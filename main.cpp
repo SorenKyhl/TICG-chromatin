@@ -200,10 +200,6 @@ public:
 	std::unordered_set<Bead*> A_contains;
 	std::unordered_set<Bead*> B_contains;
 
-	//static constexpr double chiA = 0;
-	//static constexpr double chiB = 1;
-	//static constexpr double chiAB = 5;
-
 	void print() 
 	{
 		std::cout << r << "     N: " << contains.size() << std::endl;
