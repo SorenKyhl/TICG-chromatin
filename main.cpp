@@ -197,8 +197,12 @@ public:
 	static constexpr double vint = 4/3*M_PI*3*3*3; // volume of HP1 interaction
 	static constexpr double J = -4;  // kT 
 
-	std::unordered_set<Bead*> A_contains;
-	std::unordered_set<Bead*> B_contains;
+	int A_contains;
+	int B_contains;
+
+	const int ntypes = 2;
+	std::vector<int> typenums = std::vector<int>(ntypes);
+	std::vector<double> phis = std::vector<double>(ntypes);
 
 	void print() 
 	{
@@ -214,31 +218,17 @@ public:
 	{
 		contains.insert(bead);
 		local_HP1 += bead->nbound();
-
-		if (bead->d == Bead::A)
-		{
-			A_contains.insert(bead);
-		}
-		else {
-			B_contains.insert(bead);
-		}
+		typenums[bead->d]++;
 	}
 		
 	void moveOut(Bead* bead)
 	{
 		contains.erase(bead);
 		local_HP1 -= bead->nbound();
-
-		if (bead->d == Bead::A)
-		{
-			A_contains.erase(bead);
-		}
-		else {
-			B_contains.erase(bead);
-		}
+		typenums[bead->d]--;
 	}
 
-	double getEnergy(const std::vector<double> &chis)
+	double getEnergy(const Eigen::MatrixXd &chis)
 	{
 		// nonbonded volume interactions
 		//phi = contains.size()*beadvol/vol;
@@ -246,11 +236,40 @@ public:
 		//double U = vol*phi*phi/beadvol;
 
 		// AB volume interactions
-		assert (contains.size() == A_contains.size() + B_contains.size());
-		double phiA = A_contains.size()*beadvol/vol;
-		double phiB = B_contains.size()*beadvol/vol;
-		if (phiA > 0.5 || phiB > 0.5) {phiA = 999999999;}
-		double U = chis[0]*vol*phiA*phiB/beadvol + chis[1]*vol*phiA*phiA/beadvol + chis[2]*vol*phiB*phiB/beadvol;
+		//assert (contains.size() == A_contains.size() + B_contains.size());
+		//double phiA = typenums[0]*beadvol/vol;
+		//double phiB = typenums[1]*beadvol/vol;
+
+		bool high_volfrac = false;
+		for (int i=0; i<ntypes; i++)
+		{
+			phis[i] = typenums[i]*beadvol/vol;
+
+			if (phis[i] > 0.5) {high_volfrac=true;};
+		}
+
+		//if (phiA > 0.5 || phiB > 0.5) {phiA = 999999999;}
+
+		double U = 0;
+
+		if (high_volfrac)
+		{
+			U = 99999999999;
+		}
+		else 
+		{
+			for (int i=0; i<ntypes; i++)
+			{
+				for (int j=i; j<ntypes; j++)
+				{
+					U += chis(i,j)*phis[i]*phis[j]*vol/beadvol;
+				}
+			}
+		}
+				
+
+		//double Uold = chis[0]*vol*phiA*phiB/beadvol + chis[1]*vol*phiA*phiA/beadvol + chis[2]*vol*phiB*phiB/beadvol;
+		//std::cout << U << " " << Uold << std::endl;
 		return U;
 	}
 
@@ -364,7 +383,7 @@ public:
 
 	bool checkHp1Consistency(int hp1_tot);
 			
-	double energy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<double>& chis)
+	double energy(const std::unordered_set<Cell*>& flagged_cells, const Eigen::MatrixXd &chis)
 	{
 		// nonbonded volume interactions
 		double U = 0; 
@@ -390,7 +409,7 @@ public:
 		unsigned long n = 0;
 		for(Cell* cell : active_cells)
 		{
-			n += cell->A_contains.size()*cell->B_contains.size();
+			n += cell->typenums[Bead::A] * cell->typenums[Bead::B];
 		}
 		return n;
 	}
@@ -399,7 +418,7 @@ public:
 		unsigned long n = 0;
 		for(Cell* cell : active_cells)
 		{
-			n += cell->A_contains.size()*cell->A_contains.size();
+			n += cell->typenums[Bead::A] * cell->typenums[Bead::A];
 		}
 		return n;
 	}
@@ -408,9 +427,18 @@ public:
 		unsigned long n = 0;
 		for(Cell* cell : active_cells)
 		{
-			n += cell->B_contains.size()*cell->B_contains.size();
+			n += cell->typenums[Bead::B] * cell->typenums[Bead::B];
 		}
 		return n;
+	}
+
+	unsigned long get_ij_Contacts(int i, int j) 
+	{
+		unsigned long n = 0;
+		for(Cell* cell : active_cells)
+		{
+			n += cell->typenums[i] * cell->typenums[j];
+		}
 	}
 };
 
@@ -424,7 +452,8 @@ public:
 	RanMars* rng; 
 
 	double chi; // = 1;  
-	std::vector<double> chis;
+	Eigen::MatrixXd chis;
+	int nspecies; // number of different epigenetic marks
 	int nbeads; // = 32000;// 362918; 
 	double hp1_mean_conc; // = 285;  // [uM]
 	double hp1_total; // conserved quantity 
@@ -489,6 +518,7 @@ public:
 
 	void setupContacts()
 	{
+		std::cout << "setting up contacts" << std::endl;
 		int nbins = nbeads/contact_resolution + 1;
 		contact_map.resize(nbins);
 		for(int i=0; i<nbins; i++)
@@ -548,14 +578,35 @@ public:
 		nlohmann::json config;
 		i >> config;
 		
-		chis.resize(3);
+		nspecies = config["nspecies"];
+		chis = Eigen::MatrixXd::Zero(nspecies, nspecies);
 
+		char first = 'A' + 1;
+		//std::cout << first << std::endl;
+
+		//std::cout << chis << std::endl;
+		for (int i=0; i<nspecies; i++)
+		{
+			for (int j=i; j<nspecies; j++)
+			{
+				//std::cout << i << ", " << j << std::endl;
+				char first = 'A' + i;
+				char second = 'A' + j;
+				//std::cout << first << ", " << second << std::endl;
+				std::string chistring = "chi";
+				chistring += first;
+				chistring += second;
+				std::cout << chistring << std::endl;
+				chis(i,j) = config[chistring];
+			}
+		}
+	
 		production = config["production"];
 		nbeads = config["nbeads"];
-		chi = config["chi"];
-		chis[0] = config["chiAB"];
-		chis[1] = config["chiA"];
-		chis[2] = config["chiB"];
+		//chi = config["chi"];
+		//chis[0] = config["chiAB"];
+		//chis[1] = config["chiA"];
+		//chis[2] = config["chiB"];
 		hp1_mean_conc = config["hp1_mean_conc"];
 		decay_length = config["decay_length"];
 		nSweeps = config["nSweeps"];
@@ -842,6 +893,7 @@ public:
 
 	void MC()
 	{
+		std::cout << "Beginning Simulation" << std::endl;
 		for(int sweep = 0; sweep<nSweeps; sweep++)
 		{
 			//std::cout << sweep << std::endl; 
@@ -1513,6 +1565,16 @@ public:
 		unsigned long n_AA = grid.get_AA_Contacts();
 		unsigned long n_AB = grid.get_AB_Contacts();
 		unsigned long n_BB = grid.get_BB_Contacts();
+
+		std::vector<unsigned long> all_contacts;
+		for (int i=0; i<nspecies; i++)
+		{
+			for (int j=0; j<nspecies; j++)
+			{
+				all_contacts.push_back(grid.get_ij_Contacts(i, j));
+			}
+		}
+
 		obs_out = fopen("./data_out/observables.traj", "a");
 		fprintf(obs_out, "%d\t %ld\t %ld\t %ld\n", sweep, n_AA, n_AB, n_BB);
 		fclose(obs_out);
