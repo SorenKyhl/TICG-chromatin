@@ -437,8 +437,9 @@ public:
 		unsigned long n = 0;
 		for(Cell* cell : active_cells)
 		{
-			n += cell->typenums[i] * cell->typenums[j];
+			n += cell->typenums[i] * cell->typenums[i];
 		}
+		return n;
 	}
 };
 
@@ -1566,17 +1567,20 @@ public:
 		unsigned long n_AB = grid.get_AB_Contacts();
 		unsigned long n_BB = grid.get_BB_Contacts();
 
-		std::vector<unsigned long> all_contacts;
+		obs_out = fopen("./data_out/observables.traj", "a");
+		//fprintf(obs_out, "%d\t %ld\t %ld\t %ld\n", sweep, n_AA, n_AB, n_BB);
+		fprintf(obs_out, "%d\t", sweep);
+
 		for (int i=0; i<nspecies; i++)
 		{
-			for (int j=0; j<nspecies; j++)
+			for (int j=i; j<nspecies; j++)
 			{
-				all_contacts.push_back(grid.get_ij_Contacts(i, j));
+				unsigned long ij_contacts = grid.get_ij_Contacts(i, j);
+				fprintf(obs_out, "%ld\t", ij_contacts);
 			}
 		}
 
-		obs_out = fopen("./data_out/observables.traj", "a");
-		fprintf(obs_out, "%d\t %ld\t %ld\t %ld\n", sweep, n_AA, n_AB, n_BB);
+		fprintf(obs_out, "\n");
 		fclose(obs_out);
 	}
 
