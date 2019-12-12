@@ -56,8 +56,11 @@ public:
 		: id{0}, r{0,0,0}, tail1{0}, tail2{0} {}
 
 
-	enum Domain {A, B};
-	Domain d;
+	//enum Domain {A, B, C, D, E, F, G, H};
+	//int d; // domain
+
+	int ntypes = 7;
+	std::vector<int> d = std::vector<int>(ntypes);
 
 	int id;   // i don't think i need this anymore
 	Eigen::RowVector3d r;
@@ -197,10 +200,7 @@ public:
 	static constexpr double vint = 4/3*M_PI*3*3*3; // volume of HP1 interaction
 	static constexpr double J = -4;  // kT 
 
-	int A_contains;
-	int B_contains;
-
-	const int ntypes = 2;
+	const int ntypes = 7;
 	std::vector<int> typenums = std::vector<int>(ntypes);
 	std::vector<double> phis = std::vector<double>(ntypes);
 
@@ -218,14 +218,24 @@ public:
 	{
 		contains.insert(bead);
 		local_HP1 += bead->nbound();
-		typenums[bead->d]++;
+		//typenums += bead->d;
+
+		for(int i=0; i<ntypes; i++)
+		{
+			typenums[i] += bead->d[i];
+		}
 	}
 		
 	void moveOut(Bead* bead)
 	{
 		contains.erase(bead);
 		local_HP1 -= bead->nbound();
-		typenums[bead->d]--;
+		//typenums -= bead->d;
+
+		for(int i=0; i<ntypes; i++)
+		{
+			typenums[i] -= bead->d[i];
+		}
 	}
 
 	double getEnergy(const Eigen::MatrixXd &chis)
@@ -409,7 +419,8 @@ public:
 		unsigned long n = 0;
 		for(Cell* cell : active_cells)
 		{
-			n += cell->typenums[Bead::A] * cell->typenums[Bead::B];
+			//n += cell->typenums[Bead::A] * cell->typenums[Bead::B];
+			n += cell->typenums[0] * cell->typenums[1];
 		}
 		return n;
 	}
@@ -418,7 +429,8 @@ public:
 		unsigned long n = 0;
 		for(Cell* cell : active_cells)
 		{
-			n += cell->typenums[Bead::A] * cell->typenums[Bead::A];
+			//n += cell->typenums[Bead::A] * cell->typenums[Bead::A];
+			n += cell->typenums[0] * cell->typenums[0];
 		}
 		return n;
 	}
@@ -427,7 +439,8 @@ public:
 		unsigned long n = 0;
 		for(Cell* cell : active_cells)
 		{
-			n += cell->typenums[Bead::B] * cell->typenums[Bead::B];
+			//n += cell->typenums[Bead::B] * cell->typenums[Bead::B];
+			n += cell->typenums[1] * cell->typenums[1];
 		}
 		return n;
 	}
@@ -437,7 +450,7 @@ public:
 		unsigned long n = 0;
 		for(Cell* cell : active_cells)
 		{
-			n += cell->typenums[i] * cell->typenums[i];
+			n += cell->typenums[i] * cell->typenums[j];
 		}
 		return n;
 	}
@@ -508,7 +521,16 @@ public:
 	bool load_configuration; // = true;
 	std::string load_configuration_filename; // = "32k_input.xyz";
 	std::string load_chipseq_filename; // = "chrom16_H3K9me3.txt";
+	std::vector<std::string> chipseq_files;
 
+	std::string chipseq_1;
+	std::string chipseq_2;
+	std::string chipseq_3;
+	std::string chipseq_4;
+	std::string chipseq_5;
+	std::string chipseq_6;
+	std::string chipseq_7;
+	
 	// analytics
 	bool print_MC; // = false;
 	bool print_trans; // = false;
@@ -602,6 +624,7 @@ public:
 			}
 		}
 	
+		std::cout << "made it out" << std::endl;
 		production = config["production"];
 		nbeads = config["nbeads"];
 		//chi = config["chi"];
@@ -621,6 +644,20 @@ public:
 		load_chipseq = config["load_chipseq"];
 		load_configuration = config["load_configuration"];
 		load_configuration_filename = config["load_configuration_filename"];
+		chipseq_1 = config["chipseq_1"];
+		chipseq_files.push_back(chipseq_1);
+		chipseq_2 = config["chipseq_2"];
+		chipseq_files.push_back(chipseq_2);
+		chipseq_3 = config["chipseq_3"];
+		chipseq_files.push_back(chipseq_3);
+		chipseq_4 = config["chipseq_4"];
+		chipseq_files.push_back(chipseq_4);
+		chipseq_5 = config["chipseq_5"];
+		chipseq_files.push_back(chipseq_5);
+		chipseq_6 = config["chipseq_6"];
+		chipseq_files.push_back(chipseq_6);
+		chipseq_7 = config["chipseq_7"];
+		chipseq_files.push_back(chipseq_7);
 		load_chipseq_filename = config["load_chipseq_filename"];
 		print_MC = config["print_MC"];
 		print_trans = config["print_trans"];
@@ -649,7 +686,7 @@ public:
 		
 	void initialize()
 	{
-		std::cout << "Initializing simulation objects ... ";
+		std::cout << "Initializing simulation objects ... " << std::endl;
 		Timer t_init("Initializing");
 
 		grid.delta=28.7; // grid cell size nm
@@ -678,16 +715,22 @@ public:
 		double bondlength = 16.5;
 		beads.resize(nbeads);  // uses default constructor initialization to create nbeads;
 
+		std::cout << "load configuratin is " << load_configuration << std::endl;
 		// set configuration
 		if(load_configuration) {
+
+			std::cout << "Loading configuration from " << load_configuration_filename << std::endl;
 			std::ifstream IFILE; 
 			IFILE.open(load_configuration_filename); 
 			std::string line;
 			getline(IFILE, line); // nbeads line
+			std::cout << line << std::endl;
 			getline(IFILE, line); // comment line 
+			std::cout << line << std::endl;
 				
 			// first bead
 			getline(IFILE, line);
+			std::cout << line << std::endl;
 			std::stringstream ss;
 			ss << line;
 			ss >> beads[0].id;
@@ -698,6 +741,7 @@ public:
 			for(int i=1; i<nbeads; i++)
 			{
 				getline(IFILE, line);
+				std::cout << line << std::endl;
 				std::stringstream ss;  // new stream so no overflow from last line
 				ss << line;
 
@@ -733,21 +777,42 @@ public:
 
 		// set epigenetic sequence
 		if (load_chipseq) {
-			std::ifstream IFCHIPSEQ;
-			int ntails_methylated;
-			IFCHIPSEQ.open(load_chipseq_filename);
-			// assigns methylation marks based on chipseq data 
-			for(int i=0; i<nbeads; i++) {
-				IFCHIPSEQ >> ntails_methylated;
-				if (ntails_methylated == 2) {
-					beads[i].tail1.mark = 1;
-					beads[i].tail2.mark = 1;
-					beads[i].tails_methylated = 2;
+			int marktype = 0;
+			for (std::string chipseq_file : chipseq_files)
+			{
+				std::ifstream IFCHIPSEQ;
+				int tail_marked;
+				IFCHIPSEQ.open(chipseq_file);
+				for(int i=0; i<nbeads; i++)
+				{
+					IFCHIPSEQ >> tail_marked;
+					if (tail_marked == 1)
+					{
+						beads[i].d[marktype] = 1;
+					}
+					else
+					{
+						beads[i].d[marktype] = 0;
+					}
 				}
-				else if (ntails_methylated == 1) {
-					beads[i].tail1.mark = 1;
-					beads[i].tails_methylated = 1;
+				marktype++;
+				IFCHIPSEQ.close();
+
+				// assigns methylation marks based on chipseq data 
+				/*
+				for(int i=0; i<nbeads; i++) {
+					IFCHIPSEQ >> ntails_methylated;
+					if (ntails_methylated == 2) {
+						beads[i].tail1.mark = 1;
+						beads[i].tail2.mark = 1;
+						beads[i].tails_methylated = 2;
+					}
+					else if (ntails_methylated == 1) {
+						beads[i].tail1.mark = 1;
+						beads[i].tails_methylated = 1;
+					}
 				}
+				*/
 			}
 		}
 		else {
@@ -785,11 +850,11 @@ public:
 
 				if(rndDouble < prob)
 				{
-					beads[i].d = Bead::A;
+					beads[i].d[0] = 1; //Bead::A;
 				}
 				else
 				{
-					beads[i].d = Bead::B;
+					beads[i].d[1]= 1; // Bead::B;
 				}
 			}
 		}
@@ -1547,9 +1612,19 @@ public:
 
 		for(Bead bead : beads)
 		{
-		    int epimark = bead.tail1.mark + bead.tail2.mark;
-		    int bindmark = bead.tail1.bound + bead.tail2.bound;
-		    fprintf(xyz_out, "%d\t %lf\t %lf\t %lf\t %d\t %d\t %d\n" , bead.id,bead.r(0),bead.r(1),bead.r(2), epimark, bead.nbound(), bead.d);
+		    //int epimark = bead.tail1.mark + bead.tail2.mark;
+		    //int bindmark = bead.tail1.bound + bead.tail2.bound;
+		    //fprintf(xyz_out, "%d\t %lf\t %lf\t %lf\t %d\t %d\t %d\n" , bead.id,bead.r(0),bead.r(1),bead.r(2), epimark, bead.nbound(), bead.d);
+
+
+			fprintf(xyz_out, "%d\t %lf\t %lf\t %lf\t" , bead.id,bead.r(0),bead.r(1),bead.r(2));
+
+			for(int i=0; i<nspecies; i++)
+			{
+				fprintf(xyz_out, "%d\t", bead.d[i]);
+			}
+
+			fprintf(xyz_out, "\n");
 		}
 		fclose(xyz_out); 
 	}
@@ -1563,9 +1638,9 @@ public:
 
 	void dumpObservables(int sweep)
 	{
-		unsigned long n_AA = grid.get_AA_Contacts();
-		unsigned long n_AB = grid.get_AB_Contacts();
-		unsigned long n_BB = grid.get_BB_Contacts();
+		//unsigned long n_AA = grid.get_AA_Contacts();
+		//unsigned long n_AB = grid.get_AB_Contacts();
+		//unsigned long n_BB = grid.get_BB_Contacts();
 
 		obs_out = fopen("./data_out/observables.traj", "a");
 		//fprintf(obs_out, "%d\t %ld\t %ld\t %ld\n", sweep, n_AA, n_AB, n_BB);
