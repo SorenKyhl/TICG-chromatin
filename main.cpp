@@ -251,9 +251,19 @@ public:
 		//double phiB = typenums[1]*beadvol/vol;
 
 		bool high_volfrac = false;
+
+		int total_beads = 0;
+		for (int n : typenums)
+		{
+			total_beads += n;
+		}
+		float phi_solvent = 1 - total_beads*vol/beadvol;
+
+
 		for (int i=0; i<ntypes; i++)
 		{
 			phis[i] = typenums[i]*beadvol/vol;
+			//phi_solvent -= phis[i]; // wrong!! when nucl. have multiple marks
 
 			if (phis[i] > 0.5) {high_volfrac=true;};
 		}
@@ -272,11 +282,17 @@ public:
 			{
 				for (int j=i; j<ntypes; j++)
 				{
-					U += chis(i,j)*phis[i]*phis[j]*vol/beadvol;
+					if (i==j)
+					{
+						U += chis(i,j)*phis[i]*phi_solvent*vol/beadvol;
+					}
+					else
+					{
+						U += chis(i,j)*phis[i]*phis[j]*vol/beadvol;
+					}
 				}
 			}
 		}
-				
 
 		//double Uold = chis[0]*vol*phiA*phiB/beadvol + chis[1]*vol*phiA*phiA/beadvol + chis[2]*vol*phiB*phiB/beadvol;
 		//std::cout << U << " " << Uold << std::endl;
