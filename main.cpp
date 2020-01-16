@@ -59,7 +59,7 @@ public:
 	//enum Domain {A, B, C, D, E, F, G, H};
 	//int d; // domain
 
-	int ntypes = 7;
+	static int ntypes;
 	std::vector<int> d = std::vector<int>(ntypes);
 
 	int id;   // i don't think i need this anymore
@@ -200,7 +200,7 @@ public:
 	static constexpr double vint = 4/3*M_PI*3*3*3; // volume of HP1 interaction
 	static constexpr double J = -4;  // kT 
 
-	const int ntypes = 7;
+	static int ntypes;
 	std::vector<int> typenums = std::vector<int>(ntypes);
 	std::vector<double> phis = std::vector<double>(ntypes);
 
@@ -209,17 +209,22 @@ public:
 		std::cout << r << "     N: " << contains.size() << std::endl;
 		for (Bead* bead : contains)
 		{
-			std::cout << "With beads: " ;
-			bead->print();
+			//std::cout << "With beads: " << contains.size() << std::endl;
+			//bead->print();
 		};
+
+		for (int i=0; i<3; i++)
+		{
+			std::cout << phis[i] << " " << typenums[i] << " " << std::endl;
+		}
 	}
 
 	void reset()
 	{
 		// clears population trackers
 		contains.clear();
-		typenums.clear();
-		phis.clear();
+		typenums = {0,0,0};  // DO NOT USE .clear()
+		phis = {0,0,0};      // ... it doesn't re-assign to 0's
 	}
 
 	void moveIn(Bead* bead)
@@ -278,7 +283,7 @@ public:
 
 		double U = 0;
 
-		if (phi_solvent < 0.1 )
+		if (phi_solvent < 0.5)
 		{
 			// high volume fraction occurs when more than 50% of the volume is occupied by beads
 			U = 99999999999;
@@ -349,7 +354,7 @@ public:
 			cells[i].resize(cells_per_dim);
 			for(int j=0; j<cells_per_dim; j++) {
 				cells[i][j].resize(cells_per_dim);
-				for(int k=0; k<L; k++) {
+				for(int k=0; k<cells_per_dim; k++) {
 					
 					cells[i][j][k].phi = 0.0;
 					cells[i][j][k].vol = delta*delta*delta;
@@ -405,9 +410,9 @@ public:
 	void meshBeads(std::vector<Bead> &beads)
 	{
 		// Inserts all beads into their corresponding grid cells
-		for(int i=0; i<=L; i++) {
-			for(int j=0; j<=L; j++) {
-				for(int k=0; k<=L; k++) {
+		for(int i=0; i<cells.size(); i++) {
+			for(int j=0; j<cells[i].size(); j++) {
+				for(int k=0; k<cells[i][j].size(); k++) {
 					cells[i][j][k].reset();
 				}
 			}
@@ -581,6 +586,8 @@ public:
 	bool nonbonded_on; //= true;
 	bool binding_on; // = false; 
 
+	bool gridmove_on;
+
 	bool AB_block; // = true;
 	int domainsize = nbeads;
 
@@ -696,21 +703,33 @@ public:
 				}
 			}
 
-			chipseq_1 = config["chipseq_1"];
-			chipseq_files.push_back(chipseq_1);
-			chipseq_2 = config["chipseq_2"];
-			chipseq_files.push_back(chipseq_2);
-			chipseq_3 = config["chipseq_3"];
-			chipseq_files.push_back(chipseq_3);
-			chipseq_4 = config["chipseq_4"];
-			chipseq_files.push_back(chipseq_4);
-			chipseq_5 = config["chipseq_5"];
-			chipseq_files.push_back(chipseq_5);
-			chipseq_6 = config["chipseq_6"];
-			chipseq_files.push_back(chipseq_6);
-			chipseq_7 = config["chipseq_7"];
-			chipseq_files.push_back(chipseq_7);
+			//chipseq_1 = config["chipseq_1"];
+			//chipseq_files.push_back(chipseq_1);
+			//chipseq_2 = config["chipseq_2"];
+			//chipseq_files.push_back(chipseq_2);
+			//chipseq_3 = config["chipseq_3"];
+			//chipseq_files.push_back(chipseq_3);
+			//chipseq_4 = config["chipseq_4"];
+			//chipseq_files.push_back(chipseq_4);
+			//chipseq_5 = config["chipseq_5"];
+			//chipseq_files.push_back(chipseq_5);
+			//chipseq_6 = config["chipseq_6"];
+			//chipseq_files.push_back(chipseq_6);
+			//chipseq_7 = config["chipseq_7"];
+			//chipseq_files.push_back(chipseq_7);
+
+			for (auto file : config["chipseq_files"])
+			{
+				chipseq_files.push_back(file);
+			}
+			std::cout << chipseq_files.size();
+
+			nspecies = chipseq_files.size();
+			Cell::ntypes = nspecies;
+			Bead::ntypes = nspecies;
 		}
+
+		gridmove_on = config["gridmove_on"];
 	
 		std::cout << "made it out" << std::endl;
 		production = config["production"];
@@ -803,7 +822,7 @@ public:
 		n_disp = 0;
 		n_trans = decay_length; 
 		n_crank = decay_length;
-		n_pivot = decay_length;
+		n_pivot = decay_length/10;
 		n_bind = nbeads;
 		n_rot = nbeads;
 		nSteps = n_trans + n_crank + n_pivot + n_rot + n_bind;
@@ -1065,22 +1084,29 @@ public:
 		std::cout << "Beginning Simulation" << std::endl;
 		for(int sweep = 0; sweep<nSweeps; sweep++)
 		{
-			std::cout << sweep << std::endl; 
+			//std::cout << sweep << std::endl; 
+			double nonbonded;
 
+		    looping:
 			Timer t_translation("translating", print_MC);
 			for(int j=0; j<n_trans; j++)
 			{
 				MCmove_translate();
+				//nonbonded = getNonBondedEnergy(grid.active_cells);
+				//std::cout << nonbonded << std::endl;
 			}
 			t_translation.~Timer();
 
-
-			MCmove_grid();
+			if (gridmove_on) MCmove_grid();
+			//nonbonded = getNonBondedEnergy(grid.active_cells);
+			//std::cout << nonbonded << std::endl;
 
 			Timer t_displace("displacing", print_MC);
 			for(int j=0; j<n_disp; j++)
 			{
 				MCmove_displace();
+				//nonbonded = getNonBondedEnergy(grid.active_cells);
+				//std::cout << nonbonded << std::endl;
 			}
 			t_displace.~Timer();
 
@@ -1088,6 +1114,8 @@ public:
 			Timer t_crankshaft("Cranking", print_MC);
 			for(int j=0; j<n_crank; j++) {
 				MCmove_crankshaft();
+				//nonbonded = getNonBondedEnergy(grid.active_cells);
+				//std::cout << nonbonded << std::endl;
 			}
 			t_crankshaft.~Timer();
 
@@ -1102,22 +1130,17 @@ public:
 			Timer t_pivot("pivoting", print_MC);
 			for(int j=0; j<n_pivot; j++) {
 				MCmove_pivot(sweep);
+				//nonbonded = getNonBondedEnergy(grid.active_cells);
+				//std::cout << nonbonded << std::endl;
 			}
 			t_pivot.~Timer();
 
 
 			Timer t_bind("Binding", print_MC);
 			for(int j=0; j<n_bind; j++) {
-				MCmove_bind();
+				//MCmove_bind();
 			}
 			t_bind.~Timer();
-
-			if (production)
-			{
-				// note all contacts every sweep
-				updateContacts();
-				dumpObservables(sweep);
-			}
 
 			if (sweep%dump_frequency == 0) {
 				std::cout << "Sweep number " << sweep << std::endl;
@@ -1131,20 +1154,25 @@ public:
 					std::cout << "bind: " << (float) acc_bind/((sweep+1)*n_bind)*100 << "% \t";
 					std::cout << "rot: " << (float) acc_rot/((sweep+1)*n_rot)*100 << "%" << std::endl;;
 				}
+
+				if (production) {dumpContacts();}
 			}
 
 			if (sweep%dump_stats_frequency == 0)
 			{
-				if (production) {dumpContacts();}
-				//if (production) {dumpObservables(sweep);}
+				if (production)
+				{
+					updateContacts();  // calculate contact data, but dont dump to file
+					dumpObservables(sweep);
+				}
 
 				Timer t_allenergy("all energy", print_MC);
 				double bonded = getAllBondedEnergy();
 
 				double nonbonded = 0;
 				double binding = 0;
-				if (nonbonded_on) nonbonded = getNonBondedEnergy(grid.active_cells);
-				if (binding_on) binding = binding_on ? getBindingEnergy(grid.active_cells) : 0;
+				nonbonded = nonbonded_on ? getNonBondedEnergy(grid.active_cells) : 0;
+				binding = binding_on ? getBindingEnergy(grid.active_cells) : 0;
 				//std::cout << "binding " << bonded << " nonbonded " << nonbonded << " binding" << binding <<  std::endl;
 				t_allenergy.~Timer();
 
@@ -1685,17 +1713,39 @@ public:
 		// not really a MC move (metropolis criterion doesn't apply) 
 		// don't need to choose active cells; they are chosen at the beginning of the
 		// simulation to include all cells that could possibly include particles.
-		Eigen::RowVector3d displacement;
-		displacement = step_grid*unit_vec(displacement);
-		grid.origin += displacement;
+		bool flag = true;
+		double U;
+		while (flag)
+		{
+			Eigen::RowVector3d displacement;
+			Eigen::RowVector3d old_origin = grid.origin;
 
-		// periodic boundary conditions: move inside volume bounded by (-delta, -delta, -delta) and (0,0,0)
-		grid.origin(0) -= std::ceil(grid.origin(0) / grid.delta) * grid.delta;
-		grid.origin(1) -= std::ceil(grid.origin(1) / grid.delta) * grid.delta;
-		grid.origin(2) -= std::ceil(grid.origin(2) / grid.delta) * grid.delta;
+			displacement = step_grid*unit_vec(displacement);
+			grid.origin += displacement;
 
-		// remesh beads.
-		grid.meshBeads(beads);
+			// periodic boundary conditions: move inside volume bounded by (-delta, -delta, -delta) and (0,0,0)
+			grid.origin(0) -= std::ceil(grid.origin(0) / grid.delta) * grid.delta;
+			grid.origin(1) -= std::ceil(grid.origin(1) / grid.delta) * grid.delta;
+			grid.origin(2) -= std::ceil(grid.origin(2) / grid.delta) * grid.delta;
+
+			// remesh beads.
+			grid.meshBeads(beads);
+
+			U = getNonBondedEnergy(grid.active_cells);
+
+			if (U < 9999999999)
+			{ 
+				flag = false;
+				//std::cout << "passed grid move" << std::endl;
+			}
+			else
+			{
+				flag = false;
+				grid.origin = old_origin;
+				grid.meshBeads(beads);
+				//std::cout << "failed grid move" << std::endl;
+			}
+		}
 	}
 
 	
@@ -1815,6 +1865,8 @@ public:
 };
 
 int Sim::hp1_free;
+int Bead::ntypes;
+int Cell::ntypes;
 
 void Tail::flipBind(Cell* cell_inside)
 {
