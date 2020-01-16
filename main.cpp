@@ -712,22 +712,22 @@ public:
 		std::cout << "created successfully" << std::endl;
 	}
 
-	bool inside_boundary(Bead bead)
+	bool outside_boundary(Bead bead)
 	{
-		bool is_inside = false;
+		bool is_out = false;
 
 		int boundary_radius = 0;
 
 		if (cubic_boundary)
 		{
-			is_inside = (bead.r.minCoeff() < 0 || bead.r.maxCoeff() > grid.L*grid.delta);
+			is_out = (bead.r.minCoeff() < 0 || bead.r.maxCoeff() > grid.L*grid.delta);
 		}
 		else if (spherical_boundary)
 		{
-			is_inside = bead.r.norm() < boundary_radius;
+			is_out = bead.r.norm() > boundary_radius;
 		}
 
-		return is_inside;
+		return is_out;
 	}
 
 		
@@ -816,9 +816,7 @@ public:
 					beads[i].u = unit_vec(beads[i].u); 
 					beads[i].r = beads[i-1].r + bondlength*beads[i].u; // orientations DO NOT point along contour
 					beads[i].id = i;
-				} while (inside_boundary(beads[i]) == false);
-				
-				beads[i].r = next_position;
+				} while (outside_boundary(beads[i]));
 			}
 		}
 
@@ -1346,7 +1344,7 @@ public:
 			// reject if moved out of simulation box, need to restore old bead positions
 			for(int i=first; i<=last; i++)
 			{
-				if (beads[i].r.minCoeff() < 0 || beads[i].r.maxCoeff() > grid.L*grid.delta)
+				if (outside_boundary(beads[i]))
 				{
 					throw "exited simulation box";	
 				}
@@ -1508,7 +1506,7 @@ public:
 			// reject if moved out of simulation box
 			for(int i=first; i<=last; i++)
 			{
-				if (beads[i].r.minCoeff() < 0 || beads[i].r.maxCoeff() > grid.L*grid.delta)
+				if (outside_boundary(beads[i]))
 				{
 					throw "exited simulation box";	
 				}
