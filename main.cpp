@@ -296,7 +296,8 @@ public:
 				{
 					if (i==j)
 					{
-						U += chis(i,j)*phis[i]*phi_solvent*vol/beadvol;
+						//U += chis(i,j)*phis[i]*phi_solvent*vol/beadvol;
+						U += chis(i,j)*phis[i]*phis[j]*vol/beadvol;
 						//std::cout << chis(i,j) << " " << phis[i] << " " << phi_solvent << " " << vol << " " << beadvol << std::endl;
 					}
 					else
