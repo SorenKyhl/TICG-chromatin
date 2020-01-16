@@ -712,7 +712,7 @@ public:
 		std::cout << "created successfully" << std::endl;
 	}
 
-	bool outside_boundary(Bead bead)
+	bool outside_boundary(Eigen::RowVector3d r)
 	{
 		bool is_out = false;
 
@@ -720,11 +720,11 @@ public:
 
 		if (cubic_boundary)
 		{
-			is_out = (bead.r.minCoeff() < 0 || bead.r.maxCoeff() > grid.L*grid.delta);
+			is_out = (r.minCoeff() < 0 || r.maxCoeff() > grid.L*grid.delta);
 		}
 		else if (spherical_boundary)
 		{
-			is_out = bead.r.norm() > boundary_radius;
+			is_out = r.norm() > boundary_radius;
 		}
 
 		return is_out;
@@ -811,12 +811,11 @@ public:
 			beads[0].id = 0;
 			for(int i=1; i<nbeads; i++)
 			{
-				Eigen::RowVector3d next_position;
 				do {
 					beads[i].u = unit_vec(beads[i].u); 
 					beads[i].r = beads[i-1].r + bondlength*beads[i].u; // orientations DO NOT point along contour
 					beads[i].id = i;
-				} while (outside_boundary(beads[i]));
+				} while (outside_boundary(beads[i].r));
 			}
 		}
 
@@ -1113,7 +1112,7 @@ public:
 		Cell* new_cell = grid.getCell(new_location);
 
 		// check if exited the simulation box, if so reject the move
-		if (new_location.minCoeff() < 0 || new_location.maxCoeff() > grid.L*grid.delta)
+		if (outside_boundary(new_location))
 		{
 			return;
 		}
@@ -1196,7 +1195,7 @@ public:
 			for(int i=first; i<=last; i++)
 			{
 				new_loc = beads[i].r + displacement;
-				if (new_loc.minCoeff() < 0 || new_loc.maxCoeff() > grid.L*grid.delta) {
+				if (outside_boundary(new_loc)) {
 					throw "exited simulation box";	
 				}
 			}
@@ -1344,7 +1343,7 @@ public:
 			// reject if moved out of simulation box, need to restore old bead positions
 			for(int i=first; i<=last; i++)
 			{
-				if (outside_boundary(beads[i]))
+				if (outside_boundary(beads[i].r))
 				{
 					throw "exited simulation box";	
 				}
@@ -1506,7 +1505,7 @@ public:
 			// reject if moved out of simulation box
 			for(int i=first; i<=last; i++)
 			{
-				if (outside_boundary(beads[i]))
+				if (outside_boundary(beads[i].r))
 				{
 					throw "exited simulation box";	
 				}
