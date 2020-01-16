@@ -250,30 +250,29 @@ public:
 		//double phiA = typenums[0]*beadvol/vol;
 		//double phiB = typenums[1]*beadvol/vol;
 
-		bool high_volfrac = false;
+		//bool high_volfrac = false;
 
-		int total_beads = 0;
-		for (int n : typenums)
-		{
-			total_beads += n;
-		}
-		float phi_solvent = 1 - total_beads*vol/beadvol;
-
+		//int total_beads = 0;
+		//for (int n : typenums)
+		//{
+			//total_beads += n; wrong, this is the total number of marks, not beads.
+		//}
+		//float phi_solvent = 1 - total_beads*vol/beadvol;
+		float phi_solvent = 1 - contains.size()*beadvol/vol;
 
 		for (int i=0; i<ntypes; i++)
 		{
 			phis[i] = typenums[i]*beadvol/vol;
 			//phi_solvent -= phis[i]; // wrong!! when nucl. have multiple marks
-
-			if (phis[i] > 0.5) {high_volfrac=true;};
 		}
 
 		//if (phiA > 0.5 || phiB > 0.5) {phiA = 999999999;}
 
 		double U = 0;
 
-		if (high_volfrac)
+		if (phi_solvent < 0.1 )
 		{
+			// high volume fraction occurs when more than 50% of the volume is occupied by beads
 			U = 99999999999;
 		}
 		else 
@@ -285,17 +284,19 @@ public:
 					if (i==j)
 					{
 						U += chis(i,j)*phis[i]*phi_solvent*vol/beadvol;
+						//std::cout << chis(i,j) << " " << phis[i] << " " << phi_solvent << " " << vol << " " << beadvol << std::endl;
 					}
 					else
 					{
 						U += chis(i,j)*phis[i]*phis[j]*vol/beadvol;
+						//std::cout << chis(i,j) << " " << phis[i] << " " << phis[j] << " " << vol << " " << beadvol << std::endl;
 					}
 				}
 			}
+			//std::cout << "inside else statement" << U << std::endl;
 		}
 
 		//double Uold = chis[0]*vol*phiA*phiB/beadvol + chis[1]*vol*phiA*phiA/beadvol + chis[2]*vol*phiB*phiB/beadvol;
-		//std::cout << U << " " << Uold << std::endl;
 		return U;
 	}
 
@@ -637,6 +638,7 @@ public:
 				chistring += second;
 				std::cout << chistring << std::endl;
 				chis(i,j) = config[chistring];
+				std::cout << chistring << " " << chis(i,j) << std::endl;
 			}
 		}
 	
