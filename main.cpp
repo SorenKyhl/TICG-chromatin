@@ -321,6 +321,8 @@ public:
 
 	void generate()
 	{
+		// if grid origin moves are on, then you need to generate more grid cells outside of the initial
+		// simulation box
 		std::cout << "Initializing cells: " << std::endl;
 		cells.resize(L);
 		for(int i=0; i<L; i++) {
@@ -336,12 +338,12 @@ public:
 				}
 			}
 		}
-
 		//origin = {0,0,0};
 	}
 
 	void setActiveCells()
 	{
+		// cubic simulation boundary
 		std::cout << "Setting active cells" << std::endl;
 		for(int i=0; i<L; i++) {
 			for(int j=0; j<L; j++) {
@@ -491,6 +493,9 @@ public:
 	double total_volume;
 	static int hp1_free;
 
+	bool cubic_boundary = true;
+	bool spherical_boundary = false;
+
 	FILE *xyz_out; 
 	FILE *energy_out;
 	FILE *obs_out;
@@ -619,27 +624,47 @@ public:
 		i >> config;
 		
 		nspecies = config["nspecies"];
-		chis = Eigen::MatrixXd::Zero(nspecies, nspecies);
+		load_chipseq = config["load_chipseq"];
 
-		char first = 'A' + 1;
-		//std::cout << first << std::endl;
-
-		//std::cout << chis << std::endl;
-		for (int i=0; i<nspecies; i++)
+		if (load_chipseq)
 		{
-			for (int j=i; j<nspecies; j++)
+			chis = Eigen::MatrixXd::Zero(nspecies, nspecies); 
+
+			char first = 'A' + 1;
+			for (int i=0; i<nspecies; i++)
 			{
-				//std::cout << i << ", " << j << std::endl;
-				char first = 'A' + i;
-				char second = 'A' + j;
-				//std::cout << first << ", " << second << std::endl;
-				std::string chistring = "chi";
-				chistring += first;
-				chistring += second;
-				std::cout << chistring << std::endl;
-				chis(i,j) = config[chistring];
-				std::cout << chistring << " " << chis(i,j) << std::endl;
+
+				// should be included even if load_chipseq is false... fix later
+
+				for (int j=i; j<nspecies; j++)
+				{
+					//std::cout << i << ", " << j << std::endl;
+					char first = 'A' + i;
+					char second = 'A' + j;
+					//std::cout << first << ", " << second << std::endl;
+					std::string chistring = "chi";
+					chistring += first;
+					chistring += second;
+					std::cout << chistring << std::endl;
+					chis(i,j) = config[chistring];
+					std::cout << chistring << " " << chis(i,j) << std::endl;
+				}
 			}
+
+			chipseq_1 = config["chipseq_1"];
+			chipseq_files.push_back(chipseq_1);
+			chipseq_2 = config["chipseq_2"];
+			chipseq_files.push_back(chipseq_2);
+			chipseq_3 = config["chipseq_3"];
+			chipseq_files.push_back(chipseq_3);
+			chipseq_4 = config["chipseq_4"];
+			chipseq_files.push_back(chipseq_4);
+			chipseq_5 = config["chipseq_5"];
+			chipseq_files.push_back(chipseq_5);
+			chipseq_6 = config["chipseq_6"];
+			chipseq_files.push_back(chipseq_6);
+			chipseq_7 = config["chipseq_7"];
+			chipseq_files.push_back(chipseq_7);
 		}
 	
 		std::cout << "made it out" << std::endl;
@@ -659,23 +684,8 @@ public:
 		binding_on = config["binding_on"];
 		AB_block = config["AB_block"];
 		domainsize = config["domainsize"];
-		load_chipseq = config["load_chipseq"];
 		load_configuration = config["load_configuration"];
 		load_configuration_filename = config["load_configuration_filename"];
-		chipseq_1 = config["chipseq_1"];
-		chipseq_files.push_back(chipseq_1);
-		chipseq_2 = config["chipseq_2"];
-		chipseq_files.push_back(chipseq_2);
-		chipseq_3 = config["chipseq_3"];
-		chipseq_files.push_back(chipseq_3);
-		chipseq_4 = config["chipseq_4"];
-		chipseq_files.push_back(chipseq_4);
-		chipseq_5 = config["chipseq_5"];
-		chipseq_files.push_back(chipseq_5);
-		chipseq_6 = config["chipseq_6"];
-		chipseq_files.push_back(chipseq_6);
-		chipseq_7 = config["chipseq_7"];
-		chipseq_files.push_back(chipseq_7);
 		load_chipseq_filename = config["load_chipseq_filename"];
 		print_MC = config["print_MC"];
 		print_trans = config["print_trans"];
@@ -701,6 +711,25 @@ public:
 
 		std::cout << "created successfully" << std::endl;
 	}
+
+	bool inside_boundary(Bead bead)
+	{
+		bool is_inside = false;
+
+		int boundary_radius = 0;
+
+		if (cubic_boundary)
+		{
+			is_inside = (bead.r.minCoeff() < 0 || bead.r.maxCoeff() > grid.L*grid.delta);
+		}
+		else if (spherical_boundary)
+		{
+			is_inside = bead.r.norm() < boundary_radius;
+		}
+
+		return is_inside;
+	}
+
 		
 	void initialize()
 	{
@@ -784,10 +813,10 @@ public:
 			{
 				Eigen::RowVector3d next_position;
 				do {
-					beads[i].u = unit_vec(beads[i].u);
-					next_position = beads[i-1].r + bondlength*beads[i].u; // orientations DO NOT point along contour
+					beads[i].u = unit_vec(beads[i].u); 
+					beads[i].r = beads[i-1].r + bondlength*beads[i].u; // orientations DO NOT point along contour
 					beads[i].id = i;
-				} while (next_position.minCoeff() < 0 || next_position.maxCoeff() > grid.L*grid.delta);
+				} while (inside_boundary(beads[i]) == false);
 				
 				beads[i].r = next_position;
 			}
@@ -1053,8 +1082,11 @@ public:
 
 				Timer t_allenergy("all energy", print_MC);
 				double bonded = getAllBondedEnergy();
-				double nonbonded = getNonBondedEnergy(grid.active_cells);
-				double binding = binding_on ? getBindingEnergy(grid.active_cells) : 0;
+
+				double nonbonded = 0;
+				double binding = 0;
+				if (nonbonded_on) nonbonded = getNonBondedEnergy(grid.active_cells);
+				if (binding_on) binding = binding_on ? getBindingEnergy(grid.active_cells) : 0;
 				//std::cout << "binding " << bonded << " nonbonded " << nonbonded << " binding" << binding <<  std::endl;
 				t_allenergy.~Timer();
 
