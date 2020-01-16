@@ -315,20 +315,26 @@ public:
 	std::unordered_set<Cell*> active_cells;       // cells marked as active (within simulation region)
 
 	double delta;              // grid cell size 
-	int L;                     // number of cells per side NOT equal to simulation region size
+	int L;                     // size of cubic boundary in units of grid cells
+	int boundary_radius;          // radius of boundary in units of grid cells
 
-	//Eigen::RowVector3d origin;
+	// bottom-left-most grid cell: 
+	// With grid moves on, it will diffuse with periodic boundaries
+	// inside the volume bounded by (-delta, -delta, -delta) and (0,0,0) 
+	Eigen::RowVector3d origin; 
 
 	void generate()
 	{
-		// if grid origin moves are on, then you need to generate more grid cells outside of the initial
-		// simulation box
+		origin = {-delta/2.0,-delta/2.0,-delta/2.0};
+
+		// need L+1 grid cells per direction to fully enclose simulation boundary
 		std::cout << "Initializing cells: " << std::endl;
-		cells.resize(L);
-		for(int i=0; i<L; i++) {
-			cells[i].resize(L);
-			for(int j=0; j<L; j++) {
-				cells[i][j].resize(L);
+		int cells_per_dim = L+1;
+		cells.resize(cells_per_dim);
+		for(int i=0; i<cells_per_dim; i++) {
+			cells[i].resize(cells_per_dim);
+			for(int j=0; j<cells_per_dim; j++) {
+				cells[i][j].resize(cells_per_dim);
 				for(int k=0; k<L; k++) {
 					
 					cells[i][j][k].phi = 0.0;
@@ -338,16 +344,15 @@ public:
 				}
 			}
 		}
-		//origin = {0,0,0};
 	}
 
 	void setActiveCells()
 	{
 		// cubic simulation boundary
 		std::cout << "Setting active cells" << std::endl;
-		for(int i=0; i<L; i++) {
-			for(int j=0; j<L; j++) {
-				for(int k=0; k<L; k++) {
+		for(int i=0; i<=L; i++) {
+			for(int j=0; j<=L; j++) {
+				for(int k=0; k<=L; k++) {
 					active_cells.insert(&cells[i][j][k]);
 				}
 			}
@@ -370,9 +375,9 @@ public:
 		int i, j, k;
 		for(Bead& bead : beads)   // the reference is crucial-- otherwise, copies are made in the for-each loop
 		{
-			i = floor(bead.r(0)/delta);
-			j = floor(bead.r(1)/delta);
-			k = floor(bead.r(2)/delta);
+			i = floor((bead.r(0) - origin(0))/delta);
+			j = floor((bead.r(1) - origin(1))/delta);
+			k = floor((bead.r(2) - origin(2))/delta);
 
 			cells[i][j][k].moveIn(&bead);
 		}
@@ -382,9 +387,9 @@ public:
 	{
 		// Returns a pointer to the cell in which a bead is located
 		int i, j, k;
-		i = floor(bead.r(0)/delta);
-		j = floor(bead.r(1)/delta);
-		k = floor(bead.r(2)/delta);
+		i = floor((bead.r(0) - origin(0))/delta);
+		j = floor((bead.r(1) - origin(1))/delta);
+		k = floor((bead.r(2) - origin(2))/delta);
 		return &cells[i][j][k];
 	}
 
@@ -392,9 +397,9 @@ public:
 	{
 		// Returns a pointer to the cell in which a bead is located
 		int i, j, k;
-		i = floor(r(0)/delta);
-		j = floor(r(1)/delta);
-		k = floor(r(2)/delta);
+		i = floor((r(0) - origin(0))/delta);
+		j = floor((r(1) - origin(1))/delta);
+		k = floor((r(2) - origin(2))/delta);
 		return &cells[i][j][k];
 	}
 
@@ -716,15 +721,13 @@ public:
 	{
 		bool is_out = false;
 
-		int boundary_radius = 0;
-
 		if (cubic_boundary)
 		{
 			is_out = (r.minCoeff() < 0 || r.maxCoeff() > grid.L*grid.delta);
 		}
 		else if (spherical_boundary)
 		{
-			is_out = r.norm() > boundary_radius;
+			is_out = r.norm() > grid.boundary_radius*grid.delta;
 		}
 
 		return is_out;
@@ -738,11 +741,12 @@ public:
 
 		grid.delta=28.7; // grid cell size nm
 
-
 		double Vbar = 7765.77;  // nm^3/bead: reduced number volume per spakowitz: V/N
 		grid.L= std::round(std::pow(nbeads*Vbar,1.0/3.0) / grid.delta); // number of grid cells per side // ROUNDED, won't exactly equal a desired volume frac
 		std::cout << "grid.L is: " << grid.L << std::endl;
 		total_volume = pow(grid.L*grid.delta/1000.0, 3); // micrometers^3 
+
+		grid.boundary_radius = 7;
 
 		hp1_free = hp1_mean_conc*total_volume* 602;
 		hp1_total = hp1_free;
@@ -805,10 +809,20 @@ public:
 		}
 		else {
 			// RANDOM COIL 
-			double center = grid.delta*grid.L/2; // center of simulation box
+			double center; // center of simulation box
+			if (cubic_boundary)
+			{
+				center = grid.delta*grid.L/2;
+			}
+			else if (spherical_boundary)
+			{
+				center = 0;
+			}
+
 			beads[0].r = {center, center, center}; // start in middlle of the box
 			beads[0].u = unit_vec(beads[0].u);
 			beads[0].id = 0;
+
 			for(int i=1; i<nbeads; i++)
 			{
 				do {
