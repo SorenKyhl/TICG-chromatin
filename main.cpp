@@ -191,7 +191,7 @@ public:
 
 class Cell {
 public:
-	Eigen::RowVector3d r; // corner of cell?????
+	Eigen::RowVector3d r; // corner of cell == CURRENTLY UNUSED
 	std::unordered_set<Bead*> contains; // beads associated inside this gridpoint
 	double phi;
 	double vol;
@@ -212,6 +212,14 @@ public:
 			std::cout << "With beads: " ;
 			bead->print();
 		};
+	}
+
+	void reset()
+	{
+		// clears population trackers
+		contains.clear();
+		typenums.clear();
+		phis.clear();
 	}
 
 	void moveIn(Bead* bead)
@@ -315,8 +323,14 @@ public:
 	std::unordered_set<Cell*> active_cells;       // cells marked as active (within simulation region)
 
 	double delta;              // grid cell size 
+
+	bool cubic_boundary = true;
+	bool spherical_boundary = false;
+
 	int L;                     // size of cubic boundary in units of grid cells
+	double radius;              // radius of simulation volume in [nanometers]
 	int boundary_radius;          // radius of boundary in units of grid cells
+	Eigen::RowVector3d sphere_center; // center of spherical boundary
 
 	// bottom-left-most grid cell: 
 	// With grid moves on, it will diffuse with periodic boundaries
@@ -348,12 +362,31 @@ public:
 
 	void setActiveCells()
 	{
-		// cubic simulation boundary
 		std::cout << "Setting active cells" << std::endl;
 		for(int i=0; i<=L; i++) {
 			for(int j=0; j<=L; j++) {
 				for(int k=0; k<=L; k++) {
-					active_cells.insert(&cells[i][j][k]);
+
+					if (cubic_boundary)
+					{
+						// all cells are active at all times
+						active_cells.insert(&cells[i][j][k]);
+					}
+					else if (spherical_boundary)
+					{
+						// only cells within sqrt(3)*delta of radius are active, at all times
+						Eigen::RowVector3d cell_corner;
+						cell_corner(0) = origin(0) + i*delta;
+						cell_corner(1) = origin(1) + j*delta;
+						cell_corner(2) = origin(2) + k*delta;
+
+						Eigen::RowVector3d difference = cell_corner - sphere_center;
+
+						if (difference.norm() < radius + sqrt(3)*delta)
+						{
+							active_cells.insert(&cells[i][j][k]);
+						}
+					}
 				}
 			}
 		}
@@ -372,6 +405,14 @@ public:
 	void meshBeads(std::vector<Bead> &beads)
 	{
 		// Inserts all beads into their corresponding grid cells
+		for(int i=0; i<=L; i++) {
+			for(int j=0; j<=L; j++) {
+				for(int k=0; k<=L; k++) {
+					cells[i][j][k].reset();
+				}
+			}
+		}
+
 		int i, j, k;
 		for(Bead& bead : beads)   // the reference is crucial-- otherwise, copies are made in the for-each loop
 		{
@@ -498,8 +539,6 @@ public:
 	double total_volume;
 	static int hp1_free;
 
-	bool cubic_boundary = true;
-	bool spherical_boundary = false;
 
 	FILE *xyz_out; 
 	FILE *energy_out;
@@ -515,6 +554,7 @@ public:
 	double step_crank = M_PI/6;
 	double step_pivot = M_PI/6;
 	double step_rot = M_PI/12;
+	double step_grid; // based off fraction of delta, see initialize
 
 	int n_disp;// = 0;
 	int n_trans;// = decay_length; 
@@ -721,11 +761,11 @@ public:
 	{
 		bool is_out = false;
 
-		if (cubic_boundary)
+		if (grid.cubic_boundary)
 		{
 			is_out = (r.minCoeff() < 0 || r.maxCoeff() > grid.L*grid.delta);
 		}
-		else if (spherical_boundary)
+		else if (grid.spherical_boundary)
 		{
 			is_out = r.norm() > grid.boundary_radius*grid.delta;
 		}
@@ -739,14 +779,19 @@ public:
 		std::cout << "Initializing simulation objects ... " << std::endl;
 		Timer t_init("Initializing");
 
-		grid.delta=28.7; // grid cell size nm
+		grid.delta = 28.7; // grid cell size nm
+		step_grid = grid.delta/10.0; // size of grid displacement MC moves
 
 		double Vbar = 7765.77;  // nm^3/bead: reduced number volume per spakowitz: V/N
-		grid.L= std::round(std::pow(nbeads*Vbar,1.0/3.0) / grid.delta); // number of grid cells per side // ROUNDED, won't exactly equal a desired volume frac
+		double vol = Vbar*nbeads; // simulation volume in nm^3
+		grid.L= std::round(std::pow(vol,1.0/3.0) / grid.delta); // number of grid cells per side // ROUNDED, won't exactly equal a desired volume frac
 		std::cout << "grid.L is: " << grid.L << std::endl;
-		total_volume = pow(grid.L*grid.delta/1000.0, 3); // micrometers^3 
+		total_volume = pow(grid.L*grid.delta/1000.0, 3); // micrometers^3 ONLY TRUE FOR CUBIC SIMULATIONS 
 
-		grid.boundary_radius = 7;
+		grid.radius = std::pow(3*vol/(4*M_PI), 1.0/3.0); // radius of simulation volume
+		grid.boundary_radius = std::round(grid.radius); // radius in units of grid cells
+		// sphere center needs to be centered on a multiple of grid delta
+		grid.sphere_center = {grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta};
 
 		hp1_free = hp1_mean_conc*total_volume* 602;
 		hp1_total = hp1_free;
@@ -810,11 +855,11 @@ public:
 		else {
 			// RANDOM COIL 
 			double center; // center of simulation box
-			if (cubic_boundary)
+			if (grid.cubic_boundary)
 			{
 				center = grid.delta*grid.L/2;
 			}
-			else if (spherical_boundary)
+			else if (grid.spherical_boundary)
 			{
 				center = 0;
 			}
@@ -1020,7 +1065,7 @@ public:
 		std::cout << "Beginning Simulation" << std::endl;
 		for(int sweep = 0; sweep<nSweeps; sweep++)
 		{
-			//std::cout << sweep << std::endl; 
+			std::cout << sweep << std::endl; 
 
 			Timer t_translation("translating", print_MC);
 			for(int j=0; j<n_trans; j++)
@@ -1029,6 +1074,8 @@ public:
 			}
 			t_translation.~Timer();
 
+
+			MCmove_grid();
 
 			Timer t_displace("displacing", print_MC);
 			for(int j=0; j<n_disp; j++)
@@ -1632,6 +1679,25 @@ public:
 			}
 		}
 	}
+
+	void MCmove_grid()
+	{
+		// not really a MC move (metropolis criterion doesn't apply) 
+		// don't need to choose active cells; they are chosen at the beginning of the
+		// simulation to include all cells that could possibly include particles.
+		Eigen::RowVector3d displacement;
+		displacement = step_grid*unit_vec(displacement);
+		grid.origin += displacement;
+
+		// periodic boundary conditions: move inside volume bounded by (-delta, -delta, -delta) and (0,0,0)
+		grid.origin(0) -= std::ceil(grid.origin(0) / grid.delta) * grid.delta;
+		grid.origin(1) -= std::ceil(grid.origin(1) / grid.delta) * grid.delta;
+		grid.origin(2) -= std::ceil(grid.origin(2) / grid.delta) * grid.delta;
+
+		// remesh beads.
+		grid.meshBeads(beads);
+	}
+
 	
 	void printTailComposition()
 	{
