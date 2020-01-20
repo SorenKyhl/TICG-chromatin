@@ -213,18 +213,14 @@ public:
 			//bead->print();
 		};
 
-		for (int i=0; i<3; i++)
-		{
-			std::cout << phis[i] << " " << typenums[i] << " " << std::endl;
-		}
 	}
 
 	void reset()
 	{
 		// clears population trackers
 		contains.clear();
-		typenums = {0,0,0};  // DO NOT USE .clear()
-		phis = {0,0,0};      // ... it doesn't re-assign to 0's
+		std::fill(typenums.begin(), typenums.end(), 0);  // DO NOT USE .clear()
+		std::fill(phis.begin(), phis.end(), 0);      // ... it doesn't re-assign to 0's
 	}
 
 	void moveIn(Bead* bead)
@@ -704,21 +700,6 @@ public:
 				}
 			}
 
-			//chipseq_1 = config["chipseq_1"];
-			//chipseq_files.push_back(chipseq_1);
-			//chipseq_2 = config["chipseq_2"];
-			//chipseq_files.push_back(chipseq_2);
-			//chipseq_3 = config["chipseq_3"];
-			//chipseq_files.push_back(chipseq_3);
-			//chipseq_4 = config["chipseq_4"];
-			//chipseq_files.push_back(chipseq_4);
-			//chipseq_5 = config["chipseq_5"];
-			//chipseq_files.push_back(chipseq_5);
-			//chipseq_6 = config["chipseq_6"];
-			//chipseq_files.push_back(chipseq_6);
-			//chipseq_7 = config["chipseq_7"];
-			//chipseq_files.push_back(chipseq_7);
-
 			for (auto file : config["chipseq_files"])
 			{
 				chipseq_files.push_back(file);
@@ -735,10 +716,6 @@ public:
 		std::cout << "made it out" << std::endl;
 		production = config["production"];
 		nbeads = config["nbeads"];
-		//chi = config["chi"];
-		//chis[0] = config["chiAB"];
-		//chis[1] = config["chiA"];
-		//chis[2] = config["chiB"];
 		hp1_mean_conc = config["hp1_mean_conc"];
 		decay_length = config["decay_length"];
 		nSweeps = config["nSweeps"];
