@@ -1,9 +1,11 @@
 CC = g++
 FLAGS = -O3
 DEBUG_FLAGS = -g
+INCLUDE = -I ./include
+SRC = main.cpp
 
 all: 
-	$(CC) $(FLAGS) main.cpp prof_timer.cpp
+	$(CC) $(FLAGS) $(INCLUDE) $(SRC)
 
 debug: 
-	$(CC) $(DEBUG_FLAGGS) main.cpp prof_timer.cpp
+	$(CC) $(DEBUG_FLAGGS) $(INCLUDE) $(SRC)

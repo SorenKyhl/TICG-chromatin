@@ -9,9 +9,10 @@
 #include <string>
 #include <sstream>
 #include <cstdlib>
-#include <Eigen/Dense>
-#include <random_mars.cpp>
-#include <nlohmann/json.hpp>
+
+#include "Eigen/Dense"
+#include "random_mars.cpp"
+#include "nlohmann/json.hpp"
 #include "prof_timer.cpp"
 
 unsigned long nbeads_moved = 0;
