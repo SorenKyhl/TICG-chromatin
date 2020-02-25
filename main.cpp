@@ -201,8 +201,8 @@ public:
 	static constexpr double J = -4;  // kT 
 
 	static int ntypes;
-	std::vector<int> typenums = std::vector<int>(ntypes);
-	std::vector<double> phis = std::vector<double>(ntypes);
+	std::vector<int> typenums = std::vector<int>(ntypes); // always up-to-date
+	std::vector<double> phis = std::vector<double>(ntypes); // only up-to-date after energy calculation
 
 	void print() 
 	{
@@ -225,6 +225,7 @@ public:
 
 	void moveIn(Bead* bead)
 	{
+		// updates local number of each type of bead, but does not recalculate phis
 		contains.insert(bead);
 		local_HP1 += bead->nbound();
 		//typenums += bead->d;
@@ -237,6 +238,7 @@ public:
 		
 	void moveOut(Bead* bead)
 	{
+		// updates local number of each type of bead, but does not recalculate phis
 		contains.erase(bead);
 		local_HP1 -= bead->nbound();
 		//typenums -= bead->d;
@@ -293,13 +295,13 @@ public:
 					if (i==j)
 					{
 						// A - Solvent
-						//U += chis(i,j)*phis[i]*phi_solvent*vol/beadvol;
+						U += chis(i,j)*phis[i]*phi_solvent*vol/beadvol;
 
 						// A - self
 						//U += -1*chis(i,j)*phis[i]*phis[j]*vol/beadvol;
 						
 						// the old (wrong) way...
-						U += chis(i,j)*phis[i]*phis[j]*vol/beadvol;
+						//U += chis(i,j)*phis[i]*phis[j]*vol/beadvol;
 
 					}
 					else
@@ -520,11 +522,16 @@ public:
 
 	unsigned long get_ij_Contacts(int i, int j) 
 	{
+		// calculates average phi_i phi_j
 		unsigned long n = 0;
 		for(Cell* cell : active_cells)
 		{
 			n += cell->typenums[i] * cell->typenums[j];
+			n *= cell->beadvol * cell->beadvol;
+			n /= cell->vol * cell->vol;
 		}
+
+		n /= active_cells.size(); 
 		return n;
 	}
 };
