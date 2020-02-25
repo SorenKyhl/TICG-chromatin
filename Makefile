@@ -3,9 +3,10 @@ FLAGS = -O3
 DEBUG_FLAGS = -g
 INCLUDE = -I ./include
 SRC = main.cpp
+OUT = -o TICG-engine
 
 all: 
-	$(CC) $(FLAGS) $(INCLUDE) $(SRC)
+	$(CC) $(FLAGS) $(INCLUDE) $(SRC) $(OUT)
 
 debug: 
-	$(CC) $(DEBUG_FLAGGS) $(INCLUDE) $(SRC)
+	$(CC) $(DEBUG_FLAGGS) $(INCLUDE) $(SRC) $(OUT)

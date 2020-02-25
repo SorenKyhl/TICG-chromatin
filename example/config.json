@@ -46,11 +46,11 @@
     "load_chipseq": true,
     "load_configuration": true,
     "load_configuration_filename": "5k_input.xyz",
-    "load_chipseq_filename": "chrom16_H3K9me3.txt",
+    "load_chipseq_filename": "unused",
     "print_MC": false,
     "print_trans": false,
     "print_acceptance_rates": true,
     "contact_resolution": 25,
-	"chipseq_files": ["block_1","block_2"],
+	"chipseq_files": ["block1.chipseq","block2.chipseq"],
 	"gridmove_on": true
 }
