@@ -19,8 +19,6 @@ unsigned long nbeads_moved = 0;
 
 class Cell; 
 
-int test;
-
 class Tail {
 public:
 	Tail(bool m)
@@ -55,16 +53,12 @@ public:
 	Bead() 
 		: id{0}, r{0,0,0}, tail1{0}, tail2{0} {}
 
-
-	//enum Domain {A, B, C, D, E, F, G, H};
-	//int d; // domain
-
 	static int ntypes;
 	std::vector<int> d = std::vector<int>(ntypes);
 
-	int id;   // i don't think i need this anymore
-	Eigen::RowVector3d r;
-	Eigen::RowVector3d u;
+	int id;   // unique identifier: uniqueness not strictly enforced.
+	Eigen::RowVector3d r; // position
+	Eigen::RowVector3d u; // orientation
 
 	Tail tail1;
 	Tail tail2; 
@@ -116,7 +110,7 @@ public:
 
 	double energy()
 	{
-		// DELTA = 1??
+		// DELTA = 1
 		/*
 		double delta = 1;
 		double ata =  2.7887;
@@ -137,7 +131,7 @@ public:
 		*/
 
 		// DELTA = 0.33 
-		double delta = 16.5;    // dimless (is it 16.5 or 0.33????)
+		double delta = 16.5;       // dimless (is it 16.5 or 0.33?)
 		double ata = 0.152;        // nm-1
 		double gamma = 0.938;      // dimless
 		double eps_bend = 78.309;  // kT nm
@@ -186,6 +180,37 @@ public:
 		double r = sqrt(displacement.dot(displacement));
 		return k*(r- r0)*(r - r0); // can be optimized if r0 is zero
 	}
+};
+
+
+// abstract class
+class Angle {
+public:
+	Angle(Bead* b1, Bead* b2, Bead* b3)
+		: pbead1{b1}, pbead2{b2}, pbead3{b3} {}
+
+	Bead* pbead1;
+	Bead* pbead2;
+	Bead* pbead3;
+
+	void print() {std::cout << pbead1->id <<" "<< pbead2->id <<" "<< pbead3->id << std::endl;}
+	virtual double energy() = 0; 
+};
+
+
+// abstract class
+class Dihedral {
+public:
+	Dihedral (Bead* b1, Bead* b2, Bead* b3, Bead* b4)
+		: pbead1{b1}, pbead2{b2}, pbead3{b3}, pbead4{b4} {}
+
+	Bead* pbead1;
+	Bead* pbead2;
+	Bead* pbead3;
+	Bead* pbead4;
+
+	void print() {std::cout << pbead1->id <<" "<< pbead2->id <<" "<< pbead3->id <<" "<< pbead4->id << std::endl;}
+	virtual double energy() = 0; 
 };
 
 
@@ -251,24 +276,6 @@ public:
 
 	double getEnergy(const Eigen::MatrixXd &chis)
 	{
-		// nonbonded volume interactions
-		//phi = contains.size()*beadvol/vol;
-		//if(phi > 0.5) {phi = 99999999;}
-		//double U = vol*phi*phi/beadvol;
-
-		// AB volume interactions
-		//assert (contains.size() == A_contains.size() + B_contains.size());
-		//double phiA = typenums[0]*beadvol/vol;
-		//double phiB = typenums[1]*beadvol/vol;
-
-		//bool high_volfrac = false;
-
-		//int total_beads = 0;
-		//for (int n : typenums)
-		//{
-			//total_beads += n; wrong, this is the total number of marks, not beads.
-		//}
-		//float phi_solvent = 1 - total_beads*vol/beadvol;
 		float phi_solvent = 1 - contains.size()*beadvol/vol;
 
 		for (int i=0; i<ntypes; i++)
@@ -276,8 +283,6 @@ public:
 			phis[i] = typenums[i]*beadvol/vol;
 			//phi_solvent -= phis[i]; // wrong!! when nucl. have multiple marks
 		}
-
-		//if (phiA > 0.5 || phiB > 0.5) {phiA = 999999999;}
 
 		double U = 0;
 
@@ -295,13 +300,13 @@ public:
 					if (i==j)
 					{
 						// A - Solvent
-						U += chis(i,j)*phis[i]*phi_solvent*vol/beadvol;
+						//U += chis(i,j)*phis[i]*phi_solvent*vol/beadvol;
 
 						// A - self
 						//U += -1*chis(i,j)*phis[i]*phis[j]*vol/beadvol;
 						
-						// the old (wrong) way...
-						//U += chis(i,j)*phis[i]*phis[j]*vol/beadvol;
+						// the old way
+						U += chis(i,j)*phis[i]*phis[j]*vol/beadvol;
 
 					}
 					else
@@ -311,10 +316,8 @@ public:
 					}
 				}
 			}
-			//std::cout << "inside else statement" << U << std::endl;
 		}
 
-		//double Uold = chis[0]*vol*phiA*phiB/beadvol + chis[1]*vol*phiA*phiA/beadvol + chis[2]*vol*phiB*phiB/beadvol;
 		return U;
 	}
 
@@ -490,45 +493,13 @@ public:
 		return U;
 	}
 
-	unsigned long get_AB_Contacts() {
-		unsigned long n = 0;
-		for(Cell* cell : active_cells)
-		{
-			//n += cell->typenums[Bead::A] * cell->typenums[Bead::B];
-			n += cell->typenums[0] * cell->typenums[1];
-		}
-		return n;
-	}
-
-	unsigned long get_AA_Contacts() {
-		unsigned long n = 0;
-		for(Cell* cell : active_cells)
-		{
-			//n += cell->typenums[Bead::A] * cell->typenums[Bead::A];
-			n += cell->typenums[0] * cell->typenums[0];
-		}
-		return n;
-	}
-
-	unsigned long get_BB_Contacts() {
-		unsigned long n = 0;
-		for(Cell* cell : active_cells)
-		{
-			//n += cell->typenums[Bead::B] * cell->typenums[Bead::B];
-			n += cell->typenums[1] * cell->typenums[1];
-		}
-		return n;
-	}
-
-	unsigned long get_ij_Contacts(int i, int j) 
+	double get_ij_Contacts(int i, int j) 
 	{
 		// calculates average phi_i phi_j
-		unsigned long n = 0;
+		double n = 0;
 		for(Cell* cell : active_cells)
 		{
-			n += cell->typenums[i] * cell->typenums[j];
-			n *= cell->beadvol * cell->beadvol;
-			n /= cell->vol * cell->vol;
+			n += cell->phis[i] * cell->phis[j];
 		}
 
 		n /= active_cells.size(); 
@@ -545,11 +516,11 @@ public:
 
 	RanMars* rng; 
 
-	double chi; // = 1;  
+	double chi; 
 	Eigen::MatrixXd chis;
 	int nspecies; // number of different epigenetic marks
-	int nbeads; // = 32000;// 362918; 
-	double hp1_mean_conc; // = 285;  // [uM]
+	int nbeads; 
+	double hp1_mean_conc; 
 	double hp1_total; // conserved quantity 
 	double total_volume;
 	static int hp1_free;
@@ -560,7 +531,7 @@ public:
 	FILE *obs_out;
 
 	// MC variables
-	int decay_length; // = 1000;
+	int decay_length; 
 	int exp_decay;// = nbeads/decay_length;             // size of exponential falloff for MCmove second bead choice
 	int exp_decay_crank;// = nbeads/decay_length;
 	int exp_decay_pivot;// = nbeads/decay_length;
@@ -586,25 +557,25 @@ public:
 
 	bool production; // if false, equilibration
 	int nSteps;// = n_trans + n_crank + n_pivot + n_rot + n_bind;
-	int nSweeps; //100000;
-	int dump_frequency; // = 100; // dump every x sweeps
+	int nSweeps;
+	int dump_frequency; // dump every x sweeps
 	int dump_stats_frequency;
 	//int nEquilibSweeps; // = 10*dump_frequency;
 	int acc = 0;
 
-	bool bonded_on; // = true;
-	bool nonbonded_on; //= true;
-	bool binding_on; // = false; 
+	bool bonded_on; 
+	bool nonbonded_on;
+	bool binding_on; 
 
 	bool gridmove_on;
 
 	bool AB_block; // = true;
 	int domainsize = nbeads;
 
-	bool load_chipseq; // = false;
-	bool load_configuration; // = true;
-	std::string load_configuration_filename; // = "32k_input.xyz";
-	std::string load_chipseq_filename; // = "chrom16_H3K9me3.txt";
+	bool load_chipseq;
+	bool load_configuration;
+	std::string load_configuration_filename; 
+	std::string load_chipseq_filename; 
 	std::vector<std::string> chipseq_files;
 
 	std::string chipseq_1;
@@ -637,7 +608,6 @@ public:
 			}
 		}
 	}
-
 
 	void updateContacts()
 	{
@@ -1784,7 +1754,6 @@ public:
 		    //int bindmark = bead.tail1.bound + bead.tail2.bound;
 		    //fprintf(xyz_out, "%d\t %lf\t %lf\t %lf\t %d\t %d\t %d\n" , bead.id,bead.r(0),bead.r(1),bead.r(2), epimark, bead.nbound(), bead.d);
 
-
 			fprintf(xyz_out, "%d\t %lf\t %lf\t %lf\t" , bead.id,bead.r(0),bead.r(1),bead.r(2));
 
 			for(int i=0; i<nspecies; i++)
@@ -1806,20 +1775,15 @@ public:
 
 	void dumpObservables(int sweep)
 	{
-		//unsigned long n_AA = grid.get_AA_Contacts();
-		//unsigned long n_AB = grid.get_AB_Contacts();
-		//unsigned long n_BB = grid.get_BB_Contacts();
-
 		obs_out = fopen("./data_out/observables.traj", "a");
-		//fprintf(obs_out, "%d\t %ld\t %ld\t %ld\n", sweep, n_AA, n_AB, n_BB);
 		fprintf(obs_out, "%d\t", sweep);
 
 		for (int i=0; i<nspecies; i++)
 		{
 			for (int j=i; j<nspecies; j++)
 			{
-				unsigned long ij_contacts = grid.get_ij_Contacts(i, j);
-				fprintf(obs_out, "%ld\t", ij_contacts);
+				double ij_contacts = grid.get_ij_Contacts(i, j);
+				fprintf(obs_out, "%lf\t", ij_contacts);
 			}
 		}
 
@@ -1843,12 +1807,12 @@ public:
 	{
 		readInput();
 		makeOutputFiles();
-		initialize(); // simulation
+		initialize(); 
 		grid.generate();  // creates the grid locations
 		grid.meshBeads(beads);  // populates the grid locations with beads;
 		grid.setActiveCells();  // populates the active cell locations
 		setupContacts();
-		MC();
+		MC(); // MC simulation
 		dumpContacts();
 		assert (grid.checkCellConsistency(nbeads));
 		assert (grid.checkHp1Consistency(hp1_total));
