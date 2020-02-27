@@ -1,3 +1,4 @@
+#define _GLIBCXX_USE_CXX11_ABI 0
 #include <iostream>
 #include <cmath>
 #include <vector>
@@ -14,11 +15,15 @@
 #include "random_mars.cpp"
 #include "nlohmann/json.hpp"
 #include "prof_timer.cpp"
+#include "/home/coraor/cnpy/cnpy.h"
+#include "/home/coraor/cnpy/cnpy.cpp"
+//#include "fiber.h"
 
 unsigned long nbeads_moved = 0;
 //RanMars rng(1);
 
 class Cell; 
+
 
 class Tail {
 public:
@@ -44,7 +49,6 @@ public:
 		std::cout <<  "Tail with epigenetic state: " << mark << " binding state " << bound << std::endl;
 	}
 };
-
 
 class Bead {
 public:
@@ -83,7 +87,6 @@ public:
 };
 
 
-// abstract class
 class Bond {
 public:
 	Bond(Bead* b1, Bead* b2)
@@ -94,6 +97,42 @@ public:
 
 	void print() {std::cout << pbead1->id <<" "<< pbead2->id << std::endl;}
 	virtual double energy() = 0; 
+};
+
+// abstract class
+class Angle {
+public:
+	Angle(Bead* b1, Bead* b2, Bead* b3)
+		: pbead1{b1}, pbead2{b2}, pbead3{b3} {}
+
+	Bead* pbead1;
+	Bead* pbead2;
+	Bead* pbead3;
+
+	void print() {
+		std::cout << pbead1->id << " " << pbead2->id << " " << pbead3->id << std::endl;
+	}
+
+	virtual double energy() = 0;
+};
+
+// abstract class
+class Dihedral {
+public:
+	Dihedral(Bead* b1, Bead* b2, Bead* b3, Bead* b4)
+		: pbead1{b1}, pbead2{b2}, pbead3{b3}, pbead4{b4} {}
+
+	Bead* pbead1;
+	Bead* pbead2;
+	Bead* pbead3;
+	Bead* pbead4;
+
+	void print() {
+		std::cout << pbead1->id << " " << pbead2->id << " " << pbead3->id;
+		std::cout << " " << pbead4->id << std::endl;
+	}
+
+	virtual double energy() = 0;
 };
 
 
@@ -184,35 +223,249 @@ public:
 };
 
 
-// abstract class
-class Angle {
+
+//Lookuptable for energy
+class LookupTable3D {
 public:
-	Angle(Bead* b1, Bead* b2, Bead* b3)
-		: pbead1{b1}, pbead2{b2}, pbead3{b3} {}
 
-	Bead* pbead1;
-	Bead* pbead2;
-	Bead* pbead3;
+	int NRL;
+	std::vector<std::vector<std::vector<double>>> values;
 
-	void print() {std::cout << pbead1->id <<" "<< pbead2->id <<" "<< pbead3->id << std::endl;}
-	virtual double energy() = 0; 
+	double alpha_min, alpha_max, beta_min, beta_max, alphaprime_min,alphaprime_max;
+	double alpha_int, beta_int, alphaprime_int;
+
+	cnpy::NpyArray val_arr;
+	
+	size_t length = 200;
+
+
+	LookupTable3D(int nrl)
+		: NRL{nrl} {
+
+
+		std::string fname = "/home/coraor/TICG-chromatin/range.npy";
+		//std::string fname = "/project2/depablo/coraor/fiber_builder/second_cond_" + 
+		//		std::to_string(nrl) + "_kde.dat.npy";
+		//Setup values
+		//std::cout << fname;
+		cnpy::NpyArray val_arr = cnpy::npy_load(fname);
+		double * loaded_data = val_arr.data<double>();
+
+		assert(val_arr.word_size == sizeof(double));
+		assert(val_arr.shape.size() == 3);
+
+
+		
+
+		
+		//std::vector<std::vector<double>>* values = val_arr.data<std::vector<std::vector<double>>>();
+		values.resize(length);
+
+
+		for(size_t row = 0; row < length; row++) {
+			values[row].resize(length);
+			for(size_t col = 0; col < length; col++) {
+				values[row][col].resize(length);
+				for(size_t depth = 0; depth < length; depth++) {
+					//std::cout << row*length*length + col*length + depth << std::endl;
+					//std::cout << "Vector size: " << values.size() << ", subvector size:" << values[row].size() << std::endl; 
+					//std::cout << "Undervector size: " << values[row][col].size() << std::endl;
+					values[row][col][depth] = loaded_data[row*length*length + col*length + depth];
+				}
+				
+			}
+		}
+
+
+
+		
+		//Setup range
+
+		std::string fname2 = "/home/coraor/TICG-chromatin/2drange.npy";
+		cnpy::NpyArray ran_arr = cnpy::npy_load(fname2);
+
+		assert(ran_arr.word_size == sizeof(double));
+		assert(ran_arr.shape.size() == 2);
+
+		//read data out from range
+		loaded_data = ran_arr.data<double>();
+
+		//Set up O(1) indexing
+		size_t ran_num = ran_arr.shape[1];
+		//std::cout << "Range size: " << ran_num << std::endl;
+		alpha_int = (loaded_data[ran_num-1] - loaded_data[0])/length;
+		beta_int = (loaded_data[2*ran_num-1] - loaded_data[ran_num])/length;
+		alphaprime_int = (loaded_data[3*ran_num-1] - loaded_data[2*ran_num])/length;
+		
+		alpha_min = loaded_data[0] + 0.5*alpha_int;
+		alpha_max = loaded_data[ran_num-1] - 0.5*alpha_int;
+		beta_min = loaded_data[ran_num] + 0.5*beta_int;
+		beta_max = loaded_data[2*ran_num-1] - 0.5*beta_int;
+		alphaprime_min = loaded_data[2*ran_num] + 0.5*alphaprime_int;
+		alphaprime_max = loaded_data[3*ran_num-1] - 0.5*alphaprime_int;
+
+		//std::cout << "Various parameters: " << alpha_int << beta_int << alphaprime_int;
+		//std::cout << std::endl << alpha_min << alpha_max << beta_min << beta_max;
+		//std::cout << std::endl << alphaprime_min << alphaprime_max << std::endl;
+		
+	
+	}
+
+	//Calculate the interpolated triplet energy 
+	double energy(double alpha, double beta, double alphaprime)
+	{
+		//Calculate grid interpolation
+		//std::cout << "Calculating energy" << std::endl;
+		//Every point is surrounded by 8 corners. Do a weighted-average of the corners.
+		double alpha_point,beta_point,alphaprime_point;
+		double final_val = 0.0;
+
+		alpha_point = (alpha-alpha_min)/alpha_int;
+		beta_point = (beta-beta_min)/beta_int;
+		alphaprime_point = (alphaprime-alphaprime_min)/alphaprime_int;
+
+		//std::cout << "Indices: " << alpha_point << ", " << beta_point << ", " << alphaprime_point << std::endl;
+		std::vector<double> pointvals;
+		std::vector<double> weights;
+		pointvals.resize(8);
+		weights.resize(8);
+
+		double alpha_prop = fmod(alpha_point,1.0);
+		double beta_prop = fmod(beta_point,1.0);
+		double alphaprime_prop = fmod(alphaprime_point,1.0);
+		//std::cout << alpha_prop << ", " << beta_prop << ", " << alphaprime_prop << std::endl;
+
+		for(int i=0; i<2; i++){
+			for(int j=0; j<2; j++){
+				for(int k=0; k<2; k++){
+					weights[i*4+j*2+k] = (i+(1-2*i)*alpha_prop)*(j+(1-2*j)*
+						beta_prop)*(k+(1-2*k)*alphaprime_prop);
+					int x = (int) (alpha_point + i);
+					int y = (int) (beta_point + j);
+					int z = (int) (alphaprime_point + k);
+					//std::cout << x <<','<<y<<','<<z<<std::endl;
+					pointvals[i*4+j*2+k] = values[x][y][z];
+				}
+			}
+		}
+
+		for(size_t i=0;i<8;i++){
+			final_val += weights[i]*pointvals[i];
+		}
+
+		return final_val;
+	}
 };
 
 
-// abstract class
-class Dihedral {
+//Lookuptable for energy, first condition
+class LookupTable2D {
 public:
-	Dihedral (Bead* b1, Bead* b2, Bead* b3, Bead* b4)
-		: pbead1{b1}, pbead2{b2}, pbead3{b3}, pbead4{b4} {}
 
-	Bead* pbead1;
-	Bead* pbead2;
-	Bead* pbead3;
-	Bead* pbead4;
+	int NRL;
+	std::vector<std::vector<double>> values;
 
-	void print() {std::cout << pbead1->id <<" "<< pbead2->id <<" "<< pbead3->id <<" "<< pbead4->id << std::endl;}
-	virtual double energy() = 0; 
+	double alpha_min, alpha_max, alphaprime_min,alphaprime_max;
+	double alpha_int, alphaprime_int;
+
+	cnpy::NpyArray val_arr;
+	
+	size_t length = 200;
+
+
+	LookupTable2D(int nrl)
+		: NRL{nrl} {
+
+
+		std::string fname = "/home/coraor/TICG-chromatin/first_range.npy";
+		cnpy::NpyArray val_arr = cnpy::npy_load(fname);
+		double * loaded_data = val_arr.data<double>();
+
+		assert(val_arr.word_size == sizeof(double));
+		assert(val_arr.shape.size() == 2);
+		
+		values.resize(length);
+
+		for(size_t row = 0; row < length; row++) {
+			values[row].resize(length);
+			for(size_t col = 0; col < length; col++) {
+				values[row][col] = loaded_data[row*length + col];
+			}
+		}
+
+
+
+		
+		//Setup range
+
+		std::string fname2 = "/home/coraor/TICG-chromatin/2drange.npy";
+		cnpy::NpyArray ran_arr = cnpy::npy_load(fname2);
+
+		assert(ran_arr.word_size == sizeof(double));
+		assert(ran_arr.shape.size() == 2);
+
+		//read data out from range
+		loaded_data = ran_arr.data<double>();
+
+		//Set up O(1) indexing
+		size_t ran_num = ran_arr.shape[1];
+		//std::cout << "Range size: " << ran_num << std::endl;
+		alpha_int = (loaded_data[ran_num-1] - loaded_data[0])/length;
+		alphaprime_int = (loaded_data[3*ran_num-1] - loaded_data[2*ran_num])/length;
+		
+		alpha_min = loaded_data[0] + 0.5*alpha_int;
+		alpha_max = loaded_data[ran_num-1] - 0.5*alpha_int;
+		alphaprime_min = loaded_data[2*ran_num] + 0.5*alphaprime_int;
+		alphaprime_max = loaded_data[3*ran_num-1] - 0.5*alphaprime_int;
+
+		//std::cout << "Various parameters: " << alpha_int << beta_int << alphaprime_int;
+		//std::cout << std::endl << alpha_min << alpha_max << beta_min << beta_max;
+		//std::cout << std::endl << alphaprime_min << alphaprime_max << std::endl;
+		
+	
+	}
+
+	//Calculate the interpolated triplet energy 
+	double energy(double alpha, double alphaprime)
+	{
+		//Calculate grid interpolation
+		//std::cout << "Calculating energy" << std::endl;
+		//Every point is surrounded by 8 corners. Do a weighted-average of the corners.
+		double alpha_point, alphaprime_point;
+		double final_val = 0.0;
+
+		alpha_point = (alpha-alpha_min)/alpha_int;
+		alphaprime_point = (alphaprime-alphaprime_min)/alphaprime_int;
+
+		//std::cout << "Indices: " << alpha_point << ", " << beta_point << ", " << alphaprime_point << std::endl;
+		std::vector<double> pointvals;
+		std::vector<double> weights;
+		pointvals.resize(4);
+		weights.resize(4);
+
+		double alpha_prop = fmod(alpha_point,1.0);
+		double alphaprime_prop = fmod(alphaprime_point,1.0);
+		//std::cout << alpha_prop << ", " << beta_prop << ", " << alphaprime_prop << std::endl;
+
+		for(int i=0; i<2; i++){
+			for(int k=0; k<2; k++){
+				weights[i*2+k] = (i+(1-2*i)*alpha_prop)*(k+(1-2*k)*alphaprime_prop);
+				int x = (int) (alpha_point + i);
+				int z = (int) (alphaprime_point + k);
+				//std::cout << x <<','<<y<<','<<z<<std::endl;
+				pointvals[i*2+k] = values[x][z];
+			}
+			
+		}
+
+		for(size_t i=0;i<4;i++){
+			final_val += weights[i]*pointvals[i];
+		}
+
+		return final_val;
+	}
 };
+
 
 
 class Cell {
@@ -1857,6 +2110,12 @@ bool Grid::checkHp1Consistency(int hp1_tot)
 int main()
 {
 	auto start = std::chrono::high_resolution_clock::now();
+
+	std::cout << "Making lookuptable" << std::endl;
+	LookupTable3D a(167);
+	LookupTable2D b(167);
+	std::cout << a.energy(160.0,270.0,560.0) << std::endl;
+	std::cout << b.energy(160.1,270.1) << std::endl;
 
 	Sim mySim;
 	mySim.run();
