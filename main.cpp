@@ -222,6 +222,38 @@ public:
 	}
 };
 
+//Trinucleosome energy. 
+class Fiber_Angle : public Angle {
+public:
+	//dyad should be a pointer to nrl2's alpha, alphaprime energy.
+	Fiber_Angle(Bead* bead1, Bead* bead2, Bead* bead3, LookupTable3D* LT1, 
+		LookupTable3D* LT2, LookupTable2D* LT3)
+		: Angle{bead1,bead2,bead3}, triad1{NRL1}, triad2{NRL2}, dyad{LT3} {}
+
+	LookupTable3D* triad1;
+	LookupTable3D* triad2;
+	LookupTable2D* dyad;
+
+	double energy()
+	{
+		Eigen::RowVector3d disp1 = pbead1->r - pbead2->r;
+		Eigen::RowVector3d disp2 = pbead3->r - pbead2->r;
+		Eigen::RowVector3d disp3 = pbead3->r - pbead1->r;
+
+		double alpha = sqrt(disp1.dot(disp1));
+		double alphaprime = sqrt(disp2.dot(disp2));
+		double beta = sqrt(disp3.dot(disp3));
+
+		double triad_en = 0.0;
+		if(triad1 == triad2){
+			triad_en = triad1->energy(alpha,beta,alphaprime);
+		} else{
+			triad_en = (triad1->energy(alpha,beta,alphaprime) + triad2->energy(alpha,beta,alphaprime))/2.0;	
+		}
+		return triad_en + dyad->energy(alpha,alphaprime);
+	}
+
+};
 
 
 //Lookuptable for energy
@@ -297,12 +329,12 @@ public:
 		beta_int = (loaded_data[2*ran_num-1] - loaded_data[ran_num])/length;
 		alphaprime_int = (loaded_data[3*ran_num-1] - loaded_data[2*ran_num])/length;
 		
-		alpha_min = loaded_data[0] + 0.5*alpha_int;
-		alpha_max = loaded_data[ran_num-1] - 0.5*alpha_int;
-		beta_min = loaded_data[ran_num] + 0.5*beta_int;
-		beta_max = loaded_data[2*ran_num-1] - 0.5*beta_int;
-		alphaprime_min = loaded_data[2*ran_num] + 0.5*alphaprime_int;
-		alphaprime_max = loaded_data[3*ran_num-1] - 0.5*alphaprime_int;
+		alpha_min = loaded_data[0];
+		alpha_max = loaded_data[ran_num-1];
+		beta_min = loaded_data[ran_num];
+		beta_max = loaded_data[2*ran_num-1];
+		alphaprime_min = loaded_data[2*ran_num];
+		alphaprime_max = loaded_data[3*ran_num-1];
 
 		//std::cout << "Various parameters: " << alpha_int << beta_int << alphaprime_int;
 		//std::cout << std::endl << alpha_min << alpha_max << beta_min << beta_max;
@@ -413,10 +445,10 @@ public:
 		alpha_int = (loaded_data[ran_num-1] - loaded_data[0])/length;
 		alphaprime_int = (loaded_data[3*ran_num-1] - loaded_data[2*ran_num])/length;
 		
-		alpha_min = loaded_data[0] + 0.5*alpha_int;
-		alpha_max = loaded_data[ran_num-1] - 0.5*alpha_int;
-		alphaprime_min = loaded_data[2*ran_num] + 0.5*alphaprime_int;
-		alphaprime_max = loaded_data[3*ran_num-1] - 0.5*alphaprime_int;
+		alpha_min = loaded_data[0];
+		alpha_max = loaded_data[ran_num-1];
+		alphaprime_min = loaded_data[2*ran_num];
+		alphaprime_max = loaded_data[3*ran_num-1];
 
 		//std::cout << "Various parameters: " << alpha_int << beta_int << alphaprime_int;
 		//std::cout << std::endl << alpha_min << alpha_max << beta_min << beta_max;
@@ -766,6 +798,12 @@ class Sim {
 public: 
 	std::vector<Bead> beads;
 	std::vector<Bond*> bonds; // pointers because Bond class is virtual
+	std::vector<Angle*> angles;
+	std::vector<Dihedral*> dihedrals;
+
+	std::vector<int> nrls;
+	std::vector<LookupTable3D> angle_lookups;
+	std::vector<LookupTable2D> bond_lookups;
 	Grid grid;
 
 	RanMars* rng; 
