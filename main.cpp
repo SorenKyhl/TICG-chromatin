@@ -1,4 +1,5 @@
 #define _GLIBCXX_USE_CXX11_ABI 0
+
 #include <iostream>
 #include <cmath>
 #include <vector>
@@ -23,6 +24,9 @@ unsigned long nbeads_moved = 0;
 //RanMars rng(1);
 
 class Cell; 
+class LookupTable3D;
+class LookupTable2D;
+class LookupTable1D;
 
 
 class Tail {
@@ -222,40 +226,6 @@ public:
 	}
 };
 
-//Trinucleosome energy. 
-class Fiber_Angle : public Angle {
-public:
-	//dyad should be a pointer to nrl2's alpha, alphaprime energy.
-	Fiber_Angle(Bead* bead1, Bead* bead2, Bead* bead3, LookupTable3D* LT1, 
-		LookupTable3D* LT2, LookupTable2D* LT3)
-		: Angle{bead1,bead2,bead3}, triad1{NRL1}, triad2{NRL2}, dyad{LT3} {}
-
-	LookupTable3D* triad1;
-	LookupTable3D* triad2;
-	LookupTable2D* dyad;
-
-	double energy()
-	{
-		Eigen::RowVector3d disp1 = pbead1->r - pbead2->r;
-		Eigen::RowVector3d disp2 = pbead3->r - pbead2->r;
-		Eigen::RowVector3d disp3 = pbead3->r - pbead1->r;
-
-		double alpha = sqrt(disp1.dot(disp1));
-		double alphaprime = sqrt(disp2.dot(disp2));
-		double beta = sqrt(disp3.dot(disp3));
-
-		double triad_en = 0.0;
-		if(triad1 == triad2){
-			triad_en = triad1->energy(alpha,beta,alphaprime);
-		} else{
-			triad_en = (triad1->energy(alpha,beta,alphaprime) + triad2->energy(alpha,beta,alphaprime))/2.0;	
-		}
-		return triad_en + dyad->energy(alpha,alphaprime);
-	}
-
-};
-
-
 //Lookuptable for energy
 class LookupTable3D {
 public:
@@ -270,14 +240,18 @@ public:
 	
 	size_t length = 200;
 
+	LookupTable3D() {
+		std::cout << "Warning! Empty 3D Lookuptable generated!" << std::endl;
+	}
 
-	LookupTable3D(int nrl)
+
+	LookupTable3D(int const & nrl)
 		: NRL{nrl} {
 
 
-		std::string fname = "/home/coraor/TICG-chromatin/range.npy";
-		//std::string fname = "/project2/depablo/coraor/fiber_builder/second_cond_" + 
-		//		std::to_string(nrl) + "_kde.dat.npy";
+		//std::string fname = "/home/coraor/TICG-chromatin/range.npy";
+		std::string fname = "/project2/depablo/coraor/fiber_builder/second_cond_" + 
+				std::to_string(nrl) + "_kde.dat.npy";
 		//Setup values
 		//std::cout << fname;
 		cnpy::NpyArray val_arr = cnpy::npy_load(fname);
@@ -304,7 +278,6 @@ public:
 					//std::cout << "Undervector size: " << values[row][col].size() << std::endl;
 					values[row][col][depth] = loaded_data[row*length*length + col*length + depth];
 				}
-				
 			}
 		}
 
@@ -313,7 +286,9 @@ public:
 		
 		//Setup range
 
-		std::string fname2 = "/home/coraor/TICG-chromatin/2drange.npy";
+		//std::string fname2 = "/home/coraor/TICG-chromatin/2drange.npy";
+		std::string fname2 = "/project2/depablo/coraor/fiber_builder/ranges_" +
+			std::to_string(nrl) + "_kde.dat.npy";
 		cnpy::NpyArray ran_arr = cnpy::npy_load(fname2);
 
 		assert(ran_arr.word_size == sizeof(double));
@@ -325,9 +300,9 @@ public:
 		//Set up O(1) indexing
 		size_t ran_num = ran_arr.shape[1];
 		//std::cout << "Range size: " << ran_num << std::endl;
-		alpha_int = (loaded_data[ran_num-1] - loaded_data[0])/length;
-		beta_int = (loaded_data[2*ran_num-1] - loaded_data[ran_num])/length;
-		alphaprime_int = (loaded_data[3*ran_num-1] - loaded_data[2*ran_num])/length;
+		alpha_int = (loaded_data[ran_num-1] - loaded_data[0])/(length-1);
+		beta_int = (loaded_data[2*ran_num-1] - loaded_data[ran_num])/(length-1);
+		alphaprime_int = (loaded_data[3*ran_num-1] - loaded_data[2*ran_num])/(length-1);
 		
 		alpha_min = loaded_data[0];
 		alpha_max = loaded_data[ran_num-1];
@@ -339,8 +314,6 @@ public:
 		//std::cout << "Various parameters: " << alpha_int << beta_int << alphaprime_int;
 		//std::cout << std::endl << alpha_min << alpha_max << beta_min << beta_max;
 		//std::cout << std::endl << alphaprime_min << alphaprime_max << std::endl;
-		
-	
 	}
 
 	//Calculate the interpolated triplet energy 
@@ -356,6 +329,12 @@ public:
 		beta_point = (beta-beta_min)/beta_int;
 		alphaprime_point = (alphaprime-alphaprime_min)/alphaprime_int;
 
+		if(alpha_point < 0.0 || beta_point < 0.0 || alphaprime_point < 0.0){
+			return sqrt(std::numeric_limits<double>::max());
+		} else if(alpha > alpha_max || beta_point > beta_max || alphaprime_point > alphaprime_max){
+			return sqrt(std::numeric_limits<double>::max());
+		}
+
 		//std::cout << "Indices: " << alpha_point << ", " << beta_point << ", " << alphaprime_point << std::endl;
 		std::vector<double> pointvals;
 		std::vector<double> weights;
@@ -366,12 +345,13 @@ public:
 		double beta_prop = fmod(beta_point,1.0);
 		double alphaprime_prop = fmod(alphaprime_point,1.0);
 		//std::cout << alpha_prop << ", " << beta_prop << ", " << alphaprime_prop << std::endl;
+		
 
 		for(int i=0; i<2; i++){
 			for(int j=0; j<2; j++){
 				for(int k=0; k<2; k++){
-					weights[i*4+j*2+k] = (i+(1-2*i)*alpha_prop)*(j+(1-2*j)*
-						beta_prop)*(k+(1-2*k)*alphaprime_prop);
+					weights[i*4+j*2+k] = (1-i-(1-2*i)*alpha_prop)*(1-j-(1-2*j)*
+						beta_prop)*(1-k-(1-2*k)*alphaprime_prop);
 					int x = (int) (alpha_point + i);
 					int y = (int) (beta_point + j);
 					int z = (int) (alphaprime_point + k);
@@ -404,12 +384,18 @@ public:
 	
 	size_t length = 200;
 
+	LookupTable2D() {
+		std::cout << "Warning! Empty 2D Lookuptable generated!" << std::endl;
+	}
 
-	LookupTable2D(int nrl)
+
+
+	LookupTable2D(int const & nrl)
 		: NRL{nrl} {
 
 
-		std::string fname = "/home/coraor/TICG-chromatin/first_range.npy";
+		std::string fname = "/project2/depablo/coraor/fiber_builder/first_cond_" + 
+				std::to_string(nrl) + "_kde.dat.npy";
 		cnpy::NpyArray val_arr = cnpy::npy_load(fname);
 		double * loaded_data = val_arr.data<double>();
 
@@ -430,7 +416,8 @@ public:
 		
 		//Setup range
 
-		std::string fname2 = "/home/coraor/TICG-chromatin/2drange.npy";
+		std::string fname2 = "/project2/depablo/coraor/fiber_builder/ranges_" +
+			std::to_string(nrl) + "_kde.dat.npy";
 		cnpy::NpyArray ran_arr = cnpy::npy_load(fname2);
 
 		assert(ran_arr.word_size == sizeof(double));
@@ -442,8 +429,8 @@ public:
 		//Set up O(1) indexing
 		size_t ran_num = ran_arr.shape[1];
 		//std::cout << "Range size: " << ran_num << std::endl;
-		alpha_int = (loaded_data[ran_num-1] - loaded_data[0])/length;
-		alphaprime_int = (loaded_data[3*ran_num-1] - loaded_data[2*ran_num])/length;
+		alpha_int = (loaded_data[ran_num-1] - loaded_data[0])/(length-1);
+		alphaprime_int = (loaded_data[3*ran_num-1] - loaded_data[2*ran_num])/(length-1);
 		
 		alpha_min = loaded_data[0];
 		alpha_max = loaded_data[ran_num-1];
@@ -469,6 +456,12 @@ public:
 		alpha_point = (alpha-alpha_min)/alpha_int;
 		alphaprime_point = (alphaprime-alphaprime_min)/alphaprime_int;
 
+		if(alpha_point < 0.0 || alphaprime_point < 0.0){
+			return sqrt(std::numeric_limits<double>::max());
+		} else if(alpha > alpha_max || alphaprime_point > alphaprime_max){
+			return sqrt(std::numeric_limits<double>::max());
+		}
+
 		//std::cout << "Indices: " << alpha_point << ", " << beta_point << ", " << alphaprime_point << std::endl;
 		std::vector<double> pointvals;
 		std::vector<double> weights;
@@ -481,7 +474,7 @@ public:
 
 		for(int i=0; i<2; i++){
 			for(int k=0; k<2; k++){
-				weights[i*2+k] = (i+(1-2*i)*alpha_prop)*(k+(1-2*k)*alphaprime_prop);
+				weights[i*2+k] = (1-i-(1-2*i)*alpha_prop)*(1-k-(1-2*k)*alphaprime_prop);
 				int x = (int) (alpha_point + i);
 				int z = (int) (alphaprime_point + k);
 				//std::cout << x <<','<<y<<','<<z<<std::endl;
@@ -497,6 +490,182 @@ public:
 		return final_val;
 	}
 };
+
+//Lookuptable for dihedrals.
+class LookupTable1D {
+public:
+
+	int NRL;
+	std::vector<double> values;
+
+	double dih_min, dih_max;
+	double dih_int;
+
+	cnpy::NpyArray val_arr;
+	
+	size_t length = 200;
+
+	LookupTable1D() {
+		std::cout << "Warning! Empty 1D Lookuptable generated!" << std::endl;
+	}
+
+	LookupTable1D(int const & nrl)
+		: NRL{nrl} {
+
+		//std::cout << "making 1d lookup table" << std::endl;
+
+		std::string fname = "/project2/depablo/coraor/fiber_builder/dih_energies_" +
+			std::to_string(nrl) + ".npy";
+		cnpy::NpyArray val_arr = cnpy::npy_load(fname);
+		double * loaded_data = val_arr.data<double>();
+
+		assert(val_arr.word_size == sizeof(double));
+		assert(val_arr.shape.size() == 1);
+		
+		values.resize(length);
+
+		for(size_t row = 0; row < length; row++) {
+			values[row] = loaded_data[row];
+		}
+		
+		//Setup range
+
+		std::string fname2 = "/project2/depablo/coraor/fiber_builder/dih_ranges_" +
+			std::to_string(nrl) + ".npy";
+		cnpy::NpyArray ran_arr = cnpy::npy_load(fname2);
+
+		assert(ran_arr.word_size == sizeof(double));
+		assert(ran_arr.shape.size() == 1);
+
+		//read data out from range
+		loaded_data = ran_arr.data<double>();
+
+		//Set up O(1) indexing
+		size_t ran_num = ran_arr.shape[0];
+		//std::cout << "Range size: " << ran_num << std::endl;
+		dih_int = (loaded_data[ran_num-1] - loaded_data[0])/(length-1);
+		
+		
+		dih_min = loaded_data[0];
+		dih_max = loaded_data[ran_num-1];
+		//std::cout << "Various parameters: " << alpha_int << beta_int << alphaprime_int;
+		//std::cout << std::endl << alpha_min << alpha_max << beta_min << beta_max;
+		//std::cout << std::endl << alphaprime_min << alphaprime_max << std::endl;
+	}
+
+	//Calculate the dihedral energy. dih in radians.
+	double energy(double const &dih)
+	{
+		//Calculate grid interpolation
+		//std::cout << "Calculating energy" << std::endl;
+		//Every point is surrounded by 8 corners. Do a weighted-average of the corners.
+		double dih_point;
+		double final_val = 0.0;
+
+		dih_point = (dih-dih_min)/dih_int;
+
+		if(dih_point < 0.0 || dih > dih_max){
+			return sqrt(std::numeric_limits<double>::max());
+		}
+
+		//std::cout << "Indices: " << alpha_point << ", " << beta_point << ", " << alphaprime_point << std::endl;
+		std::vector<double> pointvals;
+		std::vector<double> weights;
+		pointvals.resize(2);
+		weights.resize(2);
+
+		double dih_prop = fmod(dih_point,1.0);
+		//std::cout << alpha_prop << ", " << beta_prop << ", " << alphaprime_prop << std::endl;
+
+		for(int i=0; i<2; i++){
+				weights[i] = (1-i-(1-2*i)*dih_prop);
+				int x = (int) (dih_point + i);
+				//std::cout << x <<','<<y<<','<<z<<std::endl;
+				pointvals[i] = values[x];
+			}
+			
+		
+
+		for(size_t i=0;i<2;i++){
+			final_val += weights[i]*pointvals[i];
+		}
+
+		return final_val;
+	}
+};
+
+
+
+
+//Trinucleosome energy. 
+class Fiber_Angle : public Angle {
+public:
+	//dyad should be a pointer to nrl2's alpha, alphaprime energy.
+	Fiber_Angle(Bead * bead1, Bead * bead2, Bead * bead3, LookupTable3D * LT1, 
+		LookupTable3D * LT2, LookupTable2D * LT3)
+		: Angle{bead1,bead2,bead3}, triad1{LT1}, triad2{LT2}, dyad{LT3} {}
+
+	LookupTable3D* triad1;
+	LookupTable3D* triad2;
+	LookupTable2D* dyad;
+
+	double energy()
+	{
+		Eigen::RowVector3d disp1 = pbead1->r - pbead2->r;
+		Eigen::RowVector3d disp2 = pbead3->r - pbead2->r;
+		Eigen::RowVector3d disp3 = pbead3->r - pbead1->r;
+
+		double alpha = sqrt(disp1.dot(disp1));
+		double alphaprime = sqrt(disp2.dot(disp2));
+		double beta = sqrt(disp3.dot(disp3));
+
+		double triad_en = 0.0;
+		if(triad1 == triad2){
+			triad_en = triad1->energy(alpha,beta,alphaprime);
+		} else{
+			triad_en = (triad1->energy(alpha,beta,alphaprime) + triad2->energy(alpha,beta,alphaprime))/2.0;	
+		}
+		return triad_en + dyad->energy(alpha,alphaprime);
+	}
+
+};
+
+//Tetranucleosome dihedral energy. 
+class Fiber_Dihedral : public Dihedral {
+public:
+	//dyad should be a pointer to nrl2's alpha, alphaprime energy.
+	Fiber_Dihedral(Bead* bead1, Bead* bead2, Bead* bead3, Bead* bead4, LookupTable1D* LT1, 
+		LookupTable1D* LT2, LookupTable1D* LT3)
+		: Dihedral{bead1,bead2,bead3,bead4}, tetrad1{LT1}, tetrad2{LT2}, tetrad3{LT3} {}
+
+	LookupTable1D* tetrad1;
+	LookupTable1D* tetrad2;
+	LookupTable1D* tetrad3;
+
+	double energy()
+	{
+		Eigen::RowVector3d b1 = pbead2->r - pbead1->r;
+		Eigen::RowVector3d b2 = pbead3->r - pbead2->r;
+		Eigen::RowVector3d b3 = pbead4->r - pbead3->r;
+
+		Eigen::RowVector3d n1 = b1.cross(b2);
+		Eigen::RowVector3d n2 = b2.cross(b3);
+		n1 /= sqrt(n1.dot(n1));
+
+		Eigen::RowVector3d m1 = n1.cross(b2/sqrt(b2.dot(b2)));
+
+		double x = n1.dot(n2);
+		double y = m1.dot(n2);
+		double dih = atan2(y,x)*180.0/M_PI;
+
+
+		double tetrad_en = (tetrad1->energy(dih) + tetrad2->energy(dih) + tetrad3->energy(dih))/3.0;
+		return tetrad_en;
+	}
+
+};
+
+
 
 
 
@@ -802,8 +971,10 @@ public:
 	std::vector<Dihedral*> dihedrals;
 
 	std::vector<int> nrls;
+	int min_nrl = 158;
 	std::vector<LookupTable3D> angle_lookups;
 	std::vector<LookupTable2D> bond_lookups;
+	std::vector<LookupTable1D> dihedral_lookups;
 	Grid grid;
 
 	RanMars* rng; 
@@ -1080,6 +1251,19 @@ public:
 		n_rot = nbeads;
 		nSteps = n_trans + n_crank + n_pivot + n_rot + n_bind;
 
+		//Initialize lookuptables
+		angle_lookups.resize(207-min_nrl+1);
+		bond_lookups.resize(207-min_nrl+1);
+		dihedral_lookups.resize(207-min_nrl+1);
+		std::cout << "Creating lookup tables..." << std::endl;
+		for(int i=min_nrl;i<208;i++){
+			angle_lookups[i-min_nrl] = LookupTable3D(i);
+			bond_lookups[i-min_nrl] = LookupTable2D(i);
+			dihedral_lookups[i-min_nrl] = LookupTable1D(i);
+		}
+		std::cout << "Lookup tables completed." << std::endl;
+
+
 		double bondlength = 16.5;
 		beads.resize(nbeads);  // uses default constructor initialization to create nbeads;
 
@@ -1206,7 +1390,7 @@ public:
 			}
 		}
 
-                // set domain sequence
+        // set domain sequence
 		if (AB_block) {
 			for(int i=0; i<nbeads; i++)
 			{
@@ -1234,12 +1418,77 @@ public:
 			}
 		}
 
+		//Set nrl distribution
+		nrls.resize(nbeads-1);
+		std::vector<double> probs, cum_probs;
+		double nrl,prob;
+		double ktw = 13.9; // ktwist from "A relationship between the helical twist of DNA and the ordered positioning of nucleosomes in all eukaryotic cells"
+
+
+		probs.resize(207-min_nrl+1);
+		cum_probs.resize(probs.size());
+		double psum = 0.0;
+		//Calculate the probability distribution & cumulative probability
+		for(int i=0; i < probs.size(); i++){
+			nrl = i + min_nrl + 0.0;
+			//Generate according to Widom 1992 distribution
+			probs[i] = 1.0/(20.0*sqrt(2*M_PI))*exp(-0.5*(nrl-200.0)*(nrl-200.0)/(20.0*20.0));
+			
+			//Multiply by positive + negative twist energies
+			probs[i] *= (exp(-ktw*pow(((i+min_nrl-147) % 10)/10.0,2))+
+				exp(-ktw*pow(1.-(i+min_nrl-147 % 10)/10.0,2)));
+			psum += probs[i];
+		}
+
+		probs[0] /= psum;
+		cum_probs[0] = probs[0];
+		for(int i=1; i < probs.size(); i++){
+			probs[i] /= psum;
+			cum_probs[i] = cum_probs[i-1] + probs[i];
+		}
+
+		assert(cum_probs[cum_probs.size()-1] > 0.99);
+
+
+		//Draw random numbers and draw from widom distribution
+		for(int i=0; i<nbeads-1; i++){
+			double seed = rng->uniform();
+			//search for first val greater than seed
+			int j = 0;
+			while(cum_probs[j] < seed){
+				j++;
+			}
+			nrls[i] = min_nrl + j;
+		}
+
 		// set bonds
+		//For Fiber, only make first bond harmonic
+		bonds.push_back(new Harmonic_Bond(&beads[0],&beads[1],1.0,160.0));
+		
+		/*
 		bonds.resize(nbeads-1); // use default constructor
 		for(int i=0; i<nbeads-1; i++)
 		{
 			bonds[i] = new DSS_Bond{&beads[i], &beads[i+1]};
 		}
+		*/
+
+		//set angles
+		angles.resize(nbeads-2);
+		for(int i=0; i < nbeads-2; i++){
+			angles[i] = new Fiber_Angle(&beads[i], &beads[i+1], &beads[i+2], 
+				&angle_lookups[nrls[i]-min_nrl],&angle_lookups[nrls[i+1]-min_nrl],
+				&bond_lookups[nrls[i]-min_nrl]);
+		}
+
+		//set Dihedrals
+		dihedrals.resize(nbeads-3);
+		for(int i=0; i < nbeads-3; i++){
+			dihedrals[i] = new Fiber_Dihedral(&beads[i],&beads[i+1],&beads[i+2],&beads[i+3],
+				&dihedral_lookups[nrls[i]-min_nrl],&dihedral_lookups[nrls[i+1]-min_nrl],
+				&dihedral_lookups[nrls[i+2]-min_nrl]);
+		}
+
 
 		// output for vis.
 		dumpData();
@@ -1266,6 +1515,8 @@ public:
 	{
 		double U = 0;
 		for(Bond* bond : bonds) {U += bond->energy();}
+		for(Angle* angle : angles) {U += angle->energy();}
+		for(Dihedral* dihedral: dihedrals) {U += dihedral->energy();}
 		return U;
 	}
 
@@ -1273,8 +1524,19 @@ public:
 	{
 		double U = 0;
 		//for(Bond* bo : bonds) U += bo->energy();  // inefficient 
-		if (first>0) U += bonds[first-1]->energy(); // move affects bond going into first
-		if (last<(nbeads-1)) U += bonds[last]->energy();   // ... and leaving the second
+		if (first>0) {
+			if(bonds.size() > first) {U += bonds[first-1]->energy();} // move affects bond going into first
+			if(angles.size() > first) {U += angles[first-2]->energy() + angles[first-1]->energy();}
+			if(dihedrals.size() > first) {U += dihedrals[first-3]->energy() + 
+				dihedrals[first-2]->energy() + dihedrals[first-1]->energy();}
+		}
+
+		if (last<(nbeads-1)) {
+			if(bonds.size() > last) {U += bonds[last]->energy();} // move affects bond going into first
+			if(angles.size() > last) {U += angles[last-1]->energy() + angles[last]->energy();}
+			if(dihedrals.size() > last) {U += dihedrals[last-2]->energy() + 
+				dihedrals[last-1]->energy() + dihedrals[last]->energy();}
+		}
 		return U;
 	}
 
@@ -1372,13 +1634,14 @@ public:
 			}
 			t_crankshaft.~Timer();
 
-			
+			//For fiber sims, remove the rotation moves.
+			/*
 			Timer t_rotation("Rotating", print_MC);
 			for(int j=0; j<n_rot; j++) {
 				MCmove_rotate();
 			}
 			t_rotation.~Timer();
-			
+			*/
 
 			Timer t_pivot("pivoting", print_MC);
 			for(int j=0; j<n_pivot; j++) {
@@ -2152,8 +2415,12 @@ int main()
 	std::cout << "Making lookuptable" << std::endl;
 	LookupTable3D a(167);
 	LookupTable2D b(167);
-	std::cout << a.energy(160.0,270.0,560.0) << std::endl;
-	std::cout << b.energy(160.1,270.1) << std::endl;
+	LookupTable1D c(167);
+	std::cout << a.energy(150.11,148,150.11) << std::endl;
+	std::cout << b.energy(150.11,150.11) << std::endl;
+	//should be: 6.58908421, 2.78657891, 4.9675081
+	
+	std::cout << c.energy(159.0) << std::endl;
 
 	Sim mySim;
 	mySim.run();
