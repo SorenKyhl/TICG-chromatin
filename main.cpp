@@ -329,14 +329,19 @@ public:
 		beta_point = (beta-beta_min)/beta_int;
 		alphaprime_point = (alphaprime-alphaprime_min)/alphaprime_int;
 
+
 		if(alpha_point < 0.0 || beta_point < 0.0 || alphaprime_point < 0.0){
-			double dist = (alpha-100)*(alpha-100) + (beta-100)*(beta-100) + (
+			//std::cout << "alpha, beta, alpha': " << alpha << ", " << beta
+			//<< ", " << alphaprime << std::endl;
+			double dist = (alpha-100)*(alpha-100) + (beta-80.0)*(beta-80.0) + (
 				alphaprime-100)*(alphaprime-100);
-			return sqrt(std::numeric_limits<double>::max())* dist;
+			return std::cbrt(std::numeric_limits<double>::max())* dist;
 		} else if(alpha > alpha_max || beta > beta_max || alphaprime > alphaprime_max){
-			double dist = (alpha-100)*(alpha-100) + (beta-100)*(beta-100) + (
+			//std::cout << "alpha, beta, alpha': " << alpha << ", " << beta
+			//<< ", " << alphaprime << std::endl;
+			double dist = (alpha-100)*(alpha-100) + (beta-80.0)*(beta-80.0) + (
 				alphaprime-100)*(alphaprime-100);
-			return sqrt(std::numeric_limits<double>::max()) * dist;
+			return std::cbrt(std::numeric_limits<double>::max()) * dist;
 		}
 
 		//std::cout << "Indices: " << alpha_point << ", " << beta_point << ", " << alphaprime_point << std::endl;
@@ -463,8 +468,6 @@ public:
 		//Every point is surrounded by 8 corners. Do a weighted-average of the corners.
 		
 		//Convert to Angstroms
-		alpha *= 10.0;
-		alphaprime *= 10.0;
 
 		double alpha_point, alphaprime_point;
 		double final_val = 0.0;
@@ -627,6 +630,10 @@ public:
 	LookupTable3D* triad2;
 	LookupTable2D* dyad;
 
+
+
+	double prior_energy;
+
 	double energy()
 	{
 		Eigen::RowVector3d disp1 = pbead1->r - pbead2->r;
@@ -638,12 +645,24 @@ public:
 		double beta = sqrt(disp3.dot(disp3));
 
 		double triad_en = 0.0;
+		//Convert nm --> Angstroms
+		alpha *= 10;
+		beta *= 10;
+		alphaprime *= 10;
 		if(triad1 == triad2){
 			triad_en = triad1->energy(alpha,beta,alphaprime);
 		} else{
 			triad_en = (triad1->energy(alpha,beta,alphaprime) + triad2->energy(alpha,beta,alphaprime))/2.0;	
 		}
-		return triad_en + dyad->energy(alpha,alphaprime);
+		double dyad_en = dyad->energy(alpha,alphaprime);
+		//std::cout << "Triad_energy: " << triad_en << ", dyad energy: " << dyad_en << std::endl;
+		//if(triad_en + dyad_en > prior_energy + 100){
+		//	std::cout << "dramatic triplet energy increase at " << pbead1->id << "," << pbead2->id
+		//	<< "," << pbead3->id << std::endl;
+		//}
+
+		prior_energy = triad_en + dyad_en;
+		return triad_en + dyad_en;
 	}
 
 };
@@ -1016,8 +1035,15 @@ public:
 	int exp_decay;// = nbeads/decay_length;             // size of exponential falloff for MCmove second bead choice
 	int exp_decay_crank;// = nbeads/decay_length;
 	int exp_decay_pivot;// = nbeads/decay_length;
-	double step_disp = 1;
-	double step_trans = 2;
+	
+	//New
+	double step_disp = 10;
+	double step_trans = 10;
+
+	//Originals
+	//double step_disp = 1;
+	//double step_trans = 2;
+
 	double step_crank = M_PI/6;
 	double step_pivot = M_PI/6;
 	double step_rot = M_PI/12;
@@ -1035,6 +1061,7 @@ public:
 	int acc_pivot = 0;
 	int acc_rot = 0;
 	int acc_bind = 0;
+	int acc_disp = 0;
 
 	bool production; // if false, equilibration
 	int nSteps;// = n_trans + n_crank + n_pivot + n_rot + n_bind;
@@ -1246,6 +1273,7 @@ public:
 		step_grid = grid.delta/10.0; // size of grid displacement MC moves
 
 		double Vbar = 7765.77;  // nm^3/bead: reduced number volume per spakowitz: V/N
+		//For our purposes, increase Vbar dramatically for full persistence
 		double vol = Vbar*nbeads; // simulation volume in nm^3
 		grid.L= std::round(std::pow(vol,1.0/3.0) / grid.delta); // number of grid cells per side // ROUNDED, won't exactly equal a desired volume frac
 		std::cout << "grid.L is: " << grid.L << std::endl;
@@ -1847,6 +1875,7 @@ public:
 					std::cout << "crank: " << (float) acc_crank/((sweep+1)*n_crank)*100 << "% \t";
 					std::cout << "pivot: " << (float) acc_pivot/((sweep+1)*n_pivot)*100 << "% \t";
 					std::cout << "bind: " << (float) acc_bind/((sweep+1)*n_bind)*100 << "% \t";
+					std::cout << "displace: " << (float) acc_disp/((sweep+1)*n_disp)*100 << "% \t";
 					std::cout << std::endl;
 					//std::cout << "rot: " << (float) acc_rot/((sweep+1)*n_rot)*100 << "%" << std::endl;;
 				}
@@ -1891,7 +1920,7 @@ public:
 		Cell* old_cell = grid.getCell(beads[o]);
 		
 		Eigen::RowVector3d displacement;
-		displacement = step_disp*unit_vec(displacement);
+		displacement = rng->uniform()*step_disp*unit_vec(displacement);
 
 		Eigen::RowVector3d new_location = beads[o].r + displacement;
 
@@ -1924,6 +1953,7 @@ public:
 		{
 			//std::cout << "Accepted"<< std::endl;
 			acc += 1;
+			acc_disp += 1;
 			/*
 			double post_eng = getAllBondedEnergy();
 			if(post_eng > prev_eng){
@@ -1972,7 +2002,9 @@ public:
 
 		// generate displacement vector with magnitude step_trans
 		Eigen::RowVector3d displacement;
-		displacement = step_trans*unit_vec(displacement);
+
+		//Add random chance for smaller step
+		displacement = rng->uniform()*step_trans*unit_vec(displacement);
 
 		// memory storage objects
 		std::unordered_set<Cell*> flagged_cells;
