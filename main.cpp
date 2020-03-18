@@ -330,9 +330,13 @@ public:
 		alphaprime_point = (alphaprime-alphaprime_min)/alphaprime_int;
 
 		if(alpha_point < 0.0 || beta_point < 0.0 || alphaprime_point < 0.0){
-			return sqrt(std::numeric_limits<double>::max());
-		} else if(alpha > alpha_max || beta_point > beta_max || alphaprime_point > alphaprime_max){
-			return sqrt(std::numeric_limits<double>::max());
+			double dist = (alpha-100)*(alpha-100) + (beta-100)*(beta-100) + (
+				alphaprime-100)*(alphaprime-100);
+			return sqrt(std::numeric_limits<double>::max())* dist;
+		} else if(alpha > alpha_max || beta > beta_max || alphaprime > alphaprime_max){
+			double dist = (alpha-100)*(alpha-100) + (beta-100)*(beta-100) + (
+				alphaprime-100)*(alphaprime-100);
+			return sqrt(std::numeric_limits<double>::max()) * dist;
 		}
 
 		//std::cout << "Indices: " << alpha_point << ", " << beta_point << ", " << alphaprime_point << std::endl;
@@ -356,6 +360,13 @@ public:
 					int y = (int) (beta_point + j);
 					int z = (int) (alphaprime_point + k);
 					//std::cout << x <<','<<y<<','<<z<<std::endl;
+					if(x >= values.size() || y >= values.size() || z >= values.size() ||
+						x < 0 || y < 0 || z < 0 || i*4+j*2+k > pointvals.size()-1 || i*4+j*2+k < 0){
+						std::cout << "Invalid values lookup: " << x << ",";
+						std::cout << y << "," << z << "; Returning inf" << std::endl;
+						std::cout << "NRL: " << NRL << ", Lengths: " << alpha << ",";
+						std::cout << beta << "," << alphaprime << std::endl;
+					}
 					pointvals[i*4+j*2+k] = values[x][y][z];
 				}
 			}
@@ -450,6 +461,11 @@ public:
 		//Calculate grid interpolation
 		//std::cout << "Calculating energy" << std::endl;
 		//Every point is surrounded by 8 corners. Do a weighted-average of the corners.
+		
+		//Convert to Angstroms
+		alpha *= 10.0;
+		alphaprime *= 10.0;
+
 		double alpha_point, alphaprime_point;
 		double final_val = 0.0;
 
@@ -457,9 +473,11 @@ public:
 		alphaprime_point = (alphaprime-alphaprime_min)/alphaprime_int;
 
 		if(alpha_point < 0.0 || alphaprime_point < 0.0){
-			return sqrt(std::numeric_limits<double>::max());
+			double dist = (alpha-100)*(alpha-100)+ (alphaprime-100)*(alphaprime-100);
+			return sqrt(std::numeric_limits<double>::max()) * dist;
 		} else if(alpha > alpha_max || alphaprime_point > alphaprime_max){
-			return sqrt(std::numeric_limits<double>::max());
+			double dist = (alpha-100)*(alpha-100) + (alphaprime-100)*(alphaprime-100);
+			return sqrt(std::numeric_limits<double>::max()) * dist;
 		}
 
 		//std::cout << "Indices: " << alpha_point << ", " << beta_point << ", " << alphaprime_point << std::endl;
@@ -1053,6 +1071,7 @@ public:
 	bool print_MC; // = false;
 	bool print_trans; // = false;
 	bool print_acceptance_rates; // = true;
+	bool timers; // = false;
 
 	std::vector<std::vector<int>> contact_map;
 	int contact_resolution; //= 500;
@@ -1172,6 +1191,7 @@ public:
 		binding_on = config["binding_on"];
 		AB_block = config["AB_block"];
 		domainsize = config["domainsize"];
+		timers = config["timers"];
 		load_configuration = config["load_configuration"];
 		load_configuration_filename = config["load_configuration_filename"];
 		load_chipseq_filename = config["load_chipseq_filename"];
@@ -1243,12 +1263,17 @@ public:
 		exp_decay_crank = nbeads/decay_length;
 		exp_decay_pivot = nbeads/decay_length;
 
-		n_disp = 0;
+		
 		n_trans = decay_length; 
+		//Massively increased n_trans:
+		//n_trans = 50*decay_length;
 		n_crank = decay_length;
 		n_pivot = decay_length/10;
+
+		n_disp = nbeads;
 		n_bind = nbeads;
-		n_rot = nbeads;
+		n_rot = 0;
+		//n_rot = nbeads;
 		nSteps = n_trans + n_crank + n_pivot + n_rot + n_bind;
 
 		//Initialize lookuptables
@@ -1267,7 +1292,7 @@ public:
 		double bondlength = 16.5;
 		beads.resize(nbeads);  // uses default constructor initialization to create nbeads;
 
-		std::cout << "load configuratin is " << load_configuration << std::endl;
+		std::cout << "load configuratiOn is " << load_configuration << std::endl;
 		// set configuration
 		if(load_configuration) {
 
@@ -1520,23 +1545,135 @@ public:
 		return U;
 	}
 
-	double getBondedEnergy(int first, int last)
+	double getBondedEnergy(int first, int last, bool print = false)
 	{
 		double U = 0;
 		//for(Bond* bo : bonds) U += bo->energy();  // inefficient 
+		/*
+		if(last == first){
+			if(last != 0) {U += angles[last-2]->energy()}
+		}
+		*/
+		//Iterate over bonds
+		//if(first > 0 && bonds.size() >= first){U += bonds[first-1]->energy();}
+		//if(last < nbeads-1 && bonds.size() >= last){U += bonds[last]->energy();}
+
+		//Iterate over angles
+		//first
+		int min_angle;
+		int max_angle;
+		int last_min_angle;
+		int last_max_angle;
+		int min_dih;
+		int max_dih;
+		int last_min_dih;
+		int last_max_dih;
+
+		if(print){std::cout << "first: " << first << ", last: " << last << std::endl;}
+
+		if(first > 0){
+			(first-2 > 0) ? (min_angle = first-2) : (min_angle = 0);
+			(first-1 < ((int)angles.size())-1) ? (max_angle = first-1) : (max_angle = ((int) angles.size())-1);
+			
+			for(size_t i=min_angle;i <= max_angle; i++){
+				U += angles[i]->energy();
+			}
+		} else {
+			min_angle = -1;
+			max_angle = -1;
+		}
+		if(print){std::cout << "Energy after first: " << U << std::endl;
+		std::cout << "min_angle: " << min_angle << std::endl;
+		std::cout << "max_angle: " << max_angle << std::endl;
+		}
+		//last
+		if(last < nbeads-1){
+			//don't double count angle
+			(last - 1 > max_angle+1) ? (last_min_angle = last-1) : (last_min_angle = max_angle+1);
+			last_max_angle = std::min(last,(int) angles.size()-1);
+			for(size_t i=last_min_angle;i <= last_max_angle; i++){
+				U += angles[i]->energy();
+			}
+		} else {
+			last_min_angle = -1;
+			last_max_angle = -1;
+		}
+
+		if(print){std::cout << "Energy after second: " << U << std::endl;
+		std::cout << "last_min_angle: " << last_min_angle << std::endl;
+		std::cout << "last_max_angle: " << last_max_angle << std::endl;
+		}
+		//Iterate over dihedrals
+		//first
+		if(first > 0){
+			 min_dih = std::max(0,first-3);
+			 max_dih = std::min(first-1,((int) dihedrals.size())-1);
+			for(size_t i=min_dih;i<=max_dih;i++){
+				U += dihedrals[i]->energy();
+			}
+		} else {
+			min_dih = -1;
+			max_dih = -1;
+		}
+		if(print){std::cout << "Energy after third: " << U << std::endl;
+		std::cout << "min_dih: " << min_dih << std::endl;
+		std::cout << "max_dih: " << max_dih << std::endl;
+		}
+
+		//last
+		if(last < nbeads-1){
+			 last_min_dih = std::max(last-2, (int) max_dih+1);
+			 last_max_dih = std::min(last,((int) dihedrals.size())-1);
+			for(size_t i=last_min_dih;i<=last_max_dih;i++){
+				U += dihedrals[i]->energy();
+			}
+		} else {
+			last_min_dih = -1;
+			last_max_dih = -1;
+		}
+		if(print){std::cout << "Energy after fourth: " << U << std::endl;
+		std::cout << "last_min_dih: " << last_min_dih << std::endl;
+		std::cout << "last_max_dih: " << last_max_dih << std::endl;
+		}
+
+		/*
+		if(last-first < 4){
+			//Give up on clever indexing and just do them all
+			if(first == 1){ U += angles[0]->energy() + dihedrals[0]->energy();}
+			else if(first == 2){U += angles}
+
+			size_t angle_first = 
+			size_t min_inds = (first-3 < 0) ? 0 : first-3;
+			size_t max_inds = (last < dihedrals.size()) ? last : dihedrals.size()-1;
+			for(size_t i=min_inds;i <= max_inds; i++){
+				U += angles[i]->energy();
+				U += dihedrals[i]->energy();
+			}
+			if(last == nbeads-1) { U += angles[angles.size()-1]->energy();}
+			return U;
+		}
+		
+
 		if (first>0) {
 			if(bonds.size() > first) {U += bonds[first-1]->energy();} // move affects bond going into first
-			if(angles.size() > first) {U += angles[first-2]->energy() + angles[first-1]->energy();}
-			if(dihedrals.size() > first) {U += dihedrals[first-3]->energy() + 
+			if(angles.size() >= first && first > 1) {U += angles[first-2]->energy() + angles[first-1]->energy();}
+			if(dihedrals.size() >= first && first > 2) {U += dihedrals[first-3]->energy() + 
 				dihedrals[first-2]->energy() + dihedrals[first-1]->energy();}
+			//if only smaller number of dihedrals valid, do those
+			if(first == 2){ U += dihedrals[first-2]->energy() + dihedrals[first-1]->energy();}
+			if(first == 1){ U += angles[first-1] + dihedrals[first-1]->energy();}
 		}
 
 		if (last<(nbeads-1)) {
 			if(bonds.size() > last) {U += bonds[last]->energy();} // move affects bond going into first
-			if(angles.size() > last) {U += angles[last-1]->energy() + angles[last]->energy();}
-			if(dihedrals.size() > last) {U += dihedrals[last-2]->energy() + 
+			if(angles.size() > last && last > 0) {U += angles[last-1]->energy() + angles[last]->energy();}
+			if(dihedrals.size() > last && last > 1) {U += dihedrals[last-2]->energy() + 
 				dihedrals[last-1]->energy() + dihedrals[last]->energy();}
+			//If only one dihedral valid, do that one
+			if(last == dihedrals.size()) { U += dihedrals[last-2]->energy() + dihedrals[last-1]->energy();}
+			if(last == dihedrals.size()+1) { U += dihedrals[last-2]->energy();}
 		}
+		*/
 		return U;
 	}
 
@@ -1597,12 +1734,16 @@ public:
 	void MC()
 	{
 		std::cout << "Beginning Simulation" << std::endl;
+		double prev_eng, after_eng;
+
 		for(int sweep = 0; sweep<nSweeps; sweep++)
 		{
 			//std::cout << sweep << std::endl; 
 			double nonbonded;
 
-		    looping:
+		    //looping:
+			//prev_eng = getAllBondedEnergy();
+
 			Timer t_translation("translating", print_MC);
 			for(int j=0; j<n_trans; j++)
 			{
@@ -1610,8 +1751,14 @@ public:
 				//nonbonded = getNonBondedEnergy(grid.active_cells);
 				//std::cout << nonbonded << std::endl;
 			}
-			t_translation.~Timer();
-
+			//t_translation.~Timer();
+			/*
+			after_eng = getAllBondedEnergy();
+			if(after_eng > prev_eng+1000000){
+				std::cout << "Dramatic increase after translation" << std::endl;
+			}
+			prev_eng = after_eng;
+			*/
 			if (gridmove_on) MCmove_grid();
 			//nonbonded = getNonBondedEnergy(grid.active_cells);
 			//std::cout << nonbonded << std::endl;
@@ -1623,7 +1770,14 @@ public:
 				//nonbonded = getNonBondedEnergy(grid.active_cells);
 				//std::cout << nonbonded << std::endl;
 			}
-			t_displace.~Timer();
+			/*
+			//t_displace.~Timer();
+			after_eng = getAllBondedEnergy();
+			if(after_eng > prev_eng+1000000){
+				std::cout << "Dramatic increase after displacement" << std::endl;
+			}
+			prev_eng = after_eng;
+			*/
 
 
 			Timer t_crankshaft("Cranking", print_MC);
@@ -1632,15 +1786,27 @@ public:
 				//nonbonded = getNonBondedEnergy(grid.active_cells);
 				//std::cout << nonbonded << std::endl;
 			}
-			t_crankshaft.~Timer();
-
-			//For fiber sims, remove the rotation moves.
+			//t_crankshaft.~Timer();
 			/*
+			after_eng = getAllBondedEnergy();
+			if(after_eng > prev_eng+1000000){
+				std::cout << "Dramatic increase after crankshaft" << std::endl;
+			}
+			prev_eng = after_eng;
+			*/
+			//For fiber sims, remove the rotation moves.
+			
 			Timer t_rotation("Rotating", print_MC);
 			for(int j=0; j<n_rot; j++) {
 				MCmove_rotate();
 			}
-			t_rotation.~Timer();
+			//t_rotation.~Timer();
+			/*
+			after_eng = getAllBondedEnergy();
+			if(after_eng > prev_eng+1000000){
+				std::cout << "Dramatic increase after Rotation" << std::endl;
+			}
+			prev_eng = after_eng;
 			*/
 
 			Timer t_pivot("pivoting", print_MC);
@@ -1649,14 +1815,27 @@ public:
 				//nonbonded = getNonBondedEnergy(grid.active_cells);
 				//std::cout << nonbonded << std::endl;
 			}
-			t_pivot.~Timer();
-
+			//t_pivot.~Timer();
+			/*
+			after_eng = getAllBondedEnergy();
+			if(after_eng > prev_eng+1000000){
+				std::cout << "Dramatic increase after Pivoting" << std::endl;
+			}
+			prev_eng = after_eng;
+			*/
 
 			Timer t_bind("Binding", print_MC);
 			for(int j=0; j<n_bind; j++) {
-				//MCmove_bind();
+				MCmove_bind();
 			}
-			t_bind.~Timer();
+			//t_bind.~Timer();
+			/*
+			after_eng = getAllBondedEnergy();
+			if(after_eng > prev_eng+1000000){
+				std::cout << "Dramatic increase after binding" << std::endl;
+			}
+			prev_eng = after_eng;
+			*/
 
 			if (sweep%dump_frequency == 0) {
 				std::cout << "Sweep number " << sweep << std::endl;
@@ -1668,7 +1847,8 @@ public:
 					std::cout << "crank: " << (float) acc_crank/((sweep+1)*n_crank)*100 << "% \t";
 					std::cout << "pivot: " << (float) acc_pivot/((sweep+1)*n_pivot)*100 << "% \t";
 					std::cout << "bind: " << (float) acc_bind/((sweep+1)*n_bind)*100 << "% \t";
-					std::cout << "rot: " << (float) acc_rot/((sweep+1)*n_rot)*100 << "%" << std::endl;;
+					std::cout << std::endl;
+					//std::cout << "rot: " << (float) acc_rot/((sweep+1)*n_rot)*100 << "%" << std::endl;;
 				}
 
 				if (production) {dumpContacts();}
@@ -1690,7 +1870,7 @@ public:
 				nonbonded = nonbonded_on ? getNonBondedEnergy(grid.active_cells) : 0;
 				binding = binding_on ? getBindingEnergy(grid.active_cells) : 0;
 				//std::cout << "binding " << bonded << " nonbonded " << nonbonded << " binding" << binding <<  std::endl;
-				t_allenergy.~Timer();
+				//t_allenergy.~Timer();
 
 				dumpEnergy(sweep, bonded, nonbonded, binding);
 			}
@@ -1703,7 +1883,7 @@ public:
 	
 	void MCmove_displace()
 	{
-		Timer t_displacemove("Displacement move");
+		Timer t_displacemove("Displacement move", print_MC);
 		// pick random particle
 		int o = floor(beads.size()*rng->uniform());
 
@@ -1714,20 +1894,20 @@ public:
 		displacement = step_disp*unit_vec(displacement);
 
 		Eigen::RowVector3d new_location = beads[o].r + displacement;
-		Cell* new_cell = grid.getCell(new_location);
 
 		// check if exited the simulation box, if so reject the move
 		if (outside_boundary(new_location))
 		{
 			return;
 		}
+		Cell* new_cell = grid.getCell(new_location);
 
 		std::unordered_set<Cell*> flagged_cells;
 		flagged_cells.insert(old_cell);
 		flagged_cells.insert(new_cell);
 
 		double Uold = getTotalEnergy(o, o, flagged_cells);
-		
+		//double prev_eng = getAllBondedEnergy();
 		// move
 		beads[o].r = new_location;
 
@@ -1744,6 +1924,21 @@ public:
 		{
 			//std::cout << "Accepted"<< std::endl;
 			acc += 1;
+			/*
+			double post_eng = getAllBondedEnergy();
+			if(post_eng > prev_eng){
+				std::cout << "Energy failure at bead " << o << ", overall bonded change: ";
+				std::cout << post_eng - prev_eng << std::endl;
+				double new_bonded = getBondedEnergy(o,o,true);
+				std::cout << "Current getBondedEnergy: " << new_bonded << std::endl;
+				beads[o].r -= displacement;
+				double old_bonded = getBondedEnergy(o,o,true);
+				std::cout << "Old getBondedEnergy: " << old_bonded << std::endl;
+				std::cout << "getBondedEnergy delta: " << new_bonded - old_bonded << std::endl;
+				beads[o].r += displacement;
+			}
+			*/
+
 		}
 		else
 		{
@@ -1790,7 +1985,7 @@ public:
 		Cell* new_cell_tmp;
 		Eigen::RowVector3d new_loc;
 
-		t_setup.~Timer();
+		//t_setup.~Timer();
 
 		// execute move
 		try
@@ -1804,7 +1999,7 @@ public:
 					throw "exited simulation box";	
 				}
 			}
-			t_bounds.~Timer();
+			//t_bounds.~Timer();
 
 			Timer t_flag("Flag cells", print_trans);
 			// flag appropriate cells for energy calculation and find beads that swapped cells
@@ -1822,19 +2017,19 @@ public:
 					flagged_cells.insert(new_cell_tmp);
 				}
 			}
-			t_flag.~Timer();
-
+			//t_flag.~Timer();
+			//double real_Uold = getAllBondedEnergy();
 			Timer t_uold("Uold", print_trans);
 			//std::cout << "Beads: " << last-first << " Cells: " << flagged_cells.size() << std::endl;
 			double Uold = getTotalEnergy(first, last, flagged_cells);
-			t_uold.~Timer();
+			//t_uold.~Timer();
 
 			Timer t_disp("Displacement", print_trans);
 			for(int i=first; i<=last; i++)
 			{
 				beads[i].r += displacement;
 			}
-			t_disp.~Timer();
+			//t_disp.~Timer();
 
 			Timer t_swap("Bead Swaps", print_trans);
 			// update grid <bead index,   <old cell , new cell>>
@@ -1844,17 +2039,38 @@ public:
 				x.second.first->moveOut(&beads[x.first]);
 				x.second.second->moveIn(&beads[x.first]);
 			}
-			t_swap.~Timer();
+			//t_swap.~Timer();
 
 			Timer t_unew("Unew", print_trans);
 			double Unew = getTotalEnergy(first, last, flagged_cells);
-			t_unew.~Timer();
+			//t_unew.~Timer();
 
 			if (rng->uniform() < exp(Uold-Unew))
 			{
 				acc += 1;
 				acc_trans += 1;
 				nbeads_moved += (last-first);
+				/*
+				double real_Unew = getAllBondedEnergy();
+				if(real_Unew > real_Uold){
+					std::cout << "Energy failure at beads " << first << ", " << last;
+					std::cout <<", overall bonded change: ";
+					std::cout << real_Unew - real_Uold << std::endl;
+					double new_bonded = getBondedEnergy(first,last,true);
+					std::cout << "Current getBondedEnergy: " << new_bonded << std::endl;
+					for(int i=first; i<=last; i++)
+					{
+						beads[i].r -= displacement;
+					}
+					double old_bonded = getBondedEnergy(first,last,true);
+					std::cout << "Old getBondedEnergy: " << old_bonded << std::endl;
+					std::cout << "getBondedEnergy delta: " << new_bonded - old_bonded << std::endl;
+					for(int i=first; i<=last; i++)
+					{
+						beads[i].r += displacement;
+					}
+				}
+				*/
 			}
 			else
 			{
@@ -1864,7 +2080,7 @@ public:
 		// REJECTION CASES -- restore old conditions
 		catch (const char* msg)
 		{
-			Timer t_rej("rejection", print_trans); 
+			Timer t_rej("rejection", print_trans);
 			if(msg == "rejected")
 			{
 				// restore particle positions 
@@ -2068,13 +2284,14 @@ public:
 		int length;
 		do {
 			length = abs(round(randomExp(0, exp_decay_pivot))); // length down the polymer from the end
-		} while (length < 1 || length > nbeads-1);
+		} while (length < 2 || length > nbeads-2);
 
 		int pivot = (end == 0) ? length : (nbeads-1-length);
 
 		int first = (pivot < end) ? pivot+1 : end;
 		int last = (pivot < end) ? end : pivot-1;
-
+		//if(first < 10){std::cout << "end: " << end << ", first: " << first << ", last: " << last <<std::endl; 
+		//std::cout << "length: " << length << std::endl; throw "actually end =0";}
 		// rotation objects
                 double angle = step_pivot*(rng->uniform()- 0.5); // random symmtric angle in cone size step_pivot 
 		Eigen::RowVector3d axis;                     // random axis
@@ -2094,7 +2311,9 @@ public:
 		try
 		{
 			double Uold = 0;
-			if(bonded_on) Uold += getBondedEnergy(pivot-1, pivot);
+			//if(bonded_on) Uold += getBondedEnergy(pivot-1, pivot);
+			double old_bonded = getBondedEnergy(first,last,false);
+			if(bonded_on) Uold += old_bonded;
 
 			for(int i=first; i<=last; i++)
 			{
@@ -2143,8 +2362,7 @@ public:
 				x.second.second->moveIn(&beads[x.first]); // in to the new cell
 			} 
 
-			double Unew = getTotalEnergy(pivot-1, pivot, flagged_cells);
-
+			double Unew = getTotalEnergy(first, last, flagged_cells);
 
 			if (rng->uniform() < exp(Uold-Unew))
 			{
