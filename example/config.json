@@ -1,5 +1,5 @@
 {
-    "seed": 1,
+    "seed": 123456,
     "production": true,
     "nbeads": 5000,
     "chi": 1,
@@ -32,9 +32,9 @@
     "chiFF": 0.0,
     "chiFG": 0.0,
     "chiGG": 0.0,
-    "hp1_mean_conc": 0,
+    "hp1_mean_conc": 300,
     "decay_length": 100,
-    "nSweeps": 10000,
+    "nSweeps": 36000000,
     "dump_frequency": 100,
     "dump_stats_frequency": 100,
     "nEquilibSweeps": 1,
@@ -49,8 +49,10 @@
     "load_chipseq_filename": "unused",
     "print_MC": false,
     "print_trans": false,
+    "timers": false,
     "print_acceptance_rates": true,
     "contact_resolution": 25,
 	"chipseq_files": ["block1.chipseq","block2.chipseq"],
-	"gridmove_on": true
+	"gridmove_on": true,
+	"ideal_chrom": true
 }

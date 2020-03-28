@@ -68,17 +68,29 @@ public:
 	int id;   // unique identifier: uniqueness not strictly enforced.
 	Eigen::RowVector3d r; // position
 	Eigen::RowVector3d u; // orientation
+	bool lh_bound; // bound by LH
 
 	Tail tail1;
 	Tail tail2; 
 	int tails_methylated;
 
 	static constexpr double Jprime = -4; // kT
+	static constexpr double Jlh = -5; //kT, LH binding energy
 
 	double tailEnergy(double chem)
 	{
 		//    intranucleosome HP1 interaction |        HP1 binding energy
 		return Jprime*tail1.bound*tail2.bound + tail1.energy(chem) + tail2.energy(chem);
+	}
+
+	double LHEnergy()
+	{
+		return Jlh*lh_bound;
+	}
+
+	void flipLH()
+	{
+		lh_bound = !lh_bound;
 	}
 
 	int nbound()
@@ -241,7 +253,7 @@ public:
 	size_t length = 200;
 
 	LookupTable3D() {
-		std::cout << "Warning! Empty 3D Lookuptable generated!" << std::endl;
+		//std::cout << "Warning! Empty 3D Lookuptable generated!" << std::endl;
 	}
 
 
@@ -401,7 +413,7 @@ public:
 	size_t length = 200;
 
 	LookupTable2D() {
-		std::cout << "Warning! Empty 2D Lookuptable generated!" << std::endl;
+		//std::cout << "Warning! Empty 2D Lookuptable generated!" << std::endl;
 	}
 
 
@@ -527,7 +539,7 @@ public:
 	size_t length = 200;
 
 	LookupTable1D() {
-		std::cout << "Warning! Empty 1D Lookuptable generated!" << std::endl;
+		//std::cout << "Warning! Empty 1D Lookuptable generated!" << std::endl;
 	}
 
 	LookupTable1D(int const & nrl)
@@ -629,6 +641,8 @@ public:
 	LookupTable3D* triad1;
 	LookupTable3D* triad2;
 	LookupTable2D* dyad;
+	//lh = True if bead1 has a LH bound
+	
 
 
 
@@ -660,9 +674,30 @@ public:
 		//	std::cout << "dramatic triplet energy increase at " << pbead1->id << "," << pbead2->id
 		//	<< "," << pbead3->id << std::endl;
 		//}
-
 		prior_energy = triad_en + dyad_en;
-		return triad_en + dyad_en;
+
+		//Check beads for LH, apply potentials based on this.
+		if(pbead2->lh_bound){
+
+			// second NRL leg
+			if (alphaprime > 100){
+				//add linear A(r) based on average slope increase: 1.222 kT/nm above
+				//10 nm
+				//Slope is parabolic function of NRL, pulled from dinuc data:
+				// U = (a-100)*(aNRL^2+bNRL+c)
+				double lhslope = -0.00010907*(triad2->NRL)*(triad2->NRL) + 0.04089813*(triad2->NRL)+(
+					-3.705485);
+				prior_energy += (alphaprime-100.0)*lhslope;
+			} 
+			// first NRL leg
+			if (alpha > 100){
+				double lhslope = -0.00010907*(triad1->NRL)*(triad1->NRL) + 0.04089813*(triad1->NRL)+(
+					-3.705485);
+			prior_energy += (alpha-100.0)*lhslope;} 
+			//
+		}
+
+		return prior_energy;
 	}
 
 };
@@ -703,9 +738,6 @@ public:
 };
 
 
-
-
-
 class Cell {
 public:
 	Eigen::RowVector3d r; // corner of cell == CURRENTLY UNUSED
@@ -716,6 +748,12 @@ public:
 	static const int beadvol = 520; // volume of a bead in the cell. 
 	static constexpr double vint = 4/3*M_PI*3*3*3; // volume of HP1 interaction
 	static constexpr double J = -4;  // kT 
+
+	//Ideal Chromatin Constants
+	static constexpr double gamma1 = -0.030;
+	static constexpr double gamma2 = -0.351;
+	static constexpr double gamma3 = -3.727;
+	static constexpr double d_scale = 200./50000; //Rescale d in TICG to Michrom
 
 	static int ntypes;
 	std::vector<int> typenums = std::vector<int>(ntypes); // always up-to-date
@@ -766,7 +804,7 @@ public:
 		}
 	}
 
-	double getEnergy(const Eigen::MatrixXd &chis)
+	double getEnergy(const Eigen::MatrixXd &chis,bool ideal_chrom=false)
 	{
 		float phi_solvent = 1 - contains.size()*beadvol/vol;
 
@@ -808,6 +846,39 @@ public:
 					}
 				}
 			}
+			if(ideal_chrom){
+				//Calculate pairwise ideal chromatin term
+				double d; //difference in index
+				int imax = (int) contains.size();
+				std::vector<int> inds;
+				for (const auto& elem: contains) {
+					inds.push_back(elem->id);
+				}
+
+				for (int i=0; i < imax-1; i++){
+					for(int j=i+1; j < imax; j++){
+						d = abs(inds[i] - inds[j]);
+						//Ideal chromatin:
+						d *= d_scale;
+						if (d < 500 && d > 3){
+							U += gamma1/log(d) + gamma2/d + gamma3/(d*d);
+						}
+					}
+
+				}
+				/*
+				for (int i=0; i < imax-1; i++){
+					for (int j = i+1; j < imax; j++){
+						d = abs(contains[i]->id - contains[j]->id);
+						//Ideal chromatin:
+						d *= d_scale;
+						if (d < 500 && d > 3){
+							U += gamma1/log(d) + gamma2/d + gamma3/(d*d);
+						}
+					}
+				}
+				*/
+			}
 		}
 
 		return U;
@@ -819,6 +890,7 @@ public:
 		double U = J/2*vint*vol*rho*rho;
 		return  U;
 	}
+
 };
 
 
@@ -963,13 +1035,13 @@ public:
 
 	bool checkHp1Consistency(int hp1_tot);
 			
-	double energy(const std::unordered_set<Cell*>& flagged_cells, const Eigen::MatrixXd &chis)
+	double energy(const std::unordered_set<Cell*>& flagged_cells, const Eigen::MatrixXd &chis, bool ideal_chrom)
 	{
 		// nonbonded volume interactions
 		double U = 0; 
 		for(Cell* cell : flagged_cells)
 		{
-			U += cell->getEnergy(chis);
+			U += cell->getEnergy(chis,ideal_chrom);
 		}
 		return U;
 	}
@@ -1023,7 +1095,12 @@ public:
 	double hp1_mean_conc; 
 	double hp1_total; // conserved quantity 
 	double total_volume;
+
+	double lh_mean_conc;
+	double lh_total; // conserved
+
 	static int hp1_free;
+	int lh_free;
 
 
 	FILE *xyz_out; 
@@ -1062,6 +1139,7 @@ public:
 	int acc_rot = 0;
 	int acc_bind = 0;
 	int acc_disp = 0;
+	int acc_lh = 0;
 
 	bool production; // if false, equilibration
 	int nSteps;// = n_trans + n_crank + n_pivot + n_rot + n_bind;
@@ -1074,6 +1152,8 @@ public:
 	bool bonded_on; 
 	bool nonbonded_on;
 	bool binding_on; 
+	bool lh_on;
+	bool ideal_chrom;
 
 	bool gridmove_on;
 
@@ -1118,6 +1198,21 @@ public:
 		}
 	}
 
+	//Recount the number of HP1s in each cell based on number of actual bound
+	//tails
+	void correct_hp1()
+	{
+		for(Cell* cell : grid.active_cells)
+		{
+			int hp1_tot = 0;
+			for(Bead* bead1 : cell->contains)
+			{
+				hp1_tot += bead1->nbound();
+			}
+			cell->local_HP1 = hp1_tot;
+		}
+	}
+
 	void updateContacts()
 	{
 		for(Cell* cell : grid.active_cells)
@@ -1132,6 +1227,18 @@ public:
 				}
 			}
 		}
+	}
+
+	double getLHChemPot()
+	{
+		//LH volume approximated by taking 1.35 g/mL as the density of 
+		//"protein", and using this to calculate the solvent-excluded-volume
+		//of the protein.
+		//20731.740000 is the mass from the internet, lammps units
+		//15,356.84 mL/mole
+		//2.550122e-20 mL/particle
+		//Make reference conc 1 mM,
+		return log(lh_free/total_volume/ (602));
 	}
 
 	double getChemPot()
@@ -1209,6 +1316,7 @@ public:
 		production = config["production"];
 		nbeads = config["nbeads"];
 		hp1_mean_conc = config["hp1_mean_conc"];
+		lh_mean_conc = config["lh_mean_conc"];
 		decay_length = config["decay_length"];
 		nSweeps = config["nSweeps"];
 		dump_frequency = config["dump_frequency"];
@@ -1216,6 +1324,7 @@ public:
 		bonded_on = config["bonded_on"];
 		nonbonded_on = config["nonbonded_on"];
 		binding_on = config["binding_on"];
+		lh_on = config["lh_on"];
 		AB_block = config["AB_block"];
 		domainsize = config["domainsize"];
 		timers = config["timers"];
@@ -1226,6 +1335,7 @@ public:
 		print_trans = config["print_trans"];
 		print_acceptance_rates = config["print_acceptance_rates"];
 		contact_resolution = config["contact_resolution"];
+		ideal_chrom = config["ideal_chrom"];
 
 		int seed = config["seed"];
 		rng = new RanMars(seed);
@@ -1284,8 +1394,11 @@ public:
 		// sphere center needs to be centered on a multiple of grid delta
 		grid.sphere_center = {grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta};
 
-		hp1_free = hp1_mean_conc*total_volume* 602;
+		hp1_free = hp1_mean_conc*total_volume* 602; // 602 = number/(uM*um^3)
 		hp1_total = hp1_free;
+
+		lh_free = lh_mean_conc*total_volume* 602;
+		lh_total = lh_free; 
 
 		exp_decay = nbeads/decay_length;             // size of exponential falloff for MCmove second bead choice
 		exp_decay_crank = nbeads/decay_length;
@@ -1302,7 +1415,7 @@ public:
 		n_bind = nbeads;
 		n_rot = 0;
 		//n_rot = nbeads;
-		nSteps = n_trans + n_crank + n_pivot + n_rot + n_bind;
+		nSteps = n_trans + n_crank + n_pivot + n_rot + n_bind + n_disp;
 
 		//Initialize lookuptables
 		angle_lookups.resize(207-min_nrl+1);
@@ -1310,6 +1423,7 @@ public:
 		dihedral_lookups.resize(207-min_nrl+1);
 		std::cout << "Creating lookup tables..." << std::endl;
 		for(int i=min_nrl;i<208;i++){
+			std::cout << "Made lookuptable for nrl " << i << std::endl;
 			angle_lookups[i-min_nrl] = LookupTable3D(i);
 			bond_lookups[i-min_nrl] = LookupTable2D(i);
 			dihedral_lookups[i-min_nrl] = LookupTable1D(i);
@@ -1390,17 +1504,23 @@ public:
 		// set epigenetic sequence
 		if (load_chipseq) {
 			int marktype = 0;
+			std::cout << "Loading chipseq" << std::endl;
 			for (std::string chipseq_file : chipseq_files)
 			{
 				std::ifstream IFCHIPSEQ;
 				int tail_marked;
 				IFCHIPSEQ.open(chipseq_file);
+				
+				//mark the bead with its type as well as its 
 				for(int i=0; i<nbeads; i++)
 				{
 					IFCHIPSEQ >> tail_marked;
 					if (tail_marked == 1)
 					{
 						beads[i].d[marktype] = 1;
+					}
+					else if (tail_marked == 2){
+						beads[i].d[marktype] = 2;
 					}
 					else
 					{
@@ -1409,11 +1529,12 @@ public:
 				}
 				marktype++;
 				IFCHIPSEQ.close();
-
+				
 				// assigns methylation marks based on chipseq data 
-				/*
+				int ntails_methylated;
 				for(int i=0; i<nbeads; i++) {
 					IFCHIPSEQ >> ntails_methylated;
+					std::cout << "Methylating tails for bead " <<i << std::endl;
 					if (ntails_methylated == 2) {
 						beads[i].tail1.mark = 1;
 						beads[i].tail2.mark = 1;
@@ -1424,7 +1545,7 @@ public:
 						beads[i].tails_methylated = 1;
 					}
 				}
-				*/
+				
 			}
 		}
 		else {
@@ -1710,7 +1831,7 @@ public:
 		// gets all the nonbonded energy
 		auto start = std::chrono::high_resolution_clock::now();
 
-		double U = grid.energy(flagged_cells, chis);
+		double U = grid.energy(flagged_cells, chis,ideal_chrom);
 
 		auto stop = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
@@ -1732,12 +1853,15 @@ public:
 		return Energy; 
 	}
 
+
 	double getTotalEnergy(int first, int last, const std::unordered_set<Cell*>& flagged_cells)
 	{
 		double U = 0;
 		if (bonded_on) U += getBondedEnergy(first, last);
+		//Add ideal chromatin model if enabled in sim
 		if (nonbonded_on) U += getNonBondedEnergy(flagged_cells);
 		if (binding_on) U += getBindingEnergy(flagged_cells);
+		//no LH energy because it's noncooperative
 		return U;
 	}
 
@@ -1856,6 +1980,8 @@ public:
 			for(int j=0; j<n_bind; j++) {
 				MCmove_bind();
 			}
+
+			correct_hp1();
 			//t_bind.~Timer();
 			/*
 			after_eng = getAllBondedEnergy();
@@ -1898,6 +2024,7 @@ public:
 				double binding = 0;
 				nonbonded = nonbonded_on ? getNonBondedEnergy(grid.active_cells) : 0;
 				binding = binding_on ? getBindingEnergy(grid.active_cells) : 0;
+				//lh_binding = lh_on ? getLHEnergy() : 0;
 				//std::cout << "binding " << bonded << " nonbonded " << nonbonded << " binding" << binding <<  std::endl;
 				//t_allenergy.~Timer();
 
@@ -2436,12 +2563,14 @@ public:
 	void MCmove_bind()
 	{
 		// pick random particle
+
 		int o = floor(beads.size()*rng->uniform());
 
 		bool flip2 = round(rng->uniform());       // flip 1 or 2 tails?
 		bool flip_first = round(rng->uniform());  // if 1, which tail to flip? 
 
 		Cell* current_cell = grid.getCell(beads[o]); 
+		int old_hp1 = hp1_free;
 		double Uold = beads[o].tailEnergy(getChemPot()) + current_cell->getTailEnergy();  
 
 		if (flip2) {
@@ -2451,10 +2580,21 @@ public:
 		else {  // only flip one tail
 			(flip_first) ? beads[o].tail1.flipBind(current_cell) : beads[o].tail2.flipBind(current_cell);
 		}
-
+		int new_hp1 = hp1_free;
 		double Unew = beads[o].tailEnergy(getChemPot()) + current_cell->getTailEnergy();
 
-		if (rng->uniform() < exp(Uold-Unew))
+		//Reject on hp1 basis of too many hp1s are being consumed
+		if(hp1_free < 3 && new_hp1 < old_hp1){
+			//std::cout << "Rejected" << std::endl;
+			if (flip2) {
+				beads[o].tail1.flipBind(current_cell);
+				beads[o].tail2.flipBind(current_cell);
+			}
+			else {
+				(flip_first) ? beads[o].tail1.flipBind(current_cell) : beads[o].tail2.flipBind(current_cell);
+			}
+		}
+		else if (rng->uniform() < exp(Uold-Unew))
 		{
 			//std::cout << "Accepted"<< std::endl;
 			acc += 1;
@@ -2471,6 +2611,39 @@ public:
 			else {
 				(flip_first) ? beads[o].tail1.flipBind(current_cell) : beads[o].tail2.flipBind(current_cell);
 			}
+		}
+	}
+
+	//Add or remove a linker histone to the given particle
+	void MCmove_link()
+	{
+		// pick random particle
+		int o = floor(beads.size()*rng->uniform());
+
+		//bool flip2 = round(rng->uniform());       // flip 1 or 2 tails?
+		//bool flip_first = round(rng->uniform());  // if 1, which tail to flip? 
+
+		Cell* current_cell = grid.getCell(beads[o]); 
+		
+		//LH binding energy is non-cooperative, based on triplet angles:
+		double Uold = beads[o].LHEnergy() + getBondedEnergy(o,o) + getLHChemPot();
+
+		//double Uold = beads[o].tailEnergy(getLHChemPot()) + current_cell->getTailEnergy();  
+
+		beads[o].flipLH();
+
+		double Unew = beads[o].LHEnergy() + getBondedEnergy(o,o) + getLHChemPot();
+
+		if (rng->uniform() < exp(Uold-Unew))
+		{
+			//std::cout << "Accepted"<< std::endl;
+			acc += 1;
+			acc_lh += 1;
+		}
+		else
+		{
+			//std::cout << "Rejected" << std::endl;
+			beads[0].flipLH();
 		}
 	}
 
