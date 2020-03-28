@@ -75,7 +75,7 @@ public:
 	int tails_methylated;
 
 	static constexpr double Jprime = -4; // kT
-	static constexpr double Jlh = -5; //kT, LH binding energy
+	static constexpr double Jlh = -2; //kT, LH binding energy
 
 	double tailEnergy(double chem)
 	{
@@ -88,10 +88,7 @@ public:
 		return Jlh*lh_bound;
 	}
 
-	void flipLH()
-	{
-		lh_bound = !lh_bound;
-	}
+	void flipLH();
 
 	int nbound()
 	{
@@ -677,24 +674,36 @@ public:
 		prior_energy = triad_en + dyad_en;
 
 		//Check beads for LH, apply potentials based on this.
-		if(pbead2->lh_bound){
 
-			// second NRL leg
-			if (alphaprime > 100){
-				//add linear A(r) based on average slope increase: 1.222 kT/nm above
-				//10 nm
-				//Slope is parabolic function of NRL, pulled from dinuc data:
-				// U = (a-100)*(aNRL^2+bNRL+c)
-				double lhslope = -0.00010907*(triad2->NRL)*(triad2->NRL) + 0.04089813*(triad2->NRL)+(
-					-3.705485);
-				prior_energy += (alphaprime-100.0)*lhslope;
-			} 
-			// first NRL leg
-			if (alpha > 100){
-				double lhslope = -0.00010907*(triad1->NRL)*(triad1->NRL) + 0.04089813*(triad1->NRL)+(
-					-3.705485);
-			prior_energy += (alpha-100.0)*lhslope;} 
-			//
+		int total_lhs = 0;
+		total_lhs += pbead1->lh_bound;
+		total_lhs += pbead2->lh_bound;
+		total_lhs += pbead3->lh_bound;
+		if(total_lhs > 0){
+			
+			double lhslope = 0.2*total_lhs/3.0;
+			if (beta > 100){
+				prior_energy += (beta-100.0)*lhslope;
+			}
+
+			if(pbead2->lh_bound){
+
+				// second NRL leg
+				if (alphaprime > 100){
+					//add linear A(r) based on average slope increase: 1.222 kT/nm above
+					//10 nm
+					//Slope is parabolic function of NRL, pulled from dinuc data:
+					// U = (a-100)*(aNRL^2+bNRL+c)
+					lhslope = -0.00010907*(triad2->NRL)*(triad2->NRL) + 0.04089813*(triad2->NRL)+(
+						-3.705485);
+					prior_energy += (alphaprime-100.0)*lhslope;
+				} 
+				// first NRL leg
+				if (alpha > 100){
+					lhslope = -0.00010907*(triad1->NRL)*(triad1->NRL) + 0.04089813*(triad1->NRL)+(
+						-3.705485);
+				prior_energy += (alpha-100.0)*lhslope;} 			
+			}
 		}
 
 		return prior_energy;
@@ -1100,7 +1109,7 @@ public:
 	double lh_total; // conserved
 
 	static int hp1_free;
-	int lh_free;
+	static int lh_free;
 
 
 	FILE *xyz_out; 
@@ -1132,6 +1141,7 @@ public:
 	int n_pivot;// = decay_length;
 	int n_bind;// = 0;
 	int n_rot;// = nbeads;
+	int n_link;// = nbeads;
 
 	int acc_trans = 0;
 	int acc_crank = 0;
@@ -1139,7 +1149,7 @@ public:
 	int acc_rot = 0;
 	int acc_bind = 0;
 	int acc_disp = 0;
-	int acc_lh = 0;
+	int acc_link = 0;
 
 	bool production; // if false, equilibration
 	int nSteps;// = n_trans + n_crank + n_pivot + n_rot + n_bind;
@@ -1383,7 +1393,6 @@ public:
 		step_grid = grid.delta/10.0; // size of grid displacement MC moves
 
 		double Vbar = 7765.77;  // nm^3/bead: reduced number volume per spakowitz: V/N
-		//For our purposes, increase Vbar dramatically for full persistence
 		double vol = Vbar*nbeads; // simulation volume in nm^3
 		grid.L= std::round(std::pow(vol,1.0/3.0) / grid.delta); // number of grid cells per side // ROUNDED, won't exactly equal a desired volume frac
 		std::cout << "grid.L is: " << grid.L << std::endl;
@@ -1397,8 +1406,12 @@ public:
 		hp1_free = hp1_mean_conc*total_volume* 602; // 602 = number/(uM*um^3)
 		hp1_total = hp1_free;
 
+
+		//Internal calibration: want lh ~ 1/10th of nbeads
+		//double ideal_lh = std::pow(1000,3)/(4*602)
 		lh_free = lh_mean_conc*total_volume* 602;
 		lh_total = lh_free; 
+		std::cout << "Linker histone molecules: " << lh_free << std::endl;
 
 		exp_decay = nbeads/decay_length;             // size of exponential falloff for MCmove second bead choice
 		exp_decay_crank = nbeads/decay_length;
@@ -1413,9 +1426,10 @@ public:
 
 		n_disp = nbeads;
 		n_bind = nbeads;
+		n_link = nbeads;
 		n_rot = 0;
 		//n_rot = nbeads;
-		nSteps = n_trans + n_crank + n_pivot + n_rot + n_bind + n_disp;
+		nSteps = n_trans + n_crank + n_pivot + n_rot + n_bind + n_disp + n_link;
 
 		//Initialize lookuptables
 		angle_lookups.resize(207-min_nrl+1);
@@ -1982,6 +1996,12 @@ public:
 			}
 
 			correct_hp1();
+
+			if(lh_on){
+				for(int j=0; j<n_link; j++) {
+					MCmove_link();
+				}
+			}
 			//t_bind.~Timer();
 			/*
 			after_eng = getAllBondedEnergy();
@@ -2002,6 +2022,7 @@ public:
 					std::cout << "pivot: " << (float) acc_pivot/((sweep+1)*n_pivot)*100 << "% \t";
 					std::cout << "bind: " << (float) acc_bind/((sweep+1)*n_bind)*100 << "% \t";
 					std::cout << "displace: " << (float) acc_disp/((sweep+1)*n_disp)*100 << "% \t";
+					std::cout << "link: " << (float) acc_link/((sweep+1)*n_disp)*100 << "% \t";
 					std::cout << std::endl;
 					//std::cout << "rot: " << (float) acc_rot/((sweep+1)*n_rot)*100 << "%" << std::endl;;
 				}
@@ -2622,23 +2643,25 @@ public:
 
 		//bool flip2 = round(rng->uniform());       // flip 1 or 2 tails?
 		//bool flip_first = round(rng->uniform());  // if 1, which tail to flip? 
-
-		Cell* current_cell = grid.getCell(beads[o]); 
 		
 		//LH binding energy is non-cooperative, based on triplet angles:
 		double Uold = beads[o].LHEnergy() + getBondedEnergy(o,o) + getLHChemPot();
 
 		//double Uold = beads[o].tailEnergy(getLHChemPot()) + current_cell->getTailEnergy();  
 
+		int old_lh = lh_free;
 		beads[o].flipLH();
-
+		int new_lh = lh_free;
 		double Unew = beads[o].LHEnergy() + getBondedEnergy(o,o) + getLHChemPot();
 
-		if (rng->uniform() < exp(Uold-Unew))
+		if(lh_free < 3 && new_lh < old_lh){
+			beads[0].flipLH();
+		}
+		else if (rng->uniform() < exp(Uold-Unew))
 		{
 			//std::cout << "Accepted"<< std::endl;
 			acc += 1;
-			acc_lh += 1;
+			acc_link += 1;
 		}
 		else
 		{
@@ -2739,6 +2762,10 @@ public:
 				fprintf(xyz_out, "%d\t", bead.d[i]);
 			}
 
+			if(lh_on){
+				fprintf(xyz_out,"%d", (int) bead.lh_bound);
+			}
+
 			fprintf(xyz_out, "\n");
 		}
 		fclose(xyz_out); 
@@ -2798,8 +2825,21 @@ public:
 };
 
 int Sim::hp1_free;
+int Sim::lh_free;
 int Bead::ntypes;
 int Cell::ntypes;
+
+void Bead::flipLH()
+{
+	lh_bound = !lh_bound;
+	if(lh_bound){
+		Sim::lh_free -= 1;
+	}
+	else {
+		Sim::lh_free += 1;
+	}
+}
+
 
 void Tail::flipBind(Cell* cell_inside)
 {

@@ -33,6 +33,7 @@
     "chiFG": 0.0,
     "chiGG": 0.0,
     "hp1_mean_conc": 300,
+	"lh_mean_conc": 20.3,
     "decay_length": 100,
     "nSweeps": 36000000,
     "dump_frequency": 100,
@@ -55,4 +56,5 @@
 	"chipseq_files": ["block1.chipseq","block2.chipseq"],
 	"gridmove_on": true,
 	"ideal_chrom": true
+	"lh_on": true
 }
