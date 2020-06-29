@@ -1,4 +1,4 @@
-CC = g++
+CC = /software/gcc-6.2-el7-x86_64/bin/g++
 FLAGS = -O3
 DEBUG_FLAGS = -g
 INCLUDE = -I ./include

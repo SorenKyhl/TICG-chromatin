@@ -37,8 +37,8 @@ public:
 	static constexpr double eps_methylated = -0.01;   // kT
 	static constexpr double eps_unmethylated = 1.52;  // kT
 
-	bool mark; // methylation state: me3?
-	bool bound; // bound by HP1?
+	bool mark = false; // methylation state: me3?
+	bool bound = false; // bound by HP1?
 
 	double energy(double chem)
 	{
@@ -63,19 +63,21 @@ public:
 		: id{0}, r{0,0,0}, tail1{0}, tail2{0} {}
 
 	static int ntypes;
-	std::vector<int> d = std::vector<int>(ntypes);
+
+	std::vector<int> d = std::vector<int>(ntypes); // Array of mark values
 
 	int id;   // unique identifier: uniqueness not strictly enforced.
 	Eigen::RowVector3d r; // position
 	Eigen::RowVector3d u; // orientation
-	bool lh_bound; // bound by LH
+	bool lh_bound = false; // bound by LH
 
 	Tail tail1;
 	Tail tail2; 
 	int tails_methylated;
 
 	static constexpr double Jprime = -4; // kT
-	static constexpr double Jlh = -2; //kT, LH binding energy
+	//static constexpr double Jlh = -4;
+	static constexpr double Jlh = -log(1e5); //kT, LH binding energy
 
 	double tailEnergy(double chem)
 	{
@@ -83,9 +85,16 @@ public:
 		return Jprime*tail1.bound*tail2.bound + tail1.energy(chem) + tail2.energy(chem);
 	}
 
-	double LHEnergy()
+	double LHEnergy(const int & nbeads)
 	{
-		return Jlh*lh_bound;
+		if(lh_bound){
+			//Changed for mint_16-17 ONLY
+			double en = Jlh;
+			if(id <= 2 || id >= nbeads-3 ){en += 100000;}
+			return en;
+		} else{
+			return 0.0;
+		}
 	}
 
 	void flipLH();
@@ -679,29 +688,40 @@ public:
 		total_lhs += pbead1->lh_bound;
 		total_lhs += pbead2->lh_bound;
 		total_lhs += pbead3->lh_bound;
+
 		if(total_lhs > 0){
 			
-			double lhslope = 0.2*total_lhs/3.0;
+			//rBeta slope	
+			double lhslope = 0.475*total_lhs/3.0;
+			//lhslope /= 100;
 			if (beta > 100){
 				prior_energy += (beta-100.0)*lhslope;
 			}
 
+			//ralpha slope
+			//For correct counting: only count central LHs
 			if(pbead2->lh_bound){
 
 				// second NRL leg
 				if (alphaprime > 100){
+
 					//add linear A(r) based on average slope increase: 1.222 kT/nm above
 					//10 nm
+					//Corrected: slope is 0.028644 kT/Angstrom / LH above 100A
 					//Slope is parabolic function of NRL, pulled from dinuc data:
 					// U = (a-100)*(aNRL^2+bNRL+c)
-					lhslope = -0.00010907*(triad2->NRL)*(triad2->NRL) + 0.04089813*(triad2->NRL)+(
-						-3.705485);
+					//lhslope = -0.00010907*(triad2->NRL)*(triad2->NRL) + 0.04089813*(triad2->NRL)+(
+					//	-3.705485);
+					lhslope = 0.028655;
+
+					//Convert to kT
+					lhslope *= 1.688;
 					prior_energy += (alphaprime-100.0)*lhslope;
 				} 
 				// first NRL leg
 				if (alpha > 100){
-					lhslope = -0.00010907*(triad1->NRL)*(triad1->NRL) + 0.04089813*(triad1->NRL)+(
-						-3.705485);
+					//lhslope = -0.00010907*(triad1->NRL)*(triad1->NRL) + 0.04089813*(triad1->NRL)+(
+					//	-3.705485);
 				prior_energy += (alpha-100.0)*lhslope;} 			
 			}
 		}
@@ -739,6 +759,18 @@ public:
 		double y = m1.dot(n2);
 		double dih = atan2(y,x)*180.0/M_PI;
 
+		/*
+		if(isnan(dih)){
+			std::cout << "Nan encountered in dih." << std::endl;
+			std::cout << "x, y: " << x << ", " << y << std::endl;
+			std::cout << "n1, n2:" << n1 << ", " << n2 << std::endl;
+			std::cout << "m1: " << m1 << std::endl;
+			std::cout << "b1, b2, b3: " << b1 << ", " << b2 << ", " << b3 << std::endl;
+			std::cout << "Bead ids: " << pbead1->id << ", " << pbead2->id << ", " 
+			<< pbead3->id << ", " << pbead4->id << std::endl;
+			std::cout << "Bead 3.r - bead 1.r: " << pbead3->r - pbead1->r << std::endl;
+		}
+		*/
 
 		double tetrad_en = (tetrad1->energy(dih) + tetrad2->energy(dih) + tetrad3->energy(dih))/3.0;
 		return tetrad_en;
@@ -753,7 +785,7 @@ public:
 	std::unordered_set<Bead*> contains; // beads associated inside this gridpoint
 	double phi;
 	double vol;
-	int local_HP1; // local number of HP1
+	int local_HP1 = 0; // local number of HP1
 	static const int beadvol = 520; // volume of a bead in the cell. 
 	static constexpr double vint = 4/3*M_PI*3*3*3; // volume of HP1 interaction
 	static constexpr double J = -4;  // kT 
@@ -828,8 +860,11 @@ public:
 		if (phi_solvent < 0.5)
 		{
 			// high volume fraction occurs when more than 50% of the volume is occupied by beads
-			U = 99999999999;
+			double phi_else = contains.size()*beadvol/vol; 
+			//make penalty prop to phi_else
+			U = 99999999999*phi_else;
 		}
+		
 		else 
 		{
 			for (int i=0; i<ntypes; i++)
@@ -855,6 +890,7 @@ public:
 					}
 				}
 			}
+
 			if(ideal_chrom){
 				//Calculate pairwise ideal chromatin term
 				double d; //difference in index
@@ -867,6 +903,8 @@ public:
 				for (int i=0; i < imax-1; i++){
 					for(int j=i+1; j < imax; j++){
 						d = abs(inds[i] - inds[j]);
+						U += 0.2*d; //MINT_041 ONLY
+
 						//Ideal chromatin:
 						d *= d_scale;
 						if (d < 500 && d > 3){
@@ -875,6 +913,7 @@ public:
 					}
 
 				}
+
 				/*
 				for (int i=0; i < imax-1; i++){
 					for (int j = i+1; j < imax; j++){
@@ -1088,6 +1127,9 @@ public:
 	std::vector<Angle*> angles;
 	std::vector<Dihedral*> dihedrals;
 
+	static std::unordered_set<int> lh_beads; // Indices of beads with bound LH
+	static std::unordered_set<int> nolh_beads; // Indices of beads without bound LH
+
 	std::vector<int> nrls;
 	int min_nrl = 158;
 	std::vector<LookupTable3D> angle_lookups;
@@ -1115,6 +1157,7 @@ public:
 	FILE *xyz_out; 
 	FILE *energy_out;
 	FILE *obs_out;
+	FILE *nrl_out;
 
 	// MC variables
 	int decay_length; 
@@ -1141,7 +1184,8 @@ public:
 	int n_pivot;// = decay_length;
 	int n_bind;// = 0;
 	int n_rot;// = nbeads;
-	int n_link;// = nbeads;
+	int n_link;// = lh_total;
+	int n_swaplh;// = lh_total;
 
 	int acc_trans = 0;
 	int acc_crank = 0;
@@ -1150,6 +1194,7 @@ public:
 	int acc_bind = 0;
 	int acc_disp = 0;
 	int acc_link = 0;
+	int acc_swaplh = 0;
 
 	bool production; // if false, equilibration
 	int nSteps;// = n_trans + n_crank + n_pivot + n_rot + n_bind;
@@ -1161,9 +1206,10 @@ public:
 
 	bool bonded_on; 
 	bool nonbonded_on;
-	bool binding_on; 
-	bool lh_on;
-	bool ideal_chrom;
+	bool binding_on; //Bind HP1
+	bool lh_on; //Perform LH binding and swapping moves
+	bool ideal_chrom; //Add ideal chromosome term from MiChrom
+	bool palindrome; //Palindromic NRL sequence
 
 	bool gridmove_on;
 
@@ -1173,7 +1219,7 @@ public:
 	bool load_chipseq;
 	bool load_configuration;
 	std::string load_configuration_filename; 
-	std::string load_chipseq_filename; 
+	std::string load_tails_filename; 
 	std::vector<std::string> chipseq_files;
 
 	std::string chipseq_1;
@@ -1223,6 +1269,29 @@ public:
 		}
 	}
 
+	//Recount the number of HP1s in each cell based on number of actual bound
+	//tails
+	//Reset the number free to be total - bound
+	void correct_lh()
+	{
+		int bound_lh = 0;
+		for(Bead& bead1 : beads)
+			{
+				if(bead1.lh_bound){bound_lh += 1;}
+			}
+		if(lh_free != lh_total - bound_lh || bound_lh > lh_total){
+			std::cout <<"LH counting error. Real bound: " << lh_total - bound_lh
+			<< ", tracked: " << lh_free << std::endl;
+			lh_free = lh_total - bound_lh;
+			if(lh_free < 0){
+				lh_free = 0;
+			}
+		}
+		//std::cout << "Total lh: " << lh_total << ", bound_lh: " << bound_lh <<
+		//", free_lh: " << lh_free <<std::endl;
+
+	}
+
 	void updateContacts()
 	{
 		for(Cell* cell : grid.active_cells)
@@ -1248,14 +1317,14 @@ public:
 		//15,356.84 mL/mole
 		//2.550122e-20 mL/particle
 		//Make reference conc 1 mM,
-		return log(lh_free/total_volume/ (602));
+		return log(lh_free/total_volume/ (602.2));
 	}
 
 	double getChemPot()
 	{
 		// chemical potential based on [HP1_free] in micromolar. 
 		// Conversion ratio: (HP1_free/um^3) / [uM] = 602
-		return log(hp1_free/total_volume / (602));
+		return log(hp1_free/total_volume / (602.2));
 	}
 
 	Eigen::MatrixXd unit_vec(Eigen::MatrixXd b)
@@ -1272,7 +1341,7 @@ public:
 		b(2) = 1-2.0*R3;
 		return b;
 	}
-
+	
 	void readInput()
 	{
 		std::cout << "reading input file ... ";
@@ -1281,6 +1350,8 @@ public:
 		nlohmann::json config;
 		i >> config;
 		
+		//This nspecies is just used to load Chi values.
+		//It's reset by the length of the chipseq files.
 		nspecies = config["nspecies"];
 		load_chipseq = config["load_chipseq"];
 
@@ -1308,6 +1379,7 @@ public:
 					std::cout << chistring << " " << chis(i,j) << std::endl;
 				}
 			}
+
 
 			for (auto file : config["chipseq_files"])
 			{
@@ -1340,12 +1412,13 @@ public:
 		timers = config["timers"];
 		load_configuration = config["load_configuration"];
 		load_configuration_filename = config["load_configuration_filename"];
-		load_chipseq_filename = config["load_chipseq_filename"];
+		load_tails_filename = config["load_tails_filename"];
 		print_MC = config["print_MC"];
 		print_trans = config["print_trans"];
 		print_acceptance_rates = config["print_acceptance_rates"];
 		contact_resolution = config["contact_resolution"];
 		ideal_chrom = config["ideal_chrom"];
+		palindrome = config["palindrome"];
 
 		int seed = config["seed"];
 		rng = new RanMars(seed);
@@ -1363,6 +1436,7 @@ public:
 	        xyz_out = fopen("./data_out/output.xyz", "w");
 		energy_out = fopen("./data_out/energy.traj", "w");
 		obs_out = fopen("./data_out/observables.traj", "w");
+		nrl_out = fopen("./data_out/nrl.dat","w");
 
 		std::cout << "created successfully" << std::endl;
 	}
@@ -1393,6 +1467,7 @@ public:
 		step_grid = grid.delta/10.0; // size of grid displacement MC moves
 
 		double Vbar = 7765.77;  // nm^3/bead: reduced number volume per spakowitz: V/N
+		Vbar *= 10.0; // 10x the volume for MINT_040 only
 		double vol = Vbar*nbeads; // simulation volume in nm^3
 		grid.L= std::round(std::pow(vol,1.0/3.0) / grid.delta); // number of grid cells per side // ROUNDED, won't exactly equal a desired volume frac
 		std::cout << "grid.L is: " << grid.L << std::endl;
@@ -1403,13 +1478,13 @@ public:
 		// sphere center needs to be centered on a multiple of grid delta
 		grid.sphere_center = {grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta};
 
-		hp1_free = hp1_mean_conc*total_volume* 602; // 602 = number/(uM*um^3)
+		hp1_free = hp1_mean_conc*total_volume* 602.2; // 602 = number/(uM*um^3)
 		hp1_total = hp1_free;
 
 
 		//Internal calibration: want lh ~ 1/10th of nbeads
 		//double ideal_lh = std::pow(1000,3)/(4*602)
-		lh_free = lh_mean_conc*total_volume* 602;
+		lh_free = lh_mean_conc*total_volume* 602.2;
 		lh_total = lh_free; 
 		std::cout << "Linker histone molecules: " << lh_free << std::endl;
 
@@ -1426,10 +1501,20 @@ public:
 
 		n_disp = nbeads;
 		n_bind = nbeads;
-		n_link = nbeads;
+		if(lh_total > nbeads){
+			n_link = 2*nbeads;
+			n_swaplh = nbeads;
+		} else if (nbeads - lh_total < lh_total){
+			n_link = 2*lh_total;
+			n_swaplh = nbeads-lh_total;
+		} else{
+			n_link = 2*lh_total;
+			n_swaplh = lh_total;
+		}
+
 		n_rot = 0;
 		//n_rot = nbeads;
-		nSteps = n_trans + n_crank + n_pivot + n_rot + n_bind + n_disp + n_link;
+		nSteps = n_trans + n_crank + n_pivot + n_rot + n_bind + n_disp + n_link + n_swaplh;
 
 		//Initialize lookuptables
 		angle_lookups.resize(207-min_nrl+1);
@@ -1448,7 +1533,7 @@ public:
 		double bondlength = 16.5;
 		beads.resize(nbeads);  // uses default constructor initialization to create nbeads;
 
-		std::cout << "load configuratiOn is " << load_configuration << std::endl;
+		std::cout << "load configuration is " << load_configuration << std::endl;
 		// set configuration
 		if(load_configuration) {
 
@@ -1515,52 +1600,52 @@ public:
 			}
 		}
 
+
 		// set epigenetic sequence
+		// Sum of marks should be at least 1 for proper excluded volume
 		if (load_chipseq) {
 			int marktype = 0;
 			std::cout << "Loading chipseq" << std::endl;
+
+			bool firstfile = true;
 			for (std::string chipseq_file : chipseq_files)
 			{
 				std::ifstream IFCHIPSEQ;
-				int tail_marked;
+				int mark_num;
 				IFCHIPSEQ.open(chipseq_file);
 				
+
 				//mark the bead with its type as well as its 
 				for(int i=0; i<nbeads; i++)
 				{
-					IFCHIPSEQ >> tail_marked;
-					if (tail_marked == 1)
-					{
-						beads[i].d[marktype] = 1;
-					}
-					else if (tail_marked == 2){
-						beads[i].d[marktype] = 2;
-					}
-					else
-					{
-						beads[i].d[marktype] = 0;
-					}
+					IFCHIPSEQ >> mark_num;
+					beads[i].d[marktype] = mark_num;
 				}
 				marktype++;
 				IFCHIPSEQ.close();
-				
-				// assigns methylation marks based on chipseq data 
-				int ntails_methylated;
-				for(int i=0; i<nbeads; i++) {
-					IFCHIPSEQ >> ntails_methylated;
-					std::cout << "Methylating tails for bead " <<i << std::endl;
-					if (ntails_methylated == 2) {
-						beads[i].tail1.mark = 1;
-						beads[i].tail2.mark = 1;
-						beads[i].tails_methylated = 2;
-					}
-					else if (ntails_methylated == 1) {
-						beads[i].tail1.mark = 1;
-						beads[i].tails_methylated = 1;
-					}
-				}
-				
 			}
+		}
+
+		if(binding_on){
+			std::ifstream IFCHIPSEQ;
+
+			// assigns methylation marks based on chipseq data 
+			int ntails_methylated;
+			IFCHIPSEQ.open(load_tails_filename);
+			for(int i=0; i<nbeads; i++) {
+				IFCHIPSEQ >> ntails_methylated;
+				if (ntails_methylated == 2) {
+					beads[i].tail1.mark = 1;
+					beads[i].tail2.mark = 1;
+					beads[i].tails_methylated = 2;
+				}
+				else if (ntails_methylated == 1) {
+					beads[i].tail1.mark = 1;
+					beads[i].tails_methylated = 1;
+				}
+			}
+			IFCHIPSEQ.close();
+
 		}
 		else {
 			// assigns methylation marks in a block polymer manner
@@ -1639,6 +1724,7 @@ public:
 
 
 		//Draw random numbers and draw from widom distribution
+
 		for(int i=0; i<nbeads-1; i++){
 			double seed = rng->uniform();
 			//search for first val greater than seed
@@ -1646,7 +1732,24 @@ public:
 			while(cum_probs[j] < seed){
 				j++;
 			}
+
 			nrls[i] = min_nrl + j;
+			//SET NRL DISTRIBUTION MANUALLY HERE
+			//FOR MINT_014 -_017 ONLY
+			//if(i < 3){
+			//	nrls[i] = 167;
+			//} else {
+			//	nrls[i] = 197;
+			//}
+
+			nrls[i] = 197;
+		}
+
+		//if palindromic, draw for first half, replicate for second half
+		if(palindrome){
+			for(int i=0; i<(nbeads/2); i++){
+				nrls[nbeads/2 + i] = nrls[nbeads/2 - i];
+			}
 		}
 
 		// set bonds
@@ -1680,6 +1783,10 @@ public:
 
 		// output for vis.
 		dumpData();
+		
+		//Write nrls
+		dumpNrls();
+
 		//dumpEnergy(0);
 		std::cout << "Objects created" << std::endl;
 	}
@@ -1875,6 +1982,7 @@ public:
 		//Add ideal chromatin model if enabled in sim
 		if (nonbonded_on) U += getNonBondedEnergy(flagged_cells);
 		if (binding_on) U += getBindingEnergy(flagged_cells);
+
 		//no LH energy because it's noncooperative
 		return U;
 	}
@@ -1901,6 +2009,7 @@ public:
 	{
 		std::cout << "Beginning Simulation" << std::endl;
 		double prev_eng, after_eng;
+		bool lh_done = false;
 
 		for(int sweep = 0; sweep<nSweeps; sweep++)
 		{
@@ -1989,19 +2098,45 @@ public:
 			}
 			prev_eng = after_eng;
 			*/
-
 			Timer t_bind("Binding", print_MC);
-			for(int j=0; j<n_bind; j++) {
-				MCmove_bind();
-			}
-
-			correct_hp1();
-
-			if(lh_on){
-				for(int j=0; j<n_link; j++) {
-					MCmove_link();
+			if(binding_on){
+				for(int j=0; j<n_bind; j++) {
+					MCmove_bind();
 				}
 			}
+
+			if(!(grid.checkHp1Consistency(hp1_total))){
+				correct_hp1();
+			}
+			
+			if(lh_on){correct_lh();}
+
+			//If lhs are fully bound, swap. Otherwise, bind and unbind.
+			
+			if(!lh_done && sweep > 10 && lh_free < 50){
+				std::cout << "Linker histones saturated." << std::endl;
+				lh_done = true;
+			}
+
+
+			if(!lh_done && lh_on){
+				for(int j=0; j<n_link; j++) {
+					MCmove_link();
+
+				}
+			}
+
+			if(lh_on){
+				for(int j=0; j<n_swaplh; j++) {
+					MCmove_swaplh();
+				}
+			}
+
+			if(!(grid.checkHp1Consistency(hp1_total))){
+				correct_hp1();
+			}
+
+			if(lh_on){correct_lh();}
 			//t_bind.~Timer();
 			/*
 			after_eng = getAllBondedEnergy();
@@ -2022,7 +2157,8 @@ public:
 					std::cout << "pivot: " << (float) acc_pivot/((sweep+1)*n_pivot)*100 << "% \t";
 					std::cout << "bind: " << (float) acc_bind/((sweep+1)*n_bind)*100 << "% \t";
 					std::cout << "displace: " << (float) acc_disp/((sweep+1)*n_disp)*100 << "% \t";
-					std::cout << "link: " << (float) acc_link/((sweep+1)*n_disp)*100 << "% \t";
+					std::cout << "link: " << (float) acc_link/((sweep+1)*n_link)*100 << "% \t";
+					std::cout << "lhswap: " << (float) acc_swaplh/((sweep+1)*n_swaplh)*100 << "% \t";
 					std::cout << std::endl;
 					//std::cout << "rot: " << (float) acc_rot/((sweep+1)*n_rot)*100 << "%" << std::endl;;
 				}
@@ -2045,7 +2181,7 @@ public:
 				double binding = 0;
 				nonbonded = nonbonded_on ? getNonBondedEnergy(grid.active_cells) : 0;
 				binding = binding_on ? getBindingEnergy(grid.active_cells) : 0;
-				//lh_binding = lh_on ? getLHEnergy() : 0;
+				//lh_binding = lh_on ? getLHEnergy(nbeads) : 0;
 				//std::cout << "binding " << bonded << " nonbonded " << nonbonded << " binding" << binding <<  std::endl;
 				//t_allenergy.~Timer();
 
@@ -2057,12 +2193,15 @@ public:
 		std::cout << "acceptance rate: " << (float) acc/(nSweeps*nSteps)*100.0 << "%" << std::endl;
 	}
 
-	
-	void MCmove_displace()
+	//bool for accepted and energy for rosenbluth sampling
+	void MCmove_displace(int o = -1)
 	{
 		Timer t_displacemove("Displacement move", print_MC);
 		// pick random particle
-		int o = floor(beads.size()*rng->uniform());
+		bool sub_mc = (o > 0);
+		if(!sub_mc){
+			o = floor(beads.size()*rng->uniform());
+		}
 
 		// copy old info (don't forget orientation, etc)
 		Cell* old_cell = grid.getCell(beads[o]);
@@ -2096,12 +2235,13 @@ public:
 		}
 
 		double Unew = getTotalEnergy(o, o, flagged_cells);
-
 		if (rng->uniform() < exp(Uold-Unew))
 		{
 			//std::cout << "Accepted"<< std::endl;
+			if(!sub_mc){
 			acc += 1;
 			acc_disp += 1;
+			}
 			/*
 			double post_eng = getAllBondedEnergy();
 			if(post_eng > prev_eng){
@@ -2645,17 +2785,18 @@ public:
 		//bool flip_first = round(rng->uniform());  // if 1, which tail to flip? 
 		
 		//LH binding energy is non-cooperative, based on triplet angles:
-		double Uold = beads[o].LHEnergy() + getBondedEnergy(o,o) + getLHChemPot();
+		double Uold = beads[o].LHEnergy(nbeads) + getBondedEnergy(o,o) + getLHChemPot();
 
 		//double Uold = beads[o].tailEnergy(getLHChemPot()) + current_cell->getTailEnergy();  
 
 		int old_lh = lh_free;
 		beads[o].flipLH();
 		int new_lh = lh_free;
-		double Unew = beads[o].LHEnergy() + getBondedEnergy(o,o) + getLHChemPot();
+		double Unew = beads[o].LHEnergy(nbeads) + getBondedEnergy(o,o) + getLHChemPot();
 
-		if(lh_free < 3 && new_lh < old_lh){
-			beads[0].flipLH();
+		if(lh_free < 0 && new_lh < old_lh){
+			beads[o].flipLH();
+			return;
 		}
 		else if (rng->uniform() < exp(Uold-Unew))
 		{
@@ -2666,17 +2807,385 @@ public:
 		else
 		{
 			//std::cout << "Rejected" << std::endl;
-			beads[0].flipLH();
+			beads[o].flipLH();
 		}
 	}
 
+	//Swap Linker histones between two nucleosomes.
+	void MCmove_swaplh()
+	{
+		bool trivial_swap = true;
+		// pick 2 random particles
+		int lh_size = lh_beads.size();
+		int nolh_size = nolh_beads.size();
+
+		int ind_o = floor(lh_size*rng->uniform());
+		int ind_m = floor(nolh_size*rng->uniform());
+
+		auto op = std::next(std::begin(lh_beads),ind_o);
+		auto mp = std::next(std::begin(nolh_beads),ind_m);
+
+		if(lh_beads.size() == 0 || nolh_beads.size() == 0){
+			return;
+		}
+
+		int o = *op;
+		int m = *mp;
+
+		//This is where most of the expense comes in
+		//int ndisp = 100;
+		int ndisp = 26;
+
+		//Rosenbluth decays to a swap chance of 1.1% on the 
+		//diblock. Slow as hell though. Breaks without it though.
+		double wo = 0.0; //Rosenbluth pseudo-partition functions
+		double wn = 0.0; 
+
+		std::vector<double> eng_o;
+		std::vector<double> eng_n;
+
+		std::unordered_set<Cell*> flagged_cells;
+
+		//Print info about current lhs
+		/*int sum_bound = beads[o].lh_bound + beads[m].lh_bound;
+		if(sum_bound != 1){
+			std::cout << "Failure at beads " << o << ", " << "m" << std::endl;
+		}
+		std::cout << "Current binding states: " << beads[o].lh_bound << ", " << 
+		beads[m].lh_bound << std::endl;
+		*/
+
+		//bool flip2 = round(rng->uniform());       // flip 1 or 2 tails?
+		//bool flip_first = round(rng->uniform());  // if 1, which tail to flip? 
+		
+		//LH binding energy is non-cooperative, based on triplet angles:
+		double Uold = getBondedEnergy(o,o) + getBondedEnergy(m,m) + 
+			beads[o].LHEnergy(nbeads) + beads[m].LHEnergy(nbeads);
+
+		if(Uold > 999999999.0){
+			//No swap will be valid --> energies are out of bounds
+			return;
+		}
+		if(trivial_swap){
+			beads[o].flipLH();
+			beads[m].flipLH();
+			double Unew = getBondedEnergy(o,o) + getBondedEnergy(m,m) +beads[o].LHEnergy(nbeads)
+				+ beads[m].LHEnergy(nbeads);
+			//double Udiff = Unew - Uold;
+			//double ranval = rng->uniform();
+			//double expon = exp(-Udiff);
+			//std::cout << "Ranval: " << ranval << std::endl;
+			//std::cout << "UDiff: " << Udiff << std::endl;
+			//std::cout << "Exponentional: " << expon  << std::endl;
+			//std::cout << "Boolean check: " << (ranval < expon) << std::endl << std::endl;
+			if (rng->uniform() < exp(Uold-Unew))
+			{
+				//std::cout << "Accepted"<< std::endl;
+				acc += 1;
+				acc_swaplh += 1;
+				return;
+			}
+			else
+			{
+				
+				//std::cout << "Rejected" << std::endl;
+				beads[o].flipLH();
+				beads[m].flipLH();
+				return;
+			}
+		}
+		
+		double disp_l = 5;
+
+		//Begin pseudo-partition function construction
+		//Flag all cells within sampleable radius of the centerpoint of o+-1,m+-1
+		Eigen::RowVector3d o_com;
+		Eigen::RowVector3d m_com;
+		Eigen::RowVector3d tmp_x(disp_l, 0., 0.);
+		Eigen::RowVector3d tmp_y(0., disp_l, 0.);
+		Eigen::RowVector3d tmp_z(0., 0., disp_l);
+
+		o_com = beads[o].r;
+		m_com = beads[m].r;
+		std::vector<Eigen::RowVector3d> new_pos;
+		new_pos.push_back(o_com);
+		new_pos.push_back(o_com + tmp_x);
+		new_pos.push_back(o_com - tmp_x);
+		new_pos.push_back(o_com + tmp_y);
+		new_pos.push_back(o_com - tmp_y);
+		new_pos.push_back(o_com + tmp_z);
+		new_pos.push_back(o_com - tmp_z);
+		new_pos.push_back(m_com);
+		new_pos.push_back(m_com + tmp_x);
+		new_pos.push_back(m_com - tmp_x);
+		new_pos.push_back(m_com + tmp_y);
+		new_pos.push_back(m_com - tmp_y);
+		new_pos.push_back(m_com + tmp_z);
+		new_pos.push_back(m_com - tmp_z);
+
+		//Check relative partition functions in a grid around initial point.
+		//If this patterning is complete, we reproduce Frenkel & Smit's
+		//Algorithm for orientational bias exactly.
+
+		//Add all nearby cells to "relevant" analysis
+		for(int i = 0; i<new_pos.size();i++){
+			if(!outside_boundary(new_pos[i])){
+				flagged_cells.insert(grid.getCell(new_pos[i]));
+			}
+		}
+		
+		//Generate ndisp configurations in 3d grid within +- disp_l
+		std::vector<Eigen::RowVector3d> o_list;
+		std::vector<Eigen::RowVector3d> m_list;
+
+		int per_side = pow(ndisp,1.0/3);
+		Eigen::RowVector3d x_delta = 2*tmp_x;
+		Eigen::RowVector3d y_delta = 2*tmp_y;
+		Eigen::RowVector3d z_delta = 2*tmp_z;
+
+		Eigen::RowVector3d o_base_pos = o_com - (tmp_x + tmp_y + tmp_z);
+		Eigen::RowVector3d m_base_pos = m_com - (tmp_x + tmp_y + tmp_z);
+
+		Eigen::RowVector3d delta_o(0.,0.,0.);
+		Eigen::RowVector3d delta_m(0.,0.,0.);
+
+		//Generate positions randomly within box around position. 
+		//formula: min + ran_num * delta_x + ran_num * delta_y + ran_num * delta_z;
+
+		//ijk --> xyz
+		o_list.push_back(o_com);
+		m_list.push_back(m_com);
+		for(int i = 0; i < per_side; i++){
+			for(int j = 0; j < per_side; j++){
+				for(int k = 0; k < per_side; k++){
+
+					delta_o = o_base_pos + (rng->uniform())*x_delta + (
+						rng->uniform())*y_delta + rng->uniform()*z_delta;
+					if(!outside_boundary(delta_o)){
+						o_list.push_back(delta_o);
+					}
+
+					//Generate new, uncorrelated position for delta_m
+					delta_m = m_base_pos + (rng->uniform())*x_delta + (
+						rng->uniform())*y_delta + rng->uniform()*z_delta;
+					if(!outside_boundary(delta_m)){
+						m_list.push_back(delta_m);
+					}
+				}
+			}
+		}
+		
+		//Collect energies at all positions before swap.
+		for(int i=0; i < o_list.size(); i++){
+			for(int j=0; j < m_list.size(); j++){
+				//Implement bead moves
+				bead_displace(o,o_list[i]);
+				bead_displace(m,m_list[j]);
+
+				double tmp = getTotalEnergy(o,o,flagged_cells) +getBondedEnergy(m,m) + beads[o].LHEnergy(nbeads)
+					+ beads[m].LHEnergy(nbeads);
+				eng_o.push_back(tmp);
+			}
+		}
+
+
+
+		/*
+		for(int i=0;i<ndisp;i++){
+			MCmove_displace(o);
+			MCmove_displace(m);
+
+			double tmp = getTotalEnergy(o,o,flagged_cells) +getBondedEnergy(m,m) + beads[o].LHEnergy(nbeads)
+				+ beads[m].LHEnergy(nbeads);
+			eng_o.push_back(tmp);
+		}
+		*/
+		
+		//auto old_o = beads[o].r;
+		//auto old_m = beads[m].r;
+
+		/*Strategy: "combined LH swap and displacement move."
+		Rosenbluth style: create ensemble of before.
+		Obey super detailed balance, Frenkel and smit 13.1.10
+
+		Record initial position. Perform 2*n displacements,and collect rosenbluth
+		weights. Swap linker histones, perform 2*n displacements, and collect
+		rosenbluth weights. Accept with Frenkel and Smit Rosenbluth acceptance
+		criterion 13.2.1:
+		acc(o->n) = min[1,W(n)/W(o)]
+		*/
+
+		//double Uold = beads[o].tailEnergy(getLHChemPot()) + current_cell->getTailEnergy();  
+
+		beads[o].flipLH();
+		beads[m].flipLH();
+
+		for(int i=0; i < o_list.size(); i++){
+			for(int j=0; j < m_list.size(); j++){
+				//Implement bead moves
+				bead_displace(o,o_list[i]);
+				bead_displace(m,m_list[j]);
+
+				double tmp = getTotalEnergy(o,o,flagged_cells) +getBondedEnergy(m,m) + beads[o].LHEnergy(nbeads)
+					+ beads[m].LHEnergy(nbeads);
+				eng_n.push_back(tmp);
+			}
+		}
+		/*
+		for(int i=0;i<3*ndisp/2;i++){
+			MCmove_displace(o);
+			MCmove_displace(m);
+
+			if(i>ndisp/2){
+				double tmp = getTotalEnergy(o,o,flagged_cells) + getBondedEnergy(m,m) +beads[o].LHEnergy(nbeads)
+				 + beads[m].LHEnergy(nbeads);
+				eng_n.push_back(tmp);
+			}
+		}
+		*/
+
+		//For exponential summation, shift energies by minimum value
+		double min = 0.0;
+		for(int i=0; i<eng_o.size(); i++){
+			min = (eng_o[i] < min) ? eng_o[i] : min;
+			min = (eng_n[i] < min) ? eng_n[i] : min;
+		}
+		/*
+		double sum = 0.0;
+		for(int i=0; i<eng_o.size(); i++){
+			sum += eng_o[i];
+			sum += eng_n[i];
+		}
+		int so = eng_o.size();
+		int sn = eng_n.size();
+
+		sum /= (so + sn);
+		*/
+		std::vector<double> wo_list;
+		std::vector<double> wn_list;
+		wo_list.resize(eng_o.size());
+		wn_list.resize(eng_n.size());
+
+		for(int i=0; i<eng_o.size(); i++){
+			//eng_o[i] -= sum;
+			//eng_n[i] -= sum;
+			eng_o[i] -= min;
+			eng_n[i] -= min;
+			//std::cout << "Eng o,n: " << eng_o[i] <<", " << eng_n[i] << std::endl;
+			wo_list[i] = exp(-eng_o[i]);
+			wo += wo_list[i];
+			wn_list[i] = exp(-eng_n[i]);
+			wn += wn_list[i];
+		}
+
+		//Cell* old_cell_tmp_o = grid.getCell(old_o);
+		//Cell* old_cell_tmp_m = grid.getCell(old_m);
+		//Cell* new_cell_tmp_o = grid.getCell(beads[o]);
+		//Cell* new_cell_tmp_m = grid.getCell(beads[m]);
+
+		std::vector<double> cum_probs;
+		cum_probs.resize(wn_list.size());
+		int o_size = o_list.size();
+		int m_size = m_list.size();
+
+		double wrat = wn/wo;
+		double ranval = rng->uniform();
+		//double expon = exp(-Udiff);
+		//std::cout << "Ranval: " << ranval << std::endl;
+		//std::cout << "wrat: " << wrat << std::endl;
+		//std::cout << "Exponentional: " << expon  << std::endl;
+		//std::cout << "Boolean check: " << (ranval < wrat) << std::endl << std::endl;
+
+		if (ranval < wrat)
+		//if (rng->uniform() < exp(Uold-Unew))
+		{
+			//std::cout << "Accepted"<< std::endl;
+
+			acc += 1;
+			acc_swaplh += 1;
+
+			//Select actual position from ensemble
+
+			wn_list[0] /= wn;
+			cum_probs[0] = wn_list[0];
+			//renormalize wn to 1
+			for (int i = 1; i < wn_list.size(); i++){
+				wn_list[i] /= wn;
+				cum_probs[i] = cum_probs[i-1] + wn_list[i];
+			}
+
+
+			//Select thermal-random configuration. 
+			double seed = rng->uniform();
+			int j = 0;
+			while(cum_probs[j] < seed){
+				j++;
+			}
+
+			//Process j into i,k
+			int i = j/m_size;
+			int k = j % m_size;
+
+
+			bead_displace(o,o_list[i]);
+			bead_displace(m,m_list[k]);
+
+			//###########
+		}
+		else
+		{
+			//std::cout << "Rejected" << std::endl;
+			beads[o].flipLH();
+			beads[m].flipLH();
+		
+			/*
+			std::cout << "Reverted binding states: " << beads[o].lh_bound << ", " << 
+			beads[m].lh_bound << std::endl;
+
+			sum_bound = beads[o].lh_bound + beads[m].lh_bound;
+			if(sum_bound != 1){
+				std::cout << "Failure at beads " << o << ", " << "m" << std::endl;
+			}
+			*/
+
+			//Select actual position from ensemble
+
+			wo_list[0] /= wo;
+			cum_probs[0] = wo_list[0];
+			//renormalize wn to 1
+			for (int i = 1; i < wo_list.size(); i++){
+				wo_list[i] /= wo;
+				cum_probs[i] = cum_probs[i-1] + wo_list[i];
+			}
+
+
+			//Select thermal-random configuration. 
+			double seed = rng->uniform();
+			int j = 0;
+			while(cum_probs[j] < seed){
+				j++;
+			}
+
+			//Process j into i,k
+			int i = j/m_size;
+			int k = j % m_size;
+
+
+			bead_displace(o,o_list[i]);
+			bead_displace(m,m_list[k]);
+		}
+
+	}
+	
 	void MCmove_grid()
 	{
 		// not really a MC move (metropolis criterion doesn't apply) 
 		// don't need to choose active cells; they are chosen at the beginning of the
 		// simulation to include all cells that could possibly include particles.
+		// AEC Update: If U > 
 		bool flag = true;
 		double U;
+		double old_U;
 		while (flag)
 		{
 			Eigen::RowVector3d displacement;
@@ -2695,7 +3204,9 @@ public:
 
 			U = getNonBondedEnergy(grid.active_cells);
 
-			if (U < 9999999999)
+			//If energy isn't infinite, or if energy is infinite but decreasing
+			//by meaningful values
+			if (U < 9999999999 || old_U - U > 9999999999)
 			{ 
 				flag = false;
 				//std::cout << "passed grid move" << std::endl;
@@ -2707,10 +3218,32 @@ public:
 				grid.meshBeads(beads);
 				//std::cout << "failed grid move" << std::endl;
 			}
+			old_U = U;
 		}
 	}
 
-	
+	//Place bead o at position r. Update grid & cells for this.
+	void bead_displace(int o, const Eigen::RowVector3d &r){
+		Cell* old_cell = grid.getCell(beads[o]);
+
+		// check if exited the simulation box, if so reject the move
+		if (outside_boundary(r))
+		{
+			return;
+		}
+
+		Cell* new_cell = grid.getCell(r);
+
+		beads[o].r = r;
+
+		// check if moved grid into new grid cell, update grid
+		if (new_cell != old_cell)
+		{
+			new_cell->moveIn(&beads[o]);
+			old_cell->moveOut(&beads[o]);
+		}
+	}
+
 	void printTailComposition()
 	{
 		double HP1_un = 0;
@@ -2752,7 +3285,7 @@ public:
 		for(Bead bead : beads)
 		{
 		    //int epimark = bead.tail1.mark + bead.tail2.mark;
-		    //int bindmark = bead.tail1.bound + bead.tail2.bound;
+		    int bindmark = bead.tail1.bound + bead.tail2.bound;
 		    //fprintf(xyz_out, "%d\t %lf\t %lf\t %lf\t %d\t %d\t %d\n" , bead.id,bead.r(0),bead.r(1),bead.r(2), epimark, bead.nbound(), bead.d);
 
 			fprintf(xyz_out, "%d\t %lf\t %lf\t %lf\t" , bead.id,bead.r(0),bead.r(1),bead.r(2));
@@ -2762,8 +3295,14 @@ public:
 				fprintf(xyz_out, "%d\t", bead.d[i]);
 			}
 
+			if(binding_on){
+				//fprintf(xyz_out,"%d\t", epimark);
+				fprintf(xyz_out,"%d\t", bindmark);
+			}
+
 			if(lh_on){
-				fprintf(xyz_out,"%d", (int) bead.lh_bound);
+				int bound = bead.lh_bound;
+				fprintf(xyz_out,"%d\t", bound);
 			}
 
 			fprintf(xyz_out, "\n");
@@ -2776,6 +3315,14 @@ public:
 		energy_out = fopen("./data_out/energy.traj", "a");
 		fprintf(energy_out, "%d\t %lf\t %lf\t %lf\n", sweep, bonded, nonbonded, binding);
 		fclose(energy_out);
+	}
+
+	void dumpNrls(){
+		nrl_out = fopen("./data_out/nrl.dat","a");
+		for (int i=0; i < nrls.size(); i++){
+			fprintf(nrl_out,"%d\n",nrls[i]);
+		}
+		fclose(nrl_out);
 	}
 
 	void dumpObservables(int sweep)
@@ -2828,15 +3375,26 @@ int Sim::hp1_free;
 int Sim::lh_free;
 int Bead::ntypes;
 int Cell::ntypes;
+std::unordered_set<int> Sim::lh_beads;
+std::unordered_set<int> Sim::nolh_beads;
 
 void Bead::flipLH()
 {
-	lh_bound = !lh_bound;
+
 	if(lh_bound){
-		Sim::lh_free -= 1;
+		//unbind
+		Sim::lh_free += 1;
+		lh_bound = false;
+		Sim::lh_beads.erase(id);
+		Sim::nolh_beads.insert(id);
 	}
 	else {
-		Sim::lh_free += 1;
+		//bind
+		Sim::lh_free -= 1;
+		lh_bound = true;
+		Sim::lh_beads.insert(id);
+		Sim::nolh_beads.erase(id);
+
 	}
 }
 
@@ -2868,7 +3426,15 @@ bool Grid::checkHp1Consistency(int hp1_tot)
 	}
 
 	cellhp1 += Sim::hp1_free;
-	return (cellhp1 == hp1_tot);
+	bool consistent = (cellhp1 == hp1_tot);
+
+	if(false){
+		std::cout << "Inconsistent hp1. " << std::endl;
+		std::cout << "Cell hp1: " << cellhp1 << std::endl;
+		std::cout << "hp1_tot: " << hp1_tot << std::endl << std::endl;
+
+	}
+	return consistent;
 }
 
 int main()
