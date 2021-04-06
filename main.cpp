@@ -18,66 +18,21 @@
 unsigned long nbeads_moved = 0;
 //RanMars rng(1);
 
-class Cell; 
-
-class Tail {
-public:
-	Tail(bool m)
-		: mark{m}, bound{0} {}
-	
-	static constexpr double eps_methylated = -0.01;   // kT
-	static constexpr double eps_unmethylated = 1.52;  // kT
-
-	bool mark; // methylation state: me3?
-	bool bound; // bound by HP1?
-
-	double energy(double chem)
-	{
-		// calculates binding energy as a function of chemical potential (chem = kT log[HP1_free])
-		return bound*(mark*(eps_methylated-chem) + !mark*(eps_unmethylated-chem));
-	}
-
-	void flipBind(Cell* cell_inside);
-
-	void print()
-	{
-		std::cout <<  "Tail with epigenetic state: " << mark << " binding state " << bound << std::endl;
-	}
-};
-
-
 class Bead {
 public:
-	Bead(int i, double x=0, double y=0, double z=0, bool mark1=0, bool mark2=0)
-		: id{i}, r{x,y,z}, tail1{mark1}, tail2{mark2} {}
+	Bead(int i, double x=0, double y=0, double z=0)
+		: id{i}, r{x,y,z}  {}
 	
 	Bead() 
-		: id{0}, r{0,0,0}, tail1{0}, tail2{0} {}
-
-	static int ntypes;
-	std::vector<int> d = std::vector<int>(ntypes);
+		: id{0}, r{0,0,0} {}
 
 	int id;   // unique identifier: uniqueness not strictly enforced.
 	Eigen::RowVector3d r; // position
 	Eigen::RowVector3d u; // orientation
 
-	Tail tail1;
-	Tail tail2; 
-	int tails_methylated;
-
-	static constexpr double Jprime = -4; // kT
-
-	double tailEnergy(double chem)
-	{
-		//    intranucleosome HP1 interaction |        HP1 binding energy
-		return Jprime*tail1.bound*tail2.bound + tail1.energy(chem) + tail2.energy(chem);
-	}
-
-	int nbound()
-	{
-		// number of bound HP1
-		return tail1.bound + tail2.bound;
-	}
+	// number of different bead types
+	static int ntypes;
+	std::vector<int> d = std::vector<int>(ntypes);
 
 	void print() {std::cout << id <<" "<< r << std::endl;}
 };
@@ -97,6 +52,11 @@ public:
 };
 
 
+// Discrete, Shearable, Stretchable bond (see:) 
+// Koslover, Spakowitz
+// "Discretizing elastic chains for coarse-grained polymer models" 
+// Soft Matter, 2013
+// DOI: 10.1039/C3SM50311A
 class DSS_Bond : public Bond {
 public:
 	DSS_Bond(Bead* bead1, Bead* bead2) 
@@ -119,16 +79,6 @@ public:
 		double eps_bend = 1.4668;
 		double eps_parl = 34.634;
 		double eps_perp = 16.438;
-		*/
-
-		// DELTA = 0.1
-		/*
-		double delta = 0.1;
-		double ata = 21.651;
-		double gamma = 0.98168;
-		double eps_bend = 1.5515;
-		double eps_parl = 818.08;
-		double eps_perp = 1107.8;
 		*/
 
 		// DELTA = 0.33 
@@ -179,7 +129,7 @@ public:
 	{
 		Eigen::RowVector3d displacement = pbead2->r - pbead1->r; 
 		double r = sqrt(displacement.dot(displacement));
-		return k*(r- r0)*(r - r0); // can be optimized if r0 is zero
+		return k*(r- r0)*(r - r0); 
 	}
 };
 
@@ -219,7 +169,6 @@ class Cell {
 public:
 	Eigen::RowVector3d r; // corner of cell == CURRENTLY UNUSED
 	std::unordered_set<Bead*> contains; // beads associated inside this gridpoint
-	double phi;
 	double vol;
 	int local_HP1; // local number of HP1
 	static const int beadvol = 520; // volume of a bead in the cell. 
@@ -229,6 +178,10 @@ public:
 	static int ntypes;
 	std::vector<int> typenums = std::vector<int>(ntypes); // always up-to-date
 	std::vector<double> phis = std::vector<double>(ntypes); // only up-to-date after energy calculation
+	
+	static double diag_binsize;
+	static int diag_nbins;
+	std::vector<double> diag_phis = std::vector<double>(diag_nbins);
 
 	void print() 
 	{
@@ -253,7 +206,6 @@ public:
 	{
 		// updates local number of each type of bead, but does not recalculate phis
 		contains.insert(bead);
-		local_HP1 += bead->nbound();
 		//typenums += bead->d;
 
 		for(int i=0; i<ntypes; i++)
@@ -266,7 +218,6 @@ public:
 	{
 		// updates local number of each type of bead, but does not recalculate phis
 		contains.erase(bead);
-		local_HP1 -= bead->nbound();
 		//typenums -= bead->d;
 
 		for(int i=0; i<ntypes; i++)
@@ -275,10 +226,25 @@ public:
 		}
 	}
 
-	double getEnergy(const Eigen::MatrixXd &chis)
+	double getDensityCapEnergy()
 	{
+		// Density in each cell is capped at 50%
+		// otherwise, incur a large energy penalty
+		
+		float phi_beads = contains.size()*beadvol/vol;
 		float phi_solvent = 1 - contains.size()*beadvol/vol;
 
+		double U = 0;
+		if (phi_solvent < 0.5)
+		{
+			// high volume fraction occurs when more than 50% of the volume is occupied by beads
+			U = 99999999999*phi_beads;
+		}
+		return U;
+	}
+
+	double getEnergy(const Eigen::MatrixXd &chis)
+	{
 		for (int i=0; i<ntypes; i++)
 		{
 			phis[i] = typenums[i]*beadvol/vol;
@@ -286,48 +252,82 @@ public:
 		}
 
 		double U = 0;
-
-		if (phi_solvent < 0.5)
+		for (int i=0; i<ntypes; i++)
 		{
-			// high volume fraction occurs when more than 50% of the volume is occupied by beads
-			U = 99999999999;
-		}
-		else 
-		{
-			for (int i=0; i<ntypes; i++)
+			for (int j=i; j<ntypes; j++)
 			{
-				for (int j=i; j<ntypes; j++)
+				if (i==j)
 				{
-					if (i==j)
-					{
-						// A - Solvent
-						//U += chis(i,j)*phis[i]*phi_solvent*vol/beadvol;
+					// A - Solvent
+					//U += chis(i,j)*phis[i]*phi_solvent*vol/beadvol;
 
-						// A - self
-						//U += -1*chis(i,j)*phis[i]*phis[j]*vol/beadvol;
-						
-						// the old way
-						U += chis(i,j)*phis[i]*phis[j]*vol/beadvol;
-
-					}
-					else
-					{
-						U += chis(i,j)*phis[i]*phis[j]*vol/beadvol;
-						//std::cout << chis(i,j) << " " << phis[i] << " " << phis[j] << " " << vol << " " << beadvol << std::endl;
-					}
+					// A - self
+					//U += -1*chis(i,j)*phis[i]*phis[j]*vol/beadvol;
+					
+					// the old way
+					U += chis(i,j)*phis[i]*phis[j]*vol/beadvol;
+					//U += exp(compressibility*( phi_beads - 0.5));
+				}
+				else
+				{
+					U += chis(i,j)*phis[i]*phis[j]*vol/beadvol;
+					//U += exp(compressibility*( phi_beads - 0.5));
+					//std::cout << chis(i,j) << " " << phis[i] << " " << phis[j] << " " << vol << " " << beadvol << std::endl;
 				}
 			}
 		}
-
 		return U;
 	}
 
-	double getTailEnergy()
+	double getDiagEnergy(const std::vector<double> diag_chis)
 	{
-		double rho = local_HP1/vol;
-		double U = J/2*vint*vol*rho*rho;
-		return  U;
+		for (int i=0; i<diag_nbins; i++)
+		{
+			diag_phis[i] = 0;
+		}
+
+		double Udiag = 0;
+		/*
+		int index;
+		for (Bead* bead1 : contains)
+		{
+			for (Bead* bead2 : contains)
+			{
+				index = std::floor( abs(bead1->id - bead2->id) / diag_binsize);
+				assert (index >= 0);
+				assert (index <= diag_nbins);
+				diag_phis[index] += 1; // diag phis is just a count, multiply by volumes later
+			}
+		}
+		*/
+		int d_index; // genomic separation (index for diag_phis)
+		int imax = (int) contains.size();
+		std::vector<int> indices;
+		for (const auto& elem : contains)
+		{
+			indices.push_back(elem->id);
+		}
+
+		for (int i=0; i<imax-1; i++)
+		{
+			for(int j=i+1; j<imax; j++)
+			{
+				d_index  = std::floor( abs(indices[i] - indices[j]) / diag_binsize);
+				diag_phis[d_index] += 1; // diag phis is just a count, multiply by volumes later
+			}
+		}
+
+		for (int i=0; i<diag_nbins; i++)
+		{
+			diag_phis[i] *= beadvol/vol; // convert to actual volume fraction
+			Udiag += diag_chis[i] * diag_phis[i]*diag_phis[i];
+		}
+
+		// multiply by vol/beadvol to calculate mean-field energy
+		Udiag *= vol/beadvol; 
+		return Udiag; 
 	}
+
 };
 
 
@@ -365,7 +365,6 @@ public:
 				cells[i][j].resize(cells_per_dim);
 				for(int k=0; k<cells_per_dim; k++) {
 					
-					cells[i][j][k].phi = 0.0;
 					cells[i][j][k].vol = delta*delta*delta;
 					cells[i][j][k].r = {i*delta,j*delta,k*delta};
 					//cells[i][j][k].print();
@@ -470,7 +469,16 @@ public:
 		return (cellbeads == nbeads); 
 	}
 
-	bool checkHp1Consistency(int hp1_tot);
+	double densityCapEnergy(const std::unordered_set<Cell*>& flagged_cells)
+	{
+		// energy penalty due to density cap
+		double U = 0; 
+		for(Cell* cell : flagged_cells)
+		{
+			U += cell->getDensityCapEnergy();
+		}
+		return U;
+	}
 			
 	double energy(const std::unordered_set<Cell*>& flagged_cells, const Eigen::MatrixXd &chis)
 	{
@@ -483,28 +491,58 @@ public:
 		return U;
 	}
 
-	double tailEnergy(const std::unordered_set<Cell*>& flagged_cells)
+	double diagEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<double> diag_chis)
 	{
-		// HP1 oligomerization volume interactions
-		double U = 0;
+		// nonbonded volume interactions
+		double U = 0; 
 		for(Cell* cell : flagged_cells)
 		{
-			U += cell->getTailEnergy();
+			U += cell->getDiagEnergy(diag_chis);
 		}
 		return U;
 	}
 
+
 	double get_ij_Contacts(int i, int j) 
 	{
 		// calculates average phi_i phi_j
-		double n = 0;
+		double obs  = 0;
 		for(Cell* cell : active_cells)
 		{
-			n += cell->phis[i] * cell->phis[j];
+			obs += cell->phis[i] * cell->phis[j];
 		}
 
-		n /= active_cells.size(); 
-		return n;
+		obs /= active_cells.size(); 
+		return obs;
+	}
+
+	void getDiagObs(std::vector<double> &diag_obs)
+	{
+		for (Cell* cell : active_cells)
+		{
+			for(int i=0; i<diag_obs.size(); i++)
+			{
+				diag_obs[i] += cell->diag_phis[i] * cell->diag_phis[i];
+			}
+		}
+
+		for (int i=0; i<diag_obs.size(); i++)
+		{
+			diag_obs[i] /= active_cells.size();
+		}
+	}
+
+	double cellCount()
+	{
+		int sum = 0;
+		int num = 0;
+		for (Cell* cell : active_cells)
+		{
+			sum += cell->contains.size();
+			num++;
+		}
+
+		return (double) sum / (double) num;
 	}
 };
 
@@ -519,13 +557,11 @@ public:
 
 	double chi; 
 	Eigen::MatrixXd chis;
+	std::vector<double> diag_chis;
 	int nspecies; // number of different epigenetic marks
 	int nbeads; 
-	double hp1_mean_conc; 
-	double hp1_total; // conserved quantity 
 	double total_volume;
-	static int hp1_free;
-
+	double grid_size;
 
 	FILE *xyz_out; 
 	FILE *energy_out;
@@ -547,17 +583,15 @@ public:
 	int n_trans;// = decay_length; 
 	int n_crank;// = decay_length;
 	int n_pivot;// = decay_length;
-	int n_bind;// = 0;
 	int n_rot;// = nbeads;
 
 	int acc_trans = 0;
 	int acc_crank = 0;
 	int acc_pivot = 0;
 	int acc_rot = 0;
-	int acc_bind = 0;
 
 	bool production; // if false, equilibration
-	int nSteps;// = n_trans + n_crank + n_pivot + n_rot + n_bind;
+	int nSteps;// = n_trans + n_crank + n_pivot + n_rot
 	int nSweeps;
 	int dump_frequency; // dump every x sweeps
 	int dump_stats_frequency;
@@ -566,9 +600,11 @@ public:
 
 	bool bonded_on; 
 	bool nonbonded_on;
-	bool binding_on; 
 
 	bool gridmove_on;
+	bool diagonal_on;
+	bool plaid_on;
+	bool cellcount_on = true;
 
 	bool AB_block; // = true;
 	int domainsize = nbeads;
@@ -626,12 +662,6 @@ public:
 		}
 	}
 
-	double getChemPot()
-	{
-		// chemical potential based on [HP1_free] in micromolar. 
-		// Conversion ratio: (HP1_free/um^3) / [uM] = 602
-		return log(hp1_free/total_volume / (602));
-	}
 
 	Eigen::MatrixXd unit_vec(Eigen::MatrixXd b)
 	{
@@ -655,59 +685,81 @@ public:
 		std::ifstream i("config.json");
 		nlohmann::json config;
 		i >> config;
+
+		plaid_on = config["plaid_on"];
 		
-		nspecies = config["nspecies"];
-		load_chipseq = config["load_chipseq"];
-
-		if (load_chipseq)
+		if (plaid_on)
 		{
-			chis = Eigen::MatrixXd::Zero(nspecies, nspecies); 
+			nspecies = config["nspecies"];
+			load_chipseq = config["load_chipseq"];
 
-			char first = 'A' + 1;
-			for (int i=0; i<nspecies; i++)
+			if (load_chipseq)
 			{
+				chis = Eigen::MatrixXd::Zero(nspecies, nspecies); 
 
-				// should be included even if load_chipseq is false... fix later
-
-				for (int j=i; j<nspecies; j++)
+				char first = 'A' + 1;
+				for (int i=0; i<nspecies; i++)
 				{
-					//std::cout << i << ", " << j << std::endl;
-					char first = 'A' + i;
-					char second = 'A' + j;
-					//std::cout << first << ", " << second << std::endl;
-					std::string chistring = "chi";
-					chistring += first;
-					chistring += second;
-					std::cout << chistring << std::endl;
-					chis(i,j) = config[chistring];
-					std::cout << chistring << " " << chis(i,j) << std::endl;
+
+					// should be included even if load_chipseq is false... fix later
+
+					for (int j=i; j<nspecies; j++)
+					{
+						//std::cout << i << ", " << j << std::endl;
+						char first = 'A' + i;
+						char second = 'A' + j;
+						//std::cout << first << ", " << second << std::endl;
+						std::string chistring = "chi";
+						chistring += first;
+						chistring += second;
+						std::cout << chistring << std::endl;
+						chis(i,j) = config[chistring];         //  i must be less than j
+						std::cout << chistring << " " << chis(i,j) << std::endl;
+					}
 				}
-			}
 
-			for (auto file : config["chipseq_files"])
+				for (auto file : config["chipseq_files"])
+				{
+					chipseq_files.push_back(file);
+				}
+				std::cout << chipseq_files.size();
+
+				nspecies = chipseq_files.size();
+				Cell::ntypes = nspecies;
+				Bead::ntypes = nspecies;
+			}
+		}
+		else
+		{
+			nspecies = 0;
+			load_chipseq = false;
+		}
+
+		diagonal_on= config["diagonal_on"];
+		nbeads = config["nbeads"];
+
+		if (diagonal_on)
+		{
+			for (auto e : config["diag_chis"])
 			{
-				chipseq_files.push_back(file);
+				diag_chis.push_back(e);
 			}
-			std::cout << chipseq_files.size();
 
-			nspecies = chipseq_files.size();
-			Cell::ntypes = nspecies;
-			Bead::ntypes = nspecies;
+			Cell::diag_nbins = diag_chis.size();
+			std::cout << "number of bins: " << Cell::diag_nbins << std::endl;
+			Cell::diag_binsize = nbeads / diag_chis.size();
+			std::cout << "binsize " << Cell::diag_binsize << std::endl;
 		}
 
 		gridmove_on = config["gridmove_on"];
 	
-		std::cout << "made it out" << std::endl;
 		production = config["production"];
-		nbeads = config["nbeads"];
-		hp1_mean_conc = config["hp1_mean_conc"];
 		decay_length = config["decay_length"];
 		nSweeps = config["nSweeps"];
 		dump_frequency = config["dump_frequency"];
 		dump_stats_frequency = config["dump_stats_frequency"];
 		bonded_on = config["bonded_on"];
 		nonbonded_on = config["nonbonded_on"];
-		binding_on = config["binding_on"];
 		AB_block = config["AB_block"];
 		domainsize = config["domainsize"];
 		load_configuration = config["load_configuration"];
@@ -717,6 +769,8 @@ public:
 		print_trans = config["print_trans"];
 		print_acceptance_rates = config["print_acceptance_rates"];
 		contact_resolution = config["contact_resolution"];
+		grid_size = config["grid_size"];
+		//cellcount_on = config["cellcount_on"];
 
 		int seed = config["seed"];
 		rng = new RanMars(seed);
@@ -760,7 +814,9 @@ public:
 		std::cout << "Initializing simulation objects ... " << std::endl;
 		Timer t_init("Initializing");
 
-		grid.delta = 28.7; // grid cell size nm
+		//grid.delta = 28.7; // grid cell size nm
+		grid.delta = grid_size;
+		std::cout << "grid size is : " << grid.delta << std::endl;
 		step_grid = grid.delta/10.0; // size of grid displacement MC moves
 
 		double Vbar = 7765.77;  // nm^3/bead: reduced number volume per spakowitz: V/N
@@ -768,14 +824,13 @@ public:
 		grid.L= std::round(std::pow(vol,1.0/3.0) / grid.delta); // number of grid cells per side // ROUNDED, won't exactly equal a desired volume frac
 		std::cout << "grid.L is: " << grid.L << std::endl;
 		total_volume = pow(grid.L*grid.delta/1000.0, 3); // micrometers^3 ONLY TRUE FOR CUBIC SIMULATIONS 
+		std::cout << "volume is: " << total_volume << std::endl;
 
 		grid.radius = std::pow(3*vol/(4*M_PI), 1.0/3.0); // radius of simulation volume
 		grid.boundary_radius = std::round(grid.radius); // radius in units of grid cells
 		// sphere center needs to be centered on a multiple of grid delta
 		grid.sphere_center = {grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta};
 
-		hp1_free = hp1_mean_conc*total_volume* 602;
-		hp1_total = hp1_free;
 
 		exp_decay = nbeads/decay_length;             // size of exponential falloff for MCmove second bead choice
 		exp_decay_crank = nbeads/decay_length;
@@ -785,9 +840,8 @@ public:
 		n_trans = decay_length; 
 		n_crank = decay_length;
 		n_pivot = decay_length/10;
-		n_bind = nbeads;
 		n_rot = nbeads;
-		nSteps = n_trans + n_crank + n_pivot + n_rot + n_bind;
+		nSteps = n_trans + n_crank + n_pivot + n_rot;
 
 		double bondlength = 16.5;
 		beads.resize(nbeads);  // uses default constructor initialization to create nbeads;
@@ -859,63 +913,32 @@ public:
 			}
 		}
 
-		// set epigenetic sequence
-		if (load_chipseq) {
-			int marktype = 0;
-			for (std::string chipseq_file : chipseq_files)
-			{
-				std::ifstream IFCHIPSEQ;
-				int tail_marked;
-				IFCHIPSEQ.open(chipseq_file);
-				for(int i=0; i<nbeads; i++)
-				{
-					IFCHIPSEQ >> tail_marked;
-					if (tail_marked == 1)
-					{
-						beads[i].d[marktype] = 1;
-					}
-					else
-					{
-						beads[i].d[marktype] = 0;
-					}
-				}
-				marktype++;
-				IFCHIPSEQ.close();
+		//initialize
+        if (load_chipseq) {
+            int marktype = 0;
+            for (std::string chipseq_file : chipseq_files)
+            {
+                std::ifstream IFCHIPSEQ;
+                int tail_marked;
+                IFCHIPSEQ.open(chipseq_file);
+                for(int i=0; i<nbeads; i++)
+                {
+                    IFCHIPSEQ >> tail_marked;
+                    if (tail_marked == 1)
+                    {
+                        beads[i].d[marktype] = 1;
+                    }
+                    else
+                    {
+                        beads[i].d[marktype] = 0;
+                    }
+                }
+                marktype++;
+                IFCHIPSEQ.close();
+            }
+        }
 
-				// assigns methylation marks based on chipseq data 
-				/*
-				for(int i=0; i<nbeads; i++) {
-					IFCHIPSEQ >> ntails_methylated;
-					if (ntails_methylated == 2) {
-						beads[i].tail1.mark = 1;
-						beads[i].tail2.mark = 1;
-						beads[i].tails_methylated = 2;
-					}
-					else if (ntails_methylated == 1) {
-						beads[i].tail1.mark = 1;
-						beads[i].tails_methylated = 1;
-					}
-				}
-				*/
-			}
-		}
-		else {
-			// assigns methylation marks in a block polymer manner
-			int blocksize  = nbeads/5;
-			for(int i=0; i<nbeads; i++) {
-				if (i%blocksize < blocksize/3) {
-					beads[i].tail1.mark = 1;
-					beads[i].tail2.mark = 1;
-					beads[i].tails_methylated = 2;
-				}
-				else if (i%blocksize < 2*blocksize/3) {
-					beads[i].tail1.mark = 1;
-					beads[i].tails_methylated = 1;
-				}
-			}
-		}
-
-                // set domain sequence
+		// set domain sequence
 		if (AB_block) {
 			for(int i=0; i<nbeads; i++)
 			{
@@ -992,7 +1015,15 @@ public:
 		// gets all the nonbonded energy
 		auto start = std::chrono::high_resolution_clock::now();
 
-		double U = grid.energy(flagged_cells, chis);
+		double U = grid.densityCapEnergy(flagged_cells);
+		if (plaid_on)
+		{
+			U += grid.energy(flagged_cells, chis);
+		}
+		if (diagonal_on)
+		{
+			U += grid.diagEnergy(flagged_cells, diag_chis); 
+		}
 
 		auto stop = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
@@ -1000,18 +1031,11 @@ public:
 		return U;
 	}
 
-	double getBindingEnergy(const std::unordered_set<Cell*>& flagged_cells)
+	double getJustDiagEnergy(const std::unordered_set<Cell*>& flagged_cells)
 	{
-		// JUST CALCULATES THE VOLUME INTERACTION OF HP1, NOT ENERGY OF SPECIFIC TAIL BINDING
-		auto start = std::chrono::high_resolution_clock::now();
-		
-		double Energy = grid.tailEnergy(flagged_cells);
-
-		auto stop = std::chrono::high_resolution_clock::now();
-		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
-		//std::cout << "Binding took " << duration.count() << "microseseconds "<< std::endl;
-	
-		return Energy; 
+		// for when dumping energy; 
+		double U =  grid.diagEnergy(flagged_cells, diag_chis); 
+		return U;
 	}
 
 	double getTotalEnergy(int first, int last, const std::unordered_set<Cell*>& flagged_cells)
@@ -1019,7 +1043,6 @@ public:
 		double U = 0;
 		if (bonded_on) U += getBondedEnergy(first, last);
 		if (nonbonded_on) U += getNonBondedEnergy(flagged_cells);
-		if (binding_on) U += getBindingEnergy(flagged_cells);
 		return U;
 	}
 
@@ -1048,13 +1071,15 @@ public:
 		{
 			//std::cout << sweep << std::endl; 
 			double nonbonded;
+			//nonbonded = getNonBondedEnergy(grid.active_cells);
+			//std::cout << "beginning sim: nonbonded: " <<  grid.active_cells.size() << std::endl;
 
 		    looping:
 			Timer t_translation("translating", print_MC);
 			for(int j=0; j<n_trans; j++)
 			{
 				MCmove_translate();
-				//nonbonded = getNonBondedEnergy(grid.active_cells);
+				//nonbonded = getnonbondedenergy(grid.active_cells);
 				//std::cout << nonbonded << std::endl;
 			}
 			t_translation.~Timer();
@@ -1098,12 +1123,6 @@ public:
 			t_pivot.~Timer();
 
 
-			Timer t_bind("Binding", print_MC);
-			for(int j=0; j<n_bind; j++) {
-				//MCmove_bind();
-			}
-			t_bind.~Timer();
-
 			if (sweep%dump_frequency == 0) {
 				std::cout << "Sweep number " << sweep << std::endl;
 				dumpData();
@@ -1113,8 +1132,9 @@ public:
 					std::cout << "trans: " << (float) acc_trans/((sweep+1)*n_trans)*100 << "% \t";
 					std::cout << "crank: " << (float) acc_crank/((sweep+1)*n_crank)*100 << "% \t";
 					std::cout << "pivot: " << (float) acc_pivot/((sweep+1)*n_pivot)*100 << "% \t";
-					std::cout << "bind: " << (float) acc_bind/((sweep+1)*n_bind)*100 << "% \t";
-					std::cout << "rot: " << (float) acc_rot/((sweep+1)*n_rot)*100 << "%" << std::endl;;
+					std::cout << "rot: " << (float) acc_rot/((sweep+1)*n_rot)*100 << "% \t"; 
+					std::cout << "cellcount: " << grid.cellCount() << "% " << std::endl;
+					
 				}
 
 				if (production) {dumpContacts();}
@@ -1132,13 +1152,13 @@ public:
 				double bonded = getAllBondedEnergy();
 
 				double nonbonded = 0;
-				double binding = 0;
+				double diagonal = 0;
 				nonbonded = nonbonded_on ? getNonBondedEnergy(grid.active_cells) : 0;
-				binding = binding_on ? getBindingEnergy(grid.active_cells) : 0;
-				//std::cout << "binding " << bonded << " nonbonded " << nonbonded << " binding" << binding <<  std::endl;
+				diagonal = diagonal_on ? getJustDiagEnergy(grid.active_cells) : 0;
+				//std::cout << "bonded " << bonded << " nonbonded " << nonbonded << std::endl;
 				t_allenergy.~Timer();
 
-				dumpEnergy(sweep, bonded, nonbonded, binding);
+				dumpEnergy(sweep, bonded, nonbonded, diagonal);
 			}
 
 		}
@@ -1383,6 +1403,7 @@ public:
 			for(int i=first; i<=last; i++)
 			{
 				// save old configuration
+				// --------------------- can this be done more efficiently? ------------------------------------------
 				old_positions.push_back(beads[i].r);
 				old_orientations.push_back(beads[i].u);
 
@@ -1417,7 +1438,6 @@ public:
 
 			// calculate old nonbonded energy based on flagged cells
 			if (nonbonded_on) Uold += getNonBondedEnergy(flagged_cells);
-			if (binding_on) Uold += getBindingEnergy(flagged_cells);
 
 			
 			// Update grid
@@ -1579,7 +1599,6 @@ public:
 
 			// calculate old nonbonded energy based on flagged cells
 			if(nonbonded_on) Uold += getNonBondedEnergy(flagged_cells);
-			if(binding_on) Uold += getBindingEnergy(flagged_cells);
 			
 			// Update grid
 			//for(std::pair<int, std::pair<Cell*, Cell*>> &x : bead_swaps)
@@ -1629,47 +1648,6 @@ public:
 
 	}
 
-	void MCmove_bind()
-	{
-		// pick random particle
-		int o = floor(beads.size()*rng->uniform());
-
-		bool flip2 = round(rng->uniform());       // flip 1 or 2 tails?
-		bool flip_first = round(rng->uniform());  // if 1, which tail to flip? 
-
-		Cell* current_cell = grid.getCell(beads[o]); 
-		double Uold = beads[o].tailEnergy(getChemPot()) + current_cell->getTailEnergy();  
-
-		if (flip2) {
-			beads[o].tail1.flipBind(current_cell);
-			beads[o].tail2.flipBind(current_cell);
-		}
-		else {  // only flip one tail
-			(flip_first) ? beads[o].tail1.flipBind(current_cell) : beads[o].tail2.flipBind(current_cell);
-		}
-
-		double Unew = beads[o].tailEnergy(getChemPot()) + current_cell->getTailEnergy();
-
-		if (rng->uniform() < exp(Uold-Unew))
-		{
-			//std::cout << "Accepted"<< std::endl;
-			acc += 1;
-			acc_bind += 1;
-		}
-		else
-		{
-			//std::cout << "Rejected" << std::endl;
-			
-			if (flip2) {
-				beads[o].tail1.flipBind(current_cell);
-				beads[o].tail2.flipBind(current_cell);
-			}
-			else {
-				(flip_first) ? beads[o].tail1.flipBind(current_cell) : beads[o].tail2.flipBind(current_cell);
-			}
-		}
-	}
-
 	void MCmove_grid()
 	{
 		// not really a MC move (metropolis criterion doesn't apply) 
@@ -1711,38 +1689,6 @@ public:
 	}
 
 	
-	void printTailComposition()
-	{
-		double HP1_un = 0;
-		double HP1_on = 0;
-		double HP1_di = 0;
-
-		double HP1_un_tot = 0;
-		double HP1_on_tot = 0;
-		double HP1_di_tot = 0;
-
-		if (!load_chipseq)
-		{
-			HP1_un_tot = nbeads/3*2;
-			HP1_on_tot = nbeads/3*2;
-			HP1_di_tot = nbeads/3*2;
-		}
-		
-		for(Bead bead : beads)
-		{
-			if (bead.tails_methylated == 0) {
-				HP1_un += bead.nbound();
-			}
-			else if (bead.tails_methylated == 1) {
-				HP1_on += bead.nbound();
-			}
-			else { HP1_di += bead.nbound();}
-		}
-
-		//std::cout << "free HP1 is : " << HP1_free << std::endl; // need to modify for Sim::HP1_free
-		std::cout << "none: " << HP1_un/HP1_un_tot << " me3: " << HP1_on/HP1_on_tot << " 2xme3: " << HP1_di/HP1_di_tot << std::endl;
-	}
-
 	void dumpData() 
 	{ 
 		xyz_out = fopen("./data_out/output.xyz", "a");
@@ -1751,15 +1697,14 @@ public:
 
 		for(Bead bead : beads)
 		{
-		    //int epimark = bead.tail1.mark + bead.tail2.mark;
-		    //int bindmark = bead.tail1.bound + bead.tail2.bound;
-		    //fprintf(xyz_out, "%d\t %lf\t %lf\t %lf\t %d\t %d\t %d\n" , bead.id,bead.r(0),bead.r(1),bead.r(2), epimark, bead.nbound(), bead.d);
-
 			fprintf(xyz_out, "%d\t %lf\t %lf\t %lf\t" , bead.id,bead.r(0),bead.r(1),bead.r(2));
 
-			for(int i=0; i<nspecies; i++)
+			if (plaid_on)
 			{
-				fprintf(xyz_out, "%d\t", bead.d[i]);
+				for(int i=0; i<nspecies; i++)
+				{
+					fprintf(xyz_out, "%d\t", bead.d[i]);
+				}
 			}
 
 			fprintf(xyz_out, "\n");
@@ -1767,10 +1712,10 @@ public:
 		fclose(xyz_out); 
 	}
 
-	void dumpEnergy(int sweep, double bonded=0, double nonbonded=0, double binding=0)
+	void dumpEnergy(int sweep, double bonded=0, double nonbonded=0, double diagonal=0)
 	{
 		energy_out = fopen("./data_out/energy.traj", "a");
-		fprintf(energy_out, "%d\t %lf\t %lf\t %lf\n", sweep, bonded, nonbonded, binding);
+		fprintf(energy_out, "%d\t %lf\t %lf\t %lf\n", sweep, bonded, nonbonded, diagonal);
 		fclose(energy_out);
 	}
 
@@ -1779,12 +1724,26 @@ public:
 		obs_out = fopen("./data_out/observables.traj", "a");
 		fprintf(obs_out, "%d\t", sweep);
 
-		for (int i=0; i<nspecies; i++)
+		if (plaid_on)
 		{
-			for (int j=i; j<nspecies; j++)
+			for (int i=0; i<nspecies; i++)
 			{
-				double ij_contacts = grid.get_ij_Contacts(i, j);
-				fprintf(obs_out, "%lf\t", ij_contacts);
+				for (int j=i; j<nspecies; j++)
+				{
+					double ij_contacts = grid.get_ij_Contacts(i, j);
+					fprintf(obs_out, "%lf\t", ij_contacts);
+				}
+			}
+		}
+
+		if (diagonal_on)
+		{
+			std::vector<double> diag_obs(diag_chis.size(), 0.0);
+			grid.getDiagObs(diag_obs);
+
+			for(auto& e : diag_obs)
+			{
+				fprintf(obs_out, "%lf\t", e);
 			}
 		}
 
@@ -1816,43 +1775,14 @@ public:
 		MC(); // MC simulation
 		dumpContacts();
 		assert (grid.checkCellConsistency(nbeads));
-		assert (grid.checkHp1Consistency(hp1_total));
 	}
 };
 
-int Sim::hp1_free;
 int Bead::ntypes;
 int Cell::ntypes;
+int Cell::diag_nbins;
+double Cell::diag_binsize;
 
-void Tail::flipBind(Cell* cell_inside)
-{
-	// update HP1 globally and locally in the cell
-	if (bound)
-	{
-		cell_inside->local_HP1 -= 1;
-		Sim::hp1_free += 1;
-	}
-	else {
-		cell_inside->local_HP1 += 1;
-		Sim::hp1_free -= 1;
-	}
-
-	// flip the binding state
-	bound = !bound;
-}
-
-bool Grid::checkHp1Consistency(int hp1_tot)
-{
-	// checks to see if the number of HP1 proteins is conserved
-	double cellhp1 = 0;
-	for(Cell* cell : active_cells)
-	{
-		cellhp1 += cell->local_HP1;
-	}
-
-	cellhp1 += Sim::hp1_free;
-	return (cellhp1 == hp1_tot);
-}
 
 int main()
 {
