@@ -9,4 +9,4 @@ all:
 	$(CC) $(FLAGS) $(INCLUDE) $(SRC) $(OUT)
 
 debug: 
-	$(CC) $(DEBUG_FLAGGS) $(INCLUDE) $(SRC) $(OUT)
+	$(CC) $(DEBUG_FLAGS) $(INCLUDE) $(SRC) $(OUT)

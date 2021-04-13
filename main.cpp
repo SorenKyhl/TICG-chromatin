@@ -15,9 +15,14 @@
 #include "nlohmann/json.hpp"
 #include "prof_timer.cpp"
 
+#include "Bead.h"
+#include "Bond.h"
+#include "DSS_Bond.h"
+
 unsigned long nbeads_moved = 0;
 //RanMars rng(1);
 
+/*
 class Bead {
 public:
 	Bead(int i, double x=0, double y=0, double z=0)
@@ -36,8 +41,10 @@ public:
 
 	void print() {std::cout << id <<" "<< r << std::endl;}
 };
+*/
 
 
+/*
 // abstract class
 class Bond {
 public:
@@ -50,8 +57,10 @@ public:
 	void print() {std::cout << pbead1->id <<" "<< pbead2->id << std::endl;}
 	virtual double energy() = 0; 
 };
+*/
 
 
+/*
 // Discrete, Shearable, Stretchable bond (see:) 
 // Koslover, Spakowitz
 // "Discretizing elastic chains for coarse-grained polymer models" 
@@ -72,14 +81,12 @@ public:
 	double energy()
 	{
 		// DELTA = 1
-		/*
-		double delta = 1;
-		double ata =  2.7887;
-		double gamma = 0.83281;
-		double eps_bend = 1.4668;
-		double eps_parl = 34.634;
-		double eps_perp = 16.438;
-		*/
+		// double delta = 1;
+		// double ata =  2.7887;
+		// double gamma = 0.83281;
+		// double eps_bend = 1.4668;
+		// double eps_parl = 34.634;
+		// double eps_perp = 16.438;
 
 		// DELTA = 0.33 
 		double delta = 16.5;       // dimless (is it 16.5 or 0.33?)
@@ -115,8 +122,9 @@ public:
 		return U;
 	}
 };
+*/
 
-
+/*
 class Harmonic_Bond : public Bond {
 public:
 	Harmonic_Bond(Bead* bead1, Bead* bead2, double kk, double r00) 
@@ -132,8 +140,10 @@ public:
 		return k*(r- r0)*(r - r0); 
 	}
 };
+*/
 
 
+/*
 // abstract class
 class Angle {
 public:
@@ -147,8 +157,9 @@ public:
 	void print() {std::cout << pbead1->id <<" "<< pbead2->id <<" "<< pbead3->id << std::endl;}
 	virtual double energy() = 0; 
 };
+*/
 
-
+/*
 // abstract class
 class Dihedral {
 public:
@@ -163,18 +174,17 @@ public:
 	void print() {std::cout << pbead1->id <<" "<< pbead2->id <<" "<< pbead3->id <<" "<< pbead4->id << std::endl;}
 	virtual double energy() = 0; 
 };
+*/
 
 
 class Cell {
 public:
-	Eigen::RowVector3d r; // corner of cell == CURRENTLY UNUSED
+	Eigen::RowVector3d r; // corner of cell... position RELATIVE TO ORIGIN... the grid origin diffuses
 	std::unordered_set<Bead*> contains; // beads associated inside this gridpoint
-	double vol;
-	int local_HP1; // local number of HP1
+	double vol;		                // volume of cell
 	static const int beadvol = 520; // volume of a bead in the cell. 
-	static constexpr double vint = 4/3*M_PI*3*3*3; // volume of HP1 interaction
-	static constexpr double J = -4;  // kT 
 
+	// number of bead types
 	static int ntypes;
 	std::vector<int> typenums = std::vector<int>(ntypes); // always up-to-date
 	std::vector<double> phis = std::vector<double>(ntypes); // only up-to-date after energy calculation
@@ -186,12 +196,12 @@ public:
 	void print() 
 	{
 		std::cout << r << "     N: " << contains.size() << std::endl;
+		/*
 		for (Bead* bead : contains)
 		{
-			//std::cout << "With beads: " << contains.size() << std::endl;
-			//bead->print();
+			bead->print();
 		};
-
+		*/
 	}
 
 	void reset()
@@ -206,8 +216,6 @@ public:
 	{
 		// updates local number of each type of bead, but does not recalculate phis
 		contains.insert(bead);
-		//typenums += bead->d;
-
 		for(int i=0; i<ntypes; i++)
 		{
 			typenums[i] += bead->d[i];
@@ -218,8 +226,6 @@ public:
 	{
 		// updates local number of each type of bead, but does not recalculate phis
 		contains.erase(bead);
-		//typenums -= bead->d;
-
 		for(int i=0; i<ntypes; i++)
 		{
 			typenums[i] -= bead->d[i];
@@ -336,17 +342,17 @@ public:
 	std::vector<std::vector<std::vector<Cell>>> cells; 
 	std::unordered_set<Cell*> active_cells;       // cells marked as active (within simulation region)
 
-	double delta;              // grid cell size 
+	double delta;              // grid cell size (length)
 
 	bool cubic_boundary = true;
 	bool spherical_boundary = false;
 
-	int L;                     // size of cubic boundary in units of grid cells
-	double radius;              // radius of simulation volume in [nanometers]
+	int L;                        // size of cubic boundary in units of grid cells
+	double radius;                // radius of simulation volume in [nanometers]
 	int boundary_radius;          // radius of boundary in units of grid cells
 	Eigen::RowVector3d sphere_center; // center of spherical boundary
 
-	// bottom-left-most grid cell: 
+	// origin is the bottom-left-most grid cell for cubic simulations
 	// With grid moves on, it will diffuse with periodic boundaries
 	// inside the volume bounded by (-delta, -delta, -delta) and (0,0,0) 
 	Eigen::RowVector3d origin; 
@@ -366,7 +372,7 @@ public:
 				for(int k=0; k<cells_per_dim; k++) {
 					
 					cells[i][j][k].vol = delta*delta*delta;
-					cells[i][j][k].r = {i*delta,j*delta,k*delta};
+					cells[i][j][k].r = {i*delta,j*delta,k*delta}; // position relative to origin
 					//cells[i][j][k].print();
 				}
 			}
@@ -414,20 +420,19 @@ public:
 		}
 	}
 
-
 	void meshBeads(std::vector<Bead> &beads)
 	{
 		// Inserts all beads into their corresponding grid cells
 		for(int i=0; i<cells.size(); i++) {
 			for(int j=0; j<cells[i].size(); j++) {
 				for(int k=0; k<cells[i][j].size(); k++) {
-					cells[i][j][k].reset();
+					cells[i][j][k].reset(); // initialize cells to contain no beads
 				}
 			}
 		}
 
 		int i, j, k;
-		for(Bead& bead : beads)   // the reference is crucial-- otherwise, copies are made in the for-each loop
+		for(Bead& bead : beads)
 		{
 			i = floor((bead.r(0) - origin(0))/delta);
 			j = floor((bead.r(1) - origin(1))/delta);
@@ -553,7 +558,7 @@ public:
 	std::vector<Bond*> bonds; // pointers because Bond class is virtual
 	Grid grid;
 
-	RanMars* rng; 
+	RanMars* rng;  // random number generator
 
 	double chi; 
 	Eigen::MatrixXd chis;
@@ -563,6 +568,7 @@ public:
 	double total_volume;
 	double grid_size;
 
+	// output files
 	FILE *xyz_out; 
 	FILE *energy_out;
 	FILE *obs_out;
@@ -572,19 +578,20 @@ public:
 	int exp_decay;// = nbeads/decay_length;             // size of exponential falloff for MCmove second bead choice
 	int exp_decay_crank;// = nbeads/decay_length;
 	int exp_decay_pivot;// = nbeads/decay_length;
-	double step_disp = 1;
+	double step_disp = 5;
 	double step_trans = 2;
 	double step_crank = M_PI/6;
 	double step_pivot = M_PI/6;
 	double step_rot = M_PI/12;
 	double step_grid; // based off fraction of delta, see initialize
 
-	int n_disp;// = 0;
-	int n_trans;// = decay_length; 
-	int n_crank;// = decay_length;
-	int n_pivot;// = decay_length;
-	int n_rot;// = nbeads;
+	int n_disp;
+	int n_trans;
+	int n_crank;
+	int n_pivot;
+	int n_rot;
 
+	int acc_disp = 0;
 	int acc_trans = 0;
 	int acc_crank = 0;
 	int acc_pivot = 0;
@@ -600,6 +607,12 @@ public:
 
 	bool bonded_on; 
 	bool nonbonded_on;
+
+	bool displacement_on;
+	bool translation_on;
+	bool crankshaft_on;
+	bool pivot_on;
+	bool rotate_on;
 
 	bool gridmove_on;
 	bool diagonal_on;
@@ -760,7 +773,11 @@ public:
 		dump_stats_frequency = config["dump_stats_frequency"];
 		bonded_on = config["bonded_on"];
 		nonbonded_on = config["nonbonded_on"];
-		AB_block = config["AB_block"];
+		displacement_on = config["displacement_on"];
+		translation_on = config["translation_on"];
+		crankshaft_on = config["crankshaft_on"];
+		pivot_on = config["pivot_on"];
+		rotate_on = config["rotate_on"];
 		domainsize = config["domainsize"];
 		load_configuration = config["load_configuration"];
 		load_configuration_filename = config["load_configuration_filename"];
@@ -814,7 +831,6 @@ public:
 		std::cout << "Initializing simulation objects ... " << std::endl;
 		Timer t_init("Initializing");
 
-		//grid.delta = 28.7; // grid cell size nm
 		grid.delta = grid_size;
 		std::cout << "grid size is : " << grid.delta << std::endl;
 		step_grid = grid.delta/10.0; // size of grid displacement MC moves
@@ -829,18 +845,19 @@ public:
 		grid.radius = std::pow(3*vol/(4*M_PI), 1.0/3.0); // radius of simulation volume
 		grid.boundary_radius = std::round(grid.radius); // radius in units of grid cells
 		// sphere center needs to be centered on a multiple of grid delta
-		grid.sphere_center = {grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta};
+		//grid.sphere_center = {grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta};
+		grid.origin = {grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta};
 
 
 		exp_decay = nbeads/decay_length;             // size of exponential falloff for MCmove second bead choice
 		exp_decay_crank = nbeads/decay_length;
 		exp_decay_pivot = nbeads/decay_length;
 
-		n_disp = 0;
-		n_trans = decay_length; 
-		n_crank = decay_length;
-		n_pivot = decay_length/10;
-		n_rot = nbeads;
+		n_disp = displacement_on ? nbeads : 0;
+		n_trans = translation_on ? decay_length : 0; 
+		n_crank = crankshaft_on ? decay_length : 0;
+		n_pivot = pivot_on ? decay_length/10: 0;
+		n_rot = rotate_on ? nbeads : 0;
 		nSteps = n_trans + n_crank + n_pivot + n_rot;
 
 		double bondlength = 16.5;
@@ -913,7 +930,7 @@ public:
 			}
 		}
 
-		//initialize
+		// set up chipseq
         if (load_chipseq) {
             int marktype = 0;
             for (std::string chipseq_file : chipseq_files)
@@ -923,6 +940,7 @@ public:
                 IFCHIPSEQ.open(chipseq_file);
                 for(int i=0; i<nbeads; i++)
                 {
+					beads[i].d.reserve(nspecies);
                     IFCHIPSEQ >> tail_marked;
                     if (tail_marked == 1)
                     {
@@ -938,34 +956,6 @@ public:
             }
         }
 
-		// set domain sequence
-		if (AB_block) {
-			for(int i=0; i<nbeads; i++)
-			{
-				//if (i%domainsize < domainsize/2.0)
-				//{
-				//	beads[i].d = Bead::A;
-				//}
-				//else
-				//{
-				//	beads[i].d = Bead::B;
-				//}
-
-				double sig = 500.0;
-				double prob = gaussian(2000.0, sig, i) + gaussian(6000.0, sig, i);
-				double rndDouble = (double)rand() / RAND_MAX;
-
-				if(rndDouble < prob)
-				{
-					beads[i].d[0] = 1; //Bead::A;
-				}
-				else
-				{
-					beads[i].d[1]= 1; // Bead::B;
-				}
-			}
-		}
-
 		// set bonds
 		bonds.resize(nbeads-1); // use default constructor
 		for(int i=0; i<nbeads-1; i++)
@@ -973,16 +963,8 @@ public:
 			bonds[i] = new DSS_Bond{&beads[i], &beads[i+1]};
 		}
 
-		// output for vis.
 		dumpData();
-		//dumpEnergy(0);
 		std::cout << "Objects created" << std::endl;
-	}
-
-	double gaussian(double mu, double sig, double x)
-	{
-		// un-normalized gaussian
-		return std::exp(-std::pow(x-mu,2)/(2*sig*sig));
 	}
 
 	void print()
@@ -1129,11 +1111,14 @@ public:
 				
 				if (print_acceptance_rates) {
 					std::cout << "acceptance rate: " << (float) acc/((sweep+1)*nSteps)*100.0 << "%" << std::endl;
-					std::cout << "trans: " << (float) acc_trans/((sweep+1)*n_trans)*100 << "% \t";
-					std::cout << "crank: " << (float) acc_crank/((sweep+1)*n_crank)*100 << "% \t";
-					std::cout << "pivot: " << (float) acc_pivot/((sweep+1)*n_pivot)*100 << "% \t";
-					std::cout << "rot: " << (float) acc_rot/((sweep+1)*n_rot)*100 << "% \t"; 
-					std::cout << "cellcount: " << grid.cellCount() << "% " << std::endl;
+
+					if (displacement_on) std::cout << "disp: " << (float) acc_disp/((sweep+1)*n_disp)*100 << "% \t";
+					if (translation_on) std::cout << "trans: " << (float) acc_trans/((sweep+1)*n_trans)*100 << "% \t";
+					if (crankshaft_on) std::cout << "crank: " << (float) acc_crank/((sweep+1)*n_crank)*100 << "% \t";
+					if (pivot_on) std::cout << "pivot: " << (float) acc_pivot/((sweep+1)*n_pivot)*100 << "% \t";
+					if (rotate_on) std::cout << "rot: " << (float) acc_rot/((sweep+1)*n_rot)*100 << "% \t"; 
+					//std::cout << "cellcount: " << grid.cellCount();
+					std::cout << std::endl;
 					
 				}
 
@@ -1149,11 +1134,11 @@ public:
 				}
 
 				Timer t_allenergy("all energy", print_MC);
-				double bonded = getAllBondedEnergy();
 
+				double bonded = getAllBondedEnergy();
 				double nonbonded = 0;
-				double diagonal = 0;
 				nonbonded = nonbonded_on ? getNonBondedEnergy(grid.active_cells) : 0;
+				double diagonal = 0;
 				diagonal = diagonal_on ? getJustDiagEnergy(grid.active_cells) : 0;
 				//std::cout << "bonded " << bonded << " nonbonded " << nonbonded << std::endl;
 				t_allenergy.~Timer();
@@ -1169,7 +1154,7 @@ public:
 	
 	void MCmove_displace()
 	{
-		Timer t_displacemove("Displacement move");
+	    Timer t_displacemove("Displacement move", print_MC);
 		// pick random particle
 		int o = floor(beads.size()*rng->uniform());
 
@@ -1180,13 +1165,14 @@ public:
 		displacement = step_disp*unit_vec(displacement);
 
 		Eigen::RowVector3d new_location = beads[o].r + displacement;
-		Cell* new_cell = grid.getCell(new_location);
 
 		// check if exited the simulation box, if so reject the move
 		if (outside_boundary(new_location))
 		{
 			return;
 		}
+
+		Cell* new_cell = grid.getCell(new_location);
 
 		std::unordered_set<Cell*> flagged_cells;
 		flagged_cells.insert(old_cell);
@@ -1210,6 +1196,8 @@ public:
 		{
 			//std::cout << "Accepted"<< std::endl;
 			acc += 1;
+			acc_disp += 1;
+			nbeads_moved += 1;
 		}
 		else
 		{
@@ -1530,6 +1518,9 @@ public:
 		// chose one end of the polymer and a pivot bead
 		int end = (nbeads-1)*round(rng->uniform()); //  either first bead or last bead
 
+		end = nbeads-1;
+		std::cout << "pivoting: " << end << std::endl;
+
 		// pick second bead according to single-sided exponential distribution away from end
 		int length;
 		do {
@@ -1613,14 +1604,14 @@ public:
 
 			if (rng->uniform() < exp(Uold-Unew))
 			{
-				//std::cout << "Accepted"<< std::endl;
+				std::cout << "Accepted"<< std::endl;
 				acc += 1;
 				acc_pivot += 1;
 				nbeads_moved += (last-first);
 			}
 			else
 			{
-				//std::cout << "Rejected" << std::endl;
+				std::cout << "Rejected" << std::endl;
 				throw "rejected";
 			}
 		}
@@ -1673,17 +1664,18 @@ public:
 
 			U = getNonBondedEnergy(grid.active_cells);
 
+			// don't accept if move violates density maximum
 			if (U < 9999999999)
 			{ 
-				flag = false;
 				//std::cout << "passed grid move" << std::endl;
+				flag = false;
 			}
 			else
 			{
+				//std::cout << "failed grid move" << std::endl;
 				flag = false;
 				grid.origin = old_origin;
-				grid.meshBeads(beads);
-				//std::cout << "failed grid move" << std::endl;
+				grid.meshBeads(beads); // remesh back with old origin
 			}
 		}
 	}
@@ -1782,7 +1774,6 @@ int Bead::ntypes;
 int Cell::ntypes;
 int Cell::diag_nbins;
 double Cell::diag_binsize;
-
 
 int main()
 {
