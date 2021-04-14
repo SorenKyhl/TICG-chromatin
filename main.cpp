@@ -19,164 +19,6 @@
 #include "Bond.h"
 #include "DSS_Bond.h"
 
-unsigned long nbeads_moved = 0;
-//RanMars rng(1);
-
-/*
-class Bead {
-public:
-	Bead(int i, double x=0, double y=0, double z=0)
-		: id{i}, r{x,y,z}  {}
-	
-	Bead() 
-		: id{0}, r{0,0,0} {}
-
-	int id;   // unique identifier: uniqueness not strictly enforced.
-	Eigen::RowVector3d r; // position
-	Eigen::RowVector3d u; // orientation
-
-	// number of different bead types
-	static int ntypes;
-	std::vector<int> d = std::vector<int>(ntypes);
-
-	void print() {std::cout << id <<" "<< r << std::endl;}
-};
-*/
-
-
-/*
-// abstract class
-class Bond {
-public:
-	Bond(Bead* b1, Bead* b2)
-		: pbead1{b1}, pbead2{b2} {}
-
-	Bead* pbead1;
-	Bead* pbead2;
-
-	void print() {std::cout << pbead1->id <<" "<< pbead2->id << std::endl;}
-	virtual double energy() = 0; 
-};
-*/
-
-
-/*
-// Discrete, Shearable, Stretchable bond (see:) 
-// Koslover, Spakowitz
-// "Discretizing elastic chains for coarse-grained polymer models" 
-// Soft Matter, 2013
-// DOI: 10.1039/C3SM50311A
-class DSS_Bond : public Bond {
-public:
-	DSS_Bond(Bead* bead1, Bead* bead2) 
-		: Bond{bead1, bead2} {}
-
-        double delta;
-        double ata;
-        double gamma;
-        double eps_bend;
-        double eps_parl;
-        double eps_perp;
-
-	double energy()
-	{
-		// DELTA = 1
-		// double delta = 1;
-		// double ata =  2.7887;
-		// double gamma = 0.83281;
-		// double eps_bend = 1.4668;
-		// double eps_parl = 34.634;
-		// double eps_perp = 16.438;
-
-		// DELTA = 0.33 
-		double delta = 16.5;       // dimless (is it 16.5 or 0.33?)
-		double ata = 0.152;        // nm-1
-		double gamma = 0.938;      // dimless
-		double eps_bend = 78.309;  // kT nm
-		double eps_parl = 2.665;   // kT/nm
-		double eps_perp = 1.942;   // kT/nm
-
-		double U = 0;
-
-		Eigen::RowVector3d R = pbead2->r - pbead1->r;              
-		Eigen::RowVector3d Rparl = R.dot(pbead1->u)*pbead1->u;
-		Eigen::RowVector3d Rperp = R - Rparl;
-
-		// checks:
-		//cout << "-------" << endl;
-		//cout << "R is :         " << R << endl;
-		//cout << "R|_ + R||   =  " << Rparl + Rperp << endl;
-		//cout << "R|_ dot R|| =  " << Rparl.dot(Rperp) << endl;
-		//cout << "R|| norm is   : " << Rparl.norm() << endl;
-		//cout << "R|| norm is   : " << R.dot(pbead1->u) << endl;
-
-		//U += eps_bend*(u.row(i) - u.row(i-1) - ata*Rperp).squaredNorm();  // bend energy
-		//U += eps_parl*pow((R.dot(u.row(i-1)) - delta*gamma), 2);               // stretch energy
-		//U += eps_perp*Rperp.squaredNorm();                                // shear energy
-
-		U += eps_bend*(pbead2->u - pbead1->u - ata*Rperp).squaredNorm();
-		U += eps_parl*pow((R.dot(pbead1->u) - delta*gamma), 2);
-		U += eps_perp*Rperp.squaredNorm(); 
-		U /= 2*delta;
-
-		return U;
-	}
-};
-*/
-
-/*
-class Harmonic_Bond : public Bond {
-public:
-	Harmonic_Bond(Bead* bead1, Bead* bead2, double kk, double r00) 
-		: Bond{bead1, bead2}, k{kk}, r0{r00} {}
-
-	double k;
-	double r0;
-
-	double energy()
-	{
-		Eigen::RowVector3d displacement = pbead2->r - pbead1->r; 
-		double r = sqrt(displacement.dot(displacement));
-		return k*(r- r0)*(r - r0); 
-	}
-};
-*/
-
-
-/*
-// abstract class
-class Angle {
-public:
-	Angle(Bead* b1, Bead* b2, Bead* b3)
-		: pbead1{b1}, pbead2{b2}, pbead3{b3} {}
-
-	Bead* pbead1;
-	Bead* pbead2;
-	Bead* pbead3;
-
-	void print() {std::cout << pbead1->id <<" "<< pbead2->id <<" "<< pbead3->id << std::endl;}
-	virtual double energy() = 0; 
-};
-*/
-
-/*
-// abstract class
-class Dihedral {
-public:
-	Dihedral (Bead* b1, Bead* b2, Bead* b3, Bead* b4)
-		: pbead1{b1}, pbead2{b2}, pbead3{b3}, pbead4{b4} {}
-
-	Bead* pbead1;
-	Bead* pbead2;
-	Bead* pbead3;
-	Bead* pbead4;
-
-	void print() {std::cout << pbead1->id <<" "<< pbead2->id <<" "<< pbead3->id <<" "<< pbead4->id << std::endl;}
-	virtual double energy() = 0; 
-};
-*/
-
-
 class Cell {
 public:
 	Eigen::RowVector3d r; // corner of cell... position RELATIVE TO ORIGIN... the grid origin diffuses
@@ -193,15 +35,15 @@ public:
 	static int diag_nbins;
 	std::vector<double> diag_phis = std::vector<double>(diag_nbins);
 
+	static bool diagonal_linear;
+
 	void print() 
 	{
 		std::cout << r << "     N: " << contains.size() << std::endl;
-		/*
 		for (Bead* bead : contains)
 		{
 			bead->print();
 		};
-		*/
 	}
 
 	void reset()
@@ -293,19 +135,17 @@ public:
 		}
 
 		double Udiag = 0;
-		/*
-		int index;
-		for (Bead* bead1 : contains)
-		{
-			for (Bead* bead2 : contains)
-			{
-				index = std::floor( abs(bead1->id - bead2->id) / diag_binsize);
-				assert (index >= 0);
-				assert (index <= diag_nbins);
-				diag_phis[index] += 1; // diag phis is just a count, multiply by volumes later
-			}
-		}
-		*/
+		//int index;
+		//for (Bead* bead1 : contains)
+		//{
+			//for (Bead* bead2 : contains)
+			//{
+				//index = std::floor( abs(bead1->id - bead2->id) / diag_binsize);
+				//assert (index >= 0);
+				//assert (index <= diag_nbins);
+				//diag_phis[index] += 1; // diag phis is just a count, multiply by volumes later
+			//}
+		//}
 		int d_index; // genomic separation (index for diag_phis)
 		int imax = (int) contains.size();
 		std::vector<int> indices;
@@ -314,6 +154,7 @@ public:
 			indices.push_back(elem->id);
 		}
 
+		// count pairwise contacts 
 		for (int i=0; i<imax-1; i++)
 		{
 			for(int j=i+1; j<imax; j++)
@@ -326,16 +167,21 @@ public:
 		for (int i=0; i<diag_nbins; i++)
 		{
 			diag_phis[i] *= beadvol/vol; // convert to actual volume fraction
-			Udiag += diag_chis[i] * diag_phis[i]*diag_phis[i];
+
+			if (diagonal_linear) {
+				Udiag += diag_chis[i]*diag_phis[i];
+			}
+			else {
+				Udiag += diag_chis[i]* diag_phis[i]*diag_phis[i];
+			}
 		}
 
 		// multiply by vol/beadvol to calculate mean-field energy
-		Udiag *= vol/beadvol; 
+		// needs to be different for linear case?
+		//if(!diagonal_linear) { Udiag *= vol/beadvol;}
 		return Udiag; 
 	}
-
 };
-
 
 class Grid {
 public:
@@ -527,7 +373,12 @@ public:
 		{
 			for(int i=0; i<diag_obs.size(); i++)
 			{
-				diag_obs[i] += cell->diag_phis[i] * cell->diag_phis[i];
+				if (Cell::diagonal_linear) {
+					diag_obs[i] += cell->diag_phis[i];
+				}
+				else {
+					diag_obs[i] += cell->diag_phis[i] * cell->diag_phis[i];
+				}
 			}
 		}
 
@@ -572,6 +423,8 @@ public:
 	FILE *xyz_out; 
 	FILE *energy_out;
 	FILE *obs_out;
+	FILE *diag_obs_out;
+	FILE *density_out;
 
 	// MC variables
 	int decay_length; 
@@ -622,6 +475,7 @@ public:
 	bool AB_block; // = true;
 	int domainsize = nbeads;
 
+	bool track_contactmap;
 	bool load_chipseq;
 	bool load_configuration;
 	std::string load_configuration_filename; 
@@ -641,8 +495,11 @@ public:
 	bool print_trans; // = false;
 	bool print_acceptance_rates; // = true;
 
+	unsigned long nbeads_moved = 0;
+
 	std::vector<std::vector<int>> contact_map;
 	int contact_resolution; //= 500;
+	bool dump_density;
 
 	void setupContacts()
 	{
@@ -739,7 +596,6 @@ public:
 
 				nspecies = chipseq_files.size();
 				Cell::ntypes = nspecies;
-				Bead::ntypes = nspecies;
 			}
 		}
 		else
@@ -787,6 +643,9 @@ public:
 		print_acceptance_rates = config["print_acceptance_rates"];
 		contact_resolution = config["contact_resolution"];
 		grid_size = config["grid_size"];
+		track_contactmap = config["track_contactmap"];
+		Cell::diagonal_linear = config["diagonal_linear"];
+		dump_density = config["dump_density"];
 		//cellcount_on = config["cellcount_on"];
 
 		int seed = config["seed"];
@@ -805,6 +664,8 @@ public:
 	        xyz_out = fopen("./data_out/output.xyz", "w");
 		energy_out = fopen("./data_out/energy.traj", "w");
 		obs_out = fopen("./data_out/observables.traj", "w");
+		diag_obs_out = fopen("./data_out/diag_observables.traj", "w");
+		density_out = fopen("./data_out/density.traj", "w");
 
 		std::cout << "created successfully" << std::endl;
 	}
@@ -847,7 +708,6 @@ public:
 		// sphere center needs to be centered on a multiple of grid delta
 		//grid.sphere_center = {grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta};
 		grid.origin = {grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta};
-
 
 		exp_decay = nbeads/decay_length;             // size of exponential falloff for MCmove second bead choice
 		exp_decay_crank = nbeads/decay_length;
@@ -1016,7 +876,7 @@ public:
 	double getJustDiagEnergy(const std::unordered_set<Cell*>& flagged_cells)
 	{
 		// for when dumping energy; 
-		double U =  grid.diagEnergy(flagged_cells, diag_chis); 
+		double U = grid.diagEnergy(flagged_cells, diag_chis); 
 		return U;
 	}
 
@@ -1122,7 +982,7 @@ public:
 					
 				}
 
-				if (production) {dumpContacts();}
+				if (production) {dumpContacts(sweep);}
 			}
 
 			if (sweep%dump_stats_frequency == 0)
@@ -1148,6 +1008,8 @@ public:
 
 		}
 
+		// final contact map
+		dumpContacts(nSweeps);
 		std::cout << "acceptance rate: " << (float) acc/(nSweeps*nSteps)*100.0 << "%" << std::endl;
 	}
 
@@ -1519,7 +1381,6 @@ public:
 		int end = (nbeads-1)*round(rng->uniform()); //  either first bead or last bead
 
 		end = nbeads-1;
-		std::cout << "pivoting: " << end << std::endl;
 
 		// pick second bead according to single-sided exponential distribution away from end
 		int length;
@@ -1604,14 +1465,14 @@ public:
 
 			if (rng->uniform() < exp(Uold-Unew))
 			{
-				std::cout << "Accepted"<< std::endl;
+				//std::cout << "Accepted"<< std::endl;
 				acc += 1;
 				acc_pivot += 1;
 				nbeads_moved += (last-first);
 			}
 			else
 			{
-				std::cout << "Rejected" << std::endl;
+				//std::cout << "Rejected" << std::endl;
 				throw "rejected";
 			}
 		}
@@ -1713,40 +1574,76 @@ public:
 
 	void dumpObservables(int sweep)
 	{
-		obs_out = fopen("./data_out/observables.traj", "a");
-		fprintf(obs_out, "%d\t", sweep);
-
 		if (plaid_on)
 		{
+			obs_out = fopen("./data_out/observables.traj", "a");
+			fprintf(obs_out, "%d", sweep);
+
 			for (int i=0; i<nspecies; i++)
 			{
 				for (int j=i; j<nspecies; j++)
 				{
 					double ij_contacts = grid.get_ij_Contacts(i, j);
-					fprintf(obs_out, "%lf\t", ij_contacts);
+					fprintf(obs_out, "\t%lf", ij_contacts);
 				}
 			}
+
+			fprintf(obs_out, "\n");
+			fclose(obs_out);
 		}
 
 		if (diagonal_on)
 		{
+			diag_obs_out = fopen("./data_out/diag_observables.traj", "a");
+			fprintf(diag_obs_out, "%d", sweep);
+
 			std::vector<double> diag_obs(diag_chis.size(), 0.0);
 			grid.getDiagObs(diag_obs);
 
 			for(auto& e : diag_obs)
 			{
-				fprintf(obs_out, "%lf\t", e);
+				fprintf(diag_obs_out, "\t%lf", e);
 			}
+
+			fprintf(diag_obs_out, "\n");
+			fclose(diag_obs_out);
 		}
 
-		fprintf(obs_out, "\n");
-		fclose(obs_out);
+		if (dump_density)
+		{
+			density_out = fopen("./data_out/density.traj", "a");
+			fprintf(density_out, "%d", sweep);
+
+			double avg_density = 0;
+			int i = 0;
+			for (Cell* cell : grid.active_cells)
+			{
+				i++;
+				//fprintf(density_out, " %lf", cell->phis[0]);
+				avg_density += cell->phis[0];
+			}
+			avg_density /= i;
+			fprintf(density_out, " %lf\n", avg_density);
+			fclose(density_out);
+		}
+
 	}
 
-	void dumpContacts()
+	void dumpContacts(int sweep)
 	{
-		// overwrites contact file with most current values
-		std::ofstream contactsOutFile("./data_out/contacts.txt");
+		std::string contact_map_filename;
+		if (track_contactmap)
+		{
+			// outputs new contactmap file every time
+			contact_map_filename = "./data_out/contacts" + std::to_string(sweep) + ".txt";
+		}
+		else
+		{
+			// overwrites contact file with most current values
+			contact_map_filename = "./data_out/contacts.txt";
+		}
+
+		std::ofstream contactsOutFile(contact_map_filename);
 		for (const auto &row : contact_map) {
 			for (const int &element : row) {
 				contactsOutFile << element << " ";
@@ -1765,15 +1662,14 @@ public:
 		grid.setActiveCells();  // populates the active cell locations
 		setupContacts();
 		MC(); // MC simulation
-		dumpContacts();
 		assert (grid.checkCellConsistency(nbeads));
 	}
 };
 
-int Bead::ntypes;
 int Cell::ntypes;
 int Cell::diag_nbins;
 double Cell::diag_binsize;
+bool Cell::diagonal_linear;
 
 int main()
 {
@@ -1785,6 +1681,6 @@ int main()
 	auto stop = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::seconds>(stop-start);
 	std::cout << "Took " << duration.count() << "seconds "<< std::endl;
-	std::cout << "Moved " << nbeads_moved << " beads " << std::endl;
+	std::cout << "Moved " << mySim.nbeads_moved << " beads " << std::endl;
 	return 0;
 }
