@@ -19,6 +19,17 @@
 #include "Bond.h"
 #include "DSS_Bond.h"
 
+#define LOAD_CONFIG(var, config) load_config(#var, (var), (config))
+
+template<class T>
+void load_config(std::string name, T& var, const nlohmann::json& json)
+{
+    std::cout << "loading " << name << " ... ";
+    assert(json.contains(name));
+    var = json[name];
+    std::cout << "loaded." << std::endl;
+}
+
 class Cell {
 public:
 	Eigen::RowVector3d r; // corner of cell... position RELATIVE TO ORIGIN... the grid origin diffuses
@@ -500,6 +511,7 @@ public:
 	std::vector<std::vector<int>> contact_map;
 	int contact_resolution; //= 500;
 	bool dump_density;
+	bool visit_tracking;
 
 	void setupContacts()
 	{
@@ -518,6 +530,10 @@ public:
 
 	void updateContacts()
 	{
+		int rows = contact_map.size();
+		int cols = contact_map.size();
+		std::vector<std::vector<bool>> visited(rows, std::vector<bool>(cols, false));
+
 		for(Cell* cell : grid.active_cells)
 		{
 			for(Bead* bead1 : cell->contains)
@@ -526,7 +542,13 @@ public:
 				{
 					int id1 = bead1->id/contact_resolution;
 					int id2 = bead2->id/contact_resolution;
-					contact_map[id1][id2] += 1;
+
+					if (visited[id1][id2] == false)
+					{
+						contact_map[id1][id2] += 1;
+
+						if (visit_tracking) visited[id1][id2] = true;
+					}
 				}
 			}
 		}
@@ -556,11 +578,11 @@ public:
 		nlohmann::json config;
 		i >> config;
 
-		plaid_on = config["plaid_on"];
+		assert(config.contains("plaid_on")); plaid_on = config["plaid_on"];
 		
 		if (plaid_on)
 		{
-			nspecies = config["nspecies"];
+			assert(config.contains("nspecies")); nspecies = config["nspecies"];
 			load_chipseq = config["load_chipseq"];
 
 			if (load_chipseq)
@@ -620,32 +642,33 @@ public:
 			std::cout << "binsize " << Cell::diag_binsize << std::endl;
 		}
 
-		gridmove_on = config["gridmove_on"];
-	
-		production = config["production"];
-		decay_length = config["decay_length"];
-		nSweeps = config["nSweeps"];
-		dump_frequency = config["dump_frequency"];
-		dump_stats_frequency = config["dump_stats_frequency"];
-		bonded_on = config["bonded_on"];
-		nonbonded_on = config["nonbonded_on"];
-		displacement_on = config["displacement_on"];
-		translation_on = config["translation_on"];
-		crankshaft_on = config["crankshaft_on"];
-		pivot_on = config["pivot_on"];
-		rotate_on = config["rotate_on"];
-		domainsize = config["domainsize"];
-		load_configuration = config["load_configuration"];
-		load_configuration_filename = config["load_configuration_filename"];
-		load_chipseq_filename = config["load_chipseq_filename"];
-		print_MC = config["print_MC"];
-		print_trans = config["print_trans"];
-		print_acceptance_rates = config["print_acceptance_rates"];
-		contact_resolution = config["contact_resolution"];
-		grid_size = config["grid_size"];
-		track_contactmap = config["track_contactmap"];
-		Cell::diagonal_linear = config["diagonal_linear"];
-		dump_density = config["dump_density"];
+		//assert(config.contains("gridmove_on")); gridmove_on = config["gridmove_on"];
+		//
+		assert(config.contains("production")); production = config["production"];
+		assert(config.contains("decay_length")); decay_length = config["decay_length"];
+		assert(config.contains("nSweeps")); nSweeps = config["nSweeps"];
+		assert(config.contains("dump_frequency")); dump_frequency = config["dump_frequency"];
+		assert(config.contains("dump_stats_frequency")); dump_stats_frequency = config["dump_stats_frequency"];
+		assert(config.contains("bonded_on")); bonded_on = config["bonded_on"];
+		assert(config.contains("nonbonded_on")); nonbonded_on = config["nonbonded_on"];
+		assert(config.contains("displacement_on")); displacement_on = config["displacement_on"];
+		assert(config.contains("translation_on")); translation_on = config["translation_on"];
+		assert(config.contains("crankshaft_on")); crankshaft_on = config["crankshaft_on"];
+		assert(config.contains("pivot_on")); pivot_on = config["pivot_on"];
+		assert(config.contains("rotate_on")); rotate_on = config["rotate_on"];
+		assert(config.contains("domainsize")); domainsize = config["domainsize"];
+		assert(config.contains("load_configuration")); load_configuration = config["load_configuration"];
+		assert(config.contains("load_configuration_filename")); load_configuration_filename = config["load_configuration_filename"];
+		assert(config.contains("load_chipseq_filename")); load_chipseq_filename = config["load_chipseq_filename"];
+		assert(config.contains("print_MC")); print_MC = config["print_MC"];
+		assert(config.contains("print_trans")); print_trans = config["print_trans"];
+		assert(config.contains("print_acceptance_rates")); print_acceptance_rates = config["print_acceptance_rates"];
+		assert(config.contains("contact_resolution")); contact_resolution = config["contact_resolution"];
+		assert(config.contains("grid_size")); grid_size = config["grid_size"];
+		assert(config.contains("track_contactmap")); track_contactmap = config["track_contactmap"];
+		assert(config.contains("diagonal_linear")); Cell::diagonal_linear = config["diagonal_linear"];
+		assert(config.contains("dump_density")); dump_density = config["dump_density"];
+		assert(config.contains("visit_tracking")); visit_tracking = config["visit_tracking"];
 		//cellcount_on = config["cellcount_on"];
 
 		int seed = config["seed"];
