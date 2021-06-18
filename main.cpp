@@ -19,15 +19,17 @@
 #include "Bond.h"
 #include "DSS_Bond.h"
 
-#define LOAD_CONFIG(var, config) load_config(#var, (var), (config))
-
+// assign variable to json key of the same name
+#define READ_JSON(json, var) read_json((json), (var), #var)
 template<class T>
-void load_config(std::string name, T& var, const nlohmann::json& json)
+void read_json(const nlohmann::json& json, T& var, std::string varname)
 {
-    std::cout << "loading " << name << " ... ";
-    assert(json.contains(name));
-    var = json[name];
-    std::cout << "loaded." << std::endl;
+    std::cout << "loading " << varname << " ... ";
+	if( !json.contains(varname) ) {
+		throw std::runtime_error("config.contains(\""+varname+"\") has failed");
+	}
+	var = json[varname];
+    std::cout << "loaded: " << std::to_string(var) << std::endl;
 }
 
 class Cell {
@@ -68,6 +70,7 @@ public:
 	void moveIn(Bead* bead)
 	{
 		// updates local number of each type of bead, but does not recalculate phis
+		// TODO update populations of distance ids
 		contains.insert(bead);
 		for(int i=0; i<ntypes; i++)
 		{
@@ -78,6 +81,7 @@ public:
 	void moveOut(Bead* bead)
 	{
 		// updates local number of each type of bead, but does not recalculate phis
+		// TODO update populations of distance ids
 		contains.erase(bead);
 		for(int i=0; i<ntypes; i++)
 		{
@@ -190,7 +194,7 @@ public:
 		// multiply by vol/beadvol to calculate mean-field energy
 		// needs to be different for linear case?
 		//if(!diagonal_linear) { Udiag *= vol/beadvol;}
-		return Udiag; 
+		return Udiag*vol/beadvol; 
 	}
 };
 
@@ -419,7 +423,6 @@ public:
 	std::vector<Bead> beads;
 	std::vector<Bond*> bonds; // pointers because Bond class is virtual
 	Grid grid;
-
 	RanMars* rng;  // random number generator
 
 	double chi; 
@@ -483,23 +486,12 @@ public:
 	bool plaid_on;
 	bool cellcount_on = true;
 
-	bool AB_block; // = true;
-	int domainsize = nbeads;
 
 	bool track_contactmap;
 	bool load_chipseq;
 	bool load_configuration;
 	std::string load_configuration_filename; 
-	std::string load_chipseq_filename; 
 	std::vector<std::string> chipseq_files;
-
-	std::string chipseq_1;
-	std::string chipseq_2;
-	std::string chipseq_3;
-	std::string chipseq_4;
-	std::string chipseq_5;
-	std::string chipseq_6;
-	std::string chipseq_7;
 	
 	// analytics
 	bool print_MC; // = false;
@@ -512,6 +504,7 @@ public:
 	int contact_resolution; //= 500;
 	bool dump_density;
 	bool visit_tracking;
+	bool update_contacts_distance;
 
 	void setupContacts()
 	{
@@ -530,25 +523,61 @@ public:
 
 	void updateContacts()
 	{
-		int rows = contact_map.size();
-		int cols = contact_map.size();
-		std::vector<std::vector<bool>> visited(rows, std::vector<bool>(cols, false));
+		if (update_contacts_distance){
+			updateContactsDistance();
+		}
+		else {
+			updateContactsGrid();
+		}
+	}
 
-		for(Cell* cell : grid.active_cells)
+	void updateContactsGrid()
+	{
+		// contact defined as residing within same grid cell
 		{
-			for(Bead* bead1 : cell->contains)
+			int rows = contact_map.size();
+			int cols = contact_map.size();
+			int id1, id2;
+			std::vector<std::vector<bool>> visited(rows, std::vector<bool>(cols, false));
+
+
+			for(Cell* cell : grid.active_cells)
 			{
-				for(Bead* bead2 : cell->contains)
+				for(Bead* bead1 : cell->contains)
 				{
-					int id1 = bead1->id/contact_resolution;
-					int id2 = bead2->id/contact_resolution;
-
-					if (visited[id1][id2] == false)
+					for(Bead* bead2 : cell->contains)
 					{
-						contact_map[id1][id2] += 1;
+						id1 = bead1->id/contact_resolution;
+						id2 = bead2->id/contact_resolution;
 
-						if (visit_tracking) visited[id1][id2] = true;
+						if (visited[id1][id2] == false)
+						{
+							contact_map[id1][id2] += 1;
+
+							if (visit_tracking) visited[id1][id2] = true;
+						}
 					}
+				}
+			}
+		}
+	}
+
+	void updateContactsDistance()
+	{
+		// contacts defined as two beads within a cutoff distance
+		double cutoff = 28.7; // nm
+		int id1, id2;
+		for(int i=0; i<beads.size(); i++)
+		{
+			for(int j=i; j<beads.size(); j++)
+			{
+				Eigen::RowVector3d distance =  beads[i].r - beads[j].r;
+				if (distance.norm() < cutoff)
+				{
+					id1 = beads[i].id/contact_resolution;
+					id2 = beads[j].id/contact_resolution;
+					contact_map[id1][id2] += 1;
+					if (id1 != id2) contact_map[id2][id1] += 1;
 				}
 			}
 		}
@@ -572,7 +601,7 @@ public:
 
 	void readInput()
 	{
-		std::cout << "reading input file ... ";
+		std::cout << "reading input file ... " << std::endl;
 
 		std::ifstream i("config.json");
 		nlohmann::json config;
@@ -583,7 +612,7 @@ public:
 		if (plaid_on)
 		{
 			assert(config.contains("nspecies")); nspecies = config["nspecies"];
-			load_chipseq = config["load_chipseq"];
+			assert(config.contains("load_chipseq")); load_chipseq = config["load_chipseq"];
 
 			if (load_chipseq)
 			{
@@ -597,26 +626,27 @@ public:
 
 					for (int j=i; j<nspecies; j++)
 					{
-						//std::cout << i << ", " << j << std::endl;
 						char first = 'A' + i;
 						char second = 'A' + j;
-						//std::cout << first << ", " << second << std::endl;
 						std::string chistring = "chi";
 						chistring += first;
 						chistring += second;
-						std::cout << chistring << std::endl;
 						chis(i,j) = config[chistring];         //  i must be less than j
 						std::cout << chistring << " " << chis(i,j) << std::endl;
 					}
 				}
 
+				assert(config.contains("chipseq_files"));
 				for (auto file : config["chipseq_files"])
 				{
 					chipseq_files.push_back(file);
 				}
-				std::cout << chipseq_files.size();
 
-				nspecies = chipseq_files.size();
+
+				if (chipseq_files.size() != nspecies)
+				{
+					throw std::runtime_error("Number of chipseq files: " + std::to_string(chipseq_files.size()) + " must equal number of species: " + std::to_string(nspecies));
+				}
 				Cell::ntypes = nspecies;
 			}
 		}
@@ -626,11 +656,12 @@ public:
 			load_chipseq = false;
 		}
 
-		diagonal_on= config["diagonal_on"];
-		nbeads = config["nbeads"];
+		assert(config.contains("diagonal_on")); diagonal_on= config["diagonal_on"];
+		assert(config.contains("nbeads")); nbeads = config["nbeads"];
 
 		if (diagonal_on)
 		{
+			assert(config.contains("diag_chis"));
 			for (auto e : config["diag_chis"])
 			{
 				diag_chis.push_back(e);
@@ -642,9 +673,11 @@ public:
 			std::cout << "binsize " << Cell::diag_binsize << std::endl;
 		}
 
-		//assert(config.contains("gridmove_on")); gridmove_on = config["gridmove_on"];
+		assert(config.contains("gridmove_on")); gridmove_on = config["gridmove_on"];
 		//
-		assert(config.contains("production")); production = config["production"];
+		std::cout << "grid move is : " << gridmove_on << std::endl;
+		//assert(config.contains("production")); production = config["production"];
+		READ_JSON(config, production); 
 		assert(config.contains("decay_length")); decay_length = config["decay_length"];
 		assert(config.contains("nSweeps")); nSweeps = config["nSweeps"];
 		assert(config.contains("dump_frequency")); dump_frequency = config["dump_frequency"];
@@ -656,10 +689,8 @@ public:
 		assert(config.contains("crankshaft_on")); crankshaft_on = config["crankshaft_on"];
 		assert(config.contains("pivot_on")); pivot_on = config["pivot_on"];
 		assert(config.contains("rotate_on")); rotate_on = config["rotate_on"];
-		assert(config.contains("domainsize")); domainsize = config["domainsize"];
 		assert(config.contains("load_configuration")); load_configuration = config["load_configuration"];
 		assert(config.contains("load_configuration_filename")); load_configuration_filename = config["load_configuration_filename"];
-		assert(config.contains("load_chipseq_filename")); load_chipseq_filename = config["load_chipseq_filename"];
 		assert(config.contains("print_MC")); print_MC = config["print_MC"];
 		assert(config.contains("print_trans")); print_trans = config["print_trans"];
 		assert(config.contains("print_acceptance_rates")); print_acceptance_rates = config["print_acceptance_rates"];
@@ -669,8 +700,10 @@ public:
 		assert(config.contains("diagonal_linear")); Cell::diagonal_linear = config["diagonal_linear"];
 		assert(config.contains("dump_density")); dump_density = config["dump_density"];
 		assert(config.contains("visit_tracking")); visit_tracking = config["visit_tracking"];
+		assert(config.contains("update_contacts_distance")); update_contacts_distance = config["update_contacts_distance"];
 		//cellcount_on = config["cellcount_on"];
 
+		assert(config.contains("seed"));
 		int seed = config["seed"];
 		rng = new RanMars(seed);
 
@@ -761,7 +794,7 @@ public:
 				
 			// first bead
 			getline(IFILE, line);
-			std::cout << line << std::endl;
+			//std::cout << line << std::endl;
 			std::stringstream ss;
 			ss << line;
 			ss >> beads[0].id;
@@ -772,7 +805,7 @@ public:
 			for(int i=1; i<nbeads; i++)
 			{
 				getline(IFILE, line);
-				std::cout << line << std::endl;
+				//std::cout << line << std::endl;
 				std::stringstream ss;  // new stream so no overflow from last line
 				ss << line;
 
@@ -823,7 +856,8 @@ public:
                 IFCHIPSEQ.open(chipseq_file);
                 for(int i=0; i<nbeads; i++)
                 {
-					beads[i].d.reserve(nspecies);
+					//beads[i].d.reserve(nspecies);
+					beads[i].d.resize(nspecies);
                     IFCHIPSEQ >> tail_marked;
                     if (tail_marked == 1)
                     {
@@ -1657,7 +1691,7 @@ public:
 		std::string contact_map_filename;
 		if (track_contactmap)
 		{
-			// outputs new contactmap file every time
+			// outputs new contact map, doesn't override
 			contact_map_filename = "./data_out/contacts" + std::to_string(sweep) + ".txt";
 		}
 		else
@@ -1689,6 +1723,7 @@ public:
 	}
 };
 
+//TOOD: phase out
 int Cell::ntypes;
 int Cell::diag_nbins;
 double Cell::diag_binsize;
