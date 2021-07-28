@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-for i in {1..250}
+for i in {1..500}
 do
 	# generate sequences
 	python3 get_seq.py > seq1.txt
@@ -13,7 +13,7 @@ do
 	# move output to own folder
 	mkdir sample$i
 	touch log.log
-	mv data_out log.log sample$i
+	mv data_out log.log seq1.txt seq2.txt sample$i
 
 	# calculate contact map
 	python3 contactmap.py $i
