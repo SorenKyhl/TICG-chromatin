@@ -196,6 +196,21 @@ public:
 		//if(!diagonal_linear) { Udiag *= vol/beadvol;}
 		return Udiag*vol/beadvol; 
 	}
+
+	double getBoundaryEnergy(const double boundary_chi, const double delta)
+	{
+		// TODO: this is broken if the grid is moving; 
+		// need to check relative to origin
+		double Uboundary = 0;
+		for (const auto& bead : contains)
+		{
+			if (bead->r(0) < delta)
+			{
+				Uboundary += boundary_chi;
+			}
+		}
+		return Uboundary;
+	}
 };
 
 class Grid {
@@ -368,6 +383,16 @@ public:
 		return U;
 	}
 
+	double boundaryEnergy(const std::unordered_set<Cell*>& flagged_cells, const double boundary_chi)
+	{
+		// nonbonded volume interactions
+		double U = 0; 
+		for(Cell* cell : flagged_cells)
+		{
+			U += cell->getBoundaryEnergy(boundary_chi, delta);
+		}
+		return U;
+	}
 
 	double get_ij_Contacts(int i, int j) 
 	{
@@ -428,6 +453,7 @@ public:
 	double chi; 
 	Eigen::MatrixXd chis;
 	std::vector<double> diag_chis;
+	double boundary_chi;
 	int nspecies; // number of different epigenetic marks
 	int nbeads; 
 	double total_volume;
@@ -483,6 +509,7 @@ public:
 
 	bool gridmove_on;
 	bool diagonal_on;
+	bool boundary_attract_on;
 	bool plaid_on;
 	bool cellcount_on = true;
 
@@ -701,6 +728,9 @@ public:
 		assert(config.contains("dump_density")); dump_density = config["dump_density"];
 		assert(config.contains("visit_tracking")); visit_tracking = config["visit_tracking"];
 		assert(config.contains("update_contacts_distance")); update_contacts_distance = config["update_contacts_distance"];
+		assert(config.contains("boundary_attract_on")); boundary_attract_on = config["boundary_attract_on"];
+		assert(config.contains("boundary_chi")); boundary_chi  = config["boundary_chi"];
+
 		//cellcount_on = config["cellcount_on"];
 
 		assert(config.contains("seed"));
@@ -923,6 +953,10 @@ public:
 		{
 			U += grid.diagEnergy(flagged_cells, diag_chis); 
 		}
+		if (boundary_attract_on)
+		{
+			U += grid.boundaryEnergy(flagged_cells, boundary_chi);
+		}
 
 		auto stop = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
@@ -934,6 +968,13 @@ public:
 	{
 		// for when dumping energy; 
 		double U = grid.diagEnergy(flagged_cells, diag_chis); 
+		return U;
+	}
+
+	double getJustBoundaryEnergy(const std::unordered_set<Cell*>& flagged_cells)
+	{
+		// for when dumping energy; 
+		double U = grid.boundaryEnergy(flagged_cells, boundary_chi); 
 		return U;
 	}
 
@@ -1054,13 +1095,15 @@ public:
 
 				double bonded = getAllBondedEnergy();
 				double nonbonded = 0;
-				nonbonded = nonbonded_on ? getNonBondedEnergy(grid.active_cells) : 0;
+				nonbonded = nonbonded_on ? getNonBondedEnergy(grid.active_cells) : 0; // includes diagonal and boundary energy
 				double diagonal = 0;
 				diagonal = diagonal_on ? getJustDiagEnergy(grid.active_cells) : 0;
+				double boundary = 9;
+				boundary = boundary_attract_on ? getJustBoundaryEnergy(grid.active_cells) : 0;
 				//std::cout << "bonded " << bonded << " nonbonded " << nonbonded << std::endl;
 				t_allenergy.~Timer();
 
-				dumpEnergy(sweep, bonded, nonbonded, diagonal);
+				dumpEnergy(sweep, bonded, nonbonded, diagonal, boundary);
 			}
 
 		}
@@ -1622,10 +1665,10 @@ public:
 		fclose(xyz_out); 
 	}
 
-	void dumpEnergy(int sweep, double bonded=0, double nonbonded=0, double diagonal=0)
+	void dumpEnergy(int sweep, double bonded=0, double nonbonded=0, double diagonal=0, double boundary=0)
 	{
 		energy_out = fopen("./data_out/energy.traj", "a");
-		fprintf(energy_out, "%d\t %lf\t %lf\t %lf\n", sweep, bonded, nonbonded, diagonal);
+		fprintf(energy_out, "%d\t %lf\t %lf\t %lf\t %lf\n", sweep, bonded, nonbonded, diagonal, boundary);
 		fclose(energy_out);
 	}
 
