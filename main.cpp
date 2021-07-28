@@ -1174,7 +1174,7 @@ public:
 	{
 		if (print_trans) std::cout << "==================NEW MOVE ====================" << std::endl;
 		Timer t_trans("Translate", print_trans);
-		Timer t_setup("setup", print_trans);
+		//Timer t_setup("setup", print_trans);
 
 		// select a first bead at random
 		int first = floor(beads.size()*rng->uniform());
@@ -1206,12 +1206,12 @@ public:
 		Cell* new_cell_tmp;
 		Eigen::RowVector3d new_loc;
 
-		t_setup.~Timer();
+		//t_setup.~Timer();
 
 		// execute move
 		try
 		{
-			Timer t_bounds("bounds", print_trans);
+			//Timer t_bounds("bounds", print_trans);
 			// reject immediately if moved out of simulation box, no cleanup necessary
 			for(int i=first; i<=last; i++)
 			{
@@ -1220,9 +1220,9 @@ public:
 					throw "exited simulation box";	
 				}
 			}
-			t_bounds.~Timer();
+			//t_bounds.~Timer();
 
-			Timer t_flag("Flag cells", print_trans);
+			//Timer t_flag("Flag cells", print_trans);
 			// flag appropriate cells for energy calculation and find beads that swapped cells
 			for(int i=first; i<=last; i++)
 			{
@@ -1238,21 +1238,21 @@ public:
 					flagged_cells.insert(new_cell_tmp);
 				}
 			}
-			t_flag.~Timer();
+			//t_flag.~Timer();
 
-			Timer t_uold("Uold", print_trans);
+			//Timer t_uold("Uold", print_trans);
 			//std::cout << "Beads: " << last-first << " Cells: " << flagged_cells.size() << std::endl;
 			double Uold = getTotalEnergy(first, last, flagged_cells);
-			t_uold.~Timer();
+			//t_uold.~Timer();
 
-			Timer t_disp("Displacement", print_trans);
+			//Timer t_disp("Displacement", print_trans);
 			for(int i=first; i<=last; i++)
 			{
 				beads[i].r += displacement;
 			}
-			t_disp.~Timer();
+			//t_disp.~Timer();
 
-			Timer t_swap("Bead Swaps", print_trans);
+			//Timer t_swap("Bead Swaps", print_trans);
 			// update grid <bead index,   <old cell , new cell>>
 			//for(std::pair<int, std::pair<Cell*, Cell*>> &x : bead_swaps)
 			for(auto const &x : bead_swaps)
@@ -1260,11 +1260,11 @@ public:
 				x.second.first->moveOut(&beads[x.first]);
 				x.second.second->moveIn(&beads[x.first]);
 			}
-			t_swap.~Timer();
+			//t_swap.~Timer();
 
-			Timer t_unew("Unew", print_trans);
+			//Timer t_unew("Unew", print_trans);
 			double Unew = getTotalEnergy(first, last, flagged_cells);
-			t_unew.~Timer();
+			//t_unew.~Timer();
 
 			if (rng->uniform() < exp(Uold-Unew))
 			{
