@@ -7,4 +7,4 @@ mkdir run
 make && mv TICG-engine run/
 
 requires config.json to specify simulation parameters
-see example/ for reference
+see sample/ for reference
