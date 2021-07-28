@@ -1,5 +1,5 @@
 CC = g++
-FLAGS = -O3
+FLAGS = -O3 -std=c++14
 DEBUG_FLAGS = -g
 INCLUDE = -I ./include
 SRC = main.cpp
