@@ -1,4 +1,11 @@
-#!/bin/bash
+#! /bin/bash
+#SBATCH --job-name=TICG
+#SBATCH --output=TICG.out
+#SBATCH --time=24:00:00
+#SBATCH --partition=depablo-ivyb
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=4
+#SBATCH --mem-per-cpu=2000
 
 
 for i in 1
