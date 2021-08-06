@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-for i in {1..500}
+for i in 1
 do
 	# generate sequences
 	python3 get_seq.py > seq1.txt
@@ -18,5 +18,3 @@ do
 	# calculate contact map
 	python3 contactmap.py $i
 done
-
-
