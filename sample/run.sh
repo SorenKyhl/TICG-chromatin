@@ -19,7 +19,6 @@ do
 
 	# move output to own folder
 	mkdir sample$i
-	touch log.log
 	mv data_out log.log seq1.txt seq2.txt sample$i
 
 	# calculate contact map
