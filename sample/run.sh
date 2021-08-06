@@ -1,6 +1,6 @@
 #! /bin/bash
 #SBATCH --job-name=TICG
-#SBATCH --output=TICG.out
+#SBATCH --output=sample/TICG.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --nodes=1
@@ -16,7 +16,7 @@ do
 	python3 get_seq.py > seq2.txt
 
 	# run simulation
-	./sample/TICG-engine > log.log
+	./TICG-engine > log.log
 
 	# move output to own folder
 	mkdir sample$i
