@@ -7,7 +7,7 @@
 #SBATCH --ntasks-per-node=4
 #SBATCH --mem-per-cpu=2000
 
-
+cd ~/TICG-chromatin
 for i in 1
 do
 	# generate sequences
@@ -15,7 +15,7 @@ do
 	python3 get_seq.py > seq2.txt
 
 	# run simulation
-	./TICG-engine > log.log
+	./sample/TICG-engine > log.log
 
 	# move output to own folder
 	mkdir sample$i
