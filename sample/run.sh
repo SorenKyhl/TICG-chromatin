@@ -7,7 +7,7 @@
 #SBATCH --ntasks-per-node=4
 #SBATCH --mem-per-cpu=2000
 
-cd ~/TICG-chromatin
+cd ~/TICG-chromatin/sample
 source activate python3.8_pytorch1.8.1_cuda10.2
 for i in 1
 do
