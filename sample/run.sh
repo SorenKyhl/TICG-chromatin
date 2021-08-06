@@ -19,7 +19,7 @@ do
 	./TICG-engine > log.log
 
 	# move output to own folder
-	mkdir sample$i
+	mkdir -p sample$i
 	mv data_out log.log seq1.txt seq2.txt sample$i
 
 	# calculate contact map
