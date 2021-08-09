@@ -59,8 +59,8 @@
   "print_acceptance_rates": true,
   "contact_resolution": 1,
   "chipseq_files": [
-	"seq1.txt",
-	"seq2.txt"
+	"seq0.txt",
+	"seq1.txt"
   ],
   "gridmove_on": true,
   "diag_chis": [0, 0.02631579, 0.05263158, 0.07894737, 0.10526316,
