@@ -14,9 +14,9 @@ def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     # '../../sequences_to_contact_maps/dataset_04_18_21'
     # "../../../../project2/depablo/erschultz/dataset_04_18_21"
-    parser.add_argument('--data_folder', type=str, default='../../../../project2/depablo/erschultz/dataset_04_18_21', help='Location of input data')
-    parser.add_argument('--sample', type=int, default=40, help='sample id')
-    parser.add_argument('--method', type=str, default='random', help='method for assigning particle types')
+    parser.add_argument('--data_folder', type=str, default='../sequences_to_contact_maps/dataset_04_18_21', help='Location of input data')
+    parser.add_argument('--sample', type=int, default=2, help='sample id')
+    parser.add_argument('--method', type=str, default='PCA', help='method for assigning particle types')
     parser.add_argument('--m', type=int, default=1024, help='number of particles (will crop contact map)')
     parser.add_argument('--p_switch', type=float, default=0.05, help='probability to switch bead assignment')
     parser.add_argument('--k', type=int, default=2, help='sequences to generate')
@@ -30,7 +30,7 @@ def getArgs():
 
 def get_random_seq(m, p_switch, k):
     seq = np.zeros((m, k))
-    # vec[0, :] = np.random.choice([1,0], size = k)
+    seq[0, :] = np.random.choice([1,0], size = k)
     for j in range(k):
         for i in range(1, m):
             if seq[i-1, j] == 1:
@@ -78,36 +78,13 @@ def get_PCA_seq(m, y_diag, k):
 
     return seq
 
-def get_GNN_seq(args, y_diag):
-    parser = getBaseParser()
-    opt = parser.parse_args()
-    opt.id = 116
-    opt.model_type='ContactGNN'
-    old_dir = os.getcwd()
-    os.chdir('/../../sequences_to_contact_maps')
-    opt = finalizeOpt(opt, parser)
-
-    model = getModel(opt)
-    model_name = osp.join(opt.ofile_folder, 'model.pt')
-    if osp.exists(model_name):
-        save_dict = torch.load(model_name, map_location=torch.device('cpu'))
-        model.load_state_dict(save_dict['model_state_dict'])
-        train_loss_arr = save_dict['train_loss']
-        val_loss_arr = save_dict['val_loss']
-        print('Model is loaded: {}'.format(model_name), file = opt.log_file)
-    else:
-        raise Exception('Model does not exist: {}'.format(model_name))
-    model.eval()
-
-    seq = model()
-
-    os.chdir(old_dir)
-
 def writeSeq(seq, format):
     print(seq)
     m, k = seq.shape
     for j in range(k):
         np.savetxt('seq{}.txt'.format(j), seq[:, j], fmt = format)
+
+    np.save('x.npy', seq)
 
 def main():
     args = getArgs()
@@ -124,7 +101,7 @@ def main():
             format = '%d'
         elif args.method == 'GNN':
             assert args.k == 2
-            seq_path = '/../../sequences_to_contact_maps/results/ContactGNN/{}/sample{}/z.npy'.format(args.GNN_model_id, args.sample)
+            seq_path = '../../sequences_to_contact_maps/results/ContactGNN/{}/sample{}/z.npy'.format(args.GNN_model_id, args.sample)
             if osp.exists(seq_path):
                 seq = np.load(seq_path)[:args.m, :args.m]
             else:
@@ -137,6 +114,8 @@ def main():
             seq = np.zeros((args.m, args.k))
             seq[np.arange(args.m), kmeans.labels_] = 1
             format = '%d'
+        else:
+            raise Exception('Unkown method: {}'.format(args.method))
 
     for i in range(args.k):
         plt.plot(seq[:,i], label = i)

@@ -10,7 +10,7 @@
 m=1024
 k=2
 sample=40
-
+dataFolder='/project2/depablo/erschultz/dataset_04_18_21'
 
 cd ~/TICG-chromatin/sample
 source activate python3.8_pytorch1.8.1_cuda10.2
@@ -20,18 +20,18 @@ do
 	python3 get_seq.py --method $method --m $m --k $k --sample $sample
 
 	# run simulation
-	./TICG-engine > log.log # with max ent
+	./TICG-engine > log.log # TODO max ent
 
   # calculate contact map
-  python3 contactmap.py $i
+  python3 contactmap.py
 
-  # compare function
-  python3 compare_contact.py
+  # compare results
+  python3 compare_contact.py --m $m --sample $sample --data_folder $dataFolder
 
 	# move output to own folder
-  dir='/project2/depablo/erschultz/dataset_08/09_21/samples/sample'$sample+'/'$method
+  dir="${dataFolder}/samples/sample${sample}/${method}"
 	mkdir -p $dir
-	mv data_out log.log seq1.txt seq2.txt $dir
-  cp config.json $dir
-
+	mv data_out log.log seq0.txt seq1.txt x.npy y.npy y.png $dir
 done
+
+cp config.json "${dataFolder}/config.json"

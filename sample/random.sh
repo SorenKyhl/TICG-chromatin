@@ -11,8 +11,9 @@ method='random'
 m=1024
 pSwitch=0.05
 k=4
+today=$(date +'%m_%d_%y')
+dataFolder="/project2/depablo/erschultz/dataset_${today}"
 numSimulations=1
-
 
 cd ~/TICG-chromatin/sample
 source activate python3.8_pytorch1.8.1_cuda10.2
@@ -25,11 +26,13 @@ do
 	./TICG-engine > log.log
 
   # calculate contact map
-  python3 contactmap.py $i
+  python3 contactmap.py
 
 	# move output to own folder
-  dir='/project2/depablo/erschultz/dataset_08/09_21/samples/sample'$i
+  dir="${dataFolder}/samples/sample${i}"
 	mkdir -p $dir
-	mv data_out log.log seq1.txt seq2.txt $dir
+	mv data_out log.log seq0.txt seq1.txt distance_pearson.png x.npy y.npy y.png $dir
 
 done
+
+cp config.json "${dataFolder}/config.json"

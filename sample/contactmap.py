@@ -1,5 +1,4 @@
 import os.path as osp
-import sys
 
 import numpy as np
 import pandas as pd
@@ -46,12 +45,10 @@ def plotContactMap(y, ofile = None, title = None, vmin = 0, vmax = 1, size_in = 
 
 
 def main():
-    it = int(sys.argv[1])
+    y = np.loadtxt('data_out\contacts.txt')[:args.m, :args.m]
 
-    df = pd.read_csv("data_out/contacts.txt", delimiter=" ", header=None)
-    df = df.fillna(0)
-
-    plotContactMap(df, ofile = 'data_out/contacts.png', vmax = 'mean')
+    plotContactMap(y, ofile = 'y.png', vmax = 'mean')
+    np.save(os.path.join(out_path, 'y.npy'), y.astype(np.int16))
 
 if __name__ == '__main__':
     main()
