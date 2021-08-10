@@ -14,9 +14,14 @@ k=4
 today=$(date +'%m_%d_%y')
 dataFolder="/project2/depablo/erschultz/dataset_${today}"
 numSimulations=1
+chi='1 & 2 & -1 & 1.5 \\ 2 & 1 & -1 & -0.5 \\ -1 & -1 & 1 & 1.5 \\ 1.5 & -0.5 & 1.5 & 1'
 
 cd ~/TICG-chromatin/sample
 source activate python3.8_pytorch1.8.1_cuda10.2
+
+python3 get_config.py --save_chi --chi $chi --m $m
+mv chis.txt chis.npy $dataFolder
+
 for i in {1..$numSimulations}
 do
 	# generate sequences

@@ -14,6 +14,9 @@ dataFolder='/project2/depablo/erschultz/dataset_04_18_21'
 
 cd ~/TICG-chromatin/sample
 source activate python3.8_pytorch1.8.1_cuda10.2
+
+python3 get_config.py --k $k --m $m # TODO make it set default chi
+
 for method in 'ground_truth' 'PCA' 'k_means' 'GNN'
 do
 	# generate sequences

@@ -1,4 +1,6 @@
-tags
-scratch/
-a.out
 TICG-engine
+data_out
+*.txt
+*.npy
+*.png
+config.json

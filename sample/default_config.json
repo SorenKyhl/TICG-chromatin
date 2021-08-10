@@ -1,7 +1,6 @@
 {
   "seed": 1,
   "production": true,
-  "nbeads": 1024,
   "chi": 1,
   "nspecies": 2,
   "hp1_mean_conc": 0,
@@ -31,28 +30,10 @@
   "print_acceptance_rates": true,
   "contact_resolution": 1,
   "gridmove_on": true,
-  "diag_chis": [
-    0,
-    0.02631579,
-    0.05263158,
-    0.07894737,
-    0.10526316,
-    0.13157895,
-    0.15789474,
-    0.18421053,
-    0.21052632,
-    0.23684211,
-    0.26315789,
-    0.28947368,
-    0.31578947,
-    0.34210526,
-    0.36842105,
-    0.39473684,
-    0.42105263,
-    0.44736842,
-    0.47368421,
-    0.5
-  ],
+  "diag_chis": [0, 0.02631579, 0.05263158, 0.07894737, 0.10526316,
+       0.13157895, 0.15789474, 0.18421053, 0.21052632, 0.23684211,
+       0.26315789, 0.28947368, 0.31578947, 0.34210526, 0.36842105,
+       0.39473684, 0.42105263, 0.44736842, 0.47368421, 0.5       ],
   "grid_size": 28.7,
   "track_contactmap": true,
   "diagonal_linear": true,
@@ -60,13 +41,5 @@
   "dump_density": false,
   "update_contacts_distance": false,
   "boundary_attract_on": false,
-  "boundary_chi": 0,
-  "chiAA": 1.0,
-  "chiAB": 2.0,
-  "chiBA": 3.0,
-  "chiBB": 4.01,
-  "chipseq_files": [
-    "seq0.txt",
-    "seq1.txt"
-  ]
+  "boundary_chi": 0
 }
