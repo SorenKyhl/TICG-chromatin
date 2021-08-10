@@ -36,11 +36,10 @@ do
 	dir="${dataFolder}/samples/sample${i}"
 	mkdir -p $dir
 	mv data_out log.log distance_pearson.png x.npy y.npy y.png chis.txt chis.npy $dir
-	for i in $(seq 1 $k)
+	for i in $(seq 0 $(($k-1)))
 	do
 		mv seq${i}.txt $dir
 	done
-
 done
 
-cp config.json "${dataFolder}/config.json"
+mv config.json ${dataFolder}

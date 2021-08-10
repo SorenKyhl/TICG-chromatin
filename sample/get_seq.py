@@ -41,27 +41,15 @@ def get_random_seq(m, p_switch, k):
     return seq
 
 def get_PCA_seq(m, y_diag, k):
-    # pca = PCA()
-    # pca.fit(y_diag)
-
-    cov_arr = np.cov(y_diag)
-    print(cov_arr)
-    values, vectors = np.linalg.eig(cov_arr)
-    explained_variances = []
-    for i in range(len(values)):
-        explained_variances.append(values[i] / np.sum(values))
-
-    print(np.sum(explained_variances[:5]), '\n', explained_variances[:5])
-
+    pca = PCA()
+    pca.fit(y_diag)
     seq = np.zeros((m, k))
 
 
     j = 0
     PC_count = k // 2 # 2 seqs per PC
     for pc_i in range(PC_count):
-        # pc = pca.components_[pc_i]
-        pc = vectors[:, pc_i]
-        print(pc)
+        pc = pca.components_[pc_i]
         plt.plot(pc, label = pc_i)
 
         pcpos = pc.copy()
@@ -79,7 +67,6 @@ def get_PCA_seq(m, y_diag, k):
     return seq
 
 def writeSeq(seq, format):
-    print(seq)
     m, k = seq.shape
     for j in range(k):
         np.savetxt('seq{}.txt'.format(j), seq[:, j], fmt = format)

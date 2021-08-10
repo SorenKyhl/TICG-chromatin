@@ -31,11 +31,8 @@ def str2list(v, sep1 = '\\', sep2 = '&'):
             return None
         else:
             v = v.replace(' ', '') # get rid of spaces
-            print(v)
             result = [i.split(sep2) for i in v.split(sep1)]
-            print(result)
             result = np.array(result, dtype=float)
-            print(result)
             return result
     else:
         raise argparse.ArgumentTypeError('str value expected.')
