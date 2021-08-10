@@ -155,7 +155,7 @@ public:
 		//{
 			//for (Bead* bead2 : contains)
 			//{
-				//index = std::floor( abs(bead1->id - bead2->id) / diag_binsize);
+				//index = std::floor( std::abs(bead1->id - bead2->id) / diag_binsize);
 				//assert (index >= 0);
 				//assert (index <= diag_nbins);
 				//diag_phis[index] += 1; // diag phis is just a count, multiply by volumes later
@@ -174,7 +174,7 @@ public:
 		{
 			for(int j=i+1; j<imax; j++)
 			{
-				d_index  = std::floor( abs(indices[i] - indices[j]) / diag_binsize);
+				d_index  = std::floor( std::abs(indices[i] - indices[j]) / diag_binsize);
 				diag_phis[d_index] += 1; // diag phis is just a count, multiply by volumes later
 			}
 		}
@@ -1004,10 +1004,10 @@ public:
 
 
 		if (cdf_y > 0.5) {
-			return mu - decay*log(1 - 2*abs(cdf_y - 0.5)); // inverse cdf
+			return mu - decay*log(1 - 2*std::abs(cdf_y - 0.5)); // inverse cdf
 		}
 		else {
-			return mu + decay*log(1 - 2*abs(cdf_y - 0.5)); // inverse cdf
+			return mu + decay*log(1 - 2*std::abs(cdf_y - 0.5)); // inverse cdf
 		}
 	}
 
@@ -1190,7 +1190,7 @@ public:
 		int last = -1; 
 		while (last < 0 || last >= nbeads)
 		{
-			last = round(randomExp(first, exp_decay));            // does this obey detailed balance?
+			last = std::round(randomExp(first, exp_decay));            // does this obey detailed balance?
 		}
 
 		// swap first and last to ensure last > first
@@ -1325,7 +1325,7 @@ public:
 		int last = -1; 
 		while (last < 1 || last > nbeads-2)
 		{
-			last = round(randomExp(first, exp_decay_crank));
+			last = std::round(randomExp(first, exp_decay_crank));
 		}
 
 		// swap first and last to ensure last > first
@@ -1485,14 +1485,14 @@ public:
 		// The only bonds affected are pivot-1 OR pivot;
 
 		// chose one end of the polymer and a pivot bead
-		int end = (nbeads-1)*round(rng->uniform()); //  either first bead or last bead
+		int end = (nbeads-1)*std::round(rng->uniform()); //  either first bead or last bead
 
 		end = nbeads-1;
 
 		// pick second bead according to single-sided exponential distribution away from end
 		int length;
 		do {
-			length = abs(round(randomExp(0, exp_decay_pivot))); // length down the polymer from the end
+			length = std::abs(std::round(randomExp(0, exp_decay_pivot))); // length down the polymer from the end
 		} while (length < 1 || length > nbeads-1);
 
 		int pivot = (end == 0) ? length : (nbeads-1-length);
