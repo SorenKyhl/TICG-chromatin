@@ -19,19 +19,20 @@ chi='1 & 2 & -1 & 1.5 \\ 2 & 1 & -1 & -0.5 \\ -1 & -1 & 1 & 1.5 \\ 1.5 & -0.5 & 
 cd ~/TICG-chromatin/sample
 source activate python3.8_pytorch1.8.1_cuda10.2
 
-python3 get_config.py --save_chi --chi $chi --m $m
 mv chis.txt chis.npy $dataFolder
 
 for i in {1..$numSimulations}
 do
+	python3 get_config.py --save_chi --chi $chi --m $m > log.log
+
 	# generate sequences
 	python3 get_seq.py --method $method --m $m --p_switch $pSwitch --k $k
 
 	# run simulation
-	./TICG-engine > log.log
+	# ./TICG-engine >> log.log
 
   # calculate contact map
-  python3 contactmap.py
+  # python3 contactmap.py
 
 	# move output to own folder
   dir="${dataFolder}/samples/sample${i}"
