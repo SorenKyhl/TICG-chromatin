@@ -521,7 +521,7 @@ public:
 	std::vector<std::string> chipseq_files;
 	
 	// analytics
-	bool print_MC; // = false;
+	bool prof_timer_on; // = false;
 	bool print_trans; // = false;
 	bool print_acceptance_rates; // = true;
 
@@ -718,7 +718,7 @@ public:
 		assert(config.contains("rotate_on")); rotate_on = config["rotate_on"];
 		assert(config.contains("load_configuration")); load_configuration = config["load_configuration"];
 		assert(config.contains("load_configuration_filename")); load_configuration_filename = config["load_configuration_filename"];
-		assert(config.contains("print_MC")); print_MC = config["print_MC"];
+		assert(config.contains("prof_timer_on")); prof_timer_on = config["prof_timer_on"];
 		assert(config.contains("print_trans")); print_trans = config["print_trans"];
 		assert(config.contains("print_acceptance_rates")); print_acceptance_rates = config["print_acceptance_rates"];
 		assert(config.contains("contact_resolution")); contact_resolution = config["contact_resolution"];
@@ -1022,52 +1022,52 @@ public:
 			//std::cout << "beginning sim: nonbonded: " <<  grid.active_cells.size() << std::endl;
 
 		    looping:
-			Timer t_translation("translating", print_MC);
+			Timer t_translation("translating", prof_timer_on);
 			for(int j=0; j<n_trans; j++)
 			{
 				MCmove_translate();
 				//nonbonded = getnonbondedenergy(grid.active_cells);
 				//std::cout << nonbonded << std::endl;
 			}
-			t_translation.~Timer();
+			//t_translation.~Timer();
 
 			if (gridmove_on) MCmove_grid();
 			//nonbonded = getNonBondedEnergy(grid.active_cells);
 			//std::cout << nonbonded << std::endl;
 
-			Timer t_displace("displacing", print_MC);
+			Timer t_displace("displacing", prof_timer_on);
 			for(int j=0; j<n_disp; j++)
 			{
 				MCmove_displace();
 				//nonbonded = getNonBondedEnergy(grid.active_cells);
 				//std::cout << nonbonded << std::endl;
 			}
-			t_displace.~Timer();
+			//t_displace.~Timer();
 
 
-			Timer t_crankshaft("Cranking", print_MC);
+			Timer t_crankshaft("Cranking", prof_timer_on);
 			for(int j=0; j<n_crank; j++) {
 				MCmove_crankshaft();
 				//nonbonded = getNonBondedEnergy(grid.active_cells);
 				//std::cout << nonbonded << std::endl;
 			}
-			t_crankshaft.~Timer();
+			//t_crankshaft.~Timer();
 
 			
-			Timer t_rotation("Rotating", print_MC);
+			Timer t_rotation("Rotating", prof_timer_on);
 			for(int j=0; j<n_rot; j++) {
 				MCmove_rotate();
 			}
-			t_rotation.~Timer();
+			//t_rotation.~Timer();
 			
 
-			Timer t_pivot("pivoting", print_MC);
+			Timer t_pivot("pivoting", prof_timer_on);
 			for(int j=0; j<n_pivot; j++) {
 				MCmove_pivot(sweep);
 				//nonbonded = getNonBondedEnergy(grid.active_cells);
 				//std::cout << nonbonded << std::endl;
 			}
-			t_pivot.~Timer();
+			//t_pivot.~Timer();
 
 
 			if (sweep%dump_frequency == 0) {
@@ -1098,7 +1098,7 @@ public:
 					dumpObservables(sweep);
 				}
 
-				Timer t_allenergy("all energy", print_MC);
+				Timer t_allenergy("all energy", prof_timer_on);
 
 				double bonded = getAllBondedEnergy();
 				double nonbonded = 0;
@@ -1108,7 +1108,7 @@ public:
 				double boundary = 9;
 				boundary = boundary_attract_on ? getJustBoundaryEnergy(grid.active_cells) : 0;
 				//std::cout << "bonded " << bonded << " nonbonded " << nonbonded << std::endl;
-				t_allenergy.~Timer();
+				//t_allenergy.~Timer();
 
 				dumpEnergy(sweep, bonded, nonbonded, diagonal, boundary);
 			}
@@ -1123,7 +1123,7 @@ public:
 	
 	void MCmove_displace()
 	{
-	    Timer t_displacemove("Displacement move", print_MC);
+	    Timer t_displacemove("Displacement move", prof_timer_on);
 		// pick random particle
 		int o = floor(beads.size()*rng->uniform());
 
