@@ -819,6 +819,13 @@ public:
 			std::string line;
 			getline(IFILE, line); // nbeads line
 			std::cout << line << std::endl;
+
+			int init_nbeads = stoi(line);
+			std::cout << "checking if nbeads in config.json matches number of beads in the first line of <input>.xyz ... " << std::endl;
+			assert(init_nbeads == nbeads);
+			std::cout << "nbeads in config.json matches <input>.xyz" << std::endl;
+
+			
 			getline(IFILE, line); // comment line 
 			std::cout << line << std::endl;
 				
