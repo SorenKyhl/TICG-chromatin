@@ -37,7 +37,11 @@ do
 	# move output to own folder
   dir="${dataFolder}/samples/sample${i}"
 	mkdir -p $dir
-	mv data_out log.log seq0.txt seq1.txt distance_pearson.png x.npy y.npy y.png $dir
+	mv data_out log.log distance_pearson.png x.npy y.npy y.png $dir
+	for i in $(seq 1 $k)
+	do
+		mv seq${i}.txt $dir
+	done
 
 done
 
