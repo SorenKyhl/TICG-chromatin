@@ -31,11 +31,8 @@ def str2list(v, sep1 = '\\', sep2 = '&'):
             return None
         else:
             v = v.replace(' ', '') # get rid of spaces
-            print(v)
             result = [i.split(sep2) for i in v.split(sep1)]
-            print(result)
             result = np.array(result, dtype=float)
-            print(result)
             return result
     else:
         raise argparse.ArgumentTypeError('str value expected.')
@@ -127,8 +124,12 @@ def main():
             conv.updatePsi()
         args.chi = conv.chi
     else:
-        print(args.chi)
+        print("Chi:\n", args.chi)
         rows, cols = args.chi.shape
+        if args.k is None:
+            args.k = rows
+        else:
+            assert args.k == rows, 'number of particle types does not match shape of chi'
         assert rows == cols, "chi not square".format(args.chi)
         conv = InteractionConverter(args.k, args.chi)
         if not conv.PsiUniqueRows():
@@ -152,10 +153,6 @@ def main():
     config['nbeads']=args.m
 
     # save chipseq files
-    if args.k is None:
-        args.k = rows
-    else:
-        assert args.k == rows, 'number of particle types does not match shape of chi'
     config['chipseq_files'] = ['seq{}.txt'.format(i) for i in range(args.k)]
 
     with open('config.json', 'w') as f:

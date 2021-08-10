@@ -1,6 +1,6 @@
 #! /bin/bash
 #SBATCH --job-name=TICG
-#SBATCH --output=sample/TICG.out
+#SBATCH --output=TICG.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --nodes=1
@@ -14,14 +14,12 @@ k=4
 today=$(date +'%m_%d_%y')
 dataFolder="/project2/depablo/erschultz/dataset_${today}"
 numSimulations=1
-chi='1 & 2 & -1 & 1.5 \\ 2 & 1 & -1 & -0.5 \\ -1 & -1 & 1 & 1.5 \\ 1.5 & -0.5 & 1.5 & 1'
+chi="1&2&-1&1.5\\2&1&-1&-0.5\\-1&-1&1&1.5\\1.5&-0.5&1.5&1"
 
 cd ~/TICG-chromatin/sample
 source activate python3.8_pytorch1.8.1_cuda10.2
 
-mv chis.txt chis.npy $dataFolder
-
-for i in {1..$numSimulations}
+for i in $(seq 1 $numSimulations)
 do
 	python3 get_config.py --save_chi --chi $chi --m $m > log.log
 
@@ -35,10 +33,13 @@ do
   # python3 contactmap.py
 
 	# move output to own folder
-  dir="${dataFolder}/samples/sample${i}"
+	dir="${dataFolder}/samples/sample${i}"
 	mkdir -p $dir
-	mv data_out log.log seq0.txt seq1.txt distance_pearson.png x.npy y.npy y.png $dir
-
+	mv data_out log.log distance_pearson.png x.npy y.npy y.png chis.txt chis.npy $dir
+	for i in $(seq 0 $(($k-1)))
+	do
+		mv seq${i}.txt $dir
+	done
 done
 
-cp config.json "${dataFolder}/config.json"
+mv config.json ${dataFolder}
