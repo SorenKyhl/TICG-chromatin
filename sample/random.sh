@@ -19,8 +19,6 @@ chi="1&2&-1&1.5\\2&1&-1&-0.5\\-1&-1&1&1.5\\1.5&-0.5&1.5&1"
 cd ~/TICG-chromatin/sample
 source activate python3.8_pytorch1.8.1_cuda10.2
 
-mv chis.txt chis.npy $dataFolder
-
 for i in $(seq 1 $numSimulations)
 do
 	python3 get_config.py --save_chi --chi $chi --m $m > log.log
@@ -35,9 +33,9 @@ do
   # python3 contactmap.py
 
 	# move output to own folder
-  dir="${dataFolder}/samples/sample${i}"
+	dir="${dataFolder}/samples/sample${i}"
 	mkdir -p $dir
-	mv data_out log.log distance_pearson.png x.npy y.npy y.png $dir
+	mv data_out log.log distance_pearson.png x.npy y.npy y.png chis.txt chis.npy $dir
 	for i in $(seq 1 $k)
 	do
 		mv seq${i}.txt $dir
