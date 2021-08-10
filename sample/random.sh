@@ -21,7 +21,7 @@ source activate python3.8_pytorch1.8.1_cuda10.2
 
 mv chis.txt chis.npy $dataFolder
 
-for i in {1..$numSimulations}
+for i in $(seq 1 $numSimulations)
 do
 	python3 get_config.py --save_chi --chi $chi --m $m > log.log
 
