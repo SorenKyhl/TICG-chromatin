@@ -124,7 +124,6 @@ def main():
             conv.updatePsi()
         args.chi = conv.chi
     else:
-        print("Chi:\n", args.chi)
         rows, cols = args.chi.shape
         if args.k is None:
             args.k = rows

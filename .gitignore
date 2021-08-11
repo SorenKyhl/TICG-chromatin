@@ -3,4 +3,6 @@ data_out
 *.txt
 *.npy
 *.png
+*.log
+*.out
 config.json
