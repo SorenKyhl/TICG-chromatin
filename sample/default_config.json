@@ -32,7 +32,7 @@
        0.26315789, 0.28947368, 0.31578947, 0.34210526, 0.36842105,
        0.39473684, 0.42105263, 0.44736842, 0.47368421, 0.5       ],
   "grid_size": 28.7,
-  "track_contactmap": true,
+  "track_contactmap": false,
   "diagonal_linear": true,
   "visit_tracking": false,
   "dump_density": false,
