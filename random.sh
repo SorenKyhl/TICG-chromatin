@@ -1,6 +1,6 @@
 #! /bin/bash
 #SBATCH --job-name=TICG
-#SBATCH --output=~/TICG-chromatin/TICG.out
+#SBATCH --output=~/TICG-chromatin/sample/TICG.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --nodes=1
@@ -16,29 +16,24 @@ dataFolder="/project2/depablo/erschultz/dataset_${today}"
 numSimulations=1
 chi="1&2&-1&1.5\\2&1&-1&-0.5\\-1&-1&1&1.5\\1.5&-0.5&1.5&1"
 
-# copy utils to scrath
-cd ~/TICG-chromatin/utils
+cd ~/TICG-chromatin/sample
 cp input1024.xyz /scratch/midway2/erschultz/input1024.xyz
 cp default_config.json /scratch/midway2/erschultz/default_config.json
-
-# move to scratch
 cd /scratch/midway2/erschultz
-
-# activate python
 source activate python3.8_pytorch1.8.1_cuda10.2
 
 for i in $(seq 1 $numSimulations)
 do
-	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi $chi --m $m > log.log
+	python3 ~/TICG-chromatin/sample/get_config.py --save_chi --chi $chi --m $m > log.log
 
 	# generate sequences
-	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --p_switch $pSwitch --k $k
+	python3 ~/TICG-chromatin/sample/get_seq.py --method $method --m $m --p_switch $pSwitch --k $k
 
 	# run simulation
-	~/TICG-chromatin/TICG-engine >> log.log
+	~/TICG-chromatin/sample/TICG-engine >> log.log
 
   # calculate contact map
-  python3 ~/TICG-chromatin/scripts/contactmap.py
+  python3 ~/TICG-chromatin/sample/contactmap.py
 
 	# move output to own folder
 	dir="${dataFolder}/samples/sample${i}"
