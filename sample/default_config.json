@@ -22,7 +22,7 @@
   "load_chipseq": true,
   "load_configuration": true,
   "load_configuration_filename": "input1024.xyz",
-  "print_MC": false,
+  "prof_timer_on": false,
   "print_trans": false,
   "print_acceptance_rates": true,
   "contact_resolution": 1,
