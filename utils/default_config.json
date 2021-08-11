@@ -3,7 +3,7 @@
   "production": true,
   "hp1_mean_conc": 0,
   "decay_length": 100,
-  "nSweeps": 50000,
+  "nSweeps": 10000,
   "dump_frequency": 100,
   "dump_stats_frequency": 10,
   "nEquilibSweeps": 1,

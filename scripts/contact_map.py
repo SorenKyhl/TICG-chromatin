@@ -1,3 +1,4 @@
+import os
 import os.path as osp
 
 import numpy as np
@@ -45,7 +46,9 @@ def plotContactMap(y, ofile = None, title = None, vmin = 0, vmax = 1, size_in = 
 
 
 def main():
-    y = np.loadtxt('data_out\contacts.txt')[:args.m, :args.m]
+    print(os.getcwd())
+    print(osp.exists('data_out'))
+    y = np.loadtxt(osp.join('data_out','contacts.txt'))[:args.m, :args.m]
 
     plotContactMap(y, ofile = 'y.png', vmax = 'mean')
     np.save(os.path.join(out_path, 'y.npy'), y.astype(np.int16))

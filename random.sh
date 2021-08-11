@@ -38,7 +38,7 @@ do
 	~/TICG-chromatin/TICG-engine >> log.log
 
   # calculate contact map
-  python3 ~/TICG-chromatin/scripts/contactmap.py
+  python3 ~/TICG-chromatin/scripts/contact_map.py
 
 	# move output to own folder
 	dir="${dataFolder}/samples/sample${i}"
