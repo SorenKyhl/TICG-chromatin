@@ -11,13 +11,14 @@ method='random'
 m=1024
 pSwitch=0.05
 k=4
-today=$(date +'%m_%d_%y')
-dataFolder="/project2/depablo/erschultz/dataset_${today}"
 numSimulations=1
 chi="1&2&-1&1.5\\2&1&-1&-0.5\\-1&-1&1&1.5\\1.5&-0.5&1.5&1"
 
-# move utils to scratch
+today=$(date +'%m_%d_%y')
+dataFolder="/project2/depablo/erschultz/dataset_${today}"
 scratchDir='/scratch/midway2/erschultz/TICG'
+
+# move utils to scratch
 mkdir -p $scratchDir
 cd ~/TICG-chromatin/utils
 cp input1024.xyz "${scratchDir}/input1024.xyz"
