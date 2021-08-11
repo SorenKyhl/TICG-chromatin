@@ -150,7 +150,10 @@ def main():
             config[key] = val
 
     # save nbeads
-    config['nbeads']=args.m
+    config['nbeads'] = args.m
+
+    # save nspecies
+    config["nspecies"] = args.k
 
     # save chipseq files
     config['chipseq_files'] = ['seq{}.txt'.format(i) for i in range(args.k)]

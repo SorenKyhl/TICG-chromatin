@@ -1,7 +1,6 @@
 {
   "seed": 1,
   "production": true,
-  "nspecies": 2,
   "hp1_mean_conc": 0,
   "decay_length": 100,
   "nSweeps": 50000,
