@@ -17,12 +17,14 @@ numSimulations=1
 chi="1&2&-1&1.5\\2&1&-1&-0.5\\-1&-1&1&1.5\\1.5&-0.5&1.5&1"
 
 # move utils to scratch
+scratchDir='/scratch/midway2/erschultz/TICG'
+mkdir -p $scratchDir
 cd ~/TICG-chromatin/utils
-cp input1024.xyz /scratch/midway2/erschultz/input1024.xyz
-cp default_config.json /scratch/midway2/erschultz/default_config.json
+cp input1024.xyz "${scratchDir}/input1024.xyz"
+cp default_config.json "${scratchDir}/default_config.json"
 
 # change cwd to scratch
-cd /scratch/midway2/erschultz
+cd $scratchDir
 
 # activate python
 source activate python3.8_pytorch1.8.1_cuda10.2
