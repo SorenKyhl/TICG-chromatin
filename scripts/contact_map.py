@@ -6,6 +6,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+def getArgs():
+    parser = argparse.ArgumentParser(description='Base parser')
+    parser.add_argument('--m', type=int, default=1024, help='number of particles')
+
+    args = parser.parse_args()
+    return args
 
 def plotContactMap(y, ofile = None, title = None, vmin = 0, vmax = 1, size_in = 6, minVal = None, maxVal = None):
     """
@@ -46,8 +52,7 @@ def plotContactMap(y, ofile = None, title = None, vmin = 0, vmax = 1, size_in = 
 
 
 def main():
-    print(os.getcwd())
-    print(osp.exists('data_out'))
+    args = getArgs()
     y = np.loadtxt(osp.join('data_out','contacts.txt'))[:args.m, :args.m]
 
     plotContactMap(y, ofile = 'y.png', vmax = 'mean')
