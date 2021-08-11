@@ -32,9 +32,13 @@ do
   python3 compare_contact.py --m $m --sample $sample --data_folder $dataFolder
 
 	# move output to own folder
-  dir="${dataFolder}/samples/sample${sample}/${method}"
+  dir="${dataFolder}/samples/sample${sample}/${method}/k${k}"
 	mkdir -p $dir
-	mv data_out log.log seq0.txt seq1.txt x.npy y.npy y.png $dir
+	mv data_out log.log x.npy y.npy y.png distance_pearson.png $dir
+	for i in $(seq 0 $(($k-1)))
+	do
+		mv seq${i}.txt $dir
+	done
 done
 
-cp config.json "${dataFolder}/config.json"
+mv config.json ${dataFolder}

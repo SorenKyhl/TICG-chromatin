@@ -27,15 +27,15 @@ do
 	python3 get_seq.py --method $method --m $m --p_switch $pSwitch --k $k
 
 	# run simulation
-	# ./TICG-engine >> log.log
+	./TICG-engine >> log.log
 
   # calculate contact map
-  # python3 contactmap.py
+  python3 contactmap.py
 
 	# move output to own folder
 	dir="${dataFolder}/samples/sample${i}"
 	mkdir -p $dir
-	mv data_out log.log distance_pearson.png x.npy y.npy y.png chis.txt chis.npy $dir
+	mv data_out log.log x.npy y.npy y.png chis.txt chis.npy $dir
 	for i in $(seq 0 $(($k-1)))
 	do
 		mv seq${i}.txt $dir

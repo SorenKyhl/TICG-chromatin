@@ -13,7 +13,7 @@ from sklearn.cluster import KMeans
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     # '../../sequences_to_contact_maps/dataset_04_18_21'
-    # "../../../../project2/depablo/erschultz/dataset_04_18_21"
+    # "./project2/depablo/erschultz/dataset_04_18_21"
     parser.add_argument('--data_folder', type=str, default='../sequences_to_contact_maps/dataset_04_18_21', help='Location of input data')
     parser.add_argument('--sample', type=int, default=2, help='sample id')
     parser.add_argument('--method', type=str, default='PCA', help='method for assigning particle types')
