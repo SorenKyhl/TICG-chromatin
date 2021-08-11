@@ -58,7 +58,7 @@ def main():
     y = np.loadtxt(osp.join('data_out','contacts.txt'))[:args.m, :args.m]
 
     plotContactMap(y, ofile = 'y.png', vmax = 'mean')
-    np.save(os.path.join(out_path, 'y.npy'), y.astype(np.int16))
+    np.save('y.npy', y.astype(np.int16))
 
 if __name__ == '__main__':
     main()
