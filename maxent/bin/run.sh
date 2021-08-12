@@ -1,4 +1,6 @@
 #!/bin/bash
+
+
 # TICG-MaxEnt optimization algorithm.
 #
 # This script will execute maximum entropy optimization of chi parameters for the TICG-chromatin model of genome architecture
@@ -74,7 +76,7 @@
 #
 # goal_specified
 #	if false, the user does not need to specify observables. instead, the user should specify the first two lines (zeroth and first)
-#   in chis.txt. The first line (zeroth simulation) are the chi parameters for which the goal observalbes will be calculated.
+#   in chis.txt. The first line (zeroth simulation) are the chi parameters for which the goal observables will be calculated.
 #	the second line (first simulation) are the inital chi parameters to start the maximum entropy procdeure,
 #	which will subsequently attempt to match the conditions observed in iteration 0. The same is true of chis_diag.txt
 #
