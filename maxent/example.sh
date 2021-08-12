@@ -15,6 +15,10 @@
 # chis.txt (line 2): 0 0 0
 # chis_diag.txt (line 2): np.zeros(16)
 
+# if on midway
+# module load jq
+# module load python
+
 # using all default parameters:
 ./bin/run.sh 
 
