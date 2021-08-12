@@ -11,8 +11,10 @@ method='random'
 m=1024
 pSwitch=0.05
 k=4
-numSimulations=1
-chi="1&2&-1&1.5\\2&1&-1&-0.5\\-1&-1&1&1.5\\1.5&-0.5&1.5&1"
+numSimulations=2
+# chi="1&2&-1&1.5\\2&1&-1&-0.5\\-1&-1&1&1.5\\1.5&-0.5&1.5&1"
+chi='none'
+
 
 today=$(date +'%m_%d_%y')
 dataFolder="/project2/depablo/erschultz/dataset_${today}"
@@ -30,7 +32,7 @@ cd $scratchDir
 # activate python
 source activate python3.8_pytorch1.8.1_cuda10.2
 
-for i in $(seq 1 $numSimulations)
+for i in $(seq 2 $numSimulations)
 do
   # set up config.json
 	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi $chi --m $m > log.log

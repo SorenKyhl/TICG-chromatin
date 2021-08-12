@@ -1,6 +1,5 @@
 TICG-engine
 data_out
-*.txt
 *.npy
 *.png
 *.log

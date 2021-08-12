@@ -10,6 +10,9 @@ def getArgs():
     parser.add_argument('--save_chi', action="store_true", help='true to save chi to wd')
     parser.add_argument('--min_chi', type=float, default=-1., help='minimum chi value for random generation')
     parser.add_argument('--max_chi', type=float, default=1., help='maximum chi value for random generation')
+    parser.add_argument('--diag_only', action='store_true', help='true to set non_diagonal chi to 0')
+    parser.add_argument('--fill_diag', type=float, help='fill diag of chi with given value (None to skip)')
+    parser.add_argument('--fill_offdiag', type=float, help='fill off diag of chi with given value (None to skip)')
 
     args = parser.parse_args()
     return args
@@ -37,7 +40,7 @@ def str2list(v, sep1 = '\\', sep2 = '&'):
     else:
         raise argparse.ArgumentTypeError('str value expected.')
 
-def generateRandomChi(n_types, only_diag = False, minVal = -1., maxVal = 1., decimals = 1):
+def generateRandomChi(n_types, fill_diag = None, fill_offdiag = None, minVal = -1., maxVal = 1., decimals = 1):
     '''Initializes random chi array.'''
     # create array with random values in [minval, maxVal]
     rands = np.random.rand(n_types, n_types) * (maxVal - minVal) + minVal
@@ -45,14 +48,17 @@ def generateRandomChi(n_types, only_diag = False, minVal = -1., maxVal = 1., dec
     # make symmetric chi array
     chi = np.tril(rands) + np.triu(rands.T, 1)
 
-    if only_diag:
+    if fill_offdiag is not None:
         # only diag mode sets all off diagonal elements to 0
         # i.e. type i only interacts with type i
         chi_diag = np.diagonal(chi)
-        chi = np.zeros((n_types, n_types))
+        chi = np.ones((n_types, n_types)) * fill_offdiag
         di = np.diag_indices(n_types)
         chi[di] = chi_diag
-
+    if fill_diag is not None:
+        di = np.diag_indices(n_types)
+        chi[di] = fill_diag
+        
     return np.round(chi, decimals = decimals)
 
 class InteractionConverter():
