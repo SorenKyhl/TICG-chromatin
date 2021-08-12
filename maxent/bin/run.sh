@@ -54,7 +54,7 @@
 #	identical to obj_goal_txt, except for diagonal chis
 #
 # ----------- command-line arguments --------------
-# output_dir
+# outputDir
 #	directory where all simulations and results are output
 #
 # gamma
@@ -89,7 +89,7 @@
 #
 #
 # ------------ results -----------
-# in output_dir:
+# in outputDir:
 #	iteration<i>
 #		directories that contain simulation results from each iteration, including config file and other inputs
 #
@@ -100,16 +100,29 @@
 
 
 # command-line arguments
-output_dir=${1:-maxent_output}
+today=$(date +'%m_%d_%y')
+outputDir=${1:-"/project2/depablo/erschultz/maxent_${today}"}
 gamma=${2:-0.00001}
 gamma_diag=${3:-0.00001}
 mode=${4:-plaid}
 production_sweeps=${5:-50000}
 equilib_sweeps=${6:-10000}
-goal_specified=${7:0}
+goal_specified=${7:-0}
+
+# other parameters
+scratchDir='/scratch/midway2/erschultz/TICG_maxent'
+configFileName='config.json'
+saveFileName='equilibrated.xyz'
+proj_root=$(pwd)
+proj_bin="$(pwd)/bin"                # location of algorithm scripts
+nchis=$(head -1 "resources/chis.txt" | wc -w)
+ndiagchis=$(head -1 "resources/chis_diag.txt" | wc -w)
+
+# change to max ent directory
+cd ~/TICG-chromatin/maxent
 
 # directory checks
-if [ -d $output_dir ]
+if [ -d $outputDir ]
 then
 	# don't overrite previous results!
 	echo "output directory already exists"
@@ -124,48 +137,42 @@ else
 	exit 1
 fi
 
-configfile=config.json
-savepoint=equilibrated.xyz
-proj_root=$(pwd)
-proj_bin="$(pwd)/bin"                # location of algorithm scripts
-nchis=$(head -1 resources/chis.txt | wc -w)
-ndiagchis=$(head -1 resources/chis_diag.txt | wc -w)
-
 run_simulation () {
 	mkdir "iteration$it"
-	cp resources/* "iteration$it"
+	cp resources/* "iteration$it" # TODO avoid this
 	$proj_bin/update_chis.sh $it $proj_bin
 	python3 $proj_bin/update_diag.py $it
 	cd "iteration$it"
 
 	# equilibrate system
-	python3 $proj_bin/jsed.py $configfile nSweeps $equilib_sweeps i
-	./TICG-engine > equilib.log
-	$proj_bin/fork_last_snapshot.sh $savepoint
+	python3 $proj_bin/jsed.py $configFileName nSweeps $equilib_sweeps i
+	~/TICG-chromatin/TICG-engine > equilib.log
+	$proj_bin/fork_last_snapshot.sh $saveFileName
 	mkdir equilib_out
 	mv data_out/* equilib_out
 
 	# set up production run
-	python3 $proj_bin/jsed.py $configfile load_configuration_filename $savepoint s
-	python3 $proj_bin/jsed.py $configfile nSweeps $production_sweeps i
-	python3 $proj_bin/jsed.py $configfile seed $RANDOM i
-	./TICG-engine > production.log
+	python3 $proj_bin/jsed.py $configFileName load_configuration_filename $saveFileName s
+	python3 $proj_bin/jsed.py $configFileName nSweeps $production_sweeps i
+	python3 $proj_bin/jsed.py $configFileName seed $RANDOM i
+	~/TICG-chromatin/TICG-engine > production.log
 	echo "finished iteration $it"
 
-	cd $proj_root/$output_dir
-	python3 $proj_bin/contactmap.py $it
+	python3 ~/TICG-chromatin/scripts/contact_map.py
+	cd $scratchDir
 }
 
-# set up output direcory
-it=0       # iteration number
-mkdir $output_dir
-cp -r resources $output_dir
-cd $output_dir
+# set up scratch and output directory
+mkdir -p $scratchDir
+mkdir -p $outputDir
+cp -r resources $scratchDir
+cd $scratchDir
 mv resources/chis.txt .
 mv resources/chis_diag.txt .
 touch track.log
 
 # iteration 0
+it=0
 if [ $goal_specified -eq 1 ]
 then
 	# if goal is specified, just move in goal files and do not simulate
@@ -187,3 +194,6 @@ do
 	# update plots
 	gnuplot -c $proj_bin/plot.p $nchis $ndiagchis
 done
+
+# move data to output directory
+mv $scratchDir/* $outputDir

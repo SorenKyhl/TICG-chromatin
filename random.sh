@@ -21,6 +21,14 @@ today=$(date +'%m_%d_%y')
 dataFolder="/project2/depablo/erschultz/dataset_${today}"
 scratchDir='/scratch/midway2/erschultz/TICG'
 
+# directory checks
+if [ -d $dataFolder ]
+then
+	# don't overrite previous results!
+	echo "output directory already exists"
+	exit 1
+fi
+
 # move utils to scratch
 mkdir -p $scratchDir
 cd ~/TICG-chromatin/utils

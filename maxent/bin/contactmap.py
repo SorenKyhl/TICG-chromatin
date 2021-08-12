@@ -7,9 +7,6 @@ from scipy import linalg
 import seaborn as sns
 mpl.use('Agg')
 
-import palettable
-from palettable.colorbrewer.sequential import Reds_3
-
 mycmap = mpl.colors.LinearSegmentedColormap.from_list('custom',
                                              [(0,    'white'),
                                               (0.3,  'white'),
@@ -31,4 +28,3 @@ mean1 = df.stack().mean()
 plt.figure(figsize=(12,10))
 sns.heatmap(df/(mean1), vmax=1, cmap=mycmap);
 plt.savefig(it_dir + "/contact" + str(it) + ".png")
-
