@@ -27,4 +27,4 @@
 # module load python
 
 # using all default parameters:
-./bin/run.sh
+~/TICG-chromatin/maxent/bin/run.sh

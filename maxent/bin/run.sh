@@ -101,7 +101,7 @@
 output_dir=${1:-maxent_output}
 gamma=${2:-0.00001}
 gamma_diag=${3:-0.00001}
-mode=${4:-both}
+mode=${4:-plaid}
 production_sweeps=${5:-50000}
 equilib_sweeps=${6:-10000}
 goal_specified=${7:0}
