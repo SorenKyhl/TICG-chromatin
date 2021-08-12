@@ -28,8 +28,9 @@
 
 # using all default parameters:
 
-# activate python
+# activate python and jq
 source activate python3.8_pytorch1.8.1_cuda10.2
+module load jq
 
 cd ~/TICG-chromatin/maxent
 bin/run.sh
