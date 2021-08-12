@@ -1,14 +1,14 @@
 #!/bin/bash
 # TICG-MaxEnt optimization algorithm.
 #
-# This script will execute maximum entropy optimizaiton of chi parameters for the TICG-chromatin model of genome architecture
-# usage: (while in proj_root/) 
+# This script will execute maximum entropy optimization of chi parameters for the TICG-chromatin model of genome architecture
+# usage: (while in proj_root/)
 #	./bin/run.sh
 #
 # Required folder structure:
 # proj_root
 # |- resources
-#    |- config.json         
+#    |- config.json
 #    |- init_config.xyz
 #    |- seqs.txt
 #    |- TICG-engine
@@ -18,18 +18,18 @@
 #    |- obj_goal_diag.txt (optional)
 # |- bin
 #    |- algorithm scripts
-# 
+#
 # the maximum entropy procedure requires several files in the resources folder:
-# config.json: 
-#	specifies most of the simulation paramters that are constant throughout maximum entropy optimization. 
+# config.json:
+#	specifies most of the simulation paramters that are constant throughout maximum entropy optimization.
 #	the only exceptions are the number of equilibration and production sweeps, which are command-line arguments to this script,
 #	... and the chi values, which are updated by after each maximum entropy step by the helper functions "update_chis.sh" and
 #	"update_diagonal.py"
 #
 # init_config.xyz
-#	initial configuration for all simulations TODO: randomize this initial configuration. It's not essential, the initial 
+#	initial configuration for all simulations TODO: randomize this initial configuration. It's not essential, the initial
 #	configuration doesn't affect the output after equilibration, and the seed for each simulation is random
-# 
+#
 # seqs.txt
 #	one-dimensinoal vectors corresponding to epigenetic bead labels
 #
@@ -45,7 +45,7 @@
 #	identical to chis.txt, except for diagonal chis
 #
 # obj_goal.txt (optional)
-#	space-separated list of goal observables corresponding to each chi parameter. (optional: if $goal_specified 
+#	space-separated list of goal observables corresponding to each chi parameter. (optional: if $goal_specified
 #   is false, goal observables will be calculated from iteration 0 simulations)
 #
 # obj_gial_diag.txt (optional)
@@ -57,10 +57,10 @@
 #
 # gamma
 #	newton's method relaxation constant for plaid chi optimization. often needs to be << 1, otherwise overshoot.
-#	
+#
 # gamma_diag
 #	newton's method relaxation constant for diagonal chi optimization. often needs to be << 1, otherwise overshoot.
-# 
+#
 # mode
 #	plaid: optimize only plaid chis, with fixed diagonal chis
 #	diag: optimize only diagonal chis, with fixed plaid chis
@@ -71,9 +71,9 @@
 #
 # equilib_sweeps
 #	number of equilibration sweeps
-# 
+#
 # goal_specified
-#	if false, the user does not need to specify observables. instead, the user should specify the first two lines (zeroth and first) 
+#	if false, the user does not need to specify observables. instead, the user should specify the first two lines (zeroth and first)
 #   in chis.txt. The first line (zeroth simulation) are the chi parameters for which the goal observalbes will be calculated.
 #	the second line (first simulation) are the inital chi parameters to start the maximum entropy procdeure,
 #	which will subsequently attempt to match the conditions observed in iteration 0. The same is true of chis_diag.txt
@@ -93,7 +93,7 @@
 #
 #	chis.txt, chis_diag.txt
 #		space-separated list of chi parameters, each line corresponds to a new iteration. the first line is always iteration 0
-# 
+#
 #	pchis.png, pchi
 
 
@@ -108,13 +108,13 @@ goal_specified=${7:0}
 
 # directory checks
 if [ -d $output_dir ]
-then 
+then
 	# don't overrite previous results!
 	echo "output directory already exists"
 	exit 1
 fi
 
-if [[ -d resources && -d bin ]] 
+if [[ -d resources && -d bin ]]
 then
 	echo "resources and bin exist"
 else
@@ -123,7 +123,7 @@ else
 fi
 
 configfile=config.json
-savepoint=equilibrated.xyz 
+savepoint=equilibrated.xyz
 proj_root=$(pwd)
 proj_bin="$(pwd)/bin"                # location of algorithm scripts
 nchis=$(head -1 resources/chis.txt | wc -w)
@@ -134,7 +134,7 @@ run_simulation () {
 	cp resources/* "iteration$it"
 	$proj_bin/update_chis.sh $it $proj_bin
 	python3 $proj_bin/update_diag.py $it
-	cd "iteration$it" 
+	cd "iteration$it"
 
 	# equilibrate system
 	python3 $proj_bin/jsed.py $configfile nSweeps $equilib_sweeps i
@@ -156,7 +156,7 @@ run_simulation () {
 
 # set up output direcory
 it=0       # iteration number
-mkdir $output_dir 
+mkdir $output_dir
 cp -r resources $output_dir
 cd $output_dir
 mv resources/chis.txt .
@@ -181,7 +181,7 @@ do
 
 	# update chis via newton's method
 	python3 $proj_bin/newton_step.py $it $gamma $gamma_diag $mode $goal_specified >> track.log
-	
+
 	# update plots
 	gnuplot -c $proj_bin/plot.p $nchis $ndiagchis
 done
