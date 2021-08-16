@@ -108,6 +108,7 @@ mode=${4:-plaid}
 production_sweeps=${5:-50000}
 equilib_sweeps=${6:-10000}
 goal_specified=${7:-0}
+num_iterations=${8:-50}
 
 # other parameters
 scratchDir='/scratch/midway2/erschultz/TICG_maxent'
@@ -138,10 +139,20 @@ else
 fi
 
 run_simulation () {
+	# resources must be in working directory
 	mkdir "iteration$it"
-	cp resources/* "iteration$it" # TODO avoid this
-	$proj_bin/update_chis.sh $it $proj_bin
-	python3 $proj_bin/update_diag.py $it
+	cp resources/* "iteration$it"
+	if ["$mode" == "plaid"];
+	then
+		$proj_bin/update_chis.sh $it $proj_bin
+	elif ["$mode" == "diag"];
+	then
+		python3 $proj_bin/update_diag.py $it
+	elif ["$mode" == "both"];
+	then
+		$proj_bin/update_chis.sh $it $proj_bin
+		python3 $proj_bin/update_diag.py $it
+	fi
 	cd "iteration$it"
 
 	# equilibrate system
@@ -167,8 +178,17 @@ mkdir -p $scratchDir
 mkdir -p $outputDir
 cp -r resources $scratchDir
 cd $scratchDir
-mv resources/chis.txt .
-mv resources/chis_diag.txt .
+if ["$mode" == "plaid"];
+then
+	mv resources/chis.txt .
+elif ["$mode" == "diag"];
+then
+	mv resources/chis_diag.txt .
+elif ["$mode" == "both"];
+then
+	mv resources/chis.txt .
+	mv resources/chis_diag.txt .
+fi
 touch track.log
 
 # iteration 0
@@ -176,15 +196,25 @@ it=0
 if [ $goal_specified -eq 1 ]
 then
 	# if goal is specified, just move in goal files and do not simulate
-	mv resources/obj_goal.txt .
-	mv resources/obj_goal_diag.txt .
+	if ["$mode" == "plaid"];
+	then
+		mv resources/obj_goal.txt .
+	elif ["$mode" == "diag"];
+	then
+		mv resources/obj_goal_diag.txt .
+	elif ["$mode" == "both"];
+	then
+		mv resources/obj_goal.txt .
+		mv resources/obj_goal_diag.txt .
+	fi
+
 else
 	# if goal is not specified, simulate iteration 0 and calculate the goals from that simulation
 	run_simulation
 fi
 
 # maxent optimization
-for it in {1..100}
+for it in $(seq 1 $(($num_iterations)))
 do
 	run_simulation
 

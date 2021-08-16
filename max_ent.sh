@@ -11,34 +11,39 @@ m=1024
 k=2
 sample=40
 dataFolder='/project2/depablo/erschultz/dataset_04_18_21'
+sampleFolder="$dataFolder/samples/sample$sample"
+scratchDir='/scratch/midway2/erschultz/TICG'
+gamma=0.00001
+gammaDiag=0.00001
+mode="plaid"
+productionSweeps=50000
+equilibSweeps=10000
+goalSpecified=1
+numIterations=50
 
-cd ~/TICG-chromatin/sample
 source activate python3.8_pytorch1.8.1_cuda10.2
+module load jq
 
-python3 get_config.py --k $k --m $m
+cd ~/TICG-chromatin/maxent/resources
+python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi 0 --max_chi 0 --save_chi_for_max_ent
 
-for method in 'ground_truth' 'PCA' 'k_means' 'GNN' 'random'
+# 'PCA' 'k_means' 'GNN' 'random'
+for method in 'ground_truth'
 do
+	cd ~/TICG-chromatin/maxent/resources
 	# generate sequences
-	python3 get_seq.py --method $method --m $m --k $k --sample $sample
+	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --k $k --sample $sample
+	# generate goals
+	python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --k $k --contact_map "$sampleFolder/y.npy"
 
-	# run simulation
-	./TICG-engine > log.log # TODO max ent
+	# apply max ent with newton's method
+	dir="${dataFolder}/samples/sample${sample}/${method}/k${k}"
+	~/TICG-chromatin/maxent/bin/run.sh $dir $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations
 
-  # calculate contact map
-  python3 contactmap.py
+	# run longer simulation to estimate contact map
+	cd $scratchDir
+	~/TICG-chromatin/TICG-engine > log.log
 
   # compare results
-  python3 compare_contact.py --m $m --sample $sample --data_folder $dataFolder
-
-	# move output to own folder
-  dir="${dataFolder}/samples/sample${sample}/${method}/k${k}"
-	mkdir -p $dir
-	mv data_out log.log x.npy y.npy y.png distance_pearson.png $dir
-	for i in $(seq 0 $(($k-1)))
-	do
-		mv seq${i}.txt $dir
-	done
+  python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --sample $sample --data_folder $dataFolder
 done
-
-mv config.json ${dataFolder}

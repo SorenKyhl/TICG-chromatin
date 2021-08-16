@@ -8,6 +8,7 @@ def getArgs():
     parser.add_argument('--m', type=int, default=1024, help='number of particles')
     parser.add_argument('--k', type=int, help='number of particle types (inferred from chi if None)')
     parser.add_argument('--save_chi', action="store_true", help='true to save chi to wd')
+    parser.add_argument('--save_chi_for_max_ent', action="store_true", help='true to save chi to wd in format needed for max ent')
     parser.add_argument('--min_chi', type=float, default=-1., help='minimum chi value for random generation')
     parser.add_argument('--max_chi', type=float, default=1., help='maximum chi value for random generation')
     parser.add_argument('--diag_only', action='store_true', help='true to set non_diagonal chi to 0')
@@ -58,7 +59,7 @@ def generateRandomChi(n_types, fill_diag = None, fill_offdiag = None, minVal = -
     if fill_diag is not None:
         di = np.diag_indices(n_types)
         chi[di] = fill_diag
-        
+
     return np.round(chi, decimals = decimals)
 
 class InteractionConverter():
@@ -144,6 +145,8 @@ def main():
     if args.save_chi:
         np.savetxt('chis.txt', args.chi, fmt='%0.5f')
         np.save('chis.npy', args.chi)
+    elif args.save_chi_for_max_ent:
+        np.savetxt('chis.txt', args.chi[np.triu_indices(args.k)], fmt='%0.5f')
 
     # save chi to config
     letters='ABCDEFG'
