@@ -38,15 +38,13 @@ source activate python3.8_pytorch1.8.1_cuda10.2
 for i in $(seq $startSimulation $(($startSimulation + $numSimulations - 1)))
 do
   # set up config.json
-	echo $chi
-	python3 ~/TICG-chromatin/scripts/test.py --chi $chi --m $m	
-python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi "${chi}" --m $m --fill_offdiag $fillOffdiag --ensure_distinguishable > log.log
+	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi $chi --m $m --fill_offdiag $fillOffdiag --ensure_distinguishable
 
 	# generate sequences
 	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --p_switch $pSwitch --k $k
 
 	# run simulation
-	~/TICG-chromatin/TICG-engine >> log.log
+	~/TICG-chromatin/TICG-engine > log.log
 
   # calculate contact map
   python3 ~/TICG-chromatin/scripts/contact_map.py --m $m

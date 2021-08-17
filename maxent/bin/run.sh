@@ -177,17 +177,8 @@ mkdir -p $scratchDir
 mkdir -p $outputDir
 cp -r resources $scratchDir
 cd $scratchDir
-if [ $mode == "plaid" ];
-then
-	mv resources/chis.txt .
-elif [ $mode == "diag" ];
-then
-	mv resources/chis_diag.txt .
-elif [ $mode == "both" ];
-then
-	mv resources/chis.txt .
-	mv resources/chis_diag.txt .
-fi
+mv resources/chis.txt .
+mv resources/chis_diag.txt .
 touch track.log
 
 # iteration 0

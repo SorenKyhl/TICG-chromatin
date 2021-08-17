@@ -40,12 +40,10 @@ def main():
             result = seqi @ y @ seqj
             result /= args.m # take average
             result /= y_max # convert from freq to prob
+            obj_goal.append(result)
 
-    obj_goal.append(result)
-
-    np.savetxt('obj_goal.txt', np.array(obj_goal))
-    np.savetxt('obj_goal_diag.txt', np.zeros(20))
-
+    np.savetxt('obj_goal.txt', np.array(obj_goal), delimiter='\t')
+    np.savetxt('obj_goal_diag.txt', np.zeros(20), delimiter='\t')
 
 if __name__ == '__main__':
     main()
