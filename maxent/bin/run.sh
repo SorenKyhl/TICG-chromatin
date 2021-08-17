@@ -98,13 +98,15 @@
 #
 #	pchis.png, pchi
 
+# change to max ent directory
+cd ~/TICG-chromatin/maxent
 
 # command-line arguments
 today=$(date +'%m_%d_%y')
 outputDir=${1:-"/project2/depablo/erschultz/maxent_${today}"}
 gamma=${2:-0.00001}
 gamma_diag=${3:-0.00001}
-mode=${4:-plaid}
+mode=${4:-"plaid"}
 production_sweeps=${5:-50000}
 equilib_sweeps=${6:-10000}
 goal_specified=${7:-0}
@@ -117,10 +119,7 @@ saveFileName='equilibrated.xyz'
 proj_root=$(pwd)
 proj_bin="$(pwd)/bin"                # location of algorithm scripts
 nchis=$(head -1 "resources/chis.txt" | wc -w)
-ndiagchis=$(head -1 "resources/chis_diag.txt" | wc -w)
-
-# change to max ent directory
-cd ~/TICG-chromatin/maxent
+# ndiagchis=$(head -1 "resources/chis_diag.txt" | wc -w)
 
 # directory checks
 if [ -d $outputDir ]
@@ -142,13 +141,13 @@ run_simulation () {
 	# resources must be in working directory
 	mkdir "iteration$it"
 	cp resources/* "iteration$it"
-	if ["$mode" == "plaid"];
+	if [ $mode == "plaid" ];
 	then
 		$proj_bin/update_chis.sh $it $proj_bin
-	elif ["$mode" == "diag"];
+	elif [ $mode == "diag" ];
 	then
 		python3 $proj_bin/update_diag.py $it
-	elif ["$mode" == "both"];
+	elif [ $mode == "both" ];
 	then
 		$proj_bin/update_chis.sh $it $proj_bin
 		python3 $proj_bin/update_diag.py $it
@@ -178,13 +177,13 @@ mkdir -p $scratchDir
 mkdir -p $outputDir
 cp -r resources $scratchDir
 cd $scratchDir
-if ["$mode" == "plaid"];
+if [ $mode == "plaid" ];
 then
 	mv resources/chis.txt .
-elif ["$mode" == "diag"];
+elif [ $mode == "diag" ];
 then
 	mv resources/chis_diag.txt .
-elif ["$mode" == "both"];
+elif [ $mode == "both" ];
 then
 	mv resources/chis.txt .
 	mv resources/chis_diag.txt .
@@ -196,13 +195,13 @@ it=0
 if [ $goal_specified -eq 1 ]
 then
 	# if goal is specified, just move in goal files and do not simulate
-	if ["$mode" == "plaid"];
+	if [ $mode == "plaid" ];
 	then
 		mv resources/obj_goal.txt .
-	elif ["$mode" == "diag"];
+	elif [ $mode == "diag" ];
 	then
 		mv resources/obj_goal_diag.txt .
-	elif ["$mode" == "both"];
+	elif [ $mode == "both" ];
 	then
 		mv resources/obj_goal.txt .
 		mv resources/obj_goal_diag.txt .

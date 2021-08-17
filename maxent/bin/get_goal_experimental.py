@@ -13,33 +13,37 @@ def getArgs():
     return args
 
 def main():
-	'''
-	Calculate goal observables from contact map.
+    '''
+    Calculate goal observables from contact map.
 
-	Currently obs_goal_diag is not suported.
-	'''
-	args = getArgs()
-	obj_goal = np.zeros(k)
+    Currently obs_goal_diag is not suported.
+    '''
+    args = getArgs()
+    obj_goal = []
 
-	if args.contact_map.endswith('.npy'):
-		y = np.load(args.contact_map)
-	elif args.contact_map.endswith('.txt'):
-		y = np.loadtxt(args.contact_map)
+    if args.contact_map.endswith('.npy'):
+        y = np.load(args.contact_map)
+    elif args.contact_map.endswith('.txt'):
+        y = np.loadtxt(args.contact_map)
 
-	y = y[:args.m, :args.m] # crop to m
-	y = np.triu(y) # avoid double counting due to symmetry
+    y = y[:args.m, :args.m] # crop to m
+    y = np.triu(y) # avoid double counting due to symmetry
 
-	for i in range(k):
-		seq = np.loadtxt("seq{}.txt".format(i))
+    for i in range(k):
+        seqi = np.loadtxt("seq{}.txt".format(i))
+        for j in range(k):
+            if j < i:
+                # don't double count
+                continue
+            seqj = np.loadtxt("seq{}.txt".format(i))
+            result = seqi @ y @ seqj
+            result /= args.m # take average
+            result /= y_max # convert from freq to prob
 
-		result = seq @ y @ seq
-		result /= args.m # take average
-		result /= y_max # convert from freq to prob
+    obj_goal.append(result)
 
-		obj_goal[i] = result
-
-	np.savetxt('obj_goal.txt', obj_goal)
+    np.savetxt('obj_goal.txt', np.array(obj_goal))
 
 
 if __name__ == '__main__':
-	main()
+    main()
