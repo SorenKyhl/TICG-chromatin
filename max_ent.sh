@@ -41,6 +41,7 @@ do
 	~/TICG-chromatin/maxent/bin/run.sh $dir $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations
 
 	# run longer simulation to estimate contact map
+	# TODO missing config.json because run.sh moved it
 	cd $scratchDir
 	~/TICG-chromatin/TICG-engine > log.log
 

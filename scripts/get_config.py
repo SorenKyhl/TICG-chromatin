@@ -14,6 +14,7 @@ def getArgs():
     parser.add_argument('--diag_only', action='store_true', help='true to set non_diagonal chi to 0')
     parser.add_argument('--fill_diag', type=float, help='fill diag of chi with given value (None to skip)')
     parser.add_argument('--fill_offdiag', type=float, help='fill off diag of chi with given value (None to skip)')
+    parser.add_argument('--ensure_distinguishable', action='store_true', help='true to ensure that corresponding psi is distinguishable')
 
     args = parser.parse_args()
     return args
@@ -124,11 +125,18 @@ def main():
     # process chi
     if args.chi is None:
         assert args.k is not None, "chi and k cannot both be None"
-        conv = InteractionConverter(args.k)
-        while not conv.PsiUniqueRows(): # defaults to False
-            # generate random chi
-            conv.chi = generateRandomChi(args.k, minVal = args.min_chi, maxVal = args.max_chi)
-            conv.updatePsi()
+        conv = InteractionConverter(args.k, generateRandomChi(args.k, minVal = args.min_chi, maxVal = args.max_chi))
+        if args.ensure_distinguishable:
+            max_it = 10
+            it = 0
+            while not conv.PsiUniqueRows() and it < max_it: # defaults to False
+                # generate random chi
+                conv.chi = generateRandomChi(args.k, minVal = args.min_chi, maxVal = args.max_chi)
+                conv.updatePsi()
+                it += 1
+            if it == max_it:
+                print('Warning: maximum iteration reached')
+                print('Warning: particles are not distinguishable')
         args.chi = conv.chi
     else:
         rows, cols = args.chi.shape
