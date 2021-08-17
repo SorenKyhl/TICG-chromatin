@@ -8,6 +8,8 @@ import argparse
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
+import matplotlib.pyplot as plt
+
 sys.path.insert(1, '/home/erschultz/sequences_to_contact_maps')
 from neural_net_utils.utils import calculateDistanceStratifiedCorrelation
 

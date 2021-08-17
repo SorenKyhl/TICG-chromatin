@@ -157,6 +157,8 @@ def main():
         np.save('chis.npy', args.chi)
     elif args.save_chi_for_max_ent:
         np.savetxt('chis.txt', args.chi[np.triu_indices(args.k)], fmt='%0.5f')
+        np.savetxt('chis_diag.txt', np.array(config["diag_chis"]))
+
 
     # save chi to config
     letters='ABCDEFG'
