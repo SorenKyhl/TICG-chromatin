@@ -32,7 +32,7 @@ for method in 'ground_truth'
 do
 	cd ~/TICG-chromatin/maxent/resources
 	# generate sequences
-	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --k $k --sample $sample
+	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --k $k --sample $sample --data_folder $dataFolder
 	# generate goals
 	python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --k $k --contact_map "${sampleFolder}/y.npy"
 

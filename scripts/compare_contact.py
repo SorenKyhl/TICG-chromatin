@@ -16,7 +16,7 @@ def getArgs():
     # '../../sequences_to_contact_maps/dataset_04_18_21'
     # "/project2/depablo/erschultz/dataset_04_18_21"
     parser.add_argument('--ifile1', type=str, help='location of input data')
-    parser.add_argument('--ifile2', type=str help='location of input data')
+    parser.add_argument('--ifile2', type=str, help='location of input data')
     parser.add_argument('--m', type=int, default=1024, help='number of particles')
 
     args = parser.parse_args()
