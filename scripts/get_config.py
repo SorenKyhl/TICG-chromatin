@@ -1,6 +1,7 @@
 import argparse
 import json
 import numpy as np
+import sys
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
