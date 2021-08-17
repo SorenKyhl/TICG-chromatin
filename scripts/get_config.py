@@ -117,6 +117,7 @@ class InteractionConverter():
         self.Psi = self.allStrings @ self.chi @ self.allStrings.T
 
 def main():
+    print(sys.argv)
     with open('default_config.json', 'rb') as f:
         config = json.load(f)
 
