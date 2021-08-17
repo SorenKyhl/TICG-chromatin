@@ -15,12 +15,11 @@ def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     # '../../sequences_to_contact_maps/dataset_04_18_21'
     # "/project2/depablo/erschultz/dataset_04_18_21"
-    parser.add_argument('--data_folder', type=str, default='../../sequences_to_contact_maps/dataset_04_18_21', help='Location of input data')
-    parser.add_argument('--sample', type=int, default=2, help='sample id')
+    parser.add_argument('--ifile1', type=str, help='location of input data')
+    parser.add_argument('--ifile2', type=str help='location of input data')
     parser.add_argument('--m', type=int, default=1024, help='number of particles')
 
     args = parser.parse_args()
-    args.sample_folder = osp.join(args.data_folder, 'samples', 'sample{}'.format(args.sample))
     return args
 
 # plotting functions
@@ -40,8 +39,8 @@ def plotDistanceStratifiedPearsonCorrelation(y, yhat, args):
 
 def main():
     args = getArgs()
-    y = np.load(osp.join(args.sample_folder, 'y.npy'))[:args.m, :args.m]
-    yhat = np.load('y.npy')
+    y = np.load(args.ifile1)[:args.m, :args.m]
+    yhat = np.load(args.ifile2)[:args.m, :args.m]
 
     plotDistanceStratifiedPearsonCorrelation(y, yhat, args)
 

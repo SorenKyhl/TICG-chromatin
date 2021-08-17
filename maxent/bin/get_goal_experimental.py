@@ -29,9 +29,9 @@ def main():
     y = y[:args.m, :args.m] # crop to m
     y = np.triu(y) # avoid double counting due to symmetry
 
-    for i in range(k):
+    for i in range(args.k):
         seqi = np.loadtxt("seq{}.txt".format(i))
-        for j in range(k):
+        for j in range(args.k):
             if j < i:
                 # don't double count
                 continue

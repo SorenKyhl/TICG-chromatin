@@ -206,7 +206,6 @@ then
 		mv resources/obj_goal.txt .
 		mv resources/obj_goal_diag.txt .
 	fi
-
 else
 	# if goal is not specified, simulate iteration 0 and calculate the goals from that simulation
 	run_simulation
@@ -223,6 +222,11 @@ do
 	# update plots
 	gnuplot -c $proj_bin/plot.p $nchis $ndiagchis
 done
+
+# run longer simulation
+it=$(($num_iterations + 1))
+product_sweeps=500000
+run_simulation
 
 # move data to output directory
 mv $scratchDir/* $outputDir

@@ -19,7 +19,7 @@ mode="plaid"
 productionSweeps=50000
 equilibSweeps=10000
 goalSpecified=1
-numIterations=5
+numIterations=5 # iteration 1 + numIterations is production run to get contact map
 
 source activate python3.8_pytorch1.8.1_cuda10.2
 module load jq
@@ -34,17 +34,14 @@ do
 	# generate sequences
 	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --k $k --sample $sample
 	# generate goals
-	python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --k $k --contact_map "$sampleFolder/y.npy"
+	python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --k $k --contact_map "${sampleFolder}/y.npy"
 
 	# apply max ent with newton's method
-	dir="${dataFolder}/samples/sample${sample}/${method}/k${k}"
+	dir="${sampleFolder}/${method}/k${k}"
 	~/TICG-chromatin/maxent/bin/run.sh $dir $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations
 
-	# run longer simulation to estimate contact map
-	# TODO missing config.json because run.sh moved it
-	cd $scratchDir
-	~/TICG-chromatin/TICG-engine > log.log
-
   # compare results
-  python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --sample $sample --data_folder $dataFolder
+	cd $dir
+	prodIt=$(($num_iterations + 1))
+  python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --ifile1 "$sampleFolder/y.npy" --ifile2 "${dir}/iteration${prodIt}/y.npy"
 done
