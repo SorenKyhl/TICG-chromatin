@@ -74,6 +74,7 @@ def writeSeq(seq, format):
     np.save('x.npy', seq)
 
 def main():
+    print(sys.argv)
     args = getArgs()
     if args.method == 'random':
         seq = get_random_seq(args.m, args.p_switch, args.k)

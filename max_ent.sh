@@ -1,6 +1,6 @@
 #! /bin/bash
 #SBATCH --job-name=TICG
-#SBATCH --output=TICG.out
+#SBATCH --output=TICG_maxent.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --nodes=1

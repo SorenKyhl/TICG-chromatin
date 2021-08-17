@@ -28,6 +28,7 @@ def main():
 
     y = y[:args.m, :args.m] # crop to m
     y = np.triu(y) # avoid double counting due to symmetry
+    y_max = np.max(y)
 
     for i in range(args.k):
         seqi = np.loadtxt("seq{}.txt".format(i))

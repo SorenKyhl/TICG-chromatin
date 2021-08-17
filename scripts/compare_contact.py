@@ -8,7 +8,7 @@ import argparse
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
-sys.path.insert(1, '../sequences_to_contact_maps')
+sys.path.insert(1, '/home/erschultz/sequences_to_contact_maps')
 from neural_net_utils.utils import calculateDistanceStratifiedCorrelation
 
 def getArgs():
