@@ -12,7 +12,6 @@ k=2
 sample=40
 dataFolder='/project2/depablo/erschultz/dataset_04_18_21'
 sampleFolder="$dataFolder/samples/sample$sample"
-scratchDir='/scratch/midway2/erschultz/TICG'
 gamma=0.00001
 gammaDiag=0.00001
 mode="plaid"
