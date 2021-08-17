@@ -119,7 +119,7 @@ saveFileName='equilibrated.xyz'
 proj_root=$(pwd)
 proj_bin="$(pwd)/bin"                # location of algorithm scripts
 nchis=$(head -1 "resources/chis.txt" | wc -w)
-# ndiagchis=$(head -1 "resources/chis_diag.txt" | wc -w)
+ndiagchis=$(head -1 "resources/chis_diag.txt" | wc -w)
 
 # directory checks
 if [ -d $outputDir ]

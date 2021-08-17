@@ -7,7 +7,7 @@ def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     parser.add_argument('--m', type=int, default=1024, help='number of particles')
     parser.add_argument('--k', type=int, help='number of particle types (inferred from chi if None)')
-	parser.add_argument('--contact_map', type=str, help='filepath to contact map')
+    parser.add_argument('--contact_map', type=str, help='filepath to contact map')
 
     args = parser.parse_args()
     return args
@@ -43,6 +43,7 @@ def main():
     obj_goal.append(result)
 
     np.savetxt('obj_goal.txt', np.array(obj_goal))
+    np.savetxt('obj_goal_diag.txt', np.zeros(20))
 
 
 if __name__ == '__main__':
