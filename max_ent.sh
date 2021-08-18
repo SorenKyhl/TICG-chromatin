@@ -29,18 +29,25 @@ python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi 0 --max_c
 # 'PCA' 'k_means' 'GNN' 'random'
 for method in 'ground_truth'
 do
+	STARTTIME=$(date +%s)
 	cd ~/TICG-chromatin/maxent/resources
 	# generate sequences
 	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --k $k --sample $sample --data_folder $dataFolder
 	# generate goals
 	python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --k $k --contact_map "${sampleFolder}/y.npy"
-
+	ENDTIME=$(date +%s)
+	echo "setup time: $(($ENDTIME - $STARTTIME)) seconds"
 	# apply max ent with newton's method
 	dir="${sampleFolder}/${method}/k${k}"
+	STARTTIME=$(date +%s)
 	~/TICG-chromatin/maxent/bin/run.sh $dir $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations
-
+	ENDTIME=$(date +%s)
+	echo "run time: $(($ENDTIME - $STARTTIME)) seconds"
   # compare results
 	cd $dir
 	prodIt=$(($num_iterations + 1))
+	STARTTIME=$(date +%s)
   python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --ifile1 "$sampleFolder/y.npy" --ifile2 "${dir}/iteration${prodIt}/y.npy"
+	ENDTIME=$(date +%s)
+	echo "compare time: $(($ENDTIME - $STARTTIME)) seconds"
 done

@@ -1,7 +1,6 @@
 {
   "seed": 1,
   "production": true,
-  "hp1_mean_conc": 0,
   "decay_length": 100,
   "nSweeps": 500000,
   "dump_frequency": 50000,

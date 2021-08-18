@@ -159,7 +159,6 @@ run_simulation () {
 	python3 $proj_bin/jsed.py $configFileName nSweeps $equilib_sweeps i
 	~/TICG-chromatin/TICG-engine > equilib.log
 	$proj_bin/fork_last_snapshot.sh $saveFileName
-	mkdir equilib_out
 	mv data_out equilib_out
 
 	# set up production run
@@ -167,9 +166,11 @@ run_simulation () {
 	python3 $proj_bin/jsed.py $configFileName nSweeps $production_sweeps i
 	python3 $proj_bin/jsed.py $configFileName seed $RANDOM i
 	~/TICG-chromatin/TICG-engine > production.log
-	echo "finished iteration $it"
+	mv data_out production_out
 
 	python3 ~/TICG-chromatin/scripts/contact_map.py
+
+	echo "finished iteration $it"
 	cd $scratchDir
 }
 
@@ -197,19 +198,35 @@ fi
 # maxent optimization
 for it in $(seq 1 $(($num_iterations)))
 do
+	STARTTIME=$(date +%s)
 	run_simulation
+	ENDTIME=$(date +%s)
+	echo "iteration ${it} time: $(($ENDTIME - $STARTTIME)) seconds"
 
 	# update chis via newton's method
+	STARTTIME=$(date +%s)
 	python3 $proj_bin/newton_step.py $it $gamma $gamma_diag $mode $goal_specified >> track.log
+	ENDTIME=$(date +%s)
+	echo "newton time: $(($ENDTIME - $STARTTIME)) seconds"
 
 	# update plots
-	gnuplot -c $proj_bin/plot.p $nchis $ndiagchis
+	STARTTIME=$(date +%s)
+	gnuplot $proj_bin/plot.p $nchis $ndiagchis
+	ENDTIME=$(date +%s)
+	echo "plot time: $(($ENDTIME - $STARTTIME)) seconds"
+	gnuplot $proj_bin/plot.p $nchis $ndiagchis
 done
 
 # run longer simulation
+STARTTIME=$(date +%s)
 it=$(($num_iterations + 1))
-product_sweeps=500000
+production_sweeps=500000
 run_simulation
+ENDTIME=$(date +%s)
+echo "long simulation time: $(($ENDTIME - $STARTTIME)) seconds"
 
 # move data to output directory
+STARTTIME=$(date +%s)
 mv $scratchDir/* $outputDir
+ENDTIME=$(date +%s)
+echo "mv time: $(($ENDTIME - $STARTTIME)) seconds"

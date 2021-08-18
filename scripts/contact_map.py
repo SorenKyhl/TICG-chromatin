@@ -11,6 +11,7 @@ import argparse
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     parser.add_argument('--m', type=int, default=1024, help='number of particles')
+    parser.add_argument('save_npy', action='store_true', help='true to save y as .npy')
 
     args = parser.parse_args()
     return args
@@ -58,7 +59,8 @@ def main():
     y = np.loadtxt(osp.join('data_out','contacts.txt'))[:args.m, :args.m]
 
     plotContactMap(y, ofile = 'y.png', vmax = 'mean')
-    np.save('y.npy', y.astype(np.int16))
+    if args.save_npy:
+        np.save('y.npy', y.astype(np.int16))
 
 if __name__ == '__main__':
     main()

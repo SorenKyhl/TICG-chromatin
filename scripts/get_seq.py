@@ -21,6 +21,7 @@ def getArgs():
     parser.add_argument('--p_switch', type=float, default=0.05, help='probability to switch bead assignment')
     parser.add_argument('--k', type=int, default=2, help='sequences to generate')
     parser.add_argument('--GNN_model_id', type=int, default=116, help='model id for ContactGNN')
+    parser.add_argument('save_npy', action='store_true', help='true to save seq as .npy')
 
 
     args = parser.parse_args()
@@ -66,12 +67,13 @@ def get_PCA_seq(m, y_diag, k):
 
     return seq
 
-def writeSeq(seq, format):
+def writeSeq(seq, format, save_npy):
     m, k = seq.shape
     for j in range(k):
         np.savetxt('seq{}.txt'.format(j), seq[:, j], fmt = format)
 
-    np.save('x.npy', seq)
+    if save_npy:
+        np.save('x.npy', seq)
 
 def main():
     print(sys.argv)
@@ -110,7 +112,7 @@ def main():
     plt.legend()
     plt.show()
 
-    writeSeq(seq, format)
+    writeSeq(seq, format, args.save_npy)
 
 
 if __name__ ==  "__main__":

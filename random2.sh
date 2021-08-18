@@ -45,13 +45,13 @@ do
 	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable > log.log
 
 	# generate sequences
-	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --p_switch $pSwitch --k $k >> log.log
+	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --p_switch $pSwitch --k $k --save_npy >> log.log
 
 	# run simulation
 	~/TICG-chromatin/TICG-engine >> log.log
 
   # calculate contact map
-  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m
+  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --save_npy
 
 	# move inputs and outputs to own folder
 	dir="${dataFolder}/samples/sample${i}"
