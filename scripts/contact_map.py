@@ -12,12 +12,9 @@ def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     parser.add_argument('--m', type=int, default=1024, help='number of particles')
     parser.add_argument('--save_npy', action='store_true', help='true to save y as .npy')
-    parser.add_argument('--ifile', help='location of contact map')
+    parser.add_argument('--ifile', default=osp.join('data_out','contacts.txt'), help='location of contact map')
 
     args = parser.parse_args()
-
-    if args.ifile is None:
-        args.ifile = osp.join('data_out','contacts.txt')
     return args
 
 def plotContactMap(y, ofile = None, title = None, vmin = 0, vmax = 1, size_in = 6, minVal = None, maxVal = None):

@@ -19,6 +19,7 @@ productionSweeps=50000
 equilibSweeps=10000
 goalSpecified=1
 numIterations=2 # iteration 1 + numIterations is production run to get contact map
+overwrite=1
 
 STARTTIME=$(date +%s)
 source activate python3.8_pytorch1.8.1_cuda10.2
@@ -45,7 +46,7 @@ do
 	# apply max ent with newton's method
 	dir="${sampleFolder}/${method}/k${k}"
 	STARTTIME=$(date +%s)
-	~/TICG-chromatin/maxent/bin/run.sh $dir $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations
+	~/TICG-chromatin/maxent/bin/run.sh $dir $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite
 	ENDTIME=$(date +%s)
 	echo "run time: $(($ENDTIME - $STARTTIME)) seconds"
   # compare results

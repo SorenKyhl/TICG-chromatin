@@ -111,6 +111,7 @@ production_sweeps=${5:-50000}
 equilib_sweeps=${6:-10000}
 goal_specified=${7:-0}
 num_iterations=${8:-50}
+overwrite=${9:-0}
 
 # other parameters
 scratchDir='/scratch/midway2/erschultz/TICG_maxent'
@@ -122,13 +123,19 @@ nchis=$(head -1 "resources/chis.txt" | wc -w)
 k=$(jq .nspecies "resources/${configFileName}")
 ndiagchis=$(head -1 "resources/chis_diag.txt" | wc -w)
 
-# directory checks
-# if [ -d $outputDir ]
-# then
-	# don't overrite previous results!
-# 	echo "output directory already exists"
-# 	exit 1
-# fi
+directory checks
+if [ -d $outputDir ]
+then
+	if [ $overwrite -eq 1 ]
+	then
+		echo "output directory already exists - overwriting"
+		rm -r $outputDir
+	else
+		# don't overrite previous results!
+		echo "output directory already exists - aborting"
+		exit 1
+	fi
+fi
 
 if [[ -d resources && -d bin ]]
 then
@@ -168,6 +175,7 @@ run_simulation () {
 	~/TICG-chromatin/TICG-engine > production.log
 
 	python3 ~/TICG-chromatin/scripts/contact_map.py --save_npy
+	mv data_out production_out
 
 	echo "finished iteration $it"
 	cd $scratchDir
