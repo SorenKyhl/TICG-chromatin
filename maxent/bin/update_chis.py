@@ -40,13 +40,16 @@ def main():
 def test():
     args = getArgs()
     args.k = 2
+    args.it = 0
 
     config = {}
 
+    allchis = np.loadtxt('maxent/resources/chis.txt')
+    print(allchis)
     letters='ABCDEFG'
 
     # get last row of 'chis.txt'
-    lastchis = [1, 2, 3]
+    lastchis = list(allchis[int(args.it)])
 
     counter = 0
     for i in range(args.k):
