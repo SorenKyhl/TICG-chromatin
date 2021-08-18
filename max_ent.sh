@@ -21,7 +21,7 @@ goalSpecified=1
 numIterations=2 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 
-STARTTIME=$(date +%s)
+OverallStartTime=$(date +%s)
 source activate python3.8_pytorch1.8.1_cuda10.2
 module load jq
 
@@ -33,8 +33,7 @@ python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --ifile "y.npy"
 cd ~/TICG-chromatin/maxent/resources
 python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi 0 --max_chi 0 --fill_diag=-1 --save_chi_for_max_ent
 
-# 'PCA' 'k_means' 'GNN' 'random'
-for method in 'ground_truth'
+for method in 'ground_truth' 'PCA' 'k_means' 'GNN' 'random'
 do
 	echo $method
 	cd ~/TICG-chromatin/maxent/resources
@@ -45,18 +44,18 @@ do
 
 	# apply max ent with newton's method
 	dir="${sampleFolder}/${method}/k${k}"
-	STARTTIME=$(date +%s)
+	StartTime=$(date +%s)
 	~/TICG-chromatin/maxent/bin/run.sh $dir $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite
-	ENDTIME=$(date +%s)
-	echo "run time: $(($ENDTIME - $STARTTIME)) seconds"
+	EndTime=$(date +%s)
+	echo "run time: $(($EndTime - $StartTime)) seconds"
   # compare results
 	cd $dir
 	prodIt=$(($num_iterations + 1))
-	STARTTIME=$(date +%s)
+	StartTime=$(date +%s)
   python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --ifile1 "$sampleFolder/y.npy" --ifile2 "${dir}/iteration${prodIt}/y.npy"
-	ENDTIME=$(date +%s)
-	echo "compare time: $(($ENDTIME - $STARTTIME)) seconds"
+	EndTime=$(date +%s)
+	echo "compare time: $(($EndTime - $StartTime)) seconds"
 done
 
-ENDTIME=$(date +%s)
-echo "total time: $(($ENDTIME - $STARTTIME)) seconds"
+EndTime=$(date +%s)
+echo "total time: $(($EndTime - $OverallStartTime)) seconds"

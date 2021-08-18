@@ -123,7 +123,7 @@ nchis=$(head -1 "resources/chis.txt" | wc -w)
 k=$(jq .nspecies "resources/${configFileName}")
 ndiagchis=$(head -1 "resources/chis_diag.txt" | wc -w)
 
-directory checks
+# directory checks
 if [ -d $outputDir ]
 then
 	if [ $overwrite -eq 1 ]
@@ -174,7 +174,10 @@ run_simulation () {
 	python3 $proj_bin/jsed.py $configFileName seed $RANDOM i
 	~/TICG-chromatin/TICG-engine > production.log
 
-	python3 ~/TICG-chromatin/scripts/contact_map.py --save_npy
+	if [ $it -gt $num_iterations ]
+	then
+		python3 ~/TICG-chromatin/scripts/contact_map.py --save_npy
+	fi
 	mv data_out production_out
 
 	echo "finished iteration $it"
@@ -211,23 +214,16 @@ do
 	echo "iteration ${it} time: $(($ENDTIME - $STARTTIME)) seconds"
 
 	# update chis via newton's method
-	STARTTIME=$(date +%s)
 	python3 $proj_bin/newton_step.py $it $gamma $gamma_diag $mode $goal_specified >> track.log
-	ENDTIME=$(date +%s)
-	echo "newton time: $(($ENDTIME - $STARTTIME)) seconds"
 
 	# update plots
-	STARTTIME=$(date +%s)
-	gnuplot $proj_bin/plot.p $nchis $ndiagchis
-	ENDTIME=$(date +%s)
-	echo "plot time: $(($ENDTIME - $STARTTIME)) seconds"
 	gnuplot $proj_bin/plot.p $nchis $ndiagchis
 done
 
 # run longer simulation
 STARTTIME=$(date +%s)
 it=$(($num_iterations + 1))
-production_sweeps=500000
+production_sweeps=50000 # TODO change back to 500000
 run_simulation
 ENDTIME=$(date +%s)
 echo "long simulation time: $(($ENDTIME - $STARTTIME)) seconds"

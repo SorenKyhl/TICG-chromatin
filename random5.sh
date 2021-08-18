@@ -23,8 +23,8 @@ fillDiag=-1
 
 
 today=$(date +'%m_%d_%y')
-dataFolder="/project2/depablo/erschultz/dataset_${today}"
-# dataFolder="/project2/depablo/erschultz/dataset_test"
+# dataFolder="/project2/depablo/erschultz/dataset_${today}"
+dataFolder="/project2/depablo/erschultz/dataset_test"
 scratchDir='/scratch/midway2/erschultz/TICG5'
 
 # move utils to scratch

@@ -21,7 +21,7 @@ def getArgs():
     parser.add_argument('--p_switch', type=float, default=0.05, help='probability to switch bead assignment')
     parser.add_argument('--k', type=int, default=2, help='sequences to generate')
     parser.add_argument('--GNN_model_id', type=int, default=116, help='model id for ContactGNN')
-    parser.add_argument('save_npy', action='store_true', help='true to save seq as .npy')
+    parser.add_argument('--save_npy', action='store_true', help='true to save seq as .npy')
 
 
     args = parser.parse_args()
