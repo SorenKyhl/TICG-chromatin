@@ -10,12 +10,14 @@
 method='random'
 m=1024
 pSwitch=0.05
-k=4
-startSimulation=2
+k=2
+startSimulation=4
 numSimulations=2
-chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
-# chi='none'
-fillOffdiag=0
+# chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
+chi='none'
+minChi=0
+maxChi=2
+fillDiag=-1
 
 
 today=$(date +'%m_%d_%y')
@@ -38,13 +40,13 @@ source activate python3.8_pytorch1.8.1_cuda10.2
 for i in $(seq $startSimulation $(($startSimulation + $numSimulations - 1)))
 do
   # set up config.json
-	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --fill_offdiag $fillOffdiag --ensure_distinguishable
+	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable > log.log
 
 	# generate sequences
-	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --p_switch $pSwitch --k $k
+	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --p_switch $pSwitch --k $k >> log.log
 
 	# run simulation
-	~/TICG-chromatin/TICG-engine > log.log
+	~/TICG-chromatin/TICG-engine >> log.log
 
   # calculate contact map
   python3 ~/TICG-chromatin/scripts/contact_map.py --m $m

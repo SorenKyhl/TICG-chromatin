@@ -12,7 +12,6 @@ def getArgs():
     parser.add_argument('--save_chi_for_max_ent', action="store_true", help='true to save chi to wd in format needed for max ent')
     parser.add_argument('--min_chi', type=float, default=-1., help='minimum chi value for random generation')
     parser.add_argument('--max_chi', type=float, default=1., help='maximum chi value for random generation')
-    parser.add_argument('--diag_only', action='store_true', help='true to set non_diagonal chi to 0')
     parser.add_argument('--fill_diag', type=float, help='fill diag of chi with given value (None to skip)')
     parser.add_argument('--fill_offdiag', type=float, help='fill off diag of chi with given value (None to skip)')
     parser.add_argument('--ensure_distinguishable', action='store_true', help='true to ensure that corresponding psi is distinguishable')
@@ -43,24 +42,24 @@ def str2list(v, sep1 = '\\', sep2 = '&'):
     else:
         raise argparse.ArgumentTypeError('str value expected.')
 
-def generateRandomChi(n_types, fill_diag = None, fill_offdiag = None, minVal = -1., maxVal = 1., decimals = 1):
+def generateRandomChi(args, decimals = 1):
     '''Initializes random chi array.'''
     # create array with random values in [minval, maxVal]
-    rands = np.random.rand(n_types, n_types) * (maxVal - minVal) + minVal
+    rands = np.random.rand(args.k, args.k) * (args.max_chi - args.min_chi) + args.min_chi
 
     # make symmetric chi array
     chi = np.tril(rands) + np.triu(rands.T, 1)
 
-    if fill_offdiag is not None:
-        # only diag mode sets all off diagonal elements to 0
-        # i.e. type i only interacts with type i
+    if args.fill_offdiag is not None:
+        # fills off diag chis with value of fill_offdiag
         chi_diag = np.diagonal(chi)
-        chi = np.ones((n_types, n_types)) * fill_offdiag
-        di = np.diag_indices(n_types)
+        chi = np.ones((args.k, args.k)) * args.fill_offdiag
+        di = np.diag_indices(args.k)
         chi[di] = chi_diag
-    if fill_diag is not None:
-        di = np.diag_indices(n_types)
-        chi[di] = fill_diag
+    if args.fill_diag is not None:
+        # fills diag chis with value of fill_diag
+        di = np.diag_indices(args.k)
+        chi[di] = args.fill_diag
 
     return np.round(chi, decimals = decimals)
 
@@ -127,13 +126,13 @@ def main():
     # process chi
     if args.chi is None:
         assert args.k is not None, "chi and k cannot both be None"
-        conv = InteractionConverter(args.k, generateRandomChi(args.k, minVal = args.min_chi, maxVal = args.max_chi))
+        conv = InteractionConverter(args.k, generateRandomChi(args))
         if args.ensure_distinguishable:
             max_it = 10
             it = 0
             while not conv.PsiUniqueRows() and it < max_it: # defaults to False
                 # generate random chi
-                conv.chi = generateRandomChi(args.k, minVal = args.min_chi, maxVal = args.max_chi)
+                conv.chi = generateRandomChi(args)
                 conv.updatePsi()
                 it += 1
             if it == max_it:
@@ -184,6 +183,16 @@ def main():
 
     with open('config.json', 'w') as f:
         json.dump(config, f, indent = 2)
+
+def test():
+    args = getArgs()
+    args.k=8
+    args.fill_diag = -1
+    print(generateRandomChi(args))
+
+    args.fill_diag = None
+    args.fill_offdiag = 0
+    print(generateRandomChi(args))
 
 if __name__ == '__main__':
     main()
