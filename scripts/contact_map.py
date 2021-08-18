@@ -62,7 +62,7 @@ def main():
     args = getArgs()
     if args.ifile.endswith('.txt'):
         y = np.loadtxt(args.ifile)[:args.m, :args.m]
-    elif args.ifile.endswith('.npy')
+    elif args.ifile.endswith('.npy'):
         y = np.load(args.ifile)[:args.m, :args.m]
     else:
         raise Exception("Unrecognized extension: {}".format(args.ifile))
