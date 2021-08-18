@@ -25,7 +25,7 @@ fillDiag=-1
 today=$(date +'%m_%d_%y')
 dataFolder="/project2/depablo/erschultz/dataset_${today}"
 # dataFolder="/project2/depablo/erschultz/dataset_test"
-scratchDir='/scratch/midway2/erschultz/TICG'
+scratchDir='/scratch/midway2/erschultz/TICG4'
 
 # move utils to scratch
 mkdir -p $scratchDir
@@ -55,13 +55,13 @@ do
 
 	# move inputs and outputs to own folder
 	dir="${dataFolder}/samples/sample${i}"
-	# directory checks
-	if [ -d $dir ]
-	then
-		# don't overrite previous results!
-		echo "output directory already exists: ${dir}"
-		exit 1
-	fi
+	# # directory checks
+	# if [ -d $dir ]
+	# then
+	# 	# don't overrite previous results!
+	# 	echo "output directory already exists: ${dir}"
+	# 	exit 1
+	# fi
 	mkdir -p $dir
 	mv config.json data_out log.log x.npy y.npy y.png chis.txt chis.npy $dir
 	for i in $(seq 0 $(($k-1)))
