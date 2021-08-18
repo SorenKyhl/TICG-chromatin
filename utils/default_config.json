@@ -20,7 +20,6 @@
   "domainsize": 800,
   "load_chipseq": true,
   "load_configuration": true,
-  "load_configuration_filename": "input1024.xyz",
   "prof_timer_on": false,
   "print_trans": false,
   "print_acceptance_rates": true,

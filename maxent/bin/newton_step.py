@@ -1,20 +1,20 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import os.path as osp
 import sys
 
 def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified):
 
     if goal_specified:
         print("READING FROM OBJ_GOAL")
-        f_obj_goal = open(goal_file, "r")
-        obj_goal = f_obj_goal.readline().split()
-        obj_goal = np.array([float(x) for x in obj_goal])
-        f_obj_goal.close()
+        with open(goal_file, "r") as f_obj_goal:
+            obj_goal = f_obj_goal.readline().split()
+            obj_goal = np.array([float(x) for x in obj_goal])
     else:
         # get goal observables from first iteration
         print("READING FROM OBS")
-        df = pd.read_csv("iteration" + str(0) + "/data_out/" + obs_file, delimiter="\t", header=None)
+        df = pd.read_csv(osp.join("iteration" .format(0), "production_out", obs_file), delimiter="\t", header=None)
         df = df.dropna(axis=1)
         df = df.drop(df.columns[0] ,axis=1)
         obj_goal = df.mean().values
@@ -22,15 +22,14 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_
     print("obj goal:", obj_goal)
 
     # read in current chis
-    f_chis = open(parameter_file, "r")
-    lines = f_chis.readlines()
-    current_chis = lines[it].split()
-    current_chis = [float(x) for x in current_chis]
-    f_chis.close()
+    with open(parameter_file, "r") as f_chis:
+        lines = f_chis.readlines()
+        current_chis = lines[it].split()
+        current_chis = [float(x) for x in current_chis]
     print("current chi values: ", current_chis)
 
     # get current observable values
-    df = pd.read_csv("iteration" + str(it) + "/data_out/" + obs_file, delimiter="\t", header=None)
+    df = pd.read_csv(osp.join("iteration".format(it), "data_out", obs_file), delimiter="\t", header=None)
     df = df.dropna(axis=1)
     df = df.drop(df.columns[0] ,axis=1)
     lam = df.mean().values

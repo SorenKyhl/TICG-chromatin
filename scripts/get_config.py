@@ -9,6 +9,7 @@ def getArgs():
     parser.add_argument('--chi', type=str2list, help='chi matrix using latex separator style (if None will be generated randomly)')
     parser.add_argument('--m', type=int, default=1024, help='number of particles')
     parser.add_argument('--k', type=int, help='number of particle types (inferred from chi if None)')
+    parser.add_argument('--load_configuration_filename', type=str, default='input1024.xyz', help='file name of initial config')
     parser.add_argument('--save_chi', action="store_true", help='true to save chi to wd')
     parser.add_argument('--save_chi_for_max_ent', action="store_true", help='true to save chi to wd in format needed for max ent')
     parser.add_argument('--min_chi', type=float, default=-1., help='minimum chi value for random generation')
@@ -180,6 +181,9 @@ def main():
 
     # save nspecies
     config["nspecies"] = args.k
+
+    # save configuration filename
+    config["load_configuration_filename"] = args.load_configuration_filename
 
     # save chipseq files
     config['chipseq_files'] = ['seq{}.txt'.format(i) for i in range(args.k)]

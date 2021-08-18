@@ -166,9 +166,9 @@ run_simulation () {
 	python3 $proj_bin/jsed.py $configFileName nSweeps $production_sweeps i
 	python3 $proj_bin/jsed.py $configFileName seed $RANDOM i
 	~/TICG-chromatin/TICG-engine > production.log
-	mv data_out production_out
 
-	python3 ~/TICG-chromatin/scripts/contact_map.py
+	python3 ~/TICG-chromatin/scripts/contact_map.py --save_npy
+	mv data_out production_out
 
 	echo "finished iteration $it"
 	cd $scratchDir
@@ -226,7 +226,4 @@ ENDTIME=$(date +%s)
 echo "long simulation time: $(($ENDTIME - $STARTTIME)) seconds"
 
 # move data to output directory
-STARTTIME=$(date +%s)
 mv $scratchDir/* $outputDir
-ENDTIME=$(date +%s)
-echo "mv time: $(($ENDTIME - $STARTTIME)) seconds"

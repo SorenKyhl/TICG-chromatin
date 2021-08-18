@@ -18,25 +18,30 @@ mode="plaid"
 productionSweeps=50000
 equilibSweeps=10000
 goalSpecified=1
-numIterations=1 # iteration 1 + numIterations is production run to get contact map
+numIterations=2 # iteration 1 + numIterations is production run to get contact map
 
+STARTTIME=$(date +%s)
 source activate python3.8_pytorch1.8.1_cuda10.2
 module load jq
 
+# plot ref contact map
+cd $sampleFolder
+python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --ifile "y.npy"
+
+# get config
 cd ~/TICG-chromatin/maxent/resources
-python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi 0 --max_chi 0 --save_chi_for_max_ent
+python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi 0 --max_chi 0 --fill_diag=-1 --save_chi_for_max_ent --load_configuration_filename "~/TICG-chromatin/utils/input1024.xyz"
 
 # 'PCA' 'k_means' 'GNN' 'random'
 for method in 'ground_truth'
 do
-	STARTTIME=$(date +%s)
+	echo $method
 	cd ~/TICG-chromatin/maxent/resources
 	# generate sequences
 	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --k $k --sample $sample --data_folder $dataFolder
 	# generate goals
 	python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --k $k --contact_map "${sampleFolder}/y.npy"
-	ENDTIME=$(date +%s)
-	echo "setup time: $(($ENDTIME - $STARTTIME)) seconds"
+
 	# apply max ent with newton's method
 	dir="${sampleFolder}/${method}/k${k}"
 	STARTTIME=$(date +%s)
@@ -51,3 +56,6 @@ do
 	ENDTIME=$(date +%s)
 	echo "compare time: $(($ENDTIME - $STARTTIME)) seconds"
 done
+
+ENDTIME=$(date +%s)
+echo "total time: $(($ENDTIME - $STARTTIME)) seconds"

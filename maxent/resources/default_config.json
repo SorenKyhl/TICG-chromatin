@@ -1,7 +1,6 @@
 {
   "seed": 1,
   "production": true,
-  "hp1_mean_conc": 0,
   "decay_length": 100,
   "nSweeps": 500000,
   "dump_frequency": 10000,
@@ -21,7 +20,6 @@
   "domainsize": 800,
   "load_chipseq": true,
   "load_configuration": true,
-  "load_configuration_filename": "input1024.xyz",
   "prof_timer_on": false,
   "print_trans": false,
   "print_acceptance_rates": true,

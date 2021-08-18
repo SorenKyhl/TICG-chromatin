@@ -11,9 +11,13 @@ import argparse
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     parser.add_argument('--m', type=int, default=1024, help='number of particles')
-    parser.add_argument('save_npy', action='store_true', help='true to save y as .npy')
+    parser.add_argument('--save_npy', action='store_true', help='true to save y as .npy')
+    parser.add_argument('--ifile', help='location of contact map')
 
     args = parser.parse_args()
+
+    if args.ifile is None:
+        args.ifile = osp.join('data_out','contacts.txt')
     return args
 
 def plotContactMap(y, ofile = None, title = None, vmin = 0, vmax = 1, size_in = 6, minVal = None, maxVal = None):
@@ -56,7 +60,13 @@ def plotContactMap(y, ofile = None, title = None, vmin = 0, vmax = 1, size_in = 
 
 def main():
     args = getArgs()
-    y = np.loadtxt(osp.join('data_out','contacts.txt'))[:args.m, :args.m]
+    if args.ifile.endswith('.txt'):
+        y = np.loadtxt(args.ifile)[:args.m, :args.m]
+    elif args.ifile.endswith('.npy')
+        y = np.load(args.ifile)[:args.m, :args.m]
+    else:
+        raise Exception("Unrecognized extension: {}".format(args.ifile))
+
 
     plotContactMap(y, ofile = 'y.png', vmax = 'mean')
     if args.save_npy:
