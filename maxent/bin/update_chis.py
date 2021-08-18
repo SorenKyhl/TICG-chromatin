@@ -23,7 +23,7 @@ def main():
     letters='ABCDEFG'
 
     # get last row of 'chis.txt'
-    lastchis = list(allchis[int(it)])
+    lastchis = list(allchis[int(args.it)])
 
     counter = 0
     for i in range(args.k):
