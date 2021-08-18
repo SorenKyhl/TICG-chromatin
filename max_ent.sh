@@ -18,7 +18,7 @@ mode="plaid"
 productionSweeps=50000
 equilibSweeps=10000
 goalSpecified=1
-numIterations=5 # iteration 1 + numIterations is production run to get contact map
+numIterations=1 # iteration 1 + numIterations is production run to get contact map
 
 source activate python3.8_pytorch1.8.1_cuda10.2
 module load jq

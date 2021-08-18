@@ -3,20 +3,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import sys
 
-'''calculates one step of the TICG-MaxEnt optimization routine
-i.e. updates chis based on observables from simulation
-'''
-
-it = int(sys.argv[1])               # iteration number
-gamma_plaid  = float(sys.argv[2])   # damping coefficient
-gamma_diag = float(sys.argv[3])     # dampling coefficient
-mode = sys.argv[4]                  # plaid, diag, or both
-goal_specified = int(sys.argv[5])   # if true, will read from obj_goal.txt and obj_goal_diag.txt. 
-                                    # if false, will calculate goals from iteration1 observables
-
-print("iteration number " + str(it) + " gamma_plaid : " + str(gamma_plaid))
-print("iteration number " + str(it) + " gamma_diag : " + str(gamma_diag))
-
 def step(parameter_file, obs_file, convergence_file, goal_file, gamma):
 
     if goal_specified:
@@ -52,7 +38,7 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma):
     # normalizing factor (June 16 2020)
     # damping coefficients have to be really small to prevent overshoot.
     # is there a scaling factor that can adjust for this?....
-    #Ngrid = 17**3 
+    #Ngrid = 17**3
     #nucl_per_bead = 10
 
     #lam = lam * Ngrid * nucl_per_bead**2
@@ -75,7 +61,7 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma):
     print("new chi values: ", new_chis)
 
     f_chis = open(parameter_file, "a")
-    np.savetxt(f_chis, new_chis, newline=" ", fmt="%.5f") 
+    np.savetxt(f_chis, new_chis, newline=" ", fmt="%.5f")
     f_chis.write("\n")
     f_chis.close()
 
@@ -99,55 +85,51 @@ def copy_chis(parameter_file, obs_file, convergence_file, goal_file, gamma):
 
     #write chi parameters to next iteration, unchanged
     f_chis = open(parameter_file, "a")
-    np.savetxt(f_chis, new_chis, newline=" ", fmt="%.5f") 
+    np.savetxt(f_chis, new_chis, newline=" ", fmt="%.5f")
     f_chis.write("\n")
     f_chis.close()
-    
 
-if (mode == "diag"):
+def main():
+    '''
+    Calculates one step of the TICG-MaxEnt optimization routine.
+    i.e. updates chis based on observables from simulation
+    '''
+
+    it = int(sys.argv[1])               # iteration number
+    gamma_plaid  = float(sys.argv[2])   # damping coefficient
+    gamma_diag = float(sys.argv[3])     # dampling coefficient
+    mode = sys.argv[4]                  # plaid, diag, or both
+    goal_specified = int(sys.argv[5])   # if true, will read from obj_goal.txt and obj_goal_diag.txt.
+                                        # if false, will calculate goals from iteration1 observables
+
+    print("iteration number " + str(it) + " gamma_plaid : " + str(gamma_plaid))
+    print("iteration number " + str(it) + " gamma_diag : " + str(gamma_diag))
+
+    if mode == "diag":
+        diag_fn = step
+        fn = copy_chis
+    elif mode == "plaid":
+        diag_fn = copy_chis
+        fn = step
+    elif mode == "both":
+        diag_fn = step
+        fn = step
+    else:
+        raise Exception("Unknown mode: {}".format(mode))
+
     parameter_file = "chis_diag.txt"
     obs_file = "diag_observables.traj"
     convergence_file = "convergence_diag.txt"
     goal_file = "obj_goal_diag.txt"
     gamma = gamma_diag
-    step(parameter_file, obs_file, convergence_file, goal_file, gamma)
+    diag_fn(parameter_file, obs_file, convergence_file, goal_file, gamma)
 
     parameter_file = "chis.txt"
     obs_file = "observables.traj"
     convergence_file = "convergence.txt"
     goal_file = "obj_goal.txt"
     gamma = gamma_plaid
-    copy_chis(parameter_file, obs_file, convergence_file, goal_file, gamma)
+    fn(parameter_file, obs_file, convergence_file, goal_file, gamma)
 
-if (mode == "plaid"):
-    parameter_file = "chis_diag.txt"
-    obs_file = "diag_observables.traj"
-    convergence_file = "convergence_diag.txt"
-    goal_file = "obj_goal_diag.txt"
-    gamma = gamma_diag
-    copy_chis(parameter_file, obs_file, convergence_file, goal_file,  gamma)
-
-    parameter_file = "chis.txt"
-    obs_file = "observables.traj"
-    convergence_file = "convergence.txt"
-    goal_file = "obj_goal.txt"
-    gamma = gamma_plaid
-    step(parameter_file, obs_file, convergence_file, goal_file,  gamma)
-
-if (mode == "both"):
-    parameter_file = "chis_diag.txt"
-    obs_file = "diag_observables.traj"
-    convergence_file = "convergence_diag.txt"
-    goal_file = "obj_goal_diag.txt"
-    gamma = gamma_diag
-    step(parameter_file, obs_file, convergence_file,goal_file,  gamma)
-
-    parameter_file = "chis.txt"
-    obs_file = "observables.traj"
-    convergence_file = "convergence.txt"
-    goal_file = "obj_goal.txt"
-    gamma = gamma_plaid
-    step(parameter_file, obs_file, convergence_file,goal_file,  gamma)
-
-
-
+if __name__ == '__main__':
+    main()

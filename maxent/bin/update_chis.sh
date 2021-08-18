@@ -28,4 +28,3 @@ do
         counter=$((counter+1))
     done
 done
-

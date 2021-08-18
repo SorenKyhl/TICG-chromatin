@@ -119,6 +119,7 @@ saveFileName='equilibrated.xyz'
 proj_root=$(pwd)
 proj_bin="$(pwd)/bin"                # location of algorithm scripts
 nchis=$(head -1 "resources/chis.txt" | wc -w)
+k=$(jq .nspecies "resources/${configFileName}")
 ndiagchis=$(head -1 "resources/chis_diag.txt" | wc -w)
 
 # directory checks
@@ -149,8 +150,8 @@ run_simulation () {
 		python3 $proj_bin/update_diag.py $it
 	elif [ $mode == "both" ];
 	then
-		$proj_bin/update_chis.sh $it $proj_bin
-		python3 $proj_bin/update_diag.py $it
+		python3 $proj_bin/update_chis.py --it $it --k $k
+		python3 $proj_bin/update_diag.py --it $it
 	fi
 	cd "iteration${it}"
 

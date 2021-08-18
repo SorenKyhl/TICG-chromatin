@@ -1,24 +1,36 @@
 import json
 import numpy as np
 import sys
+import argparse
 
-it = sys.argv[1]
+def getArgs():
+    parser = argparse.ArgumentParser(description='Base parser')
+    parser.add_argument('--it', type=int, help='current iteration')
 
-config_file = "iteration"+it+"/config.json"
+    args = parser.parse_args()
+    return args
 
-with open(config_file) as f:
-    config = json.load(f)
+def main():
+    args = getArgs()
 
-#assert(config['diagonal_on'] == True)
-allchis = np.loadtxt('chis_diag.txt')
+    config_file = "iteration{}/config.json".format(args.it)
 
-# get last row of 'chis.txt'
-lastchis = list(allchis[int(it)])
+    with open(config_file) as f:
+        config = json.load(f)
 
-config['diag_chis'] = lastchis
+    #assert(config['diagonal_on'])
+    allchis = np.loadtxt('chis_diag.txt')
 
-with open(config_file, "w") as f:
-    json.dump(config, f)
+    # get last row of 'chis.txt'
+    lastchis = list(allchis[int(it)])
+
+    config['diag_chis'] = lastchis
+
+    with open(config_file, "w") as f:
+        json.dump(config, f)
+
+if __name__ == '__main__':
+    main()
 
 
 """
