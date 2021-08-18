@@ -159,7 +159,7 @@ run_simulation () {
 	~/TICG-chromatin/TICG-engine > equilib.log
 	$proj_bin/fork_last_snapshot.sh $saveFileName
 	mkdir equilib_out
-	mv data_out/* equilib_out
+	mv data_out equilib_out
 
 	# set up production run
 	python3 $proj_bin/jsed.py $configFileName load_configuration_filename $saveFileName s
@@ -186,17 +186,8 @@ it=0
 if [ $goal_specified -eq 1 ]
 then
 	# if goal is specified, just move in goal files and do not simulate
-	if [ $mode == "plaid" ];
-	then
-		mv resources/obj_goal.txt .
-	elif [ $mode == "diag" ];
-	then
-		mv resources/obj_goal_diag.txt .
-	elif [ $mode == "both" ];
-	then
-		mv resources/obj_goal.txt .
-		mv resources/obj_goal_diag.txt .
-	fi
+	mv resources/obj_goal.txt .
+	mv resources/obj_goal_diag.txt .
 else
 	# if goal is not specified, simulate iteration 0 and calculate the goals from that simulation
 	run_simulation

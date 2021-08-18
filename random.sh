@@ -65,3 +65,6 @@ do
 		mv seq${i}.txt $dir
 	done
 done
+
+# clean up
+rm default_config.json input1024.xyz
