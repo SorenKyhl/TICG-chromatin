@@ -30,7 +30,7 @@ python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --ifile "y.npy"
 
 # get config
 cd ~/TICG-chromatin/maxent/resources
-python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi 0 --max_chi 0 --fill_diag=-1 --save_chi_for_max_ent --load_configuration_filename "~/TICG-chromatin/utils/input1024.xyz"
+python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi 0 --max_chi 0 --fill_diag=-1 --save_chi_for_max_ent
 
 # 'PCA' 'k_means' 'GNN' 'random'
 for method in 'ground_truth'
