@@ -144,7 +144,7 @@ run_simulation () {
 	cp resources/* "iteration$it"
 	if [ $mode == "plaid" ];
 	then
-		$proj_bin/update_chis.sh $it $proj_bin
+		python3 $proj_bin/update_chis.py --it $it --k $k
 	elif [ $mode == "diag" ];
 	then
 		python3 $proj_bin/update_diag.py $it

@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import sys
 
-def step(parameter_file, obs_file, convergence_file, goal_file, gamma):
+def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified):
 
     if goal_specified:
         print("READING FROM OBJ_GOAL")
@@ -72,7 +72,7 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma):
     convergence.write(str(howfar) + '\n')
     convergence.close()
 
-def copy_chis(parameter_file, obs_file, convergence_file, goal_file, gamma):
+def copy_chis(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified = None):
     ''' for parameters that are not optimized, just copy chis to next iteration'''
     # load current chi parameters
     f_chis = open(parameter_file, "r")
@@ -122,14 +122,14 @@ def main():
     convergence_file = "convergence_diag.txt"
     goal_file = "obj_goal_diag.txt"
     gamma = gamma_diag
-    diag_fn(parameter_file, obs_file, convergence_file, goal_file, gamma)
+    diag_fn(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified)
 
     parameter_file = "chis.txt"
     obs_file = "observables.traj"
     convergence_file = "convergence.txt"
     goal_file = "obj_goal.txt"
     gamma = gamma_plaid
-    fn(parameter_file, obs_file, convergence_file, goal_file, gamma)
+    fn(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified)
 
 if __name__ == '__main__':
     main()

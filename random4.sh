@@ -1,6 +1,6 @@
 #! /bin/bash
-#SBATCH --job-name=TICG1
-#SBATCH --output=TICG1.out
+#SBATCH --job-name=TICG4
+#SBATCH --output=TICG4.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --nodes=1
