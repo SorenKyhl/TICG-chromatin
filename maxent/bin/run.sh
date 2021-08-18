@@ -152,7 +152,7 @@ run_simulation () {
 		$proj_bin/update_chis.sh $it $proj_bin
 		python3 $proj_bin/update_diag.py $it
 	fi
-	cd "iteration$it"
+	cd "iteration${it}"
 
 	# equilibrate system
 	python3 $proj_bin/jsed.py $configFileName nSweeps $equilib_sweeps i

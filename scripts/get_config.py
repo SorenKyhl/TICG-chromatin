@@ -2,6 +2,7 @@ import argparse
 import json
 import numpy as np
 import sys
+import csv
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
