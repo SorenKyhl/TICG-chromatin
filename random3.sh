@@ -11,8 +11,8 @@ method='random'
 m=1024
 pSwitch=0.05
 k=2
-startSimulation=3
-numSimulations=50
+startSimulation=101
+numSimulations=150
 chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
 
 # chi='none'
