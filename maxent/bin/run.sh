@@ -123,12 +123,12 @@ k=$(jq .nspecies "resources/${configFileName}")
 ndiagchis=$(head -1 "resources/chis_diag.txt" | wc -w)
 
 # directory checks
-if [ -d $outputDir ]
-then
+# if [ -d $outputDir ]
+# then
 	# don't overrite previous results!
-	echo "output directory already exists"
-	exit 1
-fi
+# 	echo "output directory already exists"
+# 	exit 1
+# fi
 
 if [[ -d resources && -d bin ]]
 then
@@ -168,7 +168,6 @@ run_simulation () {
 	~/TICG-chromatin/TICG-engine > production.log
 
 	python3 ~/TICG-chromatin/scripts/contact_map.py --save_npy
-	mv data_out production_out
 
 	echo "finished iteration $it"
 	cd $scratchDir
