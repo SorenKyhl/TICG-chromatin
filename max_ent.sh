@@ -34,7 +34,7 @@ cd ~/TICG-chromatin/maxent/resources
 python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi 0 --max_chi 0 --fill_diag=-1 --save_chi_for_max_ent
 
 # 'ground_truth' 'random' 'k_means' 'GNN'
-for method in  'PCA' 
+for method in  'PCA'
 do
 	printf "\n${method}\n"
 	cd ~/TICG-chromatin/maxent/resources
@@ -45,17 +45,12 @@ do
 
 	# apply max ent with newton's method
 	dir="${sampleFolder}/${method}/k${k}"
-	StartTime=$(date +%s)
 	~/TICG-chromatin/maxent/bin/run.sh $dir $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite
-	EndTime=$(date +%s)
-	echo "run time: $(($EndTime - $StartTime)) seconds"
-  # compare results
+
+	# compare results
 	cd $dir
 	prodIt=$(($numIterations+1))
-	StartTime=$(date +%s)
   python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --ifile1 "$sampleFolder/y.npy" --ifile2 "${dir}/iteration${prodIt}/y.npy"
-	EndTime=$(date +%s)
-	echo "compare time: $(($EndTime - $StartTime)) seconds"
 done
 
 EndTime=$(date +%s)

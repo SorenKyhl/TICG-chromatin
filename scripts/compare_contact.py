@@ -40,7 +40,6 @@ def plotDistanceStratifiedPearsonCorrelation(y, yhat, args):
     plt.close()
 
 def main():
-    print(sys.argv)
     args = getArgs()
     y = np.load(args.ifile1)[:args.m, :args.m]
     yhat = np.load(args.ifile2)[:args.m, :args.m]

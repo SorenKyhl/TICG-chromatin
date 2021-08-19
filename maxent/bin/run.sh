@@ -216,19 +216,16 @@ do
 
 	# update plots
 	STARTTIME=$(date +%s)
-	python3 $proj_bin/plot_convergence.py --mode $mode
+	python3 $proj_bin/plot_convergence.py --mode $mode --k $k
 	ENDTIME=$(date +%s)
 	echo "plot time: $(($ENDTIME - $STARTTIME)) seconds"
-	# gnuplot -e $proj_bin/plot.p $nchis $ndiagchis
+	# gnuplot -e $proj_bin/plot.p $k $ndiagchis
 done
 
 # run longer simulation
-STARTTIME=$(date +%s)
 it=$(($num_iterations + 1))
-production_sweeps=50000 # TODO change back to 500000
+production_sweeps=20000 # TODO change back to 500000
 run_simulation
-ENDTIME=$(date +%s)
-echo "long simulation time: $(($ENDTIME - $STARTTIME)) seconds"
 
 # move data to output directory
 mv $scratchDir/* $outputDir
