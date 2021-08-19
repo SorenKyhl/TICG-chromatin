@@ -17,7 +17,7 @@ gammaDiag=0.00001
 mode="plaid"
 productionSweeps=50000
 equilibSweeps=10000
-goalSpecified=1
+goalSpecified=1 # TODO
 numIterations=1 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 
@@ -32,9 +32,8 @@ python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --ifile "y.npy"
 # get config
 cd ~/TICG-chromatin/maxent/resources
 python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi 0 --max_chi 0 --fill_diag=-1 --save_chi_for_max_ent
-
-# 'ground_truth' 'random' 'k_means' 'GNN'
-for method in  'PCA'
+#'ground_truth' 'random' 'k_means' 'PCA' TODO
+for method in  'GNN'
 do
 	printf "\n${method}\n"
 	cd ~/TICG-chromatin/maxent/resources

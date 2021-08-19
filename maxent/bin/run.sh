@@ -215,16 +215,13 @@ do
 	python3 $proj_bin/newton_step.py $it $gamma $gamma_diag $mode $goal_specified >> track.log
 
 	# update plots
-	STARTTIME=$(date +%s)
 	python3 $proj_bin/plot_convergence.py --mode $mode --k $k
-	ENDTIME=$(date +%s)
-	echo "plot time: $(($ENDTIME - $STARTTIME)) seconds"
-	# gnuplot -e $proj_bin/plot.p $k $ndiagchis
 done
 
 # run longer simulation
 it=$(($num_iterations + 1))
-production_sweeps=20000 # TODO change back to 500000
+python3 $proj_bin/jsed.py $configFileName dump_frequency 1000 i
+production_sweeps=10000 # TODO
 run_simulation
 
 # move data to output directory

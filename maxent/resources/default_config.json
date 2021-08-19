@@ -4,7 +4,7 @@
   "decay_length": 100,
   "nSweeps": 500000,
   "dump_frequency": 10000,
-  "dump_stats_frequency": 10,
+  "dump_stats_frequency": 100,
   "nEquilibSweeps": 1,
   "bonded_on": true,
   "nonbonded_on": true,
