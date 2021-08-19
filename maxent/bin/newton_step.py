@@ -67,18 +67,16 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_
     #howfar = sum(abs(difference))/sum(obj_goal)
     howfar = np.sqrt(difference@difference)/np.sqrt(obj_goal@obj_goal)
 
-    convergence = open(convergence_file, "a")
-    convergence.write(str(howfar) + '\n')
-    convergence.close()
+    with open(convergence_file, "a") as f:
+        f.write(str(howfar) + '\n')
 
 def copy_chis(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified = None):
     ''' for parameters that are not optimized, just copy chis to next iteration'''
     # load current chi parameters
-    f_chis = open(parameter_file, "r")
-    lines = f_chis.readlines()
-    current_chis = lines[it].split()
-    current_chis = [float(x) for x in current_chis]
-    f_chis.close()
+    with open(parameter_file, "r") as f_chis:
+        lines = f_chis.readlines()
+        current_chis = lines[it].split()
+        current_chis = [float(x) for x in current_chis]
 
     new_chis = current_chis
 

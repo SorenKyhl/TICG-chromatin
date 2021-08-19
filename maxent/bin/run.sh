@@ -208,7 +208,7 @@ else
 fi
 
 # maxent optimization
-if [ $num_iterations -gt 0]
+if [ $num_iterations -gt 0 ]
 then
 	for it in $(seq 1 $(($num_iterations)))
 	do
