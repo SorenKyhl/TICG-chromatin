@@ -220,7 +220,7 @@ done
 
 # run longer simulation
 it=$(($num_iterations + 1))
-python3 $proj_bin/jsed.py $configFileName dump_frequency 1000 i
+python3 $proj_bin/jsed.py "resources/${configFileName}" dump_frequency 1000 i
 production_sweeps=10000 # TODO
 run_simulation
 
