@@ -146,6 +146,7 @@ else
 fi
 
 run_simulation () {
+	STARTTIME=$(date +%s)
 	# resources must be in working directory
 	mkdir "iteration$it"
 	cp resources/* "iteration$it"
@@ -174,14 +175,15 @@ run_simulation () {
 	python3 $proj_bin/jsed.py $configFileName seed $RANDOM i
 	~/TICG-chromatin/TICG-engine > production.log
 
-	if [ $it -gt $num_iterations ]
+	if [ $it -gt $(($num_iterations - 1)) ]
 	then
 		python3 ~/TICG-chromatin/scripts/contact_map.py --save_npy
 	fi
 	mv data_out production_out
-
-	echo "finished iteration $it"
 	cd $scratchDir
+
+	ENDTIME=$(date +%s)
+	echo "finished iteration ${it}: $(($ENDTIME - $STARTTIME)) seconds"
 }
 
 # set up scratch and output directory
@@ -208,16 +210,16 @@ fi
 # maxent optimization
 for it in $(seq 1 $(($num_iterations)))
 do
-	STARTTIME=$(date +%s)
 	run_simulation
-	ENDTIME=$(date +%s)
-	echo "iteration ${it} time: $(($ENDTIME - $STARTTIME)) seconds"
-
 	# update chis via newton's method
 	python3 $proj_bin/newton_step.py $it $gamma $gamma_diag $mode $goal_specified >> track.log
 
 	# update plots
-	gnuplot -e $proj_bin/plot.p $nchis $ndiagchis
+	STARTTIME=$(date +%s)
+	python3 $proj_bin/plot_convergence.py --mode $mode
+	ENDTIME=$(date +%s)
+	echo "plot time: $(($ENDTIME - $STARTTIME)) seconds"
+	# gnuplot -e $proj_bin/plot.p $nchis $ndiagchis
 done
 
 # run longer simulation

@@ -48,7 +48,7 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_
 
     difference = obj_goal - lam
     B = df.cov().values
-    Binv = np.linalg.inv(B)
+    Binv = np.linalg.pinv(B)
     step = Binv@difference
     print(it)
     print(step)

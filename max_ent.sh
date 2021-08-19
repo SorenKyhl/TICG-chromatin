@@ -33,9 +33,10 @@ python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --ifile "y.npy"
 cd ~/TICG-chromatin/maxent/resources
 python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi 0 --max_chi 0 --fill_diag=-1 --save_chi_for_max_ent
 
-for method in 'ground_truth' 'PCA' 'k_means' 'GNN' 'random'
+# 'ground_truth' 'random' 'k_means' 'GNN'
+for method in  'PCA' 
 do
-	printf "\n${method}"
+	printf "\n${method}\n"
 	cd ~/TICG-chromatin/maxent/resources
 	# generate sequences
 	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --k $k --sample $sample --data_folder $dataFolder
