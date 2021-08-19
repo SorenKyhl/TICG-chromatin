@@ -61,7 +61,7 @@
   "chiBB": -1.0,
   "nbeads": 1024,
   "nspecies": 2,
-  "load_configuration_filename": "~/TICG-chromatin/utils/input1024.xyz",
+  "load_configuration_filename": "input1024.xyz",
   "chipseq_files": [
     "seq0.txt",
     "seq1.txt"

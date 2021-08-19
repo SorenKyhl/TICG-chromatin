@@ -45,13 +45,12 @@ do
 	# apply max ent with newton's method
 	dir="${sampleFolder}/${method}/k${k}"
 	StartTime=$(date +%s)
-	~/TICG-chromatin/maxent/bin/run.sh $dir $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite
+	# ~/TICG-chromatin/maxent/bin/run.sh $dir $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite
 	EndTime=$(date +%s)
 	echo "run time: $(($EndTime - $StartTime)) seconds"
   # compare results
 	cd $dir
-	prodIt=$(($num_iterations+1))
-	echo prodIt
+	prodIt=$(($numIterations+1))
 	StartTime=$(date +%s)
   python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --ifile1 "$sampleFolder/y.npy" --ifile2 "${dir}/iteration${prodIt}/y.npy"
 	EndTime=$(date +%s)
