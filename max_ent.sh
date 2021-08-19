@@ -18,7 +18,7 @@ mode="plaid"
 productionSweeps=50000
 equilibSweeps=10000
 goalSpecified=1
-numIterations=2 # iteration 1 + numIterations is production run to get contact map
+numIterations=1 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 
 OverallStartTime=$(date +%s)
@@ -35,7 +35,7 @@ python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi 0 --max_c
 
 for method in 'ground_truth' 'PCA' 'k_means' 'GNN' 'random'
 do
-	echo "\n${method}"
+	printf "\n${method}"
 	cd ~/TICG-chromatin/maxent/resources
 	# generate sequences
 	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --k $k --sample $sample --data_folder $dataFolder

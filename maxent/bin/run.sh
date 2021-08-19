@@ -217,7 +217,7 @@ do
 	python3 $proj_bin/newton_step.py $it $gamma $gamma_diag $mode $goal_specified >> track.log
 
 	# update plots
-	gnuplot $proj_bin/plot.p $nchis $ndiagchis
+	gnuplot -e $proj_bin/plot.p $nchis $ndiagchis
 done
 
 # run longer simulation
