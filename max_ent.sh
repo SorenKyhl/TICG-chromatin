@@ -50,7 +50,8 @@ do
 	echo "run time: $(($EndTime - $StartTime)) seconds"
   # compare results
 	cd $dir
-	prodIt=$(($num_iterations + 1))
+	prodIt=$(($num_iterations+1))
+	echo prodIt
 	StartTime=$(date +%s)
   python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --ifile1 "$sampleFolder/y.npy" --ifile2 "${dir}/iteration${prodIt}/y.npy"
 	EndTime=$(date +%s)

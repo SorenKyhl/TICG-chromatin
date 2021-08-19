@@ -3,9 +3,9 @@ set output 'pconvergence.png'
 set key off
 p 'convergence.txt' w l
 
-set output 'pconvergence_diag.png'
-set key off
-p 'convergence_diag.txt' w l
+# set output 'pconvergence_diag.png'
+# set key off
+# p 'convergence_diag.txt' w l
 
 set output 'pchis.png'
 set key off
