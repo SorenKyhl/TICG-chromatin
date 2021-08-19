@@ -76,7 +76,6 @@ def writeSeq(seq, format, save_npy):
         np.save('x.npy', seq)
 
 def main():
-    print(sys.argv)
     args = getArgs()
     if args.method == 'random':
         seq = get_random_seq(args.m, args.p_switch, args.k)
@@ -91,7 +90,7 @@ def main():
             format = '%d'
         elif args.method == 'GNN':
             assert args.k == 2
-            seq_path = "home/erschultz/sequences_to_contact_maps/results/ContactGNN/{}/sample{}/z.npy".format(args.GNN_model_id, args.sample)
+            seq_path = "/home/erschultz/sequences_to_contact_maps/results/ContactGNN/{}/sample{}/z.npy".format(args.GNN_model_id, args.sample)
             if osp.exists(seq_path):
                 seq = np.load(seq_path)[:args.m, :args.m]
             else:

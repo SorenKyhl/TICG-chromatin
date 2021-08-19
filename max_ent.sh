@@ -35,7 +35,7 @@ python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi 0 --max_c
 
 for method in 'ground_truth' 'PCA' 'k_means' 'GNN' 'random'
 do
-	echo $method
+	echo "\n${method}"
 	cd ~/TICG-chromatin/maxent/resources
 	# generate sequences
 	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --k $k --sample $sample --data_folder $dataFolder
@@ -45,7 +45,7 @@ do
 	# apply max ent with newton's method
 	dir="${sampleFolder}/${method}/k${k}"
 	StartTime=$(date +%s)
-	# ~/TICG-chromatin/maxent/bin/run.sh $dir $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite
+	~/TICG-chromatin/maxent/bin/run.sh $dir $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite
 	EndTime=$(date +%s)
 	echo "run time: $(($EndTime - $StartTime)) seconds"
   # compare results
