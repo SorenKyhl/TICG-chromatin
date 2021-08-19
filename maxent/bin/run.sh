@@ -208,15 +208,18 @@ else
 fi
 
 # maxent optimization
-for it in $(seq 1 $(($num_iterations)))
-do
-	run_simulation
-	# update chis via newton's method
-	python3 $proj_bin/newton_step.py $it $gamma $gamma_diag $mode $goal_specified >> track.log
+if [ $num_iterations -gt 0]
+then
+	for it in $(seq 1 $(($num_iterations)))
+	do
+		run_simulation
+		# update chis via newton's method
+		python3 $proj_bin/newton_step.py $it $gamma $gamma_diag $mode $goal_specified >> track.log
 
-	# update plots
-	python3 $proj_bin/plot_convergence.py --mode $mode --k $k
-done
+		# update plots
+		python3 $proj_bin/plot_convergence.py --mode $mode --k $k
+	done
+fi
 
 # run longer simulation
 it=$(($num_iterations + 1))
