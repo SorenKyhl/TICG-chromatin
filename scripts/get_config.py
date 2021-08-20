@@ -142,6 +142,7 @@ def main():
                 print('Warning: particles are not distinguishable')
         args.chi = conv.chi
     else:
+        # chi is not None
         rows, cols = args.chi.shape
         if args.k is None:
             args.k = rows
@@ -165,7 +166,7 @@ def main():
         with open('chis_diag.txt', 'w', newline='') as f:
             wr = csv.writer(f, delimiter = '\t')
             wr.writerow(np.array(config["diag_chis"]))
-            if args.goal_specified
+            if args.goal_specified:
                 wr.writerow(np.array(config["diag_chis"]))
 
 

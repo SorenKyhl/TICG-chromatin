@@ -25,7 +25,7 @@ scratchDir='/scratch/midway2/erschultz/TICG_fixed'
 
 # get inputxyz
 cd $sampleFolder
-~/TICG-chromatin/maxent/bin fork_last_snapshot $saveFileName
+~/TICG-chromatin/maxent/bin/fork_last_snapshot.sh $saveFileName
 mv $saveFileName "${scratchDir}/${saveFileName}"
 
 # move utils to scratch
@@ -46,7 +46,7 @@ do
 	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --ensure_distinguishable --load_configuration_filename $saveFileName > log.log
 
 	# generate sequences
-	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --sample $sample --m $m --k $k --save_npy >> log.log
+	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --data_folder $dataFolder --sample $sample --m $m --k $k --save_npy >> log.log
 
 	# run simulation
 	~/TICG-chromatin/TICG-engine >> log.log
