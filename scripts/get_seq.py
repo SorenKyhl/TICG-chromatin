@@ -80,31 +80,30 @@ def main():
     if args.method == 'random':
         seq = get_random_seq(args.m, args.p_switch, args.k)
         format = '%d'
-    else:
-        if args.method == 'PCA':
-            y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
-            seq = get_PCA_seq(args.m, y_diag, args.k)
-            format = '%.3e'
-        elif args.method == 'ground_truth':
-            seq = np.load(osp.join(args.sample_folder, 'x.npy'))[:args.m, :]
-            format = '%d'
-        elif args.method == 'GNN':
-            assert args.k == 2
-            seq_path = "/home/erschultz/sequences_to_contact_maps/results/ContactGNN/{}/sample{}/z.npy".format(args.GNN_model_id, args.sample)
-            if osp.exists(seq_path):
-                seq = np.load(seq_path)[:args.m, :args.m]
-            else:
-                raise Exception('seq path does not exist: {}'.format(seq_path))
-            format = '%.3e'
-        elif args.method == 'k_means':
-            y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
-            kmeans = KMeans(n_clusters = args.k)
-            kmeans.fit(y_diag)
-            seq = np.zeros((args.m, args.k))
-            seq[np.arange(args.m), kmeans.labels_] = 1
-            format = '%d'
+    elif args.method == 'PCA':
+        y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
+        seq = get_PCA_seq(args.m, y_diag, args.k)
+        format = '%.3e'
+    elif args.method == 'ground_truth':
+        seq = np.load(osp.join(args.sample_folder, 'x.npy'))[:args.m, :]
+        format = '%d'
+    elif args.method == 'GNN':
+        assert args.k == 2
+        seq_path = "/home/erschultz/sequences_to_contact_maps/results/ContactGNN/{}/sample{}/z.npy".format(args.GNN_model_id, args.sample)
+        if osp.exists(seq_path):
+            seq = np.load(seq_path)[:args.m, :args.m]
         else:
-            raise Exception('Unkown method: {}'.format(args.method))
+            raise Exception('seq path does not exist: {}'.format(seq_path))
+        format = '%.3e'
+    elif args.method == 'k_means':
+        y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
+        kmeans = KMeans(n_clusters = args.k)
+        kmeans.fit(y_diag)
+        seq = np.zeros((args.m, args.k))
+        seq[np.arange(args.m), kmeans.labels_] = 1
+        format = '%d'
+    else:
+        raise Exception('Unkown method: {}'.format(args.method))
 
     for i in range(args.k):
         plt.plot(seq[:,i], label = i)

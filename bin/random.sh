@@ -1,5 +1,6 @@
 #! /bin/bash
 
+cd ~/TICG-chromatin
 sbatch bin/random1.sh
 sbatch bin/random2.sh
 sbatch bin/random3.sh
