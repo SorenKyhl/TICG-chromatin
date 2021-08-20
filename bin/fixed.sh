@@ -16,6 +16,7 @@ k=2
 startSimulation=1
 numSimulations=10
 chi="-1&1\\1&0"
+overwrite=1
 
 
 today=$(date +'%m_%d_%y')
@@ -25,8 +26,7 @@ scratchDir='/scratch/midway2/erschultz/TICG_fixed'
 
 # get inputxyz
 cd $sampleFolder
-~/TICG-chromatin/maxent/bin/fork_last_snapshot.sh $saveFileName
-mv $saveFileName "${scratchDir}/${saveFileName}"
+~/TICG-chromatin/maxent/bin/fork_last_snapshot.sh "${scratchDir}/${saveFileName}"
 
 # move utils to scratch
 mkdir -p $scratchDir
@@ -59,9 +59,15 @@ do
 	# directory checks
 	if [ -d $dir ]
 	then
-		# don't overrite previous results!
-		echo "output directory already exists: ${dir}"
-		exit 1
+		if [ $overwrite -eq 1 ]
+		then
+			echo "output directory already exists - overwriting"
+			rm -r $outputDir
+		else
+			# don't overrite previous results!
+			echo "output directory already exists - aborting"
+			exit 1
+		fi
 	fi
 	mkdir -p $dir
 	mv config.json data_out log.log x.npy y.npy y.png chis.txt chis.npy $dir

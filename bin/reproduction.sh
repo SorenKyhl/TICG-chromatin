@@ -19,7 +19,7 @@ productionSweeps=50000
 equilibSweeps=10000
 goalSpecified=0
 numIterations=50 # iteration 1 + numIterations is production run to get contact map
-overwrite=0
+overwrite=1
 scratchDir='/scratch/midway2/erschultz/TICG_reproduction'
 
 OverallStartTime=$(date +%s)
