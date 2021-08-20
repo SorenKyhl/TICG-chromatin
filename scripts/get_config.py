@@ -17,6 +17,7 @@ def getArgs():
     parser.add_argument('--fill_diag', type=float, help='fill diag of chi with given value (None to skip)')
     parser.add_argument('--fill_offdiag', type=float, help='fill off diag of chi with given value (None to skip)')
     parser.add_argument('--ensure_distinguishable', action='store_true', help='true to ensure that corresponding psi is distinguishable')
+    parser.add_argument('--goal_specified', type=int, default=1, help='1=true, will save two lines to chis.txt')
 
     args = parser.parse_args()
     return args
@@ -159,11 +160,13 @@ def main():
         with open('chis.txt', 'w', newline='') as f:
             wr = csv.writer(f, delimiter = '\t')
             wr.writerow(args.chi[np.triu_indices(args.k)])
-            wr.writerow(args.chi[np.triu_indices(args.k)])
+            if args.goal_specified:
+                wr.writerow(args.chi[np.triu_indices(args.k)])
         with open('chis_diag.txt', 'w', newline='') as f:
             wr = csv.writer(f, delimiter = '\t')
             wr.writerow(np.array(config["diag_chis"]))
-            wr.writerow(np.array(config["diag_chis"]))
+            if args.goal_specified
+                wr.writerow(np.array(config["diag_chis"]))
 
 
     # save chi to config

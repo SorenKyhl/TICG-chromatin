@@ -1,6 +1,6 @@
 #! /bin/bash
-#SBATCH --job-name=TICG_maxent
-#SBATCH --output=TICG_maxent.out
+#SBATCH --job-name=TICG_reproduction
+#SBATCH --output=TICG_reproduction.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --nodes=1
@@ -17,9 +17,10 @@ gammaDiag=0.00001
 mode="plaid"
 productionSweeps=50000
 equilibSweeps=10000
-goalSpecified=1
+goalSpecified=0
 numIterations=50 # iteration 1 + numIterations is production run to get contact map
-overwrite=1
+overwrite=0
+scratchDir='/scratch/midway2/erschultz/TICG_reproduction'
 
 OverallStartTime=$(date +%s)
 source activate python3.8_pytorch1.8.1_cuda10.2
@@ -36,7 +37,6 @@ python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi 1 --max_c
 #'GNN' 'random' 'k_means' 'PCA'
 for method in 'ground_truth'
 do
-	printf "\n${method}\n"
 	cd ~/TICG-chromatin/maxent/resources
 	# generate sequences
 	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --k $k --sample $sample --data_folder $dataFolder
@@ -48,8 +48,8 @@ do
 	fi
 
 	# apply max ent with newton's method
-	dir="${sampleFolder}/${method}/k${k}"
-	~/TICG-chromatin/maxent/bin/run.sh $dir $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite
+	dir="/project2/depablo/erschultz/maxent_reprodution"
+	~/TICG-chromatin/maxent/bin/run.sh $dir $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite $scratchDir
 
 	# compare results
 	cd $dir

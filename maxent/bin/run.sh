@@ -112,9 +112,9 @@ equilib_sweeps=${6:-10000}
 goal_specified=${7:-0}
 num_iterations=${8:-50}
 overwrite=${9:-0}
+scratchDir=${10:-'/scratch/midway2/erschultz/TICG_maxent'}
 
 # other parameters
-scratchDir='/scratch/midway2/erschultz/TICG_maxent'
 configFileName='config.json'
 saveFileName='equilibrated.xyz'
 proj_root=$(pwd)
