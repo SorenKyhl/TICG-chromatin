@@ -200,5 +200,10 @@ def test():
     args.fill_offdiag = 0
     print(generateRandomChi(args))
 
+def test2():
+    conv = InteractionConverter(2, np.array([[-1, 1],[1, 0]]))
+    print(conv.allStrings)
+    conv.PsiUniqueRows()
+
 if __name__ == '__main__':
-    main()
+    test2()

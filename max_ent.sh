@@ -26,8 +26,8 @@ source activate python3.8_pytorch1.8.1_cuda10.2
 module load jq
 
 # plot ref contact map
-cd $sampleFolder
-python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --ifile "y.npy"
+# cd $sampleFolder
+# python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --ifile "y.npy"
 
 # get config
 cd ~/TICG-chromatin/maxent/resources
