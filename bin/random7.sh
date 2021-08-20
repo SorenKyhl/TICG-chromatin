@@ -1,7 +1,7 @@
 #! /bin/bash
 #SBATCH --job-name=TICG7
 #SBATCH --output=TICG7.out
-#SBATCH --time=48:00:00
+#SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -11,8 +11,8 @@ method='random'
 m=1024
 pSwitch=0.05
 k=4
-startSimulation=1301
-numSimulations=1400
+startSimulation=1001
+numSimulations=1050
 chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
 
 # chi='none'

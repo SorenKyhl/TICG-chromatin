@@ -1,7 +1,7 @@
 #! /bin/bash
 #SBATCH --job-name=TICG_fixed
 #SBATCH --output=TICG_fixed.out
-#SBATCH --time=48:00:00
+#SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
