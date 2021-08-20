@@ -14,8 +14,9 @@ def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     # '../../sequences_to_contact_maps/dataset_04_18_21'
     # "./project2/depablo/erschultz/dataset_04_18_21"
-    parser.add_argument('--data_folder', type=str, default='../sequences_to_contact_maps/dataset_04_18_21', help='Location of input data')
+    parser.add_argument('--data_folder', type=str, default='../sequences_to_contact_maps/dataset_04_18_21', help='location of input data')
     parser.add_argument('--sample', type=int, default=2, help='sample id')
+    parser.add_argument('--sample_folder', type=str, help='location of input data')
     parser.add_argument('--method', type=str, default='PCA', help='method for assigning particle types')
     parser.add_argument('--m', type=int, default=1024, help='number of particles (will crop contact map)')
     parser.add_argument('--p_switch', type=float, default=0.05, help='probability to switch bead assignment')
@@ -25,7 +26,7 @@ def getArgs():
 
 
     args = parser.parse_args()
-    if args.method != 'random':
+    if args.method != 'random' and args.sample_folder is None:
         args.sample_folder = osp.join(args.data_folder, 'samples', 'sample{}'.format(args.sample))
     return args
 

@@ -62,7 +62,7 @@ do
 		if [ $overwrite -eq 1 ]
 		then
 			echo "output directory already exists - overwriting"
-			rm -r $outputDir
+			rm -r $dir
 		else
 			# don't overrite previous results!
 			echo "output directory already exists - aborting"
