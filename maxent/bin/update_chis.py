@@ -19,7 +19,7 @@ def main():
     with open(config_file, "r") as f:
         config = json.load(f)
 
-    allchis = np.loadtxt('chis.txt')
+    allchis = np.atleast_2d(np.loadtxt('chis.txt'))
     letters='ABCDEFG'
 
     # get last row of 'chis.txt'
