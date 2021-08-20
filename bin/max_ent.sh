@@ -42,7 +42,7 @@ do
 	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --k $k --sample $sample --data_folder $dataFolder
 
 	# generate goals
-	if [ $goalSpecified -eq 1]
+	if [ $goalSpecified -eq 1 ]
 	then
 		python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --k $k --contact_map "${sampleFolder}/y.npy"
 	fi

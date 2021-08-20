@@ -15,7 +15,7 @@ m=1024
 k=2
 startSimulation=1
 numSimulations=10
-chi="-1&1//1&0"
+chi="-1&1\\1&0"
 
 
 today=$(date +'%m_%d_%y')
