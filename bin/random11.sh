@@ -12,6 +12,7 @@ m=1024
 pSwitch=0.05
 k=4
 chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
+overwrite=1
 
 # chi='none'
 # below do nothing if chi is given
@@ -56,10 +57,15 @@ do
 	# directory checks
 	if [ -d $dir ]
 	then
-		rm -r $dir
-		# don't overrite previous results!
-		# echo "output directory already exists: ${dir}"
-		# exit 1
+		if [ $overwrite -eq 1 ]
+		then
+			echo "output directory already exists - overwriting"
+			rm -r $outputDir
+		else
+			# don't overrite previous results!
+			echo "output directory already exists - aborting"
+			exit 1
+		fi
 	fi
 	mkdir -p $dir
 	mv config.json data_out log.log x.npy y.npy y.png chis.txt chis.npy $dir
