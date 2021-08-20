@@ -18,10 +18,7 @@ numSimulations=10
 chi="-1&1\\1&0"
 overwrite=1
 
-
-today=$(date +'%m_%d_%y')
-# dataFolder="/project2/depablo/erschultz/dataset_${today}"
-dataFolder="/project2/depablo/erschultz/dataset_fixed"
+outputFolder="/project2/depablo/erschultz/dataset_fixed"
 scratchDir='/scratch/midway2/erschultz/TICG_fixed'
 
 # get inputxyz
@@ -46,7 +43,7 @@ do
 	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --ensure_distinguishable --load_configuration_filename $saveFileName > log.log
 
 	# generate sequences
-	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --data_folder $dataFolder --sample $sample --m $m --k $k --save_npy >> log.log
+	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --sample_folder $sampleFolder --sample $sample --m $m --k $k --save_npy >> log.log
 
 	# run simulation
 	~/TICG-chromatin/TICG-engine >> log.log
@@ -55,14 +52,14 @@ do
   python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --save_npy
 
 	# move inputs and outputs to own folder
-	dir="${dataFolder}/samples/sample${i}"
+	dir="${outputFolder}/samples/sample${i}"
 	# directory checks
 	if [ -d $dir ]
 	then
 		if [ $overwrite -eq 1 ]
 		then
 			echo "output directory already exists - overwriting"
-			rm -r $outputDir
+			rm -r $dir
 		else
 			# don't overrite previous results!
 			echo "output directory already exists - aborting"

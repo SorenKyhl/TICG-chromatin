@@ -44,7 +44,7 @@ def test():
 
     config = {}
 
-    allchis = np.loadtxt('maxent/resources/chis.txt')
+    allchis = np.atleast_2d(np.loadtxt('maxent/resources/chis.txt'))
     print(allchis)
     letters='ABCDEFG'
 
