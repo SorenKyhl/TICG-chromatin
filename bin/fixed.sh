@@ -40,7 +40,7 @@ source activate python3.8_pytorch1.8.1_cuda10.2
 for i in $(seq $startSimulation $numSimulations)
 do
   # set up config.json
-	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --ensure_distinguishable --load_configuration_filename $saveFileName > log.log
+	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --ensure_distinguishable --load_configuration_filename $saveFileName --seed $i > log.log
 
 	# generate sequences
 	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --sample_folder $sampleFolder --sample $sample --m $m --k $k --save_npy >> log.log

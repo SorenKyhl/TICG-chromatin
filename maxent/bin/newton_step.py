@@ -98,7 +98,7 @@ def main():
     goal_specified = int(sys.argv[5])   # if true, will read from obj_goal.txt and obj_goal_diag.txt.
                                         # if false, will calculate goals from iteration1 observables
 
-    print('Iteration Number {}'.foramt(it))
+    print('Iteration Number {}'.format(it))
     print("gamma_plaid: {}".format(gamma_plaid))
     print("gamma_diag: {}".format(gamma_diag))
 

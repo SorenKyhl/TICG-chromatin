@@ -28,7 +28,7 @@ module load jq
 
 # get config
 cd ~/TICG-chromatin/maxent/resources
-python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi 1 --max_chi 1 --chi="-1&1\\1&0" --fill_diag=-1 --save_chi_for_max_ent --goal_specified $goalSpecified
+python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi=-1 --max_chi=1 --chi="-1&1\\1&0" --save_chi_for_max_ent --goal_specified $goalSpecified
 
 #'GNN' 'random' 'k_means' 'PCA'
 for method in 'ground_truth'
@@ -36,12 +36,6 @@ do
 	cd ~/TICG-chromatin/maxent/resources
 	# generate sequences
 	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --k $k --sample $sample --data_folder $dataFolder
-
-	# generate goals
-	if [ $goalSpecified -eq 1 ]
-	then
-		python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --k $k --contact_map "${sampleFolder}/y.npy"
-	fi
 
 	# apply max ent with newton's method
 	dir="/project2/depablo/erschultz/maxent_reprodution"

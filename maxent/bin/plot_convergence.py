@@ -31,12 +31,13 @@ def main():
                 if j < i:
                     continue
                 chistr = "chi{}{}".format(letters[i], letters[j])
-                plt.plot(chis[:, counter], label = chistr)
+                plt.plot(chis[1:, counter], label = chistr)
                 counter += 1
         plt.xlabel('Iteration')
         plt.ylabel('chi value')
         plt.legend()
         plt.savefig("pchis.png")
+        plt.close()
 
 
     if args.mode == 'diag' or args.mode == 'both':
@@ -45,6 +46,7 @@ def main():
         plt.plot(convergence_diag)
         plt.xlabel('Iteration')
         plt.savefig("pconvergence_diag.png")
+        plt.close()
 
 def test():
     args = getArgs()

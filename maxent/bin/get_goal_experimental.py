@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import sys
 import argparse
 import csv
+import time
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
@@ -85,6 +86,7 @@ def test():
     # x = np.array([[0,1], [1,0], [1,1]])
 
     # my method
+    t0 = time.time()
     obj_goal = []
     for i in range(2):
         seqi = x[:, i]
@@ -101,9 +103,12 @@ def test():
             result /= denom # take average
             result /= y_max # convert from freq to prob
             obj_goal.append(result)
+    t = round(time.time() - t0, 5)
+    print('time: ', t)
     print(obj_goal, '\n')
 
     # sorens method
+    t0 = time.time()
     obj_goal = []
     for i in range(2):
         seqi = x[:, i]
@@ -120,6 +125,8 @@ def test():
             result /= np.sum(outer) # take average
             result /= y_max # convert from freq to prob
             obj_goal.append(result)
+    t = round(time.time() - t0, 5)
+    print('time: ', t)
     print(obj_goal)
 
 
