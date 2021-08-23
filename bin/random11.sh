@@ -38,7 +38,7 @@ cd $scratchDir
 # activate python
 source activate python3.8_pytorch1.8.1_cuda10.2
 
-for i in 451 454 457 459 475 492 401 402 410 412 426 431 432 442
+for i in 801
 do
   # set up config.json
 	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --min_chi $minChi --max_chi $maxChi --fill_diag=$fillDiag --ensure_distinguishable > log.log
@@ -61,6 +61,7 @@ do
 		then
 			echo "output directory already exists - overwriting"
 			rm -r $dir
+      echo "rm -r ${dir}"
 		else
 			# don't overrite previous results!
 			echo "output directory already exists - aborting"
