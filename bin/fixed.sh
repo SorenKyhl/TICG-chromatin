@@ -9,7 +9,7 @@
 
 method='ground_truth'
 sample=40
-sampleFolder="/project2/depablo/skyhl/dataset_04_18_21/samples/sample$sample"
+sampleFolder="/project2/depablo/erschultz/dataset_04_18_21/samples/sample$sample"
 saveFileName='equilibrated.xyz'
 m=1024
 k=2
@@ -22,7 +22,7 @@ outputFolder="/project2/depablo/erschultz/dataset_fixed"
 scratchDir='/scratch/midway2/erschultz/TICG_fixed'
 
 # get inputxyz
-cd $sampleFolder
+cd "/project2/depablo/skyhl/dataset_04_18_21/samples/sample$sample"
 ~/TICG-chromatin/maxent/bin/fork_last_snapshot.sh "${scratchDir}/${saveFileName}"
 
 # move utils to scratch

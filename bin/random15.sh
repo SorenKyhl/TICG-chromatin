@@ -1,6 +1,6 @@
 #! /bin/bash
-#SBATCH --job-name=TICG11
-#SBATCH --output=TICG11.out
+#SBATCH --job-name=TICG15
+#SBATCH --output=TICG15.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --nodes=1
@@ -26,7 +26,7 @@ fillDiag=-1
 today=$(date +'%m_%d_%y')
 # dataFolder="/project2/depablo/erschultz/dataset_${today}"
 dataFolder="/project2/depablo/erschultz/dataset_08_18_21"
-scratchDir='/scratch/midway2/erschultz/TICG11'
+scratchDir='/scratch/midway2/erschultz/TICG15'
 
 # move utils to scratch
 mkdir -p $scratchDir
@@ -63,6 +63,7 @@ do
 		then
 			echo "output directory already exists - overwriting"
 			rm -r $dir
+      echo "rm -r ${dir}"
 		else
 			# don't overrite previous results!
 			echo "output directory already exists - aborting"

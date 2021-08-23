@@ -26,10 +26,6 @@ OverallStartTime=$(date +%s)
 source activate python3.8_pytorch1.8.1_cuda10.2
 module load jq
 
-# plot ref contact map
-# cd $sampleFolder
-# python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --ifile "y.npy"
-
 # get config
 cd ~/TICG-chromatin/maxent/resources
 python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi 1 --max_chi 1 --chi="-1&1\\1&0" --fill_diag=-1 --save_chi_for_max_ent --goal_specified $goalSpecified

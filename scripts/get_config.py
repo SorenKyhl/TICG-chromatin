@@ -66,6 +66,22 @@ def generateRandomChi(args, decimals = 1):
 
     return np.round(chi, decimals = decimals)
 
+def getChis(args):
+    conv = InteractionConverter(args.k, generateRandomChi(args))
+    if args.ensure_distinguishable:
+        max_it = 10
+        it = 0
+        while not conv.PsiUniqueRows() and it < max_it: # defaults to False
+            # generate random chi
+            conv.chi = generateRandomChi(args)
+            conv.updatePsi()
+            it += 1
+        if it == max_it:
+            print('Warning: maximum iteration reached')
+            print('Warning: particles are not distinguishable')
+
+    return conv.chi
+
 class InteractionConverter():
     """Class that allows conversion between epigenetic mark bit string pairs and integer type id"""
     def __init__(self, k, chi = None):
@@ -128,19 +144,7 @@ def main():
     # process chi
     if args.chi is None:
         assert args.k is not None, "chi and k cannot both be None"
-        conv = InteractionConverter(args.k, generateRandomChi(args))
-        if args.ensure_distinguishable:
-            max_it = 10
-            it = 0
-            while not conv.PsiUniqueRows() and it < max_it: # defaults to False
-                # generate random chi
-                conv.chi = generateRandomChi(args)
-                conv.updatePsi()
-                it += 1
-            if it == max_it:
-                print('Warning: maximum iteration reached')
-                print('Warning: particles are not distinguishable')
-        args.chi = conv.chi
+        args.chi = getChis(args)
     else:
         # chi is not None
         rows, cols = args.chi.shape
@@ -163,11 +167,14 @@ def main():
             wr.writerow(args.chi[np.triu_indices(args.k)])
             if args.goal_specified:
                 wr.writerow(args.chi[np.triu_indices(args.k)])
+            else:
+                # get random chi
+                chi = getChis(args)
+                wr.writerow(chi[np.triu_indices(args.k)])
         with open('chis_diag.txt', 'w', newline='') as f:
             wr = csv.writer(f, delimiter = '\t')
             wr.writerow(np.array(config["diag_chis"]))
-            if args.goal_specified:
-                wr.writerow(np.array(config["diag_chis"]))
+            wr.writerow(np.array(config["diag_chis"]))
 
 
     # save chi to config

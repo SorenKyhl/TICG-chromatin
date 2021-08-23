@@ -23,7 +23,11 @@ def main():
     letters='ABCDEFG'
 
     # get last row of 'chis.txt'
-    lastchis = list(allchis[int(args.it)])
+    try:
+        lastchis = list(allchis[int(args.it)])
+    except IndexError as e:
+        print('allchis:\n', allchis)
+        raise
 
     counter = 0
     for i in range(args.k):

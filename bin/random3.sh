@@ -11,8 +11,8 @@ method='random'
 m=1024
 pSwitch=0.05
 k=4
-startSimulation=801
-numSimulations=850
+startSimulation=$1
+numSimulations=$2
 chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
 overwrite=1
 
