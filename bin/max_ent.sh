@@ -15,10 +15,10 @@ sampleFolder="$dataFolder/samples/sample$sample"
 gamma=0.00001
 gammaDiag=0.00001
 mode="plaid"
-productionSweeps=50000
+productionSweeps=500000
 equilibSweeps=10000
 goalSpecified=1
-numIterations=50 # iteration 1 + numIterations is production run to get contact map
+numIterations=20 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 
 OverallStartTime=$(date +%s)
@@ -31,7 +31,7 @@ module load jq
 
 # get config
 cd ~/TICG-chromatin/maxent/resources
-python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi 1 --max_chi 1 --chi="-1&1\\1&0" --fill_diag=-1 --save_chi_for_max_ent --goal_specified $goalSpecified
+python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi 1 --max_chi 1 --chi="-1&1\\1&0" --fill_diag=-1 --save_chi_for_max_ent --goal_specified $goalSpecified --dump_frequency 50000
 
 #'GNN' 'random' 'k_means' 'PCA'
 for method in 'ground_truth'

@@ -62,5 +62,68 @@ def main():
         wr = csv.writer(f, delimiter = '\t')
         wr.writerow(np.zeros(20))
 
+def test():
+    m = 1024
+    offset = 1
+    y = np.load('../sequences_to_contact_maps/dataset_04_18_21/samples/sample40/y.npy')[:m, :m]
+    # y = np.array([[1, 0, 0],[1, 1, 0], [1,1,1]])
+    y_max = np.max(y)
+    print('y_max: ', y_max)
+    y = np.triu(y, k = offset) # avoid double counting due to symmetry
+    y = y.astype(float)
+
+    y_ones = np.ones_like(y)
+    y_ones = np.triu(y_ones, k = offset)
+    print(y, y.shape, y.dtype, '\n')
+
+    x = np.load('../sequences_to_contact_maps/dataset_04_18_21/samples/sample40/x.npy')
+    x = x[:m, :]
+    x = x.astype(float)
+    print(x, x.shape, '\n')
+
+
+    # x = np.array([[0,1], [1,0], [1,1]])
+
+    # my method
+    obj_goal = []
+    for i in range(2):
+        seqi = x[:, i]
+        print('\ni={}'.format(i), seqi)
+        for j in range(2):
+            if j < i:
+                # don't double count
+                continue
+            seqj = x[:, j]
+            print('\tj={}'.format(j), seqj)
+            left = seqi @ y
+            result = seqi @ y @ seqj
+            denom = seqi @ y_ones @ seqj
+            result /= denom # take average
+            result /= y_max # convert from freq to prob
+            obj_goal.append(result)
+    print(obj_goal, '\n')
+
+    # sorens method
+    obj_goal = []
+    for i in range(2):
+        seqi = x[:, i]
+        print('\ni={}'.format(i), seqi)
+        for j in range(2):
+            if j < i:
+                # don't double count
+                continue
+            seqj = x[:, j]
+            print('\tj={}'.format(j), seqj)
+            outer = np.outer(seqi, seqj)
+            outer = np.triu(outer, k = offset)
+            result = np.sum(np.multiply(outer, y))
+            result /= np.sum(outer) # take average
+            result /= y_max # convert from freq to prob
+            obj_goal.append(result)
+    print(obj_goal)
+
+
+
+
 if __name__ == '__main__':
     main()

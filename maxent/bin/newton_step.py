@@ -12,14 +12,14 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_
             obj_goal = f_obj_goal.readline().split()
             obj_goal = np.array([float(x) for x in obj_goal])
     else:
-        # get goal observables from first iteration
+        # get goal observables from zeroth iteration
         print("READING FROM OBS")
         df = pd.read_csv(osp.join("iteration{}" .format(0), "production_out", obs_file), delimiter="\t", header=None)
         df = df.dropna(axis=1)
         df = df.drop(df.columns[0] ,axis=1)
         obj_goal = df.mean().values
 
-    print("obj goal:", obj_goal)
+    print("obj goal: ", obj_goal)
 
     # read in current chis
     with open(parameter_file, "r") as f_chis:
@@ -33,6 +33,7 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_
     df = df.dropna(axis=1)
     df = df.drop(df.columns[0] ,axis=1)
     lam = df.mean().values
+
 
     # normalizing factor (June 16 2020)
     # damping coefficients have to be really small to prevent overshoot.
@@ -50,10 +51,8 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_
     B = df.cov().values
     Binv = np.linalg.pinv(B)
     step = Binv@difference
-    print(it)
-    print(step)
-    print(obj_goal)
-    print(lam)
+    print('step: ', step)
+    print('lam: ', lam)
 
     new_chis = current_chis - gamma*step
 
@@ -99,8 +98,9 @@ def main():
     goal_specified = int(sys.argv[5])   # if true, will read from obj_goal.txt and obj_goal_diag.txt.
                                         # if false, will calculate goals from iteration1 observables
 
-    print("iteration number " + str(it) + " gamma_plaid : " + str(gamma_plaid))
-    print("iteration number " + str(it) + " gamma_diag : " + str(gamma_diag))
+    print('Iteration Number {}'.foramt(it))
+    print("gamma_plaid: {}".format(gamma_plaid))
+    print("gamma_diag: {}".format(gamma_diag))
 
     if mode == "diag":
         diag_fn = step
@@ -127,6 +127,7 @@ def main():
     goal_file = "obj_goal.txt"
     gamma = gamma_plaid
     fn(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified)
+    print('\n')
 
 if __name__ == '__main__':
     main()
