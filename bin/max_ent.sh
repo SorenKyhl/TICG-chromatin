@@ -18,7 +18,7 @@ mode="plaid"
 productionSweeps=20000 # TODO
 equilibSweeps=10000
 goalSpecified=1
-numIterations=10 # iteration 1 + numIterations is production run to get contact map
+numIterations=5 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 
 OverallStartTime=$(date +%s)
