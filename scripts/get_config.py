@@ -11,6 +11,7 @@ def getArgs():
     parser.add_argument('--load_configuration_filename', type=str, default='input1024.xyz', help='file name of initial config')
     parser.add_argument('--goal_specified', type=int, default=1, help='1=true, will save two lines to chis.txt')
     parser.add_argument('--dump_frequency', type=int, help='set to change dump frequency')
+    parser.add_argument('--dump_stats_frequency', type=int, help='set to change dump stats frequency')
     parser.add_argument('--nSweeps', type=int, help='set to change nSweeps')
     parser.add_argument('--seed', type=int, help='set to change random seed')
 
@@ -205,7 +206,10 @@ def main():
     # save dump frequency
     if args.dump_frequency is not None:
         config['dump_frequency'] = args.dump_frequency
+    if args.dump_stats_frequency is not None:
+        config['dump_stats_frequency'] = args.dump_stats_frequency
 
+    # save seed
     if args.seed is not None:
         config['seed'] = args.seed
 

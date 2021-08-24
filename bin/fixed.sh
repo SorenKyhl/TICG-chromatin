@@ -13,6 +13,8 @@ sampleFolder="/project2/depablo/erschultz/dataset_04_18_21/samples/sample$sample
 saveFileName='equilibrated.xyz'
 m=1024
 k=2
+startSimulation=11
+numSimulations=11
 chi="-1&1\\1&0"
 overwrite=0
 
@@ -38,7 +40,7 @@ source activate python3.8_pytorch1.8.1_cuda10.2
 for i in $(seq $startSimulation $numSimulations)
 do
   # set up config.json
-	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --ensure_distinguishable --load_configuration_filename $saveFileName --nSweeps 100000 --dump_frequency 500000 > log.log
+	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --ensure_distinguishable --load_configuration_filename $saveFileName --nSweeps 5000000 --dump_frequency 500000 > log.log
 
 	# generate sequences
 	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --sample_folder $sampleFolder --sample $sample --m $m --k $k --save_npy >> log.log

@@ -1,5 +1,8 @@
+import os.path as osp
+
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 import sys
 import argparse
 import csv
@@ -67,64 +70,50 @@ def main():
         wr.writerow(np.zeros(20))
 
 def test():
+    sample_path='../sequences_to_contact_maps/dataset_fixed/samples/sample12'
     m = 1024
-    offset = 0
-    y = np.load('../sequences_to_contact_maps/dataset_04_18_21/samples/sample40/y.npy')[:m, :m]
-    # y = np.array([[1, 0, 0],[1, 1, 0], [1,1,1]])
+    offset = 1
+    # y = np.load(osp.join(sample_path, 'y.npy'))[:m, :m]
+    y = np.loadtxt(osp.join(sample_path, 'data_out', 'contacts.txt'))[:m, :m]
     y_max = np.max(y)
     print('y_max: ', y_max)
     # y = np.triu(y, k = offset) # avoid double counting due to symmetry
     y = y.astype(float)
+    # y /= y_max # convert to probability
 
     print(y, y.shape, y.dtype, '\n')
 
-    x = np.load('../sequences_to_contact_maps/dataset_04_18_21/samples/sample40/x.npy')
+    x = np.load(osp.join(sample_path, 'x.npy'))
     x = x[:m, :]
     x = x.astype(float)
+    _, k = x.shape
     print(x, x.shape, x.dtype, '\n')
 
-    # x = np.array([[0,1], [1,0], [1,1]])
-
-    # my method
-    t0 = time.time()
-    obj_goal = []
-    for i in range(2):
-        seqi = x[:, i]
-        print('\ni={}'.format(i), seqi)
-        for j in range(2):
-            if j < i:
-                # don't double count
-                continue
-            seqj = x[:, j]
-            print('\tj={}'.format(j), seqj)
-            left = seqi @ y
-            result = seqi @ y @ seqj
-            result /= m**2 # take average
-            result /= y_max # convert to probability
-            obj_goal.append(result)
-    t = round(time.time() - t0, 5)
-    print('time: ', t)
-    print(obj_goal, '\n')
+    # get current observable values
+    df = pd.read_csv(osp.join(sample_path, 'data_out', 'observables.traj'), delimiter="\t", header=None)
+    df = df.dropna(axis=1)
+    df = df.drop(df.columns[0] ,axis=1)
+    lam = df.mean().values
+    print('obj measured: ', lam)
 
     # sorens method
-    t0 = time.time()
     obj_goal = []
-    for i in range(2):
+    for i in range(k):
         seqi = x[:, i]
         print('\ni={}'.format(i), seqi)
-        for j in range(2):
+        for j in range(k):
             if j < i:
                 # don't double count
                 continue
             seqj = x[:, j]
             print('\tj={}'.format(j), seqj)
             outer = np.outer(seqi, seqj)
-            result = np.mean(np.multiply(outer, y))
+            result = np.sum(outer * y)
             result /= y_max # convert to probability
             obj_goal.append(result)
-    t = round(time.time() - t0, 5)
-    print('time: ', t)
-    print(obj_goal)
+    print(obj_goal / lam)
+    print(m**2)
+    print(np.sum(outer * np.ones_like(y)))
 
 if __name__ == '__main__':
-    main()
+    test()
