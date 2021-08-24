@@ -27,7 +27,7 @@ module load jq
 
 # get config
 cd ~/TICG-chromatin/maxent/resources
-python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi=-1 --max_chi=1 --chi="-1&1\\2&-1" --save_chi_for_max_ent --goal_specified $goalSpecified
+python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi=-1 --max_chi=1 --save_chi_for_max_ent --goal_specified $goalSpecified
 
 #'GNN'  'PCA' 'k_means' 'random'
 for method in 'ground_truth'
