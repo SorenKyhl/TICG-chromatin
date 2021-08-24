@@ -1,26 +1,20 @@
 #! /bin/bash
-#SBATCH --job-name=TICG_fixed
-#SBATCH --output=TICG_fixed.out
-#SBATCH --time=24:00:00
-#SBATCH --partition=depablo-ivyb
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
-#SBATCH --mem-per-cpu=2000
 
 method='ground_truth'
 m=1024
 k=2
-startSimulation=13
-numSimulations=13
+startSimulation=14
+numSimulations=14
 overwrite=0
-
-outputFolder="/project2/depablo/erschultz/dataset_fixed"
-scratchDir='/scratch/midway2/erschultz/TICG_fixed'
+pwd=$(pwd)
+outputFolder="C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps/dataset_fixed"
+scratchDir=$outputFolder
 
 # move utils to scratch
 mkdir -p $scratchDir
-cd ~/TICG-chromatin/utils
+cd utils
 cp input1024.xyz "${scratchDir}/input1024.xyz"
+cp default_config.json "${scratchDir}/default_config.json"
 
 # change directory to scratch
 cd $scratchDir
@@ -31,17 +25,17 @@ source activate python3.8_pytorch1.8.1_cuda10.2
 for i in $(seq $startSimulation $numSimulations)
 do
   # set up config.json
-	cp ~/TICG-chromatin/utils/config_soren.json $scratchDir/config.json
+	cp ~/TICG-chromatin/utils/config_soren.json .
 
 	# generate sequences
 	cp ~/TICG-chromatin/utils/seq0.txt .
   cp ~/TICG-chromatin/utils/seq1.txt .
 
 	# run simulation
-	~/TICG-chromatin/TICG-engine >> log.log
+	$pwd/TICG-engine >> log.log
 
   # calculate contact map
-  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --save_npy
+  python3 $pwd/scripts/contact_map.py --m $m --save_npy
 
 	# move inputs and outputs to own folder
 	dir="${outputFolder}/samples/sample${i}"
@@ -67,4 +61,4 @@ do
 done
 
 # clean up
-rm input1024.xyz
+rm default_config.json input1024.xyz
