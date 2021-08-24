@@ -160,7 +160,7 @@ def main():
         else:
             assert args.k == rows, 'number of particle types does not match shape of chi'
         assert rows == cols, "chi not square: {}".format(args.chi)
-        assert numpy.allclose(args.chi, args.chi.T), "chi is not symmetric: {}".format(args.chi)
+        assert np.allclose(args.chi, args.chi.T), "chi is not symmetric: {}".format(args.chi)
         conv = InteractionConverter(args.k, args.chi)
         if not conv.PsiUniqueRows():
             print('Warning: particles are not distinguishable')
