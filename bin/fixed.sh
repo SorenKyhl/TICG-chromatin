@@ -16,8 +16,8 @@ k=2
 chi="-1&1\\1&0"
 overwrite=0
 
-outputFolder="/project2/depablo/erschultz/dataset_fixed2"
-scratchDir='/scratch/midway2/erschultz/TICG_fixed2'
+outputFolder="/project2/depablo/erschultz/dataset_fixed"
+scratchDir='/scratch/midway2/erschultz/TICG_fixed'
 
 # get inputxyz
 cd "/project2/depablo/skyhl/dataset_04_18_21/samples/sample$sample"

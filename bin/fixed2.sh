@@ -13,8 +13,6 @@ sampleFolder="/project2/depablo/erschultz/dataset_04_18_21/samples/sample$sample
 saveFileName='equilibrated.xyz'
 m=1024
 k=2
-startSimulation=11
-numSimulations=12
 chi="-1&1\\1&0"
 overwrite=0
 
