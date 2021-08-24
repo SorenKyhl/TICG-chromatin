@@ -37,42 +37,105 @@ cd $scratchDir
 # activate python
 source activate python3.8_pytorch1.8.1_cuda10.2
 
-for i in $(seq $startSimulation $numSimulations)
-do
-  # set up config.json
-	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --ensure_distinguishable --load_configuration_filename $saveFileName --seed $i --nSweeps 5000000 --dump_frequency 500000 > log.log
 
-	# generate sequences
-	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --sample_folder $sampleFolder --sample $sample --m $m --k $k --save_npy >> log.log
 
-	# run simulation
-	~/TICG-chromatin/TICG-engine >> log.log
 
-  # calculate contact map
-  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --save_npy
+i=1
+# set up config.json
+python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --ensure_distinguishable --load_configuration_filename $saveFileName --seed $i --nSweeps 5000000 --dump_frequency 500000 --save_chi_for_max_ent > log.log
 
-	# move inputs and outputs to own folder
-	dir="${outputFolder}/samples/sample${i}"
-	# directory checks
-	if [ -d $dir ]
+# generate sequences
+python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --sample_folder $sampleFolder --sample $sample --m $m --k $k --save_npy >> log.log
+
+# get goal
+python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --k $k --contact_map "${sampleFolder}/y.npy" --verbose --triu
+
+
+# run simulation
+~/TICG-chromatin/TICG-engine >> log.log
+
+python3 ~/TICG-chromatin/maxent/bin/newton_step.py 1 0.00001 0.00001 "plaid" 1 >> log.log
+
+# calculate contact map
+python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --save_npy
+
+# move inputs and outputs to own folder
+dir="${outputFolder}/samples/sample${i}"
+# directory checks
+if [ -d $dir ]
+then
+	if [ $overwrite -eq 1 ]
 	then
-		if [ $overwrite -eq 1 ]
-		then
-			echo "output directory already exists - overwriting"
-			rm -r $dir
-		else
-			# don't overrite previous results!
-			echo "output directory already exists - aborting"
-			exit 1
-		fi
+		echo "output directory already exists - overwriting"
+		rm -r $dir
+	else
+		# don't overrite previous results!
+		echo "output directory already exists - aborting"
+		exit 1
 	fi
-	mkdir -p $dir
-	mv config.json data_out log.log x.npy y.npy y.png chis.txt chis.npy $dir
-	for i in $(seq 0 $(($k-1)))
-	do
-		mv seq${i}.txt $dir
-	done
+fi
+mkdir -p $dir
+mv config.json data_out log.log x.npy y.npy y.png chis.txt chis.npy $dir
+for i in $(seq 0 $(($k-1)))
+do
+	mv seq${i}.txt $dir
 done
+
+
+
+
+
+
+
+
+
+
+
+
+
+i=2
+# set up config.json
+python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --ensure_distinguishable --load_configuration_filename $saveFileName --seed $i --nSweeps 5000000 --dump_frequency 500000 --save_chi_for_max_ent > log.log
+
+# generate sequences
+python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --sample_folder $sampleFolder --sample $sample --m $m --k $k --save_npy >> log.log
+
+# get goal
+python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --k $k --contact_map "${sampleFolder}/y.npy" --verbose
+
+
+# run simulation
+~/TICG-chromatin/TICG-engine >> log.log
+
+python3 ~/TICG-chromatin/maxent/bin/newton_step.py 1 0.00001 0.00001 "plaid" 1 >> log.log
+
+# calculate contact map
+python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --save_npy
+
+# move inputs and outputs to own folder
+dir="${outputFolder}/samples/sample${i}"
+# directory checks
+if [ -d $dir ]
+then
+	if [ $overwrite -eq 1 ]
+	then
+		echo "output directory already exists - overwriting"
+		rm -r $dir
+	else
+		# don't overrite previous results!
+		echo "output directory already exists - aborting"
+		exit 1
+	fi
+fi
+mkdir -p $dir
+mv config.json data_out log.log x.npy y.npy y.png chis.txt chis.npy $dir
+for i in $(seq 0 $(($k-1)))
+do
+	mv seq${i}.txt $dir
+done
+
+
+
 
 # clean up
 rm default_config.json input1024.xyz

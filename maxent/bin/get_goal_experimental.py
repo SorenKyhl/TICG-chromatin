@@ -11,6 +11,7 @@ def getArgs():
     parser.add_argument('--k', type=int, help='number of particle types (inferred from chi if None)')
     parser.add_argument('--contact_map', type=str, help='filepath to contact map')
     parser.add_argument('--verbose', action='store_true', help='true for verbose mode')
+    parser.add_argument('--triu', action='store_true', help='true to use triu')
 
     args = parser.parse_args()
     return args
@@ -34,7 +35,8 @@ def main():
     y = y.astype(float) # ensure float
     y = y[:args.m, :args.m] # crop to m
     y_max = np.max(y)
-    y = np.triu(y) # avoid double counting due to symmetry
+    if args.triu:
+        y = np.triu(y) # avoid double counting due to symmetry
     if args.verbose:
         print(y)
 
@@ -54,6 +56,9 @@ def main():
             result /= y_max # convert from freq to prob
             obj_goal.append(result)
 
+    if args.verbose:
+        print('obj_goal: ', obj_goal)
+
     with open('obj_goal.txt', 'w', newline='') as f:
         wr = csv.writer(f, delimiter = '\t')
         wr.writerow(obj_goal)
@@ -68,11 +73,9 @@ def test():
     # y = np.array([[1, 0, 0],[1, 1, 0], [1,1,1]])
     y_max = np.max(y)
     print('y_max: ', y_max)
-    y = np.triu(y, k = offset) # avoid double counting due to symmetry
+    # y = np.triu(y, k = offset) # avoid double counting due to symmetry
     y = y.astype(float)
 
-    y_ones = np.ones_like(y)
-    y_ones = np.triu(y_ones, k = offset)
     print(y, y.shape, y.dtype, '\n')
 
     x = np.load('../sequences_to_contact_maps/dataset_04_18_21/samples/sample40/x.npy')
@@ -124,4 +127,4 @@ def test():
     print(obj_goal)
 
 if __name__ == '__main__':
-    main()
+    test()
