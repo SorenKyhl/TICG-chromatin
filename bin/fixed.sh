@@ -59,7 +59,7 @@ do
 		fi
 	fi
 	mkdir -p $dir
-	mv config.json data_out log.log x.npy y.npy y.png chis.txt chis.npy $dir
+	mv config.json data_out log.log y.npy y.png $dir
 	for i in $(seq 0 $(($k-1)))
 	do
 		mv seq${i}.txt $dir
