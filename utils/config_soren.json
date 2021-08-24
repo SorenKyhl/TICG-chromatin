@@ -81,7 +81,7 @@
         0.09333333,
         0.1
     ],
-    "grid_size": 28.7,
+    "grid_size": 40,
     "track_contactmap": false,
     "diagonal_linear": true,
     "visit_tracking": false,
