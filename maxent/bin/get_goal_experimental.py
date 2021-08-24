@@ -127,4 +127,4 @@ def test():
     print(obj_goal)
 
 if __name__ == '__main__':
-    test()
+    main()
