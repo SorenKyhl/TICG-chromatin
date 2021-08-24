@@ -14,7 +14,6 @@ def getArgs():
     parser.add_argument('--k', type=int, help='number of particle types (inferred from chi if None)')
     parser.add_argument('--contact_map', type=str, help='filepath to contact map')
     parser.add_argument('--verbose', action='store_true', help='true for verbose mode')
-    parser.add_argument('--triu', action='store_true', help='true to use triu')
 
     args = parser.parse_args()
     return args
@@ -38,10 +37,9 @@ def main():
     y = y.astype(float) # ensure float
     y = y[:args.m, :args.m] # crop to m
     y_max = np.max(y)
-    if args.triu:
-        y = np.triu(y) # avoid double counting due to symmetry
     if args.verbose:
-        print(y)
+        print('y_max: ', y_max)
+        print(y, y.shape, y.dtype, '\n')
 
     for i in range(args.k):
         seqi = np.loadtxt("seq{}.txt".format(i))[:args.m]
@@ -70,27 +68,24 @@ def main():
         wr.writerow(np.zeros(20))
 
 def test():
-    sample_path='../sequences_to_contact_maps/dataset_08_18_21/samples/sample2'
+    sample_path='../sequences_to_contact_maps/dataset_08_24_21/samples/sample1201'
 
     m = 1024
     offset = 0
-    # y = np.load(osp.join(sample_path, 'y.npy'))[:m, :m]
-    y = np.loadtxt(osp.join(sample_path, 'data_out', 'contacts.txt'))[:m, :m]
+    y = np.load(osp.join(sample_path, 'y.npy'))[:m, :m]
+    # y = np.loadtxt(osp.join(sample_path, 'data_out', 'contacts.txt'))[:m, :m]
     y_max = np.max(y)
     print('y_max: ', y_max)
     # y = np.triu(y, k = offset) # avoid double counting due to symmetry
     y = y.astype(float)
-    # y /= y_max # convert to probability
-    # np.fill_diagonal(y, 0)
 
     print(y, y.shape, y.dtype, '\n')
 
-    # x = np.load(osp.join(sample_path, 'x.npy'))
-    # x = x[:m, :]
-    # x = x.astype(float)
-    # _, k = x.shape
-    # print(x, x.shape, x.dtype, '\n')
-    k = 4
+    x = np.load(osp.join(sample_path, 'x.npy'))
+    x = x[:m, :]
+    x = x.astype(float)
+    _, k = x.shape
+    print(x, x.shape, x.dtype, '\n')
 
     # get current observable values
     df = pd.read_csv(osp.join(sample_path, 'data_out', 'observables.traj'), delimiter="\t", header=None)
@@ -112,8 +107,10 @@ def test():
             # seqj = x[:, j]
             seqj = np.loadtxt(osp.join(sample_path, "seq{}.txt".format(j)))[:m]
             print('\tj={}'.format(j), seqj)
-            outer = np.outer(seqi, seqj)
-            result = np.sum(outer * y)
+            result = seqi @ y @ seqj
+            # outer = np.outer(seqi, seqj)
+            # result = np.sum(outer * y)
+
             result /= m**2 # average
             result /= y_max # convert to probability
             obj_goal.append(result)
@@ -121,4 +118,4 @@ def test():
     print(obj_goal / lam)
 
 if __name__ == '__main__':
-    test()
+    main()
