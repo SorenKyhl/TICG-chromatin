@@ -1,7 +1,7 @@
 #! /bin/bash
 
 # chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
-chi="-1&1\\2&-1"
+chi="-1&2\\2&-1"
 k=2
 dataFolder="/project2/depablo/erschultz/dataset_08_24_21"
 
