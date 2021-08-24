@@ -12,7 +12,7 @@ m=1024
 k=2
 startSimulation=13
 numSimulations=13
-overwrite=0
+overwrite=1
 
 outputFolder="/project2/depablo/erschultz/dataset_fixed"
 scratchDir='/scratch/midway2/erschultz/TICG_fixed'
