@@ -70,12 +70,12 @@ def main():
         wr.writerow(np.zeros(20))
 
 def test():
-    sample_path='../sequences_to_contact_maps/dataset_04_18_21/samples/sample40-'
+    sample_path='../compare_eric/sample13'
 
     m = 1024
     offset = 0
-    y = np.load(osp.join(sample_path, 'y.npy'))[:m, :m]
-    # y = np.loadtxt(osp.join(sample_path, 'data_out', 'contacts.txt'))[:m, :m]
+    # y = np.load(osp.join(sample_path, 'y.npy'))[:m, :m]
+    y = np.loadtxt(osp.join(sample_path, 'data_out', 'contacts.txt'))[:m, :m]
     y_max = np.max(y)
     print('y_max: ', y_max)
     # y = np.triu(y, k = offset) # avoid double counting due to symmetry
@@ -85,11 +85,12 @@ def test():
 
     print(y, y.shape, y.dtype, '\n')
 
-    x = np.load(osp.join(sample_path, 'x.npy'))
-    x = x[:m, :]
-    x = x.astype(float)
-    _, k = x.shape
-    print(x, x.shape, x.dtype, '\n')
+    # x = np.load(osp.join(sample_path, 'x.npy'))
+    # x = x[:m, :]
+    # x = x.astype(float)
+    # _, k = x.shape
+    # print(x, x.shape, x.dtype, '\n')
+    k = 2
 
     # get current observable values
     df = pd.read_csv(osp.join(sample_path, 'data_out', 'observables.traj'), delimiter="\t", header=None)
@@ -101,13 +102,15 @@ def test():
     # sorens method
     obj_goal = []
     for i in range(k):
-        seqi = x[:, i]
+        # seqi = x[:, i]
+        seqi = np.loadtxt(osp.join(sample_path, "seq{}.txt".format(i)))[:m]
         print('\ni={}'.format(i), seqi)
         for j in range(k):
             if j < i:
                 # don't double count
                 continue
-            seqj = x[:, j]
+            # seqj = x[:, j]
+            seqj = np.loadtxt(osp.join(sample_path, "seq{}.txt".format(j)))[:m]
             print('\tj={}'.format(j), seqj)
             outer = np.outer(seqi, seqj)
             result = np.sum(outer * y)
