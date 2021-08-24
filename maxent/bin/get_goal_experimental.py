@@ -31,11 +31,10 @@ def main():
     else:
         raise Exception("contact map format not recognized: {}".format(args.contact_map))
 
+    y = y.astype(float) # ensure float
     y = y[:args.m, :args.m] # crop to m
-    y = np.triu(y) # avoid double counting due to symmetry
     y_max = np.max(y)
-    y_ones = np.ones_like(y)
-    y_ones = np.triu(y_ones)
+    y = np.triu(y) # avoid double counting due to symmetry
     if args.verbose:
         print(y)
 
@@ -51,8 +50,7 @@ def main():
             if args.verbose:
                 print('\tj={}'.format(j), seqj)
             result = seqi @ y @ seqj
-            denom = seqi @ y_ones @ seqj
-            result /= denom # take average
+            result /= args.m**2 # take average
             result /= y_max # convert from freq to prob
             obj_goal.append(result)
 
@@ -65,7 +63,7 @@ def main():
 
 def test():
     m = 1024
-    offset = 1
+    offset = 0
     y = np.load('../sequences_to_contact_maps/dataset_04_18_21/samples/sample40/y.npy')[:m, :m]
     # y = np.array([[1, 0, 0],[1, 1, 0], [1,1,1]])
     y_max = np.max(y)
@@ -80,8 +78,7 @@ def test():
     x = np.load('../sequences_to_contact_maps/dataset_04_18_21/samples/sample40/x.npy')
     x = x[:m, :]
     x = x.astype(float)
-    print(x, x.shape, '\n')
-
+    print(x, x.shape, x.dtype, '\n')
 
     # x = np.array([[0,1], [1,0], [1,1]])
 
@@ -99,9 +96,8 @@ def test():
             print('\tj={}'.format(j), seqj)
             left = seqi @ y
             result = seqi @ y @ seqj
-            denom = seqi @ y_ones @ seqj
-            result /= denom # take average
-            result /= y_max # convert from freq to prob
+            result /= m**2 # take average
+            result /= y_max # convert to probability
             obj_goal.append(result)
     t = round(time.time() - t0, 5)
     print('time: ', t)
@@ -120,17 +116,12 @@ def test():
             seqj = x[:, j]
             print('\tj={}'.format(j), seqj)
             outer = np.outer(seqi, seqj)
-            outer = np.triu(outer, k = offset)
-            result = np.sum(np.multiply(outer, y))
-            result /= np.sum(outer) # take average
-            result /= y_max # convert from freq to prob
+            result = np.mean(np.multiply(outer, y))
+            result /= y_max # convert to probability
             obj_goal.append(result)
     t = round(time.time() - t0, 5)
     print('time: ', t)
     print(obj_goal)
 
-
-
-
 if __name__ == '__main__':
-    main()
+    test()

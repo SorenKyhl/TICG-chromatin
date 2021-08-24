@@ -21,6 +21,7 @@ def main():
         plt.plot(convergence)
         plt.xlabel('Iteration')
         plt.savefig("pconvergence.png")
+        plt.close()
 
         # chis plot
         chis = np.loadtxt('chis.txt')
