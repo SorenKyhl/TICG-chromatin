@@ -70,16 +70,18 @@ def main():
         wr.writerow(np.zeros(20))
 
 def test():
-    sample_path='../sequences_to_contact_maps/dataset_fixed/samples/sample12'
+    sample_path='../sequences_to_contact_maps/dataset_04_18_21/samples/sample40-'
+
     m = 1024
-    offset = 1
-    # y = np.load(osp.join(sample_path, 'y.npy'))[:m, :m]
-    y = np.loadtxt(osp.join(sample_path, 'data_out', 'contacts.txt'))[:m, :m]
+    offset = 0
+    y = np.load(osp.join(sample_path, 'y.npy'))[:m, :m]
+    # y = np.loadtxt(osp.join(sample_path, 'data_out', 'contacts.txt'))[:m, :m]
     y_max = np.max(y)
     print('y_max: ', y_max)
     # y = np.triu(y, k = offset) # avoid double counting due to symmetry
     y = y.astype(float)
     # y /= y_max # convert to probability
+    # np.fill_diagonal(y, 0)
 
     print(y, y.shape, y.dtype, '\n')
 
@@ -109,11 +111,11 @@ def test():
             print('\tj={}'.format(j), seqj)
             outer = np.outer(seqi, seqj)
             result = np.sum(outer * y)
+            result /= m**2 # average
             result /= y_max # convert to probability
             obj_goal.append(result)
+    print(np.round(obj_goal, 7))
     print(obj_goal / lam)
-    print(m**2)
-    print(np.sum(outer * np.ones_like(y)))
 
 if __name__ == '__main__':
     test()
