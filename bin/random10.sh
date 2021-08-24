@@ -10,22 +10,19 @@
 method='random'
 m=1024
 pSwitch=0.05
-k=4
 startSimulation=$1
 numSimulations=$2
-chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
-overwrite=1
+k=$3
+chi=${4:-'none'}
+overwrite=0
 
-# chi='none'
-# below do nothing if chi is given
+# below does nothing if chi is given
 minChi=0
 maxChi=2
 fillDiag=-1
 
-
 today=$(date +'%m_%d_%y')
-# dataFolder="/project2/depablo/erschultz/dataset_${today}"
-dataFolder="/project2/depablo/erschultz/dataset_08_18_21"
+dataFolder=${5:-"/project2/depablo/erschultz/dataset_${today}"}
 scratchDir='/scratch/midway2/erschultz/TICG10'
 
 # move utils to scratch

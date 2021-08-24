@@ -70,7 +70,7 @@ def main():
         wr.writerow(np.zeros(20))
 
 def test():
-    sample_path='../compare_eric/sample13'
+    sample_path='../sequences_to_contact_maps/dataset_08_18_21/samples/sample2'
 
     m = 1024
     offset = 0
@@ -90,7 +90,7 @@ def test():
     # x = x.astype(float)
     # _, k = x.shape
     # print(x, x.shape, x.dtype, '\n')
-    k = 2
+    k = 4
 
     # get current observable values
     df = pd.read_csv(osp.join(sample_path, 'data_out', 'observables.traj'), delimiter="\t", header=None)
