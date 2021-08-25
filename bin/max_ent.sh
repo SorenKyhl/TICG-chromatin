@@ -18,7 +18,7 @@ mode="plaid"
 productionSweeps=50000
 equilibSweeps=10000
 goalSpecified=1
-numIterations=5 # iteration 1 + numIterations is production run to get contact map
+numIterations=50 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 
 startTime=$(date +%s)
@@ -29,8 +29,8 @@ module load jq
 cd ~/TICG-chromatin/maxent/resources
 python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi=-1 --max_chi=1 --save_chi_for_max_ent --goal_specified $goalSpecified
 
-#'GNN'  'PCA' 'k_means' 'random'
-for method in 'ground_truth'
+#'GNN'  'PCA' 
+for method in 'ground_truth' 'k_means' 'random'
 do
 	printf "\n${method}\n"
 	cd ~/TICG-chromatin/maxent/resources
