@@ -636,8 +636,7 @@ public:
 		std::ifstream i("config.json");
 		if ( !i.good() )
 		{
-			std::cout << "config.json does not exist or cannot be opened" << std::endl;
-			abort();
+			throw std::runtime_error("config.json does not exist or cannot be opened");
 		}
 
 		nlohmann::json config;
@@ -681,7 +680,9 @@ public:
 
 				if (chipseq_files.size() != nspecies)
 				{
-					throw std::runtime_error("Number of chipseq files: " + std::to_string(chipseq_files.size()) + " must equal number of species: " + std::to_string(nspecies));
+					throw std::logic_error("Number of chipseq files: " 
+							+ std::to_string(chipseq_files.size()) 
+							+ " must equal number of species: " + std::to_string(nspecies));
 				}
 				Cell::ntypes = nspecies;
 			}
@@ -850,8 +851,7 @@ public:
 		IFILE.open(load_configuration_filename); 
 		if ( !IFILE.good() ) 
 		{
-			std::cout << load_configuration_filename << " does not exist or could not be opened" << std::endl;
-			abort();
+			throw std::runtime_error(load_configuration_filename + " does not exist or could not be opened");
 		}
 		std::string line;
 		getline(IFILE, line); // nbeads line
@@ -943,8 +943,7 @@ public:
 			}
 			else
 			{
-				std::cout << chipseq_file << " does not exist or could not be opened" << std::endl;
-				abort();
+				throw std::runtime_error(chipseq_file + " does not exist or could not be opened");
 			}
 		}
 	}
