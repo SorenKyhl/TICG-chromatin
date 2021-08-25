@@ -11,7 +11,7 @@ public:
 	int id;   // unique identifier: uniqueness not strictly enforced.
 	Eigen::RowVector3d r; // position
 	Eigen::RowVector3d u; // orientation
-	std::vector<int> d; // bead type assignments
+	std::vector<double> d; // bead type assignments
 
 	void print() {std::cout << id <<" "<< r << std::endl;}
 };
