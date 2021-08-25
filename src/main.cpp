@@ -458,6 +458,7 @@ public:
 	int nbeads; 
 	double total_volume;
 	double grid_size;
+	double bond_length;
 
 	// output files
 	FILE *xyz_out; 
@@ -628,6 +629,8 @@ public:
 
 	void readInput()
 	{
+		// reads simulation parameters from config.json file
+
 		std::cout << "reading input file ... " << std::endl;
 
 		std::ifstream i("config.json");
@@ -771,13 +774,38 @@ public:
 
 		return is_out;
 	}
-
 		
 	void initialize()
 	{
 		std::cout << "Initializing simulation objects ... " << std::endl;
 		Timer t_init("Initializing");
 
+
+		// set configuration
+		beads.resize(nbeads);  // uses default constructor initialization to create nbeads;
+		std::cout << "load configuratin is " << load_configuration << std::endl;
+		if(load_configuration) 
+		{
+			loadConfiguration();
+		}
+		else {
+			bond_length = 16.5; // nm
+			initRandomCoil(bond_length);
+		}
+
+		// set up chipseq
+		if (load_chipseq) { loadChipseq(); }
+
+		// set bonds
+		constructBonds();
+
+		// output initial xyz configuration
+		dumpData();
+		std::cout << "Objects created" << std::endl;
+	}
+
+	void calculateParameters()
+	{
 		grid.delta = grid_size;
 		std::cout << "grid size is : " << grid.delta << std::endl;
 		step_grid = grid.delta/10.0; // size of grid displacement MC moves
@@ -805,120 +833,111 @@ public:
 		n_pivot = pivot_on ? decay_length/10: 0;
 		n_rot = rotate_on ? nbeads : 0;
 		nSteps = n_trans + n_crank + n_pivot + n_rot;
+	}
 
-		double bondlength = 16.5;
-		beads.resize(nbeads);  // uses default constructor initialization to create nbeads;
+	void loadConfiguration()
+	{
+		// loads x,y,z positions for every particle from <inputfile>.xyz file
+		
+		std::cout << "Loading configuration from " << load_configuration_filename << std::endl;
+		std::ifstream IFILE; 
+		IFILE.open(load_configuration_filename); 
+		std::string line;
+		getline(IFILE, line); // nbeads line
+		std::cout << line << std::endl;
 
-		std::cout << "load configuratin is " << load_configuration << std::endl;
-		// set configuration
-		if(load_configuration) {
+		int init_nbeads = stoi(line);
+		std::cout << "checking if nbeads in config.json matches number of beads in the first line of <input>.xyz ... " << std::endl;
+		assert(init_nbeads == nbeads);
+		std::cout << "nbeads in config.json matches <input>.xyz" << std::endl;
 
-			std::cout << "Loading configuration from " << load_configuration_filename << std::endl;
-			std::ifstream IFILE; 
-			IFILE.open(load_configuration_filename); 
-			std::string line;
-			getline(IFILE, line); // nbeads line
-			std::cout << line << std::endl;
-
-			int init_nbeads = stoi(line);
-			std::cout << "checking if nbeads in config.json matches number of beads in the first line of <input>.xyz ... " << std::endl;
-			assert(init_nbeads == nbeads);
-			std::cout << "nbeads in config.json matches <input>.xyz" << std::endl;
-
+		
+		getline(IFILE, line); // comment line 
+		std::cout << line << std::endl;
 			
-			getline(IFILE, line); // comment line 
-			std::cout << line << std::endl;
-				
-			// first bead
+		// first bead
+		getline(IFILE, line);
+		//std::cout << line << std::endl;
+		std::stringstream ss;
+		ss << line;
+		ss >> beads[0].id;
+		ss >> beads[0].r(0);
+		ss >> beads[0].r(1);
+		ss >> beads[0].r(2);
+
+		for(int i=1; i<nbeads; i++)
+		{
 			getline(IFILE, line);
 			//std::cout << line << std::endl;
-			std::stringstream ss;
+			std::stringstream ss;  // new stream so no overflow from last line
 			ss << line;
-			ss >> beads[0].id;
-			ss >> beads[0].r(0);
-			ss >> beads[0].r(1);
-			ss >> beads[0].r(2);
 
-			for(int i=1; i<nbeads; i++)
-			{
-				getline(IFILE, line);
-				//std::cout << line << std::endl;
-				std::stringstream ss;  // new stream so no overflow from last line
-				ss << line;
+			ss >> beads[i].id;
+			ss >> beads[i].r(0);
+			ss >> beads[i].r(1);
+			ss >> beads[i].r(2);
 
-				ss >> beads[i].id;
-				ss >> beads[i].r(0);
-				ss >> beads[i].r(1);
-				ss >> beads[i].r(2);
-
-				beads[i-1].u = beads[i].r - beads[i-1].r;
-				beads[i-1].u = beads[i-1].u.normalized();
-			}
-			beads[nbeads-1].u = unit_vec(beads[nbeads-1].u); // random orientation for last bead
-			
+			beads[i-1].u = beads[i].r - beads[i-1].r;
+			beads[i-1].u = beads[i-1].u.normalized();
 		}
-		else {
-			// RANDOM COIL 
-			double center; // center of simulation box
-			if (grid.cubic_boundary)
-			{
-				center = grid.delta*grid.L/2;
-			}
-			else if (grid.spherical_boundary)
-			{
-				center = 0;
-			}
+		beads[nbeads-1].u = unit_vec(beads[nbeads-1].u); // random orientation for last bead
+	}
 
-			beads[0].r = {center, center, center}; // start in middlle of the box
-			beads[0].u = unit_vec(beads[0].u);
-			beads[0].id = 0;
+	void initRandomCoil(double bondlength)
+	{	
+		// generates x,y,z positions for all particles according to a random coil
 
-			for(int i=1; i<nbeads; i++)
-			{
-				do {
-					beads[i].u = unit_vec(beads[i].u); 
-					beads[i].r = beads[i-1].r + bondlength*beads[i].u; // orientations DO NOT point along contour
-					beads[i].id = i;
-				} while (outside_boundary(beads[i].r));
-			}
+		double center; // center of simulation box
+		if (grid.cubic_boundary)
+		{
+			center = grid.delta*grid.L/2;
+		}
+		else if (grid.spherical_boundary)
+		{
+			center = 0;
 		}
 
+		beads[0].r = {center, center, center}; // start in middlle of the box
+		beads[0].u = unit_vec(beads[0].u);
+		beads[0].id = 0;
+
+		for(int i=1; i<nbeads; i++)
+		{
+			do {
+				beads[i].u = unit_vec(beads[i].u); 
+				beads[i].r = beads[i-1].r + bondlength*beads[i].u; // orientations DO NOT point along contour
+				beads[i].id = i;
+			} while (outside_boundary(beads[i].r));
+		}
+	}
+
+	void loadChipseq()
+	{
 		// set up chipseq
-        if (load_chipseq) {
-            int marktype = 0;
-            for (std::string chipseq_file : chipseq_files)
-            {
-                std::ifstream IFCHIPSEQ;
-                int tail_marked;
-                IFCHIPSEQ.open(chipseq_file);
-                for(int i=0; i<nbeads; i++)
-                {
-					//beads[i].d.reserve(nspecies);
-					beads[i].d.resize(nspecies);
-                    IFCHIPSEQ >> tail_marked;
-                    if (tail_marked == 1)
-                    {
-                        beads[i].d[marktype] = 1;
-                    }
-                    else
-                    {
-                        beads[i].d[marktype] = 0;
-                    }
-                }
-                marktype++;
-                IFCHIPSEQ.close();
-            }
-        }
+		int marktype = 0;
+		for (std::string chipseq_file : chipseq_files)
+		{
+			std::ifstream IFCHIPSEQ;
+			IFCHIPSEQ.open(chipseq_file);
+			for(int i=0; i<nbeads; i++)
+			{
+				//beads[i].d.reserve(nspecies);
+				beads[i].d.resize(nspecies);
+				IFCHIPSEQ >> beads[i].d[marktype];
+			}
+			marktype++;
+			IFCHIPSEQ.close();
+		}
+	}
 
-		// set bonds
+	void constructBonds()
+	{
+		// constructs bond objects. Particle positions must already be initialized.
 		bonds.resize(nbeads-1); // use default constructor
 		for(int i=0; i<nbeads-1; i++)
 		{
 			bonds[i] = new DSS_Bond{&beads[i], &beads[i+1]};
 		}
-
-		dumpData();
-		std::cout << "Objects created" << std::endl;
 	}
 
 	void print()
@@ -1761,14 +1780,15 @@ public:
 
 	void run()
 	{
-		readInput();
-		makeOutputFiles();
-		initialize(); 
-		grid.generate();  // creates the grid locations
+		readInput();            // load parameters from config.json
+		calculateParameters();  // calculates derived parameters
+		makeOutputFiles();      // open files 
+		initialize();           // set particle positions and construct bonds
+		grid.generate();        // creates the grid locations
 		grid.meshBeads(beads);  // populates the grid locations with beads;
 		grid.setActiveCells();  // populates the active cell locations
-		setupContacts();
-		MC(); // MC simulation
+		setupContacts();        // construct contact map 
+		MC();                   // MC simulation
 		assert (grid.checkCellConsistency(nbeads));
 	}
 };
