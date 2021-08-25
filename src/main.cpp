@@ -41,7 +41,7 @@ public:
 
 	// number of bead types
 	static int ntypes;
-	std::vector<int> typenums = std::vector<int>(ntypes); // always up-to-date
+	std::vector<double> typenums = std::vector<double>(ntypes); // always up-to-date
 	std::vector<double> phis = std::vector<double>(ntypes); // only up-to-date after energy calculation
 	
 	static double diag_binsize;
@@ -1682,7 +1682,7 @@ public:
 			{
 				for(int i=0; i<nspecies; i++)
 				{
-					fprintf(xyz_out, "%d\t", bead.d[i]);
+					fprintf(xyz_out, "%f\t", bead.d[i]);
 				}
 			}
 
