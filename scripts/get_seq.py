@@ -53,11 +53,11 @@ def get_PCA_split_seq(m, y_diag, k):
         pc = pca.components_[pc_i]
 
         pcpos = pc.copy()
-        pcpos[pc < 0] = 0
+        pcpos[pc < 0] = 0 # zero negative part
         seq[:,j] = pcpos
 
         pcneg = pc.copy()
-        pcneg[pc > 0] = 0
+        pcneg[pc > 0] = 0 # zero positive part
         seq[:,j+1] = pcneg * -1
         j += 2
     return seq
@@ -70,6 +70,13 @@ def get_PCA_seq(m, y_diag, k):
     for j in range(k):
         seq[:,j] = pca.components_[j]
 
+    return seq
+
+def get_k_means_seq(m, y_diag, k):
+    kmeans = KMeans(n_clusters = k)
+    kmeans.fit(y_diag)
+    seq = np.zeros((m, k))
+    seq[np.arange(m), kmeans.labels_] = 1
     return seq
 
 def writeSeq(seq, format, save_npy):
@@ -87,11 +94,11 @@ def main():
         format = '%d'
     elif args.method == 'PCA':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
-        seq = get_PCA_seq(args.m, y_diag, args.k, split = True)
+        seq = get_PCA_seq(args.m, y_diag, args.k)
         format = '%.3e'
     elif args.method == 'PCA_split':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
-        seq = get_PCA__seq(args.m, y_diag, args.k)
+        seq = get_PCA_split_seq(args.m, y_diag, args.k)
         format = '%.3e'
     elif args.method == 'ground_truth':
         seq = np.load(osp.join(args.sample_folder, 'x.npy'))[:args.m, :]
@@ -106,10 +113,7 @@ def main():
         format = '%.3e'
     elif args.method == 'k_means':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
-        kmeans = KMeans(n_clusters = args.k)
-        kmeans.fit(y_diag)
-        seq = np.zeros((args.m, args.k))
-        seq[np.arange(args.m), kmeans.labels_] = 1
+        seq = get_k_means_seq(args.m, y_diag, args.k)
         format = '%d'
     else:
         raise Exception('Unkown method: {}'.format(args.method))
