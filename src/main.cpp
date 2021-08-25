@@ -634,6 +634,12 @@ public:
 		std::cout << "reading input file ... " << std::endl;
 
 		std::ifstream i("config.json");
+		if ( !i.good() )
+		{
+			std::cout << "config.json does not exist or cannot be opened" << std::endl;
+			abort();
+		}
+
 		nlohmann::json config;
 		i >> config;
 
@@ -842,6 +848,11 @@ public:
 		std::cout << "Loading configuration from " << load_configuration_filename << std::endl;
 		std::ifstream IFILE; 
 		IFILE.open(load_configuration_filename); 
+		if ( !IFILE.good() ) 
+		{
+			std::cout << load_configuration_filename << " does not exist or could not be opened" << std::endl;
+			abort();
+		}
 		std::string line;
 		getline(IFILE, line); // nbeads line
 		std::cout << line << std::endl;
@@ -919,14 +930,22 @@ public:
 		{
 			std::ifstream IFCHIPSEQ;
 			IFCHIPSEQ.open(chipseq_file);
-			for(int i=0; i<nbeads; i++)
+			if ( IFCHIPSEQ.good() )
 			{
-				//beads[i].d.reserve(nspecies);
-				beads[i].d.resize(nspecies);
-				IFCHIPSEQ >> beads[i].d[marktype];
+				for(int i=0; i<nbeads; i++)
+				{
+					//beads[i].d.reserve(nspecies);
+					beads[i].d.resize(nspecies);
+					IFCHIPSEQ >> beads[i].d[marktype];
+				}
+				marktype++;
+				IFCHIPSEQ.close();
 			}
-			marktype++;
-			IFCHIPSEQ.close();
+			else
+			{
+				std::cout << chipseq_file << " does not exist or could not be opened" << std::endl;
+				abort();
+			}
 		}
 	}
 
