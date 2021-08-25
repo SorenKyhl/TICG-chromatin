@@ -42,17 +42,15 @@ def get_random_seq(m, p_switch, k):
 
     return seq
 
-def get_PCA_seq(m, y_diag, k):
+def get_PCA_split_seq(m, y_diag, k):
     pca = PCA()
     pca.fit(y_diag)
     seq = np.zeros((m, k))
-
 
     j = 0
     PC_count = k // 2 # 2 seqs per PC
     for pc_i in range(PC_count):
         pc = pca.components_[pc_i]
-        plt.plot(pc, label = pc_i)
 
         pcpos = pc.copy()
         pcpos[pc < 0] = 0
@@ -61,10 +59,16 @@ def get_PCA_seq(m, y_diag, k):
         pcneg = pc.copy()
         pcneg[pc > 0] = 0
         seq[:,j+1] = pcneg * -1
-
         j += 2
-    plt.legend()
-    plt.show()
+    return seq
+
+def get_PCA_seq(m, y_diag, k):
+    pca = PCA()
+    pca.fit(y_diag)
+    seq = np.zeros((m, k))
+
+    for j in range(k):
+        seq[:,j] = pca.components_[j]
 
     return seq
 
@@ -83,7 +87,11 @@ def main():
         format = '%d'
     elif args.method == 'PCA':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
-        seq = get_PCA_seq(args.m, y_diag, args.k)
+        seq = get_PCA_seq(args.m, y_diag, args.k, split = True)
+        format = '%.3e'
+    elif args.method == 'PCA_split':
+        y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
+        seq = get_PCA__seq(args.m, y_diag, args.k)
         format = '%.3e'
     elif args.method == 'ground_truth':
         seq = np.load(osp.join(args.sample_folder, 'x.npy'))[:args.m, :]

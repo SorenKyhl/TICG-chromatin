@@ -29,8 +29,8 @@ module load jq
 cd ~/TICG-chromatin/maxent/resources
 python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi=-1 --max_chi=1 --save_chi_for_max_ent --goal_specified $goalSpecified
 
-#'GNN'  'PCA' 
-for method in 'ground_truth' 'k_means' 'random'
+#'GNN' 'ground_truth' 'random' 'PCA_split'
+for method in 'k_means' 'PCA'
 do
 	printf "\n${method}\n"
 	cd ~/TICG-chromatin/maxent/resources
