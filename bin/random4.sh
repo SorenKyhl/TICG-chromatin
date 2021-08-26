@@ -14,7 +14,7 @@ startSimulation=$1
 numSimulations=$2
 k=$3
 chi=${4:-'none'}
-overwrite=0
+overwrite=1
 
 # below does nothing if chi is given
 minChi=0
