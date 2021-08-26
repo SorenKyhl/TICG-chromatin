@@ -34,19 +34,7 @@ source activate python3.8_pytorch1.8.1_cuda10.2
 
 for i in $(seq $startSimulation $numSimulations)
 do
-  # set up config.json
-	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --nSweeps 10000 --chi=$chi --m $m --k $k --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable > log.log
-
-	# generate sequences
-	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --p_switch $pSwitch --k $k --save_npy >> log.log
-
-	# run simulation
-	~/TICG-chromatin/TICG-engine >> log.log
-
-  # calculate contact map
-  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --save_npy
-
-	# move inputs and outputs to own folder
+	echo $i
 	dir="${dataFolder}/samples/sample${i}"
 	# directory checks
 	if [ -d $dir ]
@@ -61,6 +49,20 @@ do
 			exit 1
 		fi
 	fi
+
+  # set up config.json
+	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --nSweeps 10000 --chi=$chi --m $m --k $k --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable > log.log
+
+	# generate sequences
+	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --p_switch $pSwitch --k $k --save_npy >> log.log
+
+	# run simulation
+	~/TICG-chromatin/TICG-engine >> log.log
+
+  # calculate contact map
+  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --save_npy
+
+	# move inputs and outputs to own folder
 	mkdir -p $dir
 	mv config.json data_out log.log x.npy y.npy y.png chis.txt chis.npy $dir
 	for i in $(seq 0 $(($k-1)))
