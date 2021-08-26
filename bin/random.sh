@@ -16,6 +16,10 @@ dataFolder="/project2/depablo/erschultz/dataset_test"
 samplesPerTask=2
 startSample=1
 
+cd ~/TICG-chromatin/src
+make
+mv TICG-engine ..
+
 STARTTIME=$(date +%s)
 for i in $(seq 6 16)
 do
