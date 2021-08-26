@@ -11,6 +11,7 @@ chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
 # chi="-1&2\\2&-1"
 k=4
 m=1024
+today=$(date +'%m_%d_%y')
 dataFolder="/project2/depablo/erschultz/dataset_test"
 samplesPerTask=2
 startSample=1
@@ -20,7 +21,7 @@ do
   start=$($($($i-1)*$samplesPerTask)+$startSample)
   stop=$($start+$samplesPerTask)
   echo $start $stop
-  ~/TICG-chromatin/bin/random_inner.sh $i $k $chi $m & >> TICG${i}.log
+  ~/TICG-chromatin/bin/random_inner.sh $i $k $chi $m $start $stop $dataFolder & >> TICG${i}.log
 done
 
 wait

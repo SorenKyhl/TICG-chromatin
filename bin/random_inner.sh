@@ -8,6 +8,7 @@ chi=$3
 m=$4
 startSimulation=$5
 numSimulations=$6
+dataFolder=$7
 overwrite=1
 
 # below does nothing if chi is given
@@ -15,9 +16,9 @@ minChi=0
 maxChi=2
 fillDiag=-1
 
-today=$(date +'%m_%d_%y')
-dataFolder=${5:-"/project2/depablo/erschultz/dataset_${today}"}
-scratchDir="/scratch/midway2/erschultz/TICG${5}"
+
+
+scratchDir="/scratch/midway2/erschultz/TICG${1}"
 
 # move utils to scratch
 mkdir -p $scratchDir
@@ -34,7 +35,7 @@ source activate python3.8_pytorch1.8.1_cuda10.2
 for i in $(seq $startSimulation $numSimulations)
 do
   # set up config.json
-	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable > log.log
+	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --nSweeps 10000 --chi=$chi --m $m --k $k --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable > log.log
 
 	# generate sequences
 	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --p_switch $pSwitch --k $k --save_npy >> log.log
