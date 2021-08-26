@@ -7,13 +7,13 @@
 #SBATCH --ntasks-per-node=16
 #SBATCH --mem-per-cpu=2000
 
-chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
-# chi="-1&2\\2&-1"
-k=4
+# chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
+chi="-1&2\\2&-1"
+k=2
 m=1024
 today=$(date +'%m_%d_%y')
-dataFolder="/project2/depablo/erschultz/dataset_test"
-samplesPerTask=2
+dataFolder="/project2/depablo/erschultz/dataset_08_24_21"
+samplesPerTask=10
 startSample=1
 
 cd ~/TICG-chromatin/src
@@ -21,7 +21,7 @@ make
 mv TICG-engine ..
 
 STARTTIME=$(date +%s)
-for i in $(seq 6 16)
+for i in $(seq 1 5)
 do
   start=$(( $(( $(( $i-1 ))*$samplesPerTask ))+$startSample ))
   stop=$(( $start+$samplesPerTask-1 ))
