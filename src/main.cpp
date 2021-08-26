@@ -11,7 +11,7 @@
 #include <cstdlib>
 
 #include "Eigen/Dense"
-#include "random_mars.cpp"
+#include "random_mars.h"
 #include "nlohmann/json.hpp"
 #include "prof_timer.cpp"
 
@@ -19,8 +19,8 @@
 #include "Bond.h"
 #include "DSS_Bond.h"
 #include "Cell.cpp"
-#include "Grid.cpp"
-#include "Sim.cpp"
+#include "Grid.h"
+#include "Sim.h"
 
 int main()
 {

@@ -1,6 +1,19 @@
 #pragma once 
 
+#include <iostream>
+#include <vector>
+#include <fstream>
+#include <unordered_set>
+
 #include "Eigen/Dense"
+#include "nlohmann/json.hpp"
+
+#include "Bead.h"
+#include "DSS_Bond.h"
+#include "Cell.h"
+#include "Grid.h"
+#include "prof_timer.cpp"
+#include "random_mars.h"
 
 class Sim {
 public: 

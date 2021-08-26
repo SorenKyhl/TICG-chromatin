@@ -1,6 +1,13 @@
 #pragma once
 
+#include <iostream>
+#include <vector>
+#include <unordered_set>
+
 #include "Eigen/Dense"
+#include "Bead.h"
+#include "Cell.h"
+
 
 class Grid {
 public:

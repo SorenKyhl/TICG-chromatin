@@ -1,5 +1,3 @@
-#pragma once
-
 #include "Sim.h"
 
 // assign variable to json key of the same name

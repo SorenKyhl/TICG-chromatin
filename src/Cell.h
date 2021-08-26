@@ -1,7 +1,11 @@
 #pragma once 
 
 #include <iostream>
+#include <vector>
+#include <unordered_set>
 #include "Eigen/Dense"
+#include "Bead.h"
+
 
 class Cell {
 public:
@@ -27,6 +31,7 @@ public:
 	double getEnergy(const Eigen::MatrixXd &chis);
 	double getDiagEnergy(const std::vector<double> diag_chis);
 	double getBoundaryEnergy(const double boundary_chi, const double delta);
+
 };
 
 
