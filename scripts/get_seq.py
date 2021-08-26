@@ -23,7 +23,7 @@ def getArgs():
     parser.add_argument('--data_folder', type=str, default='../sequences_to_contact_maps/dataset_04_18_21', help='location of input data')
     parser.add_argument('--sample', type=int, default=2, help='sample id')
     parser.add_argument('--sample_folder', type=str, help='location of input data')
-    parser.add_argument('--method', type=str, default='PCA', help='method for assigning particle types')
+    parser.add_argument('--method', type=str, default='k_means', help='method for assigning particle types')
     parser.add_argument('--m', type=int, default=1024, help='number of particles (will crop contact map)')
     parser.add_argument('--p_switch', type=float, default=0.05, help='probability to switch bead assignment')
     parser.add_argument('--k', type=int, default=2, help='sequences to generate')
@@ -78,7 +78,7 @@ def get_PCA_seq(m, y_diag, k):
 
     return seq
 
-def get_k_means_seq(m, y, k, kr = TRUE):
+def get_k_means_seq(m, y, k, kr = True):
     if kr:
         yKR = np.log(knightRuiz(y))
     kmeans = KMeans(n_clusters = k)
