@@ -10,6 +10,12 @@ import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 
+# ensure that I can find knightRuiz
+abspath = osp.abspath(__file__)
+dname = osp.dirname(abspath)
+sys.path.insert(0, dname)
+from knightRuiz import knightRuiz
+
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     # '../../sequences_to_contact_maps/dataset_04_18_21'
@@ -72,9 +78,11 @@ def get_PCA_seq(m, y_diag, k):
 
     return seq
 
-def get_k_means_seq(m, y_diag, k):
+def get_k_means_seq(m, y, k, kr = TRUE):
+    if kr:
+        yKR = np.log(knightRuiz(y))
     kmeans = KMeans(n_clusters = k)
-    kmeans.fit(y_diag)
+    kmeans.fit(yKR)
     seq = np.zeros((m, k))
     seq[np.arange(m), kmeans.labels_] = 1
     return seq

@@ -27,7 +27,9 @@ def getArgs():
 # plotting functions
 def plotDistanceStratifiedPearsonCorrelation(y, yhat, args):
     overall_corr, corr_arr = calculateDistanceStratifiedCorrelation(y, yhat, mode = 'pearson')
+    avg = np.nanmean(corr_arr)
     title = 'Overall Pearson R: {}'.format(np.round(overall_corr, 3))
+    title += r'\nAvg Dist Pearson R: {}'.format(np.round(avg, 3))
 
     plt.plot(np.arange(args.m-1), corr_arr, color = 'black')
     plt.ylim(-0.5, 1)
