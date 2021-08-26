@@ -11,6 +11,7 @@ from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 
 sys.path.insert(1, '/home/erschultz/sequences_to_contact_maps')
+sys.path.insert(1, 'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps')
 from neural_net_utils.utils import calculateDistanceStratifiedCorrelation
 
 def getArgs():
@@ -25,20 +26,20 @@ def getArgs():
     return args
 
 # plotting functions
-def plotDistanceStratifiedPearsonCorrelation(y, yhat, args):
+def plotDistanceStratifiedPearsonCorrelation(y, yhat, args, dir = ''):
     overall_corr, corr_arr = calculateDistanceStratifiedCorrelation(y, yhat, mode = 'pearson')
     avg = np.nanmean(corr_arr)
     title = 'Overall Pearson R: {}'.format(np.round(overall_corr, 3))
-    title += r'\nAvg Dist Pearson R: {}'.format(np.round(avg, 3))
+    title +='\nAvg Dist Pearson R: {}'.format(np.round(avg, 3))
 
-    plt.plot(np.arange(args.m-1), corr_arr, color = 'black')
+    plt.plot(np.arange(args.m-2), corr_arr, color = 'black')
     plt.ylim(-0.5, 1)
     plt.xlabel('Distance', fontsize = 16)
     plt.ylabel('Pearson Correlation Coefficient', fontsize = 16)
     plt.title(title, fontsize = 16)
 
     plt.tight_layout()
-    plt.savefig('distance_pearson.png')
+    plt.savefig(osp.join(dir, 'distance_pearson.png'))
     plt.close()
 
 def main():
