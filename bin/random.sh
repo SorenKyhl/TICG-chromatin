@@ -7,31 +7,31 @@
 #SBATCH --ntasks-per-node=16
 #SBATCH --mem-per-cpu=2000
 
-# chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
-chi="-1&2\\2&-1"
-k=2
+chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
+# chi="-1&2\\2&-1"
+k=4
 m=1024
 today=$(date +'%m_%d_%y')
-dataFolder="/project2/depablo/erschultz/dataset_8_24_21"
+dataFolder="/project2/depablo/erschultz/dataset_test"
 samplesPerTask=2
 startSample=1
 
-# for i in $(seq 1 16)
-# do
-#   start=$(( $(( $(( $i-1 ))*$samplesPerTask ))+$startSample ))
-#   stop=$(( $start+$samplesPerTask-1 ))
-#   echo $start $stop
-#   ~/TICG-chromatin/bin/random_inner.sh $i $k $chi $m $start $stop $dataFolder & >> ~/TICG-chromatin/TICG${i}.log
-# done
-#
-# wait
+for i in $(seq 6 16)
+do
+  start=$(( $(( $(( $i-1 ))*$samplesPerTask ))+$startSample ))
+  stop=$(( $start+$samplesPerTask-1 ))
+  echo $start $stop
+  ~/TICG-chromatin/bin/random_inner.sh $i $k $chi $m $start $stop $dataFolder & >> ~/TICG-chromatin/TICG${i}.log
+done
+
+wait
 
 
-sbatch bin/random1.sh 1 10 $k $chi $dataFolder
-sbatch bin/random2.sh 11 20 $k $chi $dataFolder
-sbatch bin/random3.sh 21 30 $k $chi $dataFolder
-sbatch bin/random4.sh 31 40 $k $chi $dataFolder
-sbatch bin/random5.sh 41 50 $k $chi $dataFolder
+# sbatch bin/random1.sh 1 10 $k $chi $dataFolder
+# sbatch bin/random2.sh 11 20 $k $chi $dataFolder
+# sbatch bin/random3.sh 21 30 $k $chi $dataFolder
+# sbatch bin/random4.sh 31 40 $k $chi $dataFolder
+# sbatch bin/random5.sh 41 50 $k $chi $dataFolder
 # sbatch bin/random6.sh 1001 1050 $k $chi $dataFolder
 # sbatch bin/random7.sh 1051 1100 $k $chi $dataFolder
 # sbatch bin/random8.sh 1101 1150 $k $chi $dataFolder
