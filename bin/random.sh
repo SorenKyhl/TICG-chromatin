@@ -19,7 +19,7 @@ startSample=1
 for i in $(seq 1 16)
 do
   start=$(( $(( $(( $i-1 ))*$samplesPerTask ))+$startSample ))
-  stop=$($start+$samplesPerTask)
+  stop=$(( $start+$samplesPerTask-1 ))
   echo $start $stop
   # ~/TICG-chromatin/bin/random_inner.sh $i $k $chi $m $start $stop $dataFolder & >> TICG${i}.log
 done
