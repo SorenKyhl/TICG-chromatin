@@ -3,8 +3,7 @@
 #SBATCH --output=TICG.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=16
+#SBATCH --ntasks=16
 #SBATCH --mem-per-cpu=2000
 
 # chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"

@@ -51,7 +51,7 @@ do
 	fi
 
   # set up config.json
-	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --nSweeps 10000 --chi=$chi --m $m --k $k --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable > log.log
+	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable > log.log
 
 	# generate sequences
 	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --p_switch $pSwitch --k $k --save_npy >> log.log
