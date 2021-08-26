@@ -13,7 +13,7 @@ k=2
 m=1024
 today=$(date +'%m_%d_%y')
 dataFolder="/project2/depablo/erschultz/dataset_08_24_21"
-samplesPerTask=10
+samplesPerTask=5
 startSample=1
 
 cd ~/TICG-chromatin/src
@@ -21,7 +21,7 @@ make
 mv TICG-engine ..
 
 STARTTIME=$(date +%s)
-for i in $(seq 1 5)
+for i in $(seq 1 10)
 do
   start=$(( $(( $(( $i-1 ))*$samplesPerTask ))+$startSample ))
   stop=$(( $start+$samplesPerTask-1 ))
