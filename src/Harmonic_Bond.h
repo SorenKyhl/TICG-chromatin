@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Bond.h"
+
 class Harmonic_Bond : public Bond {
 public:
 	Harmonic_Bond(Bead* bead1, Bead* bead2, double kk, double r00) 

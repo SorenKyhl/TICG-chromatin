@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Bond.h" 
+
 // Discrete, Shearable, Stretchable bond (see:) 
 // Koslover, Spakowitz
 // "Discretizing elastic chains for coarse-grained polymer models" 
