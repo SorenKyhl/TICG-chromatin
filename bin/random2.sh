@@ -36,7 +36,7 @@ cd $scratchDir
 # activate python
 source activate python3.8_pytorch1.8.1_cuda10.2
 
-for i in 498 499
+for i in 597
 do
 	echo $i
 	dir="${dataFolder}/samples/sample${i}"
