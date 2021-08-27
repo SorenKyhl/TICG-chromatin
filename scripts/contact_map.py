@@ -69,5 +69,9 @@ def main():
     if args.save_npy:
         np.save('y.npy', y.astype(np.int16))
 
+        meanDist = generateDistStats(y)
+        y_diag_instance = diagonal_preprocessing(y, meanDist)
+        np.save('y_diag_instance.npy', y_diag_instance)
+
 if __name__ == '__main__':
     main()
