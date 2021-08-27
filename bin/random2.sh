@@ -36,7 +36,7 @@ cd $scratchDir
 # activate python
 source activate python3.8_pytorch1.8.1_cuda10.2
 
-for i in 478 479 500 548 549 550 598 599 600 648 649 700 748 749 750 798 799 800
+for i in 498 499
 do
 	echo $i
 	dir="${dataFolder}/samples/sample${i}"
@@ -79,4 +79,4 @@ done
 rm default_config.json input1024.xyz
 
 ENDTIME=$(date +%s)
-echo "total time: $(($ENDTIME - $STARTTIME)) seconds"
+echo "total time: $(( $ENDTIME-$STARTTIME )) seconds"

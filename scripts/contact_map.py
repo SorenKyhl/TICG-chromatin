@@ -8,6 +8,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import argparse
 
+sys.path.insert(1, '/home/erschultz/sequences_to_contact_maps')
+# sys.path.insert(1, 'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps')
+from neural_net_utils.utils import calculateDistanceStratifiedCorrelation, diagonal_preprocessing, generateDistStats
+
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     parser.add_argument('--m', type=int, default=1024, help='number of particles')
