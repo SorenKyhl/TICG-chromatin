@@ -9,7 +9,7 @@ def main():
     dir = "/project2/depablo/erschultz/dataset_08_26_21/samples"
     for file in os.listdir(dir):
         if file.startswith('sample'):
-            id = file[6:]
+            id = int(file[6:])
             ids.remove(id)
 
     print(ids)
