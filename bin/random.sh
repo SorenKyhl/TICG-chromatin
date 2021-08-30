@@ -12,7 +12,7 @@ k=2
 m=1024
 today=$(date +'%m_%d_%y')
 dataFolder="/project2/depablo/erschultz/dataset_08_29_21"
-samplesPerTask=10
+samplesPerTask=11
 startSample=40
 
 cd ~/TICG-chromatin/src
