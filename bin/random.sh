@@ -19,6 +19,7 @@ cd ~/TICG-chromatin/src
 make
 mv TICG-engine ..
 
+echo $dataFolder
 STARTTIME=$(date +%s)
 for i in $(seq 1 40)
 do
