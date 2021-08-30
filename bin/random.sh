@@ -6,12 +6,12 @@
 #SBATCH --ntasks=40
 #SBATCH --mem-per-cpu=2000
 
-chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
-# chi="-1&2\\2&-1"
-k=4
+# chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
+chi="-1&1\\1&0"
+k=2
 m=1024
 today=$(date +'%m_%d_%y')
-dataFolder="/project2/depablo/erschultz/dataset_08_26_21"
+dataFolder="/project2/depablo/erschultz/dataset_08_29_21"
 samplesPerTask=50
 startSample=1
 
