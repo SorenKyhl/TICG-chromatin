@@ -12,8 +12,8 @@ k=2
 m=1024
 today=$(date +'%m_%d_%y')
 dataFolder="/project2/depablo/erschultz/dataset_08_29_21"
-samplesPerTask=50
-startSample=1
+samplesPerTask=10
+startSample=40
 
 cd ~/TICG-chromatin/src
 make
@@ -23,7 +23,7 @@ echo $dataFolder
 STARTTIME=$(date +%s)
 for i in $(seq 1 40)
 do
-  start=$(( $(( $(( $i-1 ))*$samplesPerTask ))+$startSample ))
+  start=$(( $(( $(( $i-1 ))*50 ))+$startSample ))
   stop=$(( $start+$samplesPerTask-1 ))
   echo $start $stop
   ~/TICG-chromatin/bin/random_inner.sh $i $k $chi $m $start $stop $dataFolder > ~/TICG-chromatin/logFiles/TICG${i}.log &
