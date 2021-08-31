@@ -6,7 +6,7 @@ import numpy as np
 
 def main():
     ids = set(range(1, 2001))
-    dir = "/project2/depablo/erschultz/dataset_08_26_21/samples"
+    dir = "/project2/depablo/erschultz/dataset_08_29_21/samples"
     for file in os.listdir(dir):
         if file.startswith('sample'):
             id = int(file[6:])

@@ -47,7 +47,7 @@
     0.47368421,
     0.5
   ],
-  "grid_size": 40,
+  "grid_size": 28.7,
   "track_contactmap": false,
   "diagonal_linear": true,
   "visit_tracking": false,
@@ -55,15 +55,29 @@
   "update_contacts_distance": false,
   "boundary_attract_on": false,
   "boundary_chi": 0,
-  "chiAA": -1.0,
+  "chiAA": 0.1,
   "chiAB": 1.0,
+  "chiAC": -0.6,
+  "chiAD": -0.4,
   "chiBA": 1.0,
-  "chiBB": 0.0,
+  "chiBB": -0.6,
+  "chiBC": -0.9,
+  "chiBD": -0.7,
+  "chiCA": -0.6,
+  "chiCB": -0.9,
+  "chiCC": 0.2,
+  "chiCD": 0.2,
+  "chiDA": -0.4,
+  "chiDB": -0.7,
+  "chiDC": 0.2,
+  "chiDD": -0.5,
   "nbeads": 1024,
-  "nspecies": 2,
+  "nspecies": 4,
   "load_configuration_filename": "input1024.xyz",
   "chipseq_files": [
     "seq0.txt",
-    "seq1.txt"
+    "seq1.txt",
+    "seq2.txt",
+    "seq3.txt"
   ]
 }
