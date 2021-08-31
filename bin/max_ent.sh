@@ -39,7 +39,7 @@ do
 	# generate goals
 	if [ $goalSpecified -eq 1 ]
 	then
-		python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --verbose --m $m --k $k --contact_map "${sampleFolder}/y.npy"
+		python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --k $k --contact_map "${sampleFolder}/y.npy"
 	fi
 
 	# apply max ent with newton's method
