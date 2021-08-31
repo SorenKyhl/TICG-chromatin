@@ -10,7 +10,7 @@
 m=1024
 k=4
 sample=1201
-dataFolder='/project2/depablo/erschultz/dataset_08_18_21'
+dataFolder='/project2/depablo/erschultz/dataset_08_24_21'
 sampleFolder="$dataFolder/samples/sample$sample"
 gamma=0.00001
 gammaDiag=0.00001
