@@ -5,10 +5,12 @@ import sys
 import numpy as np
 import argparse
 
+import matplotlib
 import matplotlib.pyplot as plt
 
 from sklearn.decomposition import PCA, NMF
 from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
 
 # ensure that I can find knightRuiz
 abspath = osp.abspath(__file__)
@@ -27,12 +29,16 @@ def getArgs():
     parser.add_argument('--m', type=int, default=1024, help='number of particles (will crop contact map)')
     parser.add_argument('--p_switch', type=float, default=0.05, help='probability to switch bead assignment (for method = random)')
     parser.add_argument('--binarize', type=str2bool, default=False, help='true to binarize labels (not implemented for all methods)') # TODO
+    parser.add_argument('--normalize', type=str2bool, default=False, help='true to normalize labels to [0,1] (not implemented for all methods)') # TODO
     parser.add_argument('--k', type=int, default=2, help='sequences to generate')
     parser.add_argument('--GNN_model_id', type=int, default=116, help='model id for ContactGNN')
     parser.add_argument('--save_npy', action='store_true', help='true to save seq as .npy')
+    parser.add_argument('--plot', action='store_true', help='true to plot seq as .png')
 
 
     args = parser.parse_args()
+    args.clf = None
+    args.X = None # X for silhouette_score
     if args.method != 'random' and args.sample_folder is None:
         args.sample_folder = osp.join(args.data_folder, 'samples', 'sample{}'.format(args.sample))
     return args
@@ -103,7 +109,7 @@ def get_k_means_seq(m, y, k, kr = True):
     kmeans.fit(yKR)
     seq = np.zeros((m, k))
     seq[np.arange(m), kmeans.labels_] = 1
-    return seq
+    return seq, kmeans
 
 def get_nmf_seq(m, y, k, binarize):
     nmf = NMF(n_components = k, max_iter = 1000)
@@ -113,15 +119,13 @@ def get_nmf_seq(m, y, k, binarize):
     print("NMF reconstruction error: {}".format(nmf.reconstruction_err_))
 
     if binarize:
-        clust = np.argmax(H, axis = 0)
-        print(clust)
+        nmf.labels_ = np.argmax(H, axis = 0)
         seq = np.zeros((m, k))
-        seq[np.arange(m), clust] = 1
-        print(seq)
-        return seq
+        seq[np.arange(m), nmf.labels_] = 1
+        return seq, nmf
     else:
-        return H.T
-
+        seq = H.T
+        return seq, None
 
 def writeSeq(seq, format, save_npy):
     m, k = seq.shape
@@ -130,6 +134,35 @@ def writeSeq(seq, format, save_npy):
 
     if save_npy:
         np.save('x.npy', seq)
+
+def plot_seq_exclusive(seq, clf=None, X=None, show = False, save = True, title = None):
+    '''Plotting function for mutually exclusive particle types'''
+    # TODO make figure wider and less tall
+    m, k = seq.shape
+    cmap = matplotlib.cm.get_cmap('tab10')
+    ind = np.arange(k) % cmap.N
+    colors = plt.cycler('color', cmap(ind))
+
+    for i, c in enumerate(colors):
+        x = np.argwhere(seq[:, i] == 1)
+        plt.scatter(x, np.ones_like(x), label = i, color = c['color'], s=1)
+
+    if X is not None and clf is not None:
+        score = silhouette_score(X, clf.labels_)
+        lower_title = '\nsilhouette score: {}'.format(np.round(score, 3))
+    else:
+        lower_title = ''
+
+    plt.legend()
+    ax = plt.gca()
+    ax.axes.get_yaxis().set_visible(False)
+    if title is not None:
+        plt.title(title + lower_title, fontsize=16)
+    if save:
+        plt.savefig('seq.png')
+    if show:
+        plt.show()
+    plt.close()
 
 def main():
     args = getArgs()
@@ -157,27 +190,35 @@ def main():
         format = '%.3e'
     elif args.method == 'k_means':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
-        seq = get_k_means_seq(args.m, y_diag, args.k)
+        seq, args.clf = get_k_means_seq(args.m, y_diag, args.k)
+        args.X = y_diag
         format = '%d'
     elif args.method == 'nmf':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
-        seq = get_nmf_seq(args.m, y_diag, args.k, args.binarize)
+        seq, args.clf = get_nmf_seq(args.m, y_diag, args.k, args.binarize)
+        args.X = y_diag
         format = '%.3e'
     else:
         raise Exception('Unkown method: {}'.format(args.method))
 
     writeSeq(seq, format, args.save_npy)
 
+    if args.plot:
+        if args.method == 'k_means' or (args.method == 'nmf' and args.binarize):
+            plot_seq_exclusive(seq, clf=args.clf, X=args.X)
+        else:
+            pass
+            # TODO
+
 def test():
     args = getArgs()
     y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
-    seq = get_nmf_seq(args.m, y_diag, args.k, True)
+    seq, args.clf = get_nmf_seq(args.m, y_diag, args.k, binarize = True)
+    # seq, args.clf = get_k_means_seq(args.m, y_diag, args.k, kr = True)
+    args.X = y_diag
     format = '%.3e'
 
-    for i in range(args.k):
-        plt.plot(seq[:,i], label = i)
-    plt.legend()
-    plt.show()
+    plot_seq_exclusive(seq, clf=args.clf, X=args.X, show=True, save=True, title='help')
 
 
 if __name__ ==  "__main__":

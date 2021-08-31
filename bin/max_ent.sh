@@ -26,30 +26,28 @@ module load jq
 
 # get config
 cd ~/TICG-chromatin/maxent/resources
-# python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi=-1 --max_chi=1 --save_chi_for_max_ent --goal_specified $goalSpecified
+python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi=-1 --max_chi=1 --save_chi_for_max_ent --goal_specified $goalSpecified
 
-#'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split'
-for method in 'ground_truth' 'random' 'PCA' 'PCA_split' 'k_means'
+#'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
+for method in 'nmf'
 do
 	printf "\n${method} k=${k}\n"
 	cd ~/TICG-chromatin/maxent/resources
 	# generate sequences
-	# python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --k $k --sample $sample --data_folder $dataFolder
+	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --k $k --sample $sample --data_folder $dataFolder --plot
 
 	# generate goals
-	# if [ $goalSpecified -eq 1 ]
-	# then
-		# python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --verbose --m $m --k $k --contact_map "${sampleFolder}/y.npy"
-	# fi
+	if [ $goalSpecified -eq 1 ]
+	then
+		python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --verbose --m $m --k $k --contact_map "${sampleFolder}/y.npy"
+	fi
 
 	# apply max ent with newton's method
 	dir="${sampleFolder}/${method}/k${k}"
-	# ~/TICG-chromatin/maxent/bin/run.sh $dir $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite
+	~/TICG-chromatin/maxent/bin/run.sh $dir $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite
 
 	# compare results
 	prodIt=$(($numIterations+1))
-	cd "${dir}/iteration${prodIt}"
-	python3 ~/TICG-chromatin/scripts/contact_map.py --save_npy --ifile "production_out/contacts.txt"
 	cd $dir
   python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --ifile1 "$sampleFolder/y.npy" --ifile2 "${dir}/iteration${prodIt}/y.npy"
 done
