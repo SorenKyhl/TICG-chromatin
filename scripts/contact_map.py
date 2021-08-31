@@ -1,5 +1,6 @@
 import os
 import os.path as osp
+import sys
 
 import numpy as np
 import pandas as pd
@@ -10,7 +11,7 @@ import argparse
 
 sys.path.insert(1, '/home/erschultz/sequences_to_contact_maps')
 # sys.path.insert(1, 'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps')
-from neural_net_utils.utils import calculateDistanceStratifiedCorrelation, diagonal_preprocessing, generateDistStats
+from neural_net_utils.utils import diagonal_preprocessing, generateDistStats
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')

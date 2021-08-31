@@ -7,7 +7,7 @@ import argparse
 
 import matplotlib.pyplot as plt
 
-from sklearn.decomposition import PCA
+from sklearn.decomposition import PCA, NMF
 from sklearn.cluster import KMeans
 
 # ensure that I can find knightRuiz
@@ -25,7 +25,8 @@ def getArgs():
     parser.add_argument('--sample_folder', type=str, help='location of input data')
     parser.add_argument('--method', type=str, default='k_means', help='method for assigning particle types')
     parser.add_argument('--m', type=int, default=1024, help='number of particles (will crop contact map)')
-    parser.add_argument('--p_switch', type=float, default=0.05, help='probability to switch bead assignment')
+    parser.add_argument('--p_switch', type=float, default=0.05, help='probability to switch bead assignment (for method = random)')
+    parser.add_argument('--binarize', type=str2bool, default=False, help='true to binarize labels (not implemented for all methods)') # TODO
     parser.add_argument('--k', type=int, default=2, help='sequences to generate')
     parser.add_argument('--GNN_model_id', type=int, default=116, help='model id for ContactGNN')
     parser.add_argument('--save_npy', action='store_true', help='true to save seq as .npy')
@@ -35,6 +36,23 @@ def getArgs():
     if args.method != 'random' and args.sample_folder is None:
         args.sample_folder = osp.join(args.data_folder, 'samples', 'sample{}'.format(args.sample))
     return args
+
+def str2bool(v):
+    """
+    Helper function for argparser, converts str to boolean for various string inputs.
+    https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
+
+    Inputs:
+        v: string
+    """
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 def get_random_seq(m, p_switch, k):
     seq = np.zeros((m, k))
@@ -87,6 +105,24 @@ def get_k_means_seq(m, y, k, kr = True):
     seq[np.arange(m), kmeans.labels_] = 1
     return seq
 
+def get_nmf_seq(m, y, k, binarize):
+    nmf = NMF(n_components = k, max_iter = 1000)
+    nmf.fit(y)
+    H = nmf.components_
+
+    print("NMF reconstruction error: {}".format(nmf.reconstruction_err_))
+
+    if binarize:
+        clust = np.argmax(H, axis = 0)
+        print(clust)
+        seq = np.zeros((m, k))
+        seq[np.arange(m), clust] = 1
+        print(seq)
+        return seq
+    else:
+        return H.T
+
+
 def writeSeq(seq, format, save_npy):
     m, k = seq.shape
     for j in range(k):
@@ -123,15 +159,25 @@ def main():
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
         seq = get_k_means_seq(args.m, y_diag, args.k)
         format = '%d'
+    elif args.method == 'nmf':
+        y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
+        seq = get_nmf_seq(args.m, y_diag, args.k, args.binarize)
+        format = '%.3e'
     else:
         raise Exception('Unkown method: {}'.format(args.method))
+
+    writeSeq(seq, format, args.save_npy)
+
+def test():
+    args = getArgs()
+    y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
+    seq = get_nmf_seq(args.m, y_diag, args.k, True)
+    format = '%.3e'
 
     for i in range(args.k):
         plt.plot(seq[:,i], label = i)
     plt.legend()
     plt.show()
-
-    writeSeq(seq, format, args.save_npy)
 
 
 if __name__ ==  "__main__":
