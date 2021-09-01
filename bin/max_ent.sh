@@ -8,7 +8,7 @@
 #SBATCH --mem-per-cpu=2000
 
 m=1024
-k=4
+k=2
 sample=1201
 dataFolder='/project2/depablo/erschultz/dataset_08_24_21'
 sampleFolder="$dataFolder/samples/sample$sample"
