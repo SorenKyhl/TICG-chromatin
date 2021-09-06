@@ -1,5 +1,5 @@
 """
-Script for comparing contacts after having already run max ent..
+Script for comparing contacts after having already run max ent.
 """
 import os
 import os.path as osp
@@ -9,7 +9,7 @@ import numpy as np
 import argparse
 
 sys.path.insert(1, '/home/erschultz/TICG-chromatin/scripts')
-from compare_contact import plotDistanceStratifiedPearsonCorrelation
+from compare_contact import plotDistanceStratifiedPearsonCorrelation, comparePCA
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
@@ -43,7 +43,8 @@ def main():
                             if it > max_it:
                                 max_it = it
                     yhat = np.load(osp.join(file2_path, 'iteration{}'.format(max_it), 'y.npy'))[:args.m, :args.m]
-                    plotDistanceStratifiedPearsonCorrelation(y, yhat, args, dir=file2_path)
+                    # plotDistanceStratifiedPearsonCorrelation(y, yhat, args, dir=file2_path)
+                    comparePCA(y, yhat, args, dir=file2_path)
 
 
 if __name__ == '__main__':

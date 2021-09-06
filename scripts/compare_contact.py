@@ -4,14 +4,16 @@ import sys
 
 import numpy as np
 import argparse
+import csv
+
+from scipy.stats import spearmanr, pearsonr
 
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
 
 import matplotlib.pyplot as plt
 
 sys.path.insert(1, '/home/erschultz/sequences_to_contact_maps')
-# sys.path.insert(1, 'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps')
+sys.path.insert(1, 'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps')
 from neural_net_utils.utils import calculateDistanceStratifiedCorrelation
 
 def getArgs():
@@ -24,6 +26,34 @@ def getArgs():
 
     args = parser.parse_args()
     return args
+
+def comparePCA(y, yhat, args, dir = ''):
+    # y
+    pca_y = PCA()
+    pca_y.fit(y)
+
+    # yhat
+    pca_yhat = PCA()
+    pca_yhat.fit(yhat)
+
+    results = [['Component Index', 'Accuracy', 'Pearson R']]
+
+    for i in range(5):
+        comp_y = pca_y.components_[i]
+        sign_y = np.sign(comp_y)
+
+        comp_yhat = pca_yhat.components_[i]
+        sign_yhat = np.sign(comp_yhat)
+
+        acc = np.sum((sign_yhat == sign_y)) / sign_y.size
+        acc = max(acc, 1 - acc)
+        corr, pval = pearsonr(comp_yhat, comp_y)
+        corr = abs(corr)
+        results.append([i, acc, corr])
+
+    with open(osp.join(dir, 'PCA_results.txt'), 'w', newline = '') as f:
+        wr = csv.writer(f, delimiter = '\t')
+        wr.writerows(results)
 
 # plotting functions
 def plotDistanceStratifiedPearsonCorrelation(y, yhat, args, dir = ''):
