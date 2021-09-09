@@ -5,6 +5,7 @@ import os
 import os.path as osp
 import sys
 
+import matplotlib
 import numpy as np
 import argparse
 
@@ -33,8 +34,10 @@ def main():
     y = np.load(osp.join(args.sample_folder, 'y.npy'))[:args.m, :args.m]
     y_diag_instance = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]
     plotContactMap(y_diag_instance, ofile = osp.join(args.sample_folder, 'y_diag_instance.png'), vmax = 'max')
+    v_max = np.max(y_diag_instance)
 
     methods = {'PCA', 'PCA_split', 'k_means', 'ground_truth', 'random', 'GNN', 'nmf', 'random'}
+    # methods = {'PCA_split'}
 
     for file in os.listdir(args.sample_folder):
         if file in methods:
@@ -57,7 +60,13 @@ def main():
                     else:
                         meanDist = generateDistStats(yhat)
                         yhat_diag_instance = diagonal_preprocessing(yhat, meanDist)
-                    plotContactMap(yhat_diag_instance, ofile = osp.join(max_it_path, 'y_diag_instance.png'), vmax = 'max')
+                    dif = yhat_diag_instance - y_diag_instance
+                    cmap = matplotlib.colors.LinearSegmentedColormap.from_list('custom',
+                                                     [(0, 'blue'),
+                                                     (0.5, 'white'),
+                                                      (1, 'red')], N=126)
+                    plotContactMap(dif, ofile = osp.join(max_it_path, 'dif.png'), vmin = 'min', vmax = 'max', cmap = cmap)
+                    plotContactMap(yhat_diag_instance, ofile = osp.join(max_it_path, 'y_diag_instance.png'), vmax = v_max)
                     plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag_instance, yhat_diag_instance, args, dir=file2_path)
                     comparePCA(y, yhat, args, dir=file2_path)
 

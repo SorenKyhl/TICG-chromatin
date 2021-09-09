@@ -22,7 +22,7 @@ def getArgs():
     args = parser.parse_args()
     return args
 
-def plotContactMap(y, ofile = None, title = None, vmin = 0, vmax = 1, size_in = 6, minVal = None, maxVal = None):
+def plotContactMap(y, ofile = None, title = None, vmin = 0, vmax = 1, size_in = 6, minVal = None, maxVal = None, cmap = None):
     """
     Plotting function for contact maps.
 
@@ -35,9 +35,10 @@ def plotContactMap(y, ofile = None, title = None, vmin = 0, vmax = 1, size_in = 
         minVal: values in y less than minVal are set to 0
         maxVal: values in y greater than maxVal are set to 0
     """
-    cmap = matplotlib.colors.LinearSegmentedColormap.from_list('custom',
-                                             [(0,    'white'),
-                                              (1,    'red')], N=126)
+    if cmap is None:
+        cmap = matplotlib.colors.LinearSegmentedColormap.from_list('custom',
+                                                 [(0,    'white'),
+                                                  (1,    'red')], N=126)
     if minVal is not None:
         ind = y < minVal
         y[ind] = 0
@@ -49,6 +50,8 @@ def plotContactMap(y, ofile = None, title = None, vmin = 0, vmax = 1, size_in = 
         vmax = np.mean(y)
     elif vmax == 'max':
         vmax = np.max(y)
+    if vmin == 'min':
+        vmin = np.min(y)
     ax = sns.heatmap(y, linewidth = 0, vmin = vmin, vmax = vmax, cmap = cmap)
     if title is not None:
         plt.title(title, fontsize = 16)
