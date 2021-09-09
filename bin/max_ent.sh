@@ -20,6 +20,7 @@ equilibSweeps=10000
 goalSpecified=1
 numIterations=50 # iteration 1 + numIterations is production run to get contact map
 overwrite=0
+scratchDir='/scratch/midway2/erschultz/TICG_maxent'
 
 source activate python3.8_pytorch1.8.1_cuda10.2
 module load jq
@@ -44,10 +45,10 @@ do
 
 	# apply max ent with newton's method
 	dir="${sampleFolder}/${method}/k${k}"
-	~/TICG-chromatin/maxent/bin/run.sh $dir $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite
+	~/TICG-chromatin/maxent/bin/run.sh $dir $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite $scratchDir
 
 	# compare results
 	prodIt=$(($numIterations+1))
 	cd $dir
-  python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --ifile1 "$sampleFolder/y.npy" --ifile2 "${dir}/iteration${prodIt}/y.npy"
+  python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${dir}/iteration${prodIt}/y.npy" --y_diag_instance "$sampleFolder/y_diag_instance.npy" --yhat_diag_instance "${dir}/iteration${prodIt}/y_diag_instance.npy"
 done

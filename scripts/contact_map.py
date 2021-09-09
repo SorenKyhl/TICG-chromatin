@@ -10,7 +10,7 @@ import seaborn as sns
 import argparse
 
 sys.path.insert(1, '/home/erschultz/sequences_to_contact_maps')
-# sys.path.insert(1, 'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps')
+sys.path.insert(1, 'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps')
 from neural_net_utils.utils import diagonal_preprocessing, generateDistStats
 
 def getArgs():
@@ -76,6 +76,7 @@ def main():
 
         meanDist = generateDistStats(y)
         y_diag_instance = diagonal_preprocessing(y, meanDist)
+        plotContactMap(y_diag_instance, ofile = 'y_diag_instance.png', vmax = 'max')
         np.save('y_diag_instance.npy', y_diag_instance)
 
 if __name__ == '__main__':

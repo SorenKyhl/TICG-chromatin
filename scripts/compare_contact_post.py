@@ -9,7 +9,12 @@ import numpy as np
 import argparse
 
 sys.path.insert(1, '/home/erschultz/TICG-chromatin/scripts')
+from contact_map import plotContactMap
 from compare_contact import plotDistanceStratifiedPearsonCorrelation, comparePCA
+
+sys.path.insert(1, '/home/erschultz/sequences_to_contact_maps')
+sys.path.insert(1, 'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps')
+from neural_net_utils.utils import diagonal_preprocessing, generateDistStats
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
@@ -26,8 +31,10 @@ def getArgs():
 def main():
     args = getArgs()
     y = np.load(osp.join(args.sample_folder, 'y.npy'))[:args.m, :args.m]
-    methods = {'PCA', 'PCA_split', 'k_means', 'ground_truth', 'random', 'GNN'}
-    # methods = {'random'}
+    y_diag_instance = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]
+    plotContactMap(y_diag_instance, ofile = osp.join(args.sample_folder, 'y_diag_instance.png'), vmax = 'max')
+
+    methods = {'PCA', 'PCA_split', 'k_means', 'ground_truth', 'random', 'GNN', 'nmf', 'random'}
 
     for file in os.listdir(args.sample_folder):
         if file in methods:
@@ -42,8 +49,16 @@ def main():
                             it = int(file3[9:])
                             if it > max_it:
                                 max_it = it
-                    yhat = np.load(osp.join(file2_path, 'iteration{}'.format(max_it), 'y.npy'))[:args.m, :args.m]
-                    # plotDistanceStratifiedPearsonCorrelation(y, yhat, args, dir=file2_path)
+                    max_it_path = osp.join(file2_path, 'iteration{}'.format(max_it))
+                    yhat = np.load(osp.join(max_it_path, 'y.npy'))[:args.m, :args.m].astype(float)
+                    yhat_diag_path = osp.join(max_it_path, 'y_diag_instance.npy')
+                    if osp.exists(yhat_diag_path):
+                        yhat_diag_instance = np.load(yhat_diag_path)
+                    else:
+                        meanDist = generateDistStats(yhat)
+                        yhat_diag_instance = diagonal_preprocessing(yhat, meanDist)
+                    plotContactMap(yhat_diag_instance, ofile = osp.join(max_it_path, 'y_diag_instance.png'), vmax = 'max')
+                    plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag_instance, yhat_diag_instance, args, dir=file2_path)
                     comparePCA(y, yhat, args, dir=file2_path)
 
 
