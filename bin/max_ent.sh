@@ -8,9 +8,9 @@
 #SBATCH --mem-per-cpu=2000
 
 m=1024
-k=2
+k=4
 sample=1201
-dataFolder='/project2/depablo/erschultz/dataset_08_24_21'
+dataFolder='/project2/depablo/erschultz/dataset_08_26_21'
 sampleFolder="$dataFolder/samples/sample$sample"
 gamma=0.00001
 gammaDiag=0.00001
@@ -19,7 +19,7 @@ productionSweeps=50000
 equilibSweeps=10000
 goalSpecified=1
 numIterations=50 # iteration 1 + numIterations is production run to get contact map
-overwrite=1
+overwrite=0
 
 source activate python3.8_pytorch1.8.1_cuda10.2
 module load jq
@@ -29,7 +29,7 @@ cd ~/TICG-chromatin/maxent/resources
 python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi=-1 --max_chi=1 --save_chi_for_max_ent --goal_specified $goalSpecified
 
 #'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
-for method in 'nmf'
+for method in 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
 do
 	printf "\n${method} k=${k}\n"
 	cd ~/TICG-chromatin/maxent/resources
