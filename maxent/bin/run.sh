@@ -146,7 +146,7 @@ touch track.log
 # other parameters
 configFileName='config.json'
 saveFileName='equilibrated.xyz'
-proj_bin="home/erschultz/maxent/bin" # location of algorithm scripts
+proj_bin="home/erschultz/TICG-chromatin/maxent/bin" # location of algorithm scripts
 nchis=$(head -1 "resources/chis.txt" | wc -w)
 k=$(jq .nspecies "resources/${configFileName}")
 ndiagchis=$(head -1 "resources/chis_diag.txt" | wc -w)
