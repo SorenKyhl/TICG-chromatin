@@ -19,7 +19,7 @@ productionSweeps=50000
 equilibSweeps=10000
 goalSpecified=1
 numIterations=50 # iteration 1 + numIterations is production run to get contact map
-overwrite=0
+overwrite=1
 scratchDir='/scratch/midway2/erschultz/TICG_maxent'
 
 source activate python3.8_pytorch1.8.1_cuda10.2
@@ -30,7 +30,7 @@ cd ~/TICG-chromatin/maxent/resources
 python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi=-1 --max_chi=1 --save_chi_for_max_ent --goal_specified $goalSpecified
 
 #'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
-for method in 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
+for method in 'k_means' 'PCA' 'PCA_split' 'nmf'
 do
 	printf "\n${method} k=${k}\n"
 	cd ~/TICG-chromatin/maxent/resources
