@@ -43,6 +43,7 @@ fi
 
 # apply max ent with newton's method
 dir="${sampleFolder}/${method}/k${k}"
+mkdir -p $dir
 ~/TICG-chromatin/maxent/bin/run.sh $dir $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite $scratchDir
 
 # compare results

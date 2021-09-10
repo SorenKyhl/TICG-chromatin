@@ -18,8 +18,6 @@
 #    |- chis_diag.txt
 #    |- obj_goal.txt (optional)
 #    |- obj_goal_diag.txt (optional)
-# |- bin
-#    |- algorithm scripts
 #
 # the maximum entropy procedure requires several files in the resources folder:
 # config.json:
@@ -111,23 +109,6 @@ num_iterations=${8:-50}
 overwrite=${9:-0}
 scratchDir=${10:-'/scratch/midway2/erschultz/TICG_maxent'}
 
-# set up scratch and output directory
-# scratchDir should already exist
-mkdir -p $outputDir
-cd $scratchDir
-mv resources/chis.txt .
-mv resources/chis_diag.txt .
-touch track.log
-
-# other parameters
-configFileName='config.json'
-saveFileName='equilibrated.xyz'
-proj_root=$(pwd)
-proj_bin="$(pwd)/bin"                # location of algorithm scripts
-nchis=$(head -1 "resources/chis.txt" | wc -w)
-k=$(jq .nspecies "resources/${configFileName}")
-ndiagchis=$(head -1 "resources/chis_diag.txt" | wc -w)
-
 # directory checks
 if [ -d $outputDir ]
 then
@@ -142,13 +123,29 @@ then
 	fi
 fi
 
-if [[ -d resources && -d bin ]]
-then
-	echo "resources and bin exist"
-else
-	echo "resources or bin directory do not exist"
+if ! [[ -d $scratchDir ]]
+	echo "scratchDir does not exist"
 	exit 1
 fi
+
+if ! [[ -d resources ]]
+	echo "resources does not exist"
+	exit 1
+fi
+
+# set up scratch and output directory
+cd $scratchDir
+mv resources/chis.txt .
+mv resources/chis_diag.txt .
+touch track.log
+
+# other parameters
+configFileName='config.json'
+saveFileName='equilibrated.xyz'
+proj_bin="home/erschultz/maxent/bin" # location of algorithm scripts
+nchis=$(head -1 "resources/chis.txt" | wc -w)
+k=$(jq .nspecies "resources/${configFileName}")
+ndiagchis=$(head -1 "resources/chis_diag.txt" | wc -w)
 
 run_simulation () {
 	STARTTIME=$(date +%s)
