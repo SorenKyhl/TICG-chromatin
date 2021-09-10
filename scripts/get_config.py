@@ -15,7 +15,7 @@ def getArgs():
     parser.add_argument('--nSweeps', type=int, help='set to change nSweeps')
     parser.add_argument('--seed', type=int, help='set to change random seed')
     parser.add_argument('--default_config', type=str, default='default_config.json', help='path to default config file')
-    parser.add_argument('--ofile', type=str, defalt='config.json', help='path to output config file')
+    parser.add_argument('--ofile', type=str, default='config.json', help='path to output config file')
 
     # chi arguments
     parser.add_argument('--chi', type=str2list, help='chi matrix using latex separator style (if None will be generated randomly)')

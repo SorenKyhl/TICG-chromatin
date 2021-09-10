@@ -12,6 +12,7 @@ numIterations=$8
 overwrite=$9
 scratchDir=$10
 method=$11
+echo $@
 
 sampleFolder="$dataFolder/samples/sample$sample"
 
