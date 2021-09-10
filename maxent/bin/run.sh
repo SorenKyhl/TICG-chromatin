@@ -137,12 +137,6 @@ then
 	exit 1
 fi
 
-# set up other files
-mkdir -p $outputDir
-mv resources/chis.txt .
-mv resources/chis_diag.txt .
-touch track.log
-
 # other parameters
 configFileName='config.json'
 saveFileName='equilibrated.xyz'
@@ -150,6 +144,12 @@ proj_bin="/home/erschultz/TICG-chromatin/maxent/bin" # location of algorithm scr
 nchis=$(head -1 "resources/chis.txt" | wc -w)
 k=$(jq .nspecies "resources/${configFileName}")
 ndiagchis=$(head -1 "resources/chis_diag.txt" | wc -w)
+
+# set up other files
+mkdir -p $outputDir
+mv resources/chis.txt .
+mv resources/chis_diag.txt .
+touch track.log
 
 run_simulation () {
 	STARTTIME=$(date +%s)
