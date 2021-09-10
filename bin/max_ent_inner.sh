@@ -11,6 +11,7 @@ goalSpecified=$7
 numIterations=$8
 overwrite=$9
 scratchDir=$10
+method=$11
 
 sampleFolder="$dataFolder/samples/sample$sample"
 

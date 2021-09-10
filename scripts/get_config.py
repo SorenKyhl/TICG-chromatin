@@ -145,10 +145,10 @@ class InteractionConverter():
         self.Psi = self.allStrings @ self.chi @ self.allStrings.T
 
 def main():
+    args = getArgs()
+
     with open(args.default_config, 'rb') as f:
         config = json.load(f)
-
-    args = getArgs()
 
     # process chi
     if args.chi is None:
