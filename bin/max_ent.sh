@@ -26,7 +26,7 @@ i=0
 for method in 'k_means' 'PCA' 'PCA_split'
 do
   ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite "${scratchDir}${i}" &
-  i=$($i + 1))
+  i=$(($i + 1))
 done
 
 wait
