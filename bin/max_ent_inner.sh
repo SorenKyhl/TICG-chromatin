@@ -26,8 +26,7 @@ resources="/home/erschultz/TICG-chromatin/maxent/resources"
 scratchDirResources="${scratchDir}/resources"
 mkdir -p $scratchDirResources
 cd $scratchDirResources
-
-printf "\n${method} k=${k}\n"
+cp "${scratchDirResources}/input1024.xyz" .
 
 # get config
 python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi=-1 --max_chi=1 --save_chi_for_max_ent --goal_specified $goalSpecified --default_config "${resources}/default_config.json"
