@@ -10,8 +10,8 @@ equilibSweeps=$6
 goalSpecified=$7
 numIterations=$8
 overwrite=$9
-scratchDir=$10
-method=$11
+scratchDir=${10}
+method=${11}
 echo $@
 
 sampleFolder="$dataFolder/samples/sample$sample"
@@ -20,7 +20,7 @@ sampleFolder="$dataFolder/samples/sample$sample"
 mode="plaid"
 gamma=0.00001
 gammaDiag=0.00001
-resources="~/TICG-chromatin/maxent/resources"
+resources="/home/erschultz/TICG-chromatin/maxent/resources"
 
 # move to scratch
 scratchDirResources="${scratchDir}/resources"
