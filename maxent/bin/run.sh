@@ -98,9 +98,6 @@
 #
 #	pchis.png, pchi
 
-# change to max ent directory
-cd ~/TICG-chromatin/maxent
-
 # command-line arguments
 today=$(date +'%m_%d_%y')
 outputDir=${1:-"/project2/depablo/erschultz/maxent_${today}"}
@@ -113,6 +110,14 @@ goal_specified=${7:-0}
 num_iterations=${8:-50}
 overwrite=${9:-0}
 scratchDir=${10:-'/scratch/midway2/erschultz/TICG_maxent'}
+
+# set up scratch and output directory
+# scratchDir should already exist
+mkdir -p $outputDir
+cd $scratchDir
+mv resources/chis.txt .
+mv resources/chis_diag.txt .
+touch track.log
 
 # other parameters
 configFileName='config.json'
@@ -185,15 +190,6 @@ run_simulation () {
 	ENDTIME=$(date +%s)
 	echo "finished iteration ${it}: $(($ENDTIME - $STARTTIME)) seconds"
 }
-
-# set up scratch and output directory
-mkdir -p $scratchDir
-mkdir -p $outputDir
-cp -r resources $scratchDir
-cd $scratchDir
-mv resources/chis.txt .
-mv resources/chis_diag.txt .
-touch track.log
 
 # iteration 0
 it=0

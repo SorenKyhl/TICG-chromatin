@@ -14,6 +14,8 @@ def getArgs():
     parser.add_argument('--dump_stats_frequency', type=int, help='set to change dump stats frequency')
     parser.add_argument('--nSweeps', type=int, help='set to change nSweeps')
     parser.add_argument('--seed', type=int, help='set to change random seed')
+    parser.add_argument('--default_config', type=str, default='default_config.json', help='path to default config file')
+    parser.add_argument('--ofile', type=str, defalt='config.json', help='path to output config file')
 
     # chi arguments
     parser.add_argument('--chi', type=str2list, help='chi matrix using latex separator style (if None will be generated randomly)')
@@ -143,7 +145,7 @@ class InteractionConverter():
         self.Psi = self.allStrings @ self.chi @ self.allStrings.T
 
 def main():
-    with open('default_config.json', 'rb') as f:
+    with open(args.default_config, 'rb') as f:
         config = json.load(f)
 
     args = getArgs()
@@ -220,7 +222,7 @@ def main():
     # save chipseq files
     config['chipseq_files'] = ['seq{}.txt'.format(i) for i in range(args.k)]
 
-    with open('config.json', 'w') as f:
+    with open(args.ofile, 'w') as f:
         json.dump(config, f, indent = 2)
 
 def test():

@@ -3,52 +3,32 @@
 #SBATCH --output=TICG_maxent.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=4
+#SBATCH --ntasks=7
 #SBATCH --mem-per-cpu=2000
 
 m=1024
 k=4
 sample=1201
 dataFolder='/project2/depablo/erschultz/dataset_08_26_21'
-sampleFolder="$dataFolder/samples/sample$sample"
-gamma=0.00001
-gammaDiag=0.00001
-mode="plaid"
 productionSweeps=50000
 equilibSweeps=10000
 goalSpecified=1
-numIterations=50 # iteration 1 + numIterations is production run to get contact map
+numIterations=5 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 scratchDir='/scratch/midway2/erschultz/TICG_maxent'
 
 source activate python3.8_pytorch1.8.1_cuda10.2
 module load jq
 
-# get config
-cd ~/TICG-chromatin/maxent/resources
-python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi=-1 --max_chi=1 --save_chi_for_max_ent --goal_specified $goalSpecified
-
+STARTTIME=$(date +%s)
+i=0
 #'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
-for method in 'k_means' 'PCA' 'PCA_split' 'nmf'
+for method in 'k_means' 'PCA' 'PCA_split'
 do
-	printf "\n${method} k=${k}\n"
-	cd ~/TICG-chromatin/maxent/resources
-	# generate sequences
-	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --k $k --sample $sample --data_folder $dataFolder --plot
-
-	# generate goals
-	if [ $goalSpecified -eq 1 ]
-	then
-		python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --k $k --contact_map "${sampleFolder}/y.npy"
-	fi
-
-	# apply max ent with newton's method
-	dir="${sampleFolder}/${method}/k${k}"
-	~/TICG-chromatin/maxent/bin/run.sh $dir $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite $scratchDir
-
-	# compare results
-	prodIt=$(($numIterations+1))
-	cd $dir
-  python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${dir}/iteration${prodIt}/y.npy" --y_diag_instance "$sampleFolder/y_diag_instance.npy" --yhat_diag_instance "${dir}/iteration${prodIt}/y_diag_instance.npy"
+  ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite "${scratchDir}${i}" &
+  i=$($i + 1))
 done
+
+wait
+ENDTIME=$(date +%s)
+echo "total time: $(($ENDTIME-$STARTTIME)) seconds"
