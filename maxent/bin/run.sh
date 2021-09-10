@@ -109,6 +109,14 @@ num_iterations=${8:-50}
 overwrite=${9:-0}
 scratchDir=${10:-'/scratch/midway2/erschultz/TICG_maxent'}
 
+# move to scratch
+if ! [[ -d $scratchDir ]]
+then
+	echo "scratchDir does not exist"
+	exit 1
+fi
+cd $scratchDir
+
 # directory checks
 if [ -d $outputDir ]
 then
@@ -123,21 +131,14 @@ then
 	fi
 fi
 
-if ! [[ -d $scratchDir ]]
-then
-	echo "scratchDir does not exist"
-	exit 1
-fi
-
 if ! [[ -d resources ]]
 then
 	echo "resources does not exist"
 	exit 1
 fi
 
-# set up scratch and output directory
+# set up other files
 mkdir -p $outputDir
-cd $scratchDir
 mv resources/chis.txt .
 mv resources/chis_diag.txt .
 touch track.log
