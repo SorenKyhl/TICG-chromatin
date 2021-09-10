@@ -124,16 +124,19 @@ then
 fi
 
 if ! [[ -d $scratchDir ]]
+then
 	echo "scratchDir does not exist"
 	exit 1
 fi
 
 if ! [[ -d resources ]]
+then
 	echo "resources does not exist"
 	exit 1
 fi
 
 # set up scratch and output directory
+mkdir -p $outputDir
 cd $scratchDir
 mv resources/chis.txt .
 mv resources/chis_diag.txt .
