@@ -7,7 +7,7 @@
 #SBATCH --mem-per-cpu=2000
 
 m=1024
-k=4
+k=2
 sample=1201
 dataFolder='/project2/depablo/erschultz/dataset_08_26_21'
 productionSweeps=50000
@@ -22,16 +22,10 @@ module load jq
 
 STARTTIME=$(date +%s)
 #'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
-for method in 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
+for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
 do
   ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite "${scratchDir}_${method}" $method > ~/TICG-chromatin/logFiles/TICG_${method}.log &
 done
-
-# k=2
-# for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
-# do
-#   ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite "${scratchDir}_${method}" $method > ~/TICG-chromatin/logFiles/TICG_${method}.log &
-# done
 #
 # k=6
 # for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
