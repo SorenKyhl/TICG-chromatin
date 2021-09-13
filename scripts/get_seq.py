@@ -201,6 +201,9 @@ def main():
     else:
         raise Exception('Unkown method: {}'.format(args.method))
 
+    m, k = seq.shape
+    assert m == args.m, "m mismatch: seq has {} particles not {}".format(m, args.m)
+    assert k == args.k, "k mismatch: seq has {} particle types not {}".format(k, args.k)
     writeSeq(seq, format, args.save_npy)
 
     if args.plot:
