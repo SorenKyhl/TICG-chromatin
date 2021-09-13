@@ -149,6 +149,7 @@ ndiagchis=$(head -1 "resources/chis_diag.txt" | wc -w)
 mkdir -p $outputDir
 mv resources/chis.txt .
 mv resources/chis_diag.txt .
+mv resources/*.png .
 touch track.log
 
 run_simulation () {
