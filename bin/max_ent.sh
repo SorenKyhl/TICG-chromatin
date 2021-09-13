@@ -22,7 +22,7 @@ module load jq
 
 STARTTIME=$(date +%s)
 #'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
-for method in 'ground_truth'
+for method in 'random'
 do
   ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite "${scratchDir}_${method}" $method > ~/TICG-chromatin/logFiles/TICG_${method}.log &
 done
