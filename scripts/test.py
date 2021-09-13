@@ -35,6 +35,7 @@ def check_seq():
                 seq[:, i] = seq_i
             if not np.array_equal(seq, x):
                 ids_to_check.add(int(file[6:]))
+                np.save(osp.join(file_dir, 'x.npy'), seq)
 
     print(sorted(ids_to_check))
 
