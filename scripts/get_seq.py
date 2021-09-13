@@ -22,8 +22,8 @@ def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     # '../../sequences_to_contact_maps/dataset_04_18_21'
     # "./project2/depablo/erschultz/dataset_04_18_21"
-    parser.add_argument('--data_folder', type=str, default='../sequences_to_contact_maps/dataset_04_18_21', help='location of input data')
-    parser.add_argument('--sample', type=int, default=2, help='sample id')
+    parser.add_argument('--data_folder', type=str, default='../sequences_to_contact_maps/dataset_08_26_21', help='location of input data')
+    parser.add_argument('--sample', type=int, default=1201, help='sample id')
     parser.add_argument('--sample_folder', type=str, help='location of input data')
     parser.add_argument('--method', type=str, default='k_means', help='method for assigning particle types')
     parser.add_argument('--m', type=int, default=1024, help='number of particles (will crop contact map)')
@@ -106,7 +106,12 @@ def get_k_means_seq(m, y, k, kr = True):
     if kr:
         yKR = np.log(knightRuiz(y))
     kmeans = KMeans(n_clusters = k)
-    kmeans.fit(yKR)
+    try:
+        kmeans.fit(yKR)
+    except ValueError as e:
+        print(e)
+        print('Not using KR')
+        kmeans.fit(y)
     seq = np.zeros((m, k))
     seq[np.arange(m), kmeans.labels_] = 1
     return seq, kmeans
@@ -215,9 +220,10 @@ def main():
 
 def test():
     args = getArgs()
+    args.k = 4
     y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
-    seq, args.clf = get_nmf_seq(args.m, y_diag, args.k, binarize = True)
-    # seq, args.clf = get_k_means_seq(args.m, y_diag, args.k, kr = True)
+    # seq, args.clf = get_nmf_seq(args.m, y_diag, args.k, binarize = True)
+    seq, args.clf = get_k_means_seq(args.m, y_diag, args.k, kr = True)
     args.X = y_diag
     format = '%.3e'
 
@@ -225,4 +231,4 @@ def test():
 
 
 if __name__ ==  "__main__":
-    main()
+    test()
