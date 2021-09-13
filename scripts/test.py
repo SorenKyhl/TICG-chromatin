@@ -21,9 +21,9 @@ def main():
 
 def check_seq():
     ids_to_check = set()
-    dir = "/project2/depablo/erschultz/dataset_08_26_21/samples"
-    # dir = '../sequences_to_contact_maps/dataset_08_26_21/samples'
-    k = 4
+    dir = "/project2/depablo/erschultz/dataset_08_24_21/samples"
+    # dir = '../sequences_to_contact_maps/dataset_08_24_21/samples'
+    k = 2
     m = 1024
     for file in os.listdir(dir):
         if file.startswith('sample'):
