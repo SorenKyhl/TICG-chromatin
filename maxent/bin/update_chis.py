@@ -26,6 +26,7 @@ def main():
     try:
         lastchis = list(allchis[int(args.it)])
     except IndexError as e:
+        print('Index Error')
         print('allchis:\n', allchis)
         raise
 
