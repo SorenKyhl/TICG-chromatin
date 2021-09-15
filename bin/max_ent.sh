@@ -7,9 +7,9 @@
 #SBATCH --mem-per-cpu=2000
 
 m=1024
-k=6
+k=4
 sample=1201
-dataFolder='/project2/depablo/erschultz/dataset_08_26_21'
+dataFolder='/project2/depablo/erschultz/dataset_08_24_21'
 productionSweeps=50000
 equilibSweeps=10000
 goalSpecified=1
@@ -28,5 +28,8 @@ do
 done
 
 wait
+
+python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
+
 ENDTIME=$(date +%s)
 echo "total time: $(($ENDTIME-$STARTTIME)) seconds"

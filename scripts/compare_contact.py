@@ -5,6 +5,7 @@ import sys
 import numpy as np
 import argparse
 import csv
+import json
 
 from scipy.stats import spearmanr, pearsonr
 
@@ -29,7 +30,7 @@ def getArgs():
     args = parser.parse_args()
     return args
 
-def comparePCA(y, yhat, args, dir = ''):
+def comparePCA(y, yhat, dir = ''):
     # y
     pca_y = PCA()
     pca_y.fit(y)
@@ -76,12 +77,21 @@ def plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, args, d
     n, n = y.shape
     triu_ind = np.triu_indices(n)
     overall_corr_diag, _ = pearsonr(y_diag[triu_ind], yhat_diag[triu_ind])
+    overall_corr_diag = np.round(overall_corr_diag, 3)
 
     overall_corr, corr_arr = calculateDistanceStratifiedCorrelation(y, yhat, mode = 'pearson')
-    avg = np.nanmean(corr_arr)
-    title = 'Overall Pearson R: {}'.format(np.round(overall_corr, 3))
-    title +='\nAvg Dist Pearson R: {}'.format(np.round(avg, 3))
-    title +='\nSCC: {}'.format(np.round(overall_corr_diag, 3))
+    avg = np.round(np.nanmean(corr_arr), 3)
+    overall_corr = np.round(overall_corr, 3)
+    title = 'Overall Pearson R: {}'.format(overall_corr)
+    title +='\nAvg Dist Pearson R: {}'.format(avg)
+    title +='\nSCC: {}'.format(overall_corr_diag)
+
+    # save correlations to json
+    with open(osp.join(dir, 'distance_pearson.json'), 'w') as f:
+        temp_dict = {'overall_pearson': overall_corr,
+                     'scc': overall_corr_diag,
+                     'avg_dist_pearson': avg}
+        json.dump(temp_dict, f)
 
     plt.plot(np.arange(args.m-2), corr_arr, color = 'black')
     plt.ylim(-0.5, 1)
@@ -110,6 +120,7 @@ def main():
         y_diag_instance = diagonal_preprocessing(yhat, meanDist)
 
     plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag_instance, yhat_diag_instance, args)
+    comparePCA(y, yhat)
 
 
 if __name__ == '__main__':

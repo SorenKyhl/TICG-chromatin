@@ -19,7 +19,7 @@ from neural_net_utils.utils import diagonal_preprocessing, generateDistStats
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
-    parser.add_argument('--data_folder', type=str, default='../sequences_to_contact_maps/dataset_08_24_21', help='location of input data')
+    parser.add_argument('--data_folder', type=str, default='../sequences_to_contact_maps/dataset_08_26_21', help='location of input data')
     parser.add_argument('--sample', type=int, default=1201, help='sample id')
     parser.add_argument('--sample_folder', type=str, help='location of input data')
     parser.add_argument('--m', type=int, default=1024, help='number of particles')
@@ -68,7 +68,7 @@ def main():
                     plotContactMap(dif, ofile = osp.join(max_it_path, 'dif.png'), vmin = 'min', vmax = 'max', cmap = cmap)
                     plotContactMap(yhat_diag_instance, ofile = osp.join(max_it_path, 'y_diag_instance.png'), vmax = v_max)
                     plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag_instance, yhat_diag_instance, args, dir=file2_path)
-                    comparePCA(y, yhat, args, dir=file2_path)
+                    comparePCA(y, yhat, dir=file2_path)
 
 
 if __name__ == '__main__':
