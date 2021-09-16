@@ -8,7 +8,7 @@
 
 m=1024
 k=4
-sample=1201
+sample=1202
 dataFolder='/project2/depablo/erschultz/dataset_08_24_21'
 productionSweeps=50000
 equilibSweeps=10000
@@ -20,14 +20,26 @@ scratchDir='/scratch/midway2/erschultz/TICG'
 source activate python3.8_pytorch1.8.1_cuda10.2
 module load jq
 
-STARTTIME=$(date +%s)
-#'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
+# initialize log files
 for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
 do
-  ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite "${scratchDir}_${method}" $method > ~/TICG-chromatin/logFiles/TICG_${method}.log &
+  ofile="~/TICG-chromatin/logFiles/TICG_${method}.log"
+  rm $ofile
+  touch $ofile
 done
 
-wait
+STARTTIME=$(date +%s)
+for sample in 1202 1203
+do
+  #'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
+  for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
+  do
+    ofile="~/TICG-chromatin/logFiles/TICG_${method}.log"
+    ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite "${scratchDir}_${method}" $method >> $ofile &
+  done
+  wait
+done
+
 
 python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
 
