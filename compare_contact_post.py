@@ -31,7 +31,7 @@ def getArgs():
     args = parser.parse_args()
     if args.sample_folder is None:
         args.sample_folder = osp.join(args.data_folder, 'samples', 'sample{}'.format(args.sample))
-	print(args.sample_folder)
+        print(args.sample_folder)
     return args
 
 def main():
