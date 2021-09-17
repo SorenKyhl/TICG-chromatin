@@ -13,8 +13,13 @@ from sklearn.decomposition import PCA
 
 import matplotlib.pyplot as plt
 
-sys.path.insert(1, '/home/erschultz/sequences_to_contact_maps')
-sys.path.insert(1, 'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps')
+paths = ['/home/erschultz/sequences_to_contact_maps',
+        '/home/eric/Research/sequences_to_contact_maps',
+        'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
+for p in paths:
+    if osp.exists(p):
+        sys.path.insert(1, p)
+
 from neural_net_utils.utils import calculateDistanceStratifiedCorrelation, diagonal_preprocessing, generateDistStats
 
 def getArgs():
@@ -77,14 +82,9 @@ def plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, args, d
     n, n = y.shape
     triu_ind = np.triu_indices(n)
     overall_corr_diag, _ = pearsonr(y_diag[triu_ind], yhat_diag[triu_ind])
-    overall_corr_diag = np.round(overall_corr_diag, 3)
 
     overall_corr, corr_arr = calculateDistanceStratifiedCorrelation(y, yhat, mode = 'pearson')
-    avg = np.round(np.nanmean(corr_arr), 3)
-    overall_corr = np.round(overall_corr, 3)
-    title = 'Overall Pearson R: {}'.format(overall_corr)
-    title +='\nAvg Dist Pearson R: {}'.format(avg)
-    title +='\nSCC: {}'.format(overall_corr_diag)
+    avg = np.nanmean(corr_arr)
 
     # save correlations to json
     with open(osp.join(dir, 'distance_pearson.json'), 'w') as f:
@@ -92,6 +92,16 @@ def plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, args, d
                      'scc': overall_corr_diag,
                      'avg_dist_pearson': avg}
         json.dump(temp_dict, f)
+
+    # round
+    overall_corr_diag = np.round(overall_corr_diag, 3)
+    avg = np.round(avg, 3)
+    overall_corr = np.round(overall_corr, 3)
+
+    # format title
+    title = 'Overall Pearson R: {}'.format(overall_corr)
+    title +='\nAvg Dist Pearson R: {}'.format(avg)
+    title +='\nSCC: {}'.format(overall_corr_diag)
 
     plt.plot(np.arange(args.m-2), corr_arr, color = 'black')
     plt.ylim(-0.5, 1)

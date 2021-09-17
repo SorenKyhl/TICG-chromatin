@@ -23,7 +23,7 @@ module load jq
 # initialize log files
 for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
 do
-  ofile="~/TICG-chromatin/logFiles/TICG_${method}.log"
+  ofile="/home/erschultz/TICG-chromatin/logFiles/TICG_${method}.log"
   rm $ofile
   touch $ofile
 done
@@ -34,14 +34,14 @@ do
   #'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
   for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
   do
-    ofile="~/TICG-chromatin/logFiles/TICG_${method}.log"
+    ofile="/home/erschultz/TICG-chromatin/logFiles/TICG_${method}.log"
     ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite "${scratchDir}_${method}" $method >> $ofile &
   done
   wait
 done
 
 
-python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
+python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples 1201 1202 1203
 
 ENDTIME=$(date +%s)
 echo "total time: $(($ENDTIME-$STARTTIME)) seconds"

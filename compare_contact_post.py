@@ -9,12 +9,16 @@ import matplotlib
 import numpy as np
 import argparse
 
-sys.path.insert(1, '/home/erschultz/TICG-chromatin/scripts')
-from contact_map import plotContactMap
-from compare_contact import plotDistanceStratifiedPearsonCorrelation, comparePCA
+from scripts.contact_map import plotContactMap
+from scripts.compare_contact import plotDistanceStratifiedPearsonCorrelation, comparePCA
 
-sys.path.insert(1, '/home/erschultz/sequences_to_contact_maps')
-sys.path.insert(1, 'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps')
+paths = ['/home/erschultz/sequences_to_contact_maps',
+        '/home/eric/Research/sequences_to_contact_maps',
+        'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
+for p in paths:
+    if osp.exists(p):
+        sys.path.insert(1, p)
+
 from neural_net_utils.utils import diagonal_preprocessing, generateDistStats
 
 def getArgs():
