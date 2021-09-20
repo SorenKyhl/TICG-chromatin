@@ -105,6 +105,11 @@ public:
 	bool visit_tracking;
 	bool update_contacts_distance;
 
+
+	std::vector<std::vector<double>> Smatrix;
+	std::string Smatrix_filename;
+	bool smatrix_on;
+
 	// methods
 	void run();
 	void setupContacts();
@@ -140,4 +145,6 @@ public:
 	void dumpEnergy(int sweep, double bonded, double nonbonded, double diagonal, double boundary);
 	void dumpObservables(int sweep);
 	void dumpContacts(int sweep);
+
+	void setupSmatrix();
 };

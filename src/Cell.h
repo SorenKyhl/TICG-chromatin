@@ -31,6 +31,7 @@ public:
 	double getEnergy(const Eigen::MatrixXd &chis);
 	double getDiagEnergy(const std::vector<double> diag_chis);
 	double getBoundaryEnergy(const double boundary_chi, const double delta);
+	double getSmatrixEnergy(const std::vector<std::vector<double>> &Smatrix);
 
 };
 

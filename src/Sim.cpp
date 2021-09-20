@@ -14,6 +14,7 @@ void read_json(const nlohmann::json& json, T& var, std::string varname) {
 
 void Sim::run() {
 	readInput();            // load parameters from config.json
+	setupSmatrix();
 	calculateParameters();  // calculates derived parameters
 	makeOutputFiles();      // open files 
 	initialize();           // set particle positions and construct bonds
@@ -225,6 +226,8 @@ void Sim::readInput() {
 	assert(config.contains("update_contacts_distance")); update_contacts_distance = config["update_contacts_distance"];
 	assert(config.contains("boundary_attract_on")); boundary_attract_on = config["boundary_attract_on"];
 	assert(config.contains("boundary_chi")); boundary_chi  = config["boundary_chi"];
+	assert(config.contains("Smatrix_filename")); Smatrix_filename = config["Smatrix_filename"];
+	assert(config.contains("smatrix_on")); smatrix_on = config["smatrix_on"];
 
 	//cellcount_on = config["cellcount_on"];
 
@@ -464,7 +467,14 @@ double Sim::getNonBondedEnergy(const std::unordered_set<Cell*>& flagged_cells) {
 	double U = grid.densityCapEnergy(flagged_cells);
 	if (plaid_on)
 	{
-		U += grid.energy(flagged_cells, chis);
+		if (smatrix_on)
+		{
+			U += grid.SmatrixEnergy(flagged_cells, Smatrix);
+		}
+		else
+		{
+			U += grid.energy(flagged_cells, chis);
+		}
 	}
 	if (diagonal_on)
 	{
@@ -1254,3 +1264,17 @@ void Sim::dumpContacts(int sweep) {
 	}
 }
 
+void Sim::setupSmatrix() {
+	std::ifstream smatrixfile(Smatrix_filename);
+
+	Smatrix.resize(nbeads);
+	for (int i=0; i<nbeads; i++)
+	{
+		Smatrix[i].resize(nbeads);
+		for (int j=0; j<nbeads; j++)
+		{
+			smatrixfile >> Smatrix[i][j];
+		}
+	}
+	std::cout << "loaded Smatrix, first element:" << Smatrix[0][0] << std::endl;
+}

@@ -92,6 +92,27 @@ double Cell::getEnergy(const Eigen::MatrixXd &chis) {
 	return U;
 };
 
+double Cell::getSmatrixEnergy(const std::vector<std::vector<double>> &Smatrix)
+{
+	double U = 0;
+
+	std::vector<int> indices;
+	int imax = (int) contains.size();
+	for (const auto& elem : contains)
+	{
+		indices.push_back(elem->id);
+	}
+
+	for (int i=0; i<imax-1; i++)
+	{
+		for(int j=i+1; j<imax; j++)
+		{
+			U += Smatrix[i][j];
+		}
+	}
+	return U;
+}
+
 double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
 	for (int i=0; i<diag_nbins; i++)
 	{

@@ -151,6 +151,16 @@ double Grid::boundaryEnergy(const std::unordered_set<Cell*>& flagged_cells, cons
 	return U;
 };
 
+double Grid::SmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Smatrix) {
+	// nonbonded volume interactions
+	double U = 0; 
+	for(Cell* cell : flagged_cells)
+	{
+		U += cell->getSmatrixEnergy(Smatrix);
+	}
+	return U;
+};
+
 double Grid::get_ij_Contacts(int i, int j) 
 {
 	// calculates average phi_i phi_j

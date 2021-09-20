@@ -38,6 +38,8 @@ public:
 	double energy(const std::unordered_set<Cell*>& flagged_cells, const Eigen::MatrixXd &chis);
 	double diagEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<double> diag_chis);
 	double boundaryEnergy(const std::unordered_set<Cell*>& flagged_cells, const double boundary_chi);
+	double boundaryEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Smatrix);
+	double SmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Smatrix);
 	double get_ij_Contacts(int i, int j) ;
 	void getDiagObs(std::vector<double> &diag_obs);
 	double cellCount();
