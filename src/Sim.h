@@ -106,8 +106,8 @@ public:
 	bool update_contacts_distance;
 
 
-	std::vector<std::vector<double>> Smatrix;
-	std::string Smatrix_filename;
+	std::vector<std::vector<double>> smatrix;
+	std::string smatrix_filename;
 	bool smatrix_on;
 
 	// methods
