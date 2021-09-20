@@ -107,7 +107,7 @@ double Cell::getSmatrixEnergy(const std::vector<std::vector<double>> &Smatrix)
 	{
 		for(int j=i+1; j<imax; j++)
 		{
-			U += Smatrix[i][j];
+			U += Smatrix[i][j] * beadvol/vol;
 		}
 	}
 	return U;
