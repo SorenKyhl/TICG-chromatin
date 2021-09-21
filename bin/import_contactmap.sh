@@ -9,4 +9,4 @@
 # activate python
 source activate python3.8_pytorch1.8.1_cuda10.2
 
-python3 import_contactmap_straw.py
+python3 ~/TICG-chromatin/scripts/import_contactmap_straw.py

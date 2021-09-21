@@ -1,5 +1,6 @@
 import os
 import os.path as osp
+import sys
 
 import straw
 import pandas as pd
@@ -51,7 +52,10 @@ def import_contactmap_straw(filename, chrom=2, start=35000000, end=60575000, res
 
 def main():
     dataFolder ='/project2/depablo/erschultz/dataset_09_21_21'
+    os.mkdir(dataFolder, mode = 0o755)
+    os.mkdir(osp.join(dataFolder, 'samples'), mode = 0o755)
     sample = 'sample1'
+
     sampleFolder = osp.join(dataFolder, 'samples', sample)
     os.mkdir(sampleFolder, mode = 0o755)
 
@@ -64,10 +68,8 @@ def main():
 
     meanDist = generateDistStats(hic)
     y_diag_instance = diagonal_preprocessing(hic, meanDist)
-    plotContactMap(y_diag_instance, ofile = osp.join(sampleFolder, 'y_diag_instance.png'), vmax = 'max')
-    np.save(osp.join(sampleFolder, 'y_diag_instance.npy'), y_diag_instance)
-
-
+    plotContactMap(y_diag_instance, ofile = osp.join(sampleFolder, 'y_diag.png'), vmax = 'max')
+    np.save(osp.join(sampleFolder, 'y_diag.npy'), y_diag_instance)
 
 if __name__ == '__main__':
     main()
