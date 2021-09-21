@@ -32,6 +32,8 @@ def import_contactmap_straw(filename, chrom=2, start=35000000, end=60575000, res
 
 def main():
     hic, xticks = import_contactmap_straw("https://s3.amazonaws.com/hicfiles/hiseq/degron/untreated/unsynchronized/combined.hic")
+    print(hic)
+
 
 if __name__ == '__main__':
     main()
