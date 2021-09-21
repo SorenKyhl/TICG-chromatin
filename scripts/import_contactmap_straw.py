@@ -70,8 +70,8 @@ def main():
 
     meanDist = generateDistStats(hic)
     y_diag_instance = diagonal_preprocessing(hic, meanDist)
-    plotContactMap(y_diag_instance, ofile = osp.join(sampleFolder, 'y_diag.png'), vmax = 'max')
-    np.save(osp.join(sampleFolder, 'y_diag.npy'), y_diag_instance)
+    plotContactMap(y_diag_instance, ofile = osp.join(sampleFolder, 'y_diag_instance.png'), vmax = 'max')
+    np.save(osp.join(sampleFolder, 'y_diag_instance.npy'), y_diag_instance)
 
 if __name__ == '__main__':
     main()

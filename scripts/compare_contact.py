@@ -127,7 +127,7 @@ def main():
         yhat_diag_instance = np.load(args.yhat_diag_instance)[:args.m, :args.m]
     else:
         meanDist = generateDistStats(yhat)
-        y_diag_instance = diagonal_preprocessing(yhat, meanDist)
+        yhat_diag_instance = diagonal_preprocessing(yhat, meanDist)
 
     plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag_instance, yhat_diag_instance, args)
     comparePCA(y, yhat)
