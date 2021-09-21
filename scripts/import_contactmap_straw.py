@@ -52,6 +52,7 @@ def import_contactmap_straw(filename, chrom=2, start=35000000, end=60575000, res
 
 def main():
     dataFolder ='/project2/depablo/erschultz/dataset_09_21_21'
+    # dataFolder='dataset_09_21_21'
     os.mkdir(dataFolder, mode = 0o755)
     os.mkdir(osp.join(dataFolder, 'samples'), mode = 0o755)
     sample = 'sample1'
@@ -61,6 +62,7 @@ def main():
 
     ofile = osp.join(sampleFolder, 'y.npy')
     hic, xticks = import_contactmap_straw("https://s3.amazonaws.com/hicfiles/hiseq/degron/untreated/unsynchronized/combined.hic")
+    print(hic.shape)
 
     np.save(osp.join(sampleFolder, 'y.npy'), hic)
 
