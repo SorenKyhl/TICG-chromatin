@@ -13,8 +13,8 @@ dataFolder='/project2/depablo/erschultz/dataset_09_21_21'
 productionSweeps=50000
 equilibSweeps=10000
 goalSpecified=1
-numIterations=2 # iteration 1 + numIterations is production run to get contact map
-overwrite=0
+numIterations=100 # iteration 1 + numIterations is production run to get contact map
+overwrite=1
 scratchDir='/scratch/midway2/erschultz/TICG'
 
 source activate python3.8_pytorch1.8.1_cuda10.2
