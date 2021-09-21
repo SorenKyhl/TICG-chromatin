@@ -5,6 +5,21 @@ import straw
 import pandas as pd
 import numpy as np
 
+# ensure that I can find contact_map
+abspath = osp.abspath(__file__)
+dname = osp.dirname(abspath)
+sys.path.insert(0, dname)
+from contact_map import *
+
+paths = ['/home/erschultz/sequences_to_contact_maps',
+        '/home/eric/Research/sequences_to_contact_maps',
+        'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
+for p in paths:
+    if osp.exists(p):
+        sys.path.insert(1, p)
+
+from neural_net_utils.utils import diagonal_preprocessing, generateDistStats
+
 
 def import_contactmap_straw(filename, chrom=2, start=35000000, end=60575000, resolution=25000):
 #def import_contactmap_straw(filename, chrom=2, start=22000000, end=60575000, resolution=25000):
@@ -36,12 +51,21 @@ def import_contactmap_straw(filename, chrom=2, start=35000000, end=60575000, res
 
 def main():
     dataFolder ='/project2/depablo/erschultz/dataset_09_21_21'
-    sample = 1
-    sampleFolder = osp.join(dataFolder, sample)
+    sample = 'sample1'
+    sampleFolder = osp.join(dataFolder, 'samples', sample)
     os.mkdir(sampleFolder, mode = 0o755)
-    ofile = osp.join(sampleFolder, )
+
+    ofile = osp.join(sampleFolder, 'y.npy')
     hic, xticks = import_contactmap_straw("https://s3.amazonaws.com/hicfiles/hiseq/degron/untreated/unsynchronized/combined.hic")
-    print(hic)
+
+    np.save(osp.join(sampleFolder, 'y.npy'), hic)
+
+    plotContactMap(hic, ofile = osp.join(sampleFolder, 'y.png'), vmax = 'mean')
+
+    meanDist = generateDistStats(hic)
+    y_diag_instance = diagonal_preprocessing(hic, meanDist)
+    plotContactMap(y_diag_instance, ofile = osp.join(sampleFolder, 'y_diag_instance.png'), vmax = 'max')
+    np.save(osp.join(sampleFolder, 'y_diag_instance.npy'), y_diag_instance)
 
 
 
