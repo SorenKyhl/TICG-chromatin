@@ -1,6 +1,10 @@
+import os
+import os.path as osp
+
 import straw
 import pandas as pd
 import numpy as np
+
 
 def import_contactmap_straw(filename, chrom=2, start=35000000, end=60575000, resolution=25000):
 #def import_contactmap_straw(filename, chrom=2, start=22000000, end=60575000, resolution=25000):
@@ -31,7 +35,13 @@ def import_contactmap_straw(filename, chrom=2, start=35000000, end=60575000, res
     return hic, xticks
 
 def main():
+    dataFolder ='/project2/depablo/erschultz/dataset_09_21_21'
+    sample = 1
+    sampleFolder = osp.join(dataFolder, sample)
+    os.mkdir(sampleFolder, mode = 0o755)
+    ofile = osp.join(sampleFolder, )
     hic, xticks = import_contactmap_straw("https://s3.amazonaws.com/hicfiles/hiseq/degron/untreated/unsynchronized/combined.hic")
+
 
 if __name__ == '__main__':
     main()
