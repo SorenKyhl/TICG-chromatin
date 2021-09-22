@@ -7,13 +7,13 @@
 #SBATCH --mem-per-cpu=2000
 
 m=1024
-k=2
-sample=1202
-dataFolder='/project2/depablo/erschultz/dataset_08_24_21'
+k=4
+sample=1
+dataFolder='/project2/depablo/erschultz/dataset_09_21_21'
 productionSweeps=50000
 equilibSweeps=10000
 goalSpecified=1
-numIterations=50 # iteration 1 + numIterations is production run to get contact map
+numIterations=100 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 scratchDir='/scratch/midway2/erschultz/TICG'
 
@@ -29,21 +29,16 @@ do
 done
 
 STARTTIME=$(date +%s)
-for sample in 1202 1203
+#'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
+for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
 do
-  echo $sample
-  #'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
-  for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
-  do
-    ofile="/home/erschultz/TICG-chromatin/logFiles/TICG_${method}.log"
-    ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite "${scratchDir}_${method}" $method >> $ofile &
-  done
-  wait
-  echo
+  ofile="/home/erschultz/TICG-chromatin/logFiles/TICG_${method}.log"
+  ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite "${scratchDir}_${method}" $method >> $ofile &
 done
+wait
 
 
-python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples 1201-1202-1203
+python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples 1
 
 ENDTIME=$(date +%s)
 echo "total time: $(($ENDTIME-$STARTTIME)) seconds"

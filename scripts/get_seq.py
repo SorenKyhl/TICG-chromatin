@@ -175,11 +175,11 @@ def main():
         seq = get_random_seq(args.m, args.p_switch, args.k)
         format = '%d'
     elif args.method == 'PCA':
-        y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
+        y_diag = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]
         seq = get_PCA_seq(args.m, y_diag, args.k)
         format = '%.3e'
     elif args.method == 'PCA_split':
-        y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
+        y_diag = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]
         seq = get_PCA_split_seq(args.m, y_diag, args.k)
         format = '%.3e'
     elif args.method == 'ground_truth':
@@ -194,12 +194,12 @@ def main():
             raise Exception('seq path does not exist: {}'.format(seq_path))
         format = '%.3e'
     elif args.method == 'k_means':
-        y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
+        y_diag = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]
         seq, args.clf = get_k_means_seq(args.m, y_diag, args.k)
         args.X = y_diag
         format = '%d'
     elif args.method == 'nmf':
-        y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
+        y_diag = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]
         seq, args.clf = get_nmf_seq(args.m, y_diag, args.k, args.binarize)
         args.X = y_diag
         format = '%.3e'
@@ -221,7 +221,7 @@ def main():
 def test():
     args = getArgs()
     args.k = 4
-    y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
+    y_diag = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]
     # seq, args.clf = get_nmf_seq(args.m, y_diag, args.k, binarize = True)
     seq, args.clf = get_k_means_seq(args.m, y_diag, args.k, kr = True)
     args.X = y_diag
