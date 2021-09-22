@@ -228,6 +228,7 @@ void Sim::readInput() {
 	assert(config.contains("boundary_chi")); boundary_chi  = config["boundary_chi"];
 	assert(config.contains("smatrix_filename")); smatrix_filename = config["smatrix_filename"];
 	assert(config.contains("smatrix_on")); smatrix_on = config["smatrix_on"];
+	assert(config.contains("phi_solvent_max")); Cell::phi_solvent_max = config["phi_solvent_max"];
 
 	//cellcount_on = config["cellcount_on"];
 
@@ -242,13 +243,24 @@ void Sim::makeOutputFiles() {
 	std::cout << "making output files ... ";
 
 	// make and populate data output directory
-	const int dir_err = system("mkdir data_out");
+	std::string command = "mkdir " + data_out_filename;
+	const int dir_err = system(command.c_str());
 	if (dir_err == -1) {std::cout << "error making data_out directory" << std::endl;}
-		xyz_out = fopen("./data_out/output.xyz", "w");
-	energy_out = fopen("./data_out/energy.traj", "w");
-	obs_out = fopen("./data_out/observables.traj", "w");
-	diag_obs_out = fopen("./data_out/diag_observables.traj", "w");
-	density_out = fopen("./data_out/density.traj", "w");
+
+	xyz_out_filename = "./" + data_out_filename + "/output.xyz";
+	energy_out_filename = "./" + data_out_filename + "/energy.traj";
+	obs_out_filename = "./" + data_out_filename + "/observables.traj";
+	diag_obs_out_filename = "./" + data_out_filename + "/diag_observables.traj";
+	density_out_filename = "./" + data_out_filename + "/density.traj";
+
+
+	// fopen(char*, char*) function signature takes c strings...
+	// std::string overloads + operator and resturns std::string, need to convert back to c_str()
+	xyz_out = fopen(xyz_out_filename.c_str(), "w");
+	energy_out = fopen((energy_out_filename).c_str(), "w");
+	obs_out = fopen((obs_out_filename).c_str(), "w");
+	diag_obs_out = fopen((diag_obs_out_filename).c_str(), "w");
+	density_out = fopen((density_out_filename).c_str(), "w");
 
 	std::cout << "created successfully" << std::endl;
 }
@@ -1159,7 +1171,7 @@ void Sim::MCmove_grid() {
 
 
 void Sim::dumpData()  { 
-	xyz_out = fopen("./data_out/output.xyz", "a");
+	xyz_out = fopen(xyz_out_filename.c_str(), "a");
 	fprintf(xyz_out, "%d\n", nbeads);
 	fprintf(xyz_out, "atoms\n");
 
@@ -1181,7 +1193,7 @@ void Sim::dumpData()  {
 }
 
 void Sim::dumpEnergy(int sweep, double bonded=0, double nonbonded=0, double diagonal=0, double boundary=0) {
-	energy_out = fopen("./data_out/energy.traj", "a");
+	energy_out = fopen(energy_out_filename.c_str(), "a");
 	fprintf(energy_out, "%d\t %lf\t %lf\t %lf\t %lf\n", sweep, bonded, nonbonded, diagonal, boundary);
 	fclose(energy_out);
 }
@@ -1189,7 +1201,7 @@ void Sim::dumpEnergy(int sweep, double bonded=0, double nonbonded=0, double diag
 void Sim::dumpObservables(int sweep) {
 	if (plaid_on)
 	{
-		obs_out = fopen("./data_out/observables.traj", "a");
+		obs_out = fopen(obs_out_filename.c_str(), "a");
 		fprintf(obs_out, "%d", sweep);
 
 		for (int i=0; i<nspecies; i++)
@@ -1207,7 +1219,7 @@ void Sim::dumpObservables(int sweep) {
 
 	if (diagonal_on)
 	{
-		diag_obs_out = fopen("./data_out/diag_observables.traj", "a");
+		diag_obs_out = fopen(diag_obs_out_filename.c_str(), "a");
 		fprintf(diag_obs_out, "%d", sweep);
 
 		std::vector<double> diag_obs(diag_chis.size(), 0.0);
@@ -1224,7 +1236,7 @@ void Sim::dumpObservables(int sweep) {
 
 	if (dump_density)
 	{
-		density_out = fopen("./data_out/density.traj", "a");
+		density_out = fopen(density_out_filename.c_str(), "a");
 		fprintf(density_out, "%d", sweep);
 
 		double avg_density = 0;
@@ -1243,16 +1255,14 @@ void Sim::dumpObservables(int sweep) {
 }
 
 void Sim::dumpContacts(int sweep) {
-	std::string contact_map_filename;
-	if (track_contactmap)
-	{
+
+	if (track_contactmap){
 		// outputs new contact map, doesn't override
-		contact_map_filename = "./data_out/contacts" + std::to_string(sweep) + ".txt";
+		contact_map_filename = "./" + data_out_filename + "/contacts" + std::to_string(sweep) + ".txt";
 	}
-	else
-	{
+	else {
 		// overwrites contact file with most current values
-		contact_map_filename = "./data_out/contacts.txt";
+		contact_map_filename = "./" + data_out_filename + "/contacts.txt";
 	}
 
 	std::ofstream contactsOutFile(contact_map_filename);

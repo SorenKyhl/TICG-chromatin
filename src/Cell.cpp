@@ -5,6 +5,7 @@ int Cell::ntypes;
 int Cell::diag_nbins;
 double Cell::diag_binsize;
 bool Cell::diagonal_linear;
+double Cell::phi_solvent_max;
 
 void Cell::print() {
 	std::cout << r << "     N: " << contains.size() << std::endl;
@@ -42,14 +43,14 @@ void Cell::moveOut(Bead* bead) {
 };
 
 double Cell::getDensityCapEnergy() {
-	// Density in each cell is capped at 50%
+	// Density in each cell is capped at phi_solvent_max
 	// otherwise, incur a large energy penalty
 	
 	float phi_beads = contains.size()*beadvol/vol;
 	float phi_solvent = 1 - contains.size()*beadvol/vol;
 
 	double U = 0;
-	if (phi_solvent < 0.5)
+	if (phi_solvent < phi_solvent_max)
 	{
 		// high volume fraction occurs when more than 50% of the volume is occupied by beads
 		U = 99999999999*phi_beads;

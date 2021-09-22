@@ -22,11 +22,20 @@
 #include "Grid.h"
 #include "Sim.h"
 
-int main()
+int main(int argc, char* argv[])
 {
 	auto start = std::chrono::high_resolution_clock::now();
 
 	Sim mySim;
+
+	if (argc == 1) {
+		mySim.data_out_filename = "data_out";
+		std::cout << "data out:" << mySim.data_out_filename << std::endl;
+	}
+	else {
+		mySim.data_out_filename = argv[1];
+		std::cout << "data out:" << mySim.data_out_filename << std::endl;
+	}
 	mySim.run();
 
 	auto stop = std::chrono::high_resolution_clock::now();

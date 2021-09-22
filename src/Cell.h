@@ -23,6 +23,8 @@ public:
 	std::vector<double> diag_phis = std::vector<double>(diag_nbins);
 	static bool diagonal_linear;
 
+	static double phi_solvent_max;
+
 	void print();
 	void reset();
 	void moveIn(Bead* bead);
