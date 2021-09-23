@@ -14,7 +14,7 @@ void read_json(const nlohmann::json& json, T& var, std::string varname) {
 
 void Sim::run() {
 	readInput();            // load parameters from config.json
-	setupSmatrix();
+	if (smatrix_on) { setupSmatrix(); }
 	calculateParameters();  // calculates derived parameters
 	makeOutputFiles();      // open files 
 	initialize();           // set particle positions and construct bonds
@@ -1277,12 +1277,14 @@ void Sim::dumpContacts(int sweep) {
 void Sim::setupSmatrix() {
 	std::ifstream smatrixfile(smatrix_filename);
 
+	if ( !smatrixfile.good() ) {
+		throw std::runtime_error(smatrix_filename + " does not exist or cannot be opened");
+	}
+
 	smatrix.resize(nbeads);
-	for (int i=0; i<nbeads; i++)
-	{
+	for (int i=0; i<nbeads; i++) {
 		smatrix[i].resize(nbeads);
-		for (int j=0; j<nbeads; j++)
-		{
+		for (int j=0; j<nbeads; j++) {
 			smatrixfile >> smatrix[i][j];
 		}
 	}
