@@ -8,7 +8,7 @@ import numpy as np
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
-    parser.add_argument('--data_folder', type=str, default='../sequences_to_contact_maps/dataset_08_26_21', help='location of input data')
+    parser.add_argument('--data_folder', type=str, default='../sequences_to_contact_maps/dataset_09_21_21', help='location of input data')
     parser.add_argument('--sample', type=int, help='sample id')
     parser.add_argument('--samples', type=str2list, help='list of sample ids separated by -')
     parser.add_argument('--sample_folder', type=str, help='location of input data')
@@ -63,7 +63,7 @@ def loadData(args):
 
     for sample in args.samples:
         sample_folder = osp.join(args.data_folder, 'samples', 'sample{}'.format(sample))
-        for k in range(1, 5):
+        for k in range(1, 20):
             for method in methods:
                 json_file = osp.join(sample_folder, method, 'k{}'.format(k), 'distance_pearson.json')
                 if osp.exists(json_file):
@@ -102,7 +102,7 @@ def makeLatexTable(data, ofile):
                     data_mean = np.round(np.mean(data_list), 3)
                     if len(data_list) > 1:
                         data_std = np.round(np.std(data_list), 3)
-                        text += " & {} \pm {}".format(data_mean, data_std)
+                        text += " & {} $\pm$ {}".format(data_mean, data_std)
                     else:
                         text += " & {}".format(data_mean)
 
