@@ -64,15 +64,20 @@ def loadData(args):
     for sample in args.samples:
         sample_folder = osp.join(args.data_folder, 'samples', 'sample{}'.format(sample))
         for k in range(1, 20):
+            found_anything = False
             for method in methods:
                 json_file = osp.join(sample_folder, method, 'k{}'.format(k), 'distance_pearson.json')
                 if osp.exists(json_file):
+                    found_anything = True
                     print("Loading: {}".format(json_file))
                     with open(json_file, 'r') as f:
                         results = json.load(f)
                         data[k][method]['overall_pearson'].append(results['overall_pearson'])
                         data[k][method]['scc'].append(results['scc'])
                         data[k][method]['avg_dist_pearson'].append(results['avg_dist_pearson'])
+            if found_anything:
+                print()
+                # just making output look nicer
 
     return data
 
