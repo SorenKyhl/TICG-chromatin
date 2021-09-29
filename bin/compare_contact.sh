@@ -8,7 +8,7 @@
 #SBATCH --mem-per-cpu=2000
 
 
-dataFolder='/project2/depablo/erschultz/dataset_08_24_21'
+dataFolder='/project2/depablo/erschultz/dataset_08_26_21'
 sample=1201
 
 source activate python3.8_pytorch1.8.1_cuda10.2

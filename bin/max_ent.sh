@@ -8,7 +8,7 @@
 
 m=1024
 k=4
-sample=1202
+sample=1203
 dataFolder='/project2/depablo/erschultz/dataset_08_26_21'
 productionSweeps=50000
 equilibSweeps=10000
@@ -38,7 +38,7 @@ done
 wait
 
 
-python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples 1201-1202
+python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples 1201-1202-1203
 
 ENDTIME=$(date +%s)
 echo "total time: $(($ENDTIME-$STARTTIME)) seconds"
