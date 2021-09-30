@@ -149,7 +149,7 @@ def get_epigenetic_seq(data_folder, k, start=35000000, end=60575000, resolution=
 
     # sort based on coverage
     file_list = sorted(file_list, key = lambda pair: pair[1], reverse = True)
-    print(file_list)
+    print(file_list[:k])
 
     # choose k marks with most coverage
     seq = np.zeros((m, k))
