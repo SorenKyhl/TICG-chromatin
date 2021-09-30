@@ -32,6 +32,7 @@ def getArgs():
     parser.add_argument('--normalize', type=str2bool, default=False, help='true to normalize labels to [0,1] (not implemented for all methods)') # TODO
     parser.add_argument('--k', type=int, default=2, help='sequences to generate')
     parser.add_argument('--GNN_model_id', type=int, default=116, help='model id for ContactGNN')
+    parser.add_argument('--epigenetic_data_folder', type=str, default='../sequences_to_contact_maps/chip_seq_data/fold_change_control/processed', help='location of epigenetic data')
     parser.add_argument('--save_npy', action='store_true', help='true to save seq as .npy')
     parser.add_argument('--plot', action='store_true', help='true to plot seq as .png')
 
@@ -132,6 +133,31 @@ def get_nmf_seq(m, y, k, binarize):
         seq = H.T
         return seq, None
 
+def get_epigenetic_seq(data_folder, k, start=35000000, end=60575000, resolution=25000, chr='2'):
+    start = int(start / resolution)
+    end = int(end / resolution)
+    m = end - start + 1
+
+    # store file names and coverage in list
+    file_list = [] # list of tuples (file_name, coverage)
+    for file in os.listdir(data_folder):
+        if file.startswith(chr + "_"):
+            coverage = float(file.split('_')[2])
+            file_list.append((file, coverage))
+
+    # sort based on coverage
+    file_list  = sorted(file_list, key = lambda pair: pair[1], reverse = True)
+    print(file_list)
+
+    # choose k marks with most coverage
+    seq = np.zeros((m, k))
+    for i, (file, _) in enumerate(file_list[:k]):
+        seq_i = np.load(osp.join(data_folder, file))
+        seq_i = seq_i[start:end+1, 1]
+        seq[:, i] = seq_i
+
+    return seq
+
 def writeSeq(seq, format, save_npy):
     m, k = seq.shape
     for j in range(k):
@@ -203,6 +229,9 @@ def main():
         seq, args.clf = get_nmf_seq(args.m, y_diag, args.k, args.binarize)
         args.X = y_diag
         format = '%.3e'
+    elif args.method == 'epigenetic':
+        seq = get_epigenetic_seq(args.epigenetic_data_folder, args.k)
+        format = '%d'
     else:
         raise Exception('Unkown method: {}'.format(args.method))
 
@@ -229,6 +258,11 @@ def test():
 
     plot_seq_exclusive(seq, clf=args.clf, X=args.X, show=True, save=True, title='help')
 
+def test_epi():
+    args = getArgs()
+    args.k = 10
+    seq = get_epigenetic_seq(args.epigenetic_data_folder, args.k)
 
 if __name__ ==  "__main__":
     main()
+    # test_epi()

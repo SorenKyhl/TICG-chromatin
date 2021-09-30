@@ -76,7 +76,7 @@ def loadData(args):
                         data[k][method]['scc'].append(results['scc'])
                         data[k][method]['avg_dist_pearson'].append(results['avg_dist_pearson'])
             if found_anything:
-                print()
+                print('\n')
                 # just making output look nicer
 
     return data
