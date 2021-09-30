@@ -9,7 +9,7 @@
 m=1024
 k=6
 sample=1
-dataFolder='/project2/depablo/erschultz/dataset_09_01_21'
+dataFolder='/project2/depablo/erschultz/dataset_09_02_21'
 productionSweeps=50000
 equilibSweeps=10000
 goalSpecified=1

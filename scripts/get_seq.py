@@ -142,16 +142,20 @@ def get_epigenetic_seq(data_folder, k, start=35000000, end=60575000, resolution=
     file_list = [] # list of tuples (file_name, coverage)
     for file in os.listdir(data_folder):
         if file.startswith(chr + "_"):
-            coverage = float(file.split('_')[2])
+            seq_i = np.load(osp.join(data_folder, file))
+            seq_i = seq_i[start:end+1, 1]
+            coverage = np.average(seq_i)
             file_list.append((file, coverage))
 
     # sort based on coverage
-    file_list  = sorted(file_list, key = lambda pair: pair[1], reverse = True)
+    file_list = sorted(file_list, key = lambda pair: pair[1], reverse = True)
     print(file_list)
 
     # choose k marks with most coverage
     seq = np.zeros((m, k))
-    for i, (file, _) in enumerate(file_list[:k]):
+    for i, (file, coverage) in enumerate(file_list[:k]):
+        if coverage == 0:
+            print("WARNING: mark {} has no coverage".format(file.split('_')[1]))
         seq_i = np.load(osp.join(data_folder, file))
         seq_i = seq_i[start:end+1, 1]
         seq[:, i] = seq_i
@@ -264,5 +268,5 @@ def test_epi():
     seq = get_epigenetic_seq(args.epigenetic_data_folder, args.k)
 
 if __name__ ==  "__main__":
-    main()
-    # test_epi()
+    # main()
+    test_epi()
