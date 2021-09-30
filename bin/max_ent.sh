@@ -13,7 +13,7 @@ dataFolder='/project2/depablo/erschultz/dataset_09_02_21'
 productionSweeps=50000
 equilibSweeps=10000
 goalSpecified=1
-numIterations=5 # iteration 1 + numIterations is production run to get contact map
+numIterations=100 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 scratchDir='/scratch/midway2/erschultz/TICG'
 
@@ -29,7 +29,7 @@ do
 done
 
 STARTTIME=$(date +%s)
-for k in 2
+for k in 2 4 6 8 9
 do
   #'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
   for method in 'epigenetic'
