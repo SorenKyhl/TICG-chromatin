@@ -268,5 +268,5 @@ def test_epi():
     seq = get_epigenetic_seq(args.epigenetic_data_folder, args.k)
 
 if __name__ ==  "__main__":
-    # main()
-    test_epi()
+    main()
+    # test_epi()
