@@ -188,7 +188,7 @@ def main():
 
 
     # save chi to config
-    letters='ABCDEFG'
+    letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
     rows, cols = args.chi.shape
     for row in range(rows):
         for col in range(cols):
@@ -227,7 +227,7 @@ def main():
 
 def test():
     args = getArgs()
-    args.k=8
+    args.k = 8
     args.fill_diag = -1
     print(generateRandomChi(args))
 
