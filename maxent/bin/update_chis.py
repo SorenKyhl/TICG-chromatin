@@ -20,7 +20,7 @@ def main():
         config = json.load(f)
 
     allchis = np.atleast_2d(np.loadtxt('chis.txt'))
-    letters='ABCDEFG'
+    letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
     # get last row of 'chis.txt'
     try:
