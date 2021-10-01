@@ -9,7 +9,7 @@
 m=1024
 k=6
 sample=1
-dataFolder='/project2/depablo/erschultz/dataset_09_02_21'
+dataFolder='/project2/depablo/erschultz/dataset_09_21_21'
 productionSweeps=50000
 equilibSweeps=10000
 goalSpecified=1
@@ -29,7 +29,7 @@ do
 done
 
 STARTTIME=$(date +%s)
-for k in 2 4 6 8 9
+for k in 9
 do
   #'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
   for method in 'epigenetic'
