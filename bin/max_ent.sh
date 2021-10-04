@@ -40,7 +40,6 @@ do
   wait
 done
 
-
 python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples 1
 
 ENDTIME=$(date +%s)
