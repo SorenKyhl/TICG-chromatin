@@ -58,7 +58,7 @@ def makeLatexTableSamples(args):
     makeLatexTable(data, ofile)
 
 def loadData(args):
-    methods = ['ground_truth', 'random', 'PCA', 'PCA_split', 'k_means', 'nmf', 'GNN']
+    methods = ['ground_truth', 'random', 'PCA', 'PCA_split', 'k_means', 'nmf', 'GNN', 'epigenetic']
     data = defaultdict(lambda: defaultdict(lambda : defaultdict(list)))
 
     for sample in args.samples:

@@ -51,7 +51,7 @@ def test():
 
     allchis = np.atleast_2d(np.loadtxt('maxent/resources/chis.txt'))
     print(allchis)
-    letters='ABCDEFG'
+    letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
     # get last row of 'chis.txt'
     lastchis = list(allchis[int(args.it)])

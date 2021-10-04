@@ -133,10 +133,25 @@ def get_nmf_seq(m, y, k, binarize):
         seq = H.T
         return seq, None
 
-def get_epigenetic_seq(data_folder, k, start=35000000, end=60575000, resolution=25000, chr='2'):
-    start = int(start / resolution)
-    end = int(end / resolution)
-    m = end - start + 1
+def get_epigenetic_seq(data_folder, k, start=35000000, end=60575000, res=25000, chr='2', min_coverage_prcnt=5):
+    '''
+    Loads experimental epigenetic data from data_folder to use as particle types.
+
+    Inputs:
+        data_folder: location of epigenetic data - file format: <chr>_*.npy
+        k: number of particle types to use - will pick top k data files from data_folder with most coverage
+        start: start in base pairs
+        end: end location in base pairs
+        res: resolution of data/simulation
+        chr: chromosome
+        min_coverage_prcnt: minimum percent of particle of given particle type
+
+    Outputs:
+        seq: particle type np array of shape m x k
+    '''
+    start = int(start / res)
+    end = int(end / res)
+    m = end - start + 1 # number of particle in simulation
 
     # store file names and coverage in list
     file_list = [] # list of tuples (file_name, coverage)
@@ -144,21 +159,24 @@ def get_epigenetic_seq(data_folder, k, start=35000000, end=60575000, resolution=
         if file.startswith(chr + "_"):
             seq_i = np.load(osp.join(data_folder, file))
             seq_i = seq_i[start:end+1, 1]
-            coverage = np.average(seq_i)
+            coverage = np.sum(seq_i)
             file_list.append((file, coverage))
 
     # sort based on coverage
     file_list = sorted(file_list, key = lambda pair: pair[1], reverse = True)
-    print(file_list[:k])
+    print(file_list[:k], )
 
     # choose k marks with most coverage
     seq = np.zeros((m, k))
     for i, (file, coverage) in enumerate(file_list[:k]):
-        if coverage == 0:
-            print("WARNING: mark {} has no coverage".format(file.split('_')[1]))
+        if coverage < min_coverage_prcnt / 100 * m:
+            print("WARNING: mark {} has insufficient coverage: {}".format(file.split('_')[1], coverage))
         seq_i = np.load(osp.join(data_folder, file))
         seq_i = seq_i[start:end+1, 1]
         seq[:, i] = seq_i
+    i += 1
+    if i < k:
+        print("Warning: insufficient data - only {} marks found".format(i))
 
     return seq
 
@@ -268,5 +286,5 @@ def test_epi():
     seq = get_epigenetic_seq(args.epigenetic_data_folder, args.k)
 
 if __name__ ==  "__main__":
-    main()
-    # test_epi()
+    # main()
+    test_epi()

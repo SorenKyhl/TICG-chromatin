@@ -29,7 +29,7 @@ do
 done
 
 STARTTIME=$(date +%s)
-for k in 9
+for k in 2 4 6 8
 do
   #'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
   for method in 'epigenetic'
