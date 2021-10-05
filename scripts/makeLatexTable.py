@@ -6,6 +6,10 @@ import argparse
 from collections import defaultdict
 import numpy as np
 
+METHODS = ['ground_truth', 'random', 'PCA', 'PCA_split', 'k_means', 'nmf', 'GNN', 'epigenetic']
+LABELS = ['Ground Truth', 'Random', 'PCA', 'PCA Split', 'K-means', 'NMF', 'GNN', 'Epigenetic']
+
+
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     parser.add_argument('--data_folder', type=str, default='../sequences_to_contact_maps/dataset_09_21_21', help='location of input data')
@@ -58,14 +62,13 @@ def makeLatexTableSamples(args):
     makeLatexTable(data, ofile)
 
 def loadData(args):
-    methods = ['ground_truth', 'random', 'PCA', 'PCA_split', 'k_means', 'nmf', 'GNN', 'epigenetic']
     data = defaultdict(lambda: defaultdict(lambda : defaultdict(list)))
 
     for sample in args.samples:
         sample_folder = osp.join(args.data_folder, 'samples', 'sample{}'.format(sample))
         for k in range(1, 20):
             found_anything = False
-            for method in methods:
+            for method in METHODS:
                 json_file = osp.join(sample_folder, method, 'k{}'.format(k), 'distance_pearson.json')
                 if osp.exists(json_file):
                     found_anything = True
@@ -82,9 +85,6 @@ def loadData(args):
     return data
 
 def makeLatexTable(data, ofile):
-    methods = ['ground_truth', 'random', 'PCA', 'PCA_split', 'k_means', 'nmf', 'GNN']
-    labels = ['Ground Truth', 'Random', 'PCA', 'PCA Split', 'K-means', 'NMF', 'GNN']
-
     with open(ofile, 'w') as o:
         o.write("\\begin{center}\n")
         o.write("\\begin{tabular}{|c|c|c|c|c|}\n")
@@ -93,7 +93,7 @@ def makeLatexTable(data, ofile):
         o.write("\\hline\\hline\n")
         for k in sorted(data.keys()):
             first = True # only write k for first row in section
-            for method, label in zip(methods, labels):
+            for method, label in zip(METHODS, LABELS):
                 if method not in data[k].keys():
                     continue
                 if first:
