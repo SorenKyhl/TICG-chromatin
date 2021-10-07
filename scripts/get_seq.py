@@ -288,7 +288,7 @@ def main():
         seq = get_epigenetic_seq(args.epigenetic_data_folder, args.k)
         format = '%d'
     elif args.method == 'chromhmm':
-        seq = get_ChromHMM_seq(args.ChromHMM_data_folder, args.k)
+        seq = get_ChromHMM_seq(args.ChromHMM_data_file, args.k)
         args.clf = None
         args.X = None
         format = '%d'
