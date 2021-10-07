@@ -29,10 +29,10 @@ do
 done
 
 STARTTIME=$(date +%s)
-for k in 2 4 6 8
+for k in 9
 do
   #'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
-  for method in 'epigenetic'
+  for method in 'ChromHMM'
   do
     ofile="/home/erschultz/TICG-chromatin/logFiles/TICG_${method}.log"
     ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite "${scratchDir}_${method}" $method >> $ofile &

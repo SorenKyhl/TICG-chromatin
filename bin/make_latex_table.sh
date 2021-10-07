@@ -1,6 +1,6 @@
 #! /bin/bash
 #SBATCH --job-name=latex
-#SBATCH --output=latex.out
+#SBATCH --output=logFiles/latex.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20

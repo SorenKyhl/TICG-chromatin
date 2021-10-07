@@ -21,7 +21,9 @@ mode="plaid"
 gamma=0.00001
 gammaDiag=0.00001
 resources="/home/erschultz/TICG-chromatin/maxent/resources"
-epiData="/home/erschultz/sequences_to_contact_maps/chip_seq_data/fold_change_control/processed"
+chipSeqFolder="/home/erschultz/sequences_to_contact_maps/chip_seq_data/"
+epiData="${chipSeqFolder}/fold_change_control/processed"
+chromHMMData="${chipSeqFolder}/aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt"
 
 # move to scratch
 scratchDirResources="${scratchDir}/resources"
@@ -33,7 +35,7 @@ cp "${resources}/input1024.xyz" .
 python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi=-1 --max_chi=1 --save_chi_for_max_ent --goal_specified $goalSpecified --default_config "${resources}/default_config.json"
 
 # generate sequences
-python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --k $k --sample $sample --data_folder $dataFolder --plot --save_npy --epigenetic_data_folder $epiData
+python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --k $k --sample $sample --data_folder $dataFolder --plot --save_npy --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData
 
 # generate goals
 if [ $goalSpecified -eq 1 ]

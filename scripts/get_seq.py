@@ -20,9 +20,10 @@ from knightRuiz import knightRuiz
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
-    # '../../sequences_to_contact_maps/dataset_04_18_21'
+    seq_local = '../sequences_to_contact_maps'
+    chip_seq_data_local = osp.join(seq_local, 'chip_seq_data')
     # "./project2/depablo/erschultz/dataset_04_18_21"
-    parser.add_argument('--data_folder', type=str, default='../sequences_to_contact_maps/dataset_08_26_21', help='location of input data')
+    parser.add_argument('--data_folder', type=str, default=osp.join(seq_local,'dataset_08_26_21'), help='location of input data')
     parser.add_argument('--sample', type=int, default=1201, help='sample id')
     parser.add_argument('--sample_folder', type=str, help='location of input data')
     parser.add_argument('--method', type=str, default='k_means', help='method for assigning particle types')
@@ -32,7 +33,8 @@ def getArgs():
     parser.add_argument('--normalize', type=str2bool, default=False, help='true to normalize labels to [0,1] (not implemented for all methods)') # TODO
     parser.add_argument('--k', type=int, default=2, help='sequences to generate')
     parser.add_argument('--GNN_model_id', type=int, default=116, help='model id for ContactGNN')
-    parser.add_argument('--epigenetic_data_folder', type=str, default='../sequences_to_contact_maps/chip_seq_data/fold_change_control/processed', help='location of epigenetic data')
+    parser.add_argument('--epigenetic_data_folder', type=str, default=osp.join(chip_seq_data_local, 'fold_change_control/processed'), help='location of epigenetic data')
+    parser.add_argument('--ChromHMM_data_file', type=str, default=osp.join(chip_seq_data_local, 'aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt'), help='location of ChromHMM data')
     parser.add_argument('--save_npy', action='store_true', help='true to save seq as .npy')
     parser.add_argument('--plot', action='store_true', help='true to plot seq as .png')
 
@@ -40,6 +42,7 @@ def getArgs():
     args = parser.parse_args()
     args.clf = None
     args.X = None # X for silhouette_score
+    args.method = args.method.lower()
     if args.method != 'random' and args.sample_folder is None:
         args.sample_folder = osp.join(args.data_folder, 'samples', 'sample{}'.format(args.sample))
     return args
@@ -180,6 +183,36 @@ def get_epigenetic_seq(data_folder, k, start=35000000, end=60575000, res=25000, 
 
     return seq
 
+
+def get_ChromHMM_seq(ifile, k, start=35000000, end=60575000, res=25000, min_coverage_prcnt=5):
+    start = int(start / res)
+    end = int(end / res)
+    m = end - start + 1 # number of particle in simulation
+
+    with open(ifile, 'r') as f:
+        f.readline()
+        f.readline()
+        states = np.array([int(state.strip()) - 1 for state in f.readlines()])
+        # subtract 1 to convert to 0 based indexing
+        states = states[start:end+1]
+
+
+    seq = np.zeros((m, 15))
+    seq[np.arange(m), states] = 1
+
+    coverage_arr = np.sum(seq, axis = 0) # number of beads of each particle type
+
+    # sort based on coverage
+    insufficient_coverage = np.argwhere(coverage_arr < min_coverage_prcnt * m / 100).flatten()
+
+    # exclude marks with no coverage
+    for mark in insufficient_coverage:
+        print("Mark {} has insufficient coverage: {}".format(mark, coverage_arr[mark]))
+    seq = np.delete(seq, insufficient_coverage, 1)
+
+    assert seq.shape[1] == k
+    return seq
+
 def writeSeq(seq, format, save_npy):
     m, k = seq.shape
     for j in range(k):
@@ -222,18 +255,18 @@ def main():
     if args.method == 'random':
         seq = get_random_seq(args.m, args.p_switch, args.k)
         format = '%d'
-    elif args.method == 'PCA':
+    elif args.method == 'pca':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]
         seq = get_PCA_seq(args.m, y_diag, args.k)
         format = '%.3e'
-    elif args.method == 'PCA_split':
+    elif args.method == 'pca_split':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]
         seq = get_PCA_split_seq(args.m, y_diag, args.k)
         format = '%.3e'
     elif args.method == 'ground_truth':
         seq = np.load(osp.join(args.sample_folder, 'x.npy'))[:args.m, :]
         format = '%d'
-    elif args.method == 'GNN':
+    elif args.method == 'gnn':
         assert args.k == 2
         seq_path = "/home/erschultz/sequences_to_contact_maps/results/ContactGNN/{}/sample{}/z.npy".format(args.GNN_model_id, args.sample)
         if osp.exists(seq_path):
@@ -254,6 +287,11 @@ def main():
     elif args.method == 'epigenetic':
         seq = get_epigenetic_seq(args.epigenetic_data_folder, args.k)
         format = '%d'
+    elif args.method == 'chromhmm':
+        seq = get_ChromHMM_seq(args.ChromHMM_data_folder, args.k)
+        args.clf = None
+        args.X = None
+        format = '%d'
     else:
         raise Exception('Unkown method: {}'.format(args.method))
 
@@ -263,7 +301,7 @@ def main():
     writeSeq(seq, format, args.save_npy)
 
     if args.plot:
-        if args.method == 'k_means' or (args.method == 'nmf' and args.binarize):
+        if args.method == 'k_means' or (args.method == 'nmf' and args.binarize) or args.method == 'chromhmm':
             plot_seq_exclusive(seq, clf=args.clf, X=args.X)
         else:
             pass
@@ -278,13 +316,20 @@ def test():
     args.X = y_diag
     format = '%.3e'
 
-    plot_seq_exclusive(seq, clf=args.clf, X=args.X, show=True, save=True, title='help')
+    plot_seq_exclusive(seq, clf=args.clf, X=args.X, show=True, save=False, title='test')
 
 def test_epi():
     args = getArgs()
     args.k = 10
     seq = get_epigenetic_seq(args.epigenetic_data_folder, args.k)
 
+def test_ChromHMM():
+    args = getArgs()
+    args.k = 9
+    seq = get_ChromHMM_seq(args.ChromHMM_data_file, args.k)
+    plot_seq_exclusive(seq, show=True, save=False, title='test')
+
 if __name__ ==  "__main__":
     main()
     # test_epi()
+    # test_ChromHMM()
