@@ -80,7 +80,7 @@ def main():
         raise Exception("Unrecognized extension: {}".format(args.ifile))
 
 
-    plotContactMap(y, ofile = 'y.png', vmax = 'mean')
+    plotContactMap(y, ofile = osp.join(args.odir, 'y.png'), vmax = 'mean')
     if args.save_npy:
         np.save(osp.join(args.odir, 'y.npy'), y.astype(np.int16))
 

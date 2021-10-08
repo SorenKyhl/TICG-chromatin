@@ -1,5 +1,5 @@
 #! /bin/bash
-#SBATCH --job-name=compare_contact
+#SBATCH --job-name=contact
 #SBATCH --output=logFiles/contact_map.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
