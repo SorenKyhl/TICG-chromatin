@@ -19,7 +19,9 @@ for p in paths:
     if osp.exists(p):
         sys.path.insert(1, p)
 
-from neural_net_utils.utils import diagonal_preprocessing, generateDistStats
+from neural_net_utils.utils import diagonal_preprocessing
+from data_summary_plots import genomic_distance_statistics
+
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
@@ -63,7 +65,7 @@ def main():
                     if osp.exists(yhat_diag_path):
                         yhat_diag_instance = np.load(yhat_diag_path)
                     else:
-                        meanDist = generateDistStats(yhat)
+                        meanDist = genomic_distance_statistics(yhat)
                         yhat_diag_instance = diagonal_preprocessing(yhat, meanDist)
                     dif = yhat_diag_instance - y_diag_instance
                     cmap = matplotlib.colors.LinearSegmentedColormap.from_list('custom',
