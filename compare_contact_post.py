@@ -11,6 +11,7 @@ import argparse
 
 from scripts.contact_map import plotContactMap
 from scripts.compare_contact import plotDistanceStratifiedPearsonCorrelation, comparePCA
+from scripts.makeLatexTable import METHODS
 
 paths = ['/home/erschultz/sequences_to_contact_maps',
         '/home/eric/Research/sequences_to_contact_maps',
@@ -43,11 +44,9 @@ def main():
     plotContactMap(y_diag_instance, ofile = osp.join(args.sample_folder, 'y_diag_instance.png'), vmax = 'max')
     v_max = np.max(y_diag_instance)
 
-    methods = {'PCA', 'PCA_split', 'k_means', 'ground_truth', 'random', 'GNN', 'nmf', 'random'}
-    # methods = {'PCA_split'}
 
     for file in os.listdir(args.sample_folder):
-        if file in methods:
+        if file in METHODS:
             for file2 in os.listdir(osp.join(args.sample_folder, file)):
                 file2_path = osp.join(args.sample_folder, file, file2)
                 if osp.isdir(file2_path):
