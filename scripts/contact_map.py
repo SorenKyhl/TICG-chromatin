@@ -82,7 +82,7 @@ def main():
 
     plotContactMap(y, ofile = 'y.png', vmax = 'mean')
     if args.save_npy:
-        np.save('y.npy', y.astype(np.int16))
+        np.save(osp.join(args.odir, 'y.npy'), y.astype(np.int16))
 
         meanDist = genomic_distance_statistics(y)
         y_diag_instance = diagonal_preprocessing(y, meanDist)
