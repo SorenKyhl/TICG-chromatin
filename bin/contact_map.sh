@@ -19,4 +19,4 @@ ifile="${dir}/production_out/contacts.txt"
 
 source activate python3.8_pytorch1.8.1_cuda10.2
 
-python3 ~/TICG-chromatin/contact_map.py --m $m --ifile $ifile --odir $dir --save_npy
+python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --ifile $ifile --odir $dir --save_npy
