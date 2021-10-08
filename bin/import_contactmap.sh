@@ -1,6 +1,6 @@
 #! /bin/bash
 #SBATCH --job-name=import
-#SBATCH --output=import.out
+#SBATCH --output=logFiles/import.out
 #SBATCH --time=2:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=1

@@ -21,7 +21,7 @@ source activate python3.8_pytorch1.8.1_cuda10.2
 module load jq
 
 # initialize log files
-for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'GNN' 'epigenetic'
+for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'GNN' 'epigenetic' 'ChromHMM'
 do
   ofile="/home/erschultz/TICG-chromatin/logFiles/TICG_${method}.log"
   rm $ofile

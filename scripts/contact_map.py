@@ -16,13 +16,15 @@ for p in paths:
     if osp.exists(p):
         sys.path.insert(1, p)
 
-from neural_net_utils.utils import diagonal_preprocessing, generateDistStats
+from neural_net_utils.utils import diagonal_preprocessing
+from data_summary_plots import genomic_distance_statistics
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     parser.add_argument('--m', type=int, default=1024, help='number of particles')
     parser.add_argument('--save_npy', action='store_true', help='true to save y as .npy')
     parser.add_argument('--ifile', default=osp.join('data_out','contacts.txt'), help='location of contact map')
+    parser.add_argument('--odir', default='', help='path to output directory (default is wd)')
 
     args = parser.parse_args()
     return args
@@ -82,10 +84,10 @@ def main():
     if args.save_npy:
         np.save('y.npy', y.astype(np.int16))
 
-        meanDist = generateDistStats(y)
+        meanDist = genomic_distance_statistics(y)
         y_diag_instance = diagonal_preprocessing(y, meanDist)
-        plotContactMap(y_diag_instance, ofile = 'y_diag.png', vmax = 'max')
-        np.save('y_diag.npy', y_diag_instance)
+        plotContactMap(y_diag_instance, ofile = osp.join(args.odir, 'y_diag.png'), vmax = 'max')
+        np.save(osp.join(args.odir, 'y_diag.npy'), y_diag_instance)
 
 if __name__ == '__main__':
     main()
