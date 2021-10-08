@@ -36,5 +36,7 @@
   "dump_density": false,
   "update_contacts_distance": false,
   "boundary_attract_on": false,
-  "boundary_chi": 0
+  "boundary_chi": 0,
+  "smatrix_filename": "none",
+  "smatrix_on": false
 }

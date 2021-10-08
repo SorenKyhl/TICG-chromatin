@@ -27,13 +27,14 @@ def getArgs():
     parser.add_argument('--data_folder', type=str, default=osp.join(seq_local,'dataset_08_26_21'), help='location of input data')
     parser.add_argument('--sample', type=int, default=1201, help='sample id')
     parser.add_argument('--sample_folder', type=str, help='location of input data')
+
     parser.add_argument('--method', type=str, default='k_means', help='method for assigning particle types')
     parser.add_argument('--m', type=int, default=1024, help='number of particles (will crop contact map)')
     parser.add_argument('--p_switch', type=float, default=0.05, help='probability to switch bead assignment (for method = random)')
     parser.add_argument('--binarize', type=str2bool, default=False, help='true to binarize labels (not implemented for all methods)') # TODO
     parser.add_argument('--normalize', type=str2bool, default=False, help='true to normalize labels to [0,1] (not implemented for all methods)') # TODO
     parser.add_argument('--k', type=int, default=2, help='sequences to generate')
-    parser.add_argument('--GNN_model_id', type=int, default=116, help='model id for ContactGNN')
+    parser.add_argument('--model_path', type=str, help='path to GNN model')
     parser.add_argument('--epigenetic_data_folder', type=str, default=osp.join(chip_seq_data_local, 'fold_change_control/processed'), help='location of epigenetic data')
     parser.add_argument('--ChromHMM_data_file', type=str, default=osp.join(chip_seq_data_local, 'aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt'), help='location of ChromHMM data')
     parser.add_argument('--save_npy', action='store_true', help='true to save seq as .npy')
@@ -251,6 +252,13 @@ def get_ChromHMM_seq(ifile, k, start=35000000, end=60575000, res=25000, min_cove
     assert seq.shape[1] == k
     return seq
 
+def get_seq_gnn(m, k, model_path, sample):
+    seq_path = osp.join(model_path, "sample{}/z.npy".format(sample))
+    if osp.exists(seq_path):
+        seq = np.load(seq_path)[:args.m, :args.m]
+    else:
+        raise Exception('seq path does not exist: {}'.format(seq_path))
+
 def writeSeq(seq, format, save_npy):
     m, k = seq.shape
     for j in range(k):
@@ -328,12 +336,7 @@ def main():
         seq = np.load(osp.join(args.sample_folder, 'x.npy'))[:args.m, :]
         format = '%d'
     elif args.method == 'gnn':
-        assert args.k == 2
-        seq_path = "/home/erschultz/sequences_to_contact_maps/results/ContactGNN/{}/sample{}/z.npy".format(args.GNN_model_id, args.sample)
-        if osp.exists(seq_path):
-            seq = np.load(seq_path)[:args.m, :args.m]
-        else:
-            raise Exception('seq path does not exist: {}'.format(seq_path))
+        seq = get_seq_gnn(args)
         format = '%.3e'
     elif args.method == 'k_means':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]

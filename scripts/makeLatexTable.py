@@ -13,7 +13,7 @@ LABELS = ['Ground Truth', 'Random', 'PCA', 'PCA Split', 'K-means', 'NMF', 'GNN',
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     parser.add_argument('--data_folder', type=str, default='../sequences_to_contact_maps/dataset_09_21_21', help='location of input data')
-    parser.add_argument('--sample', type=int, help='sample id')
+    parser.add_argument('--sample', type=int, default=1, help='sample id')
     parser.add_argument('--samples', type=str2list, help='list of sample ids separated by -')
     parser.add_argument('--sample_folder', type=str, help='location of input data')
 
@@ -49,39 +49,29 @@ def str2list(v, sep = '-'):
     else:
         raise argparse.ArgumentTypeError('str value expected.')
 
-
-def makeLatexTableSample(args):
-    args.samples = [args.sample]
-    data = loadData(args)
-    ofile = osp.join(args.sample_folder, 'max_ent_table.txt')
-    makeLatexTable(data, ofile)
-
-def makeLatexTableSamples(args):
-    data = loadData(args)
-    ofile = osp.join(args.data_folder, 'max_ent_table.txt')
-    makeLatexTable(data, ofile)
-
 def loadData(args):
     data = defaultdict(lambda: defaultdict(lambda : defaultdict(list)))
 
     for sample in args.samples:
         sample_folder = osp.join(args.data_folder, 'samples', 'sample{}'.format(sample))
-        for k in range(1, 20):
-            found_anything = False
-            for method in METHODS:
-                json_file = osp.join(sample_folder, method, 'k{}'.format(k), 'distance_pearson.json')
-                if osp.exists(json_file):
-                    found_anything = True
-                    print("Loading: {}".format(json_file))
-                    with open(json_file, 'r') as f:
-                        results = json.load(f)
-                        data[k][method]['overall_pearson'].append(results['overall_pearson'])
-                        data[k][method]['scc'].append(results['scc'])
-                        data[k][method]['avg_dist_pearson'].append(results['avg_dist_pearson'])
-            if found_anything:
+        for method in os.listdir(sample_folder):
+            method_folder = osp.join(sample_folder, method)
+            if osp.isdir(method_folder) and method.split('-')[0] in METHODS:
+                print(method)
+                for k_file in os.listdir(method_folder):
+                     if k_file.startswith('k'):
+                        k = int(k_file[1])
+                        json_file = osp.join(sample_folder, method, k_file, 'distance_pearson.json')
+                        if osp.exists(json_file):
+                            found_anything = True
+                            print("Loading: {}".format(json_file))
+                            with open(json_file, 'r') as f:
+                                results = json.load(f)
+                                data[k][method]['overall_pearson'].append(results['overall_pearson'])
+                                data[k][method]['scc'].append(results['scc'])
+                                data[k][method]['avg_dist_pearson'].append(results['avg_dist_pearson'])
                 print('\n')
                 # just making output look nicer
-
     return data
 
 def makeLatexTable(data, ofile):
@@ -114,7 +104,6 @@ def makeLatexTable(data, ofile):
 
                 text += " \\\ \n"
 
-
                 o.write(text)
             o.write("\\hline\n")
         o.write("\\end{tabular}\n")
@@ -122,10 +111,18 @@ def makeLatexTable(data, ofile):
 
 def main():
     args = getArgs()
-    if args.sample is not None:
-        makeLatexTableSample(args)
+
     if args.samples is not None:
-        makeLatexTableSamples(args)
+        data = loadData(args)
+        ofile = osp.join(args.data_folder, 'max_ent_table.txt')
+
+    if args.sample is not None:
+        args.samples = [args.sample]
+        data = loadData(args)
+        ofile = osp.join(args.sample_folder, 'max_ent_table.txt')
+
+    makeLatexTable(data, ofile)
+
 
 if __name__ == '__main__':
     main()
