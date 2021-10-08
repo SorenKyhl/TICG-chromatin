@@ -4,6 +4,8 @@ import numpy as np
 import sys
 import csv
 
+LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     parser.add_argument('--m', type=int, default=1024, help='number of particles')
@@ -188,11 +190,10 @@ def main():
 
 
     # save chi to config
-    letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
     rows, cols = args.chi.shape
     for row in range(rows):
         for col in range(cols):
-            key = 'chi{}{}'.format(letters[row], letters[col])
+            key = 'chi{}{}'.format(LETTERS[row], LETTERS[col])
             val = args.chi[row, col]
             config[key] = val
 

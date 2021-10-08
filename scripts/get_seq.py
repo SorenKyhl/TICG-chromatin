@@ -17,6 +17,7 @@ abspath = osp.abspath(__file__)
 dname = osp.dirname(abspath)
 sys.path.insert(0, dname)
 from knightRuiz import knightRuiz
+from get_config import LETTERS
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
@@ -37,12 +38,15 @@ def getArgs():
     parser.add_argument('--ChromHMM_data_file', type=str, default=osp.join(chip_seq_data_local, 'aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt'), help='location of ChromHMM data')
     parser.add_argument('--save_npy', action='store_true', help='true to save seq as .npy')
     parser.add_argument('--plot', action='store_true', help='true to plot seq as .png')
+    parser.add_argument('--relabel', type=str, help='specify mark combinations to be relabled (e.g. AB-C will relabel AB mark pairs as mark C)')
 
 
     args = parser.parse_args()
     args.clf = None
     args.X = None # X for silhouette_score
     args.method = args.method.lower()
+    if args.relabel is not None:
+        assert args.method == 'random', 'relabel currently only supported for random'
     if args.method != 'random' and args.sample_folder is None:
         args.sample_folder = osp.join(args.data_folder, 'samples', 'sample{}'.format(args.sample))
     return args
@@ -64,7 +68,9 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
-def get_random_seq(m, p_switch, k):
+def get_random_seq(m, p_switch, k, relabel):
+    if relabel is not None:
+        k -= 1
     seq = np.zeros((m, k))
     seq[0, :] = np.random.choice([1,0], size = k)
     for j in range(k):
@@ -74,7 +80,40 @@ def get_random_seq(m, p_switch, k):
             else:
                 seq[i, j] = np.random.choice([1,0], p=[p_switch, 1 - p_switch])
 
+    if relabel is not None:
+        seq = relabel_seq(seq, relabel)
+
     return seq
+
+def relabel_seq(seq, relabel_str):
+    m, k = seq.shape
+
+    left, right = relabel_str.split('-')
+    new_label = LETTERS.find(right)
+    assert new_label >= k
+    old_labels = [LETTERS.find(i) for i in left]
+    all_labels = [LETTERS.find(i) for i in left+right]
+
+    new_seq = np.zeros((m, k+1))
+    new_seq[:, :k] = seq
+
+    # find where to assing new_label
+    where = np.ones(m) # all True
+    for i in old_labels:
+        where_i = seq[:, i] == 1
+        where = np.logical_and(where, seq[:, i] == 1)
+
+    # assign new_label
+    new_seq[:, new_label] = where
+    # # delete old_labels
+    for i in old_labels:
+        new_seq[:, i] -= where
+
+    # check that new_label is mutually exclusive from old_labels
+    row_sum = np.sum(new_seq[:, all_labels], axis = 1)
+    assert np.all(row_sum <= 1)
+
+    return new_seq
 
 def get_PCA_split_seq(m, y_diag, k):
     pca = PCA()
@@ -183,7 +222,6 @@ def get_epigenetic_seq(data_folder, k, start=35000000, end=60575000, res=25000, 
 
     return seq
 
-
 def get_ChromHMM_seq(ifile, k, start=35000000, end=60575000, res=25000, min_coverage_prcnt=5):
     start = int(start / res)
     end = int(end / res)
@@ -250,10 +288,33 @@ def plot_seq_exclusive(seq, clf=None, X=None, show = False, save = True, title =
         plt.show()
     plt.close()
 
+def plot_seq_not_exclusive(seq, show = False, save = True, title = None):
+    '''Plotting function for non mutually exclusive particle types'''
+    # TODO make figure wider and less tall
+    m, k = seq.shape
+    cmap = matplotlib.cm.get_cmap('tab10')
+    ind = np.arange(k) % cmap.N
+    colors = plt.cycler('color', cmap(ind))
+
+    for i, c in enumerate(colors):
+        x = np.argwhere(seq[:, i] == 1)
+        plt.scatter(x, np.ones_like(x) * i, label = i, color = c['color'], s=1)
+
+    plt.legend()
+    ax = plt.gca()
+    ax.axes.get_yaxis().set_visible(False)
+    if title is not None:
+        plt.title(title, fontsize=16)
+    if save:
+        plt.savefig('seq.png')
+    if show:
+        plt.show()
+    plt.close()
+
 def main():
     args = getArgs()
     if args.method == 'random':
-        seq = get_random_seq(args.m, args.p_switch, args.k)
+        seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel)
         format = '%d'
     elif args.method == 'pca':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]
@@ -289,8 +350,6 @@ def main():
         format = '%d'
     elif args.method == 'chromhmm':
         seq = get_ChromHMM_seq(args.ChromHMM_data_file, args.k)
-        args.clf = None
-        args.X = None
         format = '%d'
     else:
         raise Exception('Unkown method: {}'.format(args.method))
@@ -298,14 +357,14 @@ def main():
     m, k = seq.shape
     assert m == args.m, "m mismatch: seq has {} particles not {}".format(m, args.m)
     assert k == args.k, "k mismatch: seq has {} particle types not {}".format(k, args.k)
+
     writeSeq(seq, format, args.save_npy)
 
     if args.plot:
         if args.method == 'k_means' or (args.method == 'nmf' and args.binarize) or args.method == 'chromhmm':
             plot_seq_exclusive(seq, clf=args.clf, X=args.X)
         else:
-            pass
-            # TODO
+            plot_seq_not_exclusive(seq)
 
 def test():
     args = getArgs()
@@ -314,14 +373,23 @@ def test():
     # seq, args.clf = get_nmf_seq(args.m, y_diag, args.k, binarize = True)
     seq, args.clf = get_k_means_seq(args.m, y_diag, args.k, kr = True)
     args.X = y_diag
-    format = '%.3e'
 
     plot_seq_exclusive(seq, clf=args.clf, X=args.X, show=True, save=False, title='test')
 
+def test_random():
+    args = getArgs()
+    args.k = 4
+    args.m = 1000
+    args.relabel = 'AB-D'
+    seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel)
+
+    plot_seq_not_exclusive(seq, show = True, save = False, title = 'test')
+
 def test_epi():
     args = getArgs()
-    args.k = 10
+    args.k = 6
     seq = get_epigenetic_seq(args.epigenetic_data_folder, args.k)
+    plot_seq_not_exclusive(seq, show = True, save = False, title = 'test')
 
 def test_ChromHMM():
     args = getArgs()
@@ -330,6 +398,7 @@ def test_ChromHMM():
     plot_seq_exclusive(seq, show=True, save=False, title='test')
 
 if __name__ ==  "__main__":
-    main()
+    # main()
+    test_random()
     # test_epi()
     # test_ChromHMM()

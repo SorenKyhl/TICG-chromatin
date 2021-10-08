@@ -8,6 +8,7 @@ m=$4
 startSimulation=$5
 numSimulations=$6
 dataFolder=$7
+relabel=$8
 overwrite=1
 
 # below does nothing if chi is given
@@ -53,7 +54,7 @@ do
 	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable > log.log
 
 	# generate sequences
-	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --p_switch $pSwitch --k $k --save_npy >> log.log
+	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --p_switch $pSwitch --k $k --save_npy --relabel $relabel >> log.log
 
 	# run simulation
 	~/TICG-chromatin/TICG-engine >> log.log
