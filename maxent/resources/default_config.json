@@ -38,5 +38,6 @@
   "boundary_attract_on": false,
   "boundary_chi": 0,
   "smatrix_filename": "none",
-  "smatrix_on": false
+  "smatrix_on": false,
+  "phi_solvent_max": 0.5
 }
