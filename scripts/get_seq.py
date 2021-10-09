@@ -43,13 +43,29 @@ def getArgs():
 
 
     args = parser.parse_args()
-    args.clf = None
+    args.labels = None
     args.X = None # X for silhouette_score
     args.method = args.method.lower()
-    if args.relabel is not None:
-        assert args.method == 'random', 'relabel currently only supported for random'
+
     if args.method != 'random' and args.sample_folder is None:
         args.sample_folder = osp.join(args.data_folder, 'samples', 'sample{}'.format(args.sample))
+
+    # check params
+    if args.relabel is not None:
+        assert args.method == 'random', 'relabel currently only supported for random'
+    if args.binarize:
+        if args.method in {'k_means', 'chromhmm'}:
+            print("{} is binarized by default".format(args.method))
+        elif args.method in {'nmf'}:
+            pass
+        else:
+            raise Exception('binarize not yet supported for {}'.format(args.method))
+    if args.normalize:
+        if args.method in {}:
+            pass
+        else:
+            raise Exception('normalize not yet supported for {}'.format(args.method))
+
     return args
 
 def str2bool(v):
@@ -158,7 +174,7 @@ def get_k_means_seq(m, y, k, kr = True):
         kmeans.fit(y)
     seq = np.zeros((m, k))
     seq[np.arange(m), kmeans.labels_] = 1
-    return seq, kmeans
+    return seq, kmeans.labels_
 
 def get_nmf_seq(m, y, k, binarize):
     nmf = NMF(n_components = k, max_iter = 1000)
@@ -171,7 +187,7 @@ def get_nmf_seq(m, y, k, binarize):
         nmf.labels_ = np.argmax(H, axis = 0)
         seq = np.zeros((m, k))
         seq[np.arange(m), nmf.labels_] = 1
-        return seq, nmf
+        return seq, nmf.labels_
     else:
         seq = H.T
         return seq, None
@@ -250,7 +266,17 @@ def get_ChromHMM_seq(ifile, k, start=35000000, end=60575000, res=25000, min_cove
     seq = np.delete(seq, insufficient_coverage, 1)
 
     assert seq.shape[1] == k
-    return seq
+
+    # get labels
+    labels = np.where(seq == np.ones((m, 1)))[1]
+    if len(labels) == m:
+        # this is only true if all marks have sufficient coverage
+        # i.e. none were deleted
+        pass
+    else:
+        labels = None
+
+    return seq, labels
 
 def get_seq_gnn(m, k, model_path, sample):
     seq_path = osp.join(model_path, "sample{}/z.npy".format(sample))
@@ -267,8 +293,8 @@ def writeSeq(seq, format, save_npy):
     if save_npy:
         np.save('x.npy', seq)
 
-def plot_seq_exclusive(seq, clf=None, X=None, show = False, save = True, title = None):
-    '''Plotting function for mutually exclusive particle types'''
+def plot_seq_exclusive(seq, labels=None, X=None, show = False, save = True, title = None):
+    '''Plotting function for mutually exclusive binary particle types'''
     # TODO make figure wider and less tall
     m, k = seq.shape
     cmap = matplotlib.cm.get_cmap('tab10')
@@ -279,8 +305,8 @@ def plot_seq_exclusive(seq, clf=None, X=None, show = False, save = True, title =
         x = np.argwhere(seq[:, i] == 1)
         plt.scatter(x, np.ones_like(x), label = i, color = c['color'], s=1)
 
-    if X is not None and clf is not None:
-        score = silhouette_score(X, clf.labels_)
+    if X is not None and labels is not None:
+        score = silhouette_score(X, labels)
         lower_title = '\nsilhouette score: {}'.format(np.round(score, 3))
     else:
         lower_title = ''
@@ -296,8 +322,8 @@ def plot_seq_exclusive(seq, clf=None, X=None, show = False, save = True, title =
         plt.show()
     plt.close()
 
-def plot_seq_not_exclusive(seq, show = False, save = True, title = None):
-    '''Plotting function for non mutually exclusive particle types'''
+def plot_seq_binary(seq, show = False, save = True, title = None):
+    '''Plotting function for non mutually exclusive binary particle types'''
     # TODO make figure wider and less tall
     m, k = seq.shape
     cmap = matplotlib.cm.get_cmap('tab10')
@@ -340,19 +366,19 @@ def main():
         format = '%.3e'
     elif args.method == 'k_means':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]
-        seq, args.clf = get_k_means_seq(args.m, y_diag, args.k)
+        seq, args.labels = get_k_means_seq(args.m, y_diag, args.k)
         args.X = y_diag
         format = '%d'
     elif args.method == 'nmf':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]
-        seq, args.clf = get_nmf_seq(args.m, y_diag, args.k, args.binarize)
+        seq, args.labels = get_nmf_seq(args.m, y_diag, args.k, args.binarize)
         args.X = y_diag
         format = '%.3e'
     elif args.method == 'epigenetic':
         seq = get_epigenetic_seq(args.epigenetic_data_folder, args.k)
         format = '%d'
     elif args.method == 'chromhmm':
-        seq = get_ChromHMM_seq(args.ChromHMM_data_file, args.k)
+        seq, labels = get_ChromHMM_seq(args.ChromHMM_data_file, args.k)
         format = '%d'
     else:
         raise Exception('Unkown method: {}'.format(args.method))
@@ -364,20 +390,24 @@ def main():
     writeSeq(seq, format, args.save_npy)
 
     if args.plot:
-        if args.method == 'k_means' or (args.method == 'nmf' and args.binarize) or args.method == 'chromhmm':
-            plot_seq_exclusive(seq, clf=args.clf, X=args.X)
-        else:
-            plot_seq_not_exclusive(seq)
+        if args.method in {'k_means', 'chromhmm'} or (args.method == 'nmf' and args.binarize):
+            plot_seq_exclusive(seq, labels=args.labels, X=args.X)
+        elif args.binarize:
+            plot_seq_binary(seq)
 
-def test():
+def test_nmf_k_means():
     args = getArgs()
     args.k = 4
     y_diag = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]
-    # seq, args.clf = get_nmf_seq(args.m, y_diag, args.k, binarize = True)
-    seq, args.clf = get_k_means_seq(args.m, y_diag, args.k, kr = True)
     args.X = y_diag
 
-    plot_seq_exclusive(seq, clf=args.clf, X=args.X, show=True, save=False, title='test')
+    seq, args.labels = get_nmf_seq(args.m, y_diag, args.k, binarize = True)
+    plot_seq_exclusive(seq, labels=args.labels, X=args.X, show=True, save=False, title='nmf-binarize test')
+
+    seq, args.labels = get_nmf_seq(args.m, y_diag, args.k, binarize = False)
+
+    seq, args.labels = get_k_means_seq(args.m, y_diag, args.k, kr = True)
+    plot_seq_exclusive(seq, labels=args.labels, X=args.X, show=True, save=False, title='k_means test')
 
 def test_random():
     args = getArgs()
@@ -386,22 +416,27 @@ def test_random():
     args.relabel = 'AB-D'
     seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel)
 
-    plot_seq_not_exclusive(seq, show = True, save = False, title = 'test')
+    plot_seq_binary(seq, show = True, save = False, title = 'test')
 
 def test_epi():
     args = getArgs()
     args.k = 6
     seq = get_epigenetic_seq(args.epigenetic_data_folder, args.k)
-    plot_seq_not_exclusive(seq, show = True, save = False, title = 'test')
+    plot_seq_binary(seq, show = True, save = False, title = 'epigenetic test')
 
 def test_ChromHMM():
     args = getArgs()
-    args.k = 9
-    seq = get_ChromHMM_seq(args.ChromHMM_data_file, args.k)
-    plot_seq_exclusive(seq, show=True, save=False, title='test')
+    args.k = 15
+    y_diag = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]
+    args.X = y_diag
+    seq, args.labels = get_ChromHMM_seq(args.ChromHMM_data_file, args.k, min_coverage_prcnt = 0)
+    plot_seq_exclusive(seq, labels=args.labels, X=args.X, show=True, save=False, title='ChromHMM test')
+
+
 
 if __name__ ==  "__main__":
-    # main()
-    test_random()
+    main()
+    # test_nmf_k_means()
+    # test_random()
     # test_epi()
     # test_ChromHMM()

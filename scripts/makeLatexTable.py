@@ -56,6 +56,7 @@ def loadData(args):
         sample_folder = osp.join(args.data_folder, 'samples', 'sample{}'.format(sample))
         for method in os.listdir(sample_folder):
             method_folder = osp.join(sample_folder, method)
+            # methods should be formatted such that method.split('-')[0] is in METHODS
             if osp.isdir(method_folder) and method.split('-')[0] in METHODS:
                 print(method)
                 for k_file in os.listdir(method_folder):
