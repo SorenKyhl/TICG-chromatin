@@ -17,7 +17,7 @@ abspath = osp.abspath(__file__)
 dname = osp.dirname(abspath)
 sys.path.insert(0, dname)
 from knightRuiz import knightRuiz
-from get_config import LETTERS
+from get_config import LETTERS, str2bool
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
@@ -67,23 +67,6 @@ def getArgs():
             raise Exception('normalize not yet supported for {}'.format(args.method))
 
     return args
-
-def str2bool(v):
-    """
-    Helper function for argparser, converts str to boolean for various string inputs.
-    https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
-
-    Inputs:
-        v: string
-    """
-    if isinstance(v, bool):
-       return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
-        return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
-        return False
-    else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 def get_random_seq(m, p_switch, k, relabel):
     if relabel is not None:

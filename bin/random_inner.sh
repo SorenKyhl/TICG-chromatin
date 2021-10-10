@@ -9,6 +9,7 @@ startSimulation=$5
 numSimulations=$6
 dataFolder=$7
 relabel=$8
+diag=$9
 overwrite=1
 
 # below does nothing if chi is given

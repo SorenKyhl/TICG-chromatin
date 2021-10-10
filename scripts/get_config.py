@@ -8,6 +8,10 @@ LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
+    parser.add_argument('--default_config', type=str, default='default_config.json', help='path to default config file')
+    parser.add_argument('--ofile', type=str, default='config.json', help='path to output config file')
+
+    # config param arguments
     parser.add_argument('--m', type=int, default=1024, help='number of particles')
     parser.add_argument('--k', type=int, help='number of particle types (inferred from chi if None)')
     parser.add_argument('--load_configuration_filename', type=str, default='input1024.xyz', help='file name of initial config')
@@ -16,8 +20,10 @@ def getArgs():
     parser.add_argument('--dump_stats_frequency', type=int, help='set to change dump stats frequency')
     parser.add_argument('--nSweeps', type=int, help='set to change nSweeps')
     parser.add_argument('--seed', type=int, help='set to change random seed')
-    parser.add_argument('--default_config', type=str, default='default_config.json', help='path to default config file')
-    parser.add_argument('--ofile', type=str, default='config.json', help='path to output config file')
+
+    # diag chi arguments
+    parser.add_argument('--diag', type=str2bool, default=False, help='True for diagonal interactions')
+    parser.add_argument('--max_diag_chi', type=float, default=0.5, help='maximum diag chi value for np.linspace()')
 
     # chi arguments
     parser.add_argument('--chi', type=str2list, help='chi matrix using latex separator style (if None will be generated randomly)')
@@ -55,6 +61,23 @@ def str2list(v, sep1 = '\\', sep2 = '&'):
             return result
     else:
         raise argparse.ArgumentTypeError('str value expected.')
+
+def str2bool(v):
+    """
+    Helper function for argparser, converts str to boolean for various string inputs.
+    https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
+
+    Inputs:
+        v: string
+    """
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 def generateRandomChi(args, decimals = 1):
     '''Initializes random chi array.'''
@@ -196,6 +219,12 @@ def main():
             key = 'chi{}{}'.format(LETTERS[row], LETTERS[col])
             val = args.chi[row, col]
             config[key] = val
+
+    # set up diag chis
+    config["diagonal_on"] = args.diag_on
+    if args.diag_on:
+        chi_diag = np.linspace(0, args.diag_max_chi, 20)
+        config["diag_chis"] = chi_diag
 
     # save nbeads
     config['nbeads'] = args.m
