@@ -501,9 +501,9 @@ def test_GNN():
 
 
 if __name__ ==  "__main__":
-    # main()
+    main()
     # test_nmf_k_means()
     # test_random()
     # test_epi()
     # test_ChromHMM()
-    test_GNN()
+    # test_GNN()
