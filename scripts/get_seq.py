@@ -39,7 +39,7 @@ def getArgs():
     parser.add_argument('--ChromHMM_data_file', type=str, default=osp.join(chip_seq_data_local, 'aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt'), help='location of ChromHMM data')
     parser.add_argument('--save_npy', action='store_true', help='true to save seq as .npy')
     parser.add_argument('--plot', action='store_true', help='true to plot seq as .png')
-    parser.add_argument('--relabel', type=str, help='specify mark combinations to be relabled (e.g. AB-C will relabel AB mark pairs as mark C)')
+    parser.add_argument('--relabel', type=str2None, help='specify mark combinations to be relabled (e.g. AB-C will relabel AB mark pairs as mark C)')
 
 
     args = parser.parse_args()
@@ -67,6 +67,25 @@ def getArgs():
             raise Exception('normalize not yet supported for {}'.format(args.method))
 
     return args
+
+def str2None(v):
+    """
+    Helper function for argparser, converts str to None if str == 'none'
+
+    Returns the string otherwise.
+
+    Inputs:
+        v: string
+    """
+    if v is None:
+        return v
+    elif isinstance(v, str):
+        if v.lower() == 'none':
+            return None
+        else:
+            return v
+    else:
+        raise argparse.ArgumentTypeError('String value expected.')
 
 def get_random_seq(m, p_switch, k, relabel):
     if relabel is not None:

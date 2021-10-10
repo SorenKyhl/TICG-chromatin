@@ -224,7 +224,7 @@ def main():
     config["diagonal_on"] = args.diag
     if args.diag:
         chi_diag = np.linspace(0, args.max_diag_chi, 20)
-        config["diag_chis"] = chi_diag
+        config["diag_chis"] = list(chi_diag)
 
     # save nbeads
     config['nbeads'] = args.m
