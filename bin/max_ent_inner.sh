@@ -48,13 +48,13 @@ then
   python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --k $k --contact_map "${sampleFolder}/y.npy"
 fi
 
-# # apply max ent with newton's method
-# dir="${sampleFolder}/${method}/k${k}"
-# ~/TICG-chromatin/maxent/bin/run.sh $dir $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite $scratchDir
-#
-# # compare results
-# prodIt=$(($numIterations+1))
-# cd $dir
-# python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${dir}/iteration${prodIt}/y.npy" --y_diag_instance "$sampleFolder/y_diag_instance.npy" --yhat_diag_instance "${dir}/iteration${prodIt}/y_diag_instance.npy"
+# apply max ent with newton's method
+dir="${sampleFolder}/${method}/k${k}"
+~/TICG-chromatin/maxent/bin/run.sh $dir $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite $scratchDir
+
+# compare results
+prodIt=$(($numIterations+1))
+cd $dir
+python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${dir}/iteration${prodIt}/y.npy" --y_diag_instance "$sampleFolder/y_diag_instance.npy" --yhat_diag_instance "${dir}/iteration${prodIt}/y_diag_instance.npy"
 
 echo "\n\n"
