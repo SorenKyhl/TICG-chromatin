@@ -409,9 +409,6 @@ def main():
     elif args.method == 'ground_truth':
         seq = np.load(osp.join(args.sample_folder, 'x.npy'))[:args.m, :]
         format = '%d'
-    elif args.method == 'gnn':
-        seq = get_seq_gnn(args)
-        format = '%.3e'
     elif args.method == 'k_means':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]
         seq, args.labels = get_k_means_seq(args.m, y_diag, args.k)
@@ -439,6 +436,7 @@ def main():
         assert dataset == osp.split(args.data_folder)[1], 'Dataset mismatch: {} vs {}'.format(dataset, args.dataset)
 
         seq = get_seq_gnn(args.k, args.model_path, args.sample, args.normalize)
+        format = '%.3e'
     else:
         raise Exception('Unkown method: {}'.format(args.method))
 
