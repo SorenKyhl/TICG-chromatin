@@ -15,8 +15,8 @@ goalSpecified=1
 numIterations=100 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 scratchDir='/scratch/midway2/erschultz/TICG'
-model_type='ContactGNNEnergy'
-model_id='28'
+modelType='ContactGNNEnergy'
+modelID='28'
 
 source activate python3.8_pytorch1.8.1_cuda10.2
 module load jq
@@ -37,7 +37,7 @@ do
   for method in 'GNN'
   do
     ofile="/home/erschultz/TICG-chromatin/logFiles/TICG_${method}.log"
-    ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite "${scratchDir}_${method}" $method >> $ofile &
+    ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite "${scratchDir}_${method}" $method $modelType $modelID>> $ofile &
   done
   wait
 done

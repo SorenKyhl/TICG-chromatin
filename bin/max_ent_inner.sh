@@ -12,8 +12,8 @@ numIterations=$8
 overwrite=$9
 scratchDir=${10}
 method=${11}
-model_type=${12}
-model_id=${13}
+modelType=${12}
+modelID=${13}
 echo $@
 
 sampleFolder="$dataFolder/samples/sample$sample"
@@ -27,7 +27,7 @@ chipSeqFolder="/home/erschultz/sequences_to_contact_maps/chip_seq_data"
 epiData="${chipSeqFolder}/fold_change_control/processed"
 chromHMMData="${chipSeqFolder}/aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt"
 results="/home/erschultz/sequences_to_contact_maps/results"
-modelPath="${results}/${model_type}/${model_id}"
+modelPath="${results}/${modelType}/${modelID}"
 
 
 # move to scratch
