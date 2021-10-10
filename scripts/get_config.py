@@ -223,7 +223,7 @@ def main():
     # set up diag chis
     config["diagonal_on"] = args.diag
     if args.diag:
-        chi_diag = np.linspace(0, args.diag_max_chi, 20)
+        chi_diag = np.linspace(0, args.max_diag_chi, 20)
         config["diag_chis"] = chi_diag
 
     # save nbeads
