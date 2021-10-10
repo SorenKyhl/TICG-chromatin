@@ -50,6 +50,15 @@ def str2list(v, sep = '-'):
         raise argparse.ArgumentTypeError('str value expected.')
 
 def loadData(args):
+    '''
+    Loads data from args.data_folder for each sample <i> in args.samples.
+
+    Data is expected to be found at args.data_folder/samples/sample<i>/<method>.
+
+    <method> must be formatted such that <method>.split('-')[0] \in METHODS (e.g. 'nmf-binarize'.split('-')[0] = 'nmf')
+
+    All directories within <method> that start with 'k' are assumed to contain 'distance_pearson.json', from which data is loaded.
+    '''
     data = defaultdict(lambda: defaultdict(lambda : defaultdict(list)))
 
     for sample in args.samples:
@@ -60,9 +69,10 @@ def loadData(args):
             if osp.isdir(method_folder) and method.split('-')[0] in METHODS:
                 print(method)
                 for k_file in os.listdir(method_folder):
-                     if k_file.startswith('k'):
+                    k_folder = osp.join(method_folder, k_file)
+                    if osp.isdir(k_folder) and k_file.startswith('k'):
                         k = int(k_file[1])
-                        json_file = osp.join(sample_folder, method, k_file, 'distance_pearson.json')
+                        json_file = osp.join(k_folder, 'distance_pearson.json')
                         if osp.exists(json_file):
                             found_anything = True
                             print("Loading: {}".format(json_file))
@@ -71,11 +81,14 @@ def loadData(args):
                                 data[k][method]['overall_pearson'].append(results['overall_pearson'])
                                 data[k][method]['scc'].append(results['scc'])
                                 data[k][method]['avg_dist_pearson'].append(results['avg_dist_pearson'])
-                print('\n')
+                        else:
+                            print("MISSING: {}".format(json_file))
+                print('')
                 # just making output look nicer
     return data
 
 def makeLatexTable(data, ofile):
+    '''Writes data to ofile in latex table format.'''
     with open(ofile, 'w') as o:
         o.write("\\begin{center}\n")
         o.write("\\begin{tabular}{|c|c|c|c|c|}\n")
@@ -84,9 +97,8 @@ def makeLatexTable(data, ofile):
         o.write("\\hline\\hline\n")
         for k in sorted(data.keys()):
             first = True # only write k for first row in section
-            for method, label in zip(METHODS, LABELS):
-                if method not in data[k].keys():
-                    continue
+            keys, labels = sort_method_keys(data[k].keys())
+            for key, label in zip(keys, labels):
                 if first:
                     k_label = k
                     first = False
@@ -95,7 +107,7 @@ def makeLatexTable(data, ofile):
                 text = "{} & {}".format(label, k_label)
 
                 for metric in ['overall_pearson', 'avg_dist_pearson', 'scc']:
-                    data_list = avg_dist_pearson_list = data[k][method][metric]
+                    data_list = avg_dist_pearson_list = data[k][key][metric]
                     data_mean = np.round(np.mean(data_list), 3)
                     if len(data_list) > 1:
                         data_std = np.round(np.std(data_list), 3)
@@ -109,6 +121,22 @@ def makeLatexTable(data, ofile):
             o.write("\\hline\n")
         o.write("\\end{tabular}\n")
         o.write("\\end{center}")
+
+def sort_method_keys(keys):
+    '''Sorts keys to match order of METHODS and gets corresponding labels from LABELS.'''
+    sorted_keys = []
+    sorted_labels = []
+    for method, label in zip(METHODS, LABELS):
+        for key in keys:
+            split = key.split('-')
+            if split[0] == method:
+                sorted_keys.append(key)
+                if len(split) > 1:
+                    sorted_labels.append(label + '-' + split[1])
+                else:
+                    sorted_labels.append(label)
+
+    return sorted_keys, sorted_labels
 
 def main():
     args = getArgs()

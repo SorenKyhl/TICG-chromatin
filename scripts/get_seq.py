@@ -25,14 +25,14 @@ def getArgs():
     chip_seq_data_local = osp.join(seq_local, 'chip_seq_data')
     # "./project2/depablo/erschultz/dataset_04_18_21"
     parser.add_argument('--data_folder', type=str, default=osp.join(seq_local,'dataset_08_26_21'), help='location of input data')
-    parser.add_argument('--sample', type=int, default=1201, help='sample id')
+    parser.add_argument('--sample', type=int, default=40, help='sample id')
     parser.add_argument('--sample_folder', type=str, help='location of input data')
 
     parser.add_argument('--method', type=str, default='k_means', help='method for assigning particle types')
     parser.add_argument('--m', type=int, default=1024, help='number of particles (will crop contact map)')
     parser.add_argument('--p_switch', type=float, default=0.05, help='probability to switch bead assignment (for method = random)')
     parser.add_argument('--binarize', type=str2bool, default=False, help='true to binarize labels (not implemented for all methods)') # TODO
-    parser.add_argument('--normalize', type=str2bool, default=False, help='true to normalize labels to [0,1] (not implemented for all methods)') # TODO
+    parser.add_argument('--normalize', type=str2bool, default=False, help='true to normalize labels to [0,1] (or [-1, 1] for some methods) (not implemented for all methods)') # TODO
     parser.add_argument('--k', type=int, default=2, help='sequences to generate')
     parser.add_argument('--model_path', type=str, help='path to GNN model')
     parser.add_argument('--epigenetic_data_folder', type=str, default=osp.join(chip_seq_data_local, 'fold_change_control/processed'), help='location of epigenetic data')
@@ -103,13 +103,28 @@ def get_random_seq(m, p_switch, k, relabel):
     return seq
 
 def relabel_seq(seq, relabel_str):
+    '''
+    Relabels seq according to relabel_str.
+
+    Inputs:
+        seq: m x k np array
+        relabel_str: string of format <old>-<new>
+
+    Example:
+    consider: <old> = AB, <new> = D, seq is m x 3
+    Any particle with both label A and label B, will be relabeled to have
+    label C and neither A nor B. Label C will be unaffected.
+
+    Note that LETTERS.find(new) must be >= k
+    (i.e label <new> cannot be present in seq already)
+    '''
     m, k = seq.shape
 
-    left, right = relabel_str.split('-')
-    new_label = LETTERS.find(right)
-    assert new_label >= k
-    old_labels = [LETTERS.find(i) for i in left]
-    all_labels = [LETTERS.find(i) for i in left+right]
+    old, new = relabel_str.split('-')
+    new_label = LETTERS.find(new)
+    assert new_label >= k # new label cannot already be present
+    old_labels = [LETTERS.find(i) for i in old]
+    all_labels = [LETTERS.find(i) for i in old+new]
 
     new_seq = np.zeros((m, k+1))
     new_seq[:, :k] = seq
@@ -122,7 +137,7 @@ def relabel_seq(seq, relabel_str):
 
     # assign new_label
     new_seq[:, new_label] = where
-    # # delete old_labels
+    # delete old_labels
     for i in old_labels:
         new_seq[:, i] -= where
 
@@ -152,13 +167,29 @@ def get_PCA_split_seq(m, y_diag, k):
         j += 2
     return seq
 
-def get_PCA_seq(m, y_diag, k):
+def get_PCA_seq(input, k, normalize):
+    '''Defines seq based on PCs of input.'''
+    m, _ = input.shape
     pca = PCA()
-    pca.fit(y_diag)
+    pca.fit(input)
     seq = np.zeros((m, k))
 
     for j in range(k):
-        seq[:,j] = pca.components_[j]
+        pc = pca.components_[j]
+
+        if normalize:
+            min = np.min(pc)
+            max = np.max(pc)
+            if max > abs(min):
+                val = max
+            else:
+                val = abs(min)
+
+            # multiply by scale such that val x scale = 1
+            scale = 1/val
+            pc *= scale
+
+        seq[:,j] = pc
 
     return seq
 
@@ -278,12 +309,29 @@ def get_ChromHMM_seq(ifile, k, start=35000000, end=60575000, res=25000, min_cove
 
     return seq, labels
 
-def get_seq_gnn(m, k, model_path, sample):
-    seq_path = osp.join(model_path, "sample{}/z.npy".format(sample))
-    if osp.exists(seq_path):
-        seq = np.load(seq_path)[:args.m, :args.m]
+def get_seq_gnn(k, model_path, sample, normalize):
+    # determine model_type
+    model_type = osp.split(osp.split(model_path)[0])[1]
+    print(model_type)
+
+    if model_type == 'ContactGNN':
+        z_path = osp.join(model_path, "sample{}/z.npy".format(sample))
+        if osp.exists(z_path):
+            seq = np.load(z_path)
+            assert seq.shape[1] == k
+        else:
+            raise Exception('z_path does not exist: {}'.format(z_path))
+    elif model_type == 'ContactGNNEnergy':
+        s_path = osp.join(model_path, "sample{}/energy_hat.txt".format(sample))
+        if osp.exists(s_path):
+            s = np.loadtxt(s_path)
+            seq = get_PCA_seq(s, k, normalize)
+        else:
+            raise Exception('s_path does not exist: {}'.format(s_path))
     else:
-        raise Exception('seq path does not exist: {}'.format(seq_path))
+        raise Exception("Unrecognized model_type: {}".format(model_type))
+
+    return seq
 
 def writeSeq(seq, format, save_npy):
     m, k = seq.shape
@@ -352,7 +400,7 @@ def main():
         format = '%d'
     elif args.method == 'pca':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]
-        seq = get_PCA_seq(args.m, y_diag, args.k)
+        seq = get_PCA_seq(y_diag, args.k, args.normalize)
         format = '%.3e'
     elif args.method == 'pca_split':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]
@@ -380,6 +428,17 @@ def main():
     elif args.method == 'chromhmm':
         seq, labels = get_ChromHMM_seq(args.ChromHMM_data_file, args.k)
         format = '%d'
+    elif args.method == 'gnn':
+        argparse_path = osp.join(args.model_path, 'argparse.txt')
+        with open(argparse_path, 'r') as f:
+            for line in f:
+                if line == '--data_folder\n':
+                    break
+            data_folder = f.readline().strip()
+            dataset = osp.split(data_folder)[1]
+        assert dataset == osp.split(args.data_folder)[1], 'Dataset mismatch: {} vs {}'.format(dataset, args.dataset)
+
+        seq = get_seq_gnn(args.k, args.model_path, args.sample, args.normalize)
     else:
         raise Exception('Unkown method: {}'.format(args.method))
 
@@ -432,11 +491,19 @@ def test_ChromHMM():
     seq, args.labels = get_ChromHMM_seq(args.ChromHMM_data_file, args.k, min_coverage_prcnt = 0)
     plot_seq_exclusive(seq, labels=args.labels, X=args.X, show=True, save=False, title='ChromHMM test')
 
+def test_GNN():
+    args = getArgs()
+    args.k = 2
+    args.model_path = '../sequences_to_contact_maps/results/ContactGNNEnergy/26'
+    args.normalize = True
+
+    seq = get_seq_gnn(args.k, args.model_path, args.sample, args.normalize)
 
 
 if __name__ ==  "__main__":
-    main()
+    # main()
     # test_nmf_k_means()
     # test_random()
     # test_epi()
     # test_ChromHMM()
+    test_GNN()

@@ -7,15 +7,16 @@
 #SBATCH --mem-per-cpu=2000
 
 m=1024
-k=6
-sample=1
-dataFolder='/project2/depablo/erschultz/dataset_09_21_21'
+sample=40
+dataFolder='/project2/depablo/erschultz/dataset_08_29_21'
 productionSweeps=50000
 equilibSweeps=10000
 goalSpecified=1
 numIterations=100 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 scratchDir='/scratch/midway2/erschultz/TICG'
+model_type='ContactGNNEnergy'
+model_id='28'
 
 source activate python3.8_pytorch1.8.1_cuda10.2
 module load jq
@@ -29,10 +30,11 @@ do
 done
 
 STARTTIME=$(date +%s)
-for k in 9
+for k in 2
 do
   #'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
-  for method in 'ChromHMM'
+  #'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
+  for method in 'GNN'
   do
     ofile="/home/erschultz/TICG-chromatin/logFiles/TICG_${method}.log"
     ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite "${scratchDir}_${method}" $method >> $ofile &
