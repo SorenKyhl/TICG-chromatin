@@ -8,6 +8,7 @@
 
 m=1024
 sample=1230
+samples='40-1230'
 dataFolder='/project2/depablo/erschultz/dataset_08_29_21'
 productionSweeps=50000
 equilibSweeps=10000
@@ -33,15 +34,21 @@ STARTTIME=$(date +%s)
 for k in 2
 do
   #'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
-  for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
+  for method in 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
   do
     ofile="/home/erschultz/TICG-chromatin/logFiles/TICG_${method}.log"
-    ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite "${scratchDir}_${method}" $method $modelType $modelID>> $ofile &
+    ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite "${scratchDir}_${method}" $method $modelType $modelID >> $ofile &
   done
   wait
 done
 
-python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples 1
+python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
 
 ENDTIME=$(date +%s)
 echo "total time: $(($ENDTIME-$STARTTIME)) seconds"
+
+# clean up scratch
+for method in 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
+do
+  rm -d "${scratchDir}_${method}"
+done

@@ -14,8 +14,8 @@ k=2
 m=1024
 today=$(date +'%m_%d_%y')
 dataFolder="/project2/depablo/erschultz/dataset_10_10_21"
-samplesPerTask=50
-startSample=1
+samplesPerTask=26
+startSample=24
 relabel='none'
 diag='true'
 
@@ -36,3 +36,9 @@ done
 wait
 ENDTIME=$(date +%s)
 echo "total time: $(($ENDTIME-$STARTTIME)) seconds"
+
+# clean up scratch
+for i in $(seq 1 40)
+do
+  rm -d "/scratch/midway2/erschultz/TICG${i}"
+done
