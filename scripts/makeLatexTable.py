@@ -6,7 +6,15 @@ import argparse
 from collections import defaultdict
 import numpy as np
 
+# ensure that I can get_config
+abspath = osp.abspath(__file__)
+dname = osp.dirname(abspath)
+sys.path.insert(0, dname)
+from knightRuiz import knightRuiz
+from get_config import str2list, str2bool
+
 METHODS = ['ground_truth', 'random', 'PCA', 'PCA_split', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM']
+SMALL_METHODS = ['ground_truth', 'random', 'PCA', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM']
 LABELS = ['Ground Truth', 'Random', 'PCA', 'PCA Split', 'K-means', 'NMF', 'GNN', 'Epigenetic', 'ChromHMM']
 
 
@@ -16,6 +24,7 @@ def getArgs():
     parser.add_argument('--sample', type=int, default=1, help='sample id')
     parser.add_argument('--samples', type=str2list, help='list of sample ids separated by -')
     parser.add_argument('--sample_folder', type=str, help='location of input data')
+    parser.add_argumet('--small', type=str2bool, default=False, help='True to output smaller table with only methods in SMALL_METHODS and SCC as metric')
 
     args = parser.parse_args()
 
@@ -24,30 +33,6 @@ def getArgs():
         args.sample_folder = osp.join(args.data_folder, 'samples', 'sample{}'.format(args.sample))
 
     return args
-
-def str2list(v, sep = '-'):
-    """
-    Helper function for argparser, converts str to list by splitting on sep.
-
-    Exmaple for sep = '-': "i-j-k" -> [i,j,k]
-
-    Inputs:
-        v: string
-        sep: separator
-    """
-    if v is None:
-        return None
-    elif isinstance(v, str):
-        if v.lower() == 'none':
-            return None
-        else:
-            result = [i for i in v.split(sep)]
-            for i, val in enumerate(result):
-                if val.isnumeric():
-                    result[i] = int(val)
-            return result
-    else:
-        raise argparse.ArgumentTypeError('str value expected.')
 
 def loadData(args):
     '''
@@ -87,18 +72,27 @@ def loadData(args):
                 # just making output look nicer
     return data
 
-def makeLatexTable(data, ofile):
+def makeLatexTable(data, ofile, small):
     '''Writes data to ofile in latex table format.'''
     with open(ofile, 'w') as o:
         o.write("\\begin{center}\n")
-        o.write("\\begin{tabular}{|c|c|c|c|c|}\n")
-        o.write("\\hline\n")
-        o.write("Method & k & Pearson R & Avg Dist Pearson R & SCC \\\ \n")
+        if small:
+            metrics = ['scc']
+            o.write("\\begin{tabular}{|c|c|c|}\n")
+            o.write("\\hline\n")
+            o.write("Method & k & SCC \\\ \n")
+        else:
+            metrics = ['overall_pearson', 'avg_dist_pearson', 'scc']
+            o.write("\\begin{tabular}{|c|c|c|c|c|}\n")
+            o.write("\\hline\n")
+            o.write("Method & k & Pearson R & Avg Dist Pearson R & SCC \\\ \n")
         o.write("\\hline\\hline\n")
         for k in sorted(data.keys()):
             first = True # only write k for first row in section
             keys, labels = sort_method_keys(data[k].keys())
             for key, label in zip(keys, labels):
+                if small and key not in SMALL_METHODS:
+                    continue
                 if first:
                     k_label = k
                     first = False
@@ -106,7 +100,7 @@ def makeLatexTable(data, ofile):
                     k_label = ''
                 text = "{} & {}".format(label, k_label)
 
-                for metric in ['overall_pearson', 'avg_dist_pearson', 'scc']:
+                for metric in metrics:
                     data_list = avg_dist_pearson_list = data[k][key][metric]
                     data_mean = np.round(np.mean(data_list), 3)
                     if len(data_list) > 1:
@@ -141,16 +135,21 @@ def sort_method_keys(keys):
 def main():
     args = getArgs()
 
+    if small:
+        fname = 'max_ent_table_small.txt'
+    else:
+        fname = 'max_ent_table.txt'
+
     if args.samples is not None:
         data = loadData(args)
-        ofile = osp.join(args.data_folder, 'max_ent_table.txt')
+        ofile = osp.join(args.data_folder, fname)
 
     if args.sample is not None:
         args.samples = [args.sample]
         data = loadData(args)
-        ofile = osp.join(args.sample_folder, 'max_ent_table.txt')
+        ofile = osp.join(args.sample_folder, fname)
 
-    makeLatexTable(data, ofile)
+    makeLatexTable(data, ofile, args.small)
 
 
 if __name__ == '__main__':

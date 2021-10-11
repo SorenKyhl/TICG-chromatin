@@ -12,7 +12,7 @@ from sklearn.decomposition import PCA, NMF
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 
-# ensure that I can find knightRuiz
+# ensure that I can find knightRuiz and get_config
 abspath = osp.abspath(__file__)
 dname = osp.dirname(abspath)
 sys.path.insert(0, dname)
