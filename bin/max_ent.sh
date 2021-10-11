@@ -33,8 +33,7 @@ STARTTIME=$(date +%s)
 for k in 2
 do
   #'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
-  #'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
-  for method in 'GNN'
+  for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
   do
     ofile="/home/erschultz/TICG-chromatin/logFiles/TICG_${method}.log"
     ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite "${scratchDir}_${method}" $method $modelType $modelID>> $ofile &
