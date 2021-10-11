@@ -175,7 +175,7 @@ def main():
     with open(args.default_config, 'rb') as f:
         config = json.load(f)
 
-    # process chi
+    # set up chi
     if args.chi is None:
         assert args.k is not None, "chi and k cannot both be None"
         args.chi = getChis(args)
@@ -192,7 +192,12 @@ def main():
         if not conv.PsiUniqueRows():
             print('Warning: particles are not distinguishable')
 
-    # save chi to wd
+    # set up diag chi
+    config["diagonal_on"] = args.diag
+    chi_diag = np.linspace(0, args.max_diag_chi, 20)
+    config["diag_chis"] = list(chi_diag)
+
+    # save chi and diag_chi
     if args.save_chi:
         np.savetxt('chis.txt', args.chi, fmt='%0.5f')
         np.save('chis.npy', args.chi)
@@ -219,11 +224,6 @@ def main():
             key = 'chi{}{}'.format(LETTERS[row], LETTERS[col])
             val = args.chi[row, col]
             config[key] = val
-
-    # set up diag chis
-    config["diagonal_on"] = args.diag
-    chi_diag = np.linspace(0, args.max_diag_chi, 20)
-    config["diag_chis"] = list(chi_diag)
 
     # save nbeads
     config['nbeads'] = args.m
