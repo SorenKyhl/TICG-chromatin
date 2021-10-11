@@ -7,7 +7,7 @@
 #SBATCH --mem-per-cpu=2000
 
 m=1024
-sample=40
+sample=1230
 dataFolder='/project2/depablo/erschultz/dataset_08_29_21'
 productionSweeps=50000
 equilibSweeps=10000
