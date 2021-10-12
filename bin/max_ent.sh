@@ -1,6 +1,6 @@
 #! /bin/bash
 #SBATCH --job-name=TICG_maxent
-#SBATCH --output=logFiles/maxent.out
+#SBATCH --output=logFiles/maxent2.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=30
@@ -22,7 +22,7 @@ source activate python3.8_pytorch1.8.1_cuda10.2
 module load jq
 
 STARTTIME=$(date +%s)
-i=1
+i=3
 for sample in 40 1230 1718
 do
   for k in 4 6
