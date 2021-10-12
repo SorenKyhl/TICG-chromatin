@@ -13,3 +13,8 @@ small='true'
 source activate python3.8_pytorch1.8.1_cuda10.2
 
 python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples --small $small
+
+samples='40-1230'
+dataFolder='/project2/depablo/erschultz/dataset_09_21_21'
+python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples --small $small
+python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples

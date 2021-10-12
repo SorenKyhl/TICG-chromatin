@@ -25,7 +25,7 @@ def getArgs():
     parser.add_argument('--sample', type=int, default=1, help='sample id')
     parser.add_argument('--samples', type=str2list, help='list of sample ids separated by -')
     parser.add_argument('--sample_folder', type=str, help='location of input data')
-    parser.add_argumet('--small', type=str2bool, default=False, help='True to output smaller table with only methods in SMALL_METHODS and SCC as metric')
+    parser.add_argument('--small', type=str2bool, default=False, help='True to output smaller table with only methods in SMALL_METHODS and SCC as metric')
 
     args = parser.parse_args()
 
