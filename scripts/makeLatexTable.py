@@ -136,7 +136,7 @@ def sort_method_keys(keys):
 def main():
     args = getArgs()
 
-    if small:
+    if args.small:
         fname = 'max_ent_table_small.txt'
     else:
         fname = 'max_ent_table.txt'
