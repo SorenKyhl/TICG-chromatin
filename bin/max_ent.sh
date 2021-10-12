@@ -30,7 +30,7 @@ do
     #'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
     for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
     do
-      if [$method -eq "GNN"]
+      if [ $method -eq "GNN" ]
       then
         methodFolder="${method}-${modelID}"
       else
