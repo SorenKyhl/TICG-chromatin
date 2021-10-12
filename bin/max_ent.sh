@@ -1,6 +1,6 @@
 #! /bin/bash
 #SBATCH --job-name=TICG_maxent
-#SBATCH --output=TICG_maxent.out
+#SBATCH --output=logFiles/maxent.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20
@@ -15,40 +15,47 @@ equilibSweeps=10000
 goalSpecified=1
 numIterations=100 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
-scratchDir='/scratch/midway2/erschultz/TICG'
+scratchDir='/scratch/midway2/erschultz/TICG_maxent'
 modelType='ContactGNNEnergy'
 modelID='28'
 
 source activate python3.8_pytorch1.8.1_cuda10.2
 module load jq
 
-# initialize log files
-for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'GNN' 'epigenetic' 'ChromHMM'
-do
-  ofile="/home/erschultz/TICG-chromatin/logFiles/TICG_${method}.log"
-  rm $ofile
-  touch $ofile
-done
+# # initialize log files
+# for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'GNN' 'epigenetic' 'ChromHMM'
+# do
+#   logfile="/home/erschultz/TICG-chromatin/logFiles/TICG_${method}.log"
+#   rm $logfile
+#   touch $logfile
+# done
 
 STARTTIME=$(date +%s)
-for k in 2
+i=1
+for sample in 40 1230
 do
-  #'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
-  for method in 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
+  for k in 2
   do
-    ofile="/home/erschultz/TICG-chromatin/logFiles/TICG_${method}.log"
-    ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite "${scratchDir}_${method}" $method $modelType $modelID >> $ofile &
+    #'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
+    for method in 'ground_truth'
+    do
+      if [$method -eq "GNN"]
+      then
+        methodFolder="${method}-${modelID}"
+      else
+        methodFolder=${method}
+      fi
+      ofile="${dataFolder}/samples/sample${sample}/${methodFolder}/k${k}"
+      ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite "${scratchDir}_${i}" $method $modelType $modelID $ofile > log.log &
+      mv log.log $ofile
+      i=$(($i+1))
+    done
   done
-  wait
 done
+
+wait
 
 python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
 
 ENDTIME=$(date +%s)
 echo "total time: $(($ENDTIME-$STARTTIME)) seconds"
-
-# clean up scratch
-for method in 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
-do
-  rm -d "${scratchDir}_${method}"
-done

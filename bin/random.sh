@@ -1,6 +1,6 @@
 #! /bin/bash
 #SBATCH --job-name=TICG
-#SBATCH --output=TICG.out
+#SBATCH --output=logFiles/random.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=50
@@ -25,7 +25,7 @@ mv TICG-engine ..
 
 echo $dataFolder
 STARTTIME=$(date +%s)
-for i in $(seq 1 40)
+for i in $(seq 1 50)
 do
   start=$(( $(( $(( $i-1 ))*50 ))+$startSample ))
   stop=$(( $start+$samplesPerTask-1 ))
@@ -38,7 +38,7 @@ ENDTIME=$(date +%s)
 echo "total time: $(($ENDTIME-$STARTTIME)) seconds"
 
 # clean up scratch
-for i in $(seq 1 40)
+for i in $(seq 1 50)
 do
   rm -d "/scratch/midway2/erschultz/TICG${i}"
 done

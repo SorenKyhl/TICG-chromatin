@@ -14,9 +14,10 @@ scratchDir=${10}
 method=${11}
 modelType=${12}
 modelID=${13}
+ofile=${14}
 echo $@
 
-sampleFolder="$dataFolder/samples/sample$sample"
+sampleFolder="${dataFolder}/samples/sample${sample}"
 
 # other parameters
 mode="plaid"
@@ -49,8 +50,7 @@ then
 fi
 
 # apply max ent with newton's method
-dir="${sampleFolder}/${method}/k${k}"
-~/TICG-chromatin/maxent/bin/run.sh $dir $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite $scratchDir
+~/TICG-chromatin/maxent/bin/run.sh $ofile $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite $scratchDir
 
 # compare results
 prodIt=$(($numIterations+1))
