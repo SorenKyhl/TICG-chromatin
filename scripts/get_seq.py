@@ -260,9 +260,12 @@ def get_epigenetic_seq(data_folder, k, start=35000000, end=60575000, res=25000, 
 
     # choose k marks with most coverage
     seq = np.zeros((m, k))
+    marks = []
     for i, (file, coverage) in enumerate(file_list[:k]):
+        mark = file.split('_')[1]
+        marks.append(mark)
         if coverage < min_coverage_prcnt / 100 * m:
-            print("WARNING: mark {} has insufficient coverage: {}".format(file.split('_')[1], coverage))
+            print("WARNING: mark {} has insufficient coverage: {}".format(mark, coverage))
         seq_i = np.load(osp.join(data_folder, file))
         seq_i = seq_i[start:end+1, 1]
         seq[:, i] = seq_i
@@ -270,7 +273,7 @@ def get_epigenetic_seq(data_folder, k, start=35000000, end=60575000, res=25000, 
     if i < k:
         print("Warning: insufficient data - only {} marks found".format(i))
 
-    return seq
+    return seq, marks
 
 def get_ChromHMM_seq(ifile, k, start=35000000, end=60575000, res=25000, min_coverage_prcnt=5):
     start = int(start / res)
@@ -372,7 +375,7 @@ def plot_seq_exclusive(seq, labels=None, X=None, show = False, save = True, titl
         plt.show()
     plt.close()
 
-def plot_seq_binary(seq, show = False, save = True, title = None):
+def plot_seq_binary(seq, show = False, save = True, title = None, labels = None):
     '''Plotting function for non mutually exclusive binary particle types'''
     # TODO make figure wider and less tall
     m, k = seq.shape
@@ -382,7 +385,11 @@ def plot_seq_binary(seq, show = False, save = True, title = None):
 
     for i, c in enumerate(colors):
         x = np.argwhere(seq[:, i] == 1)
-        plt.scatter(x, np.ones_like(x) * i, label = i, color = c['color'], s=1)
+        if labels is None:
+            label_i = i
+        else:
+            label_i = labels[i]
+        plt.scatter(x, np.ones_like(x) * i, label = label_i, color = c['color'], s=1)
 
     plt.legend()
     ax = plt.gca()
@@ -422,7 +429,7 @@ def main():
         args.X = y_diag
         format = '%.3e'
     elif args.method == 'epigenetic':
-        seq = get_epigenetic_seq(args.epigenetic_data_folder, args.k)
+        seq, marks = get_epigenetic_seq(args.epigenetic_data_folder, args.k)
         format = '%d'
     elif args.method == 'chromhmm':
         seq, labels = get_ChromHMM_seq(args.ChromHMM_data_file, args.k)
@@ -480,8 +487,9 @@ def test_random():
 def test_epi():
     args = getArgs()
     args.k = 6
-    seq = get_epigenetic_seq(args.epigenetic_data_folder, args.k)
-    plot_seq_binary(seq, show = True, save = False, title = 'epigenetic test')
+    seq, marks = get_epigenetic_seq(args.epigenetic_data_folder, args.k)
+    print(marks)
+    plot_seq_binary(seq, show = True, save = False, title = None, labels = marks, axis = False)
 
 def test_ChromHMM():
     args = getArgs()
@@ -501,9 +509,9 @@ def test_GNN():
 
 
 if __name__ ==  "__main__":
-    main()
+    # main()
     # test_nmf_k_means()
     # test_random()
-    # test_epi()
+    test_epi()
     # test_ChromHMM()
     # test_GNN()

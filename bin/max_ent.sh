@@ -3,11 +3,10 @@
 #SBATCH --output=logFiles/maxent.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
-#SBATCH --ntasks=20
+#SBATCH --ntasks=30
 #SBATCH --mem-per-cpu=2000
 
 m=1024
-sample=1718
 samples='40-1230-1718'
 dataFolder='/project2/depablo/erschultz/dataset_08_29_21'
 productionSweeps=50000
@@ -22,22 +21,14 @@ modelID='28'
 source activate python3.8_pytorch1.8.1_cuda10.2
 module load jq
 
-# # initialize log files
-# for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'GNN' 'epigenetic' 'ChromHMM'
-# do
-#   logfile="/home/erschultz/TICG-chromatin/logFiles/TICG_${method}.log"
-#   rm $logfile
-#   touch $logfile
-# done
-
 STARTTIME=$(date +%s)
 i=1
-for sample in 40 1230
+for sample in 40 1230 1718
 do
-  for k in 2
+  for k in 4 6
   do
     #'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
-    for method in 'ground_truth'
+    for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
     do
       if [$method -eq "GNN"]
       then
