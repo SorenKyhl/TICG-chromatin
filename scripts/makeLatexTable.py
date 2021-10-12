@@ -12,7 +12,7 @@ abspath = osp.abspath(__file__)
 dname = osp.dirname(abspath)
 sys.path.insert(0, dname)
 from knightRuiz import knightRuiz
-from get_config import str2list, str2bool
+from get_config import str2bool
 
 METHODS = ['ground_truth', 'random', 'PCA', 'PCA_split', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM']
 SMALL_METHODS = ['ground_truth', 'random', 'PCA', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM']
@@ -22,7 +22,7 @@ LABELS = ['Ground Truth', 'Random', 'PCA', 'PCA Split', 'K-means', 'NMF', 'GNN',
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     parser.add_argument('--data_folder', type=str, default='../sequences_to_contact_maps/dataset_09_21_21', help='location of input data')
-    parser.add_argument('--sample', type=int, default=1, help='sample id')
+    parser.add_argument('--sample', type=int, help='sample id')
     parser.add_argument('--samples', type=str2list, help='list of sample ids separated by -')
     parser.add_argument('--sample_folder', type=str, help='location of input data')
     parser.add_argument('--small', type=str2bool, default=False, help='True to output smaller table with only methods in SMALL_METHODS and SCC as metric')
@@ -34,6 +34,30 @@ def getArgs():
         args.sample_folder = osp.join(args.data_folder, 'samples', 'sample{}'.format(args.sample))
 
     return args
+
+def str2list(v, sep = '-'):
+    """
+    Helper function for argparser, converts str to list by splitting on sep.
+
+    Exmaple for sep = '-': "i-j-k" -> [i,j,k]
+
+    Inputs:
+        v: string
+        sep: separator
+    """
+    if v is None:
+        return None
+    elif isinstance(v, str):
+        if v.lower() == 'none':
+            return None
+        else:
+            result = [i for i in v.split(sep)]
+            for i, val in enumerate(result):
+                if val.isnumeric():
+                    result[i] = int(val)
+            return result
+    else:
+        raise argparse.ArgumentTypeError('str value expected.')
 
 def loadData(args):
     '''

@@ -26,7 +26,7 @@ def getArgs():
     parser.add_argument('--max_diag_chi', type=float, default=0.5, help='maximum diag chi value for np.linspace()')
 
     # chi arguments
-    parser.add_argument('--chi', type=str2list, help='chi matrix using latex separator style (if None will be generated randomly)')
+    parser.add_argument('--chi', type=str2list2D, help='chi matrix using latex separator style (if None will be generated randomly)')
     parser.add_argument('--save_chi', action="store_true", help='true to save chi to wd')
     parser.add_argument('--save_chi_for_max_ent', action="store_true", help='true to save chi to wd in format needed for max ent')
     parser.add_argument('--min_chi', type=float, default=-1., help='minimum chi value for random generation')
@@ -39,7 +39,7 @@ def getArgs():
     args = parser.parse_args()
     return args
 
-def str2list(v, sep1 = '\\', sep2 = '&'):
+def str2list2D(v, sep1 = '\\', sep2 = '&'):
     """
     Helper function for argparser, converts str to list by splitting on sep1, then on sep2.
 
