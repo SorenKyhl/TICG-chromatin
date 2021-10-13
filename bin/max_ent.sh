@@ -30,7 +30,7 @@ do
     #'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
     for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
     do
-      if [ $method -eq "GNN" ]
+      if [ $method == "GNN" ]
       then
         methodFolder="${method}-${modelID}"
       else
@@ -40,8 +40,8 @@ do
       scratchDirI="${scratchDir}_${i}"
       mkdir -p $scratchDirI
       cd $scratchDirI
-      ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite $scratchDirI $method $modelType $modelID $ofile > log.log &
-      mv log.log $ofile
+      ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite $scratchDirI $method $modelType $modelID $ofile > bash.log &
+      mv bash.log $ofile
       i=$(($i+1))
     done
   done

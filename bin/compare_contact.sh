@@ -14,4 +14,6 @@ sample=1
 source activate python3.8_pytorch1.8.1_cuda10.2
 
 for sample in 1230 1718
-python3 ~/TICG-chromatin/compare_contact_post.py --data_folder $dataFolder --sample $sample
+do
+  python3 ~/TICG-chromatin/compare_contact_post.py --data_folder $dataFolder --sample $sample
+done

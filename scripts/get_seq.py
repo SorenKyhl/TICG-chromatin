@@ -375,7 +375,7 @@ def plot_seq_exclusive(seq, labels=None, X=None, show = False, save = True, titl
         plt.show()
     plt.close()
 
-def plot_seq_binary(seq, show = False, save = True, title = None, labels = None):
+def plot_seq_binary(seq, show = False, save = True, title = None, labels = None, x_axis = True):
     '''Plotting function for non mutually exclusive binary particle types'''
     # TODO make figure wider and less tall
     m, k = seq.shape
@@ -394,6 +394,8 @@ def plot_seq_binary(seq, show = False, save = True, title = None, labels = None)
     plt.legend()
     ax = plt.gca()
     ax.axes.get_yaxis().set_visible(False)
+    if not x_axis:
+        ax.axes.get_xaxis().set_visible(False)
     if title is not None:
         plt.title(title, fontsize=16)
     if save:
@@ -489,7 +491,7 @@ def test_epi():
     args.k = 6
     seq, marks = get_epigenetic_seq(args.epigenetic_data_folder, args.k)
     print(marks)
-    plot_seq_binary(seq, show = True, save = False, title = None, labels = marks, axis = False)
+    plot_seq_binary(seq, show = True, save = False, title = None, labels = marks, x_axis = False)
 
 def test_ChromHMM():
     args = getArgs()
