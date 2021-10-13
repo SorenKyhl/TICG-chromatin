@@ -55,6 +55,6 @@ fi
 # compare results
 prodIt=$(($numIterations+1))
 cd $ofile
-python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${dir}/iteration${prodIt}/y.npy" --y_diag_instance "$sampleFolder/y_diag_instance.npy" --yhat_diag_instance "${ofile}/iteration${prodIt}/y_diag_instance.npy"
+python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${ofile}/iteration${prodIt}/y.npy" --y_diag_instance "$sampleFolder/y_diag_instance.npy" --yhat_diag_instance "${ofile}/iteration${prodIt}/y_diag_instance.npy"
 
 echo "\n\n"
