@@ -46,7 +46,10 @@ do
         methodFolder=${method}
       fi
       ofile="${dataFolder}/samples/sample${sample}/${methodFolder}/k${k}"
-      ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite "${scratchDir}_${i}" $method $modelType $modelID $ofile > log.log &
+      scratchDirI="${scratchDir}_${i}"
+      mkdir -p $scratchDirI
+      cd $scratchDirI
+      ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite $scratchDirI $method $modelType $modelID $ofile > log.log &
       mv log.log $ofile
       i=$(($i+1))
     done
