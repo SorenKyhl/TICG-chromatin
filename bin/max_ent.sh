@@ -1,6 +1,6 @@
 #! /bin/bash
 #SBATCH --job-name=TICG_maxent
-#SBATCH --output=logFiles/maxent2.out
+#SBATCH --output=logFiles/maxent.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=5
@@ -12,7 +12,7 @@ dataFolder='/project2/depablo/erschultz/dataset_08_29_21'
 productionSweeps=50000
 equilibSweeps=10000
 goalSpecified=1
-numIterations=100 # iteration 1 + numIterations is production run to get contact map
+numIterations=2 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 scratchDir='/scratch/midway2/erschultz/TICG_maxent'
 modelType='ContactGNNEnergy'
@@ -41,7 +41,7 @@ do
       mkdir -p $scratchDirI
       cd $scratchDirI
       ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite $scratchDirI $method $modelType $modelID $ofile > bash.log &
-      mv bash.log $ofile
+      mv bash.log "${ofile}/bash.log"
       i=$(($i+1))
     done
   done
@@ -50,7 +50,7 @@ done
 wait
 
 python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
-python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples --small "true"
+# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples --small "true"
 
 ENDTIME=$(date +%s)
 echo "total time: $(($ENDTIME-$STARTTIME)) seconds"
