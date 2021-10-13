@@ -67,11 +67,7 @@ def main():
                         meanDist = genomic_distance_statistics(yhat)
                         yhat_diag_instance = diagonal_preprocessing(yhat, meanDist)
                     dif = yhat_diag_instance - y_diag_instance
-                    cmap = matplotlib.colors.LinearSegmentedColormap.from_list('custom',
-                                                     [(0, 'blue'),
-                                                     (0.5, 'white'),
-                                                      (1, 'red')], N=126)
-                    plotContactMap(dif, ofile = osp.join(max_it_path, 'dif.png'), vmin = 'min', vmax = 'max', cmap = cmap)
+                    plotContactMap(dif, ofile = osp.join(max_it_path, 'dif.png'), vmin = 'min', vmax = 'max', cmap = 'blue-red')
                     plotContactMap(yhat_diag_instance, ofile = osp.join(max_it_path, 'y_diag_instance.png'), vmax = v_max)
                     plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag_instance, yhat_diag_instance, args, dir=file2_path)
                     comparePCA(y, yhat, dir=file2_path)
