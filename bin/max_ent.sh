@@ -3,7 +3,7 @@
 #SBATCH --output=logFiles/maxent2.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
-#SBATCH --ntasks=30
+#SBATCH --ntasks=5
 #SBATCH --mem-per-cpu=2000
 
 m=1024
@@ -22,13 +22,13 @@ source activate python3.8_pytorch1.8.1_cuda10.2
 module load jq
 
 STARTTIME=$(date +%s)
-i=3
-for sample in 40 1230 1718
+i=1
+for sample in 1230 1718
 do
-  for k in 4 6
+  for k in 2
   do
     #'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
-    for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
+    for method in 'GNN'
     do
       if [ $method == "GNN" ]
       then
