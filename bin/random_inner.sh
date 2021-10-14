@@ -10,7 +10,7 @@ numSimulations=$6
 dataFolder=$7
 relabel=$8
 diag=$9
-maxDiagChi=0.5
+maxDiagChi=0.1
 overwrite=1
 
 # below does nothing if chi is given
