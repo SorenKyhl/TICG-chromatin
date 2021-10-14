@@ -116,7 +116,7 @@ def makeLatexTable(data, ofile, small):
             first = True # only write k for first row in section
             keys, labels = sort_method_keys(data[k].keys())
             for key, label in zip(keys, labels):
-                if small and key not in SMALL_METHODS:
+                if small and key.split('-')[0] not in SMALL_METHODS:
                     continue
                 if first:
                     k_label = k
