@@ -8,7 +8,7 @@
 
 m=1024
 samples='40-1230-1718'
-dataFolder='/project2/depablo/erschultz/dataset_08_29_21'
+dataFolder='/project2/depablo/erschultz/dataset_08_26_21'
 productionSweeps=50000
 equilibSweeps=10000
 goalSpecified=1
@@ -16,18 +16,18 @@ numIterations=100 # iteration 1 + numIterations is production run to get contact
 overwrite=1
 scratchDir='/scratch/midway2/erschultz/TICG_maxent'
 modelType='ContactGNNEnergy'
-modelID='28'
+modelID='23'
 
 source activate python3.8_pytorch1.8.1_cuda10.2
 module load jq
 
 STARTTIME=$(date +%s)
 i=1
-for sample in 1230 1718
+for sample in 40 1230 1718
 do
-  for k in 2
+  for k in 1 2
   do
-    #'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
+    # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
     for method in 'GNN'
     do
       if [ $method == "GNN" ]
