@@ -3,7 +3,7 @@
 #SBATCH --output=logFiles/maxent.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
-#SBATCH --ntasks=5
+#SBATCH --ntasks=8
 #SBATCH --mem-per-cpu=2000
 
 m=1024
