@@ -11,20 +11,17 @@ sourceDataFolder="/project2/depablo/erschultz/dataset_10_10_21"
 outputDataFolder="/project2/depablo/erschultz/dataset_10_08_21"
 samplesPerTask=10
 startSample=41
-relabel='none'
-diag='true'
-
-cd ~/TICG-chromatin/src
-make
-mv TICG-engine ..
 
 echo $dataFolder
 STARTTIME=$(date +%s)
-for i in $(seq 1 50)
+for i in $(seq 1 40)
 do
-  start=$(( $(( $(( $i-1 ))*40 ))+$startSample ))
+  start=$(( $(( $(( $i-1 ))*50 ))+$startSample ))
   stop=$(( $start+$samplesPerTask-1 ))
-  echo $start $stop
+  for j in $(seq $start $stop)
+  do
+    mv "${sourceDataFolder}/samples/sample${j}" "${outputDataFolder}/samples/sample${j}"
+  done
 done
 
 ENDTIME=$(date +%s)
