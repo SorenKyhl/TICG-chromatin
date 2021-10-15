@@ -129,6 +129,8 @@ public:
 	bool outside_boundary(Eigen::RowVector3d r);
 	void initialize();
 	void calculateParameters();
+	void volParameters();
+	void volParameters_new();
 	void loadConfiguration();
 	void initRandomCoil(double bondlength);
 	void loadChipseq();

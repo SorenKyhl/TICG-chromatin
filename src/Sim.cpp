@@ -229,6 +229,10 @@ void Sim::readInput() {
 	assert(config.contains("smatrix_filename")); smatrix_filename = config["smatrix_filename"];
 	assert(config.contains("smatrix_on")); smatrix_on = config["smatrix_on"];
 	assert(config.contains("phi_solvent_max")); Cell::phi_solvent_max = config["phi_solvent_max"];
+	assert(config.contains("phi_chromatin")); Cell::phi_chromatin = config["phi_chromatin"];
+	assert(config.contains("kappa")); Cell::kappa = config["kappa"];
+	assert(config.contains("density_cap_on")); Cell::density_cap_on = config["density_cap_on"];
+	assert(config.contains("compressibility_on")); Cell::compressibility_on = config["compressibility_on"];
 
 	//cellcount_on = config["cellcount_on"];
 
@@ -284,7 +288,6 @@ void Sim::initialize() {
 	std::cout << "Initializing simulation objects ... " << std::endl;
 	Timer t_init("Initializing");
 
-
 	// set configuration
 	beads.resize(nbeads);  // uses default constructor initialization to create nbeads;
 	std::cout << "load configuratin is " << load_configuration << std::endl;
@@ -308,19 +311,39 @@ void Sim::initialize() {
 	std::cout << "Objects created" << std::endl;
 }
 
-void Sim::calculateParameters() {
-	grid.delta = grid_size;
-	std::cout << "grid size is : " << grid.delta << std::endl;
-	step_grid = grid.delta/10.0; // size of grid displacement MC moves
-
+void Sim::volParameters() {
 	double Vbar = 7765.77;  // nm^3/bead: reduced number volume per spakowitz: V/N
 	double vol = Vbar*nbeads; // simulation volume in nm^3
 	grid.L= std::round(std::pow(vol,1.0/3.0) / grid.delta); // number of grid cells per side // ROUNDED, won't exactly equal a desired volume frac
 	std::cout << "grid.L is: " << grid.L << std::endl;
 	total_volume = pow(grid.L*grid.delta/1000.0, 3); // micrometers^3 ONLY TRUE FOR CUBIC SIMULATIONS 
 	std::cout << "volume is: " << total_volume << std::endl;
+	std::cout << "volume fraction is: " << nbeads*Cell::beadvol/(total_volume*1000*1000*1000) << std::endl;
 
 	grid.radius = std::pow(3*vol/(4*M_PI), 1.0/3.0); // radius of simulation volume
+}
+
+void Sim::volParameters_new() {
+	double vol_beads = nbeads*Cell::beadvol;
+	double vol  = vol_beads/Cell::phi_chromatin;
+	grid.L= std::round(std::pow(vol ,1.0/3.0) / grid.delta); // number of grid cells per side // ROUNDED, won't exactly equal a desired volume frac
+
+	std::cout << "grid.L is: " << grid.L << std::endl;
+	total_volume = pow(grid.L*grid.delta/1000.0, 3); // micrometers^3 ONLY TRUE FOR CUBIC SIMULATIONS 
+	std::cout << "volume is: " << total_volume << std::endl;
+	std::cout << "volume fraction is: " << nbeads*Cell::beadvol/(total_volume*1000*1000*1000) << std::endl;
+
+	grid.radius = std::pow(3*vol/(4*M_PI), 1.0/3.0); // radius of simulation volume
+}
+
+void Sim::calculateParameters() {
+	grid.delta = grid_size;
+	std::cout << "grid size is : " << grid.delta << std::endl;
+	step_grid = grid.delta/10.0; // size of grid displacement MC moves
+
+	volParameters();
+	volParameters_new();
+
 	grid.boundary_radius = std::round(grid.radius); // radius in units of grid cells
 	// sphere center needs to be centered on a multiple of grid delta
 	//grid.sphere_center = {grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta};
@@ -356,7 +379,6 @@ void Sim::loadConfiguration() {
 	std::cout << "checking if nbeads in config.json matches number of beads in the first line of <input>.xyz ... " << std::endl;
 	assert(init_nbeads == nbeads);
 	std::cout << "nbeads in config.json matches <input>.xyz" << std::endl;
-
 	
 	getline(IFILE, line); // comment line 
 	std::cout << line << std::endl;
@@ -481,7 +503,7 @@ double Sim::getNonBondedEnergy(const std::unordered_set<Cell*>& flagged_cells) {
 	{
 		if (smatrix_on)
 		{
-			U += grid.SmatrixEnergy(flagged_cells, smatrix);
+			U += grid.SmatrixEnergy(flagged_cells, smatrix, chis);
 		}
 		else
 		{

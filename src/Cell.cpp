@@ -6,6 +6,10 @@ int Cell::diag_nbins;
 double Cell::diag_binsize;
 bool Cell::diagonal_linear;
 double Cell::phi_solvent_max;
+double Cell::phi_chromatin;
+double Cell::kappa;
+bool Cell::density_cap_on;
+bool Cell::compressibility_on;
 
 void Cell::print() {
 	std::cout << r << "     N: " << contains.size() << std::endl;
@@ -50,10 +54,17 @@ double Cell::getDensityCapEnergy() {
 	float phi_solvent = 1 - contains.size()*beadvol/vol;
 
 	double U = 0;
-	if (phi_solvent < phi_solvent_max)
+	if (density_cap_on)
 	{
-		// high volume fraction occurs when more than 50% of the volume is occupied by beads
-		U = 99999999999*phi_beads;
+		if (phi_solvent < phi_solvent_max)
+		{
+			// high volume fraction occurs when more than 50% of the volume is occupied by beads
+			U = 99999999999*phi_beads;
+		}
+	}
+	else if (compressibility_on)
+	{
+		U = (phi_beads - phi_chromatin)*(phi_beads - phi_chromatin)*kappa;
 	}
 	return U;
 };
@@ -62,7 +73,6 @@ double Cell::getEnergy(const Eigen::MatrixXd &chis) {
 	for (int i=0; i<ntypes; i++)
 	{
 		phis[i] = typenums[i]*beadvol/vol;
-		//phi_solvent -= phis[i]; // wrong!! when nucl. have multiple marks
 	}
 
 	double U = 0;
@@ -70,24 +80,7 @@ double Cell::getEnergy(const Eigen::MatrixXd &chis) {
 	{
 		for (int j=i; j<ntypes; j++)
 		{
-			if (i==j)
-			{
-				// A - Solvent
-				//U += chis(i,j)*phis[i]*phi_solvent*vol/beadvol;
-
-				// A - self
-				//U += -1*chis(i,j)*phis[i]*phis[j]*vol/beadvol;
-				
-				// the old way
-				U += chis(i,j)*phis[i]*phis[j]*vol/beadvol;
-				//U += exp(compressibility*( phi_beads - 0.5));
-			}
-			else
-			{
-				U += chis(i,j)*phis[i]*phis[j]*vol/beadvol;
-				//U += exp(compressibility*( phi_beads - 0.5));
-				//std::cout << chis(i,j) << " " << phis[i] << " " << phis[j] << " " << vol << " " << beadvol << std::endl;
-			}
+			U += chis(i,j)*phis[i]*phis[j]*vol/beadvol;
 		}
 	}
 	return U;
@@ -104,11 +97,14 @@ double Cell::getSmatrixEnergy(const std::vector<std::vector<double>> &Smatrix)
 		indices.push_back(elem->id);
 	}
 
-	for (int i=0; i<imax-1; i++)
+	assert(imax == indices.size());
+
+	for (int i=0; i<imax; i++)
 	{
-		for(int j=i+1; j<imax; j++)
+		for(int j=0; j<imax; j++)
 		{
-			U += Smatrix[i][j] * beadvol/vol;
+
+			U += Smatrix[indices[i]][indices[j]] * beadvol/vol;
 		}
 	}
 	return U;

@@ -24,6 +24,10 @@ public:
 	static bool diagonal_linear;
 
 	static double phi_solvent_max;
+	static double phi_chromatin;
+	static double kappa;
+	static bool density_cap_on;
+	static bool compressibility_on;
 
 	void print();
 	void reset();
