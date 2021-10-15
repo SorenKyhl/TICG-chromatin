@@ -4,8 +4,14 @@ import numpy as np
 import sys
 import csv
 
+LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
+    parser.add_argument('--default_config', type=str, default='default_config.json', help='path to default config file')
+    parser.add_argument('--ofile', type=str, default='config.json', help='path to output config file')
+
+    # config param arguments
     parser.add_argument('--m', type=int, default=1024, help='number of particles')
     parser.add_argument('--k', type=int, help='number of particle types (inferred from chi if None)')
     parser.add_argument('--load_configuration_filename', type=str, default='input1024.xyz', help='file name of initial config')
@@ -14,11 +20,13 @@ def getArgs():
     parser.add_argument('--dump_stats_frequency', type=int, help='set to change dump stats frequency')
     parser.add_argument('--nSweeps', type=int, help='set to change nSweeps')
     parser.add_argument('--seed', type=int, help='set to change random seed')
-    parser.add_argument('--default_config', type=str, default='default_config.json', help='path to default config file')
-    parser.add_argument('--ofile', type=str, default='config.json', help='path to output config file')
+
+    # diag chi arguments
+    parser.add_argument('--diag', type=str2bool, default=False, help='True for diagonal interactions')
+    parser.add_argument('--max_diag_chi', type=float, default=0.5, help='maximum diag chi value for np.linspace()')
 
     # chi arguments
-    parser.add_argument('--chi', type=str2list, help='chi matrix using latex separator style (if None will be generated randomly)')
+    parser.add_argument('--chi', type=str2list2D, help='chi matrix using latex separator style (if None will be generated randomly)')
     parser.add_argument('--save_chi', action="store_true", help='true to save chi to wd')
     parser.add_argument('--save_chi_for_max_ent', action="store_true", help='true to save chi to wd in format needed for max ent')
     parser.add_argument('--min_chi', type=float, default=-1., help='minimum chi value for random generation')
@@ -31,7 +39,7 @@ def getArgs():
     args = parser.parse_args()
     return args
 
-def str2list(v, sep1 = '\\', sep2 = '&'):
+def str2list2D(v, sep1 = '\\', sep2 = '&'):
     """
     Helper function for argparser, converts str to list by splitting on sep1, then on sep2.
 
@@ -53,6 +61,23 @@ def str2list(v, sep1 = '\\', sep2 = '&'):
             return result
     else:
         raise argparse.ArgumentTypeError('str value expected.')
+
+def str2bool(v):
+    """
+    Helper function for argparser, converts str to boolean for various string inputs.
+    https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
+
+    Inputs:
+        v: string
+    """
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 def generateRandomChi(args, decimals = 1):
     '''Initializes random chi array.'''
@@ -150,7 +175,7 @@ def main():
     with open(args.default_config, 'rb') as f:
         config = json.load(f)
 
-    # process chi
+    # set up chi
     if args.chi is None:
         assert args.k is not None, "chi and k cannot both be None"
         args.chi = getChis(args)
@@ -167,7 +192,12 @@ def main():
         if not conv.PsiUniqueRows():
             print('Warning: particles are not distinguishable')
 
-    # save chi to wd
+    # set up diag chi
+    config["diagonal_on"] = args.diag
+    chi_diag = np.linspace(0, args.max_diag_chi, 20)
+    config["diag_chis"] = list(chi_diag)
+
+    # save chi and diag_chi
     if args.save_chi:
         np.savetxt('chis.txt', args.chi, fmt='%0.5f')
         np.save('chis.npy', args.chi)
@@ -188,11 +218,10 @@ def main():
 
 
     # save chi to config
-    letters='ABCDEFG'
     rows, cols = args.chi.shape
     for row in range(rows):
         for col in range(cols):
-            key = 'chi{}{}'.format(letters[row], letters[col])
+            key = 'chi{}{}'.format(LETTERS[row], LETTERS[col])
             val = args.chi[row, col]
             config[key] = val
 
@@ -227,7 +256,7 @@ def main():
 
 def test():
     args = getArgs()
-    args.k=8
+    args.k = 8
     args.fill_diag = -1
     print(generateRandomChi(args))
 

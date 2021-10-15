@@ -16,12 +16,12 @@ void Sim::run() {
 	readInput();            // load parameters from config.json
 	if (smatrix_on) { setupSmatrix(); }
 	calculateParameters();  // calculates derived parameters
-	makeOutputFiles();      // open files 
+	makeOutputFiles();      // open files
 	initialize();           // set particle positions and construct bonds
 	grid.generate();        // creates the grid locations
 	grid.meshBeads(beads);  // populates the grid locations with beads;
 	grid.setActiveCells();  // populates the active cell locations
-	setupContacts();        // construct contact map 
+	setupContacts();        // construct contact map
 	MC();                   // MC simulation
 	assert (grid.checkCellConsistency(nbeads));
 }
@@ -33,7 +33,7 @@ void Sim::setupContacts() {
 	for(int i=0; i<nbins; i++)
 	{
 		contact_map[i].resize(nbins);
-		for(int j=0; j<nbins; j++) 
+		for(int j=0; j<nbins; j++)
 		{
 			contact_map[i][j] = 0;
 		}
@@ -129,7 +129,7 @@ void Sim::readInput() {
 	i >> config;
 
 	assert(config.contains("plaid_on")); plaid_on = config["plaid_on"];
-	
+
 	if (plaid_on)
 	{
 		assert(config.contains("nspecies")); nspecies = config["nspecies"];
@@ -137,7 +137,7 @@ void Sim::readInput() {
 
 		if (load_chipseq)
 		{
-			chis = Eigen::MatrixXd::Zero(nspecies, nspecies); 
+			chis = Eigen::MatrixXd::Zero(nspecies, nspecies);
 
 			char first = 'A' + 1;
 			for (int i=0; i<nspecies; i++)
@@ -166,8 +166,8 @@ void Sim::readInput() {
 
 			if (chipseq_files.size() != nspecies)
 			{
-				throw std::logic_error("Number of chipseq files: " 
-						+ std::to_string(chipseq_files.size()) 
+				throw std::logic_error("Number of chipseq files: "
+						+ std::to_string(chipseq_files.size())
 						+ " must equal number of species: " + std::to_string(nspecies));
 			}
 			Cell::ntypes = nspecies;
@@ -200,7 +200,7 @@ void Sim::readInput() {
 	//
 	std::cout << "grid move is : " << gridmove_on << std::endl;
 	//assert(config.contains("production")); production = config["production"];
-	READ_JSON(config, production); 
+	READ_JSON(config, production);
 	assert(config.contains("decay_length")); decay_length = config["decay_length"];
 	assert(config.contains("nSweeps")); nSweeps = config["nSweeps"];
 	assert(config.contains("dump_frequency")); dump_frequency = config["dump_frequency"];
@@ -283,7 +283,7 @@ bool Sim::outside_boundary(Eigen::RowVector3d r) {
 
 	return is_out;
 }
-	
+
 void Sim::initialize() {
 	std::cout << "Initializing simulation objects ... " << std::endl;
 	Timer t_init("Initializing");
@@ -291,7 +291,7 @@ void Sim::initialize() {
 	// set configuration
 	beads.resize(nbeads);  // uses default constructor initialization to create nbeads;
 	std::cout << "load configuratin is " << load_configuration << std::endl;
-	if(load_configuration) 
+	if(load_configuration)
 	{
 		loadConfiguration();
 	}
@@ -316,7 +316,7 @@ void Sim::volParameters() {
 	double vol = Vbar*nbeads; // simulation volume in nm^3
 	grid.L= std::round(std::pow(vol,1.0/3.0) / grid.delta); // number of grid cells per side // ROUNDED, won't exactly equal a desired volume frac
 	std::cout << "grid.L is: " << grid.L << std::endl;
-	total_volume = pow(grid.L*grid.delta/1000.0, 3); // micrometers^3 ONLY TRUE FOR CUBIC SIMULATIONS 
+	total_volume = pow(grid.L*grid.delta/1000.0, 3); // micrometers^3 ONLY TRUE FOR CUBIC SIMULATIONS
 	std::cout << "volume is: " << total_volume << std::endl;
 	std::cout << "volume fraction is: " << nbeads*Cell::beadvol/(total_volume*1000*1000*1000) << std::endl;
 
@@ -354,7 +354,7 @@ void Sim::calculateParameters() {
 	exp_decay_pivot = nbeads/decay_length;
 
 	n_disp = displacement_on ? nbeads : 0;
-	n_trans = translation_on ? decay_length : 0; 
+	n_trans = translation_on ? decay_length : 0;
 	n_crank = crankshaft_on ? decay_length : 0;
 	n_pivot = pivot_on ? decay_length/10: 0;
 	n_rot = rotate_on ? nbeads : 0;
@@ -363,11 +363,11 @@ void Sim::calculateParameters() {
 
 void Sim::loadConfiguration() {
 	// loads x,y,z positions for every particle from <inputfile>.xyz file
-	
+
 	std::cout << "Loading configuration from " << load_configuration_filename << std::endl;
-	std::ifstream IFILE; 
-	IFILE.open(load_configuration_filename); 
-	if ( !IFILE.good() ) 
+	std::ifstream IFILE;
+	IFILE.open(load_configuration_filename);
+	if ( !IFILE.good() )
 	{
 		throw std::runtime_error(load_configuration_filename + " does not exist or could not be opened");
 	}
@@ -379,10 +379,16 @@ void Sim::loadConfiguration() {
 	std::cout << "checking if nbeads in config.json matches number of beads in the first line of <input>.xyz ... " << std::endl;
 	assert(init_nbeads == nbeads);
 	std::cout << "nbeads in config.json matches <input>.xyz" << std::endl;
+<<<<<<< HEAD
 	
 	getline(IFILE, line); // comment line 
+=======
+
+
+	getline(IFILE, line); // comment line
+>>>>>>> 003f26df9044e447ce095168b3628b893c072529
 	std::cout << line << std::endl;
-		
+
 	// first bead
 	getline(IFILE, line);
 	//std::cout << line << std::endl;
@@ -411,7 +417,7 @@ void Sim::loadConfiguration() {
 	beads[nbeads-1].u = unit_vec(beads[nbeads-1].u); // random orientation for last bead
 }
 
-void Sim::initRandomCoil(double bondlength) {	
+void Sim::initRandomCoil(double bondlength) {
 	// generates x,y,z positions for all particles according to a random coil
 
 	double center; // center of simulation box
@@ -431,7 +437,7 @@ void Sim::initRandomCoil(double bondlength) {
 	for(int i=1; i<nbeads; i++)
 	{
 		do {
-			beads[i].u = unit_vec(beads[i].u); 
+			beads[i].u = unit_vec(beads[i].u);
 			beads[i].r = beads[i-1].r + bondlength*beads[i].u; // orientations DO NOT point along contour
 			beads[i].id = i;
 		} while (outside_boundary(beads[i].r));
@@ -473,7 +479,7 @@ void Sim::constructBonds() {
 }
 
 void Sim::print() {
-	std::cout << "simulation in : "; 
+	std::cout << "simulation in : ";
 	std::cout << "With beads: " << std::endl;
 	for(Bead& bb : beads) bb.print();             // use reference to avoid copies
 	std::cout << "And bonds: " << std::endl;
@@ -488,7 +494,7 @@ double Sim::getAllBondedEnergy() {
 
 double Sim::getBondedEnergy(int first, int last) {
 	double U = 0;
-	//for(Bond* bo : bonds) U += bo->energy();  // inefficient 
+	//for(Bond* bo : bonds) U += bo->energy();  // inefficient
 	if (first>0) U += bonds[first-1]->energy(); // move affects bond going into first
 	if (last<(nbeads-1)) U += bonds[last]->energy();   // ... and leaving the second
 	return U;
@@ -512,7 +518,7 @@ double Sim::getNonBondedEnergy(const std::unordered_set<Cell*>& flagged_cells) {
 	}
 	if (diagonal_on)
 	{
-		U += grid.diagEnergy(flagged_cells, diag_chis); 
+		U += grid.diagEnergy(flagged_cells, diag_chis);
 	}
 	if (boundary_attract_on)
 	{
@@ -526,14 +532,14 @@ double Sim::getNonBondedEnergy(const std::unordered_set<Cell*>& flagged_cells) {
 }
 
 double Sim::getJustDiagEnergy(const std::unordered_set<Cell*>& flagged_cells) {
-	// for when dumping energy; 
-	double U = grid.diagEnergy(flagged_cells, diag_chis); 
+	// for when dumping energy;
+	double U = grid.diagEnergy(flagged_cells, diag_chis);
 	return U;
 }
 
 double Sim::getJustBoundaryEnergy(const std::unordered_set<Cell*>& flagged_cells) {
-	// for when dumping energy; 
-	double U = grid.boundaryEnergy(flagged_cells, boundary_chi); 
+	// for when dumping energy;
+	double U = grid.boundaryEnergy(flagged_cells, boundary_chi);
 	return U;
 }
 
@@ -550,7 +556,7 @@ double Sim::randomExp(double mu, double decay) {
 	double cdf_y;
 	do {
 		cdf_y = rng->uniform();
-	} while (cdf_y <= 0); // cdf_y cannot exactly equal 0, otherwise inverse cdf is -infty 
+	} while (cdf_y <= 0); // cdf_y cannot exactly equal 0, otherwise inverse cdf is -infty
 
 
 	if (cdf_y > 0.5) {
@@ -565,7 +571,7 @@ void Sim::MC() {
 	std::cout << "Beginning Simulation" << std::endl;
 	for(int sweep = 0; sweep<nSweeps; sweep++)
 	{
-		//std::cout << sweep << std::endl; 
+		//std::cout << sweep << std::endl;
 		double nonbonded;
 		//nonbonded = getNonBondedEnergy(grid.active_cells);
 		//std::cout << "beginning sim: nonbonded: " <<  grid.active_cells.size() << std::endl;
@@ -602,13 +608,13 @@ void Sim::MC() {
 		}
 		//t_crankshaft.~Timer();
 
-		
+
 		Timer t_rotation("Rotating", prof_timer_on);
 		for(int j=0; j<n_rot; j++) {
 			MCmove_rotate();
 		}
 		//t_rotation.~Timer();
-		
+
 
 		Timer t_pivot("pivoting", prof_timer_on);
 		for(int j=0; j<n_pivot; j++) {
@@ -622,7 +628,7 @@ void Sim::MC() {
 		if (sweep%dump_frequency == 0) {
 			std::cout << "Sweep number " << sweep << std::endl;
 			dumpData();
-			
+
 			if (print_acceptance_rates) {
 				std::cout << "acceptance rate: " << (float) acc/((sweep+1)*nSteps)*100.0 << "%" << std::endl;
 
@@ -630,10 +636,10 @@ void Sim::MC() {
 				if (translation_on) std::cout << "trans: " << (float) acc_trans/((sweep+1)*n_trans)*100 << "% \t";
 				if (crankshaft_on) std::cout << "crank: " << (float) acc_crank/((sweep+1)*n_crank)*100 << "% \t";
 				if (pivot_on) std::cout << "pivot: " << (float) acc_pivot/((sweep+1)*n_pivot)*100 << "% \t";
-				if (rotate_on) std::cout << "rot: " << (float) acc_rot/((sweep+1)*n_rot)*100 << "% \t"; 
+				if (rotate_on) std::cout << "rot: " << (float) acc_rot/((sweep+1)*n_rot)*100 << "% \t";
 				//std::cout << "cellcount: " << grid.cellCount();
 				std::cout << std::endl;
-				
+
 			}
 
 			if (production) {dumpContacts(sweep);}
@@ -677,7 +683,7 @@ void Sim::MCmove_displace() {
 
 	// copy old info (don't forget orientation, etc)
 	Cell* old_cell = grid.getCell(beads[o]);
-	
+
 	Eigen::RowVector3d displacement;
 	displacement = step_disp*unit_vec(displacement);
 
@@ -696,7 +702,7 @@ void Sim::MCmove_displace() {
 	flagged_cells.insert(new_cell);
 
 	double Uold = getTotalEnergy(o, o, flagged_cells);
-	
+
 	// move
 	beads[o].r = new_location;
 
@@ -734,15 +740,15 @@ void Sim::MCmove_translate() {
 	int first = floor(beads.size()*rng->uniform());
 
 	// choose second bead from two-sided exponential distribution around first
-	int last = -1; 
+	int last = -1;
 	while (last < 0 || last >= nbeads)
 	{
 		last = std::round(randomExp(first, exp_decay));            // does this obey detailed balance?
 	}
 
 	// swap first and last to ensure last > first
-	if (last < first) {std::swap(first, last);} 
-	
+	if (last < first) {std::swap(first, last);}
+
 	if (print_trans) std::cout << "number of beads is " << last - first << std::endl;
 
 	// generate displacement vector with magnitude step_trans
@@ -771,7 +777,7 @@ void Sim::MCmove_translate() {
 		{
 			new_loc = beads[i].r + displacement;
 			if (outside_boundary(new_loc)) {
-				throw "exited simulation box";	
+				throw "exited simulation box";
 			}
 		}
 		//t_bounds.~Timer();
@@ -834,15 +840,15 @@ void Sim::MCmove_translate() {
 	// REJECTION CASES -- restore old conditions
 	catch (const char* msg)
 	{
-		Timer t_rej("rejection", print_trans); 
+		Timer t_rej("rejection", print_trans);
 		if(msg == "rejected")
 		{
-			// restore particle positions 
+			// restore particle positions
 			for(int i=first; i<=last; i++)
 			{
 				beads[i].r -= displacement;
 			}
-			
+
 			if (bead_swaps.size() > 0)
 			{
 				//for(std::pair<int, std::pair<Cell*, Cell*>> &x : bead_swaps)
@@ -868,16 +874,16 @@ void Sim::MCmove_crankshaft() {
 	}
 
 	// choose second bead from two-sided exponential distribution around first
-	int last = -1; 
+	int last = -1;
 	while (last < 1 || last > nbeads-2)
 	{
 		last = std::round(randomExp(first, exp_decay_crank));
 	}
 
 	// swap first and last to ensure last > first
-	if (last < first) {std::swap(first, last);} 
+	if (last < first) {std::swap(first, last);}
 
-	// compute axis of rotation, create quaternion 
+	// compute axis of rotation, create quaternion
 	Eigen::RowVector3d axis = beads[last+1].r - beads[first-1].r;
 			double angle = step_crank*(rng->uniform()- 0.5); // random symmtric angle in cone size step_crank
 	Eigen::Quaterniond du;
@@ -887,7 +893,7 @@ void Sim::MCmove_crankshaft() {
 	std::vector<Eigen::RowVector3d> old_positions;
 	std::vector<Eigen::RowVector3d> old_orientations;
 	std::unordered_set<Cell*> flagged_cells;
-	std::unordered_map<int, std::pair<Cell*, Cell*>> bead_swaps; 
+	std::unordered_map<int, std::pair<Cell*, Cell*>> bead_swaps;
 
 	old_positions.reserve(last-first);
 	old_orientations.reserve(last-first);
@@ -912,7 +918,7 @@ void Sim::MCmove_crankshaft() {
 
 			// step to new configuration, but don't update grid yet (going to check if in bounds first)
 			beads[i].r = du*(beads[i].r - beads[first-1].r) + beads[first-1].r.transpose();
-			beads[i].u = du*beads[i].u; 
+			beads[i].u = du*beads[i].u;
 		}
 
 		// reject if moved out of simulation box, need to restore old bead positions
@@ -920,11 +926,11 @@ void Sim::MCmove_crankshaft() {
 		{
 			if (outside_boundary(beads[i].r))
 			{
-				throw "exited simulation box";	
+				throw "exited simulation box";
 			}
 		}
 
-		// flag cells and bead swaps, but do not update the grid 
+		// flag cells and bead swaps, but do not update the grid
 		for(int i=first; i<=last; i++)
 		{
 			new_cell_tmp = grid.getCell(beads[i]);
@@ -942,14 +948,14 @@ void Sim::MCmove_crankshaft() {
 		// calculate old nonbonded energy based on flagged cells
 		if (nonbonded_on) Uold += getNonBondedEnergy(flagged_cells);
 
-		
+
 		// Update grid
 		//for(std::pair<int, std::pair<Cell*, Cell*>> &x : bead_swaps)
 		for(auto const &x : bead_swaps)
 		{
 			x.second.first->moveOut(&beads[x.first]); // out of the old cell
 			x.second.second->moveIn(&beads[x.first]); // in to the new cell
-		} 
+		}
 
 		double Unew = getTotalEnergy(first, last, flagged_cells);
 
@@ -969,13 +975,13 @@ void Sim::MCmove_crankshaft() {
 	// REJECTION CASES -- restore old conditions
 	catch (const char* msg)
 	{
-		// restore particle positions 
+		// restore particle positions
 		for(int i=0; i<old_positions.size(); i++)
 		{
 			beads[first+i].r = old_positions[i];
 			beads[first+i].u = old_orientations[i];
 		}
-		
+
 		// restore grid allocations
 		if (bead_swaps.size() > 0)
 		{
@@ -1001,7 +1007,7 @@ void Sim::MCmove_rotate() {
 			// step to new configuration
 			double angle = step_rot*(rng->uniform()- 0.5); // random symmtric angle in cone size step_rot
 	Eigen::RowVector3d axis;                     // random axis
-			axis = unit_vec(axis); 
+			axis = unit_vec(axis);
 	Eigen::Quaterniond du {Eigen::AngleAxisd(angle, axis)}; // object representing this rotation
 
 	beads[o].u = du*beads[o].u;
@@ -1045,9 +1051,9 @@ void Sim::MCmove_pivot(int sweep) {
 	int last = (pivot < end) ? end : pivot-1;
 
 	// rotation objects
-			double angle = step_pivot*(rng->uniform()- 0.5); // random symmtric angle in cone size step_pivot 
+			double angle = step_pivot*(rng->uniform()- 0.5); // random symmtric angle in cone size step_pivot
 	Eigen::RowVector3d axis;                     // random axis
-			axis = unit_vec(axis); 
+			axis = unit_vec(axis);
 	Eigen::Quaterniond du {Eigen::AngleAxisd(angle, axis)}; // object representing this rotation
 
 	// memory storage objects
@@ -1073,7 +1079,7 @@ void Sim::MCmove_pivot(int sweep) {
 
 			// step to new configuration, but don't update grid yet (going to check if in bounds first)
 			beads[i].r = du*(beads[i].r - beads[pivot].r) + beads[pivot].r.transpose();
-			beads[i].u = du*beads[i].u; 
+			beads[i].u = du*beads[i].u;
 		}
 
 		// reject if moved out of simulation box
@@ -1081,11 +1087,11 @@ void Sim::MCmove_pivot(int sweep) {
 		{
 			if (outside_boundary(beads[i].r))
 			{
-				throw "exited simulation box";	
+				throw "exited simulation box";
 			}
 		}
 
-		// flag cells and bead swaps, but do not update the grid 
+		// flag cells and bead swaps, but do not update the grid
 		for(int i=first; i<=last; i++)
 		{
 			new_cell_tmp = grid.getCell(beads[i]);
@@ -1102,14 +1108,14 @@ void Sim::MCmove_pivot(int sweep) {
 
 		// calculate old nonbonded energy based on flagged cells
 		if(nonbonded_on) Uold += getNonBondedEnergy(flagged_cells);
-		
+
 		// Update grid
 		//for(std::pair<int, std::pair<Cell*, Cell*>> &x : bead_swaps)
 		for(auto const &x : bead_swaps)
 		{
 			x.second.first->moveOut(&beads[x.first]); // out of the old cell
 			x.second.second->moveIn(&beads[x.first]); // in to the new cell
-		} 
+		}
 
 		double Unew = getTotalEnergy(pivot-1, pivot, flagged_cells);
 
@@ -1130,13 +1136,13 @@ void Sim::MCmove_pivot(int sweep) {
 	// REJECTION CASES -- restore old conditions
 	catch (const char* msg)
 	{
-		// restore particle positions 
+		// restore particle positions
 		for(int i=0; i<old_positions.size(); i++)
 		{
 			beads[first+i].r = old_positions[i];
 			beads[first+i].u = old_orientations[i];
 		}
-		
+
 		// restore bead allocations
 		if (bead_swaps.size() > 0)
 		{
@@ -1152,7 +1158,7 @@ void Sim::MCmove_pivot(int sweep) {
 }
 
 void Sim::MCmove_grid() {
-	// not really a MC move (metropolis criterion doesn't apply) 
+	// not really a MC move (metropolis criterion doesn't apply)
 	// don't need to choose active cells; they are chosen at the beginning of the
 	// simulation to include all cells that could possibly include particles.
 	bool flag = true;
@@ -1177,7 +1183,7 @@ void Sim::MCmove_grid() {
 
 		// don't accept if move violates density maximum
 		if (U < 9999999999)
-		{ 
+		{
 			//std::cout << "passed grid move" << std::endl;
 			flag = false;
 		}
@@ -1192,7 +1198,7 @@ void Sim::MCmove_grid() {
 }
 
 
-void Sim::dumpData()  { 
+void Sim::dumpData()  {
 	xyz_out = fopen(xyz_out_filename.c_str(), "a");
 	fprintf(xyz_out, "%d\n", nbeads);
 	fprintf(xyz_out, "atoms\n");
@@ -1211,7 +1217,7 @@ void Sim::dumpData()  {
 
 		fprintf(xyz_out, "\n");
 	}
-	fclose(xyz_out); 
+	fclose(xyz_out);
 }
 
 void Sim::dumpEnergy(int sweep, double bonded=0, double nonbonded=0, double diagonal=0, double boundary=0) {

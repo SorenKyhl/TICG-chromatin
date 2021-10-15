@@ -3,6 +3,8 @@ import numpy as np
 import sys
 import argparse
 
+LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     parser.add_argument('--it', type=int, help='current iteration')
@@ -20,7 +22,9 @@ def main():
         config = json.load(f)
 
     allchis = np.atleast_2d(np.loadtxt('chis.txt'))
-    letters='ABCDEFG'
+    if len(allchis[0] == 0):
+        # shape will be wrong if k = 1
+        allchis = allchis.T
 
     # get last row of 'chis.txt'
     try:
@@ -35,7 +39,7 @@ def main():
         for j in range(args.k):
             if j < i:
                 continue
-            key = 'chi{}{}'.format(letters[i], letters[j])
+            key = 'chi{}{}'.format(LETTERS[i], LETTERS[j])
             config[key] = lastchis[counter]
             counter += 1
 
@@ -44,28 +48,36 @@ def main():
 
 def test():
     args = getArgs()
-    args.k = 2
-    args.it = 0
+    args.k = 1
+    args.it = 5
 
     config = {}
 
-    allchis = np.atleast_2d(np.loadtxt('maxent/resources/chis.txt'))
+    allchis = np.atleast_2d(np.loadtxt('../sequences_to_contact_maps/dataset_08_26_21/samples/sample40/GNN-23/k1/chis.txt'))
     print(allchis)
-    letters='ABCDEFG'
+    if len(allchis[0] == 0):
+        allchis = allchis.T
+        print(allchis.shape)
 
     # get last row of 'chis.txt'
-    lastchis = list(allchis[int(args.it)])
+    try:
+        lastchis = list(allchis[int(args.it)])
+        print(lastchis)
+    except IndexError as e:
+        print('Index Error')
+        print('allchis:\n', allchis)
+        raise
 
     counter = 0
     for i in range(args.k):
         for j in range(args.k):
             if j < i:
                 continue
-            key = 'chi{}{}'.format(letters[i], letters[j])
+            key = 'chi{}{}'.format(LETTERS[i], LETTERS[j])
             config[key] = lastchis[counter]
             counter += 1
 
     print(config)
 
 if __name__ == '__main__':
-    main()
+    test()

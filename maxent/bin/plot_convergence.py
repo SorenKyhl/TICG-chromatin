@@ -3,6 +3,8 @@ import argparse
 import numpy as np
 import os
 
+LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     parser.add_argument('--mode', type=str, help='{plaid, diag, both}')
@@ -31,13 +33,14 @@ def main():
         
         # chis plot
         chis = np.loadtxt('chis.txt')
-        letters = 'ABCDEFGHI'
+        if chis.ndim < 2:
+            chis = np.atleast_2d(chis).T
         counter = 0
         for i in range(args.k):
             for j in range(args.k):
                 if j < i:
                     continue
-                chistr = "chi{}{}".format(letters[i], letters[j])
+                chistr = "chi{}{}".format(LETTERS[i], LETTERS[j])
                 plt.plot(chis[1:, counter], label = chistr)
                 counter += 1
         plt.xlabel('Iteration')
@@ -57,29 +60,30 @@ def main():
 
 def test():
     args = getArgs()
-    args.k = 2
-
-    convergence = np.loadtxt('../sequences_to_contact_maps/maxent_08_12_21/convergence.txt')
+    args.k = 1
+    convergence = np.loadtxt('../sequences_to_contact_maps/dataset_08_26_21/samples/sample40/GNN-23/k1/convergence.txt')
     plt.plot(convergence)
     plt.xlabel('Iteration')
     plt.show()
-    plt.savefig("pconvergence.png")
 
-    chis = np.loadtxt('../sequences_to_contact_maps/maxent_08_12_21/chis.txt')
-    letters = 'ABCDEFGHI'
+    chis = np.loadtxt('../sequences_to_contact_maps/dataset_08_26_21/samples/sample40/GNN-23/k1/chis.txt')
+    if chis.ndim < 2:
+        # shape will be wrong if k = 1
+        chis = np.atleast_2d(chis).T
+        print(chis.shape)
     counter = 0
     for i in range(args.k):
         for j in range(args.k):
             if j < i:
                 continue
-            chistr = "chi{}{}".format(letters[i], letters[j])
+            chistr = "chi{}{}".format(LETTERS[i], LETTERS[j])
+            print(chis[:, counter])
             plt.plot(chis[:, counter], label = chistr)
             counter += 1
     plt.xlabel('Iteration')
     plt.ylabel('chi value')
     plt.legend()
     plt.show()
-    plt.savefig("pchis.png")
 
 
 if __name__ == '__main__':
