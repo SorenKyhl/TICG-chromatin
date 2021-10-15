@@ -24,7 +24,7 @@ def main():
         plt.close()
 
         # chis plot
-        chis = np.loadtxt('chis.txt')
+        chis = np.atleast_2d(np.loadtxt('chis.txt'))
         letters = 'ABCDEFGHI'
         counter = 0
         for i in range(args.k):

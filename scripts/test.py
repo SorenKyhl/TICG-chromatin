@@ -20,11 +20,6 @@ def find_mising_ids():
 
     print(ids)
 
-def main():
-    dir = '../sequences_to_contact_maps/dataset_08_26_21/samples'
-    x = np.load(osp.join(dir, 'sample1201', 'x.npy'))
-    print(x)
-
 def check_seq():
     ids_to_check = set()
     dir = "/project2/depablo/erschultz/dataset_08_24_21/samples"
