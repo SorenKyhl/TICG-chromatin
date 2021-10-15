@@ -16,7 +16,7 @@ numIterations=100 # iteration 1 + numIterations is production run to get contact
 overwrite=1
 scratchDir='/scratch/midway2/erschultz/TICG_maxent'
 modelType='ContactGNNEnergy'
-modelID='23'
+modelID='22'
 
 source activate python3.8_pytorch1.8.1_cuda10.2
 module load jq

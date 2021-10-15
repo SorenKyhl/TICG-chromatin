@@ -46,6 +46,7 @@ def getArgs():
     args.labels = None
     args.X = None # X for silhouette_score
     args.method = args.method.lower()
+    args.dataset = osp.split(args.data_folder)[1]
 
     if args.method != 'random' and args.sample_folder is None:
         args.sample_folder = osp.join(args.data_folder, 'samples', 'sample{}'.format(args.sample))
@@ -444,7 +445,7 @@ def main():
                     break
             data_folder = f.readline().strip()
             dataset = osp.split(data_folder)[1]
-        assert dataset == osp.split(args.data_folder)[1], 'Dataset mismatch: {} vs {}'.format(dataset, args.dataset)
+        assert dataset == args.dataset, 'Dataset mismatch: {} vs {}'.format(dataset, args.dataset)
 
         seq = get_seq_gnn(args.k, args.model_path, args.sample, args.normalize)
         format = '%.3e'
