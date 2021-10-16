@@ -267,6 +267,16 @@ void Sim::makeOutputFiles() {
 	density_out = fopen((density_out_filename).c_str(), "w");
 
 	std::cout << "created successfully" << std::endl;
+
+
+	command = "cp config.json " + data_out_filename;
+	const int result = system(command.c_str());
+
+	for (const std::string file : chipseq_files)
+	{
+		command = "cp " + file + " " + data_out_filename;
+		const int result = system(command.c_str());
+	}
 }
 
 bool Sim::outside_boundary(Eigen::RowVector3d r) {
