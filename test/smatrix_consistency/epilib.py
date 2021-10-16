@@ -7,6 +7,7 @@ import seaborn as sns
 import straw
 from os import system
 import os
+import json
 
 #import palettable
 #from palettable.colorbrewer.sequential import Reds_3
@@ -20,6 +21,60 @@ mycmap = mpl.colors.LinearSegmentedColormap.from_list('custom',
 #%config InlineBackend.figure_format='retina'
 #plt.rcParams['figure.figsize'] = [8,6]
 #plt.rcParams.update({'font.size':14})
+
+
+class Sim:
+
+    def __init__(self, path):
+        self.path = path
+        self.hic = get_contactmap(path+"/contacts.txt")
+        self.d = get_diagonal(self.hic)
+        self.energy = pd.read_csv(path+"/energy.traj", sep='\t', names=["step", "bonded", "nonbonded", "x", "y"])
+        self.config = self.load_config()
+        self.chi = self.load_chis()
+        self.seqs = self.load_seqs()
+    
+    def load_config(self):
+        with open(self.path + "/config.json") as f:
+            config = json.load(f)
+            
+        return config
+    
+    def load_chis(self):
+        nspecies = self.config['nspecies']
+        letters = 'ABCDE'
+        
+        chi = np.zeros((nspecies, nspecies))
+        for i in range(nspecies):
+            for j in range(nspecies):
+                if j >= i:
+                    chi[i,j] = self.config["chi" + letters[i] + letters[j]]
+                    chi[j,i] = self.config["chi" + letters[i] + letters[j]]
+        return chi
+    
+    def load_seqs(self):
+        seqs = []
+        for file in self.config["chipseq_files"]:
+            seqs.append( np.loadtxt(file) )
+        seqs = np.array(seqs)
+        return seqs
+    
+    def get_smatrix(self):
+        '''
+        Non-diagonal entries in chi need to be multiplied by 0.5
+        to account for factor of 2 in cross terms
+        '''
+        
+        chimatrix = copy.deepcopy(self.chi)
+        d = copy.deepcopy(chimatrix.diagonal())
+        chimatrix *= 0.5
+        np.fill_diagonal(chimatrix, d)
+        smatrix = seqs.T @ chimatrix @ seqs
+        
+        return smatrix
+    
+    def plot_contactmap(self, vmaxp=0.1):
+        plot_contactmap(self.hic, vmaxp)
 
 def import_contactmap_straw(filename, chrom=2, start=0, end=60575000, resolution=50000, norm=True):
 

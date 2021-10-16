@@ -1,0 +1,47 @@
+data out:foff
+reading input file ... 
+chiAA -1
+chiAB 1
+chiBB -1
+grid move is : 1
+loading production ... loaded: 1
+read successfully
+grid size is : 28.7
+grid.L is: 7
+volume is: 0.00810849
+volume fraction is: 0.0656695
+grid.L is: 7
+volume is: 0.00810849
+volume fraction is: 0.0656695
+making output files ... created successfully
+Initializing simulation objects ... 
+load configuratin is 1
+Loading configuration from input1024.xyz
+1024
+checking if nbeads in config.json matches number of beads in the first line of <input>.xyz ... 
+nbeads in config.json matches <input>.xyz
+atoms
+Objects created
+Initializing took 2712 microseconds 
+Initializing cells: 
+Setting active cells
+setting up contacts
+Beginning Simulation
+Sweep number 0
+acceptance rate: 84.846%
+trans: 56% 	crank: 73% 	pivot: 90% 	rot: 88.7695% 	
+Sweep number 10000
+acceptance rate: 82.1531%
+trans: 51.5392% 	crank: 73.2188% 	pivot: 70.7239% 	rot: 86.1269% 	
+Sweep number 20000
+acceptance rate: 82.1419%
+trans: 51.5551% 	crank: 73.0238% 	pivot: 70.667% 	rot: 86.1314% 	
+Sweep number 30000
+acceptance rate: 82.1528%
+trans: 51.586% 	crank: 73.0434% 	pivot: 70.5633% 	rot: 86.1406% 	
+Sweep number 40000
+acceptance rate: 82.1511%
+trans: 51.584% 	crank: 73.0497% 	pivot: 70.3757% 	rot: 86.1399% 	
+acceptance rate: 82.1518%
+Took 34seconds 
+Moved 62253145 beads 
