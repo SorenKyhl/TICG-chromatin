@@ -158,24 +158,6 @@ double Grid::SmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const
 	for(Cell* cell : flagged_cells)
 	{
 		double smatrixenergy = cell->getSmatrixEnergy(Smatrix);
-		double regularenergy = cell->getEnergy(chis);
-
-		std::cout << "------------- New Cell ------------" << std::endl;
-		std::cout << "Smatrix | getEnergy" << std::endl;
-		std::cout << smatrixenergy << " " << regularenergy << std::endl;
-
-		std::cout << " N_types: ";
-		for (auto &e: cell-> typenums)
-		{
-			std::cout << e << " ";
-		}
-		std::cout << std::endl;
-
-		if (abs(smatrixenergy - regularenergy) >  0.00001)
-		{
-			std::cout << "=================problem==============" << std::endl;
-		}
-
 		U += smatrixenergy;
 	}
 	return U;

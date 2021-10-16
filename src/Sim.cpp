@@ -379,14 +379,8 @@ void Sim::loadConfiguration() {
 	std::cout << "checking if nbeads in config.json matches number of beads in the first line of <input>.xyz ... " << std::endl;
 	assert(init_nbeads == nbeads);
 	std::cout << "nbeads in config.json matches <input>.xyz" << std::endl;
-<<<<<<< HEAD
 	
-	getline(IFILE, line); // comment line 
-=======
-
-
 	getline(IFILE, line); // comment line
->>>>>>> 003f26df9044e447ce095168b3628b893c072529
 	std::cout << line << std::endl;
 
 	// first bead
