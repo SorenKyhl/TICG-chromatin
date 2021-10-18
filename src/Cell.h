@@ -28,6 +28,7 @@ public:
 	static double kappa;
 	static bool density_cap_on;
 	static bool compressibility_on;
+	static bool diag_pseudobeads_on;
 
 	void print();
 	void reset();
@@ -38,6 +39,9 @@ public:
 	double getDiagEnergy(const std::vector<double> diag_chis);
 	double getBoundaryEnergy(const double boundary_chi, const double delta);
 	double getSmatrixEnergy(const std::vector<std::vector<double>> &Smatrix);
+
+	int bonds_to_beads(int bonds);
+
 
 };
 

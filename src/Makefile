@@ -17,5 +17,11 @@ Sim.o: Sim.cpp Sim.h
 TICG-engine: main.cpp Grid.o Sim.o random_mars.o
 	$(CC) $(FLAGS) $(INCLUDE) -o $@ $^ 
 
-debug: main.cpp Grid.o Sim.o random_mars.o
+debug2: main.cpp Grid.o Sim.o random_mars.o
 	$(CC) $(DEBUG_FLAGS) $(INCLUDE) -o TICG-engine $^ 
+
+debug: 
+	g++ $(DEBUG_FLAGS) -I ../include -c Grid.cpp
+	g++ $(DEBUG_FLAGS) -I ../include -c Sim.cpp
+	g++ $(DEBUG_FLAGS) -c random_mars.cpp
+	g++ $(DEBUG_FLAGS) -I ../include -o TICG-engine main.cpp Grid.o Sim.o random_mars.o

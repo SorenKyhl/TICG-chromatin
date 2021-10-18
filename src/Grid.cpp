@@ -182,7 +182,8 @@ void Grid::getDiagObs(std::vector<double> &diag_obs) {
 		for(int i=0; i<diag_obs.size(); i++)
 		{
 			if (Cell::diagonal_linear) {
-				diag_obs[i] += cell->diag_phis[i];
+				//diag_obs[i] += cell->diag_phis[i];
+				diag_obs[i] += cell->diag_phis[i] * cell->diag_phis[i];
 			}
 			else {
 				diag_obs[i] += cell->diag_phis[i] * cell->diag_phis[i];
