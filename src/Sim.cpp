@@ -28,7 +28,8 @@ void Sim::run() {
 
 void Sim::setupContacts() {
 	std::cout << "setting up contacts" << std::endl;
-	int nbins = nbeads/contact_resolution + 1;
+	int nbins = nbeads/contact_resolution;
+	std::cout << "contactmap size: " << nbins << std::endl;
 	contact_map.resize(nbins);
 	for(int i=0; i<nbins; i++)
 	{
@@ -1300,9 +1301,24 @@ void Sim::dumpContacts(int sweep) {
 
 	std::ofstream contactsOutFile(contact_map_filename);
 	for (const auto &row : contact_map) {
+		/*
 		for (const int &element : row) {
 			contactsOutFile << element << " ";
 		}
+		*/
+
+		for (int i=0; i<row.size(); i++)
+		{
+			if (i == row.size()-1)
+			{
+				contactsOutFile << row[i];
+			}
+			else
+			{
+				contactsOutFile << row[i] << " ";
+			}
+		}
+
 		contactsOutFile << "\n";
 	}
 }
