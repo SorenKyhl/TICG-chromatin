@@ -1233,6 +1233,12 @@ void Sim::dumpEnergy(int sweep, double bonded=0, double nonbonded=0, double diag
 }
 
 void Sim::dumpObservables(int sweep) {
+	
+	// TODO phis are not updated unless energy function is called
+	// leads to error if dumping observables after a rejected move;
+	// beads are returned to their original state and typenums is updated
+	// but cell.phis is not
+	double U = grid.energy(grid.active_cells, chis); //to update phis in cells
 	if (plaid_on)
 	{
 		obs_out = fopen(obs_out_filename.c_str(), "a");
