@@ -14,8 +14,8 @@ k=2
 m=1024
 today=$(date +'%m_%d_%y')
 dataFolder="/project2/depablo/erschultz/dataset_10_14_21"
-samplesPerTask=22
-startSample=19
+samplesPerTask=4
+startSample=37
 relabel='none'
 diag='true'
 
