@@ -10,7 +10,7 @@ import seaborn as sns
 import argparse
 
 paths = ['/home/erschultz/sequences_to_contact_maps',
-        '/home/eric/Research/sequences_to_contact_maps',
+        '/home/eric/sequences_to_contact_maps',
         'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
 for p in paths:
     if osp.exists(p):

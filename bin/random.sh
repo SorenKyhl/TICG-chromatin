@@ -7,17 +7,21 @@
 #SBATCH --mem-per-cpu=2000
 
 # chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
-# chi="-1&1&0&0\\1&-2&0&-1\\0&0&-1&2\\0&-1&2&-1"
-chi="-1&1\\1&0"
+chi="-1&1&0&0\\1&-2&0&-1\\0&0&-1&2\\0&-1&2&-1"
+# chi="-1&1\\1&0"
 # chi='none'
-k=2
+k=4
 m=1024
 today=$(date +'%m_%d_%y')
-dataFolder="/project2/depablo/erschultz/dataset_10_14_21"
-samplesPerTask=4
-startSample=37
+dataFolder="/home/eric/dataset_test"
+# dataFolder="/project2/depablo/erschultz/dataset_10_25_21"
+startSample=1
 relabel='none'
-diag='true'
+tasks=50
+samples=1000
+samplesPerTask=$(($samples / $tasks))
+diag='false'
+local=0
 
 cd ~/TICG-chromatin/src
 make
@@ -25,20 +29,23 @@ mv TICG-engine ..
 
 echo $dataFolder
 STARTTIME=$(date +%s)
-for i in $(seq 1 50)
+for i in $(seq 1 $tasks)
 do
-  start=$(( $(( $(( $i-1 ))*40 ))+$startSample ))
+  start=$(( $(( $(( $i-1 ))*$samples / $tasks ))+$startSample ))
   stop=$(( $start+$samplesPerTask-1 ))
   echo $start $stop
-  ~/TICG-chromatin/bin/random_inner.sh $i $k $chi $m $start $stop $dataFolder $relabel $diag > ~/TICG-chromatin/logFiles/TICG${i}.log &
+  # ~/TICG-chromatin/bin/random_inner.sh $i $k $chi $m $start $stop $dataFolder $relabel $diag $local > ~/TICG-chromatin/logFiles/TICG${i}.log &
 done
 
 wait
 ENDTIME=$(date +%s)
-echo "total time: $(($ENDTIME-$STARTTIME)) seconds"
+echo "total time: $(( $ENDTIME-$STARTTIME )) seconds"
 
-# clean up scratch
-for i in $(seq 1 50)
-do
-  rm -d "/scratch/midway2/erschultz/TICG${i}"
-done
+if [ $local -eq 0 ]
+then
+  # clean up scratch
+  for i in $(seq 1 50)
+  do
+    rm -d "/scratch/midway2/erschultz/TICG${i}"
+  done
+fi

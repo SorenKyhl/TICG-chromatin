@@ -18,7 +18,7 @@ def getArgs():
     parser.add_argument('--goal_specified', type=int, default=1, help='1=true, will save two lines to chis.txt')
     parser.add_argument('--dump_frequency', type=int, help='set to change dump frequency')
     parser.add_argument('--dump_stats_frequency', type=int, help='set to change dump stats frequency')
-    parser.add_argument('--nSweeps', type=int, help='set to change nSweeps')
+    parser.add_argument('--n_sweeps', type=int, help='set to change nSweeps')
     parser.add_argument('--seed', type=int, help='set to change random seed')
 
     # diag chi arguments
@@ -232,8 +232,8 @@ def main():
     config["nspecies"] = args.k
 
     # save nSweeps
-    if args.nSweeps is not None:
-        config['nSweeps'] = args.nSweeps
+    if args.n_sweeps is not None:
+        config['nSweeps'] = args.n_sweeps
 
     # save dump frequency
     if args.dump_frequency is not None:
