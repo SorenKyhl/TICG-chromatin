@@ -8,7 +8,7 @@ numSimulations=$6
 dataFolder=$7
 relabel=$8
 diag=$9
-local=$10
+local=${10}
 
 # other params
 method='random'
@@ -25,9 +25,10 @@ fillDiag=-1
 
 echo $@
 
-
+echo $local
 if [ $local -eq 0 ]
 then
+	echo scratch
 	scratchDir="/scratch/midway2/erschultz/TICG${1}"
 
 	# move utils to scratch
@@ -38,6 +39,7 @@ then
 
 	cd $scratchDir
 else
+	echo data
 	# move utils
 	mkdir -p $dataFolder
 	cd ~/TICG-chromatin/utils
@@ -48,11 +50,13 @@ else
 fi
 
 # activate python
+echo $local
 if [ $local -eq 0 ]
 then
+	echo activate
 	source activate python3.8_pytorch1.8.1_cuda10.2
-else
-	source activate python3.8_pytorch1.8.1_cuda11.1
+# else
+#       source activate python3.8_pytorch1.8.1_cuda11.1
 fi
 
 for i in $(seq $startSimulation $numSimulations)
