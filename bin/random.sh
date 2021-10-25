@@ -16,8 +16,8 @@ today=$(date +'%m_%d_%y')
 dataFolder="/project2/depablo/erschultz/dataset_10_25_21"
 startSample=1
 relabel='none'
-tasks=50
-samples=1000
+tasks=1
+samples=1
 samplesPerTask=$(($samples / $tasks))
 diag='false'
 local=0
@@ -26,6 +26,7 @@ if [ $local -eq 1 ]
 then
   dataFolder="/home/eric/dataset_test"
   tasks=1
+  samplesPerTask=1
 fi
 
 cd ~/TICG-chromatin/src

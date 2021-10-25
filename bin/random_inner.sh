@@ -13,7 +13,7 @@ local=$10
 # other params
 method='random'
 pSwitch=0.05
-maxDiagChi=0.5
+maxDiagChi=0.1
 overwrite=1
 nSweeps=500000
 dumpFrequency=50000
@@ -22,6 +22,8 @@ dumpFrequency=50000
 minChi=0
 maxChi=2
 fillDiag=-1
+
+echo $@
 
 
 if [ $local -eq 0 ]
