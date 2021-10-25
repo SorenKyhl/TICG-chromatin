@@ -13,8 +13,7 @@ chi="-1&1&0&0\\1&-2&0&-1\\0&0&-1&2\\0&-1&2&-1"
 k=4
 m=1024
 today=$(date +'%m_%d_%y')
-dataFolder="/home/eric/dataset_test"
-# dataFolder="/project2/depablo/erschultz/dataset_10_25_21"
+dataFolder="/project2/depablo/erschultz/dataset_10_25_21"
 startSample=1
 relabel='none'
 tasks=50
@@ -22,6 +21,12 @@ samples=1000
 samplesPerTask=$(($samples / $tasks))
 diag='false'
 local=0
+
+if [ $local -eq 1 ]
+then
+  dataFolder="/home/eric/dataset_test"
+  tasks=1
+fi
 
 cd ~/TICG-chromatin/src
 make
@@ -34,7 +39,7 @@ do
   start=$(( $(( $(( $i-1 ))*$samples / $tasks ))+$startSample ))
   stop=$(( $start+$samplesPerTask-1 ))
   echo $start $stop
-  # ~/TICG-chromatin/bin/random_inner.sh $i $k $chi $m $start $stop $dataFolder $relabel $diag $local > ~/TICG-chromatin/logFiles/TICG${i}.log &
+  ~/TICG-chromatin/bin/random_inner.sh $i $k $chi $m $start $stop $dataFolder $relabel $diag $local > ~/TICG-chromatin/logFiles/TICG${i}.log &
 done
 
 wait
