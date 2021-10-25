@@ -55,8 +55,8 @@ if [ $local -eq 0 ]
 then
 	echo activate
 	source activate python3.8_pytorch1.8.1_cuda10.2
-# else
-#       source activate python3.8_pytorch1.8.1_cuda11.1
+else
+  source activate python3.8_pytorch1.8.1_cuda11.1
 fi
 
 for i in $(seq $startSimulation $numSimulations)
