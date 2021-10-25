@@ -25,10 +25,8 @@ fillDiag=-1
 
 echo $@
 
-echo $local
 if [ $local -eq 0 ]
 then
-	echo scratch
 	scratchDir="/scratch/midway2/erschultz/TICG${1}"
 
 	# move utils to scratch
@@ -50,10 +48,8 @@ else
 fi
 
 # activate python
-echo $local
 if [ $local -eq 0 ]
 then
-	echo activate
 	source activate python3.8_pytorch1.8.1_cuda10.2
 else
   source activate python3.8_pytorch1.8.1_cuda11.1

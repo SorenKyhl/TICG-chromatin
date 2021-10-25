@@ -3,7 +3,7 @@
 #SBATCH --output=logFiles/random.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
-#SBATCH --ntasks=50
+#SBATCH --ntasks=100
 #SBATCH --mem-per-cpu=2000
 
 # chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
@@ -16,8 +16,8 @@ today=$(date +'%m_%d_%y')
 dataFolder="/project2/depablo/erschultz/dataset_10_25_21"
 startSample=1
 relabel='none'
-tasks=1
-samples=1
+tasks=100
+samples=2000
 samplesPerTask=$(($samples / $tasks))
 diag='false'
 local=0
