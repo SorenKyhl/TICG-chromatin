@@ -16,9 +16,10 @@ today=$(date +'%m_%d_%y')
 dataFolder="/project2/depablo/erschultz/dataset_10_26_21"
 startSample=1001
 relabel='none'
-tasks=40
+tasks=6
 samples=1000
 samplesPerTask=$(($samples / $tasks))
+samplesPerTask=1
 diag='false'
 local=0
 
@@ -48,7 +49,7 @@ do
   i=$(( i+$tasks ))
   echo $start $stop
   scratchDirI="${scratchDir}/TICG${i}"
-  ~/TICG-chromatin/bin/random_inner.sh $scratchDirI $k $chi $m $start $stop $dataFolder $relabel $diag > ~/TICG-chromatin/logFiles/TICG${i}.log &
+  # ~/TICG-chromatin/bin/random_inner.sh $scratchDirI $k $chi $m $start $stop $dataFolder $relabel $diag > ~/TICG-chromatin/logFiles/TICG${i}.log &
 done
 
 wait
