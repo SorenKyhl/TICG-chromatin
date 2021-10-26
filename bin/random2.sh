@@ -1,6 +1,6 @@
 #! /bin/bash
 #SBATCH --job-name=TICG
-#SBATCH --output=logFiles/random1.out
+#SBATCH --output=logFiles/random2.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=40
@@ -14,12 +14,11 @@ k=4
 m=1024
 today=$(date +'%m_%d_%y')
 dataFolder="/project2/depablo/erschultz/dataset_10_26_21"
-startSample=14
+startSample=1001
 relabel='none'
 tasks=40
 samples=1000
 samplesPerTask=$(($samples / $tasks))
-samplesPerTask=6
 diag='false'
 local=0
 
@@ -27,7 +26,7 @@ if [ $local -eq 1 ]
 then
   dataFolder="/home/eric/dataset_test"
   scratchDir='/home/eric/scratch'
-  tasks=6
+  tasks=1
   samplesPerTask=1
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
@@ -43,11 +42,13 @@ echo $dataFolder
 STARTTIME=$(date +%s)
 for i in $(seq 1 $tasks)
 do
+
   start=$(( $(( $(( $i-1 ))*$samples / $tasks ))+$startSample ))
   stop=$(( $start+$samplesPerTask-1 ))
+  i=$(( i+$tasks ))
   echo $start $stop
   scratchDirI="${scratchDir}/TICG${i}"
-  # ~/TICG-chromatin/bin/random_inner.sh $scratchDirI $k $chi $m $start $stop $dataFolder $relabel $diag > ~/TICG-chromatin/logFiles/TICG${i}.log &
+  ~/TICG-chromatin/bin/random_inner.sh $scratchDirI $k $chi $m $start $stop $dataFolder $relabel $diag > ~/TICG-chromatin/logFiles/TICG${i}.log &
 done
 
 wait
@@ -58,5 +59,6 @@ echo "total time: $(( $ENDTIME-$STARTTIME )) seconds"
 # clean up scratch
 for i in $(seq 1 $tasks)
 do
+  i=$(( i+$tasks ))
   rm -d "${scratchDir}/TICG${i}"
 done

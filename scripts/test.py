@@ -16,7 +16,8 @@ def find_mising_ids():
     for file in os.listdir(dir):
         if file.startswith('sample'):
             id = int(file[6:])
-            ids.remove(id)
+            if osp.exists(osp.join(dir, file, 'data_out')):
+                ids.remove(id)
 
     print(ids)
 

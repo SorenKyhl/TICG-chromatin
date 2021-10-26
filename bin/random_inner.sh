@@ -1,5 +1,5 @@
 #! /bin/bash
-
+scratchDir=${1}
 k=$2
 chi=$3
 m=$4
@@ -8,7 +8,6 @@ numSimulations=$6
 dataFolder=$7
 relabel=$8
 diag=$9
-local=${10}
 
 # other params
 method='random'
@@ -25,27 +24,14 @@ fillDiag=-1
 
 echo $@
 
-if [ $local -eq 0 ]
-then
-	scratchDir="/scratch/midway2/erschultz/TICG${1}"
+# move utils to scratch
+mkdir -p $scratchDir
+cd ~/TICG-chromatin/utils
+cp input1024.xyz "${scratchDir}/input1024.xyz"
+cp default_config.json "${scratchDir}/default_config.json"
 
-	# move utils to scratch
-	mkdir -p $scratchDir
-	cd ~/TICG-chromatin/utils
-	cp input1024.xyz "${scratchDir}/input1024.xyz"
-	cp default_config.json "${scratchDir}/default_config.json"
+cd $scratchDir
 
-	cd $scratchDir
-else
-	echo data
-	# move utils
-	mkdir -p $dataFolder
-	cd ~/TICG-chromatin/utils
-	cp input1024.xyz "${dataFolder}/input1024.xyz"
-	cp default_config.json "${dataFolder}/default_config.json"
-
-	cd $dataFolder
-fi
 
 for i in $(seq $startSimulation $numSimulations)
 do

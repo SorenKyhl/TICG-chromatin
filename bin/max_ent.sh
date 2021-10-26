@@ -14,7 +14,7 @@ equilibSweeps=10000
 goalSpecified=0
 numIterations=0 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
-scratchDir='/scratch/midway2/erschultz/TICG_maxent'
+scratchDir='/scratch/midway2/erschultz'
 modelType='ContactGNNEnergy'
 modelID='22'
 local='true'
@@ -42,7 +42,7 @@ do
     # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
     for method in 'ground_truth' 'GNN'
     do
-      scratchDirI="${scratchDir}_${i}"
+      scratchDirI="${scratchDir}/TICG_maxent${i}"
       mkdir -p $scratchDirI
       cd $scratchDirI
 
