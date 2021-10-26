@@ -1,6 +1,6 @@
 #! /bin/bash
 #SBATCH --job-name=TICG
-#SBATCH --output=logFiles/random.out
+#SBATCH --output=logFiles/random2.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=1
@@ -43,7 +43,8 @@ do
   start=$(( $(( $(( $i-1 ))*$samples / $tasks ))+$startSample ))
   stop=$(( $start+$samplesPerTask-1 ))
   echo $start $stop
-  ~/TICG-chromatin/bin/random_inner.sh $i $k $chi $m $start $stop $dataFolder $relabel $diag $local > ~/TICG-chromatin/logFiles/TICG${i}.log &
+  ~/TICG-chromatin/bin/random_inner.sh $i $k $chi $m $start $stop $dataFolder $relabel $diag $local
+   # > ~/TICG-chromatin/logFiles/TICG${i}.log &
 done
 
 wait
