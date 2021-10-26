@@ -49,7 +49,7 @@ do
   i=$(( i+$tasks ))
   echo $start $stop
   scratchDirI="${scratchDir}/TICG${i}"
-  # ~/TICG-chromatin/bin/random_inner.sh $scratchDirI $k $chi $m $start $stop $dataFolder $relabel $diag > ~/TICG-chromatin/logFiles/TICG${i}.log &
+  ~/TICG-chromatin/bin/random_inner.sh $scratchDirI $k $chi $m $start $stop $dataFolder $relabel $diag > ~/TICG-chromatin/logFiles/TICG${i}.log &
 done
 
 wait
