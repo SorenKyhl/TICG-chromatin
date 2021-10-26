@@ -40,7 +40,7 @@ do
   for k in 2
   do
     # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
-    for method in 'ground_truth' 'GNN'
+    for method in 'ground_truth'
     do
       scratchDirI="${scratchDir}/TICG_maxent${i}"
       mkdir -p $scratchDirI

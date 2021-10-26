@@ -21,13 +21,13 @@ samples=1000
 samplesPerTask=$(($samples / $tasks))
 samplesPerTask=1
 diag='false'
-local=0
+local=1
 
 if [ $local -eq 1 ]
 then
   dataFolder="/home/eric/dataset_test"
   scratchDir='/home/eric/scratch'
-  tasks=1
+  tasks=6
   samplesPerTask=1
   source activate python3.8_pytorch1.8.1_cuda11.1
 else

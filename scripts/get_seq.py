@@ -19,6 +19,15 @@ sys.path.insert(0, dname)
 from knightRuiz import knightRuiz
 from get_config import LETTERS, str2bool
 
+paths = ['/home/erschultz/sequences_to_contact_maps',
+        '/home/eric/sequences_to_contact_maps',
+        'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
+for p in paths:
+    if osp.exists(p):
+        sys.path.insert(1, p)
+
+from plotting_functions import plotContactMap
+
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     seq_local = '../sequences_to_contact_maps'
@@ -492,6 +501,8 @@ def main():
             plot_seq_exclusive(seq, labels=args.labels, X=args.X)
         elif args.binarize:
             plot_seq_binary(seq)
+        elif args.use_energy:
+            plotContactMap(seq, 's_matrix.png', vmin = 'min', vmax = 'max', cmap = 'blue-red')
 
 def test_nmf_k_means():
     args = getArgs()
