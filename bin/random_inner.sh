@@ -13,7 +13,7 @@ local=${10}
 # other params
 method='random'
 pSwitch=0.05
-maxDiagChi=0.1
+maxDiagChi=0.2
 overwrite=1
 nSweeps=500000
 dumpFrequency=50000
@@ -45,14 +45,6 @@ else
 	cp default_config.json "${dataFolder}/default_config.json"
 
 	cd $dataFolder
-fi
-
-# activate python
-if [ $local -eq 0 ]
-then
-	source activate python3.8_pytorch1.8.1_cuda10.2
-else
-  source activate python3.8_pytorch1.8.1_cuda11.1
 fi
 
 for i in $(seq $startSimulation $numSimulations)

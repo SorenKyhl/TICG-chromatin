@@ -24,23 +24,31 @@ def getArgs():
     seq_local = '../sequences_to_contact_maps'
     chip_seq_data_local = osp.join(seq_local, 'chip_seq_data')
     # "./project2/depablo/erschultz/dataset_04_18_21"
+
+    # input data args
     parser.add_argument('--data_folder', type=str, default=osp.join(seq_local,'dataset_08_26_21'), help='location of input data')
     parser.add_argument('--sample', type=int, default=40, help='sample id')
     parser.add_argument('--sample_folder', type=str, help='location of input data')
 
+    # standard args
     parser.add_argument('--method', type=str, default='k_means', help='method for assigning particle types')
     parser.add_argument('--m', type=int, default=1024, help='number of particles (will crop contact map)')
-    parser.add_argument('--p_switch', type=float, default=0.05, help='probability to switch bead assignment (for method = random)')
-    parser.add_argument('--binarize', type=str2bool, default=False, help='true to binarize labels (not implemented for all methods)') # TODO
-    parser.add_argument('--normalize', type=str2bool, default=False, help='true to normalize labels to [0,1] (or [-1, 1] for some methods) (not implemented for all methods)') # TODO
     parser.add_argument('--k', type=int, default=2, help='sequences to generate')
+
+    # args for specific methods
     parser.add_argument('--model_path', type=str, help='path to GNN model')
+    parser.add_argument('--use_energy', type=str2bool, default=False)
+    parser.add_argument('--correct_energy', type=str2bool, default=True, help='True to correct S by dividing all non-diagonal entries by 2')
     parser.add_argument('--epigenetic_data_folder', type=str, default=osp.join(chip_seq_data_local, 'fold_change_control/processed'), help='location of epigenetic data')
     parser.add_argument('--ChromHMM_data_file', type=str, default=osp.join(chip_seq_data_local, 'aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt'), help='location of ChromHMM data')
+    parser.add_argument('--p_switch', type=float, default=0.05, help='probability to switch bead assignment (for method = random)')
+
+    # post-processing args
+    parser.add_argument('--binarize', type=str2bool, default=False, help='true to binarize labels (not implemented for all methods)') # TODO
+    parser.add_argument('--normalize', type=str2bool, default=False, help='true to normalize labels to [0,1] (or [-1, 1] for some methods) (not implemented for all methods)') # TODO
     parser.add_argument('--save_npy', action='store_true', help='true to save seq as .npy')
     parser.add_argument('--plot', action='store_true', help='true to plot seq as .png')
     parser.add_argument('--relabel', type=str2None, help='specify mark combinations to be relabled (e.g. AB-C will relabel AB mark pairs as mark C)')
-
 
     args = parser.parse_args()
     args.labels = None
@@ -315,7 +323,7 @@ def get_ChromHMM_seq(ifile, k, start=35000000, end=60575000, res=25000, min_cove
 
     return seq, labels
 
-def get_seq_gnn(k, model_path, sample, normalize):
+def get_seq_gnn(k, model_path, sample, normalize, use_energy):
     # determine model_type
     model_type = osp.split(osp.split(model_path)[0])[1]
     print(model_type)
@@ -331,9 +339,13 @@ def get_seq_gnn(k, model_path, sample, normalize):
         s_path = osp.join(model_path, "sample{}/energy_hat.txt".format(sample))
         if osp.exists(s_path):
             s = np.loadtxt(s_path)
-            seq = get_PCA_seq(s, k, normalize)
         else:
             raise Exception('s_path does not exist: {}'.format(s_path))
+
+        if use_energy:
+            seq = s
+        else:
+            seq = get_PCA_seq(s, k, normalize)
     else:
         raise Exception("Unrecognized model_type: {}".format(model_type))
 
@@ -420,7 +432,13 @@ def main():
         format = '%.3e'
     elif args.method == 'ground_truth':
         seq = np.load(osp.join(args.sample_folder, 'x.npy'))[:args.m, :]
-        format = '%d'
+        if args.use_energy:
+            chi = np.load(osp.join(args.sample_folder, 'chis.npy'))[:args.m, :]
+            seq = seq @ chi @ seq.T
+            format = '%.3e'
+        else:
+            format = '%d'
+
     elif args.method == 'k_means':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]
         seq, args.labels = get_k_means_seq(args.m, y_diag, args.k)
@@ -447,16 +465,27 @@ def main():
             dataset = osp.split(data_folder)[1]
         assert dataset == args.dataset, 'Dataset mismatch: {} vs {}'.format(dataset, args.dataset)
 
-        seq = get_seq_gnn(args.k, args.model_path, args.sample, args.normalize)
+        seq = get_seq_gnn(args.k, args.model_path, args.sample, args.normalize, args.use_energy)
         format = '%.3e'
     else:
         raise Exception('Unkown method: {}'.format(args.method))
 
-    m, k = seq.shape
-    assert m == args.m, "m mismatch: seq has {} particles not {}".format(m, args.m)
-    assert k == args.k, "k mismatch: seq has {} particle types not {}".format(k, args.k)
-
-    writeSeq(seq, format, args.save_npy)
+    print(seq)
+    if args.use_energy:
+        m1, m2 = seq.shape
+        assert m1 == m2
+        assert m1 == args.m
+        if args.correct_energy:
+            diag = np.diagonal(seq).copy()
+            seq /= 2
+            np.fill_diagonal(seq, diag)
+        print(seq)
+        np.savetxt('s_matrix.txt', seq, fmt = format)
+    else:
+        m, k = seq.shape
+        assert m == args.m, "m mismatch: seq has {} particles not {}".format(m, args.m)
+        assert k == args.k, "k mismatch: seq has {} particle types not {}".format(k, args.k)
+        writeSeq(seq, format, args.save_npy)
 
     if args.plot:
         if args.method in {'k_means', 'chromhmm'} or (args.method == 'nmf' and args.binarize):
@@ -508,7 +537,7 @@ def test_GNN():
     args.model_path = '../sequences_to_contact_maps/results/ContactGNNEnergy/26'
     args.normalize = True
 
-    seq = get_seq_gnn(args.k, args.model_path, args.sample, args.normalize)
+    seq = get_seq_gnn(args.k, args.model_path, args.sample, args.normalize, args.use_energy)
 
 
 if __name__ ==  "__main__":

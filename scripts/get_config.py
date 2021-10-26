@@ -20,6 +20,7 @@ def getArgs():
     parser.add_argument('--dump_stats_frequency', type=int, help='set to change dump stats frequency')
     parser.add_argument('--n_sweeps', type=int, help='set to change nSweeps')
     parser.add_argument('--seed', type=int, help='set to change random seed')
+    parser.add_argument('--use_energy', type=str2bool, default=False, help='True to use s_matrix')
 
     # diag chi arguments
     parser.add_argument('--diag', type=str2bool, default=False, help='True for diagonal interactions')
@@ -84,8 +85,8 @@ def generateRandomChi(args, decimals = 1):
     # create array with random values in [minval, maxVal]
     rands = np.random.rand(args.k, args.k) * (args.max_chi - args.min_chi) + args.min_chi
 
-    # make symmetric chi array
-    chi = np.tril(rands) + np.triu(rands.T, 1)
+    # zero lower diagonal
+    chi = np.triu(rands)
 
     if args.fill_offdiag is not None:
         # fills off diag chis with value of fill_offdiag
@@ -180,14 +181,14 @@ def main():
         assert args.k is not None, "chi and k cannot both be None"
         args.chi = getChis(args)
     else:
-        # chi is not None
+        # zero lower diagonal
+        args.chi = np.triu(args.chi)
         rows, cols = args.chi.shape
         if args.k is None:
             args.k = rows
         else:
             assert args.k == rows, 'number of particle types does not match shape of chi'
         assert rows == cols, "chi not square: {}".format(args.chi)
-        assert np.allclose(args.chi, args.chi.T), "chi is not symmetric: {}".format(args.chi)
         conv = InteractionConverter(args.k, args.chi)
         if not conv.PsiUniqueRows():
             print('Warning: particles are not distinguishable')
@@ -228,9 +229,6 @@ def main():
     # save nbeads
     config['nbeads'] = args.m
 
-    # save nspecies
-    config["nspecies"] = args.k
-
     # save nSweeps
     if args.n_sweeps is not None:
         config['nSweeps'] = args.n_sweeps
@@ -245,11 +243,23 @@ def main():
     if args.seed is not None:
         config['seed'] = args.seed
 
+
+    if args.use_energy:
+        # save smatrix_on
+        config['smatrix_on']=True
+        config['chipseq_files']=None
+        config["nspecies"] = 0
+    else:
+        # save chipseq files
+        config['chipseq_files'] = ['seq{}.txt'.format(i) for i in range(args.k)]
+
+        # save nspecies
+        config["nspecies"] = args.k
+
     # save configuration filename
     config["load_configuration_filename"] = args.load_configuration_filename
 
-    # save chipseq files
-    config['chipseq_files'] = ['seq{}.txt'.format(i) for i in range(args.k)]
+
 
     with open(args.ofile, 'w') as f:
         json.dump(config, f, indent = 2)
@@ -265,7 +275,7 @@ def test():
     print(generateRandomChi(args))
 
 def test2():
-    conv = InteractionConverter(2, np.array([[-1, 2],[2, -1]]))
+    conv = InteractionConverter(2, np.array([[-1, 2],[0, -1]]))
     print(conv.allStrings)
     print(conv.PsiUniqueRows())
 

@@ -117,56 +117,32 @@ then
 fi
 cd $scratchDir
 
-# directory checks
-if [ -d $outputDir ]
-then
-	if [ $overwrite -eq 1 ]
-	then
-		echo "output directory already exists - overwriting"
-		rm -r $outputDir
-	else
-		# don't overrite previous results!
-		echo "output directory already exists - aborting"
-		exit 1
-	fi
-fi
-
-if ! [[ -d resources ]]
-then
-	echo "resources does not exist"
-	exit 1
-fi
-
 # other parameters
 configFileName='config.json'
 saveFileName='equilibrated.xyz'
-proj_bin="/home/erschultz/TICG-chromatin/maxent/bin" # location of algorithm scripts
+proj_bin=~/TICG-chromatin/maxent/bin # location of algorithm scripts
 nchis=$(head -1 "resources/chis.txt" | wc -w)
 k=$(jq .nspecies "resources/${configFileName}")
 ndiagchis=$(head -1 "resources/chis_diag.txt" | wc -w)
-
-# set up other files
-mkdir -p $outputDir
-mv resources/chis.txt .
-mv resources/chis_diag.txt .
-mv resources/*.png .
-touch track.log
 
 run_simulation () {
 	STARTTIME=$(date +%s)
 	# resources must be in working directory
 	mkdir "iteration$it"
 	cp resources/* "iteration$it"
-	if [ $mode == "plaid" ];
+	if [ $num_iterations -gt 0 ]
 	then
-		python3 $proj_bin/update_chis.py --it $it --k $k
-	elif [ $mode == "diag" ];
-	then
-		python3 $proj_bin/update_diag.py $it
-	elif [ $mode == "both" ];
-	then
-		python3 $proj_bin/update_chis.py --it $it --k $k
-		python3 $proj_bin/update_diag.py --it $it
+		if [ $mode == "plaid" ];
+		then
+			python3 $proj_bin/update_chis.py --it $it --k $k
+		elif [ $mode == "diag" ];
+		then
+			python3 $proj_bin/update_diag.py $it
+		elif [ $mode == "both" ];
+		then
+			python3 $proj_bin/update_chis.py --it $it --k $k
+			python3 $proj_bin/update_diag.py --it $it
+		fi
 	fi
 	cd "iteration${it}"
 
@@ -193,6 +169,29 @@ run_simulation () {
 	echo "finished iteration ${it}: $(($ENDTIME - $STARTTIME)) seconds"
 }
 
+
+# directory checks
+if [ -d $outputDir ]
+then
+	if [ $overwrite -eq 1 ]
+	then
+		echo "output directory already exists - overwriting"
+		rm -r $outputDir
+	else
+		# don't overrite previous results!
+		echo "output directory already exists - aborting"
+		exit 1
+	fi
+fi
+
+if ! [[ -d resources ]]
+then
+	echo "resources does not exist"
+	exit 1
+fi
+
+mkdir -p $outputDir
+
 # iteration 0
 it=0
 if [ $goal_specified -eq 1 ]
@@ -200,7 +199,8 @@ then
 	# if goal is specified, just move in goal files and do not simulate
 	mv resources/obj_goal.txt .
 	mv resources/obj_goal_diag.txt .
-else
+elif [ $num_iterations -gt 0 ]
+then
 	# if goal is not specified, simulate iteration 0 and calculate the goals from that simulation
 	run_simulation
 fi
@@ -208,6 +208,11 @@ fi
 # maxent optimization
 if [ $num_iterations -gt 0 ]
 then
+	mv resources/chis.txt .
+	mv resources/chis_diag.txt .
+	mv resources/*.png .
+	touch track.log
+
 	for it in $(seq 1 $(($num_iterations)))
 	do
 		run_simulation
