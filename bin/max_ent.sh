@@ -34,6 +34,7 @@ modelPath="${results}/${modelType}/${modelID}"
 
 max_ent () {
   sampleFolder="${dataFolder}/samples/sample${sample}"
+  ofile="${sampleFolder}/${methodFolder}/k${k}"
 
   # move to scratch
   scratchDirResources="${1}/resources"
@@ -67,16 +68,6 @@ max_ent () {
   echo "\n\n"
 }
 
-if [ $local = 'true' ]
-then
-  dataFolder="/home/eric/sequences_to_contact_maps/dataset_08_29_21"
-  scratchDir='/home/eric/scratch'
-  source activate python3.8_pytorch1.8.1_cuda11.1
-else
-  scratchDir='/scratch/midway2/erschultz'
-  source activate python3.8_pytorch1.8.1_cuda10.2
-fi
-
 format_method () {
   if [ $method == "GNN" ]
   then
@@ -101,7 +92,15 @@ format_method () {
 
 }
 
-module load jq
+if [ $local = 'true' ]
+then
+  dataFolder="/home/eric/sequences_to_contact_maps/dataset_08_29_21"
+  scratchDir='/home/eric/scratch'
+  source activate python3.8_pytorch1.8.1_cuda11.1
+else
+  scratchDir='/scratch/midway2/erschultz'
+  source activate python3.8_pytorch1.8.1_cuda10.2
+fi
 
 STARTTIME=$(date +%s)
 i=1
@@ -113,12 +112,7 @@ do
     for method in 'ground_truth' 'GNN'
     do
       scratchDirI="${scratchDir}/TICG_maxent${i}"
-      mkdir -p $scratchDirI
-      cd $scratchDirI
-
       format_method
-
-      ofile="${dataFolder}/samples/sample${sample}/${methodFolder}/k${k}"
       max_ent $scratchDirI > bash.log &
       i=$(($i+1))
     done

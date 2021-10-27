@@ -109,7 +109,7 @@ num_iterations=${8:-50}
 overwrite=${9:-0}
 scratchDir=${10:-'/scratch/midway2/erschultz/TICG_maxent'}
 
-# move to scratch
+# cd to scratch
 if ! [[ -d $scratchDir ]]
 then
 	echo "scratchDir does not exist"
@@ -118,6 +118,7 @@ fi
 cd $scratchDir
 
 # other parameters
+module load jq
 configFileName='config.json'
 saveFileName='equilibrated.xyz'
 proj_bin=~/TICG-chromatin/maxent/bin # location of algorithm scripts
