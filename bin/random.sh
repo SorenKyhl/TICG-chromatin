@@ -3,7 +3,7 @@
 #SBATCH --output=logFiles/random1.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
-#SBATCH --ntasks=40
+#SBATCH --ntasks=10
 #SBATCH --mem-per-cpu=2000
 
 # chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
@@ -13,10 +13,10 @@ chi="-1&1&0&0\\1&-2&0&-1\\0&0&-1&2\\0&-1&2&-1"
 k=4
 m=1024
 today=$(date +'%m_%d_%y')
-dataFolder="/project2/depablo/erschultz/dataset_10_26_21"
+dataFolder="/project2/depablo/erschultz/dataset_10_25_21"
 startSample=15
 relabel='none'
-tasks=40
+tasks=10
 samples=800
 samplesPerTask=$(($samples / $tasks))
 samplesPerTask=6
