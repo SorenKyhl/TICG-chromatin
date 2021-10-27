@@ -21,7 +21,7 @@ def getArgs():
     parser.add_argument('--n_sweeps', type=int, help='set to change nSweeps')
     parser.add_argument('--seed', type=int, help='set to change random seed')
     parser.add_argument('--use_energy', type=str2bool, default=False, help='True to use s_matrix')
-
+    
     # diag chi arguments
     parser.add_argument('--diag', type=str2bool, default=False, help='True for diagonal interactions')
     parser.add_argument('--max_diag_chi', type=float, default=0.5, help='maximum diag chi value for np.linspace()')
@@ -35,6 +35,8 @@ def getArgs():
     parser.add_argument('--fill_diag', type=float, help='fill diag of chi with given value (None to skip)')
     parser.add_argument('--fill_offdiag', type=float, help='fill off diag of chi with given value (None to skip)')
     parser.add_argument('--ensure_distinguishable', action='store_true', help='true to ensure that corresponding psi is distinguishable')
+    parser.add_argument('--use_ground_truth_chi', type=str2bool, default=False, help='True to use ground truth chi')
+
 
 
     args = parser.parse_args()

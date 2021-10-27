@@ -232,3 +232,4 @@ run_simulation
 
 # move data to output directory
 mv $scratchDir/* $outputDir
+rm -d $scratchDir

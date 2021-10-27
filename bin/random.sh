@@ -15,7 +15,7 @@ samples=400
 samplesPerTask=$(($samples / $tasks))
 samplesPerTask=1
 diag='true'
-local=1
+local=0
 
 if [ $local -eq 1 ]
 then
@@ -35,8 +35,9 @@ fi
 
 cd ~/TICG-chromatin
 
-for i in 1
+for i in 0 1 2 3 4
 do
   startSampleI=$(( $startSample + $samples * $i ))
+  # echo $startSampleI
   bash ~/TICG-chromatin/bin/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samples $samplesPerTask $diag $scratchDir $i
 done

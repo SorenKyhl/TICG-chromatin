@@ -12,9 +12,9 @@ diag=$9
 # other params
 method='random'
 pSwitch=0.05
-maxDiagChi=0.2
+maxDiagChi=0.1
 overwrite=1
-nSweeps=500000
+nSweeps=1000000
 dumpFrequency=50000
 
 # below does nothing if chi is given

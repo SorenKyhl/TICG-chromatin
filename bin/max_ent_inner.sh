@@ -19,6 +19,7 @@ local=${15}
 binarize=${16}
 normalize=${17}
 useEnergy=${18}
+useGroundTruthChi=${19}
 echo $@
 
 sampleFolder="${dataFolder}/samples/sample${sample}"
@@ -57,9 +58,11 @@ echo $method
 # apply max ent with newton's method
 ~/TICG-chromatin/maxent/bin/run.sh $ofile $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite $scratchDir
 
+# run.sh moves all data to $ofile upon completion
+cd $ofile
+
 # compare results
 prodIt=$(($numIterations+1))
-cd $ofile
 python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${ofile}/iteration${prodIt}/y.npy" --y_diag_instance "$sampleFolder/y_diag_instance.npy" --yhat_diag_instance "${ofile}/iteration${prodIt}/y_diag_instance.npy"
 
 echo "\n\n"

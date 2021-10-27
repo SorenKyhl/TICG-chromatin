@@ -22,7 +22,7 @@ def find_mising_ids():
     print(ids)
 
 def upper_traingularize_chis():
-    dir = "/project2/depablo/erschultz/dataset_10_25_21/samples"
+    dir = "/project2/depablo/erschultz/dataset_08_29_21/samples"
     for file in os.listdir(dir):
         if file.startswith('sample'):
             file_dir = osp.join(dir, file)
