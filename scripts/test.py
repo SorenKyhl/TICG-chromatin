@@ -23,7 +23,6 @@ def find_mising_ids():
 
 def upper_traingularize_chis():
     dir = "/project2/depablo/erschultz/dataset_10_25_21/samples"
-    dir = "/home/eric/dataset_test/samples"
     for file in os.listdir(dir):
         if file.startswith('sample'):
             file_dir = osp.join(dir, file)
@@ -63,6 +62,6 @@ def makeDirsForMaxEnt(dataset, sample):
 
 if __name__ == '__main__':
     # find_mising_ids()
-    check_seq()
+    # check_seq()
     upper_traingularize_chis()
     # makeDirsForMaxEnt("dataset_08_29_21", 40)
