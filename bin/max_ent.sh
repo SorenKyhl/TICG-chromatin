@@ -14,7 +14,6 @@ equilibSweeps=10000
 goalSpecified=0
 numIterations=0 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
-scratchDir='/scratch/midway2/erschultz'
 modelType='ContactGNNEnergy'
 modelID='22'
 local='true'
@@ -28,8 +27,33 @@ then
   scratchDir='/home/eric/scratch'
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
+  scratchDir='/scratch/midway2/erschultz'
   source activate python3.8_pytorch1.8.1_cuda10.2
 fi
+
+format_method () {
+  if [ $method == "GNN" ]
+  then
+    methodFolder="${method}-${modelID}"
+  else
+    methodFolder=${method}
+  fi
+
+  if [ $useEnergy = 'true' ]
+  then
+    methodFolder="${methodFolder}-S"
+  fi
+
+  # normalize and binarize are mutually exclusive
+  if [ $normalize = 'true' ]
+  then
+    methodFolder="${methodFolder}-normalize"
+  elif [ $binarize = 'true' ]
+  then
+    methodFolder="${methodFolder}-binarize"
+  fi
+
+}
 
 module load jq
 
@@ -46,25 +70,8 @@ do
       mkdir -p $scratchDirI
       cd $scratchDirI
 
-      if [ $method == "GNN" ]
-      then
-        methodFolder="${method}-${modelID}"
-      else
-        methodFolder=${method}
-      fi
+      format_method
 
-      if [ $useEnergy = 'true' ]
-      then
-        methodFolder="${methodFolder}-S"
-      fi
-
-      if [ $normalize = 'true' ]
-      then
-        methodFolder="${methodFolder}-normalize"
-      elif [ $binarize = 'true' ]
-      then
-        methodFolder="${methodFolder}-binarize"
-      fi
       ofile="${dataFolder}/samples/sample${sample}/${methodFolder}/k${k}"
       ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite $scratchDirI $method $modelType $modelID $ofile $local $binarize $normalize $useEnergy > bash.log &
       mv bash.log "${ofile}/bash.log"
@@ -82,4 +89,4 @@ then
 fi
 
 ENDTIME=$(date +%s)
-echo "total time: $(($ENDTIME-$STARTTIME)) seconds"
+echo "total time: $(( $ENDTIME - $STARTTIME )) seconds"

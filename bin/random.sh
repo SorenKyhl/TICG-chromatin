@@ -1,27 +1,27 @@
 #! /bin/bash
 
 # chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
-chi="-1&1&0&0\\1&-2&0&-1\\0&0&-1&2\\0&-1&2&-1"
-# chi="-1&1\\1&0"
+# chi="-1&1&0&0\\1&-2&0&-1\\0&0&-1&2\\0&-1&2&-1"
+chi="-1&1\\1&0"
 # chi='none'
-k=4
+k=2
 m=1024
 today=$(date +'%m_%d_%y')
-dataFolder="/project2/depablo/erschultz/dataset_10_25_21"
-startSample=14
+dataFolder="/project2/depablo/erschultz/dataset_10_27_21"
+startSample=1
 relabel='none'
 tasks=20
 samples=400
 samplesPerTask=$(($samples / $tasks))
-samplesPerTask=7
-diag='false'
-local=0
+samplesPerTask=1
+diag='true'
+local=1
 
 if [ $local -eq 1 ]
 then
   dataFolder="/home/eric/dataset_test"
   scratchDir='/home/eric/scratch'
-  tasks=6
+  tasks=1
   samplesPerTask=1
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
@@ -29,14 +29,14 @@ else
   source activate python3.8_pytorch1.8.1_cuda10.2
 fi
 
-cd ~/TICG-chromatin/src
-make
-mv TICG-engine ..
+# cd ~/TICG-chromatin/src
+# make
+# mv TICG-engine ..
 
 cd ~/TICG-chromatin
 
-for i in 0 1 2 3 4
+for i in 1
 do
   startSampleI=$(( $startSample + $samples * $i ))
-  sbatch ~/TICG-chromatin/bin/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samples $samplesPerTask $diag $scratchDir $i
+  bash ~/TICG-chromatin/bin/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samples $samplesPerTask $diag $scratchDir $i
 done

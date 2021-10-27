@@ -221,7 +221,7 @@ def main():
     # save chi to config
     rows, cols = args.chi.shape
     for row in range(rows):
-        for col in range(cols):
+        for col in range(row, cols):
             key = 'chi{}{}'.format(LETTERS[row], LETTERS[col])
             val = args.chi[row, col]
             config[key] = val

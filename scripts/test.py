@@ -21,11 +21,22 @@ def find_mising_ids():
 
     print(ids)
 
+def upper_traingularize_chis():
+    dir = "/project2/depablo/erschultz/dataset_10_25_21/samples"
+    dir = "/home/eric/dataset_test/samples"
+    for file in os.listdir(dir):
+        if file.startswith('sample'):
+            file_dir = osp.join(dir, file)
+            chis = np.load(osp.join(file_dir, 'chis.npy'))
+            chis = np.triu(chis)
+
+            np.savetxt(osp.join(file_dir, 'chis.txt'), chis, fmt='%0.5f')
+            np.save(osp.join(file_dir, 'chis.npy'), chis)
+
 def check_seq():
     ids_to_check = set()
-    dir = "/project2/depablo/erschultz/dataset_08_24_21/samples"
-    # dir = '../sequences_to_contact_maps/dataset_08_24_21/samples'
-    k = 2
+    dir = "/project2/depablo/erschultz/dataset_10_25_21/samples"
+    k = 4
     m = 1024
     for file in os.listdir(dir):
         if file.startswith('sample'):
@@ -51,6 +62,7 @@ def makeDirsForMaxEnt(dataset, sample):
             os.mkdir(osp.join(sample_folder, method, 'k{}'.format(k)), mode = 0o755)
 
 if __name__ == '__main__':
-    find_mising_ids()
-    # check_seq()
+    # find_mising_ids()
+    check_seq()
+    upper_traingularize_chis()
     # makeDirsForMaxEnt("dataset_08_29_21", 40)
