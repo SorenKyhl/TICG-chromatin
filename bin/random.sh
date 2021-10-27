@@ -33,6 +33,8 @@ cd ~/TICG-chromatin/src
 make
 mv TICG-engine ..
 
+cd ~/TICG-chromatin
+
 for i in 0 1 2 3 4
 do
   startSampleI=$(( $startSample + $samples * $i ))
