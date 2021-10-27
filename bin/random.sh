@@ -35,7 +35,7 @@ fi
 
 cd ~/TICG-chromatin
 
-for i in 1
+for i in 2
 do
   startSampleI=$(( $startSample + $samples * $i ))
   bash ~/TICG-chromatin/bin/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samples $samplesPerTask $diag $scratchDir $i

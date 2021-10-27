@@ -15,7 +15,7 @@ goalSpecified=0
 numIterations=0 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 modelType='ContactGNNEnergy'
-modelID='22'
+modelID='28'
 local='true'
 binarize='false'
 normalize='false'
@@ -23,7 +23,7 @@ useEnergy='true'
 
 if [ $local = 'true' ]
 then
-  dataFolder="/home/eric/sequences_to_contact_maps/dataset_08_24_21"
+  dataFolder="/home/eric/sequences_to_contact_maps/dataset_08_29_21"
   scratchDir='/home/eric/scratch'
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
@@ -64,7 +64,7 @@ do
   for k in 2
   do
     # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
-    for method in 'ground_truth'
+    for method in 'ground_truth' 'GNN'
     do
       scratchDirI="${scratchDir}/TICG_maxent${i}"
       mkdir -p $scratchDirI
@@ -74,7 +74,6 @@ do
 
       ofile="${dataFolder}/samples/sample${sample}/${methodFolder}/k${k}"
       ~/TICG-chromatin/bin/max_ent_inner.sh $m $k $sample $dataFolder $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite $scratchDirI $method $modelType $modelID $ofile $local $binarize $normalize $useEnergy > bash.log &
-      mv bash.log "${ofile}/bash.log"
       i=$(($i+1))
     done
   done
