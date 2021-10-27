@@ -36,5 +36,5 @@ mv TICG-engine ..
 for i in 0 1 2 3 4
 do
   startSampleI=$(( $startSample + $samples * $i ))
-  bash ~/TICG-chromatin/bin/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samples $samplesPerTask $diag $scratchDir $i
+  sbatch ~/TICG-chromatin/bin/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samples $samplesPerTask $diag $scratchDir $i
 done
