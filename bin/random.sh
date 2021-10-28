@@ -10,9 +10,9 @@ today=$(date +'%m_%d_%y')
 dataFolder="/project2/depablo/erschultz/dataset_10_27_21"
 startSample=1
 relabel='none'
+nodes=8
 tasks=20
-samples=400
-samplesPerTask=$(($samples / $tasks))
+samples=2000
 diag='true'
 local=0
 
@@ -21,13 +21,19 @@ then
   dataFolder="/home/eric/dataset_test"
   scratchDir='/home/eric/scratch'
   startSample=2
+  nodes=1
   tasks=1
-  samplesPerTask=1
+  samples=1
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
   scratchDir="/scratch/midway2/erschultz"
   source activate python3.8_pytorch1.8.1_cuda10.2
 fi
+
+samplesPerNode=$(( $samples / $nodes ))
+samplesPerTask=$(( $samplesPerNode / $tasks ))
+echo "samples per node" $samplesPerNode
+echo "samples per task" $samplesPerTask
 
 # cd ~/TICG-chromatin/src
 # make
@@ -35,10 +41,10 @@ fi
 
 cd ~/TICG-chromatin
 
-for i in 0 1 2 3 4
+for i in $( seq 0 $(( $nodes - 1 )) )
 do
-  startSampleI=$(( $startSample + $samples * $i ))
-  endSampleI=$(( $(( $(( $(( $tasks - 1 ))*$samples / $tasks ))+$startSampleI )) + $samplesPerTask - 1 ))
+  startSampleI=$(( $startSample + $samplesPerNode * $i ))
+  endSampleI=$(( $startSampleI + $samplesPerNode - 1 ))
   echo $startSampleI $endSampleI
-  sbatch ~/TICG-chromatin/bin/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samples $samplesPerTask $diag $scratchDir $i
+  sbatch ~/TICG-chromatin/bin/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samplesPerNode $samplesPerTask $diag $scratchDir $i
 done
