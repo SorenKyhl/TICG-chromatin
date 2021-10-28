@@ -1,3 +1,5 @@
+import os.path as osp
+
 import argparse
 import json
 import numpy as np
@@ -15,19 +17,23 @@ def getArgs():
     parser.add_argument('--m', type=int, default=1024, help='number of particles')
     parser.add_argument('--k', type=int, help='number of particle types (inferred from chi if None)')
     parser.add_argument('--load_configuration_filename', type=str, default='input1024.xyz', help='file name of initial config')
-    parser.add_argument('--goal_specified', type=int, default=1, help='1=true, will save two lines to chis.txt')
+    parser.add_argument('--goal_specified', type=str2bool, default=True, help='True will save two lines to chis.txt')
     parser.add_argument('--dump_frequency', type=int, help='set to change dump frequency')
     parser.add_argument('--dump_stats_frequency', type=int, help='set to change dump stats frequency')
     parser.add_argument('--n_sweeps', type=int, help='set to change nSweeps')
     parser.add_argument('--seed', type=int, help='set to change random seed')
     parser.add_argument('--use_energy', type=str2bool, default=False, help='True to use s_matrix')
-    
+
+    # chi arguments
+    parser.add_argument('--use_ground_truth_chi', type=str2bool, default=False, help='True to use ground truth chi and diag chi')
+    parser.add_argument('--sample_folder', type=str, help='location of sample for ground truth chi')
+
     # diag chi arguments
     parser.add_argument('--diag', type=str2bool, default=False, help='True for diagonal interactions')
     parser.add_argument('--max_diag_chi', type=float, default=0.5, help='maximum diag chi value for np.linspace()')
 
-    # chi arguments
-    parser.add_argument('--chi', type=str2list2D, help='chi matrix using latex separator style (if None will be generated randomly)')
+    # plaid chi arguments
+    parser.add_argument('--chi', type=str2list2D, help='chi matrix using latex separator style (if None will chi be generated randomly)')
     parser.add_argument('--save_chi', action="store_true", help='true to save chi to wd')
     parser.add_argument('--save_chi_for_max_ent', action="store_true", help='true to save chi to wd in format needed for max ent')
     parser.add_argument('--min_chi', type=float, default=-1., help='minimum chi value for random generation')
@@ -35,9 +41,6 @@ def getArgs():
     parser.add_argument('--fill_diag', type=float, help='fill diag of chi with given value (None to skip)')
     parser.add_argument('--fill_offdiag', type=float, help='fill off diag of chi with given value (None to skip)')
     parser.add_argument('--ensure_distinguishable', action='store_true', help='true to ensure that corresponding psi is distinguishable')
-    parser.add_argument('--use_ground_truth_chi', type=str2bool, default=False, help='True to use ground truth chi')
-
-
 
     args = parser.parse_args()
     return args
@@ -179,7 +182,9 @@ def main():
         config = json.load(f)
 
     # set up chi
-    if args.chi is None:
+    if args.use_ground_truth_chi:
+        args.chi = np.load(osp.join(args.sample_folder, 'chis.npy'))
+    elif args.chi is None:
         assert args.k is not None, "chi and k cannot both be None"
         args.chi = getChis(args)
     else:
@@ -196,9 +201,15 @@ def main():
             print('Warning: particles are not distinguishable')
 
     # set up diag chi
-    config["diagonal_on"] = args.diag
-    chi_diag = np.linspace(0, args.max_diag_chi, 20)
-    config["diag_chis"] = list(chi_diag)
+    if args.use_ground_truth_chi:
+        with open(osp.join(args.sample_folder, 'config.json'), 'rb') as f:
+            sample_config = json.load(f)
+        config["diagonal_on"] = sample_config["diagonal_on"]
+        config["diag_chis"] = sample_config["diag_chis"]
+    else:
+        config["diagonal_on"] = args.diag
+        chi_diag = np.linspace(0, args.max_diag_chi, 20)
+        config["diag_chis"] = list(chi_diag)
 
     # save chi and diag_chi
     if args.save_chi:

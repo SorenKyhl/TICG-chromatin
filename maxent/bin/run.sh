@@ -104,7 +104,7 @@ gamma_diag=${3:-0.00001}
 mode=${4:-"plaid"}
 production_sweeps=${5:-50000}
 equilib_sweeps=${6:-10000}
-goal_specified=${7:-0}
+goal_specified=${7:-"false"}
 num_iterations=${8:-50}
 overwrite=${9:-0}
 scratchDir=${10:-'/scratch/midway2/erschultz/TICG_maxent'}
@@ -195,7 +195,7 @@ mkdir -p $outputDir
 
 # iteration 0
 it=0
-if [ $goal_specified -eq 1 ]
+if [ $goal_specified = "true" ]
 then
 	# if goal is specified, just move in goal files and do not simulate
 	mv resources/obj_goal.txt .
@@ -228,7 +228,7 @@ fi
 # run longer simulation
 it=$(($num_iterations + 1))
 python3 $proj_bin/jsed.py "resources/${configFileName}" dump_frequency 50000 i
-production_sweeps=500000
+production_sweeps=1000000
 run_simulation
 
 # move data to output directory

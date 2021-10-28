@@ -45,6 +45,7 @@ def getArgs():
     parser.add_argument('--k', type=int, default=2, help='sequences to generate')
 
     # args for specific methods
+    parser.add_argument('--seed', type=int, default=1, help='random seed for numpy')
     parser.add_argument('--model_path', type=str, help='path to GNN model')
     parser.add_argument('--use_energy', type=str2bool, default=False)
     parser.add_argument('--correct_energy', type=str2bool, default=True, help='True to correct S by dividing all non-diagonal entries by 2')
@@ -105,7 +106,8 @@ def str2None(v):
     else:
         raise argparse.ArgumentTypeError('String value expected.')
 
-def get_random_seq(m, p_switch, k, relabel):
+def get_random_seq(m, p_switch, k, relabel, seed):
+    rng = np.random.default_rng(seed)
     if relabel is not None:
         k -= 1
     seq = np.zeros((m, k))
@@ -113,9 +115,9 @@ def get_random_seq(m, p_switch, k, relabel):
     for j in range(k):
         for i in range(1, m):
             if seq[i-1, j] == 1:
-                seq[i, j] = np.random.choice([1,0], p=[1 - p_switch, p_switch])
+                seq[i, j] = rng.choice([1,0], p=[1 - p_switch, p_switch])
             else:
-                seq[i, j] = np.random.choice([1,0], p=[p_switch, 1 - p_switch])
+                seq[i, j] = rng.choice([1,0], p=[p_switch, 1 - p_switch])
 
     if relabel is not None:
         seq = relabel_seq(seq, relabel)

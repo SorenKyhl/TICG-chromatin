@@ -13,7 +13,6 @@ relabel='none'
 tasks=20
 samples=400
 samplesPerTask=$(($samples / $tasks))
-samplesPerTask=1
 diag='true'
 local=0
 
@@ -21,6 +20,7 @@ if [ $local -eq 1 ]
 then
   dataFolder="/home/eric/dataset_test"
   scratchDir='/home/eric/scratch'
+  startSample=2
   tasks=1
   samplesPerTask=1
   source activate python3.8_pytorch1.8.1_cuda11.1
@@ -38,6 +38,7 @@ cd ~/TICG-chromatin
 for i in 0 1 2 3 4
 do
   startSampleI=$(( $startSample + $samples * $i ))
-  # echo $startSampleI
+  endSampleI=$(( $(( $(( $(( $tasks - 1 ))*$samples / $tasks ))+$startSampleI )) + $samplesPerTask - 1 ))
+  echo $startSampleI $endSampleI
   sbatch ~/TICG-chromatin/bin/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samples $samplesPerTask $diag $scratchDir $i
 done

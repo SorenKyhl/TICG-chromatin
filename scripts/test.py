@@ -63,5 +63,8 @@ def makeDirsForMaxEnt(dataset, sample):
 if __name__ == '__main__':
     # find_mising_ids()
     # check_seq()
-    upper_traingularize_chis()
+    # upper_traingularize_chis()
     # makeDirsForMaxEnt("dataset_08_29_21", 40)
+    s = np.loadtxt('/home/eric/sequences_to_contact_maps/results/ContactGNNEnergy/28/sample40/energy_hat.txt')
+    r = np.linalg.matrix_rank(s, tol = 20)
+    print(r)
