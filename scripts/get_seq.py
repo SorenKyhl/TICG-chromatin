@@ -45,7 +45,7 @@ def getArgs():
     parser.add_argument('--k', type=int, default=2, help='sequences to generate')
 
     # args for specific methods
-    parser.add_argument('--seed', type=int, default=1, help='random seed for numpy')
+    parser.add_argument('--seed', type=int, help='random seed for numpy')
     parser.add_argument('--model_path', type=str, help='path to GNN model')
     parser.add_argument('--use_energy', type=str2bool, default=False)
     parser.add_argument('--correct_energy', type=str2bool, default=True, help='True to correct S by dividing all non-diagonal entries by 2')
@@ -431,7 +431,7 @@ def plot_seq_binary(seq, show = False, save = True, title = None, labels = None,
 def main():
     args = getArgs()
     if args.method == 'random':
-        seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel)
+        seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel, args.seed)
         format = '%d'
     elif args.method == 'pca':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]
@@ -525,7 +525,7 @@ def test_random():
     args.k = 4
     args.m = 1000
     args.relabel = 'AB-D'
-    seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel)
+    seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel, args.seed)
 
     plot_seq_binary(seq, show = True, save = False, title = 'test')
 
@@ -554,9 +554,9 @@ def test_GNN():
 
 
 if __name__ ==  "__main__":
-    main()
+    # main()
     # test_nmf_k_means()
-    # test_random()
+    test_random()
     # test_epi()
     # test_ChromHMM()
     # test_GNN()
