@@ -7,9 +7,11 @@
 #SBATCH --mem-per-cpu=2000
 
 m=1024
+k='none'
 samples='40-1230-1718-1201-1202-1203'
 dataFolder='/project2/depablo/erschultz/dataset_08_24_21'
 productionSweeps=50000
+finalSimProductionSweeps=500000
 equilibSweeps=10000
 goalSpecified='false'
 numIterations=0 # iteration 1 + numIterations is production run to get contact map
@@ -21,6 +23,7 @@ binarize='false'
 normalize='false'
 useEnergy='false'
 useGroundTruthChi='true'
+useGroundTruthSeed='true'
 mode="plaid"
 gamma=0.00001
 gammaDiag=0.00001
@@ -34,8 +37,8 @@ modelPath="${results}/${modelType}/${modelID}"j
 
 if [ $local = 'true' ]
 then
-  # dataFolder="/home/eric/sequences_to_contact_maps/dataset_08_29_21"
-  dataFolder="/home/eric/dataset_test"
+  dataFolder="/home/eric/sequences_to_contact_maps/dataset_08_29_21"
+  # dataFolder="/home/eric/dataset_test"
   scratchDir='/home/eric/scratch'
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
@@ -46,7 +49,12 @@ fi
 
 max_ent () {
   sampleFolder="${dataFolder}/samples/sample${sample}"
-  ofile="${sampleFolder}/${methodFolder}/k${k}"
+  if [ $k = 'none' ]
+  then
+    ofile="${sampleFolder}/${methodFolder}"
+  else
+    ofile="${sampleFolder}/${methodFolder}/k${k}"
+  fi
 
   # move to scratch
   scratchDirResources="${1}/resources"
@@ -55,7 +63,7 @@ max_ent () {
   cp "${resources}/input1024.xyz" .
 
   # get config
-  python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi=-1 --max_chi=1 --save_chi_for_max_ent --goal_specified $goalSpecified --default_config "${resources}/default_config.json" --use_energy $useEnergy --use_ground_truth_chi $useGroundTruthChi --seed $i --sample_folder $sampleFolder
+  python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi=-1 --max_chi=1 --save_chi_for_max_ent --goal_specified $goalSpecified --default_config "${resources}/default_config.json" --use_energy $useEnergy --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_seed $useGroundTruthSeed --seed $i --sample_folder $sampleFolder
 
   # generate sequences
   python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --k $k --sample $sample --data_folder $dataFolder --plot --save_npy --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --model_path $modelPath --use_energy $useEnergy
@@ -68,7 +76,7 @@ max_ent () {
 
   echo $method
   # apply max ent with newton's method
-  ~/TICG-chromatin/maxent/bin/run.sh $ofile $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite $1
+  # ~/TICG-chromatin/maxent/bin/run.sh $ofile $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite $1 $finalSimProductionSweeps
 
   # run.sh moves all data to $ofile upon completion
   cd $ofile
@@ -106,27 +114,44 @@ format_method () {
   then
     methodFolder="${methodFolder}-binarize"
   fi
-
+  echo $methodFolder
 }
 
 STARTTIME=$(date +%s)
 i=1
-for sample in 2
+k=2
+for sample in 40
 do
-  for k in 2
+  # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
+  for method in 'ground_truth'
   do
-    # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
-    for method in 'ground_truth'
-    do
-      scratchDirI="${scratchDir}/TICG_maxent${i}"
-      mkdir -p $scratchDirI
-      cd $scratchDirI
-      format_method
-      max_ent $scratchDirI > bash.log &
-      i=$(($i+1))
+    scratchDirI="${scratchDir}/TICG_maxent${i}"
+    mkdir -p $scratchDirI
+    cd $scratchDirI
+
+    format_method
+    max_ent $scratchDirI > bash.log &
+    i=$(($i+1))
     done
-  done
 done
+#
+# useEnergy='true'
+# method='ground_truth'
+# k='none'
+# for sample in 40
+# do
+#   # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
+#   for method in 'ground_truth'
+#   do
+#     scratchDirI="${scratchDir}/TICG_maxent${i}"
+#     mkdir -p $scratchDirI
+#     cd $scratchDirI
+#
+#     format_method
+#     max_ent $scratchDirI > bash.log &
+#     i=$(($i+1))
+#     done
+# done
 
 wait
 

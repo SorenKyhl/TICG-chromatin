@@ -8,13 +8,13 @@ numSimulations=$6
 dataFolder=$7
 relabel=$8
 diag=$9
+nSweeps=${10}
 
 # other params
 method='random'
 pSwitch=0.05
 maxDiagChi=0.1
 overwrite=1
-nSweeps=1000000
 dumpFrequency=50000
 
 # below does nothing if chi is given

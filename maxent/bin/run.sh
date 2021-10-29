@@ -108,6 +108,7 @@ goal_specified=${7:-"false"}
 num_iterations=${8:-50}
 overwrite=${9:-0}
 scratchDir=${10:-'/scratch/midway2/erschultz/TICG_maxent'}
+final_sim_production_sweeps=${11:-1000000}
 
 # cd to scratch
 if ! [[ -d $scratchDir ]]
@@ -147,16 +148,19 @@ run_simulation () {
 	fi
 	cd "iteration${it}"
 
-	# equilibrate system
-	python3 $proj_bin/jsed.py $configFileName nSweeps $equilib_sweeps i
-	~/TICG-chromatin/TICG-engine > equilib.log
-	$proj_bin/fork_last_snapshot.sh $saveFileName
-	mv data_out equilib_out
+	if [ $num_iterations -gt 0 ]
+	then
+		# equilibrate system
+		python3 $proj_bin/jsed.py $configFileName nSweeps $equilib_sweeps i
+		~/TICG-chromatin/TICG-engine > equilib.log
+		$proj_bin/fork_last_snapshot.sh $saveFileName
+		mv data_out equilib_out
+		python3 $proj_bin/jsed.py $configFileName load_configuration_filename $saveFileName s
+	fi
 
-	# set up production run
-	python3 $proj_bin/jsed.py $configFileName load_configuration_filename $saveFileName s
+	# production
 	python3 $proj_bin/jsed.py $configFileName nSweeps $production_sweeps i
-	python3 $proj_bin/jsed.py $configFileName seed $RANDOM i
+	# python3 $proj_bin/jsed.py $configFileName seed $RANDOM i
 	~/TICG-chromatin/TICG-engine > production.log
 
 	if [ $it -gt $(($num_iterations - 1)) ]
@@ -228,7 +232,7 @@ fi
 # run longer simulation
 it=$(($num_iterations + 1))
 python3 $proj_bin/jsed.py "resources/${configFileName}" dump_frequency 50000 i
-production_sweeps=1000000
+production_sweeps=$final_sim_production_sweeps
 run_simulation
 
 # move data to output directory

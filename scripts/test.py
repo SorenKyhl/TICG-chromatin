@@ -34,22 +34,25 @@ def upper_traingularize_chis():
 
 def check_seq():
     ids_to_check = set()
-    dir = "/project2/depablo/erschultz/dataset_10_25_21/samples"
-    k = 4
-    m = 1024
-    for file in os.listdir(dir):
-        if file.startswith('sample'):
-            file_dir = osp.join(dir, file)
-            x = np.load(osp.join(file_dir, 'x.npy'))
-            seq = np.zeros((m ,k))
-            for i in range(k):
-                seq_i = np.loadtxt(osp.join(file_dir, 'seq{}.txt'.format(i)))
-                seq[:, i] = seq_i
-            if not np.array_equal(seq, x):
-                ids_to_check.add(int(file[6:]))
-                np.save(osp.join(file_dir, 'x.npy'), seq)
+    dir = "/project2/depablo/erschultz"
+    for dataset in os.listdir(dir):
+        if dataset.startswith("dataset_"):
+            print(dataset)
+            dataset_samples = osp.join(dir, dataset, 'samples')
+            for file in os.listdir(dir):
+                if file.startswith('sample'):
+                    file_dir = osp.join(dir, file)
+                    x = np.load(osp.join(file_dir, 'x.npy'))
+                    m, k = x.shape
+                    seq = np.zeros((m ,k))
+                    for i in range(k):
+                        seq_i = np.loadtxt(osp.join(file_dir, 'seq{}.txt'.format(i)))
+                        seq[:, i] = seq_i
+                    if not np.array_equal(seq, x):
+                        ids_to_check.add(int(file[6:]))
+                        # np.save(osp.join(file_dir, 'x.npy'), seq)
 
-    print(sorted(ids_to_check))
+            print(sorted(ids_to_check))
 
 def makeDirsForMaxEnt(dataset, sample):
     sample_folder = osp.join('../sequences_to_contact_maps', dataset, 'samples', 'sample{}'.format(sample))
@@ -62,9 +65,6 @@ def makeDirsForMaxEnt(dataset, sample):
 
 if __name__ == '__main__':
     # find_mising_ids()
-    # check_seq()
+    check_seq()
     # upper_traingularize_chis()
     # makeDirsForMaxEnt("dataset_08_29_21", 40)
-    s = np.loadtxt('/home/eric/sequences_to_contact_maps/results/ContactGNNEnergy/28/sample40/energy_hat.txt')
-    r = np.linalg.matrix_rank(s, tol = 20)
-    print(r)

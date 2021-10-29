@@ -15,18 +15,19 @@ def getArgs():
 
     # config param arguments
     parser.add_argument('--m', type=int, default=1024, help='number of particles')
-    parser.add_argument('--k', type=int, help='number of particle types (inferred from chi if None)')
+    parser.add_argument('--k', type=str2int, help='number of particle types (inferred from chi if None)')
     parser.add_argument('--load_configuration_filename', type=str, default='input1024.xyz', help='file name of initial config')
     parser.add_argument('--goal_specified', type=str2bool, default=True, help='True will save two lines to chis.txt')
     parser.add_argument('--dump_frequency', type=int, help='set to change dump frequency')
     parser.add_argument('--dump_stats_frequency', type=int, help='set to change dump stats frequency')
     parser.add_argument('--n_sweeps', type=int, help='set to change nSweeps')
     parser.add_argument('--seed', type=int, help='set to change random seed')
+    parser.add_argument('--use_ground_truth_seed', type=str2bool, help='True to copy seed from config file in sample_folder')
     parser.add_argument('--use_energy', type=str2bool, default=False, help='True to use s_matrix')
+    parser.add_argument('--sample_folder', type=str, help='location of sample for ground truth chi')
 
     # chi arguments
     parser.add_argument('--use_ground_truth_chi', type=str2bool, default=False, help='True to use ground truth chi and diag chi')
-    parser.add_argument('--sample_folder', type=str, help='location of sample for ground truth chi')
 
     # diag chi arguments
     parser.add_argument('--diag', type=str2bool, default=False, help='True for diagonal interactions')
@@ -85,6 +86,26 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
+def str2int(v):
+    """
+    Helper function for argparser, converts str to int if possible.
+
+    Inputs:
+        v: string
+    """
+    if v is None:
+        return v
+    elif isinstance(v, str):
+        if v.lower() == 'none':
+            return None
+        elif v.isnumeric():
+            return int(v)
+        else:
+            raise argparse.ArgumentTypeError('none or int expected not {}'.format(v))
+    else:
+        raise argparse.ArgumentTypeError('String value expected.')
+
+
 def generateRandomChi(args, decimals = 1):
     '''Initializes random chi array.'''
     # create array with random values in [minval, maxVal]
@@ -121,6 +142,64 @@ def getChis(args):
             print('Warning: particles are not distinguishable')
 
     return conv.chi
+
+def set_up_plaid_chi(args, config):
+    if args.use_ground_truth_chi:
+        args.chi = np.load(osp.join(args.sample_folder, 'chis.npy'))
+    elif args.chi is None:
+        assert args.k is not None, "chi and k cannot both be None"
+        args.chi = getChis(args)
+    else:
+        # zero lower diagonal
+        args.chi = np.triu(args.chi)
+        rows, cols = args.chi.shape
+        if args.k is None:
+            args.k = rows
+        else:
+            assert args.k == rows, 'number of particle types does not match shape of chi'
+        assert rows == cols, "chi not square: {}".format(args.chi)
+        conv = InteractionConverter(args.k, args.chi)
+        if not conv.PsiUniqueRows():
+            print('Warning: particles are not distinguishable')
+
+    # save chi to config
+    rows, cols = args.chi.shape
+    for row in range(rows):
+        for col in range(row, cols):
+            key = 'chi{}{}'.format(LETTERS[row], LETTERS[col])
+            val = args.chi[row, col]
+            config[key] = val
+
+    # save chi and diag_chi
+    if args.save_chi:
+        np.savetxt('chis.txt', args.chi, fmt='%0.5f')
+        np.save('chis.npy', args.chi)
+    elif args.save_chi_for_max_ent:
+        with open('chis.txt', 'w', newline='') as f:
+            wr = csv.writer(f, delimiter = '\t')
+            wr.writerow(args.chi[np.triu_indices(args.k)])
+            if args.goal_specified:
+                wr.writerow(args.chi[np.triu_indices(args.k)])
+            else:
+                # get random chi
+                chi = getChis(args)
+                wr.writerow(chi[np.triu_indices(args.k)])
+
+def set_up_diag_chi(args, config, sample_config):
+    if args.use_ground_truth_chi:
+        args.diag = sample_config["diagonal_on"]
+        chi_diag = sample_config["diag_chis"]
+    else:
+        chi_diag = list(np.linspace(0, args.max_diag_chi, 20))
+
+    config["diagonal_on"] = args.diag
+    if args.diag:
+        config["diag_chis"] = chi_diag
+        if args.save_chi_for_max_ent:
+            with open('chis_diag.txt', 'w', newline='') as f:
+                wr = csv.writer(f, delimiter = '\t')
+                wr.writerow(np.array(config["diag_chis"]))
+                wr.writerow(np.array(config["diag_chis"]))
 
 class InteractionConverter():
     """Class that allows conversion between epigenetic mark bit string pairs and integer type id"""
@@ -178,66 +257,30 @@ class InteractionConverter():
 def main():
     args = getArgs()
 
+    if args.sample_folder is not None:
+        with open(osp.join(args.sample_folder, 'config.json'), 'rb') as f:
+            sample_config = json.load(f)
+    else:
+        sample_config = None
+
     with open(args.default_config, 'rb') as f:
         config = json.load(f)
 
-    # set up chi
-    if args.use_ground_truth_chi:
-        args.chi = np.load(osp.join(args.sample_folder, 'chis.npy'))
-    elif args.chi is None:
-        assert args.k is not None, "chi and k cannot both be None"
-        args.chi = getChis(args)
+    if args.use_energy:
+        # save smatrix_on
+        config['smatrix_on']=True
+        config['chipseq_files']=None
+        config["nspecies"] = 0
     else:
-        # zero lower diagonal
-        args.chi = np.triu(args.chi)
-        rows, cols = args.chi.shape
-        if args.k is None:
-            args.k = rows
-        else:
-            assert args.k == rows, 'number of particle types does not match shape of chi'
-        assert rows == cols, "chi not square: {}".format(args.chi)
-        conv = InteractionConverter(args.k, args.chi)
-        if not conv.PsiUniqueRows():
-            print('Warning: particles are not distinguishable')
+        set_up_plaid_chi(args, config)
 
-    # set up diag chi
-    if args.use_ground_truth_chi:
-        with open(osp.join(args.sample_folder, 'config.json'), 'rb') as f:
-            sample_config = json.load(f)
-        config["diagonal_on"] = sample_config["diagonal_on"]
-        config["diag_chis"] = sample_config["diag_chis"]
-    else:
-        config["diagonal_on"] = args.diag
-        chi_diag = np.linspace(0, args.max_diag_chi, 20)
-        config["diag_chis"] = list(chi_diag)
+        # save seq
+        config['chipseq_files'] = ['seq{}.txt'.format(i) for i in range(args.k)]
 
-    # save chi and diag_chi
-    if args.save_chi:
-        np.savetxt('chis.txt', args.chi, fmt='%0.5f')
-        np.save('chis.npy', args.chi)
-    elif args.save_chi_for_max_ent:
-        with open('chis.txt', 'w', newline='') as f:
-            wr = csv.writer(f, delimiter = '\t')
-            wr.writerow(args.chi[np.triu_indices(args.k)])
-            if args.goal_specified:
-                wr.writerow(args.chi[np.triu_indices(args.k)])
-            else:
-                # get random chi
-                chi = getChis(args)
-                wr.writerow(chi[np.triu_indices(args.k)])
-        with open('chis_diag.txt', 'w', newline='') as f:
-            wr = csv.writer(f, delimiter = '\t')
-            wr.writerow(np.array(config["diag_chis"]))
-            wr.writerow(np.array(config["diag_chis"]))
+        # save nspecies
+        config["nspecies"] = args.k
 
-
-    # save chi to config
-    rows, cols = args.chi.shape
-    for row in range(rows):
-        for col in range(row, cols):
-            key = 'chi{}{}'.format(LETTERS[row], LETTERS[col])
-            val = args.chi[row, col]
-            config[key] = val
+    set_up_diag_chi(args, config, sample_config)
 
     # save nbeads
     config['nbeads'] = args.m
@@ -253,26 +296,13 @@ def main():
         config['dump_stats_frequency'] = args.dump_stats_frequency
 
     # save seed
-    if args.seed is not None:
+    if args.use_ground_truth_seed:
+        config['seed'] = sample_config['seed']
+    elif args.seed is not None:
         config['seed'] = args.seed
-
-
-    if args.use_energy:
-        # save smatrix_on
-        config['smatrix_on']=True
-        config['chipseq_files']=None
-        config["nspecies"] = 0
-    else:
-        # save chipseq files
-        config['chipseq_files'] = ['seq{}.txt'.format(i) for i in range(args.k)]
-
-        # save nspecies
-        config["nspecies"] = args.k
 
     # save configuration filename
     config["load_configuration_filename"] = args.load_configuration_filename
-
-
 
     with open(args.ofile, 'w') as f:
         json.dump(config, f, indent = 2)

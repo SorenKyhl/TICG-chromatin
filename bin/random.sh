@@ -1,10 +1,10 @@
 #! /bin/bash
 
-# chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
+chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
 # chi="-1&1&0&0\\1&-2&0&-1\\0&0&-1&2\\0&-1&2&-1"
 chi="-1&1\\1&0"
 # chi='none'
-k=2
+k=4
 m=1024
 today=$(date +'%m_%d_%y')
 dataFolder="/project2/depablo/erschultz/dataset_10_27_21"
@@ -14,16 +14,17 @@ nodes=8
 tasks=20
 samples=2000
 diag='true'
-local=0
+nSweeps=1000000
+local=1
 
 if [ $local -eq 1 ]
 then
   dataFolder="/home/eric/dataset_test"
   scratchDir='/home/eric/scratch'
-  startSample=2
+  startSample=1
   nodes=1
-  tasks=1
-  samples=1
+  tasks=15
+  samples=1000
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
   scratchDir="/scratch/midway2/erschultz"
@@ -46,5 +47,5 @@ do
   startSampleI=$(( $startSample + $samplesPerNode * $i ))
   endSampleI=$(( $startSampleI + $samplesPerNode - 1 ))
   echo $startSampleI $endSampleI
-  sbatch ~/TICG-chromatin/bin/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samplesPerNode $samplesPerTask $diag $scratchDir $i
+  # bash ~/TICG-chromatin/bin/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samplesPerNode $samplesPerTask $diag $scratchDir $i $nSweeps
 done

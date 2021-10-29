@@ -1,5 +1,5 @@
 #! /bin/bash
-#SBATCH --job-name=TICG
+#SBATCH --job-name=TICG5
 #SBATCH --output=logFiles/random5.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
@@ -19,6 +19,7 @@ samplesPerTask=$9
 diag=${10}
 scratchDir=${11}
 scriptIndex=${12}
+nSweeps=${13}
 
 echo $@
 
@@ -30,7 +31,7 @@ do
   i=$(( i + $tasks * $scriptIndex ))
   echo $start $stop
   scratchDirI="${scratchDir}/TICG${i}"
-  ~/TICG-chromatin/bin/random_inner.sh $scratchDirI $k $chi $m $start $stop $dataFolder $relabel $diag > ~/TICG-chromatin/logFiles/TICG${i}.log &
+  ~/TICG-chromatin/bin/random_inner.sh $scratchDirI $k $chi $m $start $stop $dataFolder $relabel $diag $nSweeps > ~/TICG-chromatin/logFiles/TICG${i}.log &
 done
 
 wait
