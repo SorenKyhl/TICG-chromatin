@@ -518,7 +518,7 @@ def main():
         assert dataset == args.dataset, 'Dataset mismatch: {} vs {}'.format(dataset, args.dataset)
 
         if args.use_energy:
-            s = get_energy_gnn(model_path, sample)
+            s = get_energy_gnn(args.model_path, args.sample)
         else:
             seq = get_seq_gnn(args.k, args.model_path, args.sample, args.normalize)
         format = '%.3e'
@@ -531,7 +531,7 @@ def main():
         assert m1 == args.m
         if args.correct_energy:
             diag = np.diagonal(s).copy()
-            seq /= 2
+            s /= 2
             np.fill_diagonal(s, diag)
         print(s)
         np.savetxt('s_matrix.txt', s, fmt = format)
