@@ -21,7 +21,7 @@ def find_mising_ids():
             if osp.exists(data_out_path) and osp.exists(x_path):
                 ids.remove(id)
 
-    print(ids)
+    print(ids, len(ids))
 
 def upper_traingularize_chis():
     dir = "/project2/depablo/erschultz/dataset_08_29_21/samples"
