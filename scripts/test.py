@@ -12,7 +12,7 @@ from makeLatexTable import METHODS
 
 def find_mising_ids():
     ids = set(range(1, 2001))
-    dir = "/project2/depablo/erschultz/dataset_10_25_21/samples"
+    dir = "/project2/depablo/erschultz/dataset_10_27_21/samples"
     for file in os.listdir(dir):
         if file.startswith('sample'):
             id = int(file[6:])
