@@ -47,5 +47,5 @@ do
   startSampleI=$(( $startSample + $samplesPerNode * $i ))
   endSampleI=$(( $startSampleI + $samplesPerNode - 1 ))
   echo $startSampleI $endSampleI
-  # bash ~/TICG-chromatin/bin/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samplesPerNode $samplesPerTask $diag $scratchDir $i $nSweeps
+  sbatch ~/TICG-chromatin/bin/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samplesPerNode $samplesPerTask $diag $scratchDir $i $nSweeps
 done
