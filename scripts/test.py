@@ -16,7 +16,9 @@ def find_mising_ids():
     for file in os.listdir(dir):
         if file.startswith('sample'):
             id = int(file[6:])
-            if osp.exists(osp.join(dir, file, 'data_out')):
+            data_out_path = osp.join(dir, file, 'data_out')
+            x_path = osp.join(dir, file, 'x.npy')
+            if osp.exists(data_out_path) and osp.exists(x_path):
                 ids.remove(id)
 
     print(ids)
@@ -64,7 +66,7 @@ def makeDirsForMaxEnt(dataset, sample):
             os.mkdir(osp.join(sample_folder, method, 'k{}'.format(k)), mode = 0o755)
 
 if __name__ == '__main__':
-    # find_mising_ids()
-    check_seq()
+    find_mising_ids()
+    # check_seq()
     # upper_traingularize_chis()
     # makeDirsForMaxEnt("dataset_08_29_21", 40)
