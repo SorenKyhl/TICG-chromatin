@@ -34,5 +34,9 @@
   "boundary_chi": 0,
   "smatrix_filename": "none",
   "smatrix_on": false,
-  "phi_solvent_max": 0.5
+  "phi_solvent_max": 0.5,
+  "phi_chromatin": 0.06966,
+  "kappa": 0,
+  "density_cap_on": true,
+  "compressibility_on": false
 }

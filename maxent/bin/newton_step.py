@@ -1,8 +1,26 @@
+import os.path as osp
+import sys
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import os.path as osp
-import sys
+
+def str2bool(v):
+    """
+    Helper function for argparser, converts str to boolean for various string inputs.
+    https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
+
+    Inputs:
+        v: string
+    """
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified):
 
@@ -91,12 +109,13 @@ def main():
     i.e. updates chis based on observables from simulation
     '''
 
-    it = int(sys.argv[1])               # iteration number
-    gamma_plaid  = float(sys.argv[2])   # damping coefficient
-    gamma_diag = float(sys.argv[3])     # dampling coefficient
-    mode = sys.argv[4]                  # plaid, diag, or both
-    goal_specified = int(sys.argv[5])   # if true, will read from obj_goal.txt and obj_goal_diag.txt.
-                                        # if false, will calculate goals from iteration1 observables
+    it = int(sys.argv[1])                    # iteration number
+    gamma_plaid  = float(sys.argv[2])        # damping coefficient
+    gamma_diag = float(sys.argv[3])          # dampling coefficient
+    mode = sys.argv[4]                       # plaid, diag, or both
+    goal_specified = str2bool(sys.argv[5])   # if true, will read from obj_goal.txt and obj_goal_diag.txt.
+                                             # if false, will calculate goals from iteration1 observables
+
 
     print('Iteration Number {}'.format(it))
     print("gamma_plaid: {}".format(gamma_plaid))

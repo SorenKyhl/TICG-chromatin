@@ -17,30 +17,48 @@ abspath = osp.abspath(__file__)
 dname = osp.dirname(abspath)
 sys.path.insert(0, dname)
 from knightRuiz import knightRuiz
-from get_config import LETTERS, str2bool
+from get_config import LETTERS, str2bool, str2int
+
+paths = ['/home/erschultz/sequences_to_contact_maps',
+        '/home/eric/sequences_to_contact_maps',
+        'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
+for p in paths:
+    if osp.exists(p):
+        sys.path.insert(1, p)
+
+from plotting_functions import plotContactMap
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     seq_local = '../sequences_to_contact_maps'
     chip_seq_data_local = osp.join(seq_local, 'chip_seq_data')
     # "./project2/depablo/erschultz/dataset_04_18_21"
+
+    # input data args
     parser.add_argument('--data_folder', type=str, default=osp.join(seq_local,'dataset_08_26_21'), help='location of input data')
     parser.add_argument('--sample', type=int, default=40, help='sample id')
     parser.add_argument('--sample_folder', type=str, help='location of input data')
 
+    # standard args
     parser.add_argument('--method', type=str, default='k_means', help='method for assigning particle types')
     parser.add_argument('--m', type=int, default=1024, help='number of particles (will crop contact map)')
-    parser.add_argument('--p_switch', type=float, default=0.05, help='probability to switch bead assignment (for method = random)')
-    parser.add_argument('--binarize', type=str2bool, default=False, help='true to binarize labels (not implemented for all methods)') # TODO
-    parser.add_argument('--normalize', type=str2bool, default=False, help='true to normalize labels to [0,1] (or [-1, 1] for some methods) (not implemented for all methods)') # TODO
-    parser.add_argument('--k', type=int, default=2, help='sequences to generate')
+    parser.add_argument('--k', type=str2int, default=2, help='sequences to generate')
+
+    # args for specific methods
+    parser.add_argument('--seed', type=int, help='random seed for numpy')
     parser.add_argument('--model_path', type=str, help='path to GNN model')
+    parser.add_argument('--use_energy', type=str2bool, default=False)
+    parser.add_argument('--correct_energy', type=str2bool, default=False, help='True to correct S by dividing all non-diagonal entries by 2')
     parser.add_argument('--epigenetic_data_folder', type=str, default=osp.join(chip_seq_data_local, 'fold_change_control/processed'), help='location of epigenetic data')
     parser.add_argument('--ChromHMM_data_file', type=str, default=osp.join(chip_seq_data_local, 'aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt'), help='location of ChromHMM data')
+    parser.add_argument('--p_switch', type=float, default=0.05, help='probability to switch bead assignment (for method = random)')
+
+    # post-processing args
+    parser.add_argument('--binarize', type=str2bool, default=False, help='true to binarize labels (not implemented for all methods)') # TODO
+    parser.add_argument('--normalize', type=str2bool, default=False, help='true to normalize labels to [0,1] (or [-1, 1] for some methods) (not implemented for all methods)') # TODO
     parser.add_argument('--save_npy', action='store_true', help='true to save seq as .npy')
     parser.add_argument('--plot', action='store_true', help='true to plot seq as .png')
     parser.add_argument('--relabel', type=str2None, help='specify mark combinations to be relabled (e.g. AB-C will relabel AB mark pairs as mark C)')
-
 
     args = parser.parse_args()
     args.labels = None
@@ -83,12 +101,12 @@ def str2None(v):
     elif isinstance(v, str):
         if v.lower() == 'none':
             return None
-        else:
-            return v
+        else: return v
     else:
         raise argparse.ArgumentTypeError('String value expected.')
 
-def get_random_seq(m, p_switch, k, relabel):
+def get_random_seq(m, p_switch, k, relabel, seed):
+    rng = np.random.default_rng(seed)
     if relabel is not None:
         k -= 1
     seq = np.zeros((m, k))
@@ -96,9 +114,9 @@ def get_random_seq(m, p_switch, k, relabel):
     for j in range(k):
         for i in range(1, m):
             if seq[i-1, j] == 1:
-                seq[i, j] = np.random.choice([1,0], p=[1 - p_switch, p_switch])
+                seq[i, j] = rng.choice([1,0], p=[1 - p_switch, p_switch])
             else:
-                seq[i, j] = np.random.choice([1,0], p=[p_switch, 1 - p_switch])
+                seq[i, j] = rng.choice([1,0], p=[p_switch, 1 - p_switch])
 
     if relabel is not None:
         seq = relabel_seq(seq, relabel)
@@ -171,7 +189,17 @@ def get_PCA_split_seq(m, y_diag, k):
     return seq
 
 def get_PCA_seq(input, k, normalize):
-    '''Defines seq based on PCs of input.'''
+    '''
+    Defines seq based on PCs of input.
+
+    Inputs:
+        input: matrix to perform PCA on
+        k: numper of particle types / principal components to use
+        normalize: True to normalize particle types / principal components to [-1, 1]
+
+    Outputs:
+        seq: array of particle types
+    '''
     m, _ = input.shape
     pca = PCA()
     pca.fit(input)
@@ -315,8 +343,43 @@ def get_ChromHMM_seq(ifile, k, start=35000000, end=60575000, res=25000, min_cove
 
     return seq, labels
 
-def get_seq_gnn(k, model_path, sample, normalize):
+def get_energy_gnn(model_path, sample):
+    '''
+    Loads output from GNN model to use as pairwise energy matrix, S
+
+    Inputs:
+        model_path: path to model results
+        sample: sample id (int)
+
+    Outputs:
+        s: np array of pairwise energies
+    '''
     # determine model_type
+    model_type = osp.split(osp.split(model_path)[0])[1]
+    print(model_type)
+
+    assert model_type == 'ContactGNNEnergy', "Unrecognized model_type: {}".format(model_type)
+    s_path = osp.join(model_path, "sample{}/energy_hat.txt".format(sample))
+    if osp.exists(s_path):
+        s = np.loadtxt(s_path)
+    else:
+        raise Exception('s_path does not exist: {}'.format(s_path))
+
+    return s
+
+def get_seq_gnn(k, model_path, sample, normalize):
+    '''
+    Loads output from GNN model to use as particle types, seq
+
+    Inputs:
+        k: number of particle types
+        model_path: path to model results
+        sample: sample id (int)
+        normalize: True to normalize seq to [-1,1] (only for ContactGNNEnergy)
+
+    Outputs:
+        seq: particle types
+    '''
     model_type = osp.split(osp.split(model_path)[0])[1]
     print(model_type)
 
@@ -331,9 +394,10 @@ def get_seq_gnn(k, model_path, sample, normalize):
         s_path = osp.join(model_path, "sample{}/energy_hat.txt".format(sample))
         if osp.exists(s_path):
             s = np.loadtxt(s_path)
-            seq = get_PCA_seq(s, k, normalize)
         else:
             raise Exception('s_path does not exist: {}'.format(s_path))
+
+        seq = get_PCA_seq(s, k, normalize)
     else:
         raise Exception("Unrecognized model_type: {}".format(model_type))
 
@@ -408,7 +472,7 @@ def plot_seq_binary(seq, show = False, save = True, title = None, labels = None,
 def main():
     args = getArgs()
     if args.method == 'random':
-        seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel)
+        seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel, args.seed)
         format = '%d'
     elif args.method == 'pca':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]
@@ -420,7 +484,13 @@ def main():
         format = '%.3e'
     elif args.method == 'ground_truth':
         seq = np.load(osp.join(args.sample_folder, 'x.npy'))[:args.m, :]
-        format = '%d'
+        if args.use_energy:
+            chi = np.load(osp.join(args.sample_folder, 'chis.npy'))[:args.m, :]
+            s = seq @ chi @ seq.T
+            format = '%.3e'
+        else:
+            format = '%d'
+
     elif args.method == 'k_means':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]
         seq, args.labels = get_k_means_seq(args.m, y_diag, args.k)
@@ -447,22 +517,41 @@ def main():
             dataset = osp.split(data_folder)[1]
         assert dataset == args.dataset, 'Dataset mismatch: {} vs {}'.format(dataset, args.dataset)
 
-        seq = get_seq_gnn(args.k, args.model_path, args.sample, args.normalize)
+        if args.use_energy:
+            s = get_energy_gnn(args.model_path, args.sample)
+        else:
+            seq = get_seq_gnn(args.k, args.model_path, args.sample, args.normalize)
         format = '%.3e'
     else:
         raise Exception('Unkown method: {}'.format(args.method))
 
-    m, k = seq.shape
-    assert m == args.m, "m mismatch: seq has {} particles not {}".format(m, args.m)
-    assert k == args.k, "k mismatch: seq has {} particle types not {}".format(k, args.k)
-
-    writeSeq(seq, format, args.save_npy)
+    if args.use_energy:
+        m1, m2 = s.shape
+        assert m1 == m2, "shape mismatch, {} vs {}".format(m1, m2)
+        assert m1 == args.m
+        if args.correct_energy:
+            diag = np.diagonal(s).copy()
+            s /= 2
+            np.fill_diagonal(s, diag)
+        print(s)
+        np.savetxt('s_matrix.txt', s, fmt = format)
+    else:
+        m, k = seq.shape
+        np.set_printoptions(threshold=100)
+        for i in range(k):
+            print(repr(seq[:100, i]))
+        assert m == args.m, "m mismatch: seq has {} particles not {}".format(m, args.m)
+        assert k == args.k, "k mismatch: seq has {} particle types not {}".format(k, args.k)
+        writeSeq(seq, format, args.save_npy)
 
     if args.plot:
-        if args.method in {'k_means', 'chromhmm'} or (args.method == 'nmf' and args.binarize):
+        if args.use_energy:
+            plotContactMap(s, 's_matrix.png', vmin = 'min', vmax = 'max', cmap = 'blue-red')
+        elif args.method in {'k_means', 'chromhmm'} or (args.method == 'nmf' and args.binarize):
             plot_seq_exclusive(seq, labels=args.labels, X=args.X)
         elif args.binarize:
             plot_seq_binary(seq)
+
 
 def test_nmf_k_means():
     args = getArgs()
@@ -483,7 +572,7 @@ def test_random():
     args.k = 4
     args.m = 1000
     args.relabel = 'AB-D'
-    seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel)
+    seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel, args.seed)
 
     plot_seq_binary(seq, show = True, save = False, title = 'test')
 
@@ -508,7 +597,7 @@ def test_GNN():
     args.model_path = '../sequences_to_contact_maps/results/ContactGNNEnergy/26'
     args.normalize = True
 
-    seq = get_seq_gnn(args.k, args.model_path, args.sample, args.normalize)
+    seq = get_seq_gnn(args.k, args.model_path, args.sample, args.normalize, args.use_energy)
 
 
 if __name__ ==  "__main__":
