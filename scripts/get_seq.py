@@ -108,7 +108,13 @@ def str2None(v):
 def get_random_seq(m, p_switch, k, relabel, seed):
     rng = np.random.default_rng(seed)
     if relabel is not None:
-        k -= 1
+        old, new = relabel.split('-')
+        if len(new) == 1:
+            k -= 1
+        elif len(old) == 1:
+            k += 1
+        else:
+            raise Exception("unsupported relabel: {}".format(relabel))
     seq = np.zeros((m, k))
     seq[0, :] = np.random.choice([1,0], size = k)
     for j in range(k):
@@ -136,35 +142,48 @@ def relabel_seq(seq, relabel_str):
     Any particle with both label A and label B, will be relabeled to have
     label C and neither A nor B. Label C will be unaffected.
 
-    Note that LETTERS.find(new) must be >= k
+
+    If len(<new>) = 1, then LETTERS.find(new) must be >= k
     (i.e label <new> cannot be present in seq already)
+
+    If len(<new>) > 1, then len(<old>) must be 1
     '''
     m, k = seq.shape
 
     old, new = relabel_str.split('-')
-    new_label = LETTERS.find(new)
-    assert new_label >= k # new label cannot already be present
+    new_labels = [LETTERS.find(i) for i in new]
+
     old_labels = [LETTERS.find(i) for i in old]
     all_labels = [LETTERS.find(i) for i in old+new]
 
-    new_seq = np.zeros((m, k+1))
-    new_seq[:, :k] = seq
+    if len(new_labels) == 1:
+        new_label = new_labels[0]
+        assert new_label >= k, "new_label already present"
+        new_seq = np.zeros((m, k+1))
+        new_seq[:, :k] = seq
 
-    # find where to assing new_label
-    where = np.ones(m) # all True
-    for i in old_labels:
-        where_i = seq[:, i] == 1
-        where = np.logical_and(where, seq[:, i] == 1)
+        # find where to assing new_label
+        where = np.ones(m) # all True
+        for i in old_labels:
+            where = np.logical_and(where, seq[:, i] == 1)
 
-    # assign new_label
-    new_seq[:, new_label] = where
-    # delete old_labels
-    for i in old_labels:
-        new_seq[:, i] -= where
+        # assign new_label
+        new_seq[:, new_label] = where
+        # delete old_labels
+        for i in old_labels:
+            new_seq[:, i] -= where
 
-    # check that new_label is mutually exclusive from old_labels
-    row_sum = np.sum(new_seq[:, all_labels], axis = 1)
-    assert np.all(row_sum <= 1)
+        # check that new_label is mutually exclusive from old_labels
+        row_sum = np.sum(new_seq[:, all_labels], axis = 1)
+        assert np.all(row_sum <= 1)
+    else: # new_label < k
+        assert len(old_labels) == 1, "too many old labels"
+        old_label = old_labels[0]
+        new_seq = np.delete(seq, old_label, axis = 1)
+
+        for i in new_labels:
+            where = np.logical_and(seq[:, i] == 0, seq[:, old_label] == 1)
+            new_seq[:, i] += where
 
     return new_seq
 
@@ -475,11 +494,11 @@ def main():
         seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel, args.seed)
         format = '%d'
     elif args.method == 'pca':
-        y_diag = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]
+        y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
         seq = get_PCA_seq(y_diag, args.k, args.normalize)
         format = '%.3e'
     elif args.method == 'pca_split':
-        y_diag = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]
+        y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
         seq = get_PCA_split_seq(args.m, y_diag, args.k)
         format = '%.3e'
     elif args.method == 'ground_truth':
@@ -492,12 +511,12 @@ def main():
             format = '%d'
 
     elif args.method == 'k_means':
-        y_diag = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]
+        y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
         seq, args.labels = get_k_means_seq(args.m, y_diag, args.k)
         args.X = y_diag
         format = '%d'
     elif args.method == 'nmf':
-        y_diag = np.load(osp.join(args.sample_folder, 'y_diag_instance.npy'))[:args.m, :args.m]
+        y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
         seq, args.labels = get_nmf_seq(args.m, y_diag, args.k, args.binarize)
         args.X = y_diag
         format = '%.3e'
@@ -539,7 +558,7 @@ def main():
         m, k = seq.shape
         np.set_printoptions(threshold=100)
         for i in range(k):
-            print(repr(seq[:100, i]))
+            print(np.round(seq[:100, i]), 3)
         assert m == args.m, "m mismatch: seq has {} particles not {}".format(m, args.m)
         assert k == args.k, "k mismatch: seq has {} particle types not {}".format(k, args.k)
         writeSeq(seq, format, args.save_npy)
@@ -571,8 +590,21 @@ def test_random():
     args = getArgs()
     args.k = 4
     args.m = 1000
+    args.p_switch = 0.05
     args.relabel = 'AB-D'
     seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel, args.seed)
+    newer_seq = relabel_seq(seq, 'D-AB')
+    newest_seq = relabel_seq(newer_seq, 'AB-D')
+    print(np.array_equal(seq, newest_seq))
+
+    args.k = 3
+    args.relabel = None
+    seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel, args.seed)
+    new_seq = relabel_seq(seq, 'AB-D')
+    newer_seq = relabel_seq(new_seq, 'D-AB')
+    newest_seq = relabel_seq(newer_seq, 'AB-D')
+    print(np.array_equal(seq, newer_seq))
+    print(np.array_equal(new_seq, newest_seq))
 
     plot_seq_binary(seq, show = True, save = False, title = 'test')
 
@@ -601,9 +633,9 @@ def test_GNN():
 
 
 if __name__ ==  "__main__":
-    main()
+    # main()
     # test_nmf_k_means()
-    # test_random()
+    test_random()
     # test_epi()
     # test_ChromHMM()
     # test_GNN()

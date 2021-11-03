@@ -1,7 +1,9 @@
+import os
+import os.path as osp
+
 import matplotlib.pyplot as plt
 import argparse
 import numpy as np
-import os
 
 LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -25,12 +27,13 @@ def main():
         plt.savefig("pconvergence.png")
         plt.close()
 
-        convergence = np.loadtxt('convergence_diag.txt')
-        plt.plot(convergence)
-        plt.xlabel('Iteration')
-        plt.savefig("pconvergence_diag.png")
-        plt.close()
-        
+        if osp.exists('convergence_diag.txt'):
+            convergence = np.loadtxt('convergence_diag.txt')
+            plt.plot(convergence)
+            plt.xlabel('Iteration')
+            plt.savefig("pconvergence_diag.png")
+            plt.close()
+
         # chis plot
         chis = np.loadtxt('chis.txt')
         if chis.ndim < 2:

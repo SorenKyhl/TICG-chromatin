@@ -89,7 +89,10 @@ if [ -f "resources/${configFileName}" ]
 then
 	k=$(jq .nspecies "resources/${configFileName}")
 fi
-ndiagchis=$(head -1 "resources/chis_diag.txt" | wc -w)
+if [ -f "resources/chis_diag.txt" ]
+then
+	ndiagchis=$(head -1 "resources/chis_diag.txt" | wc -w)
+fi
 
 run_simulation () {
 	STARTTIME=$(date +%s)
@@ -142,7 +145,8 @@ run_simulation () {
 	cd $scratchDir
 
 	ENDTIME=$(date +%s)
-	echo "finished iteration ${it}: $(($ENDTIME - $STARTTIME)) seconds"
+	echo "finished iteration ${it}: $(( $(( $ENDTIME - $STARTTIME )) / 60 )) minutes"
+
 }
 
 
@@ -167,6 +171,9 @@ then
 fi
 
 mkdir -p $outputDir
+mv resources/chis* .
+mv resources/*.png .
+touch track.log
 
 # iteration 0
 it=0
@@ -184,11 +191,6 @@ fi
 # maxent optimization
 if [ $num_iterations -gt 0 ]
 then
-	mv resources/chis.txt .
-	mv resources/chis_diag.txt .
-	mv resources/*.png .
-	touch track.log
-
 	for it in $(seq 1 $(($num_iterations)))
 	do
 		run_simulation

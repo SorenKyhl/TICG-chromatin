@@ -38,7 +38,7 @@ def check_seq():
     ids_to_check = set()
     dir = "/project2/depablo/erschultz"
     for dataset in os.listdir(dir):
-        if dataset.startswith("dataset_"):
+        if dataset.startswith("dataset_10_25"):
             print(dataset)
             dataset_samples = osp.join(dir, dataset, 'samples')
             for file in os.listdir(dir):
@@ -53,6 +53,10 @@ def check_seq():
                     if not np.array_equal(seq, x):
                         ids_to_check.add(int(file[6:]))
                         # np.save(osp.join(file_dir, 'x.npy'), seq)
+
+                    row_sum = np.sum(x[:, [0,1,3]], axis = 1)
+                    if not np.all(row_sum <= 1):
+                        ids_to_check.add(int(file[6:]))
 
             print(sorted(ids_to_check))
 

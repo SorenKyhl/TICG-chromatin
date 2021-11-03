@@ -1,3 +1,5 @@
+import os
+import os.path as osp
 import json
 import numpy as np
 import sys
@@ -22,7 +24,7 @@ def main():
         config = json.load(f)
 
     allchis = np.atleast_2d(np.loadtxt('chis.txt'))
-    if len(allchis[0] == 0):
+    if len(allchis[0]) == 0:
         # shape will be wrong if k = 1
         allchis = allchis.T
 
@@ -31,7 +33,8 @@ def main():
         lastchis = list(allchis[int(args.it)])
     except IndexError as e:
         print('Index Error')
-        print('allchis:\n', allchis)
+        print('allchis:\n', np.round(allchis, 3))
+        print('it: ', int(args.it))
         raise
 
     counter = 0
@@ -40,7 +43,14 @@ def main():
             if j < i:
                 continue
             key = 'chi{}{}'.format(LETTERS[i], LETTERS[j])
-            config[key] = lastchis[counter]
+            try:
+                config[key] = lastchis[counter]
+            except IndexError as e:
+                print('Index Error')
+                print('allchis:\n', allchis)
+                print('lastchis:\n', lastchis)
+                print('k: ', args.k)
+                raise
             counter += 1
 
     with open(config_file, "w") as f:
@@ -80,4 +90,4 @@ def test():
     print(config)
 
 if __name__ == '__main__':
-    test()
+    main()

@@ -1,5 +1,5 @@
 #! /bin/bash
-#SBATCH --job-name=TICG_maxent
+#SBATCH --job-name=maxent
 #SBATCH --output=logFiles/maxent.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
@@ -13,17 +13,17 @@ dataFolder='/project2/depablo/erschultz/dataset_10_27_21'
 productionSweeps=50000
 finalSimProductionSweeps=1000000
 equilibSweeps=10000
-goalSpecified='false'
-numIterations=0 # iteration 1 + numIterations is production run to get contact map
+goalSpecified='true'
+numIterations=100 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 modelType='ContactGNNEnergy'
-modelID='30'
-local='false'
+modelID='34'
+local='true'
 binarize='false'
 normalize='false'
 useEnergy='false'
-useGroundTruthChi='true'
-useGroundTruthSeed='true'
+useGroundTruthChi='false'
+useGroundTruthSeed='false'
 mode="plaid"
 gamma=0.00001
 gammaDiag=0.00001
@@ -37,8 +37,8 @@ modelPath="${results}/${modelType}/${modelID}"
 
 if [ $local = 'true' ]
 then
-  # dataFolder="/home/eric/sequences_to_contact_maps/dataset_10_27_21"
-  dataFolder="/home/eric/dataset_test"
+  dataFolder="/home/eric/sequences_to_contact_maps/dataset_10_27_21"
+  # dataFolder="/home/eric/dataset_test"
   scratchDir='/home/eric/scratch'
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
@@ -124,15 +124,32 @@ format_method () {
   echo $methodFolder
 }
 
-STARTTIME=$(date +%M)
+STARTTIME=$(date +%s)
 i=1
-useEnergy='true'
+# k=4
+# for sample in 40
+# do
+#   for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
+#   do
+#     # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
+#     scratchDirI="${scratchDir}/TICG_maxent${i}"
+#     mkdir -p $scratchDirI
+#     cd $scratchDirI
+#
+#     format_method
+#     max_ent $scratchDirI > bash.log &
+#     i=$(($i+1))
+#   done
+# done
+
 k='none'
+numIterations=0
+useEnergy='true'
+goalSpecified='false'
 for sample in 40
 do
-  for method in 'ground_truth'
+  for method in 'GNN'
   do
-    # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
     scratchDirI="${scratchDir}/TICG_maxent${i}"
     mkdir -p $scratchDirI
     cd $scratchDirI
@@ -142,23 +159,24 @@ do
     i=$(($i+1))
   done
 done
-
-useEnergy='false'
-k=2
-for sample in 40
-do
-  for method in 'ground_truth'
-  do
-    # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
-    scratchDirI="${scratchDir}/TICG_maxent${i}"
-    mkdir -p $scratchDirI
-    cd $scratchDirI
-
-    format_method
-    max_ent $scratchDirI > bash.log &
-    i=$(($i+1))
-  done
-done
+#
+# useEnergy='false'
+# useGroundTruthChi='true'
+# k=2
+# for sample in 40
+# do
+#   for method in 'ground_truth'
+#   do
+#     # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
+#     scratchDirI="${scratchDir}/TICG_maxent${i}"
+#     mkdir -p $scratchDirI
+#     cd $scratchDirI
+#
+#     format_method
+#     max_ent $scratchDirI > bash.log &
+#     i=$(($i+1))
+#   done
+# done
 
 wait
 
@@ -168,6 +186,5 @@ then
   python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples --small "true"
 fi
 
-ENDTIME=$(date +%M)
-echo $STARTTIME $ENDTIME
-echo "total time:$(( $ENDTIME - $STARTTIME )) minutes"
+ENDTIME=$(date +%s)
+echo "total time:$(( $(( $ENDTIME - $STARTTIME )) / 60 )) minutes"
