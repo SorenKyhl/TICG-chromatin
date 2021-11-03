@@ -43,4 +43,7 @@ public:
 	double get_ij_Contacts(int i, int j) ;
 	void getDiagObs(std::vector<double> &diag_obs);
 	double cellCount();
+	double getChromatinVolfrac();
+	double getChromatinVolfrac2();
+	double getChromatinVolfracD();
 };

@@ -10,6 +10,7 @@ double Cell::phi_chromatin;
 double Cell::kappa;
 bool Cell::density_cap_on;
 bool Cell::compressibility_on;
+bool Cell::diag_pseudobeads_on;
 
 void Cell::print() {
 	std::cout << r << "     N: " << contains.size() << std::endl;
@@ -116,7 +117,6 @@ double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
 		diag_phis[i] = 0;
 	}
 
-	double Udiag = 0;
 	//int index;
 	//for (Bead* bead1 : contains)
 	//{
@@ -136,33 +136,85 @@ double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
 		indices.push_back(elem->id);
 	}
 
-	// count pairwise contacts 
+	// count pairwise contacts  -- include self-self interaction!!
 	for (int i=0; i<imax-1; i++)
 	{
-		for(int j=i+1; j<imax; j++)
+		for(int j=i; j<imax; j++)
 		{
 			d_index  = std::floor( std::abs(indices[i] - indices[j]) / diag_binsize);
 			diag_phis[d_index] += 1; // diag phis is just a count, multiply by volumes later
 		}
 	}
 
-	for (int i=0; i<diag_nbins; i++)
+	double Udiag = 0;
+	if (diag_pseudobeads_on)
 	{
-		diag_phis[i] *= beadvol/vol; // convert to actual volume fraction
+		for (int i=0; i<diag_nbins; i++)
+		{
+			double npseudobeads = bonds_to_beads(diag_phis[i]);
+			diag_phis[i] = npseudobeads * beadvol/vol;
+			//Udiag += diag_chis[i]* npseudobeads*npseudobeads;// * beadvol/vol;
+			Udiag += diag_chis[i]* diag_phis[i]*diag_phis[i] * vol/beadvol;
+		}
 
-		if (diagonal_linear) {
-			Udiag += diag_chis[i]*diag_phis[i];
+		/*
+		double Udiag2 = 0;
+		for (int i=0; i<diag_nbins; i++)
+		{
+			//diag_phis[i] *= beadvol/vol; // convert to actual volume fraction
+
+			if (diagonal_linear) {
+				Udiag2 += diag_chis[i]*diag_phis[i];
+			}
+			else {
+				Udiag2 += diag_chis[i]* diag_phis[i]*diag_phis[i];
+			}
 		}
-		else {
-			Udiag += diag_chis[i]* diag_phis[i]*diag_phis[i];
+		//Udiag2 *= vol/beadvol;
+		
+		for (int i=0; i<diag_nbins; i++) std::cout << diag_phis[i];
+		std::cout << std::endl;
+		std::cout << Udiag << " " << Udiag2 << std::endl;
+		*/
+
+		return Udiag;
+	}
+	else
+	{
+		for (int i=0; i<diag_nbins; i++)
+		{
+			diag_phis[i] *= beadvol/vol; // convert to actual volume fraction
+
+			if (diagonal_linear) {
+				Udiag += diag_chis[i]*diag_phis[i];
+			}
+			else {
+				Udiag += diag_chis[i]* diag_phis[i]*diag_phis[i];
+			}
 		}
+
+		// multiply by vol/beadvol to calculate mean-field energy
+		// needs to be different for linear case?
+		//if(!diagonal_linear) { Udiag *= vol/beadvol;}
+		return Udiag*vol/beadvol; 
 	}
 
-	// multiply by vol/beadvol to calculate mean-field energy
-	// needs to be different for linear case?
-	//if(!diagonal_linear) { Udiag *= vol/beadvol;}
-	return Udiag*vol/beadvol; 
 };
+
+double Cell::bonds_to_beads(int bonds)
+{
+	// convert number of bonds to number of pseudobeads
+	// correct way:
+	// include self-self interactions
+	// bonds = beads**2/2
+	//
+	// wrong way:
+	// bonds = beads*(beads-1)/2
+	// solving for beads, using quadratic formula:
+	// beads = (1 + sqrt(1 + 8*bonds)) / 2
+	// return  (1 + sqrt( 1 + 8*bonds)) / 2.0 ;
+	return sqrt(2*bonds);
+}
 
 double Cell::getBoundaryEnergy(const double boundary_chi, const double delta) {
 	// TODO: this is broken if the grid is moving; 

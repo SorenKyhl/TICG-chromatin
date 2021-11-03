@@ -28,8 +28,7 @@ void Sim::run() {
 
 void Sim::setupContacts() {
 	std::cout << "setting up contacts" << std::endl;
-	int nbins = nbeads/contact_resolution;
-	std::cout << "contactmap size: " << nbins << std::endl;
+	int nbins = nbeads/contact_resolution + 1;
 	contact_map.resize(nbins);
 	for(int i=0; i<nbins; i++)
 	{
@@ -234,7 +233,6 @@ void Sim::readInput() {
 	assert(config.contains("kappa")); Cell::kappa = config["kappa"];
 	assert(config.contains("density_cap_on")); Cell::density_cap_on = config["density_cap_on"];
 	assert(config.contains("compressibility_on")); Cell::compressibility_on = config["compressibility_on"];
-	assert(config.contains("diag_pseudobeads_on")); Cell::diag_pseudobeads_on = config["diag_pseudobeads_on"];
 
 	//cellcount_on = config["cellcount_on"];
 
@@ -258,7 +256,7 @@ void Sim::makeOutputFiles() {
 	obs_out_filename = "./" + data_out_filename + "/observables.traj";
 	diag_obs_out_filename = "./" + data_out_filename + "/diag_observables.traj";
 	density_out_filename = "./" + data_out_filename + "/density.traj";
-	extra_out_filename = "./" + data_out_filename + "/extra.traj";
+
 
 	// fopen(char*, char*) function signature takes c strings...
 	// std::string overloads + operator and resturns std::string, need to convert back to c_str()
@@ -267,19 +265,8 @@ void Sim::makeOutputFiles() {
 	obs_out = fopen((obs_out_filename).c_str(), "w");
 	diag_obs_out = fopen((diag_obs_out_filename).c_str(), "w");
 	density_out = fopen((density_out_filename).c_str(), "w");
-	extra_out = fopen((extra_out_filename).c_str(), "w");
 
 	std::cout << "created successfully" << std::endl;
-
-
-	command = "cp config.json " + data_out_filename;
-	const int result = system(command.c_str());
-
-	for (const std::string file : chipseq_files)
-	{
-		command = "cp " + file + " " + data_out_filename;
-		const int result = system(command.c_str());
-	}
 }
 
 bool Sim::outside_boundary(Eigen::RowVector3d r) {
@@ -393,6 +380,9 @@ void Sim::loadConfiguration() {
 	assert(init_nbeads == nbeads);
 	std::cout << "nbeads in config.json matches <input>.xyz" << std::endl;
 	
+	getline(IFILE, line); // comment line 
+
+
 	getline(IFILE, line); // comment line
 	std::cout << line << std::endl;
 
@@ -1234,12 +1224,6 @@ void Sim::dumpEnergy(int sweep, double bonded=0, double nonbonded=0, double diag
 }
 
 void Sim::dumpObservables(int sweep) {
-	
-	// TODO phis are not updated unless energy function is called
-	// leads to error if dumping observables after a rejected move;
-	// beads are returned to their original state and typenums is updated
-	// but cell.phis is not
-	double U = grid.energy(grid.active_cells, chis); //to update phis in cells
 	if (plaid_on)
 	{
 		obs_out = fopen(obs_out_filename.c_str(), "a");
@@ -1293,12 +1277,6 @@ void Sim::dumpObservables(int sweep) {
 		fclose(density_out);
 	}
 
-	extra_out = fopen(extra_out_filename.c_str(), "a");
-	double phi_c = grid.getChromatinVolfrac();
-	double phi_c2 = grid.getChromatinVolfrac2();
-	double phi_cD = grid.getChromatinVolfracD();
-	fprintf(extra_out, "%.8f %.8f %.8f\n", phi_c, phi_c2, phi_cD);
-	fclose(extra_out);
 }
 
 void Sim::dumpContacts(int sweep) {
@@ -1314,24 +1292,9 @@ void Sim::dumpContacts(int sweep) {
 
 	std::ofstream contactsOutFile(contact_map_filename);
 	for (const auto &row : contact_map) {
-		/*
 		for (const int &element : row) {
 			contactsOutFile << element << " ";
 		}
-		*/
-
-		for (int i=0; i<row.size(); i++)
-		{
-			if (i == row.size()-1)
-			{
-				contactsOutFile << row[i];
-			}
-			else
-			{
-				contactsOutFile << row[i] << " ";
-			}
-		}
-
 		contactsOutFile << "\n";
 	}
 }
