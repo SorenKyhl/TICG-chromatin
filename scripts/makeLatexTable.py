@@ -12,7 +12,7 @@ abspath = osp.abspath(__file__)
 dname = osp.dirname(abspath)
 sys.path.insert(0, dname)
 from knightRuiz import knightRuiz
-from get_config import str2bool
+from get_config import str2bool, str2int
 
 METHODS = ['ground_truth', 'random', 'PCA', 'PCA_split', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM']
 SMALL_METHODS = ['ground_truth', 'random', 'PCA', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM']
@@ -67,7 +67,8 @@ def loadData(args):
 
     <method> must be formatted such that <method>.split('-')[0] \in METHODS (e.g. 'nmf-binarize'.split('-')[0] = 'nmf')
 
-    All directories within <method> that start with 'k' are assumed to contain 'distance_pearson.json', from which data is loaded.
+    All directories within <method> that start with 'k' or 's' are assumed to contain replicate directories.
+    All replicate directories are assumed to contain 'distance_pearson.json', from which data is loaded.
     '''
     data = defaultdict(lambda: defaultdict(lambda : defaultdict(list)))
 
@@ -78,30 +79,28 @@ def loadData(args):
             # methods should be formatted such that method.split('-')[0] is in METHODS
             if osp.isdir(method_folder) and method.split('-')[0] in METHODS:
                 print(method)
-                json_file = osp.join(method_folder, 'distance_pearson.json')
-                if osp.exists(json_file):
-                    k = 0
-                    print("Loading: {}".format(json_file))
-                    with open(json_file, 'r') as f:
-                        results = json.load(f)
-                        data[k][method]['overall_pearson'].append(results['overall_pearson'])
-                        data[k][method]['scc'].append(results['scc'])
-                        data[k][method]['avg_dist_pearson'].append(results['avg_dist_pearson'])
-                else:
-                    for k_file in os.listdir(method_folder):
-                        k_folder = osp.join(method_folder, k_file)
-                        if osp.isdir(k_folder) and k_file.startswith('k'):
-                            k = int(k_file[1])
-                            json_file = osp.join(k_folder, 'distance_pearson.json')
+                for k_file in os.listdir(method_folder):
+                    k_folder = osp.join(method_folder, k_file)
+                    if osp.isdir(k_folder) and k_file.startswith('k'):
+                        k = str2int(k_file[1])
+                        if k is None:
+                            k = 0
+                        replicate_data = defaultdict(list)
+                        for replicate in os.listdir(k_folder):
+                            replicate_folder = osp.join(k_folder, replicate)
+                            json_file = osp.join(replicate_folder, 'distance_pearson.json')
                             if osp.exists(json_file):
                                 print("Loading: {}".format(json_file))
                                 with open(json_file, 'r') as f:
                                     results = json.load(f)
-                                    data[k][method]['overall_pearson'].append(results['overall_pearson'])
-                                    data[k][method]['scc'].append(results['scc'])
-                                    data[k][method]['avg_dist_pearson'].append(results['avg_dist_pearson'])
+                                    replicate_data['overall_pearson'].append(results['overall_pearson'])
+                                    replicate_data['scc'].append(results['scc'])
+                                    replicate_data['avg_dist_pearson'].append(results['avg_dist_pearson'])
                             else:
                                 print("MISSING: {}".format(json_file))
+                        data[k][method]['overall_pearson'].append(np.mean(replicate_data['overall_pearson']))
+                        data[k][method]['scc'].append(np.mean(replicate_data['scc']))
+                        data[k][method]['avg_dist_pearson'].append(np.mean(replicate_data['avg_dist_pearson']))
                 print('')
                 # just making output look nicer
     return data

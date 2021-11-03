@@ -1,5 +1,5 @@
 #! /bin/bash
-#SBATCH --job-name=TICG7
+#SBATCH --job-name=TICG9
 #SBATCH --output=logFiles/random9.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb

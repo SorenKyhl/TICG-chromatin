@@ -14,7 +14,7 @@ nodes=10
 tasks=20
 samples=2000
 diag='true'
-nSweeps=100000
+nSweeps=1000000
 local=0
 
 if [ $local -eq 1 ]
