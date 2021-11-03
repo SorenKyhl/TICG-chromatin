@@ -43,6 +43,7 @@ def check_seq():
             dataset_samples = osp.join(dir, dataset, 'samples')
             for file in os.listdir(dir):
                 if file.startswith('sample'):
+                    print(file)
                     file_dir = osp.join(dir, file)
                     x = np.load(osp.join(file_dir, 'x.npy'))
                     m, k = x.shape
@@ -57,6 +58,7 @@ def check_seq():
                     row_sum = np.sum(x[:, [0,1,3]], axis = 1)
                     if not np.all(row_sum <= 1):
                         ids_to_check.add(int(file[6:]))
+                    print(np.all(row_sum <= 1))
 
             print(sorted(ids_to_check))
 
