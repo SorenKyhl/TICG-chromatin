@@ -70,7 +70,7 @@ def makeDirsForMaxEnt(dataset, sample):
             os.mkdir(osp.join(sample_folder, method, 'k{}'.format(k)), mode = 0o755)
 
 if __name__ == '__main__':
-    find_mising_ids()
-    # check_seq()
+    # find_mising_ids()
+    check_seq()
     # upper_traingularize_chis()
     # makeDirsForMaxEnt("dataset_08_29_21", 40)
