@@ -2,29 +2,29 @@
 
 chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
 # chi="-1&1&0&0\\1&-2&0&-1\\0&0&-1&2\\0&-1&2&-1"
-chi="-1&1\\1&0"
+# chi="-1&1\\1&0"
 # chi='none'
-k=2
+k=4
 m=1024
 today=$(date +'%m_%d_%y')
-dataFolder="/project2/depablo/erschultz/dataset_10_27_21"
+dataFolder="/project2/depablo/erschultz/dataset_11_03_21"
 startSample=1
-relabel='none'
+relabel='AB-D'
 nodes=10
 tasks=20
 samples=2000
 diag='true'
-nSweeps=1000000
+nSweeps=100000
 local=0
 
 if [ $local -eq 1 ]
 then
   dataFolder="/home/eric/dataset_test"
   scratchDir='/home/eric/scratch'
-  startSample=1
+  startSample=11
   nodes=1
-  tasks=10
-  samples=10
+  tasks=1
+  samples=1
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
   scratchDir="/scratch/midway2/erschultz"

@@ -490,6 +490,8 @@ def plot_seq_binary(seq, show = False, save = True, title = None, labels = None,
 
 def main():
     args = getArgs()
+    print(args)
+
     if args.method == 'random':
         seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel, args.seed)
         format = '%d'
@@ -556,9 +558,9 @@ def main():
         np.savetxt('s_matrix.txt', s, fmt = format)
     else:
         m, k = seq.shape
-        np.set_printoptions(threshold=100)
-        for i in range(k):
-            print(np.round(seq[:100, i]), 3)
+        # np.set_printoptions(threshold=100)
+        # for i in range(k):
+        #     print(np.round(seq[:100, i], 3))
         assert m == args.m, "m mismatch: seq has {} particles not {}".format(m, args.m)
         assert k == args.k, "k mismatch: seq has {} particle types not {}".format(k, args.k)
         writeSeq(seq, format, args.save_npy)
@@ -633,9 +635,9 @@ def test_GNN():
 
 
 if __name__ ==  "__main__":
-    # main()
+    main()
     # test_nmf_k_means()
-    test_random()
+    # test_random()
     # test_epi()
     # test_ChromHMM()
     # test_GNN()

@@ -29,5 +29,5 @@ small='true'
 # python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
 
 sample='40'
-dataFolder='/home/eric/sequences_to_contact_maps/dataset_10_25_21'
+dataFolder='/home/eric/sequences_to_contact_maps/dataset_10_27_21'
 python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
