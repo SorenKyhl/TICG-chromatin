@@ -136,23 +136,22 @@ double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
 		indices.push_back(elem->id);
 	}
 
-	// count pairwise contacts 
+	// count pairwise contacts  -- include self-self interaction!!
 	for (int i=0; i<imax-1; i++)
 	{
-		for(int j=i+1; j<imax; j++)
+		for(int j=i; j<imax; j++)
 		{
 			d_index  = std::floor( std::abs(indices[i] - indices[j]) / diag_binsize);
 			diag_phis[d_index] += 1; // diag phis is just a count, multiply by volumes later
 		}
 	}
 
-
 	double Udiag = 0;
 	if (diag_pseudobeads_on)
 	{
 		for (int i=0; i<diag_nbins; i++)
 		{
-			int npseudobeads = bonds_to_beads(diag_phis[i]);
+			double npseudobeads = bonds_to_beads(diag_phis[i]);
 			diag_phis[i] = npseudobeads * beadvol/vol;
 			//Udiag += diag_chis[i]* npseudobeads*npseudobeads;// * beadvol/vol;
 			Udiag += diag_chis[i]* diag_phis[i]*diag_phis[i] * vol/beadvol;
@@ -202,16 +201,19 @@ double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
 
 };
 
-int Cell::bonds_to_beads(int bonds)
+double Cell::bonds_to_beads(int bonds)
 {
 	// convert number of bonds to number of pseudobeads
-	// bonds = beads*beads-1)/2
+	// correct way:
+	// include self-self interactions
+	// bonds = beads**2/2
+	//
+	// wrong way:
+	// bonds = beads*(beads-1)/2
 	// solving for beads, using quadratic formula:
 	// beads = (1 + sqrt(1 + 8*bonds)) / 2
-	// 
-	// if there are no bonds, this returns 1 bead
-	// but there can never be just 1 pseudobead, so return 0;
-	return (bonds == 0) ? 0 : int ( (1 + sqrt( 1 + 8*bonds)) / 2 );
+	// return  (1 + sqrt( 1 + 8*bonds)) / 2.0 ;
+	return sqrt(2*bonds);
 }
 
 double Cell::getBoundaryEnergy(const double boundary_chi, const double delta) {

@@ -197,6 +197,48 @@ void Grid::getDiagObs(std::vector<double> &diag_obs) {
 	}
 };
 
+double Grid::getChromatinVolfrac2() 
+{
+	double obs  = 0;
+	for(Cell* cell : active_cells)
+	{
+
+		double phi_c = cell->contains.size() * cell->beadvol / cell->vol;
+		obs += phi_c*phi_c;
+	}
+
+	obs /= active_cells.size(); 
+	return obs;
+};
+
+double Grid::getChromatinVolfrac() 
+{
+	double obs  = 0;
+	for(Cell* cell : active_cells)
+	{
+
+		double phi_c = cell->contains.size() * cell->beadvol / cell->vol;
+		obs += phi_c;
+	}
+
+	obs /= active_cells.size(); 
+	return obs;
+};
+
+double Grid::getChromatinVolfracD() 
+{
+	double obs  = 0;
+	for(Cell* cell : active_cells)
+	{
+
+		double phi_c = cell->contains.size() * cell->beadvol / cell->vol;
+		obs += (phi_c - Cell::phi_chromatin) * (phi_c - Cell::phi_chromatin);
+	}
+
+	obs /= active_cells.size(); 
+	return obs;
+};
+
 double Grid::cellCount() {
 	int sum = 0;
 	int num = 0;

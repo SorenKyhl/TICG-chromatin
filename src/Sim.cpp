@@ -258,7 +258,7 @@ void Sim::makeOutputFiles() {
 	obs_out_filename = "./" + data_out_filename + "/observables.traj";
 	diag_obs_out_filename = "./" + data_out_filename + "/diag_observables.traj";
 	density_out_filename = "./" + data_out_filename + "/density.traj";
-
+	extra_out_filename = "./" + data_out_filename + "/extra.traj";
 
 	// fopen(char*, char*) function signature takes c strings...
 	// std::string overloads + operator and resturns std::string, need to convert back to c_str()
@@ -267,6 +267,7 @@ void Sim::makeOutputFiles() {
 	obs_out = fopen((obs_out_filename).c_str(), "w");
 	diag_obs_out = fopen((diag_obs_out_filename).c_str(), "w");
 	density_out = fopen((density_out_filename).c_str(), "w");
+	extra_out = fopen((extra_out_filename).c_str(), "w");
 
 	std::cout << "created successfully" << std::endl;
 
@@ -1292,6 +1293,12 @@ void Sim::dumpObservables(int sweep) {
 		fclose(density_out);
 	}
 
+	extra_out = fopen(extra_out_filename.c_str(), "a");
+	double phi_c = grid.getChromatinVolfrac();
+	double phi_c2 = grid.getChromatinVolfrac2();
+	double phi_cD = grid.getChromatinVolfracD();
+	fprintf(extra_out, "%.8f %.8f %.8f\n", phi_c, phi_c2, phi_cD);
+	fclose(extra_out);
 }
 
 void Sim::dumpContacts(int sweep) {

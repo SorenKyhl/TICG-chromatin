@@ -40,7 +40,7 @@ public:
 	double getBoundaryEnergy(const double boundary_chi, const double delta);
 	double getSmatrixEnergy(const std::vector<std::vector<double>> &Smatrix);
 
-	int bonds_to_beads(int bonds);
+	double bonds_to_beads(int bonds);
 
 
 };

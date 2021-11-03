@@ -38,6 +38,7 @@ public:
 	FILE *obs_out;
 	FILE *diag_obs_out;
 	FILE *density_out;
+	FILE *extra_out;
 	std::string data_out_filename; 
 	std::string xyz_out_filename;
 	std::string energy_out_filename;
@@ -45,6 +46,7 @@ public:
 	std::string diag_obs_out_filename;
 	std::string density_out_filename;
 	std::string contact_map_filename;
+	std::string extra_out_filename;
 
 	// MC variables
 	int decay_length; 
