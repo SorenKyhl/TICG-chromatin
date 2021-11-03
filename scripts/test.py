@@ -43,7 +43,6 @@ def check_seq():
             dataset_samples = osp.join(dir, dataset, 'samples')
             for file in os.listdir(dataset_samples):
                 if file.startswith('sample'):
-                    print(file)
                     file_dir = osp.join(dir, file)
                     x = np.load(osp.join(file_dir, 'x.npy'))
                     m, k = x.shape
