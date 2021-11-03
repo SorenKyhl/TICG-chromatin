@@ -54,7 +54,7 @@ def check_seq():
                         ids_to_check.add(int(file[6:]))
                         # np.save(osp.join(file_dir, 'x.npy'), seq)
 
-                    if dataset.startswith("dataset_10_27"):
+                    if dataset.startswith("dataset_10_25"):
                         row_sum = np.sum(x[:, [0,1,3]], axis = 1)
                         if not np.all(row_sum <= 1):
                             ids_to_check.add(int(file[6:]))
