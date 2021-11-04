@@ -3,7 +3,7 @@
 #SBATCH --output=logFiles/maxent.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
-#SBATCH --ntasks=8
+#SBATCH --ntasks=20
 #SBATCH --mem-per-cpu=2000
 
 m=1024
@@ -17,7 +17,7 @@ numIterations=100 # iteration 1 + numIterations is production run to get contact
 overwrite=1
 modelType='ContactGNNEnergy'
 modelID='34'
-local='true'
+local='false'
 binarize='false'
 normalize='false'
 useEnergy='false'
@@ -41,7 +41,7 @@ then
   scratchDir='/home/eric/scratch'
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
-  dataFolder='/project2/depablo/erschultz/dataset_10_27_21'
+  dataFolder='/project2/depablo/erschultz/dataset_11_03_21'
   scratchDir='/scratch/midway2/erschultz'
   source activate python3.8_pytorch1.8.1_cuda10.2
 fi
@@ -68,7 +68,7 @@ max_ent_inner () {
   # args:
   # 1 = scratchDir
   # 2 = replicate index
-  # 3 = seed
+  # 3 = seed for get_seq
   sampleFolder="${dataFolder}/samples/sample${sample}"
   ofile="${sampleFolder}/${methodFolder}/k${k}/replicate${2}"
 
@@ -142,39 +142,48 @@ format_method () {
 
 STARTTIME=$(date +%s)
 i=1
+for k in 2 4
+do
+  for sample in 40 1230 1718
+  do
+    for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
+    do
+      # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
+      max_ent
+    done
+  done
+done
+
+k=4
+method='ground_truth'
+for sample in 40 1230 1718
+do
+  max_ent
+done
+
+useGroundTruthChi='true'
+method='ground_truth'
+numIterations=0
+goalSpecified='false'
 k=2
 for sample in 40 1230 1718
 do
-  for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'ground_truth'
-  do
-    # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
-    max_ent
-  done
+  max_ent
 done
 
 k='none'
-numIterations=0
 useEnergy='true'
 goalSpecified='false'
-for sample in 40 1230 1718
-do
-  for method in 'GNN'
-  do
-    max_ent
-  done
-done
-
-
-useEnergy='false'
-useGroundTruthChi='true'
-k=2
+useGroundTruthChi='false'
 for sample in 40 1230 1718
 do
   for method in 'ground_truth'
+  # 'GNN'
   do
     max_ent
   done
 done
+
 
 wait
 
