@@ -197,6 +197,7 @@ then
 
 		# update plots
 		python3 $proj_bin/plot_convergence.py --mode $mode --k $k
+		python3 $proj_bin/contactmap.py $it
 	done
 fi
 
