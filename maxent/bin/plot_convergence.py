@@ -17,7 +17,7 @@ def main():
     args = getArgs()
     assert args.mode in {'plaid', 'diag', 'both'}
 
-    if args.mode == 'plaid' or args.mode == 'both':
+    if args.mode == 'plaid' or args.mode == 'both' or args.mode == 'diag':
         # convergence plot
         convergence = np.loadtxt('convergence.txt')
         plt.plot(convergence)
@@ -49,14 +49,14 @@ def main():
         plt.savefig("pchis.png")
         plt.close()
 
-
-    if args.mode == 'diag' or args.mode == 'both':
-        raise Exception("diag chis not fully supported yet")
-        convergence_diag = np.loadtxt('convergence_diag.txt')
-        plt.plot(convergence_diag)
-        plt.xlabel('Iteration')
-        plt.savefig("pconvergence_diag.png")
+        # diag chis plot
+        diag_chis = np.loadtxt('chis_diag.txt')
+        plt.plot(diag_chis)
+        plt.xlabel("Iteration")
+        plt.ylabel("chi_diagonal value")
+        plt.savefig("pchis_diag.png")
         plt.close()
+
 
 def test():
     args = getArgs()

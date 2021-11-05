@@ -22,13 +22,14 @@ def main():
         config = json.load(f)
 
     allchis = np.atleast_2d(np.loadtxt('chis.txt'))
-    if len(allchis[0] == 0):
+    #if len(allchis[0] == 0):
         # shape will be wrong if k = 1
-        allchis = allchis.T
+        #allchis = allchis.T
 
     # get last row of 'chis.txt'
     try:
         lastchis = list(allchis[int(args.it)])
+        #lastchis = list(allchis[-1])
     except IndexError as e:
         print('Index Error')
         print('allchis:\n', allchis)
@@ -42,6 +43,7 @@ def main():
             key = 'chi{}{}'.format(LETTERS[i], LETTERS[j])
             config[key] = lastchis[counter]
             counter += 1
+            print( i, j, counter)
 
     with open(config_file, "w") as f:
         json.dump(config, f)
@@ -80,4 +82,4 @@ def test():
     print(config)
 
 if __name__ == '__main__':
-    test()
+    main()

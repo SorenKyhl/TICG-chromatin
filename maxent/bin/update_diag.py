@@ -22,7 +22,7 @@ def main():
     allchis = np.loadtxt('chis_diag.txt')
 
     # get last row of 'chis.txt'
-    lastchis = list(allchis[int(it)])
+    lastchis = list(allchis[int(args.it)])
 
     config['diag_chis'] = lastchis
 

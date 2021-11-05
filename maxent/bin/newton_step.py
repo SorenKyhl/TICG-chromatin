@@ -103,6 +103,9 @@ def copy_chis(parameter_file, obs_file, convergence_file, goal_file, gamma, it, 
     f_chis.write("\n")
     f_chis.close()
 
+    with open(convergence_file, "a") as f:
+        f.write(str(0) + '\n')
+
 def main():
     '''
     Calculates one step of the TICG-MaxEnt optimization routine.
@@ -116,6 +119,7 @@ def main():
     goal_specified = str2bool(sys.argv[5])   # if true, will read from obj_goal.txt and obj_goal_diag.txt.
                                              # if false, will calculate goals from iteration1 observables
 
+    print(goal_specified)
 
     print('Iteration Number {}'.format(it))
     print("gamma_plaid: {}".format(gamma_plaid))
