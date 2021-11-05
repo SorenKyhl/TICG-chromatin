@@ -16,7 +16,7 @@ goalSpecified='true'
 numIterations=100 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 modelType='ContactGNNEnergy'
-modelID='34'
+modelID='37'
 local='false'
 binarize='false'
 normalize='false'
@@ -53,7 +53,7 @@ max_ent() {
 
   seed=$RANDOM
   format_method
-  for j in 1
+  for j in 2 3
   do
     scratchDirI="${scratchDir}/TICG_maxent${i}"
     mkdir -p $scratchDirI
@@ -165,7 +165,7 @@ useGroundTruthChi='true'
 method='ground_truth'
 numIterations=0
 goalSpecified='false'
-k=2
+k=4
 for sample in 40 1230 1718
 do
   max_ent
@@ -177,7 +177,7 @@ goalSpecified='false'
 useGroundTruthChi='false'
 for sample in 40 1230 1718
 do
-  for method in 'ground_truth'
+  for method in 'ground_truth' 'GNN'
   # 'GNN'
   do
     max_ent
