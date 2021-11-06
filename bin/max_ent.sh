@@ -16,7 +16,7 @@ goalSpecified='true'
 numIterations=100 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 modelType='ContactGNNEnergy'
-modelID='37'
+modelID='40'
 local='false'
 binarize='false'
 normalize='false'
@@ -53,7 +53,7 @@ max_ent() {
 
   seed=$RANDOM
   format_method
-  for j in 2 3
+  for j in 1 2 3
   do
     scratchDirI="${scratchDir}/TICG_maxent${i}"
     mkdir -p $scratchDirI
@@ -142,34 +142,34 @@ format_method () {
 
 STARTTIME=$(date +%s)
 i=1
-for k in 2 4
-do
-  for sample in 40 1230 1718
-  do
-    for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
-    do
-      # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
-      max_ent
-    done
-  done
-done
+# for k in 2 4
+# do
+#   for sample in 40 1230 1718
+#   do
+#     for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
+#     do
+#       # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
+#       max_ent
+#     done
+#   done
+# done
 
-k=4
-method='ground_truth'
-for sample in 40 1230 1718
-do
-  max_ent
-done
-
-useGroundTruthChi='true'
-method='ground_truth'
-numIterations=0
-goalSpecified='false'
-k=4
-for sample in 40 1230 1718
-do
-  max_ent
-done
+# k=4
+# method='ground_truth'
+# for sample in 40 1230 1718
+# do
+#   max_ent
+# done
+#
+# useGroundTruthChi='true'
+# method='ground_truth'
+# numIterations=0
+# goalSpecified='false'
+# k=4
+# for sample in 40 1230 1718
+# do
+#   max_ent
+# done
 
 k='none'
 useEnergy='true'
@@ -177,8 +177,8 @@ goalSpecified='false'
 useGroundTruthChi='false'
 for sample in 40 1230 1718
 do
-  for method in 'ground_truth' 'GNN'
-  # 'GNN'
+  for method in  'GNN'
+  # 'ground_truth' 'GNN'
   do
     max_ent
   done
