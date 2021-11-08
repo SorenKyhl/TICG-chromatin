@@ -28,8 +28,9 @@ small='true'
 # python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples --small $small
 # python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
 
+
+dataFolder='/project2/depablo/erschultz/dataset_11_03_21'
 sample='40'
-dataFolder='/home/eric/sequences_to_contact_maps/dataset_11_03_21'
-# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
+python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
 samples="40-1230-1718"
 python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
