@@ -3,7 +3,7 @@
 #SBATCH --output=logFiles/latex.out
 #SBATCH --time=2:00:00
 #SBATCH --partition=depablo-ivyb
-#SBATCH --ntasks=20
+#SBATCH --ntasks=1
 #SBATCH --mem-per-cpu=2000
 
 source activate python3.8_pytorch1.8.1_cuda10.2
