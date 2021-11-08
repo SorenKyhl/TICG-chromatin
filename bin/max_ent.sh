@@ -16,7 +16,7 @@ goalSpecified='true'
 numIterations=100 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 modelType='ContactGNNEnergy'
-modelID='40'
+modelID='42'
 local='false'
 binarize='false'
 normalize='false'
@@ -175,6 +175,20 @@ k='none'
 useEnergy='true'
 goalSpecified='false'
 useGroundTruthChi='true'
+numIterations=0
+for sample in 40 1230 1718
+do
+  for method in  'GNN'
+  # 'ground_truth' 'GNN'
+  do
+    max_ent
+  done
+done
+
+k='none'
+useEnergy='true'
+goalSpecified='false'
+useGroundTruthChi='false'
 numIterations=0
 for sample in 40 1230 1718
 do
