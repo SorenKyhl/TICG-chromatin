@@ -1,7 +1,7 @@
 #! /bin/bash
 #SBATCH --job-name=latex
 #SBATCH --output=logFiles/latex.out
-#SBATCH --time=24:00:00
+#SBATCH --time=2:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20
 #SBATCH --mem-per-cpu=2000
