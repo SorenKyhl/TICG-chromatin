@@ -19,9 +19,9 @@ SMALL_METHODS = ['ground_truth', 'random', 'PCA', 'k_means', 'nmf', 'GNN', 'epig
 LABELS = ['Ground Truth', 'Random', 'PCA', 'PCA Split', 'K-means', 'NMF', 'GNN', 'Epigenetic', 'ChromHMM']
 
 
-def getArgs(sample=None, samples = None):
+def getArgs(data_folder=None, sample=None, samples = None):
     parser = argparse.ArgumentParser(description='Base parser')
-    parser.add_argument('--data_folder', type=str, default='../sequences_to_contact_maps/dataset_10_27_21', help='location of input data')
+    parser.add_argument('--data_folder', type=str, default=data_folder, help='location of input data')
     parser.add_argument('--sample', type=int, default=sample, help='sample id')
     parser.add_argument('--samples', type=str2list, default=samples, help='list of sample ids separated by -')
     parser.add_argument('--sample_folder', type=str, help='location of input data')
@@ -191,14 +191,14 @@ def sort_method_keys(keys):
             if split[0] == method:
                 sorted_keys.append(key)
                 if len(split) > 1:
-                    sorted_labels.append(label + '-' + split[1:])
+                    sorted_labels.append(label + '-' + '-'.join(split[1:]))
                 else:
                     sorted_labels.append(label)
 
     return sorted_keys, sorted_labels
 
 def main():
-    args = getArgs(samples=[40, 1230, 1718])
+    args = getArgs(data_folder='../sequences_to_contact_maps/dataset_10_27_21', samples=[40, 1230, 1718])
 
     fname = 'max_ent_table.txt'
 
