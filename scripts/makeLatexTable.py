@@ -105,7 +105,7 @@ def loadData(args):
                 # just making output look nicer
     return data
 
-def makeLatexTable(data, ofile, header = '', small = False, mode = 'w'):
+def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', delta= True):
     '''
     Writes data to ofile in latex table format.
 
@@ -114,6 +114,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w'):
         ofile: location to write data
         small: True to output smaller table with only methods in SMALL_METHODS and only SCC as metric')
         mode: file mode (e.g. 'w', 'a')
+        delta: True to compute difference in statistics relative to ground_truth-S
     '''
     header = header.replace('_', "\_")
     with open(ofile, mode) as o:
@@ -124,7 +125,10 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w'):
             o.write("\\hline\n")
             o.write("\\multicolumn{3}{|c|}{" + header + "} \\\ \n")
             o.write("\\hline\n")
-            o.write("Method & k & SCC \\\ \n")
+            if delta:
+                o.write("Method & k & $\\Delta$ SCC \\\ \n")
+            else:
+                o.write("Method & k & SCC \\\ \n")
         else:
             metrics = ['overall_pearson', 'avg_dist_pearson', 'scc']
             o.write("\\begin{tabular}{|c|c|c|c|c|}\n")
@@ -132,11 +136,14 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w'):
             o.write("\\multicolumn{5}{|c|}{" + header + "} \\\ \n")
             o.write("\\hline\n")
             o.write("\\hline\n")
-            o.write("Method & k & Pearson R & Avg Dist Pearson R & SCC \\\ \n")
+            if delta:
+                o.write("Method & k & Pearson R & $\\Delta$ Avg Dist Pearson R & $\\Delta$  SCC \\\ \n")
+            else:
+                o.write("Method & k & Pearson R & Avg Dist Pearson R & SCC \\\ \n")
         o.write("\\hline\\hline\n")
 
         ref = data[0]['ground_truth-S']
-        print(ref)
+        print('ref', ref)
 
         for k in sorted(data.keys()):
             first = True # only write k for first row in section
@@ -156,10 +163,13 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w'):
                 for metric in metrics:
                     ref_metric = np.array(ref[metric])
                     data_list = np.array(data[k][key][metric])
-                    dif = ref_metric - data_list
-                    data_mean = np.round(np.mean(dif), 3)
+                    if delta:
+                        result = ref_metric - data_list
+                    else:
+                        result = data_list
+                    data_mean = np.round(np.mean(result), 3)
                     if len(data_list) > 1:
-                        data_std = np.round(np.std(dif), 3)
+                        data_std = np.round(np.std(result), 3)
                         text += " & {} $\pm$ {}".format(data_mean, data_std)
                     else:
                         text += " & {}".format(data_mean)
@@ -181,7 +191,7 @@ def sort_method_keys(keys):
             if split[0] == method:
                 sorted_keys.append(key)
                 if len(split) > 1:
-                    sorted_labels.append(label + '-' + split[1])
+                    sorted_labels.append(label + '-' + split[1:])
                 else:
                     sorted_labels.append(label)
 
