@@ -174,7 +174,8 @@ i=1
 k='none'
 useEnergy='true'
 goalSpecified='false'
-useGroundTruthChi='false'
+useGroundTruthChi='true'
+numIterations=0
 for sample in 40 1230 1718
 do
   for method in  'GNN'
