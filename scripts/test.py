@@ -24,7 +24,7 @@ def find_mising_ids():
     print(ids, len(ids))
 
 def upper_traingularize_chis():
-    dir = "/project2/depablo/erschultz/dataset_08_29_21/samples"
+    dir = "/project2/depablo/erschultz/dataset_09_02_21/samples"
     for file in os.listdir(dir):
         if file.startswith('sample'):
             file_dir = osp.join(dir, file)
@@ -37,9 +37,9 @@ def upper_traingularize_chis():
 def check_seq():
     ids_to_check = set()
     dir = "/project2/depablo/erschultz"
-    dir = '/home/eric/'
+    dir = '/home/eric/sequences_to_contact_maps'
     for dataset in os.listdir(dir):
-        if dataset.startswith("dataset"):
+        if dataset.startswith("dataset") and osp.isdir(osp.join(dir, dataset)):
             print(dataset)
             dataset_samples = osp.join(dir, dataset, 'samples')
             for file in os.listdir(dataset_samples):
@@ -55,8 +55,8 @@ def check_seq():
                         ids_to_check.add(int(file[6:]))
                         # np.save(osp.join(file_dir, 'x.npy'), seq)
 
-                    # if dataset.startswith("dataset_10_25"):
-                    if int(file[6:]) > 10:
+                    if dataset.startswith("dataset_11_03"):
+                    # if int(file[6:]) > 10:
                         row_sum = np.sum(x[:, [0,1,3]], axis = 1)
                         if not np.all(row_sum <= 1):
                             ids_to_check.add(int(file[6:]))
@@ -75,6 +75,6 @@ def makeDirsForMaxEnt(dataset, sample):
 
 if __name__ == '__main__':
     # find_mising_ids()
-    check_seq()
-    # upper_traingularize_chis()
+    # check_seq()
+    upper_traingularize_chis()
     # makeDirsForMaxEnt("dataset_08_29_21", 40)

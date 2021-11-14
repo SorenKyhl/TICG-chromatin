@@ -17,7 +17,7 @@ numIterations=100 # iteration 1 + numIterations is production run to get contact
 overwrite=1
 modelType='ContactGNNEnergy'
 modelID='42'
-local='false'
+local='true'
 binarize='false'
 normalize='false'
 useEnergy='false'
@@ -36,7 +36,7 @@ modelPath="${results}/${modelType}/${modelID}"
 
 if [ $local = 'true' ]
 then
-  dataFolder="/home/eric/sequences_to_contact_maps/dataset_10_27_21"
+  dataFolder="/home/eric/sequences_to_contact_maps/dataset_11_03_21"
   # dataFolder="/home/eric/dataset_test"
   scratchDir='/home/eric/scratch'
   source activate python3.8_pytorch1.8.1_cuda11.1
@@ -161,43 +161,44 @@ i=1
 #   max_ent
 # done
 #
-# useGroundTruthChi='true'
-# method='ground_truth'
-# numIterations=0
+useGroundTruthChi='true'
+method='ground_truth'
+numIterations=0
+goalSpecified='false'
+useEnergy='false'
+k=4
+for sample in 40 1230 1718
+do
+  max_ent
+done
+
+# k='none'
+# useEnergy='true'
 # goalSpecified='false'
-# k=4
+# useGroundTruthChi='true'
+# numIterations=0
 # for sample in 40 1230 1718
 # do
-#   max_ent
+#   for method in  'GNN'
+#   # 'ground_truth' 'GNN'
+#   do
+#     max_ent
+#   done
 # done
 
-k='none'
-useEnergy='true'
-goalSpecified='false'
-useGroundTruthChi='true'
-numIterations=0
-for sample in 40 1230 1718
-do
-  for method in  'GNN'
-  # 'ground_truth' 'GNN'
-  do
-    max_ent
-  done
-done
-
-k='none'
-useEnergy='true'
-goalSpecified='false'
-useGroundTruthChi='false'
-numIterations=0
-for sample in 40 1230 1718
-do
-  for method in  'GNN'
-  # 'ground_truth' 'GNN'
-  do
-    max_ent
-  done
-done
+# k='none'
+# useEnergy='true'
+# goalSpecified='false'
+# useGroundTruthChi='false'
+# numIterations=0
+# for sample in 40 1230 1718
+# do
+#   for method in  'GNN'
+#   # 'ground_truth' 'GNN'
+#   do
+#     max_ent
+#   done
+# done
 
 wait
 
