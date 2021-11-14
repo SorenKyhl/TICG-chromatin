@@ -16,8 +16,8 @@ goalSpecified='true'
 numIterations=100 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 modelType='ContactGNNEnergy'
-modelID='42'
-local='true'
+modelID='44'
+local='false'
 binarize='false'
 normalize='false'
 useEnergy='false'
@@ -41,7 +41,7 @@ then
   scratchDir='/home/eric/scratch'
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
-  dataFolder='/project2/depablo/erschultz/dataset_11_03_21'
+  dataFolder='/project2/depablo/erschultz/dataset_08_29_21'
   scratchDir='/scratch/midway2/erschultz'
   source activate python3.8_pytorch1.8.1_cuda10.2
 fi
@@ -142,25 +142,25 @@ format_method () {
 
 STARTTIME=$(date +%s)
 i=1
-# for k in 2 4
-# do
-#   for sample in 40 1230 1718
-#   do
-#     for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
-#     do
-#       # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
-#       max_ent
-#     done
-#   done
-# done
+for k in 2 4
+do
+  for sample in 40 1230 1718
+  do
+    for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
+    do
+      # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
+      max_ent
+    done
+  done
+done
 
-# k=4
-# method='ground_truth'
-# for sample in 40 1230 1718
-# do
-#   max_ent
-# done
-#
+k=4
+method='ground_truth'
+for sample in 40 1230 1718
+do
+  max_ent
+done
+
 useGroundTruthChi='true'
 method='ground_truth'
 numIterations=0
@@ -186,19 +186,19 @@ done
 #   done
 # done
 
-# k='none'
-# useEnergy='true'
-# goalSpecified='false'
-# useGroundTruthChi='false'
-# numIterations=0
-# for sample in 40 1230 1718
-# do
-#   for method in  'GNN'
-#   # 'ground_truth' 'GNN'
-#   do
-#     max_ent
-#   done
-# done
+k='none'
+useEnergy='true'
+goalSpecified='false'
+useGroundTruthChi='false'
+numIterations=0
+for sample in 40 1230 1718
+do
+  for method in  'GNN'
+  # 'ground_truth' 'GNN'
+  do
+    max_ent
+  done
+done
 
 wait
 

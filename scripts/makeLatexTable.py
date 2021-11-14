@@ -213,8 +213,14 @@ def main():
 
     dataset = osp.split(args.data_folder)[1]
 
-    makeLatexTable(data, ofile, dataset)
-    makeLatexTable(data, ofile, dataset, small = True, mode = 'a')
+    mode = 'w'
+    first = True
+    for is_small in [True, False]:
+        for is_delta in [True, False]:
+            makeLatexTable(data, ofile, dataset, small = is_small, delta = is_delta, mode = mode)
+            if first:
+                mode = 'a'
+                first = False
 
 
 if __name__ == '__main__':
