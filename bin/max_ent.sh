@@ -142,17 +142,17 @@ format_method () {
 
 STARTTIME=$(date +%s)
 i=1
-for k in 2 4
-do
-  for sample in 40 1230 1718
-  do
-    for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
-    do
-      # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
-      max_ent
-    done
-  done
-done
+# for k in 2 4
+# do
+#   for sample in 40 1230 1718
+#   do
+#     for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
+#     do
+#       # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
+#       max_ent
+#     done
+#   done
+# done
 
 k=2
 method='ground_truth'
@@ -193,7 +193,7 @@ useGroundTruthChi='false'
 numIterations=0
 for sample in 40 1230 1718
 do
-  for method in  'GNN'
+  for method in  'ground_truth'
   # 'ground_truth' 'GNN'
   do
     max_ent
