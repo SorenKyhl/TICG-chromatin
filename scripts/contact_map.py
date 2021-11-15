@@ -41,6 +41,12 @@ def main():
 
 
     plotContactMap(y, ofile = osp.join(args.odir, 'y.png'), vmax = 'mean')
+
+    s_matrix_file = 's_matrix.txt'
+    if osp.exists(s_matrix_file):
+        s = np.loadtxt(s_matrix_file)
+        plotContactMap(s, ofile = osp.join(args.odir, 's.png'), title = 'S', vmax = 'max', vmin = 'min', cmap = 'blue-red')
+
     if args.save_npy:
         np.save(osp.join(args.odir, 'y.npy'), y.astype(np.int16))
 

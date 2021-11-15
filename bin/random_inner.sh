@@ -16,9 +16,18 @@ pSwitch=0.05
 maxDiagChi=0.1
 overwrite=1
 dumpFrequency=50000
+if [ $chi = 'parity' ]
+then
+	useEnergy='true'
+elif [ $chi = 'nonlinear' ]
+then
+	useEnergy='true'
+else
+	useEnergy='false'
+fi
 
 # below does nothing if chi is given
-minChi=0
+minChi=-1
 maxChi=2
 fillDiag=-1
 
@@ -51,11 +60,11 @@ do
 		fi
 	fi
 
-  # set up config.json
-	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable --diag $diag --max_diag_chi $maxDiagChi --n_sweeps $nSweeps --dump_frequency $dumpFrequency --seed $i > log.log
-
 	# generate sequences
 	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --p_switch $pSwitch --k $k --save_npy --relabel $relabel >> log.log
+
+  # set up config.json
+	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable --diag $diag --max_diag_chi $maxDiagChi --n_sweeps $nSweeps --dump_frequency $dumpFrequency --seed $i --use_energy $useEnergy > log.log
 
 	# run simulation
 	~/TICG-chromatin/TICG-engine >> log.log
@@ -65,11 +74,7 @@ do
 
 	# move inputs and outputs to own folder
 	mkdir -p $dir
-	mv config.json data_out log.log *.npy *.png chis.txt $dir
-	for i in $(seq 0 $(($k-1)))
-	do
-		mv seq${i}.txt $dir
-	done
+	mv config.json data_out log.log *.npy *.png *.txt $dir
 done
 
 # clean up

@@ -1,27 +1,28 @@
 #! /bin/bash
 
 # chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
-chi="-1&1&0&0\\1&-2&0&-1\\0&0&-1&2\\0&-1&2&-1"
+# chi="-1&1&0&0\\1&-2&0&-1\\0&0&-1&2\\0&-1&2&-1"
 # chi="-1&1\\1&0"
 # chi='none'
-k=4
+chi='nonlinear'
+k=10
 m=1024
 today=$(date +'%m_%d_%y')
-dataFolder="/project2/depablo/erschultz/dataset_11_03_21"
+dataFolder="/project2/depablo/erschultz/dataset_11_14_21"
 startSample=1
-relabel='AB-D'
+relabel='none'
 nodes=10
 tasks=20
 samples=2000
-diag='true'
+diag='false'
 nSweeps=1000000
-local=0
+local='true'
 
-if [ $local -eq 1 ]
+if [ $local = 'true' ]
 then
   dataFolder="/home/eric/dataset_test"
   scratchDir='/home/eric/scratch'
-  startSample=11
+  startSample=14
   nodes=1
   tasks=1
   samples=1
@@ -47,5 +48,5 @@ do
   startSampleI=$(( $startSample + $samplesPerNode * $i ))
   endSampleI=$(( $startSampleI + $samplesPerNode - 1 ))
   echo $startSampleI $endSampleI
-  sbatch ~/TICG-chromatin/bin/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samplesPerNode $samplesPerTask $diag $scratchDir $i $nSweeps
+  bash ~/TICG-chromatin/bin/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samplesPerNode $samplesPerTask $diag $scratchDir $i $nSweeps
 done
