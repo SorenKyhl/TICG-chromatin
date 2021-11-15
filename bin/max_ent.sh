@@ -154,7 +154,7 @@ do
   done
 done
 
-k=4
+k=2
 method='ground_truth'
 for sample in 40 1230 1718
 do
@@ -166,7 +166,7 @@ method='ground_truth'
 numIterations=0
 goalSpecified='false'
 useEnergy='false'
-k=4
+k=2
 for sample in 40 1230 1718
 do
   max_ent
