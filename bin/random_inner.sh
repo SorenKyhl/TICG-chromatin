@@ -9,10 +9,15 @@ dataFolder=$7
 relabel=$8
 diag=$9
 nSweeps=${10}
+pSwitch=${11}
+
+# below does nothing if chi is given
+minChi=${12}
+maxChi=${13}
+fillDiag=${14}
 
 # other params
 method='random'
-pSwitch=0.05
 maxDiagChi=0.1
 overwrite=1
 dumpFrequency=50000
@@ -25,11 +30,6 @@ then
 else
 	useEnergy='false'
 fi
-
-# below does nothing if chi is given
-minChi=-1
-maxChi=2
-fillDiag=-1
 
 echo $@
 
