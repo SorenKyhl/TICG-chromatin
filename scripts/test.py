@@ -35,13 +35,15 @@ def upper_traingularize_chis():
             np.save(osp.join(file_dir, 'chis.npy'), chis)
 
 def check_seq(dataset):
-    # dir = "/project2/depablo/erschultz"
-    dir = '/home/eric/sequences_to_contact_maps'
+    dir = "/project2/depablo/erschultz"
+    # dir = '/home/eric/sequences_to_contact_maps'
     if dataset is None:
         datasets = os.listdir(dir)
     else:
         datasets = [dataset]
+    print(datasets)
     for dataset in datasets:
+        print(dataset)
         if dataset.startswith("dataset") and osp.isdir(osp.join(dir, dataset)):
             ids_to_check = set()
             print(dataset)
