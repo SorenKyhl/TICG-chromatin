@@ -27,6 +27,9 @@ then
 elif [ $chi = 'nonlinear' ]
 then
 	useEnergy='true'
+elif [ $chi = 'polynomial' ]
+then
+	useEnergy='true'
 else
 	useEnergy='false'
 fi

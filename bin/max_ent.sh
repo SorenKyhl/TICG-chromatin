@@ -17,7 +17,7 @@ numIterations=100 # iteration 1 + numIterations is production run to get contact
 overwrite=1
 modelType='ContactGNNEnergy'
 modelID='44'
-local='false'
+local='true'
 binarize='false'
 normalize='false'
 useEnergy='false'
@@ -142,24 +142,24 @@ format_method () {
 
 STARTTIME=$(date +%s)
 i=1
-for k in 4 6
-do
-  for sample in 40
-  do
-    for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
-    do
-      # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
-      max_ent
-    done
-  done
-done
-#
-k=10
-method='ground_truth'
-for sample in 40
-do
-  max_ent
-done
+# for k in 4 6
+# do
+#   for sample in 40
+#   do
+#     for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
+#     do
+#       # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
+#       max_ent
+#     done
+#   done
+# done
+# #
+# k=10
+# method='ground_truth'
+# for sample in 40
+# do
+#   max_ent
+# done
 
 # useGroundTruthChi='true'
 # method='ground_truth'
@@ -191,7 +191,7 @@ useEnergy='true'
 goalSpecified='false'
 useGroundTruthChi='false'
 numIterations=0
-for sample in 40
+for sample in 11 13
 do
   for method in  'ground_truth'
   # 'ground_truth' 'GNN'

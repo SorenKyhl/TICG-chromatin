@@ -506,8 +506,12 @@ def main():
     elif args.method == 'ground_truth':
         seq = np.load(osp.join(args.sample_folder, 'x.npy'))[:args.m, :]
         if args.use_energy:
-            chi = np.load(osp.join(args.sample_folder, 'chis.npy'))[:args.m, :]
-            s = seq @ chi @ seq.T
+            s_matrix_file = osp.join(args.sample_folder, 's_matrix.txt')
+            if osp.exists(s_matrix_file):
+                s = np.loadtxt(s_matrix_file)
+            else:
+                chi = np.load(osp.join(args.sample_folder, 'chis.npy'))[:args.m, :]
+                s = seq @ chi @ seq.T
             format = '%.3e'
         else:
             format = '%d'

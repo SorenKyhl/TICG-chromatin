@@ -34,12 +34,16 @@ def upper_traingularize_chis():
             np.savetxt(osp.join(file_dir, 'chis.txt'), chis, fmt='%0.5f')
             np.save(osp.join(file_dir, 'chis.npy'), chis)
 
-def check_seq():
-    ids_to_check = set()
-    dir = "/project2/depablo/erschultz"
+def check_seq(dataset):
+    # dir = "/project2/depablo/erschultz"
     dir = '/home/eric/sequences_to_contact_maps'
-    for dataset in os.listdir(dir):
+    if dataset is None:
+        datasets = os.listdir(dir)
+    else:
+        datasets = [dataset]
+    for dataset in datasets:
         if dataset.startswith("dataset") and osp.isdir(osp.join(dir, dataset)):
+            ids_to_check = set()
             print(dataset)
             dataset_samples = osp.join(dir, dataset, 'samples')
             for file in os.listdir(dataset_samples):
@@ -68,13 +72,15 @@ def makeDirsForMaxEnt(dataset, sample):
     sample_folder = osp.join('../sequences_to_contact_maps', dataset, 'samples', 'sample{}'.format(sample))
     assert osp.exists(sample_folder)
 
-    for method in METHODS:
+    for method in ['ground-truth', 'ground_truth-S', 'PCA', 'k_means', 'nmf', 'GNN-44-S']:
         os.mkdir(osp.join(sample_folder, method), mode = 0o755)
-        for k in [2, 4, 6]:
-            os.mkdir(osp.join(sample_folder, method, 'k{}'.format(k)), mode = 0o755)
+        for k in [2, 4]:
+            os.mkdir(osp.join(sample_folder, method, f'k{k}'), mode = 0o755)
+            for replicate in [1]:
+                os.mkdir(osp.join(sample_folder, method, f'k{k}', f'replicate{replicate}'), mode = 0o755)
 
 if __name__ == '__main__':
     # find_mising_ids()
-    # check_seq()
-    upper_traingularize_chis()
+    check_seq('dataset_08_29_21')
+    # upper_traingularize_chis()
     # makeDirsForMaxEnt("dataset_08_29_21", 40)

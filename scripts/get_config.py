@@ -5,6 +5,7 @@ import json
 import numpy as np
 import sys
 import csv
+from sklearn.metrics.pairwise import polynomial_kernel
 
 
 
@@ -63,7 +64,7 @@ def str2list2D(v, sep1 = '\\', sep2 = '&'):
     elif isinstance(v, str):
         if v.lower() == 'none':
             return None
-        elif v.lower() in {'parity', 'nonlinear'}:
+        elif v.lower() in {'parity', 'nonlinear', 'polynomial'}:
             return v.lower()
         else:
             v = v.replace(' ', '') # get rid of spaces
@@ -355,14 +356,22 @@ def main():
                             [0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0.2],
                             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1]])
             s = x_linear @ chi @ x_linear.T
+        elif args.chi == 'polynomial':
+            x = np.load('x.npy') # original particle types that interact nonlinearly
+            for i in range(args.k):
+                print(x[:, i])
+                for j in range(args.k):
+                    print('/t', x[:, j])
+                    result = polynomial_kernel(x[:, i], x[:, j], degree=3)
+                    print('\t', results)
 
-            # save chi
-            if args.save_chi:
-                np.savetxt('chis.txt', chi, fmt='%0.5f')
-                np.save('chis.npy', chi)
-                print(f'Rank of chi: {np.linalg.matrix_rank(chi)}')
+        # save chi
+        if args.chi in {'nonlinear'} and args.save_chi:
+            np.savetxt('chis.txt', chi, fmt='%0.5f')
+            np.save('chis.npy', chi)
+            print(f'Rank of chi: {np.linalg.matrix_rank(chi)}')
 
-        if args.chi in {'parity', 'nonlinear'}:
+        if args.chi in {'parity', 'nonlinear', 'polynomial'}:
             np.savetxt('s_matrix.txt', s)
             print(f'Rank of S: {np.linalg.matrix_rank(s)}')
         print('\n')
@@ -460,6 +469,30 @@ def test_nonlinear_chi():
     s = x_linear @ chi @ x_linear.T
     print(s)
 
+def test_polynomical_chi():
+    args = getArgs()
+    rng = np.random.default_rng(14)
+    args.k = 4
+    args.m = 5
+    p_switch = 0.05
+    x = np.zeros((args.m, args.k))
+    x[0, :] = np.random.choice([1,0], size = args.k)
+    for j in range(args.k):
+        for i in range(1, args.m):
+            if x[i-1, j] == 1:
+                x[i, j] = rng.choice([1,0], p=[1 - p_switch, p_switch])
+            else:
+                x[i, j] = rng.choice([1,0], p=[p_switch, 1 - p_switch])
+
+    for i in range(args.m):
+        print(x[i])
+        result = polynomial_kernel(x[i].reshape(-1, 1), x[i].reshape(-1, 1), degree=1, coef0=0)
+        print('\t', result)
+        result = np.outer(x[i], x[i])
+        print('\t', result)
+
+
 if __name__ == '__main__':
     main()
     # test_nonlinear_chi()
+    # test_polynomical_chi()
