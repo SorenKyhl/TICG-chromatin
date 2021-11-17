@@ -43,7 +43,6 @@ def check_seq(dataset):
         datasets = [dataset]
     print(datasets)
     for dataset in datasets:
-        print(dataset)
         if dataset.startswith("dataset") and osp.isdir(osp.join(dir, dataset)):
             ids_to_check = set()
             print(dataset)
@@ -83,6 +82,6 @@ def makeDirsForMaxEnt(dataset, sample):
 
 if __name__ == '__main__':
     # find_mising_ids()
-    check_seq('dataset_08_29_21')
+    check_seq('dataset_11_03_21')
     # upper_traingularize_chis()
     # makeDirsForMaxEnt("dataset_08_29_21", 40)
