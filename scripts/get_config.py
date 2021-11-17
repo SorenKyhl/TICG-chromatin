@@ -318,9 +318,9 @@ def main():
             s *= 2
             s -= 1
         elif args.chi == 'nonlinear':
-            x = np.load('x.npy')
+            x = np.load('x.npy') # original particle types that interact nonlinearly
             assert args.k >= 10
-            x_linear = np.zeros((args.m, 15))
+            x_linear = np.zeros((args.m, 15)) # transformation of x such that S = x \chi x^T
             x_linear[:, 0] = (np.sum(x[:, 0:3], axis = 1) == 1) # exactly 1 of A, B, C
             x_linear[:, 1] = (np.sum(x[:, 0:3], axis = 1) == 2) # exactly 2 of A, B, C
             x_linear[:, 2] = (np.sum(x[:, 0:3], axis = 1) == 3) # A, B, and C

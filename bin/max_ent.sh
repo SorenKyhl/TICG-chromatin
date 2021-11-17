@@ -36,12 +36,12 @@ modelPath="${results}/${modelType}/${modelID}"
 
 if [ $local = 'true' ]
 then
-  dataFolder="/home/eric/sequences_to_contact_maps/dataset_11_03_21"
-  # dataFolder="/home/eric/dataset_test"
+  # dataFolder="/home/eric/sequences_to_contact_maps/dataset_11_03_21"
+  dataFolder="/home/eric/dataset_test"
   scratchDir='/home/eric/scratch'
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
-  dataFolder='/project2/depablo/erschultz/dataset_08_29_21'
+  dataFolder='/project2/depablo/erschultz/dataset_11_14_21'
   scratchDir='/scratch/midway2/erschultz'
   source activate python3.8_pytorch1.8.1_cuda10.2
 fi
@@ -142,35 +142,35 @@ format_method () {
 
 STARTTIME=$(date +%s)
 i=1
-# for k in 2 4
+for k in 4 6
+do
+  for sample in 40
+  do
+    for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
+    do
+      # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
+      max_ent
+    done
+  done
+done
+#
+k=10
+method='ground_truth'
+for sample in 40
+do
+  max_ent
+done
+
+# useGroundTruthChi='true'
+# method='ground_truth'
+# numIterations=0
+# goalSpecified='false'
+# useEnergy='false'
+# k=2
+# for sample in 40 1230 1718
 # do
-#   for sample in 40 1230 1718
-#   do
-#     for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
-#     do
-#       # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
-#       max_ent
-#     done
-#   done
+#   max_ent
 # done
-
-k=2
-method='ground_truth'
-for sample in 40 1230 1718
-do
-  max_ent
-done
-
-useGroundTruthChi='true'
-method='ground_truth'
-numIterations=0
-goalSpecified='false'
-useEnergy='false'
-k=2
-for sample in 40 1230 1718
-do
-  max_ent
-done
 
 # k='none'
 # useEnergy='true'
@@ -191,7 +191,7 @@ useEnergy='true'
 goalSpecified='false'
 useGroundTruthChi='false'
 numIterations=0
-for sample in 40 1230 1718
+for sample in 40
 do
   for method in  'ground_truth'
   # 'ground_truth' 'GNN'
