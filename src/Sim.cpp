@@ -583,6 +583,14 @@ void Sim::MC() {
 		//nonbonded = getNonBondedEnergy(grid.active_cells);
 		//std::cout << "beginning sim: nonbonded: " <<  grid.active_cells.size() << std::endl;
 
+		Timer t_pivot("pivoting", prof_timer_on);
+		for(int j=0; j<n_pivot; j++) {
+			MCmove_pivot(sweep);
+			//nonbonded = getNonBondedEnergy(grid.active_cells);
+			//std::cout << nonbonded << std::endl;
+		}
+		//t_pivot.~Timer();
+		
 		looping:
 		Timer t_translation("translating", prof_timer_on);
 		for(int j=0; j<n_trans; j++)
@@ -596,6 +604,14 @@ void Sim::MC() {
 		if (gridmove_on) MCmove_grid();
 		//nonbonded = getNonBondedEnergy(grid.active_cells);
 		//std::cout << nonbonded << std::endl;
+	
+		Timer t_crankshaft("Cranking", prof_timer_on);
+		for(int j=0; j<n_crank; j++) {
+			MCmove_crankshaft();
+			//nonbonded = getNonBondedEnergy(grid.active_cells);
+			//std::cout << nonbonded << std::endl;
+		}
+		//t_crankshaft.~Timer();
 
 		Timer t_displace("displacing", prof_timer_on);
 		for(int j=0; j<n_disp; j++)
@@ -606,31 +622,11 @@ void Sim::MC() {
 		}
 		//t_displace.~Timer();
 
-
-		Timer t_crankshaft("Cranking", prof_timer_on);
-		for(int j=0; j<n_crank; j++) {
-			MCmove_crankshaft();
-			//nonbonded = getNonBondedEnergy(grid.active_cells);
-			//std::cout << nonbonded << std::endl;
-		}
-		//t_crankshaft.~Timer();
-
-
 		Timer t_rotation("Rotating", prof_timer_on);
 		for(int j=0; j<n_rot; j++) {
 			MCmove_rotate();
 		}
 		//t_rotation.~Timer();
-
-
-		Timer t_pivot("pivoting", prof_timer_on);
-		for(int j=0; j<n_pivot; j++) {
-			MCmove_pivot(sweep);
-			//nonbonded = getNonBondedEnergy(grid.active_cells);
-			//std::cout << nonbonded << std::endl;
-		}
-		//t_pivot.~Timer();
-
 
 		if (sweep%dump_frequency == 0) {
 			std::cout << "Sweep number " << sweep << std::endl;
