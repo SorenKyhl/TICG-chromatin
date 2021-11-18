@@ -358,12 +358,13 @@ def main():
             s = x_linear @ chi @ x_linear.T
         elif args.chi == 'polynomial':
             x = np.load('x.npy') # original particle types that interact nonlinearly
-            for i in range(args.k):
-                print(x[:, i])
-                for j in range(args.k):
-                    print('/t', x[:, j])
-                    result = polynomial_kernel(x[:, i], x[:, j], degree=3)
-                    print('\t', results)
+            args.k *= args.k
+            x_linear = np.zeros((args.m, args.k))
+            for i in range(args.m):
+                x_linear[i] = np.outer(x[i], x[i]).flatten()
+
+            chi = getChis(args)
+            s = x_linear @ chi @ x_linear.T
 
         # save chi
         if args.chi in {'nonlinear'} and args.save_chi:
@@ -373,6 +374,7 @@ def main():
 
         if args.chi in {'parity', 'nonlinear', 'polynomial'}:
             np.savetxt('s_matrix.txt', s)
+            np.save('s.npy', s)
             print(f'Rank of S: {np.linalg.matrix_rank(s)}')
         print('\n')
     else:
@@ -469,7 +471,7 @@ def test_nonlinear_chi():
     s = x_linear @ chi @ x_linear.T
     print(s)
 
-def test_polynomical_chi():
+def test_polynomial_chi():
     args = getArgs()
     rng = np.random.default_rng(14)
     args.k = 4
@@ -491,8 +493,16 @@ def test_polynomical_chi():
         result = np.outer(x[i], x[i])
         print('\t', result)
 
+        print(x[i].reshape(-1, 1).T @ x[i].reshape(-1, 1))
+
+    print('---')
+    print(x)
+    print('--')
+    result = polynomial_kernel(x, x, degree=1, coef0=0)
+    print('\t', result)
+
 
 if __name__ == '__main__':
-    main()
+    # main()
     # test_nonlinear_chi()
-    # test_polynomical_chi()
+    test_polynomial_chi()

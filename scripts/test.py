@@ -80,8 +80,21 @@ def makeDirsForMaxEnt(dataset, sample):
             for replicate in [1]:
                 os.mkdir(osp.join(sample_folder, method, f'k{k}', f'replicate{replicate}'), mode = 0o755)
 
+def main():
+    dir = '/home/eric/sequences_to_contact_maps/dataset_08_29_21/samples/sample40'
+
+    x = np.load(osp.join(dir, 'x.npy'))
+    x_cluster = np.load(osp.join(dir, 'cluster', 'x.npy'))
+    print(np.array_equal(x, x_cluster))
+
+    for i in range(2):
+        seq = np.loadtxt(osp.join(dir, f'seq{i}.txt'))
+        seq_cluster = np.loadtxt(osp.join(dir, 'cluster', f'seq{i}.txt'))
+        print(np.array_equal(seq, seq_cluster))
+
 if __name__ == '__main__':
+    main()
     # find_mising_ids()
-    check_seq('dataset_11_03_21')
+    # check_seq('dataset_11_03_21')
     # upper_traingularize_chis()
     # makeDirsForMaxEnt("dataset_08_29_21", 40)

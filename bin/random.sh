@@ -5,7 +5,7 @@
 # chi="-1&1\\1&0"
 # chi='none'
 chi='polynomial'
-k=3
+k=5
 m=1024
 today=$(date +'%m_%d_%y')
 dataFolder="/project2/depablo/erschultz/dataset_11_14_21"
@@ -15,7 +15,7 @@ nodes=10
 tasks=20
 samples=2000
 diag='false'
-nSweeps=100000
+nSweeps=500000
 pSwitch=0.05
 minChi=-1
 maxChi=2
