@@ -503,6 +503,6 @@ def test_polynomial_chi():
 
 
 if __name__ == '__main__':
-    # main()
+    main()
     # test_nonlinear_chi()
-    test_polynomial_chi()
+    # test_polynomial_chi()
