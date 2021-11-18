@@ -24,6 +24,7 @@ def str2bool(v):
 
 def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified):
 
+    # get goals
     if goal_specified:
         print("READING FROM OBJ_GOAL")
         with open(goal_file, "r") as f_obj_goal:
@@ -51,41 +52,85 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_
     df = df.dropna(axis=1)
     df = df.drop(df.columns[0] ,axis=1)
     lam = df.mean().values
-
-
-    # normalizing factor (June 16 2020)
-    # damping coefficients have to be really small to prevent overshoot.
-    # is there a scaling factor that can adjust for this?....
-    #Ngrid = 17**3
-    #nucl_per_bead = 10
-
-    #lam = lam * Ngrid * nucl_per_bead**2
-    #obj_goal = obj_goal * Ngrid * nucl_per_bead**2
-    #df = df * Ngrid * nucl_per_bead**2
+    B = df.cov().values
 
     current_chis = np.array(current_chis)
 
-    difference = obj_goal - lam
-    B = df.cov().values
-    Binv = np.linalg.pinv(B)
-    step = Binv@difference
-    print('step: ', step)
-    print('lam: ', lam)
-
-    new_chis = current_chis - gamma*step
-
-    print("new chi values: ", new_chis)
+    new_chis, howfar = newton(lam, obj_goal, B,  gamma, current_chis)
 
     f_chis = open(parameter_file, "a")
     np.savetxt(f_chis, new_chis, newline=" ", fmt="%.5f")
     f_chis.write("\n")
     f_chis.close()
 
-    #howfar = sum(abs(difference))/sum(obj_goal)
-    howfar = np.sqrt(difference@difference)/np.sqrt(obj_goal@obj_goal)
-
     with open(convergence_file, "a") as f:
         f.write(str(howfar) + '\n')
+
+def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, it, goal_specified):
+
+    # get goals
+    if goal_specified:
+        print("READING FROM OBJ_GOAL")
+        obj_goal = np.hstack([np.loadtxt(f) for f in goal_files])
+    else:
+        # get goal observables from zeroth iteration
+        print("READING FROM OBS")
+        obs = pd.DataFrame()
+        for f in obs_files:
+            df = pd.read_csv(f, sep='\t', header=None)
+            df = df.drop(df.columns[0], axis=1)
+            obs = pd.concat((obs, df), axis=1)
+
+        obj_goal = obs.mean().values
+    print("obj goal: ", obj_goal)
+
+    # read in current chis
+    current_chis = np.hstack([np.loadtxt(f)[-1] for f in parameter_files])
+    print("current chi values: ", current_chis)
+
+    # get current observable values
+    it_root = osp.join("iteration{}".format(it), "production_out")
+
+    df_total = pd.DataFrame()
+    for f in obs_files:
+        df = pd.read_csv(osp.join(it_root, f), delimiter="\t", header=None)
+        df = df.dropna(axis=1)
+        df = df.drop(df.columns[0] ,axis=1)
+        df_total= pd.concat((df_total, df), axis=1)
+    lam = df_total.mean().values
+    B = df_total.cov().values
+
+    new_chis, howfar = newton(lam, obj_goal, B, gamma, current_chis)
+
+
+    index = 0;
+    for f in parameter_files:
+        nchis = len(np.loadtxt(f)[-1])
+
+        f_chis = open(f, "a")
+        np.savetxt(f_chis, new_chis[index:index+nchis], newline=" ", fmt="%.5f")
+        f_chis.write("\n")
+        f_chis.close()
+
+        index += nchis
+
+    for f in convergence_files:
+        with open(f, "a") as f:
+            f.write(str(howfar) + '\n')
+
+def newton(lam, obj_goal, B, gamma, current_chis):
+    difference = obj_goal - lam
+    Binv = np.linalg.pinv(B)
+    step = Binv@difference
+    print('step: ', step)
+    print('lam: ', lam)
+
+    new_chis = current_chis - gamma*step
+    print("new chi values: ", new_chis)
+    
+    howfar = np.sqrt(difference@difference)/np.sqrt(obj_goal@obj_goal)
+
+    return new_chis, howfar
 
 def copy_chis(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified = None):
     ''' for parameters that are not optimized, just copy chis to next iteration'''
@@ -125,32 +170,38 @@ def main():
     print("gamma_plaid: {}".format(gamma_plaid))
     print("gamma_diag: {}".format(gamma_diag))
 
-    if mode == "diag":
-        diag_fn = step
-        fn = copy_chis
-    elif mode == "plaid":
-        diag_fn = copy_chis
-        fn = step
-    elif mode == "both":
-        diag_fn = step
-        fn = step
+    if mode == "both":
+
+        parameter_files = ["chis.txt", "chis_diag.txt"]
+        obs_files = ["observables.traj", "diag_observables.traj"]
+        convergence_files = ["convergence.txt", "convergence_diag.txt"]
+        goal_files = ["obj_goal.txt", "obj_goal_diag.txt"]
+        gamma = gamma_plaid
+        both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, it, goal_specified)
+
     else:
-        raise Exception("Unknown mode: {}".format(mode))
+        if mode == "diag":
+            diag_fn = step
+            fn = copy_chis
+        elif mode == "plaid":
+            diag_fn = copy_chis
+            fn = step
 
-    parameter_file = "chis_diag.txt"
-    obs_file = "diag_observables.traj"
-    convergence_file = "convergence_diag.txt"
-    goal_file = "obj_goal_diag.txt"
-    gamma = gamma_diag
-    diag_fn(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified)
+        parameter_file = "chis_diag.txt"
+        obs_file = "diag_observables.traj"
+        convergence_file = "convergence_diag.txt"
+        goal_file = "obj_goal_diag.txt"
+        gamma = gamma_diag
+        diag_fn(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified)
 
-    parameter_file = "chis.txt"
-    obs_file = "observables.traj"
-    convergence_file = "convergence.txt"
-    goal_file = "obj_goal.txt"
-    gamma = gamma_plaid
-    fn(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified)
-    print('\n')
+        parameter_file = "chis.txt"
+        obs_file = "observables.traj"
+        convergence_file = "convergence.txt"
+        goal_file = "obj_goal.txt"
+        gamma = gamma_plaid
+        fn(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified)
+        print('\n')
+
 
 if __name__ == '__main__':
     main()
