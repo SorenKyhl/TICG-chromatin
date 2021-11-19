@@ -5,6 +5,9 @@ import json
 import numpy as np
 import sys
 import csv
+from sklearn.metrics.pairwise import polynomial_kernel
+
+
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -61,6 +64,8 @@ def str2list2D(v, sep1 = '\\', sep2 = '&'):
     elif isinstance(v, str):
         if v.lower() == 'none':
             return None
+        elif v.lower() in {'parity', 'nonlinear', 'polynomial'}:
+            return v.lower()
         else:
             v = v.replace(' ', '') # get rid of spaces
             result = [i.split(sep2) for i in v.split(sep1)]
@@ -105,6 +110,30 @@ def str2int(v):
     else:
         raise argparse.ArgumentTypeError('String value expected.')
 
+def concat2ToD(self, x):
+    # TODO
+    '''https://github.com/calico/basenji/blob/master/basenji/layers.py'''
+    # assume x is of shape N x C x m
+    # memory expensive
+    assert len(x.shape) == 2, "shape must be 2D"
+    m, k = x.shape
+
+    x1 = np.tile(x, (1, 1, m))
+    x1 = np.reshape(x1, (-1, C, m, m))
+    x2 = np.transpose(x1, 2, 3)
+    out = np.cat((x1, x2), dim = 1)
+
+    # use indices to permute x2
+    indices = []
+    for i in range(C):
+        indices.extend(range(i, i + C * (C-1) + 1, C))
+    indices = np.tensor(indices)
+    x2 = np.index_select(x2, dim = 1, index = indices)
+
+    out = np.einsum('ijkl,ijkl->ijkl', x1, x2)
+
+    del x1, x2
+    return out
 
 def generateRandomChi(args, decimals = 1):
     '''Initializes random chi array.'''
@@ -172,6 +201,7 @@ def set_up_plaid_chi(args, config):
 
     # save chi and diag_chi
     if args.save_chi:
+        print(f'Rank of chi: {np.linalg.matrix_rank(args.chi)}')
         np.savetxt('chis.txt', args.chi, fmt='%0.5f')
         np.save('chis.npy', args.chi)
     elif args.save_chi_for_max_ent:
@@ -271,6 +301,82 @@ def main():
         config['smatrix_on']=True
         config['chipseq_files']=None
         config["nspecies"] = 0
+        config["smatrix_filename"] = "s_matrix.txt"
+
+        # create s_matrix
+        if args.chi == 'parity':
+            x = np.load('x.npy')
+
+            s = np.zeros((args.m, args.m))
+            for i in range(args.m):
+                for j in range(args.m):
+                    inner = np.concatenate((x[i, :], x[j, :]))
+                    s[i,j] = np.sum(inner) % 2
+
+            # convert to {-1, 1}
+            # odd number of particles -> 1
+            # even -> -1
+            s *= 2
+            s -= 1
+        elif args.chi == 'nonlinear':
+            x = np.load('x.npy') # original particle types that interact nonlinearly
+            assert args.k >= 10
+            x_linear = np.zeros((args.m, 15)) # transformation of x such that S = x \chi x^T
+            x_linear[:, 0] = (np.sum(x[:, 0:3], axis = 1) == 1) # exactly 1 of A, B, C
+            x_linear[:, 1] = (np.sum(x[:, 0:3], axis = 1) == 2) # exactly 2 of A, B, C
+            x_linear[:, 2] = (np.sum(x[:, 0:3], axis = 1) == 3) # A, B, and C
+            x_linear[:, 3] = x[:, 3] # D
+            x_linear[:, 4] = x[:, 4] # E
+            x_linear[:, 5] = np.logical_and(x[:, 3], x[:, 4]) # D and E
+            x_linear[:, 6] = np.logical_and(x[:, 3], x[:, 5]) # D and F
+            x_linear[:, 7] = np.logical_xor(x[:, 0], x[:, 5]) # either A or F
+            x_linear[:, 8] = x[:, 6] # G
+            x_linear[:, 9] = np.logical_and(np.logical_and(x[:, 6], x[:, 7]), np.logical_not(x[:, 4])) # G and H and not E
+            x_linear[:, 10] = x[:, 7] # H
+            x_linear[:, 11] = x[:, 8] # I
+            x_linear[:, 12] = x[:, 9] # J
+            x_linear[:, 13] = np.logical_or(x[:, 7], x[:, 8]) # H or I
+            x_linear[:, 14] = np.logical_xor(x[:, 8], x[:, 9]) # either I or J
+
+            args.k = 15
+            # chi = getChis(args)
+            chi = np.array([[-1,1.8,-0.5,1.8,0.1,1.3,-0.1,0.1,0.8,1.4,2,1.7,1.5,-0.2,1.1],
+                            [0,-1,-0.6,0.6,0.8,-0.8,-0.7,-0.1,0,-0.4,-0.2,0.6,-0.9,1.4,0.3],
+                            [0,0,-1,1.6,0,-0.2,-0.4,1.5,0.7,1.8,-0.7,-0.9,0.6,1,0.5],
+                            [0,0,0,-1,0.8,1.3,-0.6,0.7,0.1,1.4,0.6,0.7,-0.6,0.5,0.5],
+                            [0,0,0,0,-1,0.9,0.2,1.5,1.7,0.1,-0.7,0.8,0.7,1.6,1.6],
+                            [0,0,0,0,0,-1,0.6,-0.2,0.8,0.7,-1,-0.9,1.6,0.8,0.3],
+                            [0,0,0,0,0,0,-1,-0.2,-0.6,1.8,-0.6,1.9,1.1,0.4,-0.4],
+                            [0,0,0,0,0,0,0,-1,1.7,-0.4,1.7,0.2,1.2,1.8,-0.1],
+                            [0,0,0,0,0,0,0,0,-1,0.7,0.2,0.8,-0.4,1.4,1.3],
+                            [0,0,0,0,0,0,0,0,0,-1,-0.4,0.5,1.9,0.1,0.1],
+                            [0,0,0,0,0,0,0,0,0,0,-1,0.9,1,1.3,1],
+                            [0,0,0,0,0,0,0,0,0,0,0,-1,1.5,-0.1,0.7],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,-1,0.6,-0.6],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0.2],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1]])
+            s = x_linear @ chi @ x_linear.T
+        elif args.chi == 'polynomial':
+            x = np.load('x.npy') # original particle types that interact nonlinearly
+            args.k *= args.k
+            x_linear = np.zeros((args.m, args.k))
+            for i in range(args.m):
+                x_linear[i] = np.outer(x[i], x[i]).flatten()
+
+            chi = getChis(args)
+            s = x_linear @ chi @ x_linear.T
+
+        # save chi
+        if args.chi in {'nonlinear'} and args.save_chi:
+            np.savetxt('chis.txt', chi, fmt='%0.5f')
+            np.save('chis.npy', chi)
+            print(f'Rank of chi: {np.linalg.matrix_rank(chi)}')
+
+        if args.chi in {'parity', 'nonlinear', 'polynomial'}:
+            np.savetxt('s_matrix.txt', s)
+            np.save('s.npy', s)
+            print(f'Rank of S: {np.linalg.matrix_rank(s)}')
+        print('\n')
     else:
         set_up_plaid_chi(args, config)
 
@@ -322,5 +428,81 @@ def test2():
     print(conv.allStrings)
     print(conv.PsiUniqueRows())
 
+def test_nonlinear_chi():
+    args = getArgs()
+    rng = np.random.default_rng(14)
+    args.k = 10
+    p_switch = 0.05
+    x = np.zeros((args.m, args.k))
+    x[0, :] = np.random.choice([1,0], size = args.k)
+    for j in range(args.k):
+        for i in range(1, args.m):
+            if x[i-1, j] == 1:
+                x[i, j] = rng.choice([1,0], p=[1 - p_switch, p_switch])
+            else:
+                x[i, j] = rng.choice([1,0], p=[p_switch, 1 - p_switch])
+
+    x_linear = np.zeros((args.m, 15))
+    x_linear[:, 0] = (np.sum(x[:, 0:3], axis = 1) == 1) # exactly 1 of A, B, C
+    x_linear[:, 1] = (np.sum(x[:, 0:3], axis = 1) == 2) # exactly 2 of A, B, C
+    x_linear[:, 2] = (np.sum(x[:, 0:3], axis = 1) == 3) # A, B, and C
+    x_linear[:, 3] = x[:, 3] # D
+    x_linear[:, 4] = x[:, 4] # E
+    x_linear[:, 5] = np.logical_and(x[:, 3], x[:, 4]) # D and E
+    x_linear[:, 6] = np.logical_and(x[:, 3], x[:, 5]) # D and F
+    x_linear[:, 7] = np.logical_xor(x[:, 0], x[:, 5]) # either A or F
+    x_linear[:, 8] = x[:, 6] # G
+    x_linear[:, 9] = np.logical_and(np.logical_and(x[:, 6], x[:, 7]), np.logical_not(x[:, 4])) # G and H and not E
+    x_linear[:, 10] = x[:, 7] # H
+    x_linear[:, 11] = x[:, 8] # I
+    x_linear[:, 12] = x[:, 9] # J
+    x_linear[:, 13] = np.logical_or(x[:, 7], x[:, 8]) # H or I
+    x_linear[:, 14] = np.logical_xor(x[:, 8], x[:, 9]) # either I or J
+
+    print(x_linear)
+
+    args.k = 15
+    args.fill_diag = -1
+    args.max_chi = 2
+    args.min_chi = 0
+    chi = getChis(args)
+    print(chi)
+
+    s = x_linear @ chi @ x_linear.T
+    print(s)
+
+def test_polynomial_chi():
+    args = getArgs()
+    rng = np.random.default_rng(14)
+    args.k = 4
+    args.m = 5
+    p_switch = 0.05
+    x = np.zeros((args.m, args.k))
+    x[0, :] = np.random.choice([1,0], size = args.k)
+    for j in range(args.k):
+        for i in range(1, args.m):
+            if x[i-1, j] == 1:
+                x[i, j] = rng.choice([1,0], p=[1 - p_switch, p_switch])
+            else:
+                x[i, j] = rng.choice([1,0], p=[p_switch, 1 - p_switch])
+
+    for i in range(args.m):
+        print(x[i])
+        result = polynomial_kernel(x[i].reshape(-1, 1), x[i].reshape(-1, 1), degree=1, coef0=0)
+        print('\t', result)
+        result = np.outer(x[i], x[i])
+        print('\t', result)
+
+        print(x[i].reshape(-1, 1).T @ x[i].reshape(-1, 1))
+
+    print('---')
+    print(x)
+    print('--')
+    result = polynomial_kernel(x, x, degree=1, coef0=0)
+    print('\t', result)
+
+
 if __name__ == '__main__':
     main()
+    # test_nonlinear_chi()
+    # test_polynomial_chi()

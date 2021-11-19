@@ -12,20 +12,19 @@ abspath = osp.abspath(__file__)
 dname = osp.dirname(abspath)
 sys.path.insert(0, dname)
 from knightRuiz import knightRuiz
-from get_config import str2bool
+from get_config import str2bool, str2int
 
 METHODS = ['ground_truth', 'random', 'PCA', 'PCA_split', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM']
 SMALL_METHODS = ['ground_truth', 'random', 'PCA', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM']
 LABELS = ['Ground Truth', 'Random', 'PCA', 'PCA Split', 'K-means', 'NMF', 'GNN', 'Epigenetic', 'ChromHMM']
 
 
-def getArgs():
+def getArgs(data_folder=None, sample=None, samples = None):
     parser = argparse.ArgumentParser(description='Base parser')
-    parser.add_argument('--data_folder', type=str, default='../sequences_to_contact_maps/dataset_09_21_21', help='location of input data')
-    parser.add_argument('--sample', type=int, help='sample id')
-    parser.add_argument('--samples', type=str2list, help='list of sample ids separated by -')
+    parser.add_argument('--data_folder', type=str, default=data_folder, help='location of input data')
+    parser.add_argument('--sample', type=int, default=sample, help='sample id')
+    parser.add_argument('--samples', type=str2list, default=samples, help='list of sample ids separated by -')
     parser.add_argument('--sample_folder', type=str, help='location of input data')
-    parser.add_argument('--small', type=str2bool, default=False, help='True to output smaller table with only methods in SMALL_METHODS and SCC as metric')
 
     args = parser.parse_args()
 
@@ -67,7 +66,8 @@ def loadData(args):
 
     <method> must be formatted such that <method>.split('-')[0] \in METHODS (e.g. 'nmf-binarize'.split('-')[0] = 'nmf')
 
-    All directories within <method> that start with 'k' are assumed to contain 'distance_pearson.json', from which data is loaded.
+    All directories within <method> that start with 'k' or 's' are assumed to contain replicate directories.
+    All replicate directories are assumed to contain 'distance_pearson.json', from which data is loaded.
     '''
     data = defaultdict(lambda: defaultdict(lambda : defaultdict(list)))
 
@@ -81,37 +81,70 @@ def loadData(args):
                 for k_file in os.listdir(method_folder):
                     k_folder = osp.join(method_folder, k_file)
                     if osp.isdir(k_folder) and k_file.startswith('k'):
-                        k = int(k_file[1])
-                        json_file = osp.join(k_folder, 'distance_pearson.json')
-                        if osp.exists(json_file):
-                            found_anything = True
-                            print("Loading: {}".format(json_file))
-                            with open(json_file, 'r') as f:
-                                results = json.load(f)
-                                data[k][method]['overall_pearson'].append(results['overall_pearson'])
-                                data[k][method]['scc'].append(results['scc'])
-                                data[k][method]['avg_dist_pearson'].append(results['avg_dist_pearson'])
-                        else:
-                            print("MISSING: {}".format(json_file))
+                        k = str2int(k_file[1:])
+                        if k is None:
+                            k = 0
+                        replicate_data = defaultdict(list)
+                        for replicate in os.listdir(k_folder):
+                            print(replicate)
+                            replicate_folder = osp.join(k_folder, replicate)
+                            json_file = osp.join(replicate_folder, 'distance_pearson.json')
+                            if osp.exists(json_file):
+                                print("Loading: {}".format(json_file))
+                                with open(json_file, 'r') as f:
+                                    results = json.load(f)
+                                    replicate_data['overall_pearson'].append(results['overall_pearson'])
+                                    replicate_data['scc'].append(results['scc'])
+                                    replicate_data['avg_dist_pearson'].append(results['avg_dist_pearson'])
+                            else:
+                                print("MISSING: {}".format(json_file))
+                        data[k][method]['overall_pearson'].append(np.mean(replicate_data['overall_pearson']))
+                        data[k][method]['scc'].append(np.mean(replicate_data['scc']))
+                        data[k][method]['avg_dist_pearson'].append(np.mean(replicate_data['avg_dist_pearson']))
                 print('')
                 # just making output look nicer
     return data
 
-def makeLatexTable(data, ofile, small):
-    '''Writes data to ofile in latex table format.'''
-    with open(ofile, 'w') as o:
+def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', delta= True):
+    '''
+    Writes data to ofile in latex table format.
+
+    Inputs:
+        data: dictionary containing data from loadData
+        ofile: location to write data
+        small: True to output smaller table with only methods in SMALL_METHODS and only SCC as metric')
+        mode: file mode (e.g. 'w', 'a')
+        delta: True to compute difference in statistics relative to ground_truth-S
+    '''
+    header = header.replace('_', "\_")
+    with open(ofile, mode) as o:
         o.write("\\begin{center}\n")
         if small:
             metrics = ['scc']
             o.write("\\begin{tabular}{|c|c|c|}\n")
             o.write("\\hline\n")
-            o.write("Method & k & SCC \\\ \n")
+            o.write("\\multicolumn{3}{|c|}{" + header + "} \\\ \n")
+            o.write("\\hline\n")
+            if delta:
+                o.write("Method & k & $\\Delta$ SCC \\\ \n")
+            else:
+                o.write("Method & k & SCC \\\ \n")
         else:
             metrics = ['overall_pearson', 'avg_dist_pearson', 'scc']
             o.write("\\begin{tabular}{|c|c|c|c|c|}\n")
             o.write("\\hline\n")
-            o.write("Method & k & Pearson R & Avg Dist Pearson R & SCC \\\ \n")
+            o.write("\\multicolumn{5}{|c|}{" + header + "} \\\ \n")
+            o.write("\\hline\n")
+            o.write("\\hline\n")
+            if delta:
+                o.write("Method & k & Pearson R & $\\Delta$ Avg Dist Pearson R & $\\Delta$  SCC \\\ \n")
+            else:
+                o.write("Method & k & Pearson R & Avg Dist Pearson R & SCC \\\ \n")
         o.write("\\hline\\hline\n")
+
+        ref = data[0]['ground_truth-S']
+        print('ref', ref)
+
         for k in sorted(data.keys()):
             first = True # only write k for first row in section
             keys, labels = sort_method_keys(data[k].keys())
@@ -120,16 +153,23 @@ def makeLatexTable(data, ofile, small):
                     continue
                 if first:
                     k_label = k
+                    if k_label == 0:
+                        k_label = 'S'
                     first = False
                 else:
                     k_label = ''
                 text = "{} & {}".format(label, k_label)
 
                 for metric in metrics:
-                    data_list = avg_dist_pearson_list = data[k][key][metric]
-                    data_mean = np.round(np.mean(data_list), 3)
+                    ref_metric = np.array(ref[metric])
+                    data_list = np.array(data[k][key][metric])
+                    if delta:
+                        result = ref_metric - data_list
+                    else:
+                        result = data_list
+                    data_mean = np.round(np.mean(result), 3)
                     if len(data_list) > 1:
-                        data_std = np.round(np.std(data_list), 3)
+                        data_std = np.round(np.std(result), 3)
                         text += " & {} $\pm$ {}".format(data_mean, data_std)
                     else:
                         text += " & {}".format(data_mean)
@@ -139,7 +179,7 @@ def makeLatexTable(data, ofile, small):
                 o.write(text)
             o.write("\\hline\n")
         o.write("\\end{tabular}\n")
-        o.write("\\end{center}")
+        o.write("\\end{center}\n\n")
 
 def sort_method_keys(keys):
     '''Sorts keys to match order of METHODS and gets corresponding labels from LABELS.'''
@@ -151,19 +191,16 @@ def sort_method_keys(keys):
             if split[0] == method:
                 sorted_keys.append(key)
                 if len(split) > 1:
-                    sorted_labels.append(label + '-' + split[1])
+                    sorted_labels.append(label + '-' + '-'.join(split[1:]))
                 else:
                     sorted_labels.append(label)
 
     return sorted_keys, sorted_labels
 
 def main():
-    args = getArgs()
+    args = getArgs(data_folder='../sequences_to_contact_maps/dataset_10_27_21', samples=[40, 1230, 1718])
 
-    if args.small:
-        fname = 'max_ent_table_small.txt'
-    else:
-        fname = 'max_ent_table.txt'
+    fname = 'max_ent_table.txt'
 
     if args.samples is not None:
         data = loadData(args)
@@ -174,7 +211,16 @@ def main():
         data = loadData(args)
         ofile = osp.join(args.sample_folder, fname)
 
-    makeLatexTable(data, ofile, args.small)
+    dataset = osp.split(args.data_folder)[1]
+
+    mode = 'w'
+    first = True
+    for is_small in [True, False]:
+        for is_delta in [True, False]:
+            makeLatexTable(data, ofile, dataset, small = is_small, delta = is_delta, mode = mode)
+            if first:
+                mode = 'a'
+                first = False
 
 
 if __name__ == '__main__':

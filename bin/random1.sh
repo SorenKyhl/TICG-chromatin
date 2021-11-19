@@ -20,6 +20,10 @@ diag=${10}
 scratchDir=${11}
 scriptIndex=${12}
 nSweeps=${13}
+pSwitch=${14}
+minChi=${15}
+maxChi=${16}
+fillDiag=${17}
 
 echo $@
 
@@ -31,12 +35,12 @@ do
   i=$(( i + $tasks * $scriptIndex ))
   echo $start $stop
   scratchDirI="${scratchDir}/TICG${i}"
-  ~/TICG-chromatin/bin/random_inner.sh $scratchDirI $k $chi $m $start $stop $dataFolder $relabel $diag $nSweeps > ~/TICG-chromatin/logFiles/TICG${i}.log &
+  ~/TICG-chromatin/bin/random_inner.sh $scratchDirI $k $chi $m $start $stop $dataFolder $relabel $diag $nSweeps $pSwitch $minChi $maxChi $fillDiag > ~/TICG-chromatin/logFiles/TICG${i}.log &
 done
 
 wait
 ENDTIME=$( date +%s )
-echo "total time: $(( $ENDTIME - $STARTTIME )) seconds"
+echo "total time: $(( $(( $ENDTIME - $STARTTIME )) / 60 )) minutes"
 
 
 # clean up scratch

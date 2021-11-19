@@ -90,18 +90,22 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_
 def copy_chis(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified = None):
     ''' for parameters that are not optimized, just copy chis to next iteration'''
     # load current chi parameters
-    with open(parameter_file, "r") as f_chis:
-        lines = f_chis.readlines()
-        current_chis = lines[it].split()
-        current_chis = [float(x) for x in current_chis]
+    if osp.exists(parameter_file):
+        with open(parameter_file, "r") as f_chis:
+            lines = f_chis.readlines()
+            current_chis = lines[it].split()
+            current_chis = [float(x) for x in current_chis]
 
-    new_chis = current_chis
+        new_chis = current_chis
 
-    #write chi parameters to next iteration, unchanged
-    f_chis = open(parameter_file, "a")
-    np.savetxt(f_chis, new_chis, newline=" ", fmt="%.5f")
-    f_chis.write("\n")
-    f_chis.close()
+        #write chi parameters to next iteration, unchanged
+        f_chis = open(parameter_file, "a")
+        np.savetxt(f_chis, new_chis, newline=" ", fmt="%.5f")
+        f_chis.write("\n")
+        f_chis.close()
+    else:
+        pass
+        # assume that this is ok
 
 def main():
     '''

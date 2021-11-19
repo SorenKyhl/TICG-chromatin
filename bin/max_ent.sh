@@ -1,29 +1,28 @@
 #! /bin/bash
-#SBATCH --job-name=TICG_maxent
+#SBATCH --job-name=maxent
 #SBATCH --output=logFiles/maxent.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
-#SBATCH --ntasks=8
+#SBATCH --ntasks=20
 #SBATCH --mem-per-cpu=2000
 
 m=1024
 k='none'
-samples='40-1230-1718-1201-1202-1203'
-dataFolder='/project2/depablo/erschultz/dataset_10_27_21'
+samples='40-1230-1718'
 productionSweeps=50000
 finalSimProductionSweeps=1000000
 equilibSweeps=10000
-goalSpecified='false'
-numIterations=0 # iteration 1 + numIterations is production run to get contact map
+goalSpecified='true'
+numIterations=100 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 modelType='ContactGNNEnergy'
-modelID='30'
+modelID='44'
 local='false'
 binarize='false'
 normalize='false'
 useEnergy='false'
-useGroundTruthChi='true'
-useGroundTruthSeed='true'
+useGroundTruthChi='false'
+useGroundTruthSeed='false'
 mode="plaid"
 gamma=0.00001
 gammaDiag=0.00001
@@ -37,24 +36,41 @@ modelPath="${results}/${modelType}/${modelID}"
 
 if [ $local = 'true' ]
 then
-  # dataFolder="/home/eric/sequences_to_contact_maps/dataset_10_27_21"
+  # dataFolder="/home/eric/sequences_to_contact_maps/dataset_11_03_21"
   dataFolder="/home/eric/dataset_test"
   scratchDir='/home/eric/scratch'
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
+  dataFolder='/project2/depablo/erschultz/dataset_11_14_21'
   scratchDir='/scratch/midway2/erschultz'
   source activate python3.8_pytorch1.8.1_cuda10.2
 fi
 
+max_ent() {
+  # args:
+  scratchDirI="${scratchDir}/TICG_maxent${i}"
+  mkdir -p $scratchDirI
 
-max_ent () {
+  seed=$RANDOM
+  format_method
+  for j in 1 2 3
+  do
+    scratchDirI="${scratchDir}/TICG_maxent${i}"
+    mkdir -p $scratchDirI
+    cd $scratchDirI
+    max_ent_inner $scratchDirI $j $seed > bash.log &
+    i=$(( $i + 1 ))
+  done
+
+}
+
+max_ent_inner () {
+  # args:
+  # 1 = scratchDir
+  # 2 = replicate index
+  # 3 = seed for get_seq
   sampleFolder="${dataFolder}/samples/sample${sample}"
-  if [ $k = 'none' ]
-  then
-    ofile="${sampleFolder}/${methodFolder}"
-  else
-    ofile="${sampleFolder}/${methodFolder}/k${k}"
-  fi
+  ofile="${sampleFolder}/${methodFolder}/k${k}/replicate${2}"
 
   # move to scratch
   scratchDirResources="${1}/resources"
@@ -66,7 +82,7 @@ max_ent () {
   python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi=-1 --max_chi=1 --save_chi_for_max_ent --goal_specified $goalSpecified --default_config "${resources}/default_config.json" --use_energy $useEnergy --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_seed $useGroundTruthSeed --seed $RANDOM --sample_folder $sampleFolder
 
   # generate sequences
-  python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --k $k --sample $sample --data_folder $dataFolder --plot --save_npy --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --model_path $modelPath --use_energy $useEnergy
+  python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --k $k --sample $sample --data_folder $dataFolder --plot --save_npy --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --model_path $modelPath --use_energy $useEnergy --seed $3
 
   # generate goals
   if [ $goalSpecified = 'true' ]
@@ -98,7 +114,7 @@ format_method () {
 
   if [ $useGroundTruthChi = 'true' ]
   then
-    methodFolder="${methodFolder}-gt_chi"
+    methodFolder="${methodFolder}-fixed-chi"
   fi
 
   if [ $useEnergy = 'true' ]
@@ -124,50 +140,70 @@ format_method () {
   echo $methodFolder
 }
 
-STARTTIME=$(date +%M)
+STARTTIME=$(date +%s)
 i=1
-useEnergy='true'
-k='none'
-for sample in 40
+for k in 4 6
 do
-  for method in 'ground_truth'
+  for sample in 1230 1718
   do
-    # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
-    scratchDirI="${scratchDir}/TICG_maxent${i}"
-    mkdir -p $scratchDirI
-    cd $scratchDirI
-
-    format_method
-    max_ent $scratchDirI > bash.log &
-    i=$(($i+1))
+    for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
+    do
+      # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
+      max_ent
+    done
   done
 done
-
-useEnergy='false'
-k=2
-for sample in 40
+#
+k=12
+method='ground_truth'
+for sample in 40 1230 1718
 do
-  for method in 'ground_truth'
-  do
-    # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
-    scratchDirI="${scratchDir}/TICG_maxent${i}"
-    mkdir -p $scratchDirI
-    cd $scratchDirI
+  max_ent
+done
 
-    format_method
-    max_ent $scratchDirI > bash.log &
-    i=$(($i+1))
+useGroundTruthChi='true'
+method='ground_truth'
+numIterations=0
+goalSpecified='false'
+useEnergy='false'
+k=12
+for sample in 40 1230 1718
+do
+  max_ent
+done
+
+# k='none'
+# useEnergy='true'
+# goalSpecified='false'
+# useGroundTruthChi='true'
+# numIterations=0
+# for sample in 40 1230 1718
+# do
+#   for method in  'GNN'
+#   # 'ground_truth' 'GNN'
+#   do
+#     max_ent
+#   done
+# done
+
+k='none'
+useEnergy='true'
+goalSpecified='false'
+useGroundTruthChi='false'
+numIterations=0
+for sample in 1230 1718
+do
+  for method in  'ground_truth'
+  # 'ground_truth' 'GNN'
+  do
+    max_ent
   done
 done
 
 wait
 
-if [ $local = 'false' ]
-then
-  python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
-  python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples --small "true"
-fi
+python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
+# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples --small "true"
 
-ENDTIME=$(date +%M)
-echo $STARTTIME $ENDTIME
-echo "total time:$(( $ENDTIME - $STARTTIME )) minutes"
+ENDTIME=$(date +%s)
+echo "total time:$(( $(( $ENDTIME - $STARTTIME )) / 60 )) minutes"
