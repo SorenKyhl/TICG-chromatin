@@ -576,7 +576,7 @@ double Sim::randomExp(double mu, double decay) {
 
 void Sim::MC() {
 	std::cout << "Beginning Simulation" << std::endl;
-	for(int sweep = 0; sweep<nSweeps; sweep++)
+	for(int sweep = 1; sweep<nSweeps+1; sweep++)
 	{
 		//std::cout << sweep << std::endl;
 		double nonbonded;
@@ -631,24 +631,21 @@ void Sim::MC() {
 		if (sweep%dump_frequency == 0) {
 			std::cout << "Sweep number " << sweep << std::endl;
 			dumpData();
+			if (production) {dumpContacts(sweep);}
 
 			if (print_acceptance_rates) {
 				std::cout << "acceptance rate: " << (float) acc/((sweep+1)*nSteps)*100.0 << "%" << std::endl;
-
-				if (displacement_on) std::cout << "disp: " << (float) acc_disp/((sweep+1)*n_disp)*100 << "% \t";
-				if (translation_on) std::cout << "trans: " << (float) acc_trans/((sweep+1)*n_trans)*100 << "% \t";
-				if (crankshaft_on) std::cout << "crank: " << (float) acc_crank/((sweep+1)*n_crank)*100 << "% \t";
-				if (pivot_on) std::cout << "pivot: " << (float) acc_pivot/((sweep+1)*n_pivot)*100 << "% \t";
-				if (rotate_on) std::cout << "rot: " << (float) acc_rot/((sweep+1)*n_rot)*100 << "% \t";
+				if (displacement_on) std::cout << "disp: " << (float) acc_disp/(sweep*n_disp)*100 << "% \t";
+				if (translation_on) std::cout << "trans: " << (float) acc_trans/(sweep*n_trans)*100 << "% \t";
+				if (crankshaft_on) std::cout << "crank: " << (float) acc_crank/(sweep*n_crank)*100 << "% \t";
+				if (pivot_on) std::cout << "pivot: " << (float) acc_pivot/(sweep*n_pivot)*100 << "% \t";
+				if (rotate_on) std::cout << "rot: " << (float) acc_rot/(sweep*n_rot)*100 << "% \t";
 				//std::cout << "cellcount: " << grid.cellCount();
 				std::cout << std::endl;
-
 			}
-
-			if (production) {dumpContacts(sweep);}
 		}
 
-		if (sweep%dump_stats_frequency == 0)
+		if (sweep%dump_stats_frequency == 0) 
 		{
 			if (production)
 			{
@@ -670,7 +667,6 @@ void Sim::MC() {
 
 			dumpEnergy(sweep, bonded, nonbonded, diagonal, boundary);
 		}
-
 	}
 
 	// final contact map
