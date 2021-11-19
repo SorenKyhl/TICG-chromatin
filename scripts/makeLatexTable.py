@@ -30,7 +30,7 @@ def getArgs(data_folder=None, sample=None, samples = None):
 
     assert args.sample is not None or args.samples is not None, "either sample or samples must be set"
     if args.sample_folder is None and args.sample is not None:
-        args.sample_folder = osp.join(args.data_folder, 'samples', 'sample{}'.format(args.sample))
+        args.sample_folder = osp.join(args.data_folder, 'samples', f'sample{args.sample}')
 
     return args
 
@@ -72,7 +72,7 @@ def loadData(args):
     data = defaultdict(lambda: defaultdict(lambda : defaultdict(list)))
 
     for sample in args.samples:
-        sample_folder = osp.join(args.data_folder, 'samples', 'sample{}'.format(sample))
+        sample_folder = osp.join(args.data_folder, 'samples', f'sample{sample}')
         for method in os.listdir(sample_folder):
             method_folder = osp.join(sample_folder, method)
             # methods should be formatted such that method.split('-')[0] is in METHODS
@@ -90,14 +90,14 @@ def loadData(args):
                             replicate_folder = osp.join(k_folder, replicate)
                             json_file = osp.join(replicate_folder, 'distance_pearson.json')
                             if osp.exists(json_file):
-                                print("Loading: {}".format(json_file))
+                                print(f"Loading: {json_file}")
                                 with open(json_file, 'r') as f:
                                     results = json.load(f)
                                     replicate_data['overall_pearson'].append(results['overall_pearson'])
                                     replicate_data['scc'].append(results['scc'])
                                     replicate_data['avg_dist_pearson'].append(results['avg_dist_pearson'])
                             else:
-                                print("MISSING: {}".format(json_file))
+                                print(f"MISSING: {json_file}")
                         data[k][method]['overall_pearson'].append(np.mean(replicate_data['overall_pearson']))
                         data[k][method]['scc'].append(np.mean(replicate_data['scc']))
                         data[k][method]['avg_dist_pearson'].append(np.mean(replicate_data['avg_dist_pearson']))
@@ -105,7 +105,7 @@ def loadData(args):
                 # just making output look nicer
     return data
 
-def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', delta= True):
+def makeLatexTable(data, ofile, header = '', small = False, mode = 'w'):
     '''
     Writes data to ofile in latex table format.
 
@@ -121,25 +121,19 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', delta= T
         o.write("\\begin{center}\n")
         if small:
             metrics = ['scc']
-            o.write("\\begin{tabular}{|c|c|c|}\n")
+            o.write("\\begin{tabular}{|c|c|c|c|}\n")
             o.write("\\hline\n")
-            o.write("\\multicolumn{3}{|c|}{" + header + "} \\\ \n")
+            o.write("\\multicolumn{4}{|c|}{" + header + "} \\\ \n")
             o.write("\\hline\n")
-            if delta:
-                o.write("Method & k & $\\Delta$ SCC \\\ \n")
-            else:
-                o.write("Method & k & SCC \\\ \n")
+            o.write("Method & k & SCC & $\\Delta$ SCC \\\ \n")
         else:
             metrics = ['overall_pearson', 'avg_dist_pearson', 'scc']
-            o.write("\\begin{tabular}{|c|c|c|c|c|}\n")
+            o.write("\\begin{tabular}{|c|c|c|c|c|c|}\n")
             o.write("\\hline\n")
-            o.write("\\multicolumn{5}{|c|}{" + header + "} \\\ \n")
+            o.write("\\multicolumn{6}{|c|}{" + header + "} \\\ \n")
             o.write("\\hline\n")
             o.write("\\hline\n")
-            if delta:
-                o.write("Method & k & Pearson R & $\\Delta$ Avg Dist Pearson R & $\\Delta$  SCC \\\ \n")
-            else:
-                o.write("Method & k & Pearson R & Avg Dist Pearson R & SCC \\\ \n")
+            o.write("Method & k & Pearson R & Avg Dist Pearson R & SCC & $\\Delta$  SCC \\\ \n")
         o.write("\\hline\\hline\n")
 
         ref = data[0]['ground_truth-S']
@@ -150,6 +144,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', delta= T
             keys, labels = sort_method_keys(data[k].keys())
             for key, label in zip(keys, labels):
                 if small and key.split('-')[0] not in SMALL_METHODS:
+                    # skip methods not in SMALL_METHODS
                     continue
                 if first:
                     k_label = k
@@ -158,21 +153,28 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', delta= T
                     first = False
                 else:
                     k_label = ''
-                text = "{} & {}".format(label, k_label)
+                text = f"{label} & {k_label}"
 
                 for metric in metrics:
-                    ref_metric = np.array(ref[metric])
-                    data_list = np.array(data[k][key][metric])
-                    if delta:
-                        result = ref_metric - data_list
+                    if metric == 'scc':
+                        use_delta = True
                     else:
-                        result = data_list
-                    data_mean = np.round(np.mean(result), 3)
-                    if len(data_list) > 1:
-                        data_std = np.round(np.std(result), 3)
-                        text += " & {} $\pm$ {}".format(data_mean, data_std)
+                        use_delta = False
+                    ref_result = np.array(ref[metric])
+                    result = np.array(data[k][key][metric])
+                    delta_result = ref_result - result
+                    result_mean = np.round(np.mean(result), 3)
+                    delta_result_mean = np.round(np.mean(delta_result), 3)
+                    if len(result) > 1:
+                        result_std = np.round(np.std(result), 3)
+                        delta_result_std = np.round(np.std(delta_result), 3)
+                        text += f" & {result_mean} $\pm$ {result_std}"
+                        if use_delta:
+                            text += f" & {delta_result_mean} $\pm$ {delta_result_std}"
                     else:
-                        text += " & {}".format(data_mean)
+                        text += f" & {result_mean}"
+                        if use_delta:
+                            text += f" & {delta_result_mean}"
 
                 text += " \\\ \n"
 
@@ -216,11 +218,10 @@ def main():
     mode = 'w'
     first = True
     for is_small in [True, False]:
-        for is_delta in [True, False]:
-            makeLatexTable(data, ofile, dataset, small = is_small, delta = is_delta, mode = mode)
-            if first:
-                mode = 'a'
-                first = False
+        makeLatexTable(data, ofile, dataset, small = is_small, mode = mode)
+        if first:
+            mode = 'a'
+            first = False
 
 
 if __name__ == '__main__':
