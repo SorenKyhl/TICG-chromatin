@@ -36,14 +36,14 @@ modelPath="${results}/${modelType}/${modelID}"
 
 if [ $local = 'true' ]
 then
-  # dataFolder="/home/eric/sequences_to_contact_maps/dataset_11_03_21"
+  dataFolder="/home/eric/sequences_to_contact_maps/dataset_11_14_21"
   dataFolder="/home/eric/dataset_test"
   scratchDir='/home/eric/scratch'
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
   dataFolder='/project2/depablo/erschultz/dataset_11_14_21'
   scratchDir='/scratch/midway2/erschultz'
-  source activate python3.8_pytorch1.8.1_cuda10.2
+  source activate python3.8_pytorch1.8.1_cuda10.2_2
 fi
 
 max_ent() {
@@ -142,24 +142,24 @@ format_method () {
 
 STARTTIME=$(date +%s)
 i=1
-for k in 4 6
-do
-  for sample in 1230 1718
-  do
-    for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
-    do
-      # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
-      max_ent
-    done
-  done
-done
+# for k in 4 6
+# do
+#   for sample in 1230 1718
+#   do
+#     for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
+#     do
+#       # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
+#       max_ent
+#     done
+#   done
+# done
 #
-k=12
-method='ground_truth'
-for sample in 40 1230 1718
-do
-  max_ent
-done
+# k=12
+# method='ground_truth'
+# for sample in 40 1230 1718
+# do
+#   max_ent
+# done
 
 useGroundTruthChi='true'
 method='ground_truth'
@@ -186,19 +186,19 @@ done
 #   done
 # done
 
-k='none'
-useEnergy='true'
-goalSpecified='false'
-useGroundTruthChi='false'
-numIterations=0
-for sample in 1230 1718
-do
-  for method in  'ground_truth'
-  # 'ground_truth' 'GNN'
-  do
-    max_ent
-  done
-done
+# k='none'
+# useEnergy='true'
+# goalSpecified='false'
+# useGroundTruthChi='false'
+# numIterations=0
+# for sample in 1230 1718
+# do
+#   for method in  'ground_truth'
+#   # 'ground_truth' 'GNN'
+#   do
+#     max_ent
+#   done
+# done
 
 wait
 

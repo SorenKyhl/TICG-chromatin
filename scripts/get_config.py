@@ -218,7 +218,10 @@ def set_up_plaid_chi(args, config):
 def set_up_diag_chi(args, config, sample_config):
     if args.use_ground_truth_chi:
         args.diag = sample_config["diagonal_on"]
-        chi_diag = sample_config["diag_chis"]
+        try:
+            chi_diag = sample_config["diag_chis"]
+        except KeyError:
+            assert args.diag == False
     else:
         chi_diag = list(np.linspace(0, args.max_diag_chi, 20))
 
@@ -338,6 +341,7 @@ def main():
             x_linear[:, 13] = np.logical_or(x[:, 7], x[:, 8]) # H or I
             x_linear[:, 14] = np.logical_xor(x[:, 8], x[:, 9]) # either I or J
 
+            np.save('x_linear.npy', x_linear)
             args.k = 15
             # chi = getChis(args)
             chi = np.array([[-1,1.8,-0.5,1.8,0.1,1.3,-0.1,0.1,0.8,1.4,2,1.7,1.5,-0.2,1.1],
@@ -362,6 +366,8 @@ def main():
             x_linear = np.zeros((args.m, args.k))
             for i in range(args.m):
                 x_linear[i] = np.outer(x[i], x[i]).flatten()
+
+            np.save('x_linear.npy', x_linear)
 
             chi = getChis(args)
             s = x_linear @ chi @ x_linear.T
