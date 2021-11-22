@@ -16,13 +16,13 @@ goalSpecified='true'
 numIterations=100 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 modelType='ContactGNNEnergy'
-modelID='44'
 local='false'
 binarize='false'
 normalize='false'
 useEnergy='false'
 useGroundTruthChi='false'
 useGroundTruthSeed='false'
+correctEnergy='false'
 mode="plaid"
 gamma=0.00001
 gammaDiag=0.00001
@@ -82,7 +82,7 @@ max_ent_inner () {
   python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi=-1 --max_chi=1 --save_chi_for_max_ent --goal_specified $goalSpecified --default_config "${resources}/default_config.json" --use_energy $useEnergy --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_seed $useGroundTruthSeed --seed $RANDOM --sample_folder $sampleFolder
 
   # generate sequences
-  python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --k $k --sample $sample --data_folder $dataFolder --plot --save_npy --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --model_path $modelPath --use_energy $useEnergy --seed $3
+  python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --k $k --sample $sample --data_folder $dataFolder --plot --save_npy --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --model_path $modelPath --use_energy $useEnergy --seed $3 --correct_energy $correctEnergy
 
   # generate goals
   if [ $goalSpecified = 'true' ]
@@ -161,16 +161,16 @@ i=1
 #   max_ent
 # done
 
-useGroundTruthChi='true'
-method='ground_truth'
-numIterations=0
-goalSpecified='false'
-useEnergy='false'
-k=12
-for sample in 40 1230 1718
-do
-  max_ent
-done
+# useGroundTruthChi='true'
+# method='ground_truth'
+# numIterations=0
+# goalSpecified='false'
+# useEnergy='false'
+# k=12
+# for sample in 40 1230 1718
+# do
+#   max_ent
+# done
 
 # k='none'
 # useEnergy='true'
@@ -179,26 +179,28 @@ done
 # numIterations=0
 # for sample in 40 1230 1718
 # do
-#   for method in  'GNN'
-#   # 'ground_truth' 'GNN'
+#   for method in  'GNN' 'ground_truth'
+#   # 'GNN'
 #   do
 #     max_ent
 #   done
 # done
 
-# k='none'
-# useEnergy='true'
-# goalSpecified='false'
-# useGroundTruthChi='false'
-# numIterations=0
-# for sample in 1230 1718
-# do
-#   for method in  'ground_truth'
-#   # 'ground_truth' 'GNN'
-#   do
-#     max_ent
-#   done
-# done
+k='none'
+useEnergy='true'
+goalSpecified='false'
+useGroundTruthChi='false'
+numIterations=0
+correctEnergy='true'
+modelID=28
+for sample in 40 1230 1718
+do
+  for method in  'GNN'
+  # 'ground_truth' 'GNN'
+  do
+    max_ent
+  done
+done
 
 wait
 

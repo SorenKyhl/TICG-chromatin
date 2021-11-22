@@ -13,8 +13,8 @@ source activate python3.8_pytorch1.8.1_cuda10.2
 # python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
 
 dataFolder='/project2/depablo/erschultz/dataset_08_29_21'
-sample='40'
-python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
+# sample='40'
+# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
 samples="40-1230-1718"
 python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
 
@@ -33,8 +33,8 @@ python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --s
 # python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
 
 dataFolder='/project2/depablo/erschultz/dataset_11_14_21'
-sample='40'
-python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
+# sample='40'
+# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
 samples="40-1230-1718"
 python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
 
