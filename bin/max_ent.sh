@@ -31,7 +31,6 @@ chipSeqFolder="/home/erschultz/sequences_to_contact_maps/chip_seq_data"
 epiData="${chipSeqFolder}/fold_change_control/processed"
 chromHMMData="${chipSeqFolder}/aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt"
 results=~/sequences_to_contact_maps/results
-modelPath="${results}/${modelType}/${modelID}"
 
 
 if [ $local = 'true' ]
@@ -41,13 +40,13 @@ then
   scratchDir='/home/eric/scratch'
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
-  dataFolder='/project2/depablo/erschultz/dataset_11_14_21'
+  dataFolder='/project2/depablo/erschultz/dataset_08_29_21'
   scratchDir='/scratch/midway2/erschultz'
   source activate python3.8_pytorch1.8.1_cuda10.2_2
 fi
 
 max_ent() {
-  # args:
+  modelPath="${results}/${modelType}/${modelID}"
   scratchDirI="${scratchDir}/TICG_maxent${i}"
   mkdir -p $scratchDirI
 
@@ -139,7 +138,24 @@ format_method () {
 
   echo $methodFolder
 }
+sources
+chipSeqFolder="/home/erschultz/sequences_to_contact_maps/chip_seq_data"
+epiData="${chipSeqFolder}/fold_change_control/processed"
+chromHMMData="${chipSeqFolder}/aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt"
+results=~/sequences_to_contact_maps/results
+modelPath="${results}/${modelType}/${modelID}"
 
+
+if [ $local = 'true' ]
+then
+  dataFolder="/home/eric/sequences_to_contact_maps/dataset_11_14_21"
+  dataFolder="/home/eric/dataset_test"
+  scratchDir='/home/eric/scratch'
+  source activate python3.8_pytorch1.8.1_cuda11.1
+else
+  dataFolder='/project2/depablo/erschultz/dataset_11_14_21'
+  scratchDir='/scratch/midway2/erschultz'
+  source activate python3.8_pytorch1.
 STARTTIME=$(date +%s)
 i=1
 # for k in 4 6
@@ -196,6 +212,21 @@ modelID=28
 for sample in 40 1230 1718
 do
   for method in  'GNN'
+  # 'ground_truth' 'GNN'
+  do
+    max_ent
+  done
+done
+
+k='none'
+useEnergy='true'
+goalSpecified='false'
+useGroundTruthChi='false'
+numIterations=0
+correctEnergy='false'
+for sample in 40 1230 1718
+do
+  for method in  'ground_truth'
   # 'ground_truth' 'GNN'
   do
     max_ent
