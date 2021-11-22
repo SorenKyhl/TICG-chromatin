@@ -86,7 +86,6 @@ def loadData(args):
                             k = 0
                         replicate_data = defaultdict(list)
                         for replicate in os.listdir(k_folder):
-                            print(replicate)
                             replicate_folder = osp.join(k_folder, replicate)
                             json_file = osp.join(replicate_folder, 'distance_pearson.json')
                             if osp.exists(json_file):

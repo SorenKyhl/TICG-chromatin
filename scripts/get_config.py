@@ -19,7 +19,7 @@ def getArgs():
     # config param arguments
     parser.add_argument('--m', type=int, default=1024, help='number of particles')
     parser.add_argument('--k', type=str2int, help='number of particle types (inferred from chi if None)')
-    parser.add_argument('--load_configuration_filename', type=str, default='input1024.xyz', help='file name of initial config')
+    parser.add_argument('--load_configuration_filename', type=str2None, default='input1024.xyz', help='file name of initial config (None to not load)')
     parser.add_argument('--goal_specified', type=str2bool, default=True, help='True will save two lines to chis.txt')
     parser.add_argument('--dump_frequency', type=int, help='set to change dump frequency')
     parser.add_argument('--dump_stats_frequency', type=int, help='set to change dump stats frequency')
@@ -107,6 +107,25 @@ def str2int(v):
             return int(v)
         else:
             raise argparse.ArgumentTypeError('none or int expected not {}'.format(v))
+    else:
+        raise argparse.ArgumentTypeError('String value expected.')
+
+def str2None(v):
+    """
+    Helper function for argparser, converts str to None if str == 'none'
+
+    Returns the string otherwise.
+
+    Inputs:
+        v: string
+    """
+    if v is None:
+        return v
+    elif isinstance(v, str):
+        if v.lower() == 'none':
+            return None
+        else:
+            return v
     else:
         raise argparse.ArgumentTypeError('String value expected.')
 
@@ -414,7 +433,11 @@ def main():
         config['seed'] = args.seed
 
     # save configuration filename
-    config["load_configuration_filename"] = args.load_configuration_filename
+    if args.load_configuration_filename is None:
+        config["load_configuration"] = False
+        config["load_configuration_filename"] = 'none'
+    else:
+        config["load_configuration_filename"] = args.load_configuration_filename
 
     with open(args.ofile, 'w') as f:
         json.dump(config, f, indent = 2)

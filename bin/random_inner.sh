@@ -39,7 +39,13 @@ echo $@
 # move utils to scratch
 mkdir -p $scratchDir
 cd ~/TICG-chromatin/utils
-cp input1024.xyz "${scratchDir}/input1024.xyz"
+init_config="input${m}.xyz"
+if [ -f $init_config ]
+then
+	cp input1024.xyz "${scratchDir}/input1024.xyz"
+else
+	init_config='none'
+fi
 cp default_config.json "${scratchDir}/default_config.json"
 
 cd $scratchDir
@@ -67,7 +73,7 @@ do
 	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --p_switch $pSwitch --k $k --save_npy --relabel $relabel >> log.log
 
   # set up config.json
-	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable --diag $diag --max_diag_chi $maxDiagChi --n_sweeps $nSweeps --dump_frequency $dumpFrequency --seed $i --use_energy $useEnergy > log.log
+	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable --diag $diag --max_diag_chi $maxDiagChi --n_sweeps $nSweeps --dump_frequency $dumpFrequency --seed $i --use_energy $useEnergy --load_configuration_filename $init_config > log.log
 
 	# run simulation
 	~/TICG-chromatin/TICG-engine >> log.log
@@ -81,4 +87,4 @@ do
 done
 
 # clean up
-rm default_config.json input1024.xyz
+rm default_config.json *.xyz
