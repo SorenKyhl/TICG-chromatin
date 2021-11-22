@@ -47,6 +47,7 @@ fi
 
 max_ent() {
   modelPath="${results}/${modelType}/${modelID}"
+  sampleFolder="${dataFolder}/samples/sample${sample}"
   scratchDirI="${scratchDir}/TICG_maxent${i}"
   mkdir -p $scratchDirI
 
@@ -68,7 +69,6 @@ max_ent_inner () {
   # 1 = scratchDir
   # 2 = replicate index
   # 3 = seed for get_seq
-  sampleFolder="${dataFolder}/samples/sample${sample}"
   ofile="${sampleFolder}/${methodFolder}/k${k}/replicate${2}"
 
   # move to scratch
@@ -138,13 +138,6 @@ format_method () {
 
   echo $methodFolder
 }
-sources
-chipSeqFolder="/home/erschultz/sequences_to_contact_maps/chip_seq_data"
-epiData="${chipSeqFolder}/fold_change_control/processed"
-chromHMMData="${chipSeqFolder}/aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt"
-results=~/sequences_to_contact_maps/results
-modelPath="${results}/${modelType}/${modelID}"
-
 
 if [ $local = 'true' ]
 then
