@@ -172,7 +172,7 @@ i=1
 #   max_ent
 # done
 
-k='none'
+k=2
 useEnergy='false'
 goalSpecified='false'
 useGroundTruthChi='true'
@@ -186,21 +186,21 @@ do
   done
 done
 
-# k='none'
-# useEnergy='true'
-# goalSpecified='false'
-# useGroundTruthChi='false'
-# numIterations=0
-# correctEnergy='true'
-# modelID=28
-# for sample in 40 1230 1718
-# do
-#   for method in  'GNN'
-#   # 'ground_truth' 'GNN'
-#   do
-#     max_ent
-#   done
-# done
+k='none'
+useEnergy='true'
+goalSpecified='false'
+useGroundTruthChi='false'
+numIterations=0
+correctEnergy='true'
+modelID=9
+for sample in 40 1230 1718
+do
+  for method in  'GNN'
+  # 'ground_truth' 'GNN'
+  do
+    max_ent
+  done
+done
 #
 # k='none'
 # useEnergy='true'
