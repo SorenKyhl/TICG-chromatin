@@ -173,7 +173,7 @@ i=1
 # done
 
 k='none'
-useEnergy='true'
+useEnergy='false'
 goalSpecified='false'
 useGroundTruthChi='true'
 numIterations=0
