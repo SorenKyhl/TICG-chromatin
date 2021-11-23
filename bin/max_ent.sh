@@ -139,16 +139,7 @@ format_method () {
   echo $methodFolder
 }
 
-if [ $local = 'true' ]
-then
-  dataFolder="/home/eric/sequences_to_contact_maps/dataset_11_14_21"
-  dataFolder="/home/eric/dataset_test"
-  scratchDir='/home/eric/scratch'
-  source activate python3.8_pytorch1.8.1_cuda11.1
-else
-  dataFolder='/project2/depablo/erschultz/dataset_11_14_21'
-  scratchDir='/scratch/midway2/erschultz'
-  source activate python3.8_pytorch1.
+
 STARTTIME=$(date +%s)
 i=1
 # for k in 4 6
