@@ -135,8 +135,12 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w'):
             o.write("Method & k & Pearson R & Avg Dist Pearson R & SCC & $\\Delta$  SCC \\\ \n")
         o.write("\\hline\\hline\n")
 
-        ref = data[0]['ground_truth-S']
-        print('ref', ref)
+        if 'ground_truth-S' in data[0]:
+            ref = data[0][]'ground_truth-S']
+            print('ref', ref)
+        else:
+            ref = None
+            print('ref missing')
 
         for k in sorted(data.keys()):
             first = True # only write k for first row in section
@@ -159,14 +163,21 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w'):
                         use_delta = True
                     else:
                         use_delta = False
-                    ref_result = np.array(ref[metric])
                     result = np.array(data[k][key][metric])
-                    delta_result = ref_result - result
                     result_mean = np.round(np.mean(result), 3)
-                    delta_result_mean = np.round(np.mean(delta_result), 3)
+
+                    if ref is not None:
+                        ref_result = np.array(ref[metric])
+                        delta_result = ref_result - result
+                        delta_result_mean = np.round(np.mean(delta_result), 3)
+                    else:
+                        delta_result_mean = None
                     if len(result) > 1:
                         result_std = np.round(np.std(result), 3)
-                        delta_result_std = np.round(np.std(delta_result), 3)
+                        if ref is not None:
+                            delta_result_std = np.round(np.std(delta_result), 3)
+                        else:
+                            delta_result_std = None
                         text += f" & {result_mean} $\pm$ {result_std}"
                         if use_delta:
                             text += f" & {delta_result_mean} $\pm$ {delta_result_std}"
