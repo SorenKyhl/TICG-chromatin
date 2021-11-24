@@ -144,7 +144,7 @@ STARTTIME=$(date +%s)
 i=1
 for k in 2 4
 do
-  for sample in 1230 1718
+  for sample in 40
   do
     for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
     do
@@ -153,47 +153,47 @@ do
     done
   done
 done
+# #
+# k=4
+# method='ground_truth'
+# for sample in 40 1230 1718
+# do
+#   max_ent
+# done
 #
-k=4
-method='ground_truth'
-for sample in 40 1230 1718
-do
-  max_ent
-done
-
-useGroundTruthChi='true'
-method='ground_truth'
-numIterations=0
-goalSpecified='false'
-k=4
-for sample in 40 1230 1718
-do
-  max_ent
-done
-
-useGroundTruthChi='false'
-method='ground_truth'
-numIterations=0
-goalSpecified='false'
-useEnergy='true'
-k='none'
-for sample in 40 1230 1718
-do
-  max_ent
-done
-
-k='none'
-useEnergy='true'
-goalSpecified='false'
-useGroundTruthChi='false'
-numIterations=0
-correctEnergy='true'
-modelID=23
-method='GNN'
-for sample in 40 1230 1718
-do
-    max_ent
-done
+# useGroundTruthChi='true'
+# method='ground_truth'
+# numIterations=0
+# goalSpecified='false'
+# k=4
+# for sample in 40 1230 1718
+# do
+#   max_ent
+# done
+#
+# useGroundTruthChi='false'
+# method='ground_truth'
+# numIterations=0
+# goalSpecified='false'
+# useEnergy='true'
+# k='none'
+# for sample in 40 1230 1718
+# do
+#   max_ent
+# done
+#
+# k='none'
+# useEnergy='true'
+# goalSpecified='false'
+# useGroundTruthChi='false'
+# numIterations=0
+# correctEnergy='true'
+# modelID=23
+# method='GNN'
+# for sample in 40 1230 1718
+# do
+#     max_ent
+# done
 #
 # k='none'
 # useEnergy='true'
