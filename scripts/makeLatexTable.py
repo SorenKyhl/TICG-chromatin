@@ -136,7 +136,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w'):
         o.write("\\hline\\hline\n")
 
         if 'ground_truth-S' in data[0]:
-            ref = data[0][]'ground_truth-S']
+            ref = data[0]['ground_truth-S']
             print('ref', ref)
         else:
             ref = None
