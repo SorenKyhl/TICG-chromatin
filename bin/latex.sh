@@ -16,11 +16,13 @@ dataFolder='/project2/depablo/erschultz/dataset_08_29_21'
 # sample='40'
 # python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
 samples="40-1230-1718"
-python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
-
-# samples="1201-1202-1203-40-1230-1718"
-# dataFolder='/project2/depablo/erschultz/dataset_08_26_21'
 # python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
+
+dataFolder='/project2/depablo/erschultz/dataset_08_26_21'
+# sample='40'
+# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
+samples="40-1230-1718"
+python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
 
 # samples="1201-1202-1203-40-1230-1718"
 # dataFolder='/project2/depablo/erschultz/dataset_08_24_21'
@@ -36,7 +38,7 @@ dataFolder='/project2/depablo/erschultz/dataset_11_14_21'
 # sample='40'
 # python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
 samples="40-1230-1718"
-python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
+# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
 
 # dataFolder='/home/eric/dataset_test'
 # sample='11'
