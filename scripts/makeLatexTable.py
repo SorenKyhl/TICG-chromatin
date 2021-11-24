@@ -167,14 +167,19 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w'):
                     result_mean = np.round(np.mean(result), 3)
 
                     if ref is not None:
-                        ref_result = np.array(ref[metric])
-                        delta_result = ref_result - result
-                        delta_result_mean = np.round(np.mean(delta_result), 3)
+                        try:
+                            ref_result = np.array(ref[metric])
+                            delta_result = ref_result - result
+                            delta_result_mean = np.round(np.mean(delta_result), 3)
+                        except ValueError as e:
+                            print(e)
+                            print(f'method {key}, k {k}, metric: {metric}')
+                            delta_result_mean = None
                     else:
                         delta_result_mean = None
                     if len(result) > 1:
                         result_std = np.round(np.std(result), 3)
-                        if ref is not None:
+                        if delta_result_mean is not None:
                             delta_result_std = np.round(np.std(delta_result), 3)
                         else:
                             delta_result_std = None
