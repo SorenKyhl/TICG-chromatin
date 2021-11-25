@@ -131,7 +131,6 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w'):
             o.write("\\hline\n")
             o.write("\\multicolumn{6}{|c|}{" + header + "} \\\ \n")
             o.write("\\hline\n")
-            o.write("\\hline\n")
             o.write("Method & k & Pearson R & Avg Dist Pearson R & SCC & $\\Delta$  SCC \\\ \n")
         o.write("\\hline\\hline\n")
 

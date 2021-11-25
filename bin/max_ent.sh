@@ -142,17 +142,17 @@ format_method () {
 
 STARTTIME=$(date +%s)
 i=1
-for k in 2 4
-do
-  for sample in 40
-  do
-    for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
-    do
-      # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
-      max_ent
-    done
-  done
-done
+# for k in 2 4
+# do
+#   for sample in 40
+#   do
+#     for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
+#     do
+#       # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
+#       max_ent
+#     done
+#   done
+# done
 # #
 # k=4
 # method='ground_truth'
@@ -182,18 +182,18 @@ done
 #   max_ent
 # done
 #
-# k='none'
-# useEnergy='true'
-# goalSpecified='false'
-# useGroundTruthChi='false'
-# numIterations=0
-# correctEnergy='true'
-# modelID=23
-# method='GNN'
-# for sample in 40 1230 1718
-# do
-#     max_ent
-# done
+k='none'
+useEnergy='true'
+goalSpecified='false'
+useGroundTruthChi='false'
+numIterations=0
+correctEnergy='true'
+modelID=57
+method='GNN'
+for sample in 40 1230 1718
+do
+    max_ent
+done
 #
 # k='none'
 # useEnergy='true'
