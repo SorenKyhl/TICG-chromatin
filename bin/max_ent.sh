@@ -40,7 +40,7 @@ then
   scratchDir='/home/eric/scratch'
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
-  dataFolder='/project2/depablo/erschultz/dataset_08_26_21'
+  dataFolder='/project2/depablo/erschultz/dataset_08_29_21'
   scratchDir='/scratch/midway2/erschultz'
   source activate python3.8_pytorch1.8.1_cuda10.2_2
 fi
@@ -182,13 +182,28 @@ i=1
 #   max_ent
 # done
 #
+dataFolder='/project2/depablo/erschultz/dataset_08_26_21'
 k='none'
 useEnergy='true'
 goalSpecified='false'
 useGroundTruthChi='false'
 numIterations=0
 correctEnergy='true'
-modelID=57
+modelID=58
+method='GNN'
+for sample in 40 1230 1718
+do
+    max_ent
+done
+
+dataFolder='/project2/depablo/erschultz/dataset_08_29_21'
+k='none'
+useEnergy='true'
+goalSpecified='false'
+useGroundTruthChi='false'
+numIterations=0
+correctEnergy='true'
+modelID=55
 method='GNN'
 for sample in 40 1230 1718
 do
