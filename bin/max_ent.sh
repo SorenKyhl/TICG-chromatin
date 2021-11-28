@@ -161,15 +161,16 @@ i=1
 #   max_ent
 # done
 #
-# useGroundTruthChi='true'
-# method='ground_truth'
-# numIterations=0
-# goalSpecified='false'
-# k=4
-# for sample in 40 1230 1718
-# do
-#   max_ent
-# done
+dataFolder='/project2/depablo/erschultz/dataset_08_29_21'
+useGroundTruthChi='true'
+method='ground_truth'
+numIterations=0
+goalSpecified='false'
+k=2
+for sample in 40
+do
+  max_ent
+done
 #
 # useGroundTruthChi='false'
 # method='ground_truth'
@@ -182,33 +183,33 @@ i=1
 #   max_ent
 # done
 #
-dataFolder='/project2/depablo/erschultz/dataset_08_26_21'
-k='none'
-useEnergy='true'
-goalSpecified='false'
-useGroundTruthChi='false'
-numIterations=0
-correctEnergy='true'
-modelID=58
-method='GNN'
-for sample in 40 1230 1718
-do
-    max_ent
-done
+# dataFolder='/project2/depablo/erschultz/dataset_08_26_21'
+# k='none'
+# useEnergy='true'
+# goalSpecified='false'
+# useGroundTruthChi='false'
+# numIterations=0
+# correctEnergy='true'
+# modelID=58
+# method='GNN'
+# for sample in 40 1230 1718
+# do
+#     max_ent
+# done
 
-dataFolder='/project2/depablo/erschultz/dataset_08_29_21'
-k='none'
-useEnergy='true'
-goalSpecified='false'
-useGroundTruthChi='false'
-numIterations=0
-correctEnergy='true'
-modelID=55
-method='GNN'
-for sample in 40 1230 1718
-do
-    max_ent
-done
+# dataFolder='/project2/depablo/erschultz/dataset_08_29_21'
+# k='none'
+# useEnergy='true'
+# goalSpecified='false'
+# useGroundTruthChi='false'
+# numIterations=0
+# correctEnergy='true'
+# modelID=55
+# method='GNN'
+# for sample in 40 1230 1718
+# do
+#     max_ent
+# done
 #
 # k='none'
 # useEnergy='true'
