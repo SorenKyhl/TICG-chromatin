@@ -215,6 +215,7 @@ def sort_method_keys(keys):
 
 def main():
     args = getArgs(data_folder='../sequences_to_contact_maps/dataset_10_27_21', samples=[40, 1230, 1718])
+    print(args)
 
     fname = 'max_ent_table.txt'
 
