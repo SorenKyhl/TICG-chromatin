@@ -40,7 +40,7 @@ then
   scratchDir='/home/eric/scratch'
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
-  dataFolder='/project2/depablo/erschultz/dataset_08_29_21'
+  dataFolder='/project2/depablo/erschultz/dataset_10_27_21'
   scratchDir='/scratch/midway2/erschultz'
   source activate python3.8_pytorch1.8.1_cuda10.2_2
 fi
