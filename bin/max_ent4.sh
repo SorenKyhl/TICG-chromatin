@@ -1,6 +1,6 @@
 #! /bin/bash
-#SBATCH --job-name=maxent
-#SBATCH --output=logFiles/maxent.out
+#SBATCH --job-name=maxent4
+#SBATCH --output=logFiles/maxent4.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20
@@ -9,14 +9,14 @@
 m=1024
 k='none'
 samples='40-1230-1718'
-productionSweeps=50000
-finalSimProductionSweeps=1000000
+productionSweeps=10000
+finalSimProductionSweeps=10000
 equilibSweeps=10000
 goalSpecified='true'
-numIterations=100 # iteration 1 + numIterations is production run to get contact map
+numIterations=1 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 modelType='ContactGNNEnergy'
-local='false'
+local='true'
 binarize='false'
 normalize='false'
 useEnergy='false'
@@ -54,7 +54,7 @@ max_ent() {
 
   seed=$RANDOM
   format_method
-  for j in 1 2 3
+  for j in 1
   do
     scratchDirI="${scratchDir}/TICG_maxent${i}"
     mkdir -p $scratchDirI
@@ -142,13 +142,13 @@ format_method () {
 
 
 STARTTIME=$(date +%s)
-i=1
+i=3000
 dataFolder='/project2/depablo/erschultz/dataset_10_27_21'
 for k in 2 4
 do
   for sample in 40 1230 1718
   do
-    for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
+    for method in 'kPCA-x' 'kPCA-y'
     do
       # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic' 'kPCA-x' 'kPCA-y'
       max_ent
@@ -156,64 +156,12 @@ do
   done
 done
 
-
-#
-# k=2
-# method='ground_truth'
-# for sample in 40 1230 1718
-# do
-#   max_ent
-# done
-# #
-# useGroundTruthChi='true'
-# method='ground_truth'
-# numIterations=0
-# goalSpecified='false'
-# k=2
-# for sample in 40
-# do
-#   max_ent
-# done
-# #
-# useGroundTruthChi='false'
-# method='ground_truth'
-# numIterations=0
-# goalSpecified='false'
-# useEnergy='true'
-# k='none'
-# for sample in 40 1230 1718
-# do
-#   max_ent
-# done
-#
-
-# k='none'
-# useEnergy='true'
-# goalSpecified='false'
-# useGroundTruthChi='false'
-# numIterations=0
-# correctEnergy='false'
-# modelID=34
-# method='GNN'
-# for sample in 40 1230 1718
-# do
-#     max_ent
-# done
-#
-# k='none'
-# useEnergy='true'
-# goalSpecified='false'
-# useGroundTruthChi='false'
-# numIterations=0
-# correctEnergy='false'
-# for sample in 40 1230 1718
-# do
-#   for method in  'ground_truth'
-#   # 'ground_truth' 'GNN'
-#   do
-#     max_ent
-#   done
-# done
+k=2
+method='ground_truth'
+for sample in 40 1230 1718
+do
+  max_ent
+done
 
 wait
 
