@@ -8,36 +8,8 @@
 
 source activate python3.8_pytorch1.8.1_cuda10.2
 
-# samples=1
 # dataFolder='/project2/depablo/erschultz/dataset_09_21_21'
-# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
-
-dataFolder='/project2/depablo/erschultz/dataset_08_29_21'
-# sample='40'
-# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
-samples="40-1230-1718"
-python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
-
-# dataFolder='/project2/depablo/erschultz/dataset_08_26_21'
-# sample='40'
-# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
-# samples="40-1230-1718"
-# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
-
-# samples="1201-1202-1203-40-1230-1718"
-# dataFolder='/project2/depablo/erschultz/dataset_08_24_21'
-# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
-
-# dataFolder='/project2/depablo/erschultz/dataset_08_29_21'
-# sample='40'
-# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
-# samples="40-1230-1718"
-# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
-
-dataFolder='/project2/depablo/erschultz/dataset_11_14_21'
-# sample='40'
-# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
-samples="40-1230-1718"
+# samples=1
 # python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
 
 # dataFolder='/home/eric/dataset_test'
@@ -45,3 +17,18 @@ samples="40-1230-1718"
 # python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
 # samples="11-13"
 # python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
+
+samples="40-1230-1718"
+# dataFolder='dataset_08_24_21'
+# dataFolder='dataset_08_26_21'
+# dataFolder='dataset_08_29_21'
+dataFolder='dataset_10_27_21'
+# dataFolder='/dataset_11_03_21'
+# dataFolder='dataset_11_14_21'
+dataDir='/project2/depablo/erschultz'
+
+for dataset in dataset_10_27_21
+do
+  dataFolder = "${dataDir}/${dataset}"
+  python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
+done

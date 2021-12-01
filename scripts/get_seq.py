@@ -8,7 +8,7 @@ import argparse
 import matplotlib
 import matplotlib.pyplot as plt
 
-from sklearn.decomposition import PCA, NMF
+from sklearn.decomposition import PCA, NMF, KernelPCA
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 
@@ -52,6 +52,7 @@ def getArgs():
     parser.add_argument('--epigenetic_data_folder', type=str, default=osp.join(chip_seq_data_local, 'fold_change_control/processed'), help='location of epigenetic data')
     parser.add_argument('--ChromHMM_data_file', type=str, default=osp.join(chip_seq_data_local, 'aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt'), help='location of ChromHMM data')
     parser.add_argument('--p_switch', type=float, default=0.05, help='probability to switch bead assignment (for method = random)')
+    parser.add_argument('--kernel', type=str, default='poly', help='kernel for kernel PCA')
 
     # post-processing args
     parser.add_argument('--binarize', type=str2bool, default=False, help='true to binarize labels (not implemented for all methods)') # TODO
@@ -187,9 +188,10 @@ def relabel_seq(seq, relabel_str):
 
     return new_seq
 
-def get_PCA_split_seq(m, y_diag, k):
+def get_PCA_split_seq(input, k):
+    m, _ = input.shape
     pca = PCA()
-    pca.fit(y_diag)
+    pca.fit(input)
     seq = np.zeros((m, k))
 
     j = 0
@@ -207,7 +209,7 @@ def get_PCA_split_seq(m, y_diag, k):
         j += 2
     return seq
 
-def get_PCA_seq(input, k, normalize):
+def get_PCA_seq(input, k, normalize, use_kernel = False, kernel=None):
     '''
     Defines seq based on PCs of input.
 
@@ -215,17 +217,29 @@ def get_PCA_seq(input, k, normalize):
         input: matrix to perform PCA on
         k: numper of particle types / principal components to use
         normalize: True to normalize particle types / principal components to [-1, 1]
+        use_kernel: True to use kernel PCA
+        kernel: type of kernel to use
 
     Outputs:
         seq: array of particle types
     '''
     m, _ = input.shape
-    pca = PCA()
-    pca.fit(input)
-    seq = np.zeros((m, k))
+    if use_kernel:
+        pca = KernelPCA(kernel = kernel)
+        pca.fit(input)
+        print(pca.lambdas_[:10])
+    else:
+        pca = PCA()
+        pca.fit(input)
+        print(pca.explained_variance_[:10])
 
+    seq = np.zeros((m, k))
     for j in range(k):
-        pc = pca.components_[j]
+        if use_kernel:
+            pc = pca.alphas_[:, j] # deprecated in 1.0
+
+        else:
+            pc = pca.components_[j]
 
         if normalize:
             min = np.min(pc)
@@ -258,7 +272,7 @@ def get_k_means_seq(m, y, k, kr = True):
     return seq, kmeans.labels_
 
 def get_nmf_seq(m, y, k, binarize):
-    nmf = NMF(n_components = k, max_iter = 1000)
+    nmf = NMF(n_components = k, max_iter = 1000, init=None)
     nmf.fit(y)
     H = nmf.components_
 
@@ -501,7 +515,15 @@ def main():
         format = '%.3e'
     elif args.method == 'pca_split':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
-        seq = get_PCA_split_seq(args.m, y_diag, args.k)
+        seq = get_PCA_split_seq(y_diag, args.k)
+        format = '%.3e'
+    elif args.method.startswith('kpca'):
+        input_type = args.method.split('-')[1]
+        if input_type.lower() == 'y':
+            input = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
+        elif input_type.lower() == 'x':
+            input = np.load(osp.join(args.sample_folder, 'x.npy'))[:args.m, :]
+        seq = get_PCA_seq(input, args.k, args.normalize, use_kernel = True, kernel = args.kernel)
         format = '%.3e'
     elif args.method == 'ground_truth':
         seq = np.load(osp.join(args.sample_folder, 'x.npy'))[:args.m, :]
@@ -515,7 +537,6 @@ def main():
             format = '%.3e'
         else:
             format = '%d'
-
     elif args.method == 'k_means':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
         seq, args.labels = get_k_means_seq(args.m, y_diag, args.k)
@@ -637,6 +658,17 @@ def test_GNN():
 
     seq = get_seq_gnn(args.k, args.model_path, args.sample, args.normalize, args.use_energy)
 
+def test_kPCA():
+    args = getArgs()
+    args.sample_folder = "/home/eric/sequences_to_contact_maps/dataset_11_14_21/samples/sample40"
+    args.k = 4
+    input = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
+
+    seq = get_PCA_seq(input, args.k, args.normalize, use_kernel = True, kernel = args.kernel)
+
+    seq = get_PCA_seq(input, args.k, args.normalize)
+
+
 
 if __name__ ==  "__main__":
     main()
@@ -645,3 +677,4 @@ if __name__ ==  "__main__":
     # test_epi()
     # test_ChromHMM()
     # test_GNN()
+    # test_kPCA()

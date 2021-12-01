@@ -35,12 +35,12 @@ results=~/sequences_to_contact_maps/results
 
 if [ $local = 'true' ]
 then
-  dataFolder="/home/eric/sequences_to_contact_maps/dataset_10_27_21"
-  dataFolder="/home/eric/dataset_test"
+  dataFolder="/home/eric/sequences_to_contact_maps/dataset_11_14_21"
+  # dataFolder="/home/eric/dataset_test"
   scratchDir='/home/eric/scratch'
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
-  dataFolder='/project2/depablo/erschultz/dataset_10_27_21'
+  dataFolder='/project2/depablo/erschultz/dataset_11_03_21'
   scratchDir='/scratch/midway2/erschultz'
   source activate python3.8_pytorch1.8.1_cuda10.2_2
 fi
@@ -142,45 +142,59 @@ format_method () {
 
 STARTTIME=$(date +%s)
 i=1
-for k in 2 4
+dataFolder='/project2/depablo/erschultz/dataset_11_03_21'
+for k in 2 4 6
 do
   for sample in 40 1230 1718
   do
-    for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
+    for method in 'kPCA-x' 'kPCA-y'
     do
-      # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic'
+      # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic' 'kPCA-x' 'kPCA-y'
+      max_ent
+    done
+  done
+done
+
+dataFolder='/project2/depablo/erschultz/dataset_11_14_21'
+for k in 2 4 6
+do
+  for sample in 40 1230 1718
+  do
+    for method in 'kPCA-x' 'kPCA-y'
+    do
+      # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic' 'kPCA-x' 'kPCA-y'
       max_ent
     done
   done
 done
 #
-k=2
-method='ground_truth'
-for sample in 40 1230 1718
-do
-  max_ent
-done
-#
-useGroundTruthChi='true'
-method='ground_truth'
-numIterations=0
-goalSpecified='false'
-k=2
-for sample in 40
-do
-  max_ent
-done
-#
-useGroundTruthChi='false'
-method='ground_truth'
-numIterations=0
-goalSpecified='false'
-useEnergy='true'
-k='none'
-for sample in 40 1230 1718
-do
-  max_ent
-done
+# k=2
+# method='ground_truth'
+# for sample in 40 1230 1718
+# do
+#   max_ent
+# done
+# #
+# useGroundTruthChi='true'
+# method='ground_truth'
+# numIterations=0
+# goalSpecified='false'
+# k=2
+# for sample in 40
+# do
+#   max_ent
+# done
+# #
+# useGroundTruthChi='false'
+# method='ground_truth'
+# numIterations=0
+# goalSpecified='false'
+# useEnergy='true'
+# k='none'
+# for sample in 40 1230 1718
+# do
+#   max_ent
+# done
 #
 # dataFolder='/project2/depablo/erschultz/dataset_08_26_21'
 # k='none'
@@ -196,18 +210,18 @@ done
 #     max_ent
 # done
 
-k='none'
-useEnergy='true'
-goalSpecified='false'
-useGroundTruthChi='false'
-numIterations=0
-correctEnergy='false'
-modelID=34
-method='GNN'
-for sample in 40 1230 1718
-do
-    max_ent
-done
+# k='none'
+# useEnergy='true'
+# goalSpecified='false'
+# useGroundTruthChi='false'
+# numIterations=0
+# correctEnergy='false'
+# modelID=34
+# method='GNN'
+# for sample in 40 1230 1718
+# do
+#     max_ent
+# done
 #
 # k='none'
 # useEnergy='true'
