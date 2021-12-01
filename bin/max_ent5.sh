@@ -9,14 +9,14 @@
 m=1024
 k='none'
 samples='40-1230-1718'
-productionSweeps=10000
-finalSimProductionSweeps=10000
+productionSweeps=50000
+finalSimProductionSweeps=1000000
 equilibSweeps=10000
 goalSpecified='true'
-numIterations=1 # iteration 1 + numIterations is production run to get contact map
+numIterations=100 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 modelType='ContactGNNEnergy'
-local='true'
+local='false'
 binarize='false'
 normalize='false'
 useEnergy='false'
@@ -54,7 +54,7 @@ max_ent() {
 
   seed=$RANDOM
   format_method
-  for j in 1
+  for j in 1 2 3
   do
     scratchDirI="${scratchDir}/TICG_maxent${i}"
     mkdir -p $scratchDirI
