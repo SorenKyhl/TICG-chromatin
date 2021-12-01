@@ -1,6 +1,6 @@
 #! /bin/bash
-#SBATCH --job-name=maxent
-#SBATCH --output=logFiles/maxent.out
+#SBATCH --job-name=maxent3
+#SBATCH --output=logFiles/maxent3.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20
@@ -9,14 +9,14 @@
 m=1024
 k='none'
 samples='40-1230-1718'
-productionSweeps=50000
-finalSimProductionSweeps=1000000
+productionSweeps=10000
+finalSimProductionSweeps=10000
 equilibSweeps=10000
 goalSpecified='true'
-numIterations=100 # iteration 1 + numIterations is production run to get contact map
+numIterations=1 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 modelType='ContactGNNEnergy'
-local='false'
+local='true'
 binarize='false'
 normalize='false'
 useEnergy='false'
@@ -54,7 +54,7 @@ max_ent() {
 
   seed=$RANDOM
   format_method
-  for j in 1 2 3
+  for j in 1
   do
     scratchDirI="${scratchDir}/TICG_maxent${i}"
     mkdir -p $scratchDirI
@@ -142,51 +142,14 @@ format_method () {
 
 
 STARTTIME=$(date +%s)
-i=1
-dataFolder='/project2/depablo/erschultz/dataset_10_27_21'
-for k in 2 4
-do
-  for sample in 40 1230 1718
-  do
-    for method in 'kPCA-x' 'kPCA-y' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
-    do
-      # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic' 'kPCA-x' 'kPCA-y'
-      max_ent
-    done
-  done
-done
+i=2000
 
-k=2
+dataFolder='/home/eric/sequences_to_contact_maps/dataset_11_03_21'
+k=4
 method='ground_truth'
-for sample in 40 1230 1718
+for sample in 40
 do
   max_ent
-done
-
-dataFolder='/project2/depablo/erschultz/dataset_11_14_21'
-for k in 2 4 6
-do
-  for sample in 40 1230 1718
-  do
-    for method in 'kPCA-x' 'kPCA-y'
-    do
-      # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic' 'kPCA-x' 'kPCA-y'
-      max_ent
-    done
-  done
-done
-
-k='none'
-useEnergy='true'
-goalSpecified='false'
-useGroundTruthChi='false'
-numIterations=0
-correctEnergy='true'
-modelID=50
-method='GNN'
-for sample in 40 1230 1718
-do
-    max_ent
 done
 
 #

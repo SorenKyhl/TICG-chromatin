@@ -1,6 +1,6 @@
 #! /bin/bash
-#SBATCH --job-name=maxent
-#SBATCH --output=logFiles/maxent.out
+#SBATCH --job-name=maxent2
+#SBATCH --output=logFiles/maxent2.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20
@@ -142,9 +142,10 @@ format_method () {
 
 
 STARTTIME=$(date +%s)
-i=1
-dataFolder='/project2/depablo/erschultz/dataset_10_27_21'
-for k in 2 4
+i=1000
+
+dataFolder='/project2/depablo/erschultz/dataset_11_03_21'
+for k in 4 6
 do
   for sample in 40 1230 1718
   do
@@ -156,7 +157,7 @@ do
   done
 done
 
-k=2
+k=4
 method='ground_truth'
 for sample in 40 1230 1718
 do

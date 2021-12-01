@@ -31,6 +31,7 @@ def getArgs():
 
     # chi arguments
     parser.add_argument('--use_ground_truth_chi', type=str2bool, default=False, help='True to use ground truth chi and diag chi')
+    parser.add_argument('--use_ground_truth_diag_chi', type=str2bool, default=False, help='True to use ground truth diag chi')
 
     # diag chi arguments
     parser.add_argument('--diag', type=str2bool, default=False, help='True for diagonal interactions')
@@ -235,8 +236,8 @@ def set_up_plaid_chi(args, config):
                 wr.writerow(chi[np.triu_indices(args.k)])
 
 def set_up_diag_chi(args, config, sample_config):
-    if args.use_ground_truth_chi:
-        args.diag = sample_config["diagonal_on"]
+    if args.use_ground_truth_diag_chi:
+        args.diag = sample_config["diagonal_on"] # overwrite args
         try:
             chi_diag = sample_config["diag_chis"]
         except KeyError:
