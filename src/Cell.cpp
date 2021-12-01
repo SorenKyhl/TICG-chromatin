@@ -137,7 +137,7 @@ double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
 	}
 
 	// count pairwise contacts  -- include self-self interaction!!
-	for (int i=0; i<imax-1; i++)
+	for (int i=0; i<imax; i++)
 	{
 		for(int j=i; j<imax; j++)
 		{

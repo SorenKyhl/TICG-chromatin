@@ -1232,6 +1232,7 @@ void Sim::dumpObservables(int sweep) {
 	// beads are returned to their original state and typenums is updated
 	// but cell.phis is not
 	double U = grid.energy(grid.active_cells, chis); //to update phis in cells
+	double Udiag = grid.diagEnergy(grid.active_cells, diag_chis);
 	if (plaid_on)
 	{
 		obs_out = fopen(obs_out_filename.c_str(), "a");
