@@ -148,6 +148,9 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w'):
                 if small and key.split('-')[0] not in SMALL_METHODS:
                     # skip methods not in SMALL_METHODS
                     continue
+                if k == 4 and key == 'kPCA-x':
+                    # TODO fix
+                    continue
                 if first:
                     k_label = k
                     if k_label == 0:
