@@ -148,20 +148,34 @@ for k in 4 6
 do
   for sample in 40 1230 1718
   do
-    for method in 'kPCA-x' 'kPCA-y'
+    for method in 'nmf'
     do
       # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic' 'kPCA-x' 'kPCA-y'
       max_ent
     done
   done
 done
-
-k=4
-method='ground_truth'
-for sample in 40 1230 1718
-do
-  max_ent
-done
+#
+#
+# dataFolder='/project2/depablo/erschultz/dataset_11_03_21'
+# for k in 4 6
+# do
+#   for sample in 40 1230 1718
+#   do
+#     for method in 'kPCA-x' 'kPCA-y'
+#     do
+#       # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic' 'kPCA-x' 'kPCA-y'
+#       max_ent
+#     done
+#   done
+# done
+#
+# k=4
+# method='ground_truth'
+# for sample in 40 1230 1718
+# do
+#   max_ent
+# done
 
 wait
 

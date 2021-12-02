@@ -148,7 +148,7 @@ for k in 4 6
 do
   for sample in 40 1230 1718
   do
-    for method in 'random' 'k_means' 'PCA' 'PCA_split' 'nmf'
+    for method in 'random'
     do
       # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic' 'kPCA-x' 'kPCA-y'
       max_ent

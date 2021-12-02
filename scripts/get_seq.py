@@ -236,8 +236,7 @@ def get_PCA_seq(input, k, normalize, use_kernel = False, kernel=None):
     seq = np.zeros((m, k))
     for j in range(k):
         if use_kernel:
-            pc = pca.alphas_[:, j] # deprecated in 1.0
-
+            pc = pca.eigenvectors_[:, j] # deprecated in 1.0
         else:
             pc = pca.components_[j]
 
