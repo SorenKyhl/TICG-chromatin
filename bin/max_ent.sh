@@ -144,17 +144,17 @@ format_method () {
 STARTTIME=$(date +%s)
 i=1
 dataFolder='/project2/depablo/erschultz/dataset_10_27_21'
-for k in 2 4
-do
-  for sample in 40 1230 1718
-  do
-    for method in 'PCA'
-    do
-      # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic' 'kPCA-x' 'kPCA-y'
-      max_ent
-    done
-  done
-done
+# for k in 2 4
+# do
+#   for sample in 40 1230 1718
+#   do
+#     for method in 'PCA'
+#     do
+#       # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic' 'kPCA-x' 'kPCA-y'
+#       max_ent
+#     done
+#   done
+# done
 
 
 #
@@ -165,15 +165,15 @@ done
 #   max_ent
 # done
 # #
-# useGroundTruthChi='true'
-# method='ground_truth'
-# numIterations=0
-# goalSpecified='false'
-# k=2
-# for sample in 40
-# do
-#   max_ent
-# done
+useGroundTruthChi='true'
+method='ground_truth'
+numIterations=0
+goalSpecified='false'
+k=2
+for sample in 40 1230 1718
+do
+  max_ent
+done
 # #
 # useGroundTruthChi='false'
 # method='ground_truth'
