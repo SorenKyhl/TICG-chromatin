@@ -13,7 +13,7 @@ void Grid::generate() {
 		for(int j=0; j<cells_per_dim; j++) {
 			cells[i][j].resize(cells_per_dim);
 			for(int k=0; k<cells_per_dim; k++) {
-				
+
 				cells[i][j][k].vol = delta*delta*delta;
 				cells[i][j][k].r = {i*delta,j*delta,k*delta}; // position relative to origin
 				//cells[i][j][k].print();
@@ -108,22 +108,22 @@ bool Grid::checkCellConsistency(int nbeads) {
 		cellbeads += cell->contains.size();
 	}
 
-	return (cellbeads == nbeads); 
+	return (cellbeads == nbeads);
 };
 
 double Grid::densityCapEnergy(const std::unordered_set<Cell*>& flagged_cells) {
 	// energy penalty due to density cap
-	double U = 0; 
+	double U = 0;
 	for(Cell* cell : flagged_cells)
 	{
 		U += cell->getDensityCapEnergy();
 	}
 	return U;
 };
-		
+
 double Grid::energy(const std::unordered_set<Cell*>& flagged_cells, const Eigen::MatrixXd &chis) {
 	// nonbonded volume interactions
-	double U = 0; 
+	double U = 0;
 	for(Cell* cell : flagged_cells)
 	{
 		U += cell->getEnergy(chis);
@@ -133,7 +133,7 @@ double Grid::energy(const std::unordered_set<Cell*>& flagged_cells, const Eigen:
 
 double Grid::diagEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<double> diag_chis) {
 	// nonbonded volume interactions
-	double U = 0; 
+	double U = 0;
 	for(Cell* cell : flagged_cells)
 	{
 		U += cell->getDiagEnergy(diag_chis);
@@ -143,7 +143,7 @@ double Grid::diagEnergy(const std::unordered_set<Cell*>& flagged_cells, const st
 
 double Grid::boundaryEnergy(const std::unordered_set<Cell*>& flagged_cells, const double boundary_chi) {
 	// nonbonded volume interactions
-	double U = 0; 
+	double U = 0;
 	for(Cell* cell : flagged_cells)
 	{
 		U += cell->getBoundaryEnergy(boundary_chi, delta);
@@ -154,7 +154,7 @@ double Grid::boundaryEnergy(const std::unordered_set<Cell*>& flagged_cells, cons
 
 double Grid::SmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Smatrix, const Eigen::MatrixXd &chis) {
 	// nonbonded volume interactions
-	double U = 0; 
+	double U = 0;
 	for(Cell* cell : flagged_cells)
 	{
 		double smatrixenergy = cell->getSmatrixEnergy(Smatrix);
@@ -163,7 +163,18 @@ double Grid::SmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const
 	return U;
 };
 
-double Grid::get_ij_Contacts(int i, int j) 
+double Grid::EmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Ematrix, const Eigen::MatrixXd &chis) {
+	// nonbonded volume interactions
+	double U = 0;
+	for(Cell* cell : flagged_cells)
+	{
+		double ematrixenergy = cell->getEmatrixEnergy(Ematrix);
+		U += ematrixenergy;
+	}
+	return U;
+};
+
+double Grid::get_ij_Contacts(int i, int j)
 {
 	// calculates average phi_i phi_j
 	double obs  = 0;
@@ -172,7 +183,7 @@ double Grid::get_ij_Contacts(int i, int j)
 		obs += cell->phis[i] * cell->phis[j];
 	}
 
-	obs /= active_cells.size(); 
+	obs /= active_cells.size();
 	return obs;
 };
 
@@ -197,7 +208,7 @@ void Grid::getDiagObs(std::vector<double> &diag_obs) {
 	}
 };
 
-double Grid::getChromatinVolfrac2() 
+double Grid::getChromatinVolfrac2()
 {
 	double obs  = 0;
 	for(Cell* cell : active_cells)
@@ -207,11 +218,11 @@ double Grid::getChromatinVolfrac2()
 		obs += phi_c*phi_c;
 	}
 
-	obs /= active_cells.size(); 
+	obs /= active_cells.size();
 	return obs;
 };
 
-double Grid::getChromatinVolfrac() 
+double Grid::getChromatinVolfrac()
 {
 	double obs  = 0;
 	for(Cell* cell : active_cells)
@@ -221,11 +232,11 @@ double Grid::getChromatinVolfrac()
 		obs += phi_c;
 	}
 
-	obs /= active_cells.size(); 
+	obs /= active_cells.size();
 	return obs;
 };
 
-double Grid::getChromatinVolfracD() 
+double Grid::getChromatinVolfracD()
 {
 	double obs  = 0;
 	for(Cell* cell : active_cells)
@@ -235,7 +246,7 @@ double Grid::getChromatinVolfracD()
 		obs += (phi_c - Cell::phi_chromatin) * (phi_c - Cell::phi_chromatin);
 	}
 
-	obs /= active_cells.size(); 
+	obs /= active_cells.size();
 	return obs;
 };
 

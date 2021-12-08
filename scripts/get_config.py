@@ -26,7 +26,8 @@ def getArgs():
     parser.add_argument('--n_sweeps', type=int, help='set to change nSweeps')
     parser.add_argument('--seed', type=int, help='set to change random seed')
     parser.add_argument('--use_ground_truth_seed', type=str2bool, help='True to copy seed from config file in sample_folder')
-    parser.add_argument('--use_energy', type=str2bool, default=False, help='True to use s_matrix')
+    parser.add_argument('--use_ematrix', type=str2bool, default=False, help='True to use e_matrix')
+    parser.add_argument('--use_smatrix', type=str2bool, default=False, help='True to use s_matrix')
     parser.add_argument('--sample_folder', type=str, help='location of sample for ground truth chi')
 
     # chi arguments
@@ -160,7 +161,7 @@ def generateRandomChi(args, decimals = 1):
     # create array with random values in [minval, maxVal]
     rands = np.random.rand(args.k, args.k) * (args.max_chi - args.min_chi) + args.min_chi
 
-    # zero lower diagonal
+    # zero lower triangle
     chi = np.triu(rands)
 
     if args.fill_offdiag is not None:
@@ -199,7 +200,7 @@ def set_up_plaid_chi(args, config):
         assert args.k is not None, "chi and k cannot both be None"
         args.chi = getChis(args)
     else:
-        # zero lower diagonal
+        # zero lower triangle
         args.chi = np.triu(args.chi)
         rows, cols = args.chi.shape
         if args.k is None:
@@ -254,6 +255,23 @@ def set_up_diag_chi(args, config, sample_config):
                 wr.writerow(np.array(config["diag_chis"]))
                 wr.writerow(np.array(config["diag_chis"]))
 
+def calculate_E_S(x, chi):
+    s = calculate_S(x, chi)
+    e = s + s.T - np.diag(np.diagonal(s).copy())
+    return e, s
+
+def calculate_E(x, chi):
+    s = calculate_S(x, chi)
+    e = s + s.T - np.diag(np.diagonal(s).copy())
+    return e
+
+def calculate_S(x, chi):
+    # zero lower triangle (double check)
+    chi = np.triu(chi)
+
+    s = x @ chi @ x.T
+    return s
+
 class InteractionConverter():
     """Class that allows conversion between epigenetic mark bit string pairs and integer type id"""
     def __init__(self, k, chi = None):
@@ -261,7 +279,7 @@ class InteractionConverter():
         self.chi = chi
         self.allStrings = self.generateAllBinaryStrings()
         if chi is not None:
-            self.Psi = self.allStrings @ self.chi @ self.allStrings.T
+            self.Psi = calculate_S(self.allStrings, self.chi)
         else:
             self.Psi = None
 
@@ -305,7 +323,7 @@ class InteractionConverter():
 
     def updatePsi(self):
         assert self.chi is not None, "set chi first"
-        self.Psi = self.allStrings @ self.chi @ self.allStrings.T
+        self.Psi = calculate_S(self.allStrings, self.chi)
 
 def main():
     args = getArgs()
@@ -319,95 +337,110 @@ def main():
     with open(args.default_config, 'rb') as f:
         config = json.load(f)
 
-    if args.use_energy:
-        # save smatrix_on
-        config['smatrix_on']=True
-        config['chipseq_files']=None
+    if args.use_ematrix or args.use_smatrix:
+        config['bead_types'] = None
         config["nspecies"] = 0
-        config["smatrix_filename"] = "s_matrix.txt"
 
-        # create s_matrix
-        if args.chi == 'parity':
+        if args.use_smatrix:
+            assert not args.use_ematrix
+            matrix_file = "s_matrix.txt"
+            # save smatrix_on
+            config['smatrix_on'] = True
+            config["smatrix_filename"] = matrix_file
+        else:
+            matrix_file = "e_matrix.txt"
+            # save ematrix_on
+            config['ematrix_on'] = True
+            config["ematrix_filename"] = matrix_file
+
+        # create e/s_matrix
+        if isinstance(args.chi , np.ndarray):
+            assert not osp.exists(matrix_file)
             x = np.load('x.npy')
 
-            s = np.zeros((args.m, args.m))
-            for i in range(args.m):
-                for j in range(args.m):
-                    inner = np.concatenate((x[i, :], x[j, :]))
-                    s[i,j] = np.sum(inner) % 2
+            # zero lower triangle
+            chi = np.triu(args.chi)
 
-            # convert to {-1, 1}
-            # odd number of particles -> 1
-            # even -> -1
-            s *= 2
-            s -= 1
-        elif args.chi == 'nonlinear':
-            x = np.load('x.npy') # original particle types that interact nonlinearly
-            assert args.k >= 10
-            x_linear = np.zeros((args.m, 15)) # transformation of x such that S = x \chi x^T
-            x_linear[:, 0] = (np.sum(x[:, 0:3], axis = 1) == 1) # exactly 1 of A, B, C
-            x_linear[:, 1] = (np.sum(x[:, 0:3], axis = 1) == 2) # exactly 2 of A, B, C
-            x_linear[:, 2] = (np.sum(x[:, 0:3], axis = 1) == 3) # A, B, and C
-            x_linear[:, 3] = x[:, 3] # D
-            x_linear[:, 4] = x[:, 4] # E
-            x_linear[:, 5] = np.logical_and(x[:, 3], x[:, 4]) # D and E
-            x_linear[:, 6] = np.logical_and(x[:, 3], x[:, 5]) # D and F
-            x_linear[:, 7] = np.logical_xor(x[:, 0], x[:, 5]) # either A or F
-            x_linear[:, 8] = x[:, 6] # G
-            x_linear[:, 9] = np.logical_and(np.logical_and(x[:, 6], x[:, 7]), np.logical_not(x[:, 4])) # G and H and not E
-            x_linear[:, 10] = x[:, 7] # H
-            x_linear[:, 11] = x[:, 8] # I
-            x_linear[:, 12] = x[:, 9] # J
-            x_linear[:, 13] = np.logical_or(x[:, 7], x[:, 8]) # H or I
-            x_linear[:, 14] = np.logical_xor(x[:, 8], x[:, 9]) # either I or J
+            e, s = calculate_E_S(x, chi)
 
-            np.save('x_linear.npy', x_linear)
-            args.k = 15
-            # chi = getChis(args)
-            chi = np.array([[-1,1.8,-0.5,1.8,0.1,1.3,-0.1,0.1,0.8,1.4,2,1.7,1.5,-0.2,1.1],
-                            [0,-1,-0.6,0.6,0.8,-0.8,-0.7,-0.1,0,-0.4,-0.2,0.6,-0.9,1.4,0.3],
-                            [0,0,-1,1.6,0,-0.2,-0.4,1.5,0.7,1.8,-0.7,-0.9,0.6,1,0.5],
-                            [0,0,0,-1,0.8,1.3,-0.6,0.7,0.1,1.4,0.6,0.7,-0.6,0.5,0.5],
-                            [0,0,0,0,-1,0.9,0.2,1.5,1.7,0.1,-0.7,0.8,0.7,1.6,1.6],
-                            [0,0,0,0,0,-1,0.6,-0.2,0.8,0.7,-1,-0.9,1.6,0.8,0.3],
-                            [0,0,0,0,0,0,-1,-0.2,-0.6,1.8,-0.6,1.9,1.1,0.4,-0.4],
-                            [0,0,0,0,0,0,0,-1,1.7,-0.4,1.7,0.2,1.2,1.8,-0.1],
-                            [0,0,0,0,0,0,0,0,-1,0.7,0.2,0.8,-0.4,1.4,1.3],
-                            [0,0,0,0,0,0,0,0,0,-1,-0.4,0.5,1.9,0.1,0.1],
-                            [0,0,0,0,0,0,0,0,0,0,-1,0.9,1,1.3,1],
-                            [0,0,0,0,0,0,0,0,0,0,0,-1,1.5,-0.1,0.7],
-                            [0,0,0,0,0,0,0,0,0,0,0,0,-1,0.6,-0.6],
-                            [0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0.2],
-                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1]])
-            s = x_linear @ chi @ x_linear.T
-        elif args.chi == 'polynomial':
-            x = np.load('x.npy') # original particle types that interact nonlinearly
-            args.k *= args.k
-            x_linear = np.zeros((args.m, args.k))
-            for i in range(args.m):
-                x_linear[i] = np.outer(x[i], x[i]).flatten()
-
-            np.save('x_linear.npy', x_linear)
-
-            chi = getChis(args)
-            s = x_linear @ chi @ x_linear.T
-
-        # save chi
-        if args.chi in {'nonlinear'} and args.save_chi:
             np.savetxt('chis.txt', chi, fmt='%0.5f')
             np.save('chis.npy', chi)
-            print(f'Rank of chi: {np.linalg.matrix_rank(chi)}')
-
-        if args.chi in {'parity', 'nonlinear', 'polynomial'}:
             np.savetxt('s_matrix.txt', s)
             np.save('s.npy', s)
+            np.savetxt('e_matrix.txt', e)
+            np.save('e.npy', e)
             print(f'Rank of S: {np.linalg.matrix_rank(s)}')
-        print('\n')
+            print(f'Rank of E: {np.linalg.matrix_rank(e)}')
+            print('\n')
+        elif args.chi in {'nonlinear', 'polynomial'}:
+            if args.chi == 'nonlinear':
+                x = np.load('x.npy') # original particle types that interact nonlinearly
+                assert args.k >= 10
+                x_linear = np.zeros((args.m, 15)) # transformation of x such that S = x \chi x^T
+                x_linear[:, 0] = (np.sum(x[:, 0:3], axis = 1) == 1) # exactly 1 of A, B, C
+                x_linear[:, 1] = (np.sum(x[:, 0:3], axis = 1) == 2) # exactly 2 of A, B, C
+                x_linear[:, 2] = (np.sum(x[:, 0:3], axis = 1) == 3) # A, B, and C
+                x_linear[:, 3] = x[:, 3] # D
+                x_linear[:, 4] = x[:, 4] # E
+                x_linear[:, 5] = np.logical_and(x[:, 3], x[:, 4]) # D and E
+                x_linear[:, 6] = np.logical_and(x[:, 3], x[:, 5]) # D and F
+                x_linear[:, 7] = np.logical_xor(x[:, 0], x[:, 5]) # either A or F
+                x_linear[:, 8] = x[:, 6] # G
+                x_linear[:, 9] = np.logical_and(np.logical_and(x[:, 6], x[:, 7]), np.logical_not(x[:, 4])) # G and H and not E
+                x_linear[:, 10] = x[:, 7] # H
+                x_linear[:, 11] = x[:, 8] # I
+                x_linear[:, 12] = x[:, 9] # J
+                x_linear[:, 13] = np.logical_or(x[:, 7], x[:, 8]) # H or I
+                x_linear[:, 14] = np.logical_xor(x[:, 8], x[:, 9]) # either I or J
+
+                np.save('x_linear.npy', x_linear)
+                args.k = 15
+                chi = np.array([[-1,1.8,-0.5,1.8,0.1,1.3,-0.1,0.1,0.8,1.4,2,1.7,1.5,-0.2,1.1],
+                                [0,-1,-0.6,0.6,0.8,-0.8,-0.7,-0.1,0,-0.4,-0.2,0.6,-0.9,1.4,0.3],
+                                [0,0,-1,1.6,0,-0.2,-0.4,1.5,0.7,1.8,-0.7,-0.9,0.6,1,0.5],
+                                [0,0,0,-1,0.8,1.3,-0.6,0.7,0.1,1.4,0.6,0.7,-0.6,0.5,0.5],
+                                [0,0,0,0,-1,0.9,0.2,1.5,1.7,0.1,-0.7,0.8,0.7,1.6,1.6],
+                                [0,0,0,0,0,-1,0.6,-0.2,0.8,0.7,-1,-0.9,1.6,0.8,0.3],
+                                [0,0,0,0,0,0,-1,-0.2,-0.6,1.8,-0.6,1.9,1.1,0.4,-0.4],
+                                [0,0,0,0,0,0,0,-1,1.7,-0.4,1.7,0.2,1.2,1.8,-0.1],
+                                [0,0,0,0,0,0,0,0,-1,0.7,0.2,0.8,-0.4,1.4,1.3],
+                                [0,0,0,0,0,0,0,0,0,-1,-0.4,0.5,1.9,0.1,0.1],
+                                [0,0,0,0,0,0,0,0,0,0,-1,0.9,1,1.3,1],
+                                [0,0,0,0,0,0,0,0,0,0,0,-1,1.5,-0.1,0.7],
+                                [0,0,0,0,0,0,0,0,0,0,0,0,-1,0.6,-0.6],
+                                [0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0.2],
+                                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1]])
+                e, s = calculate_E_S(x_linear, chi)
+            elif args.chi == 'polynomial':
+                x = np.load('x.npy') # original particle types that interact nonlinearly
+                args.k *= args.k
+                x_linear = np.zeros((args.m, args.k))
+                for i in range(args.m):
+                    x_linear[i] = np.outer(x[i], x[i]).flatten()
+
+                np.save('x_linear.npy', x_linear)
+
+                chi = getChis(args)
+                e, s = calculate_E_S(x_linear, chi)
+
+            # save chi
+            if args.chi in {'nonlinear'} and args.save_chi:
+                np.savetxt('chis.txt', chi, fmt='%0.5f')
+                np.save('chis.npy', chi)
+                print(f'Rank of chi: {np.linalg.matrix_rank(chi)}')
+
+            np.savetxt('s_matrix.txt', s)
+            np.save('s.npy', s)
+            np.savetxt('e_matrix.txt', e)
+            np.save('e.npy', e)
+            print(f'Rank of S: {np.linalg.matrix_rank(s)}')
+            print(f'Rank of E: {np.linalg.matrix_rank(e)}')
+            print('\n')
     else:
         set_up_plaid_chi(args, config)
 
         # save seq
-        config['chipseq_files'] = ['seq{}.txt'.format(i) for i in range(args.k)]
+        config['bead_types'] = ['seq{}.txt'.format(i) for i in range(args.k)]
 
         # save nspecies
         config["nspecies"] = args.k
@@ -498,7 +531,7 @@ def test_nonlinear_chi():
     chi = getChis(args)
     print(chi)
 
-    s = x_linear @ chi @ x_linear.T
+    s = calculate_S(x_linear, chi)
     print(s)
 
 def test_polynomial_chi():

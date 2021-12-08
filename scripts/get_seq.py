@@ -17,7 +17,7 @@ abspath = osp.abspath(__file__)
 dname = osp.dirname(abspath)
 sys.path.insert(0, dname)
 from knightRuiz import knightRuiz
-from get_config import LETTERS, str2bool, str2int
+from get_config import LETTERS, str2bool, str2int, calculate_E_S
 
 paths = ['/home/erschultz/sequences_to_contact_maps',
         '/home/eric/sequences_to_contact_maps',
@@ -47,8 +47,8 @@ def getArgs():
     # args for specific methods
     parser.add_argument('--seed', type=int, help='random seed for numpy')
     parser.add_argument('--model_path', type=str, help='path to GNN model')
-    parser.add_argument('--use_energy', type=str2bool, default=False)
-    parser.add_argument('--correct_energy', type=str2bool, default=False, help='True to correct S by dividing all non-diagonal entries by 2')
+    parser.add_argument('--use_ematrix', type=str2bool, default=False)
+    parser.add_argument('--use_smatrix', type=str2bool, default=False)
     parser.add_argument('--epigenetic_data_folder', type=str, default=osp.join(chip_seq_data_local, 'fold_change_control/processed'), help='location of epigenetic data')
     parser.add_argument('--ChromHMM_data_file', type=str, default=osp.join(chip_seq_data_local, 'aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt'), help='location of ChromHMM data')
     parser.add_argument('--p_switch', type=float, default=0.05, help='probability to switch bead assignment (for method = random)')
@@ -117,7 +117,7 @@ def get_random_seq(m, p_switch, k, relabel, seed):
         else:
             raise Exception("unsupported relabel: {}".format(relabel))
     seq = np.zeros((m, k))
-    seq[0, :] = np.random.choice([1,0], size = k)
+    seq[0, :] = rng.choice([1,0], size = k)
     for j in range(k):
         for i in range(1, m):
             if seq[i-1, j] == 1:
@@ -377,7 +377,7 @@ def get_ChromHMM_seq(ifile, k, start=35000000, end=60575000, res=25000, min_cove
 
 def get_energy_gnn(model_path, sample):
     '''
-    Loads output from GNN model to use as pairwise energy matrix, S
+    Loads output from GNN model to use as ematrix or smatrix
 
     Inputs:
         model_path: path to model results
@@ -391,13 +391,13 @@ def get_energy_gnn(model_path, sample):
     print(model_type)
 
     assert model_type == 'ContactGNNEnergy', "Unrecognized model_type: {}".format(model_type)
-    s_path = osp.join(model_path, "sample{}/energy_hat.txt".format(sample))
-    if osp.exists(s_path):
-        s = np.loadtxt(s_path)
+    energy_hat_path = osp.join(model_path, "sample{}/energy_hat.txt".format(sample))
+    if osp.exists(energy_hat_path):
+        energy = np.loadtxt(energy_hat_path)
     else:
-        raise Exception('s_path does not exist: {}'.format(s_path))
+        raise Exception('s_path does not exist: {}'.format(energy_hat_path))
 
-    return s
+    return energy
 
 def get_seq_gnn(k, model_path, sample, normalize):
     '''
@@ -423,13 +423,13 @@ def get_seq_gnn(k, model_path, sample, normalize):
         else:
             raise Exception('z_path does not exist: {}'.format(z_path))
     elif model_type == 'ContactGNNEnergy':
-        s_path = osp.join(model_path, "sample{}/energy_hat.txt".format(sample))
-        if osp.exists(s_path):
-            s = np.loadtxt(s_path)
+        energy_hat_path = osp.join(model_path, "sample{}/energy_hat.txt".format(sample))
+        if osp.exists(energy_hat_path):
+            energy_hat = np.loadtxt(energy_hat_path)
         else:
-            raise Exception('s_path does not exist: {}'.format(s_path))
+            raise Exception('s_path does not exist: {}'.format(energy_hat_path))
 
-        seq = get_PCA_seq(s, k, normalize)
+        seq = get_PCA_seq(energy_hat, k, normalize)
     else:
         raise Exception("Unrecognized model_type: {}".format(model_type))
 
@@ -526,16 +526,25 @@ def main():
         format = '%.3e'
     elif args.method == 'ground_truth':
         seq = np.load(osp.join(args.sample_folder, 'x.npy'))[:args.m, :]
-        if args.use_energy:
+        calc = False
+        if args.use_smatrix:
             s_matrix_file = osp.join(args.sample_folder, 's_matrix.txt')
             if osp.exists(s_matrix_file):
                 s = np.loadtxt(s_matrix_file)
             else:
-                chi = np.load(osp.join(args.sample_folder, 'chis.npy'))[:args.m, :]
-                s = seq @ chi @ seq.T
+                calc = True
             format = '%.3e'
+        elif args.use_ematrix:
+            if osp.exists(e_matrix_file):
+                e = np.loadtxt(e_matrix_file)
+            else:
+                calc = True
         else:
             format = '%d'
+
+        if calc:
+            chi = np.load(osp.join(args.sample_folder, 'chis.npy'))[:args.m, :]
+            e, s = calculate_E_S(seq, chi)
     elif args.method == 'k_means':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
         seq, args.labels = get_k_means_seq(args.m, y_diag, args.k)
@@ -562,24 +571,28 @@ def main():
             dataset = osp.split(data_folder)[1]
         assert dataset == args.dataset, 'Dataset mismatch: {} vs {}'.format(dataset, args.dataset)
 
-        if args.use_energy:
+        if args.use_smatrix:
             s = get_energy_gnn(args.model_path, args.sample)
+        elif args.use_ematrix:
+            e = get_energy_gnn(args.model_path, args.sample)
         else:
             seq = get_seq_gnn(args.k, args.model_path, args.sample, args.normalize)
         format = '%.3e'
     else:
         raise Exception('Unkown method: {}'.format(args.method))
 
-    if args.use_energy:
+    if args.use_smatrix:
         m1, m2 = s.shape
         assert m1 == m2, "shape mismatch, {} vs {}".format(m1, m2)
         assert m1 == args.m
-        if args.correct_energy:
-            diag = np.diagonal(s).copy()
-            s /= 2
-            np.fill_diagonal(s, diag)
-        print(s)
         np.savetxt('s_matrix.txt', s, fmt = format)
+        np.save('s.npy', s)
+    elif args.use_ematrix:
+        m1, m2 = e.shape
+        assert m1 == m2, "shape mismatch, {} vs {}".format(m1, m2)
+        assert m1 == args.m
+        np.savetxt('e_matrix.txt', e, fmt = format)
+        np.save('e.npy', e)
     else:
         m, k = seq.shape
         # np.set_printoptions(threshold=100)
@@ -590,8 +603,10 @@ def main():
         writeSeq(seq, format, args.save_npy)
 
     if args.plot:
-        if args.use_energy:
+        if args.use_smatrix:
             plotContactMap(s, 's_matrix.png', vmin = 'min', vmax = 'max', cmap = 'blue-red')
+        elif args.use_ematrix:
+            plotContactMap(e, 'e_matrix.png', vmin = 'min', vmax = 'max', cmap = 'blue-red')
         elif args.method in {'k_means', 'chromhmm'} or (args.method == 'nmf' and args.binarize):
             plot_seq_exclusive(seq, labels=args.labels, X=args.X)
         elif args.binarize:
@@ -655,7 +670,7 @@ def test_GNN():
     args.model_path = '../sequences_to_contact_maps/results/ContactGNNEnergy/26'
     args.normalize = True
 
-    seq = get_seq_gnn(args.k, args.model_path, args.sample, args.normalize, args.use_energy)
+    seq = get_seq_gnn(args.k, args.model_path, args.sample, args.normalize, args.use_smatrix)
 
 def test_kPCA():
     args = getArgs()

@@ -28,15 +28,16 @@ def getArgs():
     # '../../sequences_to_contact_maps/dataset_04_18_21'
     # "/project2/depablo/erschultz/dataset_04_18_21"
     parser.add_argument('--y', type=str, help='location of input y')
-    parser.add_argument('--y_diag_instance', type=str, help='location of input y_diag_instance')
+    parser.add_argument('--y_diag', type=str, help='location of input y_diag')
     parser.add_argument('--yhat', type=str, help='location of input yhat')
-    parser.add_argument('--yhat_diag_instance', type=str, help='location of input y_diag_instance')
+    parser.add_argument('--yhat_diag', type=str, help='location of input y_diag')
     parser.add_argument('--m', type=int, default=1024, help='number of particles')
+    parser.add_argument('--dir', type=str, default='', help='location to write to')
 
     args = parser.parse_args()
     return args
 
-def comparePCA(y, yhat, dir = ''):
+def comparePCA(y, yhat, dir):
     # y
     pca_y = PCA()
     pca_y.fit(y)
@@ -79,7 +80,7 @@ def comparePCA(y, yhat, dir = ''):
     plt.close()
 
 # plotting functions
-def plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, args, dir = ''):
+def plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, args):
     n, n = y.shape
     triu_ind = np.triu_indices(n)
     overall_corr_diag, _ = pearsonr(y_diag[triu_ind], yhat_diag[triu_ind])
@@ -88,7 +89,7 @@ def plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, args, d
     avg = np.nanmean(corr_arr)
 
     # save correlations to json
-    with open(osp.join(dir, 'distance_pearson.json'), 'w') as f:
+    with open(osp.join(args.dir, 'distance_pearson.json'), 'w') as f:
         temp_dict = {'overall_pearson': overall_corr,
                      'scc': overall_corr_diag,
                      'avg_dist_pearson': avg}
@@ -111,27 +112,27 @@ def plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, args, d
     plt.title(title, fontsize = 16)
 
     plt.tight_layout()
-    plt.savefig(osp.join(dir, 'distance_pearson.png'))
+    plt.savefig(osp.join(args.dir, 'distance_pearson.png'))
     plt.close()
 
 def main():
     args = getArgs()
     y = np.load(args.y)[:args.m, :args.m]
-    if args.y_diag_instance is not None and osp.exists(args.y_diag_instance):
-        y_diag_instance = np.load(args.y_diag_instance)[:args.m, :args.m]
+    if args.y_diag is not None and osp.exists(args.y_diag):
+        y_diag = np.load(args.y_diag)[:args.m, :args.m]
     else:
         meanDist = genomic_distance_statistics(y)
-        y_diag_instance = diagonal_preprocessing(y, meanDist)
+        y_diag = diagonal_preprocessing(y, meanDist)
 
     yhat = np.load(args.yhat)[:args.m, :args.m]
-    if args.yhat_diag_instance is not None and osp.exists(args.yhat_diag_instance):
-        yhat_diag_instance = np.load(args.yhat_diag_instance)[:args.m, :args.m]
+    if args.yhat_diag is not None and osp.exists(args.yhat_diag):
+        yhat_diag = np.load(args.yhat_diag)[:args.m, :args.m]
     else:
         meanDist = genomic_distance_statistics(yhat)
-        yhat_diag_instance = diagonal_preprocessing(yhat, meanDist)
+        yhat_diag = diagonal_preprocessing(yhat, meanDist)
 
-    plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag_instance, yhat_diag_instance, args)
-    comparePCA(y, yhat)
+    plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, args)
+    comparePCA(y, yhat, args.dir)
 
 
 if __name__ == '__main__':

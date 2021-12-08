@@ -1,9 +1,9 @@
 #! /bin/bash
 
 # chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
-chi="-1&1&0&0\\1&-2&0&-1\\0&0&-1&2\\0&-1&2&-1"
+# chi="-1&1&0&0\\1&-2&0&-1\\0&0&-1&2\\0&-1&2&-1"
 # chi="-1&1\\1&0"
-# chi='none'
+chi='test'
 # chi='polynomial'
 k=4
 m=1024
@@ -14,19 +14,19 @@ relabel='none'
 nodes=10
 tasks=20
 samples=2000
-diag='false'
+diag='true'
 nSweeps=10000
 pSwitch=0.05
 minChi=-1
 maxChi=2
 fillDiag=-1
-local='false'
+local='true'
 
 if [ $local = 'true' ]
 then
   dataFolder="/home/eric/dataset_test"
   scratchDir='/home/eric/scratch'
-  startSample=26
+  startSample=51
   nodes=1
   tasks=1
   samples=1
@@ -52,5 +52,5 @@ do
   startSampleI=$(( $startSample + $samplesPerNode * $i ))
   endSampleI=$(( $startSampleI + $samplesPerNode - 1 ))
   echo $startSampleI $endSampleI
-  sbatch ~/TICG-chromatin/bin/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samplesPerNode $samplesPerTask $diag $scratchDir $i $nSweeps $pSwitch $minChi $maxChi $fillDiag
+  bash ~/TICG-chromatin/bin/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samplesPerNode $samplesPerTask $diag $scratchDir $i $nSweeps $pSwitch $minChi $maxChi $fillDiag
 done

@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include <iostream>
 #include <vector>
@@ -16,30 +16,30 @@
 #include "random_mars.h"
 
 class Sim {
-public: 
+public:
 	std::vector<Bead> beads;
 	std::vector<Bond*> bonds; // pointers because Bond class is virtual
 	Grid grid;
 	RanMars* rng;  // random number generator
 
-	double chi; 
+	double chi;
 	Eigen::MatrixXd chis;
 	std::vector<double> diag_chis;
 	double boundary_chi;
 	int nspecies; // number of different epigenetic marks
-	int nbeads; 
+	int nbeads;
 	double total_volume;
 	double grid_size;
 	double bond_length;
 
 	// output files
-	FILE *xyz_out; 
+	FILE *xyz_out;
 	FILE *energy_out;
 	FILE *obs_out;
 	FILE *diag_obs_out;
 	FILE *density_out;
 	FILE *extra_out;
-	std::string data_out_filename; 
+	std::string data_out_filename;
 	std::string xyz_out_filename;
 	std::string energy_out_filename;
 	std::string obs_out_filename;
@@ -49,7 +49,7 @@ public:
 	std::string extra_out_filename;
 
 	// MC variables
-	int decay_length; 
+	int decay_length;
 	int exp_decay;// = nbeads/decay_length;             // size of exponential falloff for MCmove second bead choice
 	int exp_decay_crank;// = nbeads/decay_length;
 	int exp_decay_pivot;// = nbeads/decay_length;
@@ -80,7 +80,7 @@ public:
 	//int nEquilibSweeps; // = 10*dump_frequency;
 	int acc = 0;
 
-	bool bonded_on; 
+	bool bonded_on;
 	bool nonbonded_on;
 
 	bool displacement_on;
@@ -96,11 +96,11 @@ public:
 	bool cellcount_on = true;
 
 	bool track_contactmap;
-	bool load_chipseq;
+	bool load_bead_types;
 	bool load_configuration;
-	std::string load_configuration_filename; 
-	std::vector<std::string> chipseq_files;
-	
+	std::string load_configuration_filename;
+	std::vector<std::string> bead_type_files;
+
 	// analytics
 	bool prof_timer_on; // = false;
 	bool print_trans; // = false;
@@ -119,6 +119,10 @@ public:
 	std::string smatrix_filename;
 	bool smatrix_on;
 
+	std::vector<std::vector<double>> ematrix;
+	std::string ematrix_filename;
+	bool ematrix_on;
+
 	// methods
 	void run();
 	void setupContacts();
@@ -135,7 +139,7 @@ public:
 	void volParameters_new();
 	void loadConfiguration();
 	void initRandomCoil(double bondlength);
-	void loadChipseq();
+	void loadBeadTypes();
 	void constructBonds();
 	void print();
 	double getAllBondedEnergy();
@@ -158,4 +162,5 @@ public:
 	void dumpContacts(int sweep);
 
 	void setupSmatrix();
+	void setupEmatrix();
 };

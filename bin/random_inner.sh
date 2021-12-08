@@ -30,6 +30,9 @@ then
 elif [ $chi = 'polynomial' ]
 then
 	useEnergy='true'
+elif [ $chi = 'test' ]
+then
+	useEnergy='true'
 else
 	useEnergy='false'
 fi
