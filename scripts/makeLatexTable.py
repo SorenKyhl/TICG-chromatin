@@ -101,9 +101,12 @@ def loadData(args):
                                 print(f"MISSING: {json_file}")
 
                             # look for s_matrix
-                            s_matrix_file = osp.join(replicate_folder, 'resources', 's.npy')
-                            if osp.exists(s_matrix_file):
-                                s = np.load(s_matrix_file)
+                            s_matrix_file1 = osp.join(replicate_folder, 'resources', 's.npy')
+                            s_matrix_file2 = osp.join(replicate_folder, 'resources', 's_matrix.txt')
+                            if osp.exists(s_matrix_file1):
+                                s = np.load(s_matrix_file1)
+                            elif osp.exists(s_matrix_file2):
+                                s = np.loadtxt(s_matrix_file2)
                             else:
                                 # load bead types
                                 x_file = osp.join(replicate_folder, 'resources', 'x.npy')
