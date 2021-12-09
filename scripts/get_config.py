@@ -66,7 +66,7 @@ def str2list2D(v, sep1 = '\\', sep2 = '&'):
     elif isinstance(v, str):
         if v.lower() == 'none':
             return None
-        elif v.lower() in {'parity', 'nonlinear', 'polynomial'}:
+        elif v.lower() in {'nonlinear', 'polynomial'}:
             return v.lower()
         else:
             v = v.replace(' ', '') # get rid of spaces
@@ -419,7 +419,6 @@ def main():
                     x_linear[i] = np.outer(x[i], x[i]).flatten()
 
                 np.save('x_linear.npy', x_linear)
-
                 chi = getChis(args)
                 e, s = calculate_E_S(x_linear, chi)
 

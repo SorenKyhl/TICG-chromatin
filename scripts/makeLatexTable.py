@@ -7,12 +7,14 @@ import argparse
 from collections import defaultdict
 import numpy as np
 
+from sklearn.metrics import mean_squared_error
+
 # ensure that I can get_config
 abspath = osp.abspath(__file__)
 dname = osp.dirname(abspath)
 sys.path.insert(0, dname)
 from knightRuiz import knightRuiz
-from get_config import str2bool, str2int
+from get_config import str2bool, str2int, calculate_S
 
 METHODS = ['ground_truth', 'random', 'PCA', 'PCA_split', 'kPCA', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM']
 SMALL_METHODS = {'ground_truth', 'random', 'PCA', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM'}
@@ -97,11 +99,37 @@ def loadData(args):
                                     replicate_data['avg_dist_pearson'].append(results['avg_dist_pearson'])
                             else:
                                 print(f"MISSING: {json_file}")
+
+                            # look for s_matrix
+                            s_matrix_file = osp.join(replicate_folder, 'resources', 's.npy')
+                            if osp.exists(s_matrix_file):
+                                s = np.load(s_matrix_file)
+                            else:
+                                # load bead types
+                                x_file = osp.join(replicate_folder, 'resources', 'x.npy')
+                                x = np.load(x_file)
+                                _, k = x.shape
+
+                                # load chi
+                                chi_file = osp.join(replicate_folder, 'chis.txt')
+                                allchis = np.atleast_2d(np.loadtxt(chi_file))
+                                if len(allchis[0]) == 0:
+                                    # shape will be wrong if k = 1
+                                    allchis = allchis.T
+                                lastchis = allchis[-1]
+                                chi = np.zeros((k,k))
+                                chi[np.triu_indices(k)] = lastchis # upper traingular chi
+
+                                # caculate s
+                                s = calculate_S(x, chi)
+
+                            replicate_data['s'].append(s)
+
                         data[k][method]['overall_pearson'].append(np.mean(replicate_data['overall_pearson']))
                         data[k][method]['scc'].append(np.mean(replicate_data['scc']))
                         data[k][method]['avg_dist_pearson'].append(np.mean(replicate_data['avg_dist_pearson']))
-                print('')
-                # just making output look nicer
+                        data[k][method]['s'].append(replicate_data['s'])
+                print('') # just making output look nicer
     return data
 
 def makeLatexTable(data, ofile, header = '', small = False, mode = 'w'):
@@ -117,26 +145,28 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w'):
     '''
     header = header.replace('_', "\_")
     with open(ofile, mode) as o:
+        # set up first rows of table
         o.write("\\begin{center}\n")
         if small:
-            metrics = ['scc']
-            o.write("\\begin{tabular}{|c|c|c|c|}\n")
+            metrics = ['scc', 's']
+            o.write("\\begin{tabular}{|c|c|c|c|c|}\n")
             o.write("\\hline\n")
-            o.write("\\multicolumn{4}{|c|}{" + header + "} \\\ \n")
+            o.write("\\multicolumn{5}{|c|}{" + header + "} \\\ \n")
             o.write("\\hline\n")
-            o.write("Method & k & SCC & $\\Delta$ SCC \\\ \n")
+            o.write("Method & k & SCC & $\\Delta$ SCC & MSE-S \\\ \n")
         else:
-            metrics = ['overall_pearson', 'avg_dist_pearson', 'scc']
-            o.write("\\begin{tabular}{|c|c|c|c|c|c|}\n")
+            metrics = ['overall_pearson', 'avg_dist_pearson', 'scc', 's']
+            o.write("\\begin{tabular}{|c|c|c|c|c|c|c|}\n")
             o.write("\\hline\n")
-            o.write("\\multicolumn{6}{|c|}{" + header + "} \\\ \n")
+            o.write("\\multicolumn{7}{|c|}{" + header + "} \\\ \n")
             o.write("\\hline\n")
-            o.write("Method & k & Pearson R & Avg Dist Pearson R & SCC & $\\Delta$  SCC \\\ \n")
+            o.write("Method & k & Pearson R & Avg Dist Pearson R & SCC & $\\Delta$  SCC & MSE-S \\\ \n")
         o.write("\\hline\\hline\n")
 
+        # get reference data
         if 'ground_truth-S' in data[0]:
             ref = data[0]['ground_truth-S']
-            print('ref', ref)
+            print('ref found')
         else:
             ref = None
             print('ref missing')
@@ -148,10 +178,10 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w'):
                 if small and key.split('-')[0] not in SMALL_METHODS:
                     # skip methods not in SMALL_METHODS
                     continue
-                if first:
+                if first: # only write k for first row in section
                     k_label = k
                     if k_label == 0:
-                        k_label = 'S'
+                        k_label = '-'
                     first = False
                 else:
                     k_label = ''
@@ -162,20 +192,38 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w'):
                         use_delta = True
                     else:
                         use_delta = False
-                    result = np.array(data[k][key][metric])
-                    result_mean = np.round(np.mean(result), 3)
 
-                    if ref is not None:
-                        try:
-                            ref_result = np.array(ref[metric])
-                            delta_result = ref_result - result
-                            delta_result_mean = np.round(np.mean(delta_result), 3)
-                        except ValueError as e:
-                            print(e)
-                            print(f'method {key}, k {k}, metric: {metric}')
-                            delta_result_mean = None
+                    if metric == 's':
+                        if ref is None:
+                            continue
+                            # skip this if no ref
+                        s_list_sample = data[k][key][metric]
+                        ref_s_list_sample = ref[metric]
+                        sample_results = []
+                        for s_list, ref_s_list in zip(s_list_sample, ref_s_list_sample): # iterates over samples
+                            replicate_results = []
+                            for s, ref_s in zip(s_list, ref_s_list): # iterates over replicates
+                                replicate_results.append(mean_squared_error(ref_s, s))
+                            sample_results.append(np.mean(replicate_results))
+
+                        result = np.array(sample_results)
+                        result_mean = np.round(np.mean(result), 3)
                     else:
-                        delta_result_mean = None
+                        result = np.array(data[k][key][metric])
+                        result_mean = np.round(np.mean(result), 3)
+
+                        if ref is not None and use_delta:
+                            try:
+                                ref_result = np.array(ref[metric])
+                                delta_result = ref_result - result
+                                delta_result_mean = np.round(np.mean(delta_result), 3)
+                            except ValueError as e:
+                                print(e)
+                                print(f'method {key}, k {k}, metric: {metric}')
+                                delta_result_mean = None
+                        else:
+                            delta_result_mean = None
+
                     if len(result) > 1:
                         result_std = np.round(np.std(result), 3)
                         if delta_result_mean is not None:
