@@ -114,7 +114,7 @@ def loadData(args):
                             replicate_folder = osp.join(k_folder, replicate)
                             json_file = osp.join(replicate_folder, 'distance_pearson.json')
                             if osp.exists(json_file):
-                                print(f"Loading: {json_file}")
+                                # print(f"Loading: {json_file}")
                                 with open(json_file, 'r') as f:
                                     results = json.load(f)
                                     replicate_data['overall_pearson'].append(results['overall_pearson'])
@@ -140,6 +140,7 @@ def loadData(args):
                                     x = np.load(x_file2)
                                 else:
                                     print(f'x not found for {replicate_folder}')
+                                    continue
 
                                 # load chi
                                 chi = load_chi(replicate_folder, k)
