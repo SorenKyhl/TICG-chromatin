@@ -24,9 +24,11 @@ dumpFrequency=50000
 if [ $chi = 'nonlinear' ]
 then
 	useE='true'
+	useS='false'
 elif [ $chi = 'polynomial' ]
 then
 	useE='true'
+	useS='false'
 else
 	useE='false'
 	useS='false'
@@ -71,7 +73,7 @@ do
 	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --p_switch $pSwitch --k $k --save_npy --relabel $relabel >> log.log
 
   # set up config.json
-	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable --diag $diag --max_diag_chi $maxDiagChi --n_sweeps $nSweeps --dump_frequency $dumpFrequency --seed $i --use_ematrix $useE --use_smatrix --$useS --load_configuration_filename $init_config > log.log
+	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable --diag $diag --max_diag_chi $maxDiagChi --n_sweeps $nSweeps --dump_frequency $dumpFrequency --seed $i --use_ematrix $useE --use_smatrix $useS --load_configuration_filename $init_config > log.log
 
 	# run simulation
 	~/TICG-chromatin/TICG-engine >> log.log

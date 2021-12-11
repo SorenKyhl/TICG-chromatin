@@ -44,8 +44,8 @@ def getArgs():
     parser.add_argument('--save_chi_for_max_ent', action="store_true", help='true to save chi to wd in format needed for max ent')
     parser.add_argument('--min_chi', type=float, default=-1., help='minimum chi value for random generation')
     parser.add_argument('--max_chi', type=float, default=1., help='maximum chi value for random generation')
-    parser.add_argument('--fill_diag', type=float, help='fill diag of chi with given value (None to skip)')
-    parser.add_argument('--fill_offdiag', type=float, help='fill off diag of chi with given value (None to skip)')
+    parser.add_argument('--fill_diag', type=str2float, help='fill diag of chi with given value (None to skip)')
+    parser.add_argument('--fill_offdiag', type=str2float, help='fill off diag of chi with given value (None to skip)')
     parser.add_argument('--ensure_distinguishable', action='store_true', help='true to ensure that corresponding psi is distinguishable')
 
     args = parser.parse_args()
@@ -111,6 +111,26 @@ def str2int(v):
             raise argparse.ArgumentTypeError('none or int expected not {}'.format(v))
     else:
         raise argparse.ArgumentTypeError('String value expected.')
+
+def str2float(v):
+    """
+    Helper function for argparser, converts str to float if possible.
+
+    Inputs:
+        v: string
+    """
+    if v is None:
+        return v
+    elif isinstance(v, str):
+        if v.lower() == 'none':
+            return None
+        elif v.isnumeric():
+            return float(v)
+        else:
+            raise argparse.ArgumentTypeError('none or float expected not {}'.format(v))
+    else:
+        raise argparse.ArgumentTypeError('String value expected.')
+
 
 def str2None(v):
     """
@@ -341,17 +361,16 @@ def main():
         config['bead_types'] = None
         config["nspecies"] = 0
 
+        # set up config
         if args.use_smatrix:
             assert not args.use_ematrix
-            matrix_file = "s_matrix.txt"
             # save smatrix_on
             config['smatrix_on'] = True
-            config["smatrix_filename"] = matrix_file
+            config["smatrix_filename"] = "s_matrix.txt"
         else:
-            matrix_file = "e_matrix.txt"
             # save ematrix_on
             config['ematrix_on'] = True
-            config["ematrix_filename"] = matrix_file
+            config["ematrix_filename"] = "e_matrix.txt"
 
         # create e/s_matrix
         if isinstance(args.chi , np.ndarray):
@@ -363,15 +382,6 @@ def main():
 
             e, s = calculate_E_S(x, chi)
 
-            np.savetxt('chis.txt', chi, fmt='%0.5f')
-            np.save('chis.npy', chi)
-            np.savetxt('s_matrix.txt', s)
-            np.save('s.npy', s)
-            np.savetxt('e_matrix.txt', e)
-            np.save('e.npy', e)
-            print(f'Rank of S: {np.linalg.matrix_rank(s)}')
-            print(f'Rank of E: {np.linalg.matrix_rank(e)}')
-            print('\n')
         elif args.chi in {'nonlinear', 'polynomial'}:
             if args.chi == 'nonlinear':
                 x = np.load('x.npy') # original particle types that interact nonlinearly
@@ -413,29 +423,31 @@ def main():
                 e, s = calculate_E_S(x_linear, chi)
             elif args.chi == 'polynomial':
                 x = np.load('x.npy') # original particle types that interact nonlinearly
-                args.k *= args.k
+                ind = np.triu_indices(args.k)
+                args.k = int(args.k*(args.k+1)/2)
                 x_linear = np.zeros((args.m, args.k))
                 for i in range(args.m):
-                    x_linear[i] = np.outer(x[i], x[i]).flatten()
+                    x_linear[i] = np.outer(x[i], x[i])[ind]
 
                 np.save('x_linear.npy', x_linear)
                 chi = getChis(args)
                 e, s = calculate_E_S(x_linear, chi)
 
-            # save chi
-            if args.chi in {'nonlinear'} and args.save_chi:
-                np.savetxt('chis.txt', chi, fmt='%0.5f')
-                np.save('chis.npy', chi)
-                print(f'Rank of chi: {np.linalg.matrix_rank(chi)}')
+        # save chi
+        if args.save_chi:
+            np.savetxt('chis.txt', chi, fmt='%0.5f')
+            np.save('chis.npy', chi)
+            print(f'Rank of chi: {np.linalg.matrix_rank(chi)}')
+        if args.use_smatrix:
+            np.savetxt('s_matrix.txt', s, fmt='%0.5f')
+        np.save('s.npy', s)
+        np.savetxt('e_matrix.txt', e, fmt='%0.5f')
+        np.save('e.npy', e)
+        print(f'Rank of S: {np.linalg.matrix_rank(s)}')
+        print(f'Rank of E: {np.linalg.matrix_rank(e)}')
+        print('\n')
 
-            np.savetxt('s_matrix.txt', s)
-            np.save('s.npy', s)
-            np.savetxt('e_matrix.txt', e)
-            np.save('e.npy', e)
-            print(f'Rank of S: {np.linalg.matrix_rank(s)}')
-            print(f'Rank of E: {np.linalg.matrix_rank(e)}')
-            print('\n')
-    else:
+    else: # not using energy
         set_up_plaid_chi(args, config)
 
         # save seq
