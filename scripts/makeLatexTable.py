@@ -14,7 +14,7 @@ abspath = osp.abspath(__file__)
 dname = osp.dirname(abspath)
 sys.path.insert(0, dname)
 from knightRuiz import knightRuiz
-from get_config import str2bool, str2int, calculate_S
+from get_config import str2bool, str2int, calculate_S, LETTERS
 
 METHODS = ['ground_truth', 'random', 'PCA', 'PCA_split', 'kPCA', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM']
 SMALL_METHODS = {'ground_truth', 'random', 'PCA', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM'}
@@ -59,6 +59,29 @@ def str2list(v, sep = '-'):
             return result
     else:
         raise argparse.ArgumentTypeError('str value expected.')
+
+def load_chi(replicate_folder, k):
+    # find final it
+    max_it = -1
+    for file in os.listdir(replicate_folder):
+        if osp.isdir(osp.join(replicate_folder, file)) and file.startswith('iteration'):
+            it = int(file[9:])
+            if it > max_it:
+                max_it = it
+
+    if max_it < 0:
+        raise Exception(f'max it not found for {replicate_folder}')
+
+    with open(osp.join(replicate_folder, f'iteration{max_it}', 'config.json'), 'rb') as f:
+        config = json.load(f)
+
+    chi = np.zeros((k,k))
+    for i, bead_i in enumerate(LETTERS[:k]):
+        for j in range(i,k):
+            bead_j = LETTERS[j]
+            chi[i,j] = config[f'chi{bead_i}{bead_j}']
+
+    return chi
 
 def loadData(args):
     '''
@@ -109,19 +132,17 @@ def loadData(args):
                                 s = np.loadtxt(s_matrix_file2)
                             else:
                                 # load bead types
-                                x_file = osp.join(replicate_folder, 'resources', 'x.npy')
-                                x = np.load(x_file)
-                                _, k = x.shape
+                                x_file1 = osp.join(replicate_folder, 'resources', 'x_linear.npy')
+                                x_file2 = osp.join(replicate_folder, 'resources', 'x.npy')
+                                if osp.exists(x_file1):
+                                    x = np.load(x_file1)
+                                elif osp.exists(x_file2):
+                                    x = np.load(x_file2)
+                                else:
+                                    print(f'x not found for {replicate_folder}')
 
                                 # load chi
-                                chi_file = osp.join(replicate_folder, 'chis.txt')
-                                allchis = np.atleast_2d(np.loadtxt(chi_file))
-                                if len(allchis[0]) == 0:
-                                    # shape will be wrong if k = 1
-                                    allchis = allchis.T
-                                lastchis = allchis[-1]
-                                chi = np.zeros((k,k))
-                                chi[np.triu_indices(k)] = lastchis # upper traingular chi
+                                chi = load_chi(replicate_folder, k)
 
                                 # caculate s
                                 s = calculate_S(x, chi)
