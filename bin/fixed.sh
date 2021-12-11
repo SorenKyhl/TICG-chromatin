@@ -10,12 +10,13 @@ nodes=10
 tasks=20
 samples=2000
 diag='false'
-nSweeps=1000
+nSweeps=2000
 pSwitch=0.05
 maxDiagChi=0.1
 overwrite=1
-dumpFrequency=1000
+dumpFrequency=200
 
+source activate python3.8_pytorch1.8.1_cuda11.1
 
 run()  {
 	echo $i
@@ -70,9 +71,9 @@ run()  {
 	rm default_config.json *.xyz
 }
 
-cd ~/TICG-chromatin/src
-make
-mv TICG-engine ..
+# cd ~/TICG-chromatin/src
+# make
+# mv TICG-engine ..
 
 i=50
 useE=False

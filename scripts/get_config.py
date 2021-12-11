@@ -217,8 +217,56 @@ def set_up_plaid_chi(args, config):
     if args.use_ground_truth_chi:
         args.chi = np.load(osp.join(args.sample_folder, 'chis.npy'))
     elif args.chi is None:
-        assert args.k is not None, "chi and k cannot both be None"
-        args.chi = getChis(args)
+        if args.k is not None:
+            args.chi = getChis(args)
+    elif isinstance(args.chi, str):
+        if args.chi == 'nonlinear':
+            x = np.load('x.npy') # original particle types that interact nonlinearly
+            assert args.k >= 10
+            x_linear = np.zeros((args.m, 15)) # transformation of x such that S = x \chi x^T
+            x_linear[:, 0] = (np.sum(x[:, 0:3], axis = 1) == 1) # exactly 1 of A, B, C
+            x_linear[:, 1] = (np.sum(x[:, 0:3], axis = 1) == 2) # exactly 2 of A, B, C
+            x_linear[:, 2] = (np.sum(x[:, 0:3], axis = 1) == 3) # A, B, and C
+            x_linear[:, 3] = x[:, 3] # D
+            x_linear[:, 4] = x[:, 4] # E
+            x_linear[:, 5] = np.logical_and(x[:, 3], x[:, 4]) # D and E
+            x_linear[:, 6] = np.logical_and(x[:, 3], x[:, 5]) # D and F
+            x_linear[:, 7] = np.logical_xor(x[:, 0], x[:, 5]) # either A or F
+            x_linear[:, 8] = x[:, 6] # G
+            x_linear[:, 9] = np.logical_and(np.logical_and(x[:, 6], x[:, 7]), np.logical_not(x[:, 4])) # G and H and not E
+            x_linear[:, 10] = x[:, 7] # H
+            x_linear[:, 11] = x[:, 8] # I
+            x_linear[:, 12] = x[:, 9] # J
+            x_linear[:, 13] = np.logical_or(x[:, 7], x[:, 8]) # H or I
+            x_linear[:, 14] = np.logical_xor(x[:, 8], x[:, 9]) # either I or J
+
+            np.save('x_linear.npy', x_linear)
+            args.k = 15
+            args.chi = np.array([[-1,1.8,-0.5,1.8,0.1,1.3,-0.1,0.1,0.8,1.4,2,1.7,1.5,-0.2,1.1],
+                            [0,-1,-0.6,0.6,0.8,-0.8,-0.7,-0.1,0,-0.4,-0.2,0.6,-0.9,1.4,0.3],
+                            [0,0,-1,1.6,0,-0.2,-0.4,1.5,0.7,1.8,-0.7,-0.9,0.6,1,0.5],
+                            [0,0,0,-1,0.8,1.3,-0.6,0.7,0.1,1.4,0.6,0.7,-0.6,0.5,0.5],
+                            [0,0,0,0,-1,0.9,0.2,1.5,1.7,0.1,-0.7,0.8,0.7,1.6,1.6],
+                            [0,0,0,0,0,-1,0.6,-0.2,0.8,0.7,-1,-0.9,1.6,0.8,0.3],
+                            [0,0,0,0,0,0,-1,-0.2,-0.6,1.8,-0.6,1.9,1.1,0.4,-0.4],
+                            [0,0,0,0,0,0,0,-1,1.7,-0.4,1.7,0.2,1.2,1.8,-0.1],
+                            [0,0,0,0,0,0,0,0,-1,0.7,0.2,0.8,-0.4,1.4,1.3],
+                            [0,0,0,0,0,0,0,0,0,-1,-0.4,0.5,1.9,0.1,0.1],
+                            [0,0,0,0,0,0,0,0,0,0,-1,0.9,1,1.3,1],
+                            [0,0,0,0,0,0,0,0,0,0,0,-1,1.5,-0.1,0.7],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,-1,0.6,-0.6],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0.2],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1]])
+        elif args.chi == 'polynomial':
+            x = np.load('x.npy') # original particle types that interact nonlinearly
+            ind = np.triu_indices(args.k)
+            args.k = int(args.k*(args.k+1)/2)
+            x_linear = np.zeros((args.m, args.k))
+            for i in range(args.m):
+                x_linear[i] = np.outer(x[i], x[i])[ind]
+
+            np.save('x_linear.npy', x_linear)
+            args.chi = getChis(args)
     else:
         # zero lower triangle
         args.chi = np.triu(args.chi)
@@ -232,29 +280,22 @@ def set_up_plaid_chi(args, config):
         if not conv.PsiUniqueRows():
             print('Warning: particles are not distinguishable')
 
-    # save chi to config
-    rows, cols = args.chi.shape
-    for row in range(rows):
-        for col in range(row, cols):
-            key = 'chi{}{}'.format(LETTERS[row], LETTERS[col])
-            val = args.chi[row, col]
-            config[key] = val
-
-    # save chi and diag_chi
-    if args.save_chi:
-        print(f'Rank of chi: {np.linalg.matrix_rank(args.chi)}')
-        np.savetxt('chis.txt', args.chi, fmt='%0.5f')
-        np.save('chis.npy', args.chi)
-    elif args.save_chi_for_max_ent:
-        with open('chis.txt', 'w', newline='') as f:
-            wr = csv.writer(f, delimiter = '\t')
-            wr.writerow(args.chi[np.triu_indices(args.k)])
-            if args.goal_specified:
+    # save chi
+    if args.chi is not None:
+        if args.save_chi:
+            print(f'Rank of chi: {np.linalg.matrix_rank(args.chi)}')
+            np.savetxt('chis.txt', args.chi, fmt='%0.5f')
+            np.save('chis.npy', args.chi)
+        elif args.save_chi_for_max_ent:
+            with open('chis.txt', 'w', newline='') as f:
+                wr = csv.writer(f, delimiter = '\t')
                 wr.writerow(args.chi[np.triu_indices(args.k)])
-            else:
-                # get random chi
-                chi = getChis(args)
-                wr.writerow(chi[np.triu_indices(args.k)])
+                if args.goal_specified:
+                    wr.writerow(args.chi[np.triu_indices(args.k)])
+                else:
+                    # get random chi
+                    chi = getChis(args)
+                    wr.writerow(chi[np.triu_indices(args.k)])
 
 def set_up_diag_chi(args, config, sample_config):
     if args.use_ground_truth_diag_chi:
@@ -357,13 +398,36 @@ def main():
     with open(args.default_config, 'rb') as f:
         config = json.load(f)
 
+    set_up_plaid_chi(args, config)
+    set_up_diag_chi(args, config, sample_config)
+    if osp.exists('x_linear.npy'):
+        x = np.load('x_linear.npy')
+    elif osp.exists('x.npy'):
+        x = np.load('x.npy')
+    else:
+        x = None
+
+    if x is not None:
+        # x is only None if doing max ent
+        e, s = calculate_E_S(x, args.chi)
+
+        if args.use_smatrix:
+            np.savetxt('s_matrix.txt', s, fmt='%0.5f')
+        np.save('s.npy', s)
+        if args.use_ematrix:
+            np.savetxt('e_matrix.txt', e, fmt='%0.5f')
+        np.save('e.npy', e)
+        print(f'Rank of S: {np.linalg.matrix_rank(s)}')
+        print(f'Rank of E: {np.linalg.matrix_rank(e)}')
+        print('\n')
+
     if args.use_ematrix or args.use_smatrix:
         config['bead_types'] = None
         config["nspecies"] = 0
 
         # set up config
         if args.use_smatrix:
-            assert not args.use_ematrix
+            assert not args.use_ematrix, 'Cannot use smatrix and ematrix'
             # save smatrix_on
             config['smatrix_on'] = True
             config["smatrix_filename"] = "s_matrix.txt"
@@ -371,92 +435,20 @@ def main():
             # save ematrix_on
             config['ematrix_on'] = True
             config["ematrix_filename"] = "e_matrix.txt"
-
-        # create e/s_matrix
-        if isinstance(args.chi , np.ndarray):
-            assert not osp.exists(matrix_file)
-            x = np.load('x.npy')
-
-            # zero lower triangle
-            chi = np.triu(args.chi)
-
-            e, s = calculate_E_S(x, chi)
-
-        elif args.chi in {'nonlinear', 'polynomial'}:
-            if args.chi == 'nonlinear':
-                x = np.load('x.npy') # original particle types that interact nonlinearly
-                assert args.k >= 10
-                x_linear = np.zeros((args.m, 15)) # transformation of x such that S = x \chi x^T
-                x_linear[:, 0] = (np.sum(x[:, 0:3], axis = 1) == 1) # exactly 1 of A, B, C
-                x_linear[:, 1] = (np.sum(x[:, 0:3], axis = 1) == 2) # exactly 2 of A, B, C
-                x_linear[:, 2] = (np.sum(x[:, 0:3], axis = 1) == 3) # A, B, and C
-                x_linear[:, 3] = x[:, 3] # D
-                x_linear[:, 4] = x[:, 4] # E
-                x_linear[:, 5] = np.logical_and(x[:, 3], x[:, 4]) # D and E
-                x_linear[:, 6] = np.logical_and(x[:, 3], x[:, 5]) # D and F
-                x_linear[:, 7] = np.logical_xor(x[:, 0], x[:, 5]) # either A or F
-                x_linear[:, 8] = x[:, 6] # G
-                x_linear[:, 9] = np.logical_and(np.logical_and(x[:, 6], x[:, 7]), np.logical_not(x[:, 4])) # G and H and not E
-                x_linear[:, 10] = x[:, 7] # H
-                x_linear[:, 11] = x[:, 8] # I
-                x_linear[:, 12] = x[:, 9] # J
-                x_linear[:, 13] = np.logical_or(x[:, 7], x[:, 8]) # H or I
-                x_linear[:, 14] = np.logical_xor(x[:, 8], x[:, 9]) # either I or J
-
-                np.save('x_linear.npy', x_linear)
-                args.k = 15
-                chi = np.array([[-1,1.8,-0.5,1.8,0.1,1.3,-0.1,0.1,0.8,1.4,2,1.7,1.5,-0.2,1.1],
-                                [0,-1,-0.6,0.6,0.8,-0.8,-0.7,-0.1,0,-0.4,-0.2,0.6,-0.9,1.4,0.3],
-                                [0,0,-1,1.6,0,-0.2,-0.4,1.5,0.7,1.8,-0.7,-0.9,0.6,1,0.5],
-                                [0,0,0,-1,0.8,1.3,-0.6,0.7,0.1,1.4,0.6,0.7,-0.6,0.5,0.5],
-                                [0,0,0,0,-1,0.9,0.2,1.5,1.7,0.1,-0.7,0.8,0.7,1.6,1.6],
-                                [0,0,0,0,0,-1,0.6,-0.2,0.8,0.7,-1,-0.9,1.6,0.8,0.3],
-                                [0,0,0,0,0,0,-1,-0.2,-0.6,1.8,-0.6,1.9,1.1,0.4,-0.4],
-                                [0,0,0,0,0,0,0,-1,1.7,-0.4,1.7,0.2,1.2,1.8,-0.1],
-                                [0,0,0,0,0,0,0,0,-1,0.7,0.2,0.8,-0.4,1.4,1.3],
-                                [0,0,0,0,0,0,0,0,0,-1,-0.4,0.5,1.9,0.1,0.1],
-                                [0,0,0,0,0,0,0,0,0,0,-1,0.9,1,1.3,1],
-                                [0,0,0,0,0,0,0,0,0,0,0,-1,1.5,-0.1,0.7],
-                                [0,0,0,0,0,0,0,0,0,0,0,0,-1,0.6,-0.6],
-                                [0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0.2],
-                                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1]])
-                e, s = calculate_E_S(x_linear, chi)
-            elif args.chi == 'polynomial':
-                x = np.load('x.npy') # original particle types that interact nonlinearly
-                ind = np.triu_indices(args.k)
-                args.k = int(args.k*(args.k+1)/2)
-                x_linear = np.zeros((args.m, args.k))
-                for i in range(args.m):
-                    x_linear[i] = np.outer(x[i], x[i])[ind]
-
-                np.save('x_linear.npy', x_linear)
-                chi = getChis(args)
-                e, s = calculate_E_S(x_linear, chi)
-
-        # save chi
-        if args.save_chi:
-            np.savetxt('chis.txt', chi, fmt='%0.5f')
-            np.save('chis.npy', chi)
-            print(f'Rank of chi: {np.linalg.matrix_rank(chi)}')
-        if args.use_smatrix:
-            np.savetxt('s_matrix.txt', s, fmt='%0.5f')
-        np.save('s.npy', s)
-        np.savetxt('e_matrix.txt', e, fmt='%0.5f')
-        np.save('e.npy', e)
-        print(f'Rank of S: {np.linalg.matrix_rank(s)}')
-        print(f'Rank of E: {np.linalg.matrix_rank(e)}')
-        print('\n')
-
-    else: # not using energy
-        set_up_plaid_chi(args, config)
-
+    else:
         # save seq
         config['bead_types'] = ['seq{}.txt'.format(i) for i in range(args.k)]
 
         # save nspecies
         config["nspecies"] = args.k
 
-    set_up_diag_chi(args, config, sample_config)
+        # save chi to config
+        rows, cols = args.chi.shape
+        for row in range(rows):
+            for col in range(row, cols):
+                key = 'chi{}{}'.format(LETTERS[row], LETTERS[col])
+                val = args.chi[row, col]
+                config[key] = val
 
     # save nbeads
     config['nbeads'] = args.m

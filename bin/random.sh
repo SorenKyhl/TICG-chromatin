@@ -26,7 +26,7 @@ then
   dataFolder="/home/eric/dataset_test"
   scratchDir='/home/eric/scratch'
   startSample=60
-  nSweeps=10000
+  nSweeps=1000
   nodes=1
   tasks=1
   samples=1
