@@ -256,7 +256,8 @@ def get_PCA_seq(input, k, normalize, use_kernel = False, kernel=None):
 
     return seq
 
-def get_k_means_seq(m, y, k, kr = True):
+def get_k_means_seq(y, k, kr = True):
+    m, _ = y.shape
     if kr:
         yKR = np.log(knightRuiz(y))
     kmeans = KMeans(n_clusters = k)
@@ -547,7 +548,7 @@ def main():
             e, s = calculate_E_S(seq, chi)
     elif args.method == 'k_means':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
-        seq, args.labels = get_k_means_seq(args.m, y_diag, args.k)
+        seq, args.labels = get_k_means_seq(y_diag, args.k)
         args.X = y_diag
         format = '%d'
     elif args.method == 'nmf':
@@ -624,7 +625,7 @@ def test_nmf_k_means():
 
     seq, args.labels = get_nmf_seq(args.m, y_diag, args.k, binarize = False)
 
-    seq, args.labels = get_k_means_seq(args.m, y_diag, args.k, kr = True)
+    seq, args.labels = get_k_means_seq(y_diag, args.k, kr = True)
     plot_seq_exclusive(seq, labels=args.labels, X=args.X, show=True, save=False, title='k_means test')
 
 def test_random():
