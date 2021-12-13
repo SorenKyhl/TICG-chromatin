@@ -1,6 +1,6 @@
 #! /bin/bash
-#SBATCH --job-name=maxent
-#SBATCH --output=logFiles/maxent.out
+#SBATCH --job-name=maxent1
+#SBATCH --output=logFiles/maxent1.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20
@@ -49,44 +49,27 @@ fi
 
 STARTTIME=$(date +%s)
 i=1
-# dataFolder='/project2/depablo/erschultz/dataset_10_27_21'
-# for k in 2 4
-# do
-#   for sample in 40 1230 1718
-#   do
-#     for method in 'PCA'
-#     do
-#       # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic' 'kPCA-x' 'kPCA-y'
-#       max_ent
-#     done
-#   done
-# done
+dataFolder='/project2/depablo/erschultz/dataset_12_11_21'
+for k in 2 4
+do
+  for sample in 40 1230 1718
+  do
+    for method in 'PCA'
+    do
+      # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic' 'kPCA-x' 'kPCA-y'
+      max_ent
+    done
+  done
+done
 
 
-#
-# k=2
-# method='ground_truth'
-# for sample in 40 1230 1718
-# do
-#   max_ent
-# done
-#
-
+k=6
 method='ground_truth'
-useS='true'
-for sample in 51 52
+for sample in 40 1230 1718
 do
   max_ent
 done
 
-useGroundTruthChi='true'
-method='ground_truth'
-useS='false'
-k=4
-for sample in 51 52
-do
-  max_ent
-done
 
 wait
 

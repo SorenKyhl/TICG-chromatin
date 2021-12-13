@@ -50,8 +50,8 @@ fi
 
 STARTTIME=$(date +%s)
 i=1000
-dataFolder='/project2/depablo/erschultz/dataset_11_03_21'
-for k in 4 6
+dataFolder='/project2/depablo/erschultz/dataset_12_11_21'
+for k in 2 4
 do
   for sample in 40 1230 1718
   do
@@ -62,64 +62,6 @@ do
     done
   done
 done
-
-#
-# k=2
-# method='ground_truth'
-# for sample in 40 1230 1718
-# do
-#   max_ent
-# done
-# #
-# useGroundTruthChi='true'
-# method='ground_truth'
-# numIterations=0
-# goalSpecified='false'
-# k=2
-# for sample in 40
-# do
-#   max_ent
-# done
-# #
-# useGroundTruthChi='false'
-# method='ground_truth'
-# numIterations=0
-# goalSpecified='false'
-# useEnergy='true'
-# k='none'
-# for sample in 40 1230 1718
-# do
-#   max_ent
-# done
-#
-
-# k='none'
-# useEnergy='true'
-# goalSpecified='false'
-# useGroundTruthChi='false'
-# numIterations=0
-# correctEnergy='false'
-# modelID=34
-# method='GNN'
-# for sample in 40 1230 1718
-# do
-#     max_ent
-# done
-#
-# k='none'
-# useEnergy='true'
-# goalSpecified='false'
-# useGroundTruthChi='false'
-# numIterations=0
-# correctEnergy='false'
-# for sample in 40 1230 1718
-# do
-#   for method in  'ground_truth'
-#   # 'ground_truth' 'GNN'
-#   do
-#     max_ent
-#   done
-# done
 
 wait
 

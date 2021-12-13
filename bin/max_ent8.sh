@@ -24,7 +24,6 @@ useS='false'
 useGroundTruthChi='false'
 useGroundTruthDiagChi='true'
 useGroundTruthSeed='false'
-correctEnergy='false'
 mode="plaid"
 gamma=0.00001
 gammaDiag=0.00001
@@ -50,19 +49,15 @@ fi
 
 STARTTIME=$(date +%s)
 i=7000
-dataFolder='/project2/depablo/erschultz/dataset_10_27_21'
-for k in 2 4
-do
-  for sample in 40 1230 1718
-  do
-    for method in 'random'
-    do
-      # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic' 'kPCA-x' 'kPCA-y'
-      max_ent
-    done
-  done
-done
+dataFolder='/project2/depablo/erschultz/dataset_12_11_21'
 
+
+method='ground_truth'
+useE='true'
+for sample in 40 1230 1718
+do
+  max_ent
+done
 wait
 
 python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples

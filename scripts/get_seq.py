@@ -526,8 +526,14 @@ def main():
         seq = get_PCA_seq(input, args.k, args.normalize, use_kernel = True, kernel = args.kernel)
         format = '%.3e'
     elif args.method == 'ground_truth':
-        seq = np.load(osp.join(args.sample_folder, 'x.npy'))[:args.m, :]
-        calc = False
+        if osp.exists(osp.join(args.sample_folder, 'x_linear.npy')):
+            x = np.load(osp.join(args.sample_folder, 'x_linear.npy'))[:args.m, :]
+        elif osp.exists(osp.join(args.sample_folder, 'x.npy')):
+            x = np.load(osp.join(args.sample_folder, 'x.npy'))[:args.m, :]
+        else:
+            raise Exception(f'x not found for {args.sample_folder}')
+        seq =
+        calc = False # TRUE if need to calculate e or s matrix
         if args.use_smatrix:
             s_matrix_file = osp.join(args.sample_folder, 's_matrix.txt')
             if osp.exists(s_matrix_file):

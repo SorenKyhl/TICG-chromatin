@@ -50,12 +50,12 @@ fi
 
 STARTTIME=$(date +%s)
 i=6000
-dataFolder='/project2/depablo/erschultz/dataset_10_27_21'
+dataFolder='/project2/depablo/erschultz/dataset_12_11_21'
 for k in 2 4
 do
   for sample in 40 1230 1718
   do
-    for method in 'nmf'
+    for method in 'kPCA-y'
     do
       # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic' 'kPCA-x' 'kPCA-y'
       max_ent
