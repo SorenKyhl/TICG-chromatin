@@ -31,6 +31,7 @@ def getArgs(data_folder=None, sample=None, samples = None):
     args = parser.parse_args()
 
     assert args.sample is not None or args.samples is not None, "either sample or samples must be set"
+    assert args.sample is None or args.samples is None, "only one of sample or samples can be set"
     if args.sample_folder is None and args.sample is not None:
         args.sample_folder = osp.join(args.data_folder, 'samples', f'sample{args.sample}')
 
@@ -94,7 +95,7 @@ def loadData(args):
     All directories within <method> that start with 'k' or 's' are assumed to contain replicate directories.
     All replicate directories are assumed to contain 'distance_pearson.json', from which data is loaded.
     '''
-    data = defaultdict(lambda: defaultdict(lambda : defaultdict(list)))
+    data = defaultdict(lambda: defaultdict(lambda : defaultdict(list))) # k, method, metric : list of replicate arrays
 
     for sample in args.samples:
         sample_folder = osp.join(args.data_folder, 'samples', f'sample{sample}')
@@ -103,6 +104,7 @@ def loadData(args):
             # methods should be formatted such that method.split('-')[0] is in METHODS
             if osp.isdir(method_folder) and method.split('-')[0] in METHODS:
                 print(method)
+                found_results = False # if not results found, don't add to dictionary
                 for k_file in os.listdir(method_folder):
                     k_folder = osp.join(method_folder, k_file)
                     if osp.isdir(k_folder) and k_file.startswith('k'):
@@ -114,6 +116,7 @@ def loadData(args):
                             replicate_folder = osp.join(k_folder, replicate)
                             json_file = osp.join(replicate_folder, 'distance_pearson.json')
                             if osp.exists(json_file):
+                                found_results = True
                                 # print(f"Loading: {json_file}")
                                 with open(json_file, 'r') as f:
                                     results = json.load(f)
@@ -150,13 +153,15 @@ def loadData(args):
 
                             replicate_data['s'].append(s)
 
-                        data[k][method]['overall_pearson'].append(np.mean(replicate_data['overall_pearson']))
-                        data[k][method]['scc'].append(np.mean(replicate_data['scc']))
-                        data[k][method]['avg_dist_pearson'].append(np.mean(replicate_data['avg_dist_pearson']))
-                        data[k][method]['s'].append(replicate_data['s'])
+                        # append replicate array to dictionary
+                        if found_results:
+                            data[k][method]['overall_pearson'].append(replicate_data['overall_pearson'])
+                            data[k][method]['scc'].append(replicate_data['scc'])
+                            data[k][method]['avg_dist_pearson'].append(replicate_data['avg_dist_pearson'])
+                            data[k][method]['s'].append(replicate_data['s'])
     return data
 
-def makeLatexTable(data, ofile, header = '', small = False, mode = 'w'):
+def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_id = None):
     '''
     Writes data to ofile in latex table format.
 
@@ -165,7 +170,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w'):
         ofile: location to write data
         small: True to output smaller table with only methods in SMALL_METHODS and only SCC as metric')
         mode: file mode (e.g. 'w', 'a')
-        delta: True to compute difference in statistics relative to ground_truth-S
+        sample_id: sample_id for table header; if set, table will show stdev over replicates for that sample
     '''
     header = header.replace('_', "\_")
     with open(ofile, mode) as o:
@@ -176,6 +181,9 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w'):
             o.write("\\begin{tabular}{|c|c|c|c|c|}\n")
             o.write("\\hline\n")
             o.write("\\multicolumn{5}{|c|}{" + header + "} \\\ \n")
+            if sample_id is not None:
+                o.write("\\hline\n")
+                o.write("\\multicolumn{5}{|c|}{sample " + f'{sample_id}' + "} \\\ \n")
             o.write("\\hline\n")
             o.write("Method & k & SCC & $\\Delta$ SCC & MSE-S \\\ \n")
         else:
@@ -183,6 +191,9 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w'):
             o.write("\\begin{tabular}{|c|c|c|c|c|c|c|}\n")
             o.write("\\hline\n")
             o.write("\\multicolumn{7}{|c|}{" + header + "} \\\ \n")
+            if sample_id is not None:
+                o.write("\\hline\n")
+                o.write("\\multicolumn{7}{|c|}{sample " + f'{sample_id}' + "} \\\ \n")
             o.write("\\hline\n")
             o.write("Method & k & Pearson R & Avg Dist Pearson R & SCC & $\\Delta$  SCC & MSE-S \\\ \n")
         o.write("\\hline\\hline\n")
@@ -212,42 +223,42 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w'):
                 text = f"{label} & {k_label}"
 
                 for metric in metrics:
-                    if metric == 'scc':
-                        use_delta = True
-                    else:
-                        use_delta = False
-
                     if metric == 's':
                         if ref is None:
                             continue
                             # skip this if no ref
-                        s_list_sample = data[k][key][metric]
+                        s_list_sample = data[k][key][metric] # list of length samples, each entry is a list of replicates
                         ref_s_list_sample = ref[metric]
                         sample_results = []
                         for s_list, ref_s_list in zip(s_list_sample, ref_s_list_sample): # iterates over samples
                             replicate_results = []
                             for s, ref_s in zip(s_list, ref_s_list): # iterates over replicates
                                 replicate_results.append(mean_squared_error(ref_s, s))
-                            sample_results.append(np.mean(replicate_results))
+                            sample_results.append(replicate_results)
 
-                        result = np.array(sample_results)
-                        result_mean = np.round(np.mean(result), 3)
+                        sample_results = np.array(sample_results)
                     else:
-                        result = np.array(data[k][key][metric])
-                        result_mean = np.round(np.mean(result), 3)
+                        sample_results = np.array(np.array(data[k][key][metric]))
 
-                        if ref is not None and use_delta:
-                            try:
-                                ref_result = np.array(ref[metric])
-                                delta_result = ref_result - result
-                                delta_result_mean = np.round(np.mean(delta_result), 3)
-                            except ValueError as e:
-                                print(e)
-                                print(f'method {key}, k {k}, metric: {metric}')
-                                delta_result_mean = None
-                        else:
+                    if sample_id is not None:
+                        assert sample_results.shape[0] == 1
+                        result = sample_results.reshape(-1)
+                    else:
+                        result = np.mean(sample_results, axis = 1)
+
+                    if ref is not None and metric == 'scc':
+                        try:
+                            ref_result = np.mean(ref[metric], axis = 1)
+                            delta_result = ref_result - result
+                            delta_result_mean = np.round(np.mean(delta_result), 3)
+                        except ValueError as e:
+                            print(e)
+                            print(f'method {key}, k {k}, metric: {metric}')
                             delta_result_mean = None
+                    else:
+                        delta_result_mean = None
 
+                    result_mean = np.round(np.mean(result), 3)
                     if len(result) > 1:
                         result_std = np.round(np.std(result), 3)
                         if delta_result_mean is not None:
@@ -255,11 +266,11 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w'):
                         else:
                             delta_result_std = None
                         text += f" & {result_mean} $\pm$ {result_std}"
-                        if use_delta:
+                        if metric == 'scc':
                             text += f" & {delta_result_mean} $\pm$ {delta_result_std}"
                     else:
                         text += f" & {result_mean}"
-                        if use_delta:
+                        if metric == 'scc':
                             text += f" & {delta_result_mean}"
 
                 text += " \\\ \n"
@@ -286,7 +297,7 @@ def sort_method_keys(keys):
     return sorted_keys, sorted_labels
 
 def main():
-    args = getArgs(data_folder='../sequences_to_contact_maps/dataset_10_27_21', samples=[40, 1230, 1718])
+    args = getArgs(data_folder='../sequences_to_contact_maps/dataset_10_27_21', sample=40)
     print(args)
 
     fname = 'max_ent_table.txt'
@@ -305,7 +316,7 @@ def main():
     mode = 'w'
     first = True
     for is_small in [True, False]:
-        makeLatexTable(data, ofile, dataset, small = is_small, mode = mode)
+        makeLatexTable(data, ofile, dataset, small = is_small, mode = mode, sample_id = args.sample)
         if first:
             mode = 'a'
             first = False
