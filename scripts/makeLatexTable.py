@@ -296,8 +296,8 @@ def sort_method_keys(keys):
 
     return sorted_keys, sorted_labels
 
-def main():
-    args = getArgs(data_folder='../sequences_to_contact_maps/dataset_10_27_21', sample=40)
+def main(data_folder, sample):
+    args = getArgs(data_folder=, sample=sample)
     print(args)
 
     fname = 'max_ent_table.txt'
@@ -323,4 +323,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main('../sequences_to_contact_maps/dataset_10_27_21', 40)
