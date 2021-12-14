@@ -48,20 +48,52 @@ else
   source activate python3.8_pytorch1.8.1_cuda10.2_2
 fi
 
+max_ent() {
+  if [ $useS = 'true' ] || [ $useE = 'true' ]
+  then
+    useGroundTruthChi='false'
+    goalSpecified='false'
+    numIterations=0
+    k=None
+  fi
+  modelPath="${results}/${modelType}/${modelID}"
+  sampleFolder="${dataFolder}/samples/sample${sample}"
+  scratchDirI="${scratchDir}/TICG_maxent${i}"
+  mkdir -p $scratchDirI
+
+  seed=$RANDOM
+  format_method
+  for j in 4 5 6
+  do
+    scratchDirI="${scratchDir}/TICG_maxent${i}"
+    mkdir -p $scratchDirI
+    cd $scratchDirI
+    max_ent_inner $scratchDirI $j $seed > bash.log &
+    i=$(( $i + 1 ))
+  done
+
+}
+
 STARTTIME=$(date +%s)
 i=1000
-dataFolder='/project2/depablo/erschultz/dataset_12_11_21'
-for k in 2 4
-do
-  for sample in 40 1230 1718
-  do
-    for method in 'PCA_split'
-    do
-      # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic' 'kPCA-x' 'kPCA-y'
-      max_ent
-    done
-  done
-done
+dataFolder='/project2/depablo/erschultz/dataset_10_27_21'
+sample=40
+method='ground_truth'
+
+useS='true'
+max_ent
+
+
+useE='true'
+max_ent
+
+useGroundTruthChi='true'
+numIterations=0
+k=2
+max_ent
+
+
+
 
 wait
 
