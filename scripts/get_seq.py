@@ -547,6 +547,7 @@ def main():
                 e = np.loadtxt(e_matrix_file)
             else:
                 calc = True
+            format = '%.3e'
         else:
             format = '%d'
 
