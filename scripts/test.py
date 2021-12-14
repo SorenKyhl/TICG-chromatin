@@ -36,25 +36,24 @@ def upper_traingularize_chis():
             np.save(osp.join(file_dir, 'chis.npy'), chis)
 
 def write_x_linear():
-    dir = "/project2/depablo/erschultz/dataset_10_27_21/samples"
+    dir = "/project2/depablo/erschultz/dataset_11_03_21/samples"
+    # dir = "/home/eric/sequences_to_contact_maps/dataset_11_03_21/samples"
     for file in os.listdir(dir):
         if file.startswith('sample'):
             file_dir = osp.join(dir, file)
-            x = np.load(osp.join(file_dir, 'x.npy'))
-            m, k = x.shape
-            x_linear = relabel_seq(x, 'D-AB')
-            print(x)
-            print(x_linear)
+            x_linear = np.load(osp.join(file_dir, 'x.npy'))
+            x = relabel_seq(x_linear, 'D-AB')
 
-            ofile = osp.join(file_dir, 'x_linear.npy')
-            print(f'writing x_linear to {ofile}')
-            return
-            # np.save(ofile, x_linear)
+            xfile = osp.join(file_dir, 'x.npy')
+            xlinearfile = osp.join(file_dir, 'x_linear.npy')
+            # print(f'writing x_linear to {ofile}')
+            np.save(xlinearfile, x_linear)
+            np.save(xfile, x)
 
 
 def check_seq(dataset):
-    dir = "/project2/depablo/erschultz"
-    # dir = '/home/eric/sequences_to_contact_maps'
+    # dir = "/project2/depablo/erschultz"
+    dir = '/home/eric/sequences_to_contact_maps'
     if dataset is None:
         datasets = os.listdir(dir)
     else:
@@ -66,6 +65,7 @@ def check_seq(dataset):
             print(dataset)
             dataset_samples = osp.join(dir, dataset, 'samples')
             for file in os.listdir(dataset_samples):
+                passed = True
                 if file.startswith('sample'):
                     file_dir = osp.join(dataset_samples, file)
                     x = np.load(osp.join(file_dir, 'x.npy'))
@@ -76,14 +76,30 @@ def check_seq(dataset):
                         seq[:, i] = seq_i
                     if not np.array_equal(seq, x):
                         ids_to_check.add(int(file[6:]))
+                        print('fail1')
+                        passed = False
                         # np.save(osp.join(file_dir, 'x.npy'), seq)
+
+                    x_linear = np.load(osp.join(file_dir, 'x_linear.npy'))
+                    m, k = x_linear.shape
+                    seq = np.zeros((m ,k))
+                    for i in range(k):
+                        seq_i = np.loadtxt(osp.join(file_dir, 'seq{}.txt'.format(i)))
+                        seq[:, i] = seq_i
+                    if not np.array_equal(seq, x_linear):
+                        ids_to_check.add(int(file[6:]))
+                        print('fail2')
+                        passed = False
 
                     if dataset.startswith("dataset_11_03"):
                     # if int(file[6:]) > 10:
-                        row_sum = np.sum(x[:, [0,1,3]], axis = 1)
+                        row_sum = np.sum(x_linear[:, [0,1,3]], axis = 1)
                         if not np.all(row_sum <= 1):
                             ids_to_check.add(int(file[6:]))
-                        print(np.all(row_sum <= 1))
+                            passed = False
+                            print('fail3')
+
+                    print(f'{file} passed: {passed}')
 
             print(sorted(ids_to_check))
 
