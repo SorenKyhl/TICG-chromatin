@@ -9,6 +9,7 @@ abspath = osp.abspath(__file__)
 dname = osp.dirname(abspath)
 sys.path.insert(0, dname)
 from makeLatexTable import METHODS
+from get_seq import relabel_seq
 
 def find_mising_ids():
     ids = set(range(1, 2001))
@@ -34,7 +35,25 @@ def upper_traingularize_chis():
             np.savetxt(osp.join(file_dir, 'chis.txt'), chis, fmt='%0.5f')
             np.save(osp.join(file_dir, 'chis.npy'), chis)
 
-def check_seq(dataset):
+def write_x_linear(dataset):
+    dir = "/project2/depablo/erschultz/dataset_10_27_21/samples"
+    for file in os.listdir(dir):
+        if file.startswith('sample'):
+            file_dir = osp.join(dataset_samples, file)
+            x = np.load(osp.join(file_dir, 'x.npy'))
+            m, k = x.shape
+            x_linear = relabel_seq(x, 'D-AB')
+            print(x)
+            print(x_linear)
+
+            ofile = osp.join(file_dir, 'x_linear.npy')
+            print(f'writing x_linear to {ofile}')
+            return
+            # np.save(ofile, x_linear)
+
+
+
+def make_x_linear():
     dir = "/project2/depablo/erschultz"
     # dir = '/home/eric/sequences_to_contact_maps'
     if dataset is None:
@@ -93,7 +112,7 @@ def main():
         print(np.array_equal(seq, seq_cluster))
 
 if __name__ == '__main__':
-    main()
+    write_x_linear()
     # find_mising_ids()
     # check_seq('dataset_11_03_21')
     # upper_traingularize_chis()
