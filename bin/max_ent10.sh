@@ -50,6 +50,7 @@ fi
 STARTTIME=$(date +%s)
 i=9000
 dataFolder='/project2/depablo/erschultz/dataset_12_11_21'
+method='ground_truth'
 
 useE='false'
 useS='true'
