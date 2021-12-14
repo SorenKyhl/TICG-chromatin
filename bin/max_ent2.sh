@@ -85,8 +85,10 @@ max_ent
 
 
 useE='true'
+useS='false'
 max_ent
 
+useE='false'
 useGroundTruthChi='true'
 numIterations=0
 k=2
