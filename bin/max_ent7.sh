@@ -24,7 +24,6 @@ useS='false'
 useGroundTruthChi='false'
 useGroundTruthDiagChi='true'
 useGroundTruthSeed='false'
-correctEnergy='false'
 mode="plaid"
 gamma=0.00001
 gammaDiag=0.00001

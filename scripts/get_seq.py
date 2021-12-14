@@ -602,6 +602,7 @@ def main():
         assert m1 == args.m
         np.savetxt('e_matrix.txt', e, fmt = format)
         np.save('e.npy', e)
+        np.save('s.npy', s) # save s.npy either way
     else:
         m, k = seq.shape
         # np.set_printoptions(threshold=100)

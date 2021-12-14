@@ -24,7 +24,6 @@ useS='false'
 useGroundTruthChi='false'
 useGroundTruthDiagChi='true'
 useGroundTruthSeed='false'
-correctEnergy='false'
 mode="plaid"
 gamma=0.00001
 gammaDiag=0.00001
@@ -91,6 +90,11 @@ max_ent
 useE='false'
 useGroundTruthChi='true'
 numIterations=0
+k=2
+max_ent
+
+useGroundTruthChi='false'
+numIterations=100
 k=2
 max_ent
 
