@@ -5,7 +5,7 @@ max_ent() {
     useGroundTruthChi='false'
     goalSpecified='false'
     numIterations=0
-    k=None
+    k='none'
   fi
   modelPath="${results}/${modelType}/${modelID}"
   sampleFolder="${dataFolder}/samples/sample${sample}"

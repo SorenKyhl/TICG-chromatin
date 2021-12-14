@@ -232,7 +232,9 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                         sample_results = []
                         for s_list, ref_s_list in zip(s_list_sample, ref_s_list_sample): # iterates over samples
                             replicate_results = []
-                            for s, ref_s in zip(s_list, ref_s_list): # iterates over replicates
+                            p_ref_s = -1
+                            ref_s = ref_s_list[0] # all the same so just grab index 0
+                            for s in s_list: # iterates over replicates
                                 replicate_results.append(mean_squared_error(ref_s, s))
                             sample_results.append(replicate_results)
 
