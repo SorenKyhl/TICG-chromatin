@@ -121,7 +121,7 @@ def loadData(args):
                                     replicate_data['scc'].append(results['scc'])
                                     replicate_data['avg_dist_pearson'].append(results['avg_dist_pearson'])
                             else:
-                                print(f"MISSING: {json_file}")
+                                print(f"\tMISSING: {json_file}")
 
                             # look for s_matrix
                             s_matrix_file1 = osp.join(replicate_folder, 'resources', 's.npy')
@@ -139,7 +139,7 @@ def loadData(args):
                                 elif osp.exists(x_file2):
                                     x = np.load(x_file2)
                                 else:
-                                    print(f'x not found for {replicate_folder}')
+                                    print(f'\tx not found for {replicate_folder}')
                                     continue
 
                                 # load chi
@@ -154,7 +154,6 @@ def loadData(args):
                         data[k][method]['scc'].append(np.mean(replicate_data['scc']))
                         data[k][method]['avg_dist_pearson'].append(np.mean(replicate_data['avg_dist_pearson']))
                         data[k][method]['s'].append(replicate_data['s'])
-                print('') # just making output look nicer
     return data
 
 def makeLatexTable(data, ofile, header = '', small = False, mode = 'w'):

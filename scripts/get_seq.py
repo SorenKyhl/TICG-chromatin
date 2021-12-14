@@ -227,7 +227,7 @@ def get_PCA_seq(input, k, normalize, use_kernel = False, kernel=None):
     if use_kernel:
         pca = KernelPCA(kernel = kernel)
         pca.fit(input)
-        print(pca.lambdas_[:10])
+        print(pca.eigenvalues_[:10])
     else:
         pca = PCA()
         pca.fit(input)
@@ -542,6 +542,7 @@ def main():
                 calc = True
             format = '%.3e'
         elif args.use_ematrix:
+            e_matrix_file = osp.join(args.sample_folder, 'e_matrix.txt')
             if osp.exists(e_matrix_file):
                 e = np.loadtxt(e_matrix_file)
             else:
