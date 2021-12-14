@@ -4,6 +4,7 @@ import sys
 
 import numpy as np
 import argparse
+import re
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -525,13 +526,43 @@ def main():
             input = np.load(osp.join(args.sample_folder, 'x.npy'))[:args.m, :]
         seq = get_PCA_seq(input, args.k, args.normalize, use_kernel = True, kernel = args.kernel)
         format = '%.3e'
-    elif args.method == 'ground_truth':
-        if osp.exists(osp.join(args.sample_folder, 'x_linear.npy')):
-            seq = np.load(osp.join(args.sample_folder, 'x_linear.npy'))[:args.m, :]
-        elif osp.exists(osp.join(args.sample_folder, 'x.npy')):
-            seq = np.load(osp.join(args.sample_folder, 'x.npy'))[:args.m, :]
+    elif args.method.startswith('ground_truth'):
+        x_linear_file = osp.join(args.sample_folder, 'x_linear.npy')
+        x_file = osp.join(args.sample_folder, 'x.npy')
+        if osp.exists(x_file):
+            x = np.load(x_file)[:args.m, :]
         else:
             raise Exception(f'x not found for {args.sample_folder}')
+        if osp.exists(x_linear_file):
+            x_linear = np.load(x_linear_file)[:args.m, :]
+        else:
+            x_linear = x
+            print(f'Warning: assuming x == x_linear for {args.sample_folder}')
+
+        if args.method.find('-') > 0:
+            mode = re.split(r'[-+]', args.method)[1]
+        else:
+            mode = None
+
+        if mode is None:
+            seq = x # use epigenetic marks directly, may interact nonlinearly
+        elif mode == 'linear':
+            seq = x_linear # use representation that can be written linearly
+            # this mode will reproduce ground_truth-S barring random seed
+        elif mode in {'E', 'S'}:
+            pass
+            # handled later
+        else:
+            raise Exception(f'Unrecognized ground_truth mode: {mode}')
+
+        if args.method.find('+') > 0:
+            assert args.method.split('+')[1] == 'random', f"unexpected method format found: {args.method}"
+            assert not args.use_smatrix and not args.use_ematrix
+            _, k = seq.shape
+            assert args.k is not None
+            assert args.k > k, f"{args.k} not > {k}"
+            seq_random = get_random_seq(args.m, args.p_switch, args.k - k, args.relabel, args.seed)
+            seq = np.concatenate((seq, seq_random), axis = 1)
 
         calc = False # TRUE if need to calculate e or s matrix
         if args.use_smatrix:
@@ -609,7 +640,8 @@ def main():
         # for i in range(k):
         #     print(np.round(seq[:100, i], 3))
         assert m == args.m, "m mismatch: seq has {} particles not {}".format(m, args.m)
-        assert k == args.k, "k mismatch: seq has {} particle types not {}".format(k, args.k)
+        if args.k is not None:
+            assert k == args.k, f"k mismatch: seq has {k} particle types not {args.k} for method {args.method}"
         writeSeq(seq, format, args.save_npy)
 
     if args.plot:
@@ -691,6 +723,12 @@ def test_kPCA():
     seq = get_PCA_seq(input, args.k, args.normalize, use_kernel = True, kernel = args.kernel)
 
     seq = get_PCA_seq(input, args.k, args.normalize)
+
+def test_ground_truth_random():
+    args = getArgs()
+    args.k = 4
+    args.m = 1000
+    args.p_switch = 0.05
 
 
 

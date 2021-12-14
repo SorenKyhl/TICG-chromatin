@@ -7,6 +7,10 @@ max_ent() {
     numIterations=0
     k='none'
   fi
+  if [ $useGroundTruthChi == 'true' ]
+  then
+    numIterations=0
+  fi
   modelPath="${results}/${modelType}/${modelID}"
   sampleFolder="${dataFolder}/samples/sample${sample}"
   scratchDirI="${scratchDir}/TICG_maxent${i}"

@@ -16,7 +16,7 @@ goalSpecified='true'
 numIterations=100 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 modelType='ContactGNNEnergy'
-local='false'
+local='true'
 binarize='false'
 normalize='false'
 useE='false'
@@ -37,9 +37,11 @@ source ~/TICG-chromatin/bin/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  # dataFolder="/home/eric/sequences_to_contact_maps/dataset_11_14_21"
-  dataFolder="/home/eric/dataset_test"
+  dataFolder="/home/eric/sequences_to_contact_maps/dataset_11_03_21"
+  # dataFolder="/home/eric/dataset_test"
   scratchDir='/home/eric/scratch'
+  numIterations=0
+  finalSimProductionSweeps=2000
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
   dataFolder='/project2/depablo/erschultz/dataset_11_03_21'
@@ -49,18 +51,48 @@ fi
 
 STARTTIME=$(date +%s)
 i=1
-dataFolder='/project2/depablo/erschultz/dataset_12_12_21'
-for k in 2 4
+dataFolder='/project2/depablo/erschultz/dataset_12_11_21'
+k=7
+method='ground_truth-linear+random'
+for sample in 40 1230 1718
 do
-  for sample in 40 1230 1718
-  do
-    for method in 'PCA'
-    do
-      # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic' 'kPCA-x' 'kPCA-y'
-      max_ent
-    done
-  done
+  max_ent
 done
+
+k=6
+method='ground_truth-linear'
+for sample in 40 1230 1718
+do
+  max_ent
+done
+
+k=3
+method='ground_truth'
+for sample in 40 1230 1718
+do
+  max_ent
+done
+
+k=6
+method='ground_truth-linear'
+useGroundTruthChi='true'
+for sample in 40 1230 1718
+do
+  max_ent
+done
+
+# dataFolder='/project2/depablo/erschultz/dataset_12_12_21'
+# for k in 2 4
+# do
+#   for sample in 40 1230 1718
+#   do
+#     for method in 'PCA'
+#     do
+#       # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic' 'kPCA-x' 'kPCA-y'
+#       max_ent
+#     done
+#   done
+# done
 
 
 wait

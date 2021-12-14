@@ -50,17 +50,47 @@ fi
 STARTTIME=$(date +%s)
 i=2000
 dataFolder='/project2/depablo/erschultz/dataset_12_12_21'
-for k in 2 4
+k=11
+method='ground_truth-linear+random'
+for sample in 40 1230 1718
 do
-  for sample in 40 1230 1718
-  do
-    for method in 'nmf'
-    do
-      # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic' 'kPCA-x' 'kPCA-y'
-      max_ent
-    done
-  done
+  max_ent
 done
+
+k=10
+method='ground_truth-linear'
+for sample in 40 1230 1718
+do
+  max_ent
+done
+
+k=4
+method='ground_truth'
+for sample in 40 1230 1718
+do
+  max_ent
+done
+
+k=10
+method='ground_truth-linear'
+useGroundTruthChi='true'
+for sample in 40 1230 1718
+do
+  max_ent
+done
+
+#
+# for k in 2 4
+# do
+#   for sample in 40 1230 1718
+#   do
+#     for method in 'nmf'
+#     do
+#       # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic' 'kPCA-x' 'kPCA-y'
+#       max_ent
+#     done
+#   done
+# done
 
 wait
 

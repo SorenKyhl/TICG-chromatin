@@ -216,6 +216,9 @@ def getChis(args):
 def set_up_plaid_chi(args, config):
     if args.use_ground_truth_chi:
         args.chi = np.load(osp.join(args.sample_folder, 'chis.npy'))
+        print(args.chi)
+        _, k = args.chi.shape
+        assert k == args.k, f"cols of ground truth chi {args.k} doesn't match cols of seq {k}"
     elif args.chi is None:
         if args.k is not None:
             args.chi = getChis(args)
