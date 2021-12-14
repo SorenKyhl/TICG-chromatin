@@ -297,7 +297,7 @@ def sort_method_keys(keys):
     return sorted_keys, sorted_labels
 
 def main(data_folder, sample):
-    args = getArgs(data_folder=, sample=sample)
+    args = getArgs(data_folder=data_folder, sample=sample)
     print(args)
 
     fname = 'max_ent_table.txt'
