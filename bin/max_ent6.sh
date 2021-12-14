@@ -50,7 +50,7 @@ fi
 
 STARTTIME=$(date +%s)
 i=5000
-dataFolder='/project2/depablo/erschultz/dataset_12_11_21'
+dataFolder='/project2/depablo/erschultz/dataset_12_12_21'
 for k in 2 4
 do
   for sample in 40 1230 1718

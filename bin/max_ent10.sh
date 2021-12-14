@@ -1,6 +1,6 @@
 #! /bin/bash
-#SBATCH --job-name=maxent1
-#SBATCH --output=logFiles/maxent1.out
+#SBATCH --job-name=maxent10
+#SBATCH --output=logFiles/maxent10.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20
@@ -10,7 +10,7 @@ m=1024
 k='none'
 samples='40-1230-1718'
 productionSweeps=50000
-finalSimProductionSweeps=10000
+finalSimProductionSweeps=1000000
 equilibSweeps=10000
 goalSpecified='true'
 numIterations=100 # iteration 1 + numIterations is production run to get contact map
@@ -37,8 +37,8 @@ source ~/TICG-chromatin/bin/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  # dataFolder="/home/eric/sequences_to_contact_maps/dataset_11_14_21"
-  dataFolder="/home/eric/dataset_test"
+  dataFolder="/home/eric/sequences_to_contact_maps/dataset_11_14_21"
+  # dataFolder="/home/eric/dataset_test"
   scratchDir='/home/eric/scratch'
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
@@ -48,24 +48,29 @@ else
 fi
 
 STARTTIME=$(date +%s)
-i=1
-dataFolder='/project2/depablo/erschultz/dataset_12_12_21'
-for k in 2 4
+i=9000
+dataFolder='/project2/depablo/erschultz/dataset_12_11_21'
+
+useE='false'
+useS='true'
+for sample in 40 1230 1718
 do
-  for sample in 40 1230 1718
-  do
-    for method in 'PCA'
-    do
-      # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic' 'kPCA-x' 'kPCA-y'
-      max_ent
-    done
-  done
+  max_ent
+done
+
+k=10
+useGroundTruthChi='true'
+numIterations=0
+for sample in 40 1230 1718
+do
+  max_ent
 done
 
 
 wait
 
 python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
+# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples --small "true"
 
 ENDTIME=$(date +%s)
 echo "total time:$(( $(( $ENDTIME - $STARTTIME )) / 60 )) minutes"

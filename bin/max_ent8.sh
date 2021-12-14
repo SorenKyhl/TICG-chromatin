@@ -49,15 +49,41 @@ fi
 
 STARTTIME=$(date +%s)
 i=7000
-dataFolder='/project2/depablo/erschultz/dataset_12_11_21'
-
-
+dataFolder='/project2/depablo/erschultz/dataset_12_12_21'
 method='ground_truth'
+
+
 useE='true'
 for sample in 40 1230 1718
 do
   max_ent
 done
+
+useE='false'
+useS='true'
+for sample in 40 1230 1718
+do
+  max_ent
+done
+
+k=10
+useGroundTruthChi='true'
+numIterations=0
+for sample in 40 1230 1718
+do
+  max_ent
+done
+
+
+k=10
+useS='false'
+useE='false'
+for sample in 40 1230 1718
+do
+  max_ent
+done
+
+
 wait
 
 python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
