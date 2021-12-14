@@ -35,7 +35,7 @@ def upper_traingularize_chis():
             np.savetxt(osp.join(file_dir, 'chis.txt'), chis, fmt='%0.5f')
             np.save(osp.join(file_dir, 'chis.npy'), chis)
 
-def write_x_linear(dataset):
+def write_x_linear():
     dir = "/project2/depablo/erschultz/dataset_10_27_21/samples"
     for file in os.listdir(dir):
         if file.startswith('sample'):
@@ -52,8 +52,7 @@ def write_x_linear(dataset):
             # np.save(ofile, x_linear)
 
 
-
-def make_x_linear():
+def check_seq(dataset):
     dir = "/project2/depablo/erschultz"
     # dir = '/home/eric/sequences_to_contact_maps'
     if dataset is None:
