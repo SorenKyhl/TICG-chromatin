@@ -39,7 +39,7 @@ def write_x_linear():
     dir = "/project2/depablo/erschultz/dataset_10_27_21/samples"
     for file in os.listdir(dir):
         if file.startswith('sample'):
-            file_dir = osp.join(dataset_samples, file)
+            file_dir = osp.join(dir, file)
             x = np.load(osp.join(file_dir, 'x.npy'))
             m, k = x.shape
             x_linear = relabel_seq(x, 'D-AB')
