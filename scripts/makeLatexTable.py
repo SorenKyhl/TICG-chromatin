@@ -25,7 +25,7 @@ SMALL_METHODS = {'ground_truth', 'random', 'PCA', 'k_means', 'nmf', 'GNN', 'epig
 LABELS = ['Ground Truth', 'Random', 'PCA', 'PCA Split', 'kPCA', 'K-means', 'NMF', 'GNN', 'Epigenetic', 'ChromHMM']
 
 
-def getArgs(data_folder=None, sample=None, samples = None):
+def getArgs(data_folder = None, sample = None, samples = None):
     parser = argparse.ArgumentParser(description='Base parser')
     parser.add_argument('--data_folder', type=str, default=data_folder, help='location of input data')
     parser.add_argument('--sample', type=int, default=sample, help='sample id')
@@ -302,7 +302,7 @@ def sort_method_keys(keys):
 
     return sorted_keys, sorted_labels
 
-def main(data_folder, sample):
+def main(data_folder=None, sample=None):
     args = getArgs(data_folder=data_folder, sample=sample)
     print(args)
 
