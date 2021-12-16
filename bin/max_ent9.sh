@@ -49,18 +49,26 @@ fi
 
 STARTTIME=$(date +%s)
 i=8000
-dataFolder='/project2/depablo/erschultz/dataset_12_12_21'
-for k in 2 4
+dataFolder='/project2/depablo/erschultz/dataset_12_11_21'
+
+method='GNN'
+modelID=64
+useS='true'
+for sample in 40 1230 1718
 do
-  for sample in 40 1230 1718
-  do
-    for method in 'PCA_split'
-    do
-      # 'GNN' 'ground_truth' 'random' 'k_means' 'PCA' 'PCA_split' 'nmf' 'epigenetic' 'kPCA-x' 'kPCA-y'
-      max_ent
-    done
-  done
+  max_ent
 done
+
+dataFolder='/project2/depablo/erschultz/dataset_12_12_21'
+
+method='GNN'
+modelID=65
+useS='true'
+for sample in 40 1230 1718
+do
+  max_ent
+done
+
 
 wait
 
