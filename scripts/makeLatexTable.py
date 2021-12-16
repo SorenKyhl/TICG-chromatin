@@ -17,7 +17,7 @@ for p in paths:
         sys.path.insert(1, p)
 
 from neural_net_utils.argparseSetup import str2Int, str2bool
-from nueral_net_utils.utils import calculate_S
+from neural_net_utils.utils import calculate_S
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 METHODS = ['ground_truth', 'random', 'PCA', 'PCA_split', 'kPCA', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM']
