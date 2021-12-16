@@ -246,7 +246,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                         sample_results = np.array(np.array(data[k][key][metric]))
 
                     if sample_id is not None:
-                        assert sample_results.shape[0] == 1, f"metric {metric} k {k_label}"
+                        assert sample_results.shape[0] == 1, f"label {label}, metric {metric}, k {k_label}"
                         result = sample_results.reshape(-1)
                     else:
                         result = np.mean(sample_results, axis = 1)
