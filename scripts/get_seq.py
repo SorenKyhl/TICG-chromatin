@@ -13,12 +13,11 @@ from sklearn.decomposition import PCA, NMF, KernelPCA
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 
-# ensure that I can find knightRuiz and get_config
+# ensure that I can find knightRuiz
 abspath = osp.abspath(__file__)
 dname = osp.dirname(abspath)
 sys.path.insert(0, dname)
 from knightRuiz import knightRuiz
-from get_config import LETTERS, str2bool, str2int, calculate_E_S
 
 paths = ['/home/erschultz/sequences_to_contact_maps',
         '/home/eric/sequences_to_contact_maps',
@@ -28,6 +27,10 @@ for p in paths:
         sys.path.insert(1, p)
 
 from plotting_functions import plotContactMap
+from neural_net_utils.argparseSetup import str2bool, str2Int
+from neural_net_utils.utils import calculate_E_S
+
+LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
@@ -43,7 +46,7 @@ def getArgs():
     # standard args
     parser.add_argument('--method', type=str, default='k_means', help='method for assigning particle types')
     parser.add_argument('--m', type=int, default=1024, help='number of particles (will crop contact map)')
-    parser.add_argument('--k', type=str2int, default=2, help='sequences to generate')
+    parser.add_argument('--k', type=str2Int, default=2, help='sequences to generate')
 
     # args for specific methods
     parser.add_argument('--seed', type=int, help='random seed for numpy')

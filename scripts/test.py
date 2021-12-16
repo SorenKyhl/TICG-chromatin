@@ -11,6 +11,17 @@ sys.path.insert(0, dname)
 from makeLatexTable import METHODS
 from get_seq import relabel_seq
 
+paths = ['/home/erschultz/sequences_to_contact_maps',
+        '/home/eric/sequences_to_contact_maps',
+        'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
+for p in paths:
+    if osp.exists(p):
+        sys.path.insert(1, p)
+
+from neural_net_utils.dataset_classes import make_dataset
+
+LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
 def find_mising_ids():
     ids = set(range(1, 2001))
     dir = "/project2/depablo/erschultz/dataset_10_27_21/samples"
@@ -25,15 +36,15 @@ def find_mising_ids():
     print(ids, len(ids))
 
 def upper_traingularize_chis():
-    dir = "/project2/depablo/erschultz/dataset_08_26_21/samples"
-    for file in os.listdir(dir):
-        if file.startswith('sample'):
-            file_dir = osp.join(dir, file)
-            chis = np.load(osp.join(file_dir, 'chis.npy'))
-            chis = np.triu(chis)
+    dir = "/project2/depablo/erschultz/dataset_08_26_21"
+    samples = make_dataset(dir)
+    for file in samples:
+        file_dir = osp.join(dir, file)
+        chis = np.load(osp.join(file_dir, 'chis.npy'))
+        chis = np.triu(chis)
 
-            np.savetxt(osp.join(file_dir, 'chis.txt'), chis, fmt='%0.5f')
-            np.save(osp.join(file_dir, 'chis.npy'), chis)
+        np.savetxt(osp.join(file_dir, 'chis.txt'), chis, fmt='%0.5f')
+        np.save(osp.join(file_dir, 'chis.npy'), chis)
 
 def write_x_linear():
     dir = "/project2/depablo/erschultz/dataset_11_03_21/samples"

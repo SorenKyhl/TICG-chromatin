@@ -7,7 +7,15 @@ import sys
 import csv
 from sklearn.metrics.pairwise import polynomial_kernel
 
+paths = ['/home/erschultz/sequences_to_contact_maps',
+        '/home/eric/sequences_to_contact_maps',
+        'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
+for p in paths:
+    if osp.exists(p):
+        sys.path.insert(1, p)
 
+from neural_net_utils.utils import InteractionConverter, calculate_E_S
+from neural_net_utils.argparseSetup import str2Int, str2bool, str2Float, str2list2D
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -18,7 +26,7 @@ def getArgs():
 
     # config param arguments
     parser.add_argument('--m', type=int, default=1024, help='number of particles')
-    parser.add_argument('--k', type=str2int, help='number of particle types (inferred from chi if None)')
+    parser.add_argument('--k', type=str2Int, help='number of particle types (inferred from chi if None)')
     parser.add_argument('--load_configuration_filename', type=str2None, default='input1024.xyz', help='file name of initial config (None to not load)')
     parser.add_argument('--goal_specified', type=str2bool, default=True, help='True will save two lines to chis.txt')
     parser.add_argument('--dump_frequency', type=int, help='set to change dump frequency')
@@ -50,106 +58,6 @@ def getArgs():
 
     args = parser.parse_args()
     return args
-
-def str2list2D(v, sep1 = '\\', sep2 = '&'):
-    """
-    Helper function for argparser, converts str to list by splitting on sep1, then on sep2.
-
-    Example for sep1 = '\\', sep2 = '&': "i & j \\ k & l" -> [[i, j], [k, l]]
-
-    Inputs:
-        v: string (any spaces will be ignored)
-        sep: separator
-    """
-    if v is None:
-        return None
-    elif isinstance(v, str):
-        if v.lower() == 'none':
-            return None
-        elif v.lower() in {'nonlinear', 'polynomial'}:
-            return v.lower()
-        else:
-            v = v.replace(' ', '') # get rid of spaces
-            result = [i.split(sep2) for i in v.split(sep1)]
-            result = np.array(result, dtype=float)
-            return result
-    else:
-        raise argparse.ArgumentTypeError('str value expected.')
-
-def str2bool(v):
-    """
-    Helper function for argparser, converts str to boolean for various string inputs.
-    https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
-
-    Inputs:
-        v: string
-    """
-    if isinstance(v, bool):
-       return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
-        return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
-        return False
-    else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
-
-def str2int(v):
-    """
-    Helper function for argparser, converts str to int if possible.
-
-    Inputs:
-        v: string
-    """
-    if v is None:
-        return v
-    elif isinstance(v, str):
-        if v.lower() == 'none':
-            return None
-        elif v.isnumeric():
-            return int(v)
-        else:
-            raise argparse.ArgumentTypeError('none or int expected not {}'.format(v))
-    else:
-        raise argparse.ArgumentTypeError('String value expected.')
-
-def str2float(v):
-    """
-    Helper function for argparser, converts str to float if possible.
-
-    Inputs:
-        v: string
-    """
-    if v is None:
-        return v
-    elif isinstance(v, str):
-        if v.lower() == 'none':
-            return None
-        elif v.isnumeric():
-            return float(v)
-        else:
-            raise argparse.ArgumentTypeError('none or float expected not {}'.format(v))
-    else:
-        raise argparse.ArgumentTypeError('String value expected.')
-
-
-def str2None(v):
-    """
-    Helper function for argparser, converts str to None if str == 'none'
-
-    Returns the string otherwise.
-
-    Inputs:
-        v: string
-    """
-    if v is None:
-        return v
-    elif isinstance(v, str):
-        if v.lower() == 'none':
-            return None
-        else:
-            return v
-    else:
-        raise argparse.ArgumentTypeError('String value expected.')
 
 def concat2ToD(self, x):
     # TODO
@@ -202,10 +110,9 @@ def getChis(args):
     if args.ensure_distinguishable:
         max_it = 10
         it = 0
-        while not conv.PsiUniqueRows() and it < max_it: # defaults to False
+        while not uniqueRows(conv.getE()) and it < max_it: # defaults to False
             # generate random chi
             conv.chi = generateRandomChi(args)
-            conv.updatePsi()
             it += 1
         if it == max_it:
             print('Warning: maximum iteration reached')
@@ -280,7 +187,7 @@ def set_up_plaid_chi(args, config):
             assert args.k == rows, 'number of particle types does not match shape of chi'
         assert rows == cols, "chi not square: {}".format(args.chi)
         conv = InteractionConverter(args.k, args.chi)
-        if not conv.PsiUniqueRows():
+        if not uniqueRows(conv.getE())):
             print('Warning: particles are not distinguishable')
 
     # save chi
@@ -319,75 +226,14 @@ def set_up_diag_chi(args, config, sample_config):
                 wr.writerow(np.array(config["diag_chis"]))
                 wr.writerow(np.array(config["diag_chis"]))
 
-def calculate_E_S(x, chi):
-    s = calculate_S(x, chi)
-    e = s + s.T - np.diag(np.diagonal(s).copy())
-    return e, s
+def uniqueRows(array):
+    if array is None:
+        return False
 
-def calculate_E(x, chi):
-    s = calculate_S(x, chi)
-    e = s + s.T - np.diag(np.diagonal(s).copy())
-    return e
-
-def calculate_S(x, chi):
-    # zero lower triangle (double check)
-    chi = np.triu(chi)
-
-    s = x @ chi @ x.T
-    return s
-
-class InteractionConverter():
-    """Class that allows conversion between epigenetic mark bit string pairs and integer type id"""
-    def __init__(self, k, chi = None):
-        self.k = k
-        self.chi = chi
-        self.allStrings = self.generateAllBinaryStrings()
-        if chi is not None:
-            self.Psi = calculate_S(self.allStrings, self.chi)
-        else:
-            self.Psi = None
-
-    def fillArrayWithAllBinaryStrings(self, n, arr, temp_arr, i, row = 0):
-        # https://www.geeksforgeeks.org/generate-all-the-binary-strings-of-n-bits/
-        if i == n:
-            arr.append(temp_arr.copy())
-            row += 1
-            return row
-
-        # First assign "1" at ith position
-        # and try for all other permutations
-        # for remaining positions
-        temp_arr[i] = 1
-        self.fillArrayWithAllBinaryStrings(n, arr, temp_arr, i + 1, row)
-
-        # And then assign "0" at ith position
-        # and try for all other permutations
-        # for remaining positions
-        temp_arr[i] = 0
-        self.fillArrayWithAllBinaryStrings(n, arr, temp_arr, i + 1, row)
-
-    def generateAllBinaryStrings(self):
-        arr = []
-        temp_arr = [None]*self.k
-        self.fillArrayWithAllBinaryStrings(self.k, arr, temp_arr, 0)
-        np_arr = np.array(arr).astype(np.int8)
-        return np_arr
-
-    def PsiUniqueRows(self):
-        if self.Psi is None:
-            return False
-
-        print("Chi:\n", self.chi)
-        print("Net interaction matrix:\n", self.Psi)
-
-        if len(np.unique(self.Psi, axis=0)) / len(self.Psi) == 1.:
-            return True
-        else:
-            return False
-
-    def updatePsi(self):
-        assert self.chi is not None, "set chi first"
-        self.Psi = calculate_S(self.allStrings, self.chi)
+    if len(np.unique(array, axis=0)) / len(array) == 1.:
+        return True
+    else:
+        return False
 
 def main():
     args = getArgs()
@@ -491,11 +337,6 @@ def test():
     args.fill_diag = None
     args.fill_offdiag = 0
     print(generateRandomChi(args))
-
-def test2():
-    conv = InteractionConverter(2, np.array([[-1, 2],[0, -1]]))
-    print(conv.allStrings)
-    print(conv.PsiUniqueRows())
 
 def test_nonlinear_chi():
     args = getArgs()

@@ -9,13 +9,17 @@ import numpy as np
 
 from sklearn.metrics import mean_squared_error
 
-# ensure that I can get_config
-abspath = osp.abspath(__file__)
-dname = osp.dirname(abspath)
-sys.path.insert(0, dname)
-from knightRuiz import knightRuiz
-from get_config import str2bool, str2int, calculate_S, LETTERS
+paths = ['/home/erschultz/sequences_to_contact_maps',
+        '/home/eric/sequences_to_contact_maps',
+        'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
+for p in paths:
+    if osp.exists(p):
+        sys.path.insert(1, p)
 
+from neural_net_utils.argparseSetup import str2Int, str2bool
+from nueral_net_utils.utils import calculate_S
+
+LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 METHODS = ['ground_truth', 'random', 'PCA', 'PCA_split', 'kPCA', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM']
 SMALL_METHODS = {'ground_truth', 'random', 'PCA', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM'}
 LABELS = ['Ground Truth', 'Random', 'PCA', 'PCA Split', 'kPCA', 'K-means', 'NMF', 'GNN', 'Epigenetic', 'ChromHMM']
@@ -108,7 +112,7 @@ def loadData(args):
                 for k_file in os.listdir(method_folder):
                     k_folder = osp.join(method_folder, k_file)
                     if osp.isdir(k_folder) and k_file.startswith('k'):
-                        k = str2int(k_file[1:])
+                        k = str2Int(k_file[1:])
                         if k is None:
                             k = 0
                         replicate_data = defaultdict(list)
