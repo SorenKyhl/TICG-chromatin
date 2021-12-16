@@ -35,7 +35,6 @@ def getArgs(data_folder = None, sample = None, samples = None):
     args = parser.parse_args()
 
     assert args.sample is not None or args.samples is not None, "either sample or samples must be set"
-    assert args.sample is None or args.samples is None, "only one of sample or samples can be set"
     if args.sample_folder is None and args.sample is not None:
         args.sample_folder = osp.join(args.data_folder, 'samples', f'sample{args.sample}')
 
@@ -307,25 +306,32 @@ def main(data_folder=None, sample=None):
     print(args)
 
     fname = 'max_ent_table.txt'
-
-    if args.samples is not None:
-        data = loadData(args)
-        ofile = osp.join(args.data_folder, fname)
+    dataset = osp.split(args.data_folder)[1]
 
     if args.sample is not None:
         args.samples = [args.sample]
         data = loadData(args)
         ofile = osp.join(args.sample_folder, fname)
 
-    dataset = osp.split(args.data_folder)[1]
+        mode = 'w'
+        first = True
+        for is_small in [True, False]:
+            makeLatexTable(data, ofile, dataset, small = is_small, mode = mode, sample_id = args.sample)
+            if first:
+                mode = 'a'
+                first = False
 
-    mode = 'w'
-    first = True
-    for is_small in [True, False]:
-        makeLatexTable(data, ofile, dataset, small = is_small, mode = mode, sample_id = args.sample)
-        if first:
-            mode = 'a'
-            first = False
+    if args.samples is not None:
+        data = loadData(args)
+        ofile = osp.join(args.data_folder, fname)
+
+        mode = 'w'
+        first = True
+        for is_small in [True, False]:
+            makeLatexTable(data, ofile, dataset, small = is_small, mode = mode)
+            if first:
+                mode = 'a'
+                first = False
 
 
 if __name__ == '__main__':
