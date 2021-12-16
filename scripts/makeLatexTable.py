@@ -329,4 +329,4 @@ def main(data_folder, sample):
 
 
 if __name__ == '__main__':
-    main('../sequences_to_contact_maps/dataset_10_27_21', 40)
+    main()
