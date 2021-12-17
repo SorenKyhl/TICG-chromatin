@@ -7,7 +7,7 @@
 #SBATCH --mem-per-cpu=2000
 #SBATCH --qos=depablo-debug
 
-cd /project2/depablo/erschultz/dataset_12_11_21
+cd /project2/depablo/erschultz/dataset_12_11_21/samples
 cd sample40
 rm -r ground_truth*
 
@@ -17,7 +17,7 @@ rm -r ground_truth*
 cd ../sample1718
 rm -r ground_truth*
 
-cd /project2/depablo/erschultz/dataset_12_12_21
+cd /project2/depablo/erschultz/dataset_12_12_21/samples
 cd sample40
 rm -r ground_truth* GNN* PCA* kPCA* nmf* random* k_means*
 
