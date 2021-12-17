@@ -15,7 +15,7 @@ for p in paths:
         sys.path.insert(1, p)
 
 from neural_net_utils.utils import InteractionConverter, calculate_E_S
-from neural_net_utils.argparseSetup import str2Int, str2bool, str2Float, str2list2D
+from neural_net_utils.argparseSetup import str2int, str2bool, str2float, str2list2D, str2None
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -26,14 +26,14 @@ def getArgs():
 
     # config param arguments
     parser.add_argument('--m', type=int, default=1024, help='number of particles')
-    parser.add_argument('--k', type=str2Int, help='number of particle types (inferred from chi if None)')
+    parser.add_argument('--k', type=str2int, help='number of particle types (inferred from chi if None)')
     parser.add_argument('--load_configuration_filename', type=str2None, default='input1024.xyz', help='file name of initial config (None to not load)')
     parser.add_argument('--goal_specified', type=str2bool, default=True, help='True will save two lines to chis.txt')
     parser.add_argument('--dump_frequency', type=int, help='set to change dump frequency')
     parser.add_argument('--dump_stats_frequency', type=int, help='set to change dump stats frequency')
     parser.add_argument('--n_sweeps', type=int, help='set to change nSweeps')
-    parser.add_argument('--seed', type=int, help='set to change random seed')
-    parser.add_argument('--use_ground_truth_seed', type=str2bool, help='True to copy seed from config file in sample_folder')
+    parser.add_argument('--TICG_seed', type=int, help='set to change random seed for simulation')
+    parser.add_argument('--use_ground_truth_TICG_seed', type=str2bool, help='True to copy seed from config file in sample_folder')
     parser.add_argument('--use_ematrix', type=str2bool, default=False, help='True to use e_matrix')
     parser.add_argument('--use_smatrix', type=str2bool, default=False, help='True to use s_matrix')
     parser.add_argument('--sample_folder', type=str, help='location of sample for ground truth chi')
@@ -41,6 +41,7 @@ def getArgs():
     # chi arguments
     parser.add_argument('--use_ground_truth_chi', type=str2bool, default=False, help='True to use ground truth chi and diag chi')
     parser.add_argument('--use_ground_truth_diag_chi', type=str2bool, default=False, help='True to use ground truth diag chi')
+    parser.add_argument('--chi_seed', type=str2int, default=None, help='seed for generating chi')
 
     # diag chi arguments
     parser.add_argument('--diag', type=str2bool, default=False, help='True for diagonal interactions')
@@ -84,10 +85,11 @@ def concat2ToD(self, x):
     del x1, x2
     return out
 
-def generateRandomChi(args, decimals = 1):
+def generateRandomChi(args, decimals = 1, rng = np.random.default_rng()):
     '''Initializes random chi array.'''
+
     # create array with random values in [minval, maxVal]
-    rands = np.random.rand(args.k, args.k) * (args.max_chi - args.min_chi) + args.min_chi
+    rands = rng.random(size=(args.k, args.k)) * (args.max_chi - args.min_chi) + args.min_chi
 
     # zero lower triangle
     chi = np.triu(rands)
@@ -106,13 +108,14 @@ def generateRandomChi(args, decimals = 1):
     return np.round(chi, decimals = decimals)
 
 def getChis(args):
-    conv = InteractionConverter(args.k, generateRandomChi(args))
+    rng = np.random.default_rng(args.chi_seed)
+    conv = InteractionConverter(args.k, generateRandomChi(args, rng = rng))
     if args.ensure_distinguishable:
         max_it = 10
         it = 0
         while not uniqueRows(conv.getE()) and it < max_it: # defaults to False
             # generate random chi
-            conv.chi = generateRandomChi(args)
+            conv.chi = generateRandomChi(args, rng = rng)
             it += 1
         if it == max_it:
             print('Warning: maximum iteration reached')
@@ -187,7 +190,7 @@ def set_up_plaid_chi(args, config):
             assert args.k == rows, 'number of particle types does not match shape of chi'
         assert rows == cols, "chi not square: {}".format(args.chi)
         conv = InteractionConverter(args.k, args.chi)
-        if not uniqueRows(conv.getE())):
+        if not uniqueRows(conv.getE()):
             print('Warning: particles are not distinguishable')
 
     # save chi
@@ -313,10 +316,10 @@ def main():
         config['dump_stats_frequency'] = args.dump_stats_frequency
 
     # save seed
-    if args.use_ground_truth_seed:
+    if args.use_ground_truth_TICG_seed:
         config['seed'] = sample_config['seed']
-    elif args.seed is not None:
-        config['seed'] = args.seed
+    elif args.TICG_seed is not None:
+        config['seed'] = args.TICG_seed
 
     # save configuration filename
     if args.load_configuration_filename is None:

@@ -27,7 +27,7 @@ for p in paths:
         sys.path.insert(1, p)
 
 from plotting_functions import plotContactMap
-from neural_net_utils.argparseSetup import str2bool, str2Int
+from neural_net_utils.argparseSetup import str2bool, str2int, str2None
 from neural_net_utils.utils import calculate_E_S
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -46,7 +46,7 @@ def getArgs():
     # standard args
     parser.add_argument('--method', type=str, default='k_means', help='method for assigning particle types')
     parser.add_argument('--m', type=int, default=1024, help='number of particles (will crop contact map)')
-    parser.add_argument('--k', type=str2Int, default=2, help='sequences to generate')
+    parser.add_argument('--k', type=str2int, default=2, help='sequences to generate')
 
     # args for specific methods
     parser.add_argument('--seed', type=int, help='random seed for numpy')
@@ -91,24 +91,6 @@ def getArgs():
             raise Exception('normalize not yet supported for {}'.format(args.method))
 
     return args
-
-def str2None(v):
-    """
-    Helper function for argparser, converts str to None if str == 'none'
-
-    Returns the string otherwise.
-
-    Inputs:
-        v: string
-    """
-    if v is None:
-        return v
-    elif isinstance(v, str):
-        if v.lower() == 'none':
-            return None
-        else: return v
-    else:
-        raise argparse.ArgumentTypeError('String value expected.')
 
 def get_random_seq(m, p_switch, k, relabel, seed):
     rng = np.random.default_rng(seed)
