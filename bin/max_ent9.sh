@@ -16,7 +16,7 @@ goalSpecified='true'
 numIterations=100 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 modelType='ContactGNNEnergy'
-local='true'
+local='false'
 useE='false'
 useS='false'
 useGroundTruthChi='false'
@@ -53,9 +53,7 @@ dataset='dataset_12_17_21'
 
 method='GNN-66'
 useS='true'
-modelID=66
-for sample in 40 40 40
-# 1230 1718
+for sample in 40 1230 1718
 do
   max_ent
 done

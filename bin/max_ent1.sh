@@ -56,21 +56,21 @@ for sample in 40
 do
   max_ent
 done
-#
-# k=2
-# method='ground_truth-psi'
-# useGroundTruthChi='true'
-# for sample in 40
-# do
-#   max_ent
-# done
-#
-# method='ground_truth'
-# useS='true'
-# for sample in 40
-# do
-#   max_ent
-# done
+
+k=2
+method='ground_truth-psi'
+useGroundTruthChi='true'
+for sample in 40
+do
+  max_ent
+done
+
+method='ground_truth'
+useS='true'
+for sample in 40
+do
+  max_ent
+done
 
 
 wait

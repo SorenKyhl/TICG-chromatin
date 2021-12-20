@@ -49,13 +49,16 @@ fi
 
 STARTTIME=$(date +%s)
 i=1000
-dataset='dataset_10_27_21'
+dataset='dataset_12_17_21'
 
-method='ground_truth-psi'
-k=2
-for sample in 40
+method='PCA_split'
+
+for k in 4 6
 do
-  max_ent
+  for sample in 40 1230 1718
+  do
+    max_ent
+  done
 done
 
 wait

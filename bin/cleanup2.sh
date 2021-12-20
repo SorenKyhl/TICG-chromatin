@@ -17,3 +17,5 @@ rm -r TICG_maxent6* &
 rm -r TICG_maxent7* &
 rm -r TICG_maxent8* &
 rm -r TICG_maxent9* &
+
+wait
