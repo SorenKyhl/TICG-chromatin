@@ -8,30 +8,32 @@
 
 cd /project2/depablo/erschultz/dataset_12_11_21/samples
 cd sample40
-rm -r ground_truth ground_truth* &
+rm -r ground_truth ground_truth*
 
 cd ../sample1230
-rm -r ground_truth ground_truth* &
+rm -r ground_truth ground_truth*
 
 cd ../sample1718
-rm -r ground_truth ground_truth* &
+rm -r ground_truth ground_truth*
 
-cd /project2/depablo/erschultz/dataset_12_12_21/samples
-cd sample40
-rm -r ground_truth ground_truth* GNN* PCA* kPCA* nmf* random* k_means* &
-
-cd ../sample1230
-rm -r ground_truth ground_truth* GNN* PCA* kPCA* nmf* random* k_means* &
-
-cd ../sample1718
-rm -r ground_truth ground_truth* GNN* PCA* kPCA* nmf* random* k_means* &
 
 cd /project2/depablo/erschultz/dataset_10_27_21/samples
 cd sample40
-rm -r ground_truth ground_truth* &
+rm -r ground_truth ground_truth*
 
 cd ../sample1230
-rm -r ground_truth ground_truth* &
+rm -r ground_truth ground_truth*
 
 cd ../sample1718
-rm -r ground_truth ground_truth* &
+rm -r ground_truth ground_truth*
+
+
+cd /project2/depablo/erschultz/dataset_12_12_21/samples
+cd sample40
+rm -r ground_truth ground_truth* GNN* PCA* kPCA* nmf* random* k_means*
+
+cd ../sample1230
+rm -r ground_truth ground_truth* GNN* PCA* kPCA* nmf* random* k_means*
+
+cd ../sample1718
+rm -r ground_truth ground_truth* GNN* PCA* kPCA* nmf* random* k_means*
