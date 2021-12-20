@@ -17,10 +17,9 @@ numIterations=100 # iteration 1 + numIterations is production run to get contact
 overwrite=1
 modelType='ContactGNNEnergy'
 local='false'
-binarize='false'
-normalize='false'
 useE='false'
 useS='false'
+useGroundTruthChi='false'
 useGroundTruthDiagChi='true'
 useGroundTruthSeed='false'
 mode="plaid"
@@ -36,41 +35,42 @@ source ~/TICG-chromatin/bin/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  # dataFolder="/home/eric/dataset_test"
+  dir="/home/eric/sequences_to_contact_maps"
   scratchDir='/home/eric/scratch'
-  numIterations=0
-  finalSimProductionSweeps=500000
+  numIterations=2
+  finalSimProductionSweeps=5000
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
+  dir='/project2/depablo/erschultz'
   scratchDir='/scratch/midway2/erschultz'
   source activate python3.8_pytorch1.8.1_cuda10.2_2
 fi
 
 STARTTIME=$(date +%s)
 i=1
-dataFolder='/project2/depablo/erschultz/dataset_10_27_21'
+dataset='dataset_10_27_21'
 
-method='ground_truth'
-k=2
-for sample in 40
-do
-  max_ent
-done
-
-k=2
 method='ground_truth-psi'
-useGroundTruthChi='true'
+k=2
 for sample in 40
 do
   max_ent
 done
-
-method='ground_truth'
-useS='true'
-for sample in 40
-do
-  max_ent
-done
+#
+# k=2
+# method='ground_truth-psi'
+# useGroundTruthChi='true'
+# for sample in 40
+# do
+#   max_ent
+# done
+#
+# method='ground_truth'
+# useS='true'
+# for sample in 40
+# do
+#   max_ent
+# done
 
 
 wait

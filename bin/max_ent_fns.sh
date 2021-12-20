@@ -12,6 +12,7 @@ max_ent() {
     numIterations=0
     goalSpecified='false'
   fi
+  dataFolder="${dir}/${dataset}"
   modelPath="${results}/${modelType}/${modelID}"
   sampleFolder="${dataFolder}/samples/sample${sample}"
   scratchDirI="${scratchDir}/TICG_maxent${i}"
@@ -90,15 +91,6 @@ format_method () {
   if [ $useE = 'true' ]
   then
     method="${method}-E"
-  fi
-
-  # normalize and binarize are mutually exclusive
-  if [ $normalize = 'true' ]
-  then
-    method="${method}-normalize"
-  elif [ $binarize = 'true' ]
-  then
-    method="${method}-binarize"
   fi
 
   # seed

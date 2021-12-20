@@ -17,10 +17,9 @@ numIterations=100 # iteration 1 + numIterations is production run to get contact
 overwrite=1
 modelType='ContactGNNEnergy'
 local='false'
-binarize='false'
-normalize='false'
 useE='false'
 useS='false'
+useGroundTruthChi='false'
 useGroundTruthDiagChi='true'
 useGroundTruthSeed='false'
 mode="plaid"
@@ -41,47 +40,22 @@ then
   scratchDir='/home/eric/scratch'
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
-  dataFolder='/project2/depablo/erschultz/dataset_11_03_21'
+  dir='/project2/depablo/erschultz'
   scratchDir='/scratch/midway2/erschultz'
   source activate python3.8_pytorch1.8.1_cuda10.2_2
 fi
 
 STARTTIME=$(date +%s)
 i=7000
-dataFolder='/project2/depablo/erschultz/dataset_12_12_21'
-method='ground_truth'
-
-
-useE='true'
-for sample in 40 1230 1718
+dataset='dataset_12_17_21'
+method='PCA'
+for k in 2 4
 do
-  max_ent
+  for sample in 40 1230 1718
+  do
+    max_ent
+  done
 done
-
-useE='false'
-useS='true'
-for sample in 40 1230 1718
-do
-  max_ent
-done
-
-k=10
-useGroundTruthChi='true'
-numIterations=0
-for sample in 40 1230 1718
-do
-  max_ent
-done
-
-
-k=10
-useS='false'
-useE='false'
-for sample in 40 1230 1718
-do
-  max_ent
-done
-
 
 wait
 

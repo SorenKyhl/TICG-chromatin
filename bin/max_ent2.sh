@@ -17,10 +17,9 @@ numIterations=100 # iteration 1 + numIterations is production run to get contact
 overwrite=1
 modelType='ContactGNNEnergy'
 local='false'
-binarize='false'
-normalize='false'
 useE='false'
 useS='false'
+useGroundTruthChi='false'
 useGroundTruthDiagChi='true'
 useGroundTruthSeed='false'
 mode="plaid"
@@ -41,7 +40,7 @@ then
   scratchDir='/home/eric/scratch'
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
-  dataFolder='/project2/depablo/erschultz/dataset_11_03_21'
+  dir='/project2/depablo/erschultz'
   scratchDir='/scratch/midway2/erschultz'
   source activate python3.8_pytorch1.8.1_cuda10.2_2
 fi
@@ -74,16 +73,18 @@ max_ent() {
 
 STARTTIME=$(date +%s)
 i=1000
-dataFolder='/home/eric/sequences_to_contact_maps/dataset_10_27_21'
+dataset='dataset_10_27_21'
 
-
-
-
+method='ground_truth-psi'
+k=2
+for sample in 40
+do
+  max_ent
+done
 
 wait
 
 python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
-# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples --small "true"
 
 ENDTIME=$(date +%s)
 echo "total time:$(( $(( $ENDTIME - $STARTTIME )) / 60 )) minutes"
