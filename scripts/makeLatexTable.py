@@ -16,7 +16,7 @@ for p in paths:
     if osp.exists(p):
         sys.path.insert(1, p)
 
-from neural_net_utils.argparseSetup import str2Int, str2bool
+from neural_net_utils.argparseSetup import str2int, str2bool, str2list
 from neural_net_utils.utils import calculate_S
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -39,30 +39,6 @@ def getArgs(data_folder = None, sample = None, samples = None):
         args.sample_folder = osp.join(args.data_folder, 'samples', f'sample{args.sample}')
 
     return args
-
-def str2list(v, sep = '-'):
-    """
-    Helper function for argparser, converts str to list by splitting on sep.
-
-    Exmaple for sep = '-': "i-j-k" -> [i,j,k]
-
-    Inputs:
-        v: string
-        sep: separator
-    """
-    if v is None:
-        return None
-    elif isinstance(v, str):
-        if v.lower() == 'none':
-            return None
-        else:
-            result = [i for i in v.split(sep)]
-            for i, val in enumerate(result):
-                if val.isnumeric():
-                    result[i] = int(val)
-            return result
-    else:
-        raise argparse.ArgumentTypeError('str value expected.')
 
 def load_chi(replicate_folder, k):
     # find final it
@@ -111,7 +87,7 @@ def loadData(args):
                 for k_file in os.listdir(method_folder):
                     k_folder = osp.join(method_folder, k_file)
                     if osp.isdir(k_folder) and k_file.startswith('k'):
-                        k = str2Int(k_file[1:])
+                        k = str2int(k_file[1:])
                         if k is None:
                             k = 0
                         replicate_data = defaultdict(list)

@@ -41,7 +41,7 @@ done
 
 wait
 ENDTIME=$( date +%s )
-echo "total time: $(( $ENDTIME - $STARTTIME )) seconds"
+echo "total time: $(( $(( $ENDTIME - $STARTTIME )) / 60 )) minutes"
 
 
 # clean up scratch

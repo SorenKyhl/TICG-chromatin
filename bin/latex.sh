@@ -19,7 +19,7 @@ source activate python3.8_pytorch1.8.1_cuda10.2
 # samples="11-13"
 # python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
 
-samples="40-1230-1718"
+# samples="40-1230-1718"
 sample=40
 # samples="51-52"
 # dataSet='dataset_08_24_21'
@@ -28,8 +28,8 @@ sample=40
 # dataSet='dataset_10_27_21'
 # dataSet='dataset_11_03_21'
 # dataSet='dataset_11_14_21'
-dataDir='/project2/depablo/erschultz'
-# dataDir='/home/eric'
+# dataDir='/project2/depablo/erschultz'
+dataDir='/home/eric/sequences_to_contact_maps'
 
 for dataset in dataset_10_27_21
 do

@@ -21,7 +21,6 @@ binarize='false'
 normalize='false'
 useE='false'
 useS='false'
-useGroundTruthChi='false'
 useGroundTruthDiagChi='true'
 useGroundTruthSeed='false'
 mode="plaid"

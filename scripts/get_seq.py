@@ -51,24 +51,29 @@ def getArgs():
     # args for specific methods
     parser.add_argument('--seed', type=int, help='random seed for numpy')
     parser.add_argument('--model_path', type=str, help='path to GNN model')
-    parser.add_argument('--use_ematrix', type=str2bool, default=False)
-    parser.add_argument('--use_smatrix', type=str2bool, default=False)
     parser.add_argument('--epigenetic_data_folder', type=str, default=osp.join(chip_seq_data_local, 'fold_change_control/processed'), help='location of epigenetic data')
     parser.add_argument('--ChromHMM_data_file', type=str, default=osp.join(chip_seq_data_local, 'aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt'), help='location of ChromHMM data')
     parser.add_argument('--p_switch', type=float, default=0.05, help='probability to switch bead assignment (for method = random)')
     parser.add_argument('--kernel', type=str, default='poly', help='kernel for kernel PCA')
 
     # post-processing args
-    parser.add_argument('--binarize', type=str2bool, default=False, help='true to binarize labels (not implemented for all methods)') # TODO
-    parser.add_argument('--normalize', type=str2bool, default=False, help='true to normalize labels to [0,1] (or [-1, 1] for some methods) (not implemented for all methods)') # TODO
     parser.add_argument('--save_npy', action='store_true', help='true to save seq as .npy')
     parser.add_argument('--plot', action='store_true', help='true to plot seq as .png')
     parser.add_argument('--relabel', type=str2None, help='specify mark combinations to be relabled (e.g. AB-C will relabel AB mark pairs as mark C)')
 
+
     args = parser.parse_args()
+    args.input = None # input in {y, x, psi}
+    args.binarize = False # True to binarize labels (not implemented for all methods)') # TODO
+    args.normalize = False # True to normalize labels to [0,1] (or [-1, 1] for some methods) (not implemented for all methods)') # TODO
+    args.use_ematrix = False
+    args.use_smatrix = False
+    args.append_random = False # True to append random seq
+    args.method = args.method.lower()
+    process_method(args)
+
     args.labels = None
     args.X = None # X for silhouette_score
-    args.method = args.method.lower()
     args.dataset = osp.split(args.data_folder)[1]
 
     if args.method != 'random' and args.sample_folder is None:
@@ -91,6 +96,27 @@ def getArgs():
             raise Exception('normalize not yet supported for {}'.format(args.method))
 
     return args
+
+def process_method(args):
+    method_split = re.split(r'[-+]', args.method)
+
+    for mode in method_split:
+        if mode == 'x':
+            args.input = mode
+        elif mode == 'y':
+            args.input = mode
+        elif mode == 'psi':
+            args.input = mode
+        elif mode == 'binarize':
+            args.binarize = True
+        elif mode == 'normlize':
+            args.normalize = False
+        elif mode == 's':
+            args.use_smatrix = True
+        elif mode == 'e':
+            args.use_ematrix = True
+        elif mode == 'random':
+            args.append_random = True
 
 def get_random_seq(m, p_switch, k, relabel, seed):
     rng = np.random.default_rng(seed)
@@ -492,14 +518,14 @@ def main():
     args = getArgs()
     print(args)
 
-    if args.method == 'random':
+    if args.method.startswith('random'):
         seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel, args.seed)
         format = '%d'
     elif args.method == 'pca':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
         seq = get_PCA_seq(y_diag, args.k, args.normalize)
         format = '%.3e'
-    elif args.method == 'pca_split':
+    elif args.method.startswith('pca_split'):
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
         seq = get_PCA_split_seq(y_diag, args.k)
         format = '%.3e'
@@ -509,39 +535,35 @@ def main():
             input = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
         elif input_type.lower() == 'x':
             input = np.load(osp.join(args.sample_folder, 'x.npy'))[:args.m, :]
+        elif input_type.lower() == 'psi':
+            input = np.load(osp.join(args.sample_folder, 'psi.npy'))[:args.m, :]
         seq = get_PCA_seq(input, args.k, args.normalize, use_kernel = True, kernel = args.kernel)
         format = '%.3e'
     elif args.method.startswith('ground_truth'):
-        psi_file = osp.join(args.sample_folder, 'x_linear.npy')
         x_file = osp.join(args.sample_folder, 'x.npy')
+        psi_file = osp.join(args.sample_folder, 'psi.npy')
         if osp.exists(x_file):
             x = np.load(x_file)[:args.m, :]
         else:
             raise Exception(f'x not found for {args.sample_folder}')
+
         if osp.exists(psi_file):
             psi = np.load(psi_file)[:args.m, :]
         else:
             psi = x
             print(f'Warning: assuming x == psi for {args.sample_folder}')
 
-        if args.method.find('-') > 0:
-            mode = re.split(r'[-+]', args.method)[1]
-        else:
-            raise exception(f'No mode found for {args.method}')
-
-        elif mode == 'x':
+        if args.input is None:
+            assert args.use_ematrix or args.use_smatrix
+        elif args.input == 'x':
             seq = x
-        elif mode == 'psi':
-            seq = psi # use representation that can be written linearly
-            # this mode will reproduce ground_truth-S barring random seed
-        elif mode in {'E', 'S'}:
-            pass
-            # handled later
+        elif args.input == 'psi':
+            seq = psi
+            # this input will reproduce ground_truth-S barring random seed
         else:
-            raise Exception(f'Unrecognized ground_truth mode: {mode}')
+            raise Exception(f'Unrecognized input mode {args.input} for method {args.method}')
 
-        if args.method.find('+') > 0:
-            assert args.method.split('+')[1] == 'random', f"unexpected method format found: {args.method}"
+        if args.append_random:
             assert not args.use_smatrix and not args.use_ematrix
             _, k = seq.shape
             assert args.k is not None
@@ -569,24 +591,24 @@ def main():
 
         if calc:
             chi = np.load(osp.join(args.sample_folder, 'chis.npy'))[:args.m, :]
-            e, s = calculate_E_S(seq, chi)
-    elif args.method == 'k_means':
+            e, s = calculate_E_S(psi, chi)
+    elif args.method.startswith('k_means'):
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
         seq, args.labels = get_k_means_seq(y_diag, args.k)
         args.X = y_diag
         format = '%d'
-    elif args.method == 'nmf':
+    elif args.method.startswith('nmf'):
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
         seq, args.labels = get_nmf_seq(args.m, y_diag, args.k, args.binarize)
         args.X = y_diag
         format = '%.3e'
-    elif args.method == 'epigenetic':
+    elif args.method.startswith('epigenetic'):
         seq, marks = get_epigenetic_seq(args.epigenetic_data_folder, args.k)
         format = '%d'
-    elif args.method == 'chromhmm':
+    elif args.method.startswith('chromhmm'):
         seq, labels = get_ChromHMM_seq(args.ChromHMM_data_file, args.k)
         format = '%d'
-    elif args.method == 'gnn':
+    elif args.method.startswith('gnn'):
         argparse_path = osp.join(args.model_path, 'argparse.txt')
         with open(argparse_path, 'r') as f:
             for line in f:
@@ -621,9 +643,6 @@ def main():
         np.save('s.npy', s) # save s.npy either way
     else:
         m, k = seq.shape
-        # np.set_printoptions(threshold=100)
-        # for i in range(k):
-        #     print(np.round(seq[:100, i], 3))
         assert m == args.m, "m mismatch: seq has {} particles not {}".format(m, args.m)
         if args.k is not None:
             assert k == args.k, f"k mismatch: seq has {k} particle types not {args.k} for method {args.method}"
@@ -639,7 +658,7 @@ def main():
         elif args.binarize:
             plot_seq_binary(seq)
 
-
+### test functions ###
 def test_nmf_k_means():
     args = getArgs()
     args.k = 4
