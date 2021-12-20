@@ -51,6 +51,7 @@ dataset='dataset_12_17_21'
 
 method='ground_truth'
 useE='true'
+useS='false'
 for sample in 40 1230 1718
 do
   max_ent
@@ -58,12 +59,15 @@ done
 
 method='ground_truth'
 useS='true'
+useE='false'
 for sample in 40 1230 1718
 do
   max_ent
 done
 
 k=7
+useE='false'
+useS='false'
 method='ground_truth-psi+random'
 for sample in 40 1230 1718
 do
