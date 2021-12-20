@@ -16,7 +16,7 @@ goalSpecified='true'
 numIterations=100 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 modelType='ContactGNNEnergy'
-local='true'
+local='false'
 binarize='false'
 normalize='false'
 useE='false'
@@ -48,7 +48,14 @@ fi
 
 STARTTIME=$(date +%s)
 i=1
-dataFolder='/home/eric/sequences_to_contact_maps/dataset_10_27_21'
+dataFolder='/project2/depablo/erschultz/dataset_10_27_21'
+
+method='ground_truth'
+k=2
+for sample in 40
+do
+  max_ent
+done
 
 k=2
 method='ground_truth-psi'
