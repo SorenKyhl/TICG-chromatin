@@ -78,7 +78,7 @@ format_method () {
 
   if [ $useGroundTruthChi = 'true' ]
   then
-    methodFolder="${methodFolder}-fixed-chi"
+    methodFolder="${methodFolder}-chi"
   fi
 
   if [ $useS = 'true' ]

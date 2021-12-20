@@ -136,24 +136,24 @@ def set_up_plaid_chi(args, config):
         if args.chi == 'nonlinear':
             x = np.load('x.npy') # original particle types that interact nonlinearly
             assert args.k >= 10
-            x_linear = np.zeros((args.m, 15)) # transformation of x such that S = x \chi x^T
-            x_linear[:, 0] = (np.sum(x[:, 0:3], axis = 1) == 1) # exactly 1 of A, B, C
-            x_linear[:, 1] = (np.sum(x[:, 0:3], axis = 1) == 2) # exactly 2 of A, B, C
-            x_linear[:, 2] = (np.sum(x[:, 0:3], axis = 1) == 3) # A, B, and C
-            x_linear[:, 3] = x[:, 3] # D
-            x_linear[:, 4] = x[:, 4] # E
-            x_linear[:, 5] = np.logical_and(x[:, 3], x[:, 4]) # D and E
-            x_linear[:, 6] = np.logical_and(x[:, 3], x[:, 5]) # D and F
-            x_linear[:, 7] = np.logical_xor(x[:, 0], x[:, 5]) # either A or F
-            x_linear[:, 8] = x[:, 6] # G
-            x_linear[:, 9] = np.logical_and(np.logical_and(x[:, 6], x[:, 7]), np.logical_not(x[:, 4])) # G and H and not E
-            x_linear[:, 10] = x[:, 7] # H
-            x_linear[:, 11] = x[:, 8] # I
-            x_linear[:, 12] = x[:, 9] # J
-            x_linear[:, 13] = np.logical_or(x[:, 7], x[:, 8]) # H or I
-            x_linear[:, 14] = np.logical_xor(x[:, 8], x[:, 9]) # either I or J
+            psi = np.zeros((args.m, 15)) # transformation of x such that S = psi \chi psi^T
+            psi[:, 0] = (np.sum(x[:, 0:3], axis = 1) == 1) # exactly 1 of A, B, C
+            psi[:, 1] = (np.sum(x[:, 0:3], axis = 1) == 2) # exactly 2 of A, B, C
+            psi[:, 2] = (np.sum(x[:, 0:3], axis = 1) == 3) # A, B, and C
+            psi[:, 3] = x[:, 3] # D
+            psi[:, 4] = x[:, 4] # E
+            psi[:, 5] = np.logical_and(x[:, 3], x[:, 4]) # D and E
+            psi[:, 6] = np.logical_and(x[:, 3], x[:, 5]) # D and F
+            psi[:, 7] = np.logical_xor(x[:, 0], x[:, 5]) # either A or F
+            psi[:, 8] = x[:, 6] # G
+            psi[:, 9] = np.logical_and(np.logical_and(x[:, 6], x[:, 7]), np.logical_not(x[:, 4])) # G and H and not E
+            psi[:, 10] = x[:, 7] # H
+            psi[:, 11] = x[:, 8] # I
+            psi[:, 12] = x[:, 9] # J
+            psi[:, 13] = np.logical_or(x[:, 7], x[:, 8]) # H or I
+            psi[:, 14] = np.logical_xor(x[:, 8], x[:, 9]) # either I or J
 
-            np.save('x_linear.npy', x_linear)
+            np.save('psi.npy', psi)
             args.k = 15
             args.chi = np.array([[-1,1.8,-0.5,1.8,0.1,1.3,-0.1,0.1,0.8,1.4,2,1.7,1.5,-0.2,1.1],
                             [0,-1,-0.6,0.6,0.8,-0.8,-0.7,-0.1,0,-0.4,-0.2,0.6,-0.9,1.4,0.3],
@@ -174,11 +174,11 @@ def set_up_plaid_chi(args, config):
             x = np.load('x.npy') # original particle types that interact nonlinearly
             ind = np.triu_indices(args.k)
             args.k = int(args.k*(args.k+1)/2)
-            x_linear = np.zeros((args.m, args.k))
+            psi = np.zeros((args.m, args.k))
             for i in range(args.m):
-                x_linear[i] = np.outer(x[i], x[i])[ind]
+                psi[i] = np.outer(x[i], x[i])[ind]
 
-            np.save('x_linear.npy', x_linear)
+            np.save('psi.npy', psi)
             args.chi = getChis(args)
     else:
         # zero lower triangle
@@ -252,16 +252,16 @@ def main():
 
     set_up_plaid_chi(args, config)
     set_up_diag_chi(args, config, sample_config)
-    if osp.exists('x_linear.npy'):
-        x = np.load('x_linear.npy')
+    if osp.exists('psi.npy'):
+        seq = np.load('psi.npy')
     elif osp.exists('x.npy'):
-        x = np.load('x.npy')
+        seq = np.load('x.npy')
     else:
-        x = None
+        seq = None
 
-    if x is not None:
+    if seq is not None:
         # x is only None if doing max ent
-        e, s = calculate_E_S(x, args.chi)
+        e, s = calculate_E_S(seq, args.chi)
 
         if args.use_smatrix:
             np.savetxt('s_matrix.txt', s, fmt='%0.5f')
@@ -355,24 +355,24 @@ def test_nonlinear_chi():
             else:
                 x[i, j] = rng.choice([1,0], p=[p_switch, 1 - p_switch])
 
-    x_linear = np.zeros((args.m, 15))
-    x_linear[:, 0] = (np.sum(x[:, 0:3], axis = 1) == 1) # exactly 1 of A, B, C
-    x_linear[:, 1] = (np.sum(x[:, 0:3], axis = 1) == 2) # exactly 2 of A, B, C
-    x_linear[:, 2] = (np.sum(x[:, 0:3], axis = 1) == 3) # A, B, and C
-    x_linear[:, 3] = x[:, 3] # D
-    x_linear[:, 4] = x[:, 4] # E
-    x_linear[:, 5] = np.logical_and(x[:, 3], x[:, 4]) # D and E
-    x_linear[:, 6] = np.logical_and(x[:, 3], x[:, 5]) # D and F
-    x_linear[:, 7] = np.logical_xor(x[:, 0], x[:, 5]) # either A or F
-    x_linear[:, 8] = x[:, 6] # G
-    x_linear[:, 9] = np.logical_and(np.logical_and(x[:, 6], x[:, 7]), np.logical_not(x[:, 4])) # G and H and not E
-    x_linear[:, 10] = x[:, 7] # H
-    x_linear[:, 11] = x[:, 8] # I
-    x_linear[:, 12] = x[:, 9] # J
-    x_linear[:, 13] = np.logical_or(x[:, 7], x[:, 8]) # H or I
-    x_linear[:, 14] = np.logical_xor(x[:, 8], x[:, 9]) # either I or J
+    psi = np.zeros((args.m, 15))
+    psi[:, 0] = (np.sum(x[:, 0:3], axis = 1) == 1) # exactly 1 of A, B, C
+    psi[:, 1] = (np.sum(x[:, 0:3], axis = 1) == 2) # exactly 2 of A, B, C
+    psi[:, 2] = (np.sum(x[:, 0:3], axis = 1) == 3) # A, B, and C
+    psi[:, 3] = x[:, 3] # D
+    psi[:, 4] = x[:, 4] # E
+    psi[:, 5] = np.logical_and(x[:, 3], x[:, 4]) # D and E
+    psi[:, 6] = np.logical_and(x[:, 3], x[:, 5]) # D and F
+    psi[:, 7] = np.logical_xor(x[:, 0], x[:, 5]) # either A or F
+    psi[:, 8] = x[:, 6] # G
+    psi[:, 9] = np.logical_and(np.logical_and(x[:, 6], x[:, 7]), np.logical_not(x[:, 4])) # G and H and not E
+    psi[:, 10] = x[:, 7] # H
+    psi[:, 11] = x[:, 8] # I
+    psi[:, 12] = x[:, 9] # J
+    psi[:, 13] = np.logical_or(x[:, 7], x[:, 8]) # H or I
+    psi[:, 14] = np.logical_xor(x[:, 8], x[:, 9]) # either I or J
 
-    print(x_linear)
+    print(psi)
 
     args.k = 15
     args.fill_diag = -1
@@ -381,7 +381,7 @@ def test_nonlinear_chi():
     chi = getChis(args)
     print(chi)
 
-    s = calculate_S(x_linear, chi)
+    s = calculate_S(psi, chi)
     print(s)
 
 def test_polynomial_chi():

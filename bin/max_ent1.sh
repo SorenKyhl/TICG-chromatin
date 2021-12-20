@@ -21,7 +21,6 @@ binarize='false'
 normalize='false'
 useE='false'
 useS='false'
-useGroundTruthChi='false'
 useGroundTruthDiagChi='true'
 useGroundTruthSeed='false'
 mode="plaid"
@@ -53,28 +52,28 @@ STARTTIME=$(date +%s)
 i=1
 dataFolder='/project2/depablo/erschultz/dataset_12_11_21'
 k=7
-method='ground_truth-linear+random'
+method='ground_truth-psi+random'
 for sample in 40 1230 1718
 do
   max_ent
 done
 
 k=6
-method='ground_truth-linear'
+method='ground_truth-psi'
 for sample in 40 1230 1718
 do
   max_ent
 done
 
 k=3
-method='ground_truth'
+method='ground_truth-x'
 for sample in 40 1230 1718
 do
   max_ent
 done
 
 k=6
-method='ground_truth-linear'
+method='ground_truth-psi'
 useGroundTruthChi='true'
 for sample in 40 1230 1718
 do

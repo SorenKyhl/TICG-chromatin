@@ -1,5 +1,5 @@
 #! /bin/bash
-#SBATCH --job-name=latex
+#SBATCH --job-name=cleanup
 #SBATCH --output=logFiles/cleanup.out
 #SBATCH --time=0:30:00
 #SBATCH --partition=depablo-ivyb
@@ -26,3 +26,5 @@ rm -r ground_truth* GNN* PCA* kPCA* nmf* random* k_means*
 
 cd ../sample1718
 rm -r ground_truth* GNN* PCA* kPCA* nmf* random* k_means*
+
+cd /project2/depablo/erschultz/dataset_11_03_21/samples
