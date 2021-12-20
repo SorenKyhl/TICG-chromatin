@@ -36,7 +36,7 @@ max_ent_inner () {
   # 1 = scratchDir
   # 2 = replicate index
   # 3 = seed for get_seq
-  ofile="${sampleFolder}/${method}/k${k}/replicate${2}"
+  ofile="${sampleFolder}/${method_fmt}/k${k}/replicate${2}"
 
   # move to scratch
   scratchDirResources="${1}/resources"
@@ -48,7 +48,7 @@ max_ent_inner () {
   python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi=-1 --max_chi=1 --save_chi_for_max_ent --goal_specified $goalSpecified --default_config "${resources}/default_config.json" --use_ematrix $useE --use_smatrix $useS --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_diag_chi $useGroundTruthDiagChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $RANDOM --sample_folder $sampleFolder
 
   # generate sequences
-  python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --m $m --k $k --sample $sample --data_folder $dataFolder --plot --save_npy --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --model_path $modelPath --seed $3
+  python3 ~/TICG-chromatin/scripts/get_seq.py --method $method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --save_npy --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --model_path $modelPath --seed $3
 
   # generate goals
   if [ $goalSpecified = 'true' ]
@@ -56,7 +56,7 @@ max_ent_inner () {
     python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --k $k --contact_map "${sampleFolder}/y.npy"
   fi
 
-  echo $method
+  echo $method_fmt
   # apply max ent with newton's method
   ~/TICG-chromatin/maxent/bin/run.sh $ofile $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite $1 $finalSimProductionSweeps
 
@@ -71,28 +71,27 @@ max_ent_inner () {
 }
 
 format_method () {
-  echo $method
+  method_fmt=$method
 
   if [ $useGroundTruthChi = 'true' ]
   then
-    method="${method}-chi"
+    method_fmt="${method_fmt}-chi"
   fi
 
   if [ $useS = 'true' ]
   then
-    method="${method}-S"
-    echo here2
+    method_fmt="${method_fmt}-S"
   fi
 
   if [ $useE = 'true' ]
   then
-    method="${method}-E"
+    method_fmt="${method_fmt}-E"
   fi
 
   # seed
   if [ $useGroundTruthSeed = 'true' ]
   then
-  method="${method}-seed"
+  method_fmt="${method_fmt}-seed"
   fi
 
   echo $method
