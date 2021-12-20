@@ -35,7 +35,7 @@ source ~/TICG-chromatin/bin/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dataFolder="/home/eric/sequences_to_contact_maps/dataset_11_14_21"
+  dir="/home/eric/sequences_to_contact_maps"
   # dataFolder="/home/eric/dataset_test"
   scratchDir='/home/eric/scratch'
   source activate python3.8_pytorch1.8.1_cuda11.1

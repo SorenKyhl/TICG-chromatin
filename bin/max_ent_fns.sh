@@ -71,12 +71,7 @@ max_ent_inner () {
 }
 
 format_method () {
-  if [ $method == "GNN" ]
-  then
-    method="${method}-${modelID}"
-  else
-    method=${method}
-  fi
+  echo $method
 
   if [ $useGroundTruthChi = 'true' ]
   then
@@ -86,6 +81,7 @@ format_method () {
   if [ $useS = 'true' ]
   then
     method="${method}-S"
+    echo here2
   fi
 
   if [ $useE = 'true' ]

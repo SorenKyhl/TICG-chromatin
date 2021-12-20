@@ -35,41 +35,17 @@ source ~/TICG-chromatin/bin/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dataFolder="/home/eric/sequences_to_contact_maps/dataset_11_14_21"
+  dir="/home/eric/sequences_to_contact_maps"
   # dataFolder="/home/eric/dataset_test"
   scratchDir='/home/eric/scratch'
+  numIterations=0
+  finalSimProductionSweeps=5000
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
   dir='/project2/depablo/erschultz'
   scratchDir='/scratch/midway2/erschultz'
   source activate python3.8_pytorch1.8.1_cuda10.2_2
 fi
-
-max_ent() {
-  if [ $useS = 'true' ] || [ $useE = 'true' ]
-  then
-    useGroundTruthChi='false'
-    goalSpecified='false'
-    numIterations=0
-    k=None
-  fi
-  modelPath="${results}/${modelType}/${modelID}"
-  sampleFolder="${dataFolder}/samples/sample${sample}"
-  scratchDirI="${scratchDir}/TICG_maxent${i}"
-  mkdir -p $scratchDirI
-
-  seed=$RANDOM
-  format_method
-  for j in 4 5 6
-  do
-    scratchDirI="${scratchDir}/TICG_maxent${i}"
-    mkdir -p $scratchDirI
-    cd $scratchDirI
-    max_ent_inner $scratchDirI $j $seed > bash.log &
-    i=$(( $i + 1 ))
-  done
-
-}
 
 STARTTIME=$(date +%s)
 i=1000

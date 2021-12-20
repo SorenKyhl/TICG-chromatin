@@ -16,7 +16,7 @@ goalSpecified='true'
 numIterations=100 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 modelType='ContactGNNEnergy'
-local='false'
+local='true'
 useE='false'
 useS='false'
 useGroundTruthChi='false'
@@ -35,9 +35,11 @@ source ~/TICG-chromatin/bin/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dataFolder="/home/eric/sequences_to_contact_maps/dataset_11_14_21"
+  dir="/home/eric/sequences_to_contact_maps"
   # dataFolder="/home/eric/dataset_test"
   scratchDir='/home/eric/scratch'
+  finalSimProductionSweeps=1000
+  numIterations=0
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
   dir='/project2/depablo/erschultz'
@@ -49,9 +51,11 @@ STARTTIME=$(date +%s)
 i=8000
 dataset='dataset_12_17_21'
 
-method='GNN'
+method='GNN-66'
+useS='true'
 modelID=66
-for sample in 40 1230 1718
+for sample in 40 40 40
+# 1230 1718
 do
   max_ent
 done
