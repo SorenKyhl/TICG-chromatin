@@ -51,7 +51,8 @@ STARTTIME=$(date +%s)
 i=8000
 dataset='dataset_12_17_21'
 
-method='GNN-66'
+method='GNN'
+modelID=66
 useS='true'
 for sample in 40 1230 1718
 do
