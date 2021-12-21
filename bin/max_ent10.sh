@@ -50,15 +50,27 @@ fi
 STARTTIME=$(date +%s)
 i=9000
 dataset='dataset_12_17_21'
-method='kPCA-x'
 
-for k in 2 4
+k=6
+method='ground_truth-psi'
+for sample in 40 1230 1718
 do
-  for sample in 40
-   # 1230 1718
-  do
-    max_ent
-  done
+  max_ent
+done
+
+k=3
+method='ground_truth-x'
+for sample in 40 1230 1718
+do
+  max_ent
+done
+
+k=6
+method='ground_truth-psi'
+useGroundTruthChi='true'
+for sample in 40 1230 1718
+do
+  max_ent
 done
 
 
