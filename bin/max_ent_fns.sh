@@ -25,6 +25,7 @@ max_ent() {
     scratchDirI="${scratchDir}/TICG_maxent${i}"
     mkdir -p $scratchDirI
     cd $scratchDirI
+    echo inner
     max_ent_inner $scratchDirI $j $seed > bash.log &
     i=$(( $i + 1 ))
   done
@@ -37,6 +38,7 @@ max_ent_inner () {
   # 2 = replicate index
   # 3 = seed for get_seq
   ofile="${sampleFolder}/${method_fmt}/k${k}/replicate${2}"
+  echo $ofile
 
   # move to scratch
   scratchDirResources="${1}/resources"
