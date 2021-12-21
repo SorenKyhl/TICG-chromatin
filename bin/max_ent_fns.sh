@@ -73,7 +73,7 @@ max_ent_inner () {
 format_method () {
   method_fmt=$method
 
-  if [ $method == 'GNN']
+  if [ $method == 'GNN' ]
   then
     method="${method}-${modelID}$"
   fi
@@ -99,5 +99,5 @@ format_method () {
   method_fmt="${method_fmt}-seed"
   fi
 
-  echo $method
+  echo $method_fmt
 }

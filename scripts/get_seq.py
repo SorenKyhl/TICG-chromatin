@@ -734,8 +734,6 @@ def test_ground_truth_random():
     args.m = 1000
     args.p_switch = 0.05
 
-
-
 if __name__ ==  "__main__":
     main()
     # test_nmf_k_means()
