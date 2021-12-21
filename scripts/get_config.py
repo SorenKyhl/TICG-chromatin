@@ -240,6 +240,7 @@ def uniqueRows(array):
 
 def main():
     args = getArgs()
+    print(args)
 
     if args.sample_folder is not None:
         with open(osp.join(args.sample_folder, 'config.json'), 'rb') as f:
