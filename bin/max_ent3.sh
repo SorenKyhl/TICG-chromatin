@@ -38,6 +38,8 @@ then
   dir="/home/eric/sequences_to_contact_maps"
   # dataFolder="/home/eric/dataset_test"
   scratchDir='/home/eric/scratch'
+  numIterations=0
+  finalSimProductionSweeps=5000
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
   dir='/project2/depablo/erschultz'
@@ -49,7 +51,7 @@ STARTTIME=$(date +%s)
 i=2000
 dataset='dataset_12_17_21'
 
-k=3
+k=6
 method='ground_truth-psi'
 for sample in 40 1230 1718
 do
