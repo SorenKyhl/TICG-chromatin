@@ -273,6 +273,7 @@ def main():
         print(f'Rank of E: {np.linalg.matrix_rank(e)}')
         print('\n')
 
+    print('276')
     if args.use_ematrix or args.use_smatrix:
         config['bead_types'] = None
         config["nspecies"] = 0
@@ -288,6 +289,7 @@ def main():
             config['ematrix_on'] = True
             config["ematrix_filename"] = "e_matrix.txt"
     else:
+        print('292')
         # save seq
         config['bead_types'] = ['seq{}.txt'.format(i) for i in range(args.k)]
 
@@ -301,6 +303,8 @@ def main():
                 key = 'chi{}{}'.format(LETTERS[row], LETTERS[col])
                 val = args.chi[row, col]
                 config[key] = val
+
+    print('307')
 
     # save nbeads
     config['nbeads'] = args.m
@@ -328,8 +332,12 @@ def main():
     else:
         config["load_configuration_filename"] = args.load_configuration_filename
 
+    print('335')
+
     with open(args.ofile, 'w') as f:
         json.dump(config, f, indent = 2)
+
+    print('340')
 
 def test():
     args = getArgs()
