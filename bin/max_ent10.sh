@@ -46,8 +46,6 @@ then
 else
   dir='/project2/depablo/erschultz'
   scratchDir='/scratch/midway2/erschultz'
-  finalSimProductionSweeps=1000
-  numIterations=1
   source activate python3.8_pytorch1.8.1_cuda10.2_2
 fi
 
