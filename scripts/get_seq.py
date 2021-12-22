@@ -563,7 +563,7 @@ def main():
             seq = psi
             # this input will reproduce ground_truth-S barring random seed
         else:
-            raise Exception(f'Unrecognized input mode {args.input} for method {args.method}')
+            raise Exception(f'Unrecognized input mode {args.input} for method {args.method} for sample {args.sampleFolder}')
         print(f'seq loaded with shape {seq.shape}')
 
         if args.append_random:
@@ -648,7 +648,7 @@ def main():
         m, k = seq.shape
         assert m == args.m, "m mismatch: seq has {} particles not {}".format(m, args.m)
         if args.k is not None:
-            assert k == args.k, f"k mismatch: seq has {k} particle types not {args.k} for method {args.method}"
+            assert k == args.k, f"k mismatch: seq has {k} particle types not {args.k} for method {args.method} for sample {args.sampleFolder}"
         writeSeq(seq, format, args.save_npy)
 
     if args.plot:
