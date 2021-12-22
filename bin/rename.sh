@@ -13,7 +13,7 @@
 #   cd "${dir}/sample${i}"
 #   mv x_linear.npy psi.npy
 # done
-# 
+#
 # dir="/project2/depablo/erschultz/dataset_12_11_21/samples"
 # for i in `seq 40`
 # do
@@ -23,8 +23,9 @@
 
 
 dir="/project2/depablo/erschultz/dataset_12_17_21/samples"
-for i in `seq 40`
+for i in `seq 2000`
 do
+  echo $i
   cd "${dir}/sample${i}"
   mv x_linear.npy psi.npy
 done
