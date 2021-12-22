@@ -559,12 +559,13 @@ def main():
             assert args.use_ematrix or args.use_smatrix
         elif args.input == 'x':
             seq = x
+            print(f'seq loaded with shape {seq.shape}')
         elif args.input == 'psi':
             seq = psi
             # this input will reproduce ground_truth-S barring random seed
+            print(f'seq loaded with shape {seq.shape}')
         else:
             raise Exception(f'Unrecognized input mode {args.input} for method {args.method} for sample {args.sample_folder}')
-        print(f'seq loaded with shape {seq.shape}')
 
         if args.append_random:
             assert not args.use_smatrix and not args.use_ematrix

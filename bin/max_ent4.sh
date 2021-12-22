@@ -65,16 +65,6 @@ do
   max_ent
 done
 
-k=7
-useE='false'
-useS='false'
-numIterations=100
-method='ground_truth-psi+random'
-for sample in 40 1230 1718
-do
-  max_ent
-done
-
 wait
 
 python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
