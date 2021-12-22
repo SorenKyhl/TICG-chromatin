@@ -10,14 +10,17 @@ cd /project2/depablo/erschultz/dataset_12_17_21/samples
 cd sample40
 rm -r ground_truth-E &
 rm -r ground_truth-S &
+rm -r ground_truth* &
 wait
 
 cd ../sample1230
 rm -r ground_truth-E &
 rm -r ground_truth-S &
+rm -r ground_truth* &
 wait
 
 cd ../sample1718
 rm -r ground_truth-E &
 rm -r ground_truth-S &
+rm -r ground_truth* &
 wait
