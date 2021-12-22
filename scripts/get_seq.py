@@ -576,22 +576,25 @@ def main():
             seq = np.concatenate((seq, seq_random), axis = 1)
 
         calc = False # TRUE if need to calculate e or s matrix
-        if args.use_smatrix:
+        if args.use_smatrix or args.use_ematrix:
             s_matrix_file = osp.join(args.sample_folder, 's_matrix.txt')
             if osp.exists(s_matrix_file):
                 s = np.loadtxt(s_matrix_file)
             else:
                 calc = True
             format = '%.3e'
-        elif args.use_ematrix:
-            e_matrix_file = osp.join(args.sample_folder, 'e_matrix.txt')
-            if osp.exists(e_matrix_file):
-                e = np.loadtxt(e_matrix_file)
-            else:
-                calc = True
-            format = '%.3e'
+
+            if args.use_ematrix:
+                e_matrix_file = osp.join(args.sample_folder, 'e_matrix.txt')
+                if osp.exists(e_matrix_file):
+                    e = np.loadtxt(e_matrix_file)
+                else:
+                    calc = True
         else:
             format = '%d'
+
+
+
 
         if calc:
             chi = np.load(osp.join(args.sample_folder, 'chis.npy'))[:args.m, :]
