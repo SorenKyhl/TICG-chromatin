@@ -52,7 +52,7 @@ dataset='dataset_10_27_21'
 
 method='ground_truth-psi'
 k=2
-for sample in 40
+for sample in 1230 1718
 do
   max_ent
 done
@@ -60,14 +60,14 @@ done
 k=2
 method='ground_truth-psi'
 useGroundTruthChi='true'
-for sample in 40
+for sample in 1230 1718
 do
   max_ent
 done
 
 method='ground_truth'
 useS='true'
-for sample in 40
+for sample in 1230 1718
 do
   max_ent
 done
