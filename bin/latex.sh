@@ -28,8 +28,8 @@ sample=40
 # dataSet='dataset_10_27_21'
 # dataSet='dataset_11_03_21'
 # dataSet='dataset_11_14_21'
-# dataDir='/project2/depablo/erschultz'
-dataDir='/home/eric/sequences_to_contact_maps'
+dataDir='/project2/depablo/erschultz'
+# dataDir='/home/eric/sequences_to_contact_maps'
 
 for dataset in dataset_10_27_21
 do
