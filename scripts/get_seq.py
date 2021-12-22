@@ -544,11 +544,13 @@ def main():
         psi_file = osp.join(args.sample_folder, 'psi.npy')
         if osp.exists(x_file):
             x = np.load(x_file)[:args.m, :]
+            print(f'x loaded with shape {x.shape}')
         else:
             raise Exception(f'x not found for {args.sample_folder}')
 
         if osp.exists(psi_file):
             psi = np.load(psi_file)[:args.m, :]
+            print(f'psi loaded with shape {psi.shape}')
         else:
             psi = x
             print(f'Warning: assuming x == psi for {args.sample_folder}')
@@ -562,6 +564,7 @@ def main():
             # this input will reproduce ground_truth-S barring random seed
         else:
             raise Exception(f'Unrecognized input mode {args.input} for method {args.method}')
+        print(f'seq loaded with shape {seq.shape}')
 
         if args.append_random:
             assert not args.use_smatrix and not args.use_ematrix

@@ -36,14 +36,18 @@ source ~/TICG-chromatin/bin/max_ent_fns.sh
 if [ $local = 'true' ]
 then
   dir="/home/eric/sequences_to_contact_maps"
+  dir='C:\\Users\\Eric\\OneDrive\\Documents\\Research\\Coding\\sequences_to_contact_maps'
   # dataFolder="/home/eric/dataset_test"
   finalSimProductionSweeps=1000
   numIterations=0
   scratchDir='/home/eric/scratch'
+  scratchDir='C:\\Users\\Eric\\OneDrive\\Documents\\Research\\Coding\\scratch'
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
   dir='/project2/depablo/erschultz'
   scratchDir='/scratch/midway2/erschultz'
+  finalSimProductionSweeps=1000
+  numIterations=1
   source activate python3.8_pytorch1.8.1_cuda10.2_2
 fi
 
@@ -53,14 +57,16 @@ dataset='dataset_12_17_21'
 
 k=6
 method='ground_truth-psi'
-for sample in 40 1230 1718
+for sample in 40
+# 1230 1718
 do
   max_ent
 done
 
 k=3
 method='ground_truth-x'
-for sample in 40 1230 1718
+for sample in 40
+ # 1230 1718
 do
   max_ent
 done
@@ -68,7 +74,8 @@ done
 k=6
 method='ground_truth-psi'
 useGroundTruthChi='true'
-for sample in 40 1230 1718
+for sample in 40
+ # 1230 1718
 do
   max_ent
 done

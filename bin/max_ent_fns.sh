@@ -79,7 +79,7 @@ format_method () {
 
   if [ $method == 'GNN' ]
   then
-    method="${method}-${modelID}$"
+    method_fmt="${method_fmt}-${modelID}$"
   fi
 
   if [ $useGroundTruthChi = 'true' ]
