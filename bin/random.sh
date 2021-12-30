@@ -4,10 +4,10 @@
 # chi="-1&1&0&0\\1&-2&0&-1\\0&0&-1&2\\0&-1&2&-1"
 # chi="-1&1\\1&0"
 chi='polynomial'
-k=3
+k=4
 m=1024
 today=$(date +'%m_%d_%y')
-dataFolder="/project2/depablo/erschultz/dataset_12_17_21"
+dataFolder="/project2/depablo/erschultz/dataset_12_29_21"
 startSample=1
 relabel='none'
 nodes=10
