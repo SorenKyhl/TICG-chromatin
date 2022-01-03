@@ -52,8 +52,12 @@ def load_chi(replicate_folder, k):
     if max_it < 0:
         raise Exception(f'max it not found for {replicate_folder}')
 
-    with open(osp.join(replicate_folder, f'iteration{max_it}', 'config.json'), 'rb') as f:
-        config = json.load(f)
+    config_file = osp.join(replicate_folder, f'iteration{max_it}', 'config.json')
+    if osp.exists(config_file):
+        with open(, 'rb') as f:
+            config = json.load(f)
+    else:
+        return None
 
     chi = np.zeros((k,k))
     for i, bead_i in enumerate(LETTERS[:k]):
@@ -104,6 +108,7 @@ def loadData(args):
                                     replicate_data['avg_dist_pearson'].append(results['avg_dist_pearson'])
                             else:
                                 print(f"\tMISSING: {json_file}")
+                                continue
 
                             # look for s_matrix
                             s_matrix_file1 = osp.join(replicate_folder, 'resources', 's.npy')
