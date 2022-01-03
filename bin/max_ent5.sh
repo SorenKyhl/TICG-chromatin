@@ -47,11 +47,8 @@ fi
 
 STARTTIME=$(date +%s)
 i=4000
-dataset='dataset_12_17_21'
-k=7
-useE='false'
-useS='false'
-numIterations=100
+dataset='dataset_12_29_21'
+k=12
 method='ground_truth-psi+random'
 for sample in 40 1230 1718
 do

@@ -51,28 +51,14 @@ fi
 
 STARTTIME=$(date +%s)
 i=9000
-dataset='dataset_12_17_21'
-
-k=6
-method='ground_truth-psi'
-for sample in 40 1230 1718
+dataset='dataset_12_29_21'
+method='k-means'
+for k in 4 6
 do
-  max_ent
-done
-
-k=3
-method='ground_truth-x'
-for sample in 40 1230 1718
-do
-  max_ent
-done
-
-k=6
-method='ground_truth-psi'
-useGroundTruthChi='true'
-for sample in 40 1230 1718
-do
-  max_ent
+  for sample in 40 1230 1718
+  do
+    max_ent
+  done
 done
 
 

@@ -47,9 +47,9 @@ fi
 
 STARTTIME=$(date +%s)
 i=7000
-dataset='dataset_12_17_21'
+dataset='dataset_12_29_21'
 method='PCA'
-for k in 2 4
+for k in 4 6
 do
   for sample in 40 1230 1718
   do

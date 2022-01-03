@@ -49,8 +49,7 @@ fi
 
 STARTTIME=$(date +%s)
 i=1000
-dataset='dataset_12_17_21'
-
+dataset='dataset_12_29_21'
 method='PCA_split'
 
 for k in 4 6
