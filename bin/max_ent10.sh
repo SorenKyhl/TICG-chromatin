@@ -52,7 +52,7 @@ fi
 STARTTIME=$(date +%s)
 i=9000
 dataset='dataset_12_29_21'
-method='k-means'
+method='k_means'
 for k in 4 6
 do
   for sample in 40 1230 1718
