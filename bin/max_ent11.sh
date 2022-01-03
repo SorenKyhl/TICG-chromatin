@@ -1,6 +1,6 @@
 #! /bin/bash
-#SBATCH --job-name=maxent10
-#SBATCH --output=logFiles/maxent10.out
+#SBATCH --job-name=maxent11
+#SBATCH --output=logFiles/maxent11.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20
@@ -50,15 +50,13 @@ else
 fi
 
 STARTTIME=$(date +%s)
-i=9000
+i=10000
 dataset='dataset_12_29_21'
-method='k_means'
-for k in 4 6
+method='ground_truth-x'
+k=4
+for sample in 40 1230 1718
 do
-  for sample in 40 1230 1718
-  do
-    max_ent
-  done
+  max_ent
 done
 
 
