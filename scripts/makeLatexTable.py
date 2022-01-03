@@ -54,7 +54,7 @@ def load_chi(replicate_folder, k):
 
     config_file = osp.join(replicate_folder, f'iteration{max_it}', 'config.json')
     if osp.exists(config_file):
-        with open(, 'rb') as f:
+        with open(config_file, 'rb') as f:
             config = json.load(f)
     else:
         return None
