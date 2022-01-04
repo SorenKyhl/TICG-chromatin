@@ -78,6 +78,7 @@ def loadData(args):
     All directories within <method> that start with 'k' or 's' are assumed to contain replicate directories.
     All replicate directories are assumed to contain 'distance_pearson.json', from which data is loaded.
     '''
+    print('\nLOADING DATA')
     data = defaultdict(lambda: defaultdict(lambda : defaultdict(list))) # k, method, metric : list of replicate arrays
 
     for sample in args.samples:
@@ -156,6 +157,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
         mode: file mode (e.g. 'w', 'a')
         sample_id: sample_id for table header; if set, table will show stdev over replicates for that sample
     '''
+    print('\nMAKING TABLE')
     header = header.replace('_', "\_")
     with open(ofile, mode) as o:
         # set up first rows of table
@@ -289,30 +291,21 @@ def main(data_folder=None, sample=None):
     fname = 'max_ent_table.txt'
     dataset = osp.split(args.data_folder)[1]
 
+    if args.samples is not None:
+        data = loadData(args)
+        ofile = osp.join(args.data_folder, fname)
+
+        makeLatexTable(data, ofile, dataset, small = True, mode = 'w')
+        makeLatexTable(data, ofile, dataset, small = False, mode = 'a')
+
     if args.sample is not None:
         args.samples = [args.sample]
         data = loadData(args)
         ofile = osp.join(args.sample_folder, fname)
 
-        mode = 'w'
-        first = True
-        for is_small in [True, False]:
-            makeLatexTable(data, ofile, dataset, small = is_small, mode = mode, sample_id = args.sample)
-            if first:
-                mode = 'a'
-                first = False
+        makeLatexTable(data, ofile, dataset, small = True, mode = 'w', sample_id = args.sample)
+        makeLatexTable(data, ofile, dataset, small = False, mode = 'a', sample_id = args.sample)
 
-    if args.samples is not None:
-        data = loadData(args)
-        ofile = osp.join(args.data_folder, fname)
-
-        mode = 'w'
-        first = True
-        for is_small in [True, False]:
-            makeLatexTable(data, ofile, dataset, small = is_small, mode = mode)
-            if first:
-                mode = 'a'
-                first = False
 
 
 if __name__ == '__main__':
