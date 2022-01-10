@@ -10,11 +10,11 @@ nodes=10
 tasks=20
 samples=2000
 diag='false'
-nSweeps=2000
+nSweeps=50000
 pSwitch=0.05
 maxDiagChi=0.1
 overwrite=1
-dumpFrequency=200
+dumpFrequency=1000
 
 source activate python3.8_pytorch1.8.1_cuda11.1
 
@@ -52,10 +52,10 @@ run()  {
 	fi
 
 	# generate sequences
-	python3 ~/TICG-chromatin/scripts/get_seq.py --method 'random' --m $m --p_switch $pSwitch --k $k --save_npy --seed 12 >> log.log
+	python3 ~/TICG-chromatin/scripts/get_seq.py --method 'random' --exclusive 'true' --m $m --p_switch $pSwitch --k $k --save_npy --seed 12 >> log.log
 
 	# set up config.json
-	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --ensure_distinguishable --diag $diag --max_diag_chi $maxDiagChi --n_sweeps $nSweeps --dump_frequency $dumpFrequency --seed 45 --use_ematrix $useE --use_smatrix $useS --load_configuration_filename $init_config > log.log
+	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --ensure_distinguishable --diag $diag --max_diag_chi $maxDiagChi --n_sweeps $nSweeps --dump_frequency $dumpFrequency --use_ematrix $useE --use_smatrix $useS --load_configuration_filename $init_config > log.log
 
 	# run simulation
 	~/TICG-chromatin/TICG-engine >> log.log
@@ -75,23 +75,9 @@ run()  {
 # make
 # mv TICG-engine ..
 
-i=50
+i=80
 useE=False
 useS=False
-run &
-
-i=51
-useE=True
-useS=False
-run &
-
-i=52
-useE=False
-useS=True
 run &
 
 wait
-
-python3 ~/TICG-chromatin/scripts/compare_contact.py --y "${dataFolder}/samples/sample50/y.npy" --y_diag "${dataFolder}/samples/sample50/y_diag.npy" --yhat "${dataFolder}/samples/sample51/y.npy" --yhat_diag "${dataFolder}/samples/sample51/yhat_diag.npy" --dir "${dataFolder}/samples/sample50" --m $m
-
-python3 ~/TICG-chromatin/scripts/compare_contact.py --y "${dataFolder}/samples/sample51/y.npy" --y_diag "${dataFolder}/samples/sample51/y_diag.npy" --yhat "${dataFolder}/samples/sample52/y.npy" --yhat_diag "${dataFolder}/samples/sample52/yhat_diag.npy" --dir "${dataFolder}/samples/sample51" --m $m

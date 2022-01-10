@@ -50,6 +50,7 @@ def getArgs():
 
     # args for specific methods
     parser.add_argument('--seed', type=int, help='random seed for numpy')
+    parser.add_argument('--exclusive', type=str2bool, default=False, help='True to use mutually exusive label (for random method)')
     parser.add_argument('--model_path', type=str, help='path to GNN model')
     parser.add_argument('--epigenetic_data_folder', type=str, default=osp.join(chip_seq_data_local, 'fold_change_control/processed'), help='location of epigenetic data')
     parser.add_argument('--ChromHMM_data_file', type=str, default=osp.join(chip_seq_data_local, 'aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt'), help='location of ChromHMM data')
@@ -94,11 +95,14 @@ def getArgs():
             pass
         else:
             raise Exception('normalize not yet supported for {}'.format(args.method))
+    if args.exclusive:
+        assert args.method == 'random', 'exclusive currently only supported for random'
 
     return args
 
 def process_method(args):
     method_split = re.split(r'[-+]', args.method)
+    method_split.pop(0)
 
     for mode in method_split:
         if mode == 'x':
@@ -118,7 +122,7 @@ def process_method(args):
         elif mode == 'random':
             args.append_random = True
 
-def get_random_seq(m, p_switch, k, relabel, seed):
+def get_random_seq(m, p_switch, k, relabel, seed, exclusive=False):
     rng = np.random.default_rng(seed)
     if relabel is not None:
         old, new = relabel.split('-')
@@ -128,14 +132,34 @@ def get_random_seq(m, p_switch, k, relabel, seed):
             k += 1
         else:
             raise Exception("unsupported relabel: {}".format(relabel))
+
     seq = np.zeros((m, k))
-    seq[0, :] = rng.choice([1,0], size = k)
-    for j in range(k):
+    if exclusive:
+        transition_probs = [1 - p_switch] # keep label with p = 1-p_switch
+        transition_probs.extend([p_switch/(k-1)]*(k-1)) # remaining transitions have sum to p_switch
+        print(transition_probs)
+
+        ind = np.empty(m)
+        ind[0] = rng.choice(range(k), size = 1)
         for i in range(1, m):
-            if seq[i-1, j] == 1:
-                seq[i, j] = rng.choice([1,0], p=[1 - p_switch, p_switch])
-            else:
-                seq[i, j] = rng.choice([1,0], p=[p_switch, 1 - p_switch])
+            prev_label = ind[i-1]
+            other_labels = list(range(k))
+            other_labels.remove(prev_label)
+
+            choices = [prev_label]
+            choices.extend(other_labels)
+            ind[i] = rng.choice(choices, p=transition_probs)
+        print('ind', ind)
+        for row, col in enumerate(ind):
+            seq[row, int(col)] = 1
+    else:
+        seq[0, :] = rng.choice([1,0], size = k)
+        for j in range(k):
+            for i in range(1, m):
+                if seq[i-1, j] == 1:
+                    seq[i, j] = rng.choice([1,0], p=[1 - p_switch, p_switch])
+                else:
+                    seq[i, j] = rng.choice([1,0], p=[p_switch, 1 - p_switch])
 
     if relabel is not None:
         seq = relabel_seq(seq, relabel)
@@ -519,7 +543,7 @@ def main():
     print(args)
 
     if args.method.startswith('random'):
-        seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel, args.seed)
+        seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel, args.seed, args.exclusive)
         format = '%d'
     elif args.method == 'pca':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
@@ -682,25 +706,31 @@ def test_nmf_k_means():
 
 def test_random():
     args = getArgs()
-    args.k = 4
-    args.m = 1000
-    args.p_switch = 0.05
-    args.relabel = 'AB-D'
-    seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel, args.seed)
-    newer_seq = relabel_seq(seq, 'D-AB')
-    newest_seq = relabel_seq(newer_seq, 'AB-D')
-    print(np.array_equal(seq, newest_seq))
+    # args.k = 4
+    # args.m = 1000
+    # args.p_switch = 0.05
+    # args.relabel = 'AB-D'
+    # seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel, args.seed)
+    # newer_seq = relabel_seq(seq, 'D-AB')
+    # newest_seq = relabel_seq(newer_seq, 'AB-D')
+    # print(np.array_equal(seq, newest_seq))
+    #
+    # args.k = 3
+    # args.relabel = None
+    # seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel, args.seed)
+    # new_seq = relabel_seq(seq, 'AB-D')
+    # newer_seq = relabel_seq(new_seq, 'D-AB')
+    # newest_seq = relabel_seq(newer_seq, 'AB-D')
+    # print(np.array_equal(seq, newer_seq))
+    # print(np.array_equal(new_seq, newest_seq))
+    #
+    # plot_seq_binary(seq, show = True, save = False, title = 'test1')
 
-    args.k = 3
-    args.relabel = None
-    seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel, args.seed)
-    new_seq = relabel_seq(seq, 'AB-D')
-    newer_seq = relabel_seq(new_seq, 'D-AB')
-    newest_seq = relabel_seq(newer_seq, 'AB-D')
-    print(np.array_equal(seq, newer_seq))
-    print(np.array_equal(new_seq, newest_seq))
 
-    plot_seq_binary(seq, show = True, save = False, title = 'test')
+    args.k=4
+    seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel, args.seed, exclusive = True)
+
+    plot_seq_exclusive(seq, show = True, save = False, title = 'test2')
 
 def test_epi():
     args = getArgs()

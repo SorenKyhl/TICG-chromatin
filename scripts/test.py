@@ -46,21 +46,38 @@ def upper_traingularize_chis():
         np.savetxt(osp.join(file_dir, 'chis.txt'), chis, fmt='%0.5f')
         np.save(osp.join(file_dir, 'chis.npy'), chis)
 
-def write_x_linear():
-    dir = "/project2/depablo/erschultz/dataset_11_03_21/samples"
+def write_psi():
+    dir = "/project2/depablo/erschultz/dataset_12_12_21/samples"
     # dir = "/home/eric/sequences_to_contact_maps/dataset_11_03_21/samples"
     for file in os.listdir(dir):
         if file.startswith('sample'):
+              #
+            # x_linear = np.load(osp.join(file_dir, 'x_linear.npy'))
+            # m, k = x_linear.shape
+            # seq = np.zeros((m ,k))
+            # for i in range(k):
+            #     seq_i = np.loadtxt(osp.join(file_dir, 'seq{}.txt'.format(i)))
+            #     seq[:, i] = seq_i
+            # if not np.array_equal(seq, x_linear):
+            #     ids_to_check.add(int(file[6:]))
+            #     print('fail2')
+            #     passed = False
             file_dir = osp.join(dir, file)
-            x_linear = np.load(osp.join(file_dir, 'x.npy'))
-            x = relabel_seq(x_linear, 'D-AB')
-
+            x_linear_file = osp.join(file_dir, 'x_linear.npy')
             xfile = osp.join(file_dir, 'x.npy')
-            xlinearfile = osp.join(file_dir, 'x_linear.npy')
-            # print(f'writing x_linear to {ofile}')
-            np.save(xlinearfile, x_linear)
-            np.save(xfile, x)
+            x = np.load(xfile)
+            m, k = x.shape
+            seq = np.zeros((m ,k))
+            for i in range(k):
+                seq_i = np.loadtxt(osp.join(file_dir, 'seq{}.txt'.format(i)))
+                seq[:, i] = seq_i
+            if not np.array_equal(seq, x):
+                ids_to_check.add(int(file[6:]))
+                print(int(file[6:]))
 
+            if osp.exists(x_linear_file):
+                x_linear = np.load(x_linear_file)
+                np.save('psi.npy', x_linear)
 
 def check_seq(dataset):
     # dir = "/project2/depablo/erschultz"
@@ -138,7 +155,7 @@ def main():
         print(np.array_equal(seq, seq_cluster))
 
 if __name__ == '__main__':
-    write_x_linear()
+    write_psi()
     # find_mising_ids()
     # check_seq('dataset_11_03_21')
     # upper_traingularize_chis()
