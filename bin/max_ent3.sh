@@ -64,6 +64,10 @@ do
   max_ent
 done
 
+method='ground_truth'
+useS='true'
+max_ent
+
 
 python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
 

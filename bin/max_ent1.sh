@@ -63,6 +63,10 @@ do
   max_ent
 done
 
+method='ground_truth'
+useS='true'
+max_ent
+
 
 wait
 
