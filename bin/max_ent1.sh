@@ -48,19 +48,17 @@ fi
 
 STARTTIME=$(date +%s)
 i=1
-dataset='dataset_12_29_21'
+dataset='dataset_12_12_21'
+sample=40
 
 method='ground_truth-psi'
 k=10
-for sample in 40 1230 1718
-do
-  max_ent
-done
-
-k=10
-method='ground_truth-psi'
 useGroundTruthChi='true'
-for sample in 40 1230 1718
+max_ent
+
+method='PCA'
+useGroundTruthChi='false'
+for k in 2 4 6
 do
   max_ent
 done
@@ -68,7 +66,7 @@ done
 
 wait
 
-python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
+python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
 
 ENDTIME=$(date +%s)
 echo "total time:$(( $(( $ENDTIME - $STARTTIME )) / 60 )) minutes"
