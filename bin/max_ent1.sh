@@ -48,7 +48,7 @@ fi
 
 STARTTIME=$(date +%s)
 i=1
-dataset='dataset_12_12_21'
+dataset='dataset_01_11_22'
 sample=40
 
 method='ground_truth-psi'
