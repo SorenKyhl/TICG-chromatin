@@ -68,6 +68,8 @@ method='ground_truth'
 useS='true'
 max_ent
 
+wait
+
 
 python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
 
