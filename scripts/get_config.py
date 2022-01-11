@@ -300,30 +300,33 @@ def main():
     with open(args.default_config, 'rb') as f:
         config = json.load(f)
 
-    # set up seq
-    if osp.exists('psi.npy'):
-        seq = np.load('psi.npy')
-    elif osp.exists('x.npy'):
-        seq = np.load('x.npy')
-        if args.relabel is not None:
-            old, new = args.relabel.split('-')
-            assert len(new) == 1, f"unsupported relabel: {args.relabel}"
-            args.k += 1
-            seq = relabel_x_to_psi(seq, args.relabel)
-            np.save('psi.npy', seq)
-    else:
-        seq = None
+    if args.relabel is not None:
+        x = np.load('x.npy')
+        old, new = args.relabel.split('-')
+        assert len(new) == 1, f"unsupported relabel: {args.relabel}"
+        args.k += 1
+        psi = relabel_x_to_psi(x, args.relabel)
+        np.save('psi.npy', psi)
+
 
     # set up chi
     set_up_plaid_chi(args, config)
     set_up_diag_chi(args, config, sample_config)
 
-    # set up e, s
-    if seq is not None:
-        # seq is only None if not doing max ent
-        writeSeq(seq, args.format)
+    # set up psi
+    if osp.exists('psi.npy'):
+        psi = np.load('psi.npy')
+    elif osp.exists('x.npy'):
+        psi = np.load('x.npy')
+    else:
+        psi = None
 
-        e, s = calculate_E_S(seq, args.chi)
+    # set up e, s
+    if psi is not None:
+        # psi is only None if not doing max ent
+        writeSeq(psi, args.format)
+
+        e, s = calculate_E_S(psi, args.chi)
 
         if args.use_smatrix:
             np.savetxt('s_matrix.txt', s, fmt='%0.5f')
