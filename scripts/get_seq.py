@@ -53,14 +53,14 @@ def getArgs():
     parser.add_argument('--exclusive', type=str2bool, default=False, help='True to use mutually exusive label (for random method)')
     parser.add_argument('--model_path', type=str, help='path to GNN model')
     parser.add_argument('--epigenetic_data_folder', type=str, default=osp.join(chip_seq_data_local, 'fold_change_control/processed'), help='location of epigenetic data')
-    parser.add_argument('--ChromHMM_data_file', type=str, default=osp.join(chip_seq_data_local, 'aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt'), help='location of ChromHMM data')
+    parser.add_argument('--ChromHMM_data_file', type=str, default=osp.join(chip_seq_data_local, 'aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt'),
+                        help='location of ChromHMM data')
     parser.add_argument('--p_switch', type=float, default=0.05, help='probability to switch bead assignment (for method = random)')
     parser.add_argument('--kernel', type=str, default='poly', help='kernel for kernel PCA')
 
     # post-processing args
     parser.add_argument('--save_npy', action='store_true', help='true to save seq as .npy')
     parser.add_argument('--plot', action='store_true', help='true to plot seq as .png')
-    parser.add_argument('--relabel', type=str2None, help='specify mark combinations to be relabled (e.g. AB-C will relabel AB mark pairs as mark C)')
 
 
     args = parser.parse_args()
@@ -76,25 +76,22 @@ def getArgs():
     args.labels = None
     args.X = None # X for silhouette_score
     args.dataset = osp.split(args.data_folder)[1]
-
     if args.method != 'random' and args.sample_folder is None:
-        args.sample_folder = osp.join(args.data_folder, 'samples', 'sample{}'.format(args.sample))
+        args.sample_folder = osp.join(args.data_folder, 'samples', f'sample{args.sample}')
 
     # check params
-    if args.relabel is not None:
-        assert args.method == 'random', 'relabel currently only supported for random'
     if args.binarize:
         if args.method in {'k_means', 'chromhmm'}:
-            print("{} is binarized by default".format(args.method))
+            print(f"{args.method} is binarized by default")
         elif args.method in {'nmf'}:
             pass
         else:
-            raise Exception('binarize not yet supported for {}'.format(args.method))
+            raise Exception(f'binarize not yet supported for {args.method}')
     if args.normalize:
         if args.method in {}:
             pass
         else:
-            raise Exception('normalize not yet supported for {}'.format(args.method))
+            raise Exception(f'normalize not yet supported for {args.method}')
     if args.exclusive:
         assert args.method == 'random', 'exclusive currently only supported for random'
 
@@ -122,16 +119,8 @@ def process_method(args):
         elif mode == 'random':
             args.append_random = True
 
-def get_random_seq(m, p_switch, k, relabel, seed, exclusive=False):
+def get_random_seq(m, p_switch, k, seed, exclusive=False):
     rng = np.random.default_rng(seed)
-    if relabel is not None:
-        old, new = relabel.split('-')
-        if len(new) == 1:
-            k -= 1
-        elif len(old) == 1:
-            k += 1
-        else:
-            raise Exception("unsupported relabel: {}".format(relabel))
 
     seq = np.zeros((m, k))
     if exclusive:
@@ -161,68 +150,7 @@ def get_random_seq(m, p_switch, k, relabel, seed, exclusive=False):
                 else:
                     seq[i, j] = rng.choice([1,0], p=[p_switch, 1 - p_switch])
 
-    if relabel is not None:
-        seq = relabel_seq(seq, relabel)
-
     return seq
-
-def relabel_seq(seq, relabel_str):
-    '''
-    Relabels seq according to relabel_str.
-
-    Inputs:
-        seq: m x k np array
-        relabel_str: string of format <old>-<new>
-
-    Example:
-    consider: <old> = AB, <new> = D, seq is m x 3
-    Any particle with both label A and label B, will be relabeled to have
-    label C and neither A nor B. Label C will be unaffected.
-
-
-    If len(<new>) = 1, then LETTERS.find(new) must be >= k
-    (i.e label <new> cannot be present in seq already)
-
-    If len(<new>) > 1, then len(<old>) must be 1
-    '''
-    m, k = seq.shape
-
-    old, new = relabel_str.split('-')
-    new_labels = [LETTERS.find(i) for i in new]
-
-    old_labels = [LETTERS.find(i) for i in old]
-    all_labels = [LETTERS.find(i) for i in old+new]
-
-    if len(new_labels) == 1:
-        new_label = new_labels[0]
-        assert new_label >= k, "new_label already present"
-        new_seq = np.zeros((m, k+1))
-        new_seq[:, :k] = seq
-
-        # find where to assing new_label
-        where = np.ones(m) # all True
-        for i in old_labels:
-            where = np.logical_and(where, seq[:, i] == 1)
-
-        # assign new_label
-        new_seq[:, new_label] = where
-        # delete old_labels
-        for i in old_labels:
-            new_seq[:, i] -= where
-
-        # check that new_label is mutually exclusive from old_labels
-        row_sum = np.sum(new_seq[:, all_labels], axis = 1)
-        assert np.all(row_sum <= 1)
-    else: # new_label < k
-        assert len(old_labels) == 1, "too many old labels"
-        old_label = old_labels[0]
-        new_seq = np.delete(seq, old_label, axis = 1)
-
-        for i in new_labels:
-            where = np.logical_and(seq[:, i] == 0, seq[:, old_label] == 1)
-            new_seq[:, i] += where
-
-    return new_seq
 
 def get_PCA_split_seq(input, k):
     m, _ = input.shape
@@ -312,7 +240,7 @@ def get_nmf_seq(m, y, k, binarize):
     nmf.fit(y)
     H = nmf.components_
 
-    print("NMF reconstruction error: {}".format(nmf.reconstruction_err_))
+    print(f"NMF reconstruction error: {nmf.reconstruction_err_}")
 
     if binarize:
         nmf.labels_ = np.argmax(H, axis = 0)
@@ -363,13 +291,13 @@ def get_epigenetic_seq(data_folder, k, start=35000000, end=60575000, res=25000, 
         mark = file.split('_')[1]
         marks.append(mark)
         if coverage < min_coverage_prcnt / 100 * m:
-            print("WARNING: mark {} has insufficient coverage: {}".format(mark, coverage))
+            print(f"WARNING: mark {mark} has insufficient coverage: {coverage}")
         seq_i = np.load(osp.join(data_folder, file))
         seq_i = seq_i[start:end+1, 1]
         seq[:, i] = seq_i
     i += 1
     if i < k:
-        print("Warning: insufficient data - only {} marks found".format(i))
+        print(f"Warning: insufficient data - only {i} marks found")
 
     return seq, marks
 
@@ -396,7 +324,7 @@ def get_ChromHMM_seq(ifile, k, start=35000000, end=60575000, res=25000, min_cove
 
     # exclude marks with no coverage
     for mark in insufficient_coverage:
-        print("Mark {} has insufficient coverage: {}".format(mark, coverage_arr[mark]))
+        print(f"Mark {mark} has insufficient coverage: {coverage_arr[mark]}")
     seq = np.delete(seq, insufficient_coverage, 1)
 
     assert seq.shape[1] == k
@@ -427,12 +355,12 @@ def get_energy_gnn(model_path, sample):
     model_type = osp.split(osp.split(model_path)[0])[1]
     print(model_type)
 
-    assert model_type == 'ContactGNNEnergy', "Unrecognized model_type: {}".format(model_type)
-    energy_hat_path = osp.join(model_path, "sample{}/energy_hat.txt".format(sample))
+    assert model_type == 'ContactGNNEnergy', f"Unrecognized model_type: {model_type}"
+    energy_hat_path = osp.join(model_path, f"sample{sample}/energy_hat.txt")
     if osp.exists(energy_hat_path):
         energy = np.loadtxt(energy_hat_path)
     else:
-        raise Exception('s_path does not exist: {}'.format(energy_hat_path))
+        raise Exception(f's_path does not exist: {energy_hat_path}')
 
     return energy
 
@@ -453,32 +381,24 @@ def get_seq_gnn(k, model_path, sample, normalize):
     print(model_type)
 
     if model_type == 'ContactGNN':
-        z_path = osp.join(model_path, "sample{}/z.npy".format(sample))
+        z_path = osp.join(model_path, f"sample{sample}/z.npy")
         if osp.exists(z_path):
             seq = np.load(z_path)
             assert seq.shape[1] == k
         else:
-            raise Exception('z_path does not exist: {}'.format(z_path))
+            raise Exception(f'z_path does not exist: {z_path}')
     elif model_type == 'ContactGNNEnergy':
-        energy_hat_path = osp.join(model_path, "sample{}/energy_hat.txt".format(sample))
+        energy_hat_path = osp.join(model_path, "sample{sample}/energy_hat.txt")
         if osp.exists(energy_hat_path):
             energy_hat = np.loadtxt(energy_hat_path)
         else:
-            raise Exception('s_path does not exist: {}'.format(energy_hat_path))
+            raise Exception(f's_path does not exist: {energy_hat_path}')
 
         seq = get_PCA_seq(energy_hat, k, normalize)
     else:
-        raise Exception("Unrecognized model_type: {}".format(model_type))
+        raise Exception(f"Unrecognized model_type: {model_type}")
 
     return seq
-
-def writeSeq(seq, format, save_npy):
-    m, k = seq.shape
-    for j in range(k):
-        np.savetxt('seq{}.txt'.format(j), seq[:, j], fmt = format)
-
-    if save_npy:
-        np.save('x.npy', seq)
 
 def plot_seq_exclusive(seq, labels=None, X=None, show = False, save = True, title = None):
     '''Plotting function for mutually exclusive binary particle types'''
@@ -494,7 +414,7 @@ def plot_seq_exclusive(seq, labels=None, X=None, show = False, save = True, titl
 
     if X is not None and labels is not None:
         score = silhouette_score(X, labels)
-        lower_title = '\nsilhouette score: {}'.format(np.round(score, 3))
+        lower_title = f'\nsilhouette score: {np.round(score, 3)}'
     else:
         lower_title = ''
 
@@ -543,16 +463,13 @@ def main():
     print(args)
 
     if args.method.startswith('random'):
-        seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel, args.seed, args.exclusive)
-        format = '%d'
+        seq = get_random_seq(args.m, args.p_switch, args.k, args.seed, args.exclusive)
     elif args.method == 'pca':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
         seq = get_PCA_seq(y_diag, args.k, args.normalize)
-        format = '%.3e'
     elif args.method.startswith('pca_split'):
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
         seq = get_PCA_split_seq(y_diag, args.k)
-        format = '%.3e'
     elif args.method.startswith('kpca'):
         input_type = args.method.split('-')[1]
         if input_type.lower() == 'y':
@@ -562,7 +479,6 @@ def main():
         elif input_type.lower() == 'psi':
             input = np.load(osp.join(args.sample_folder, 'psi.npy'))[:args.m, :]
         seq = get_PCA_seq(input, args.k, args.normalize, use_kernel = True, kernel = args.kernel)
-        format = '%.3e'
     elif args.method.startswith('ground_truth'):
         x_file = osp.join(args.sample_folder, 'x.npy')
         psi_file = osp.join(args.sample_folder, 'psi.npy')
@@ -596,7 +512,7 @@ def main():
             _, k = seq.shape
             assert args.k is not None
             assert args.k > k, f"{args.k} not > {k}"
-            seq_random = get_random_seq(args.m, args.p_switch, args.k - k, args.relabel, args.seed)
+            seq_random = get_random_seq(args.m, args.p_switch, args.k - k, args.seed)
             seq = np.concatenate((seq, seq_random), axis = 1)
 
         calc = False # TRUE if need to calculate e or s matrix
@@ -606,7 +522,6 @@ def main():
                 s = np.loadtxt(s_matrix_file)
             else:
                 calc = True
-            format = '%.3e'
 
             if args.use_ematrix:
                 e_matrix_file = osp.join(args.sample_folder, 'e_matrix.txt')
@@ -614,11 +529,6 @@ def main():
                     e = np.loadtxt(e_matrix_file)
                 else:
                     calc = True
-        else:
-            format = '%d'
-
-
-
 
         if calc:
             chi = np.load(osp.join(args.sample_folder, 'chis.npy'))[:args.m, :]
@@ -627,18 +537,14 @@ def main():
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
         seq, args.labels = get_k_means_seq(y_diag, args.k)
         args.X = y_diag
-        format = '%d'
     elif args.method.startswith('nmf'):
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
         seq, args.labels = get_nmf_seq(args.m, y_diag, args.k, args.binarize)
         args.X = y_diag
-        format = '%.3e'
     elif args.method.startswith('epigenetic'):
         seq, marks = get_epigenetic_seq(args.epigenetic_data_folder, args.k)
-        format = '%d'
     elif args.method.startswith('chromhmm'):
         seq, labels = get_ChromHMM_seq(args.ChromHMM_data_file, args.k)
-        format = '%d'
     elif args.method.startswith('gnn'):
         argparse_path = osp.join(args.model_path, 'argparse.txt')
         with open(argparse_path, 'r') as f:
@@ -647,7 +553,7 @@ def main():
                     break
             data_folder = f.readline().strip()
             dataset = osp.split(data_folder)[1]
-        assert dataset == args.dataset, 'Dataset mismatch: {} vs {}'.format(dataset, args.dataset)
+        assert dataset == args.dataset, f'Dataset mismatch: {dataset} vs { args.dataset}'
 
         if args.use_smatrix:
             s = get_energy_gnn(args.model_path, args.sample)
@@ -655,29 +561,29 @@ def main():
             e = get_energy_gnn(args.model_path, args.sample)
         else:
             seq = get_seq_gnn(args.k, args.model_path, args.sample, args.normalize)
-        format = '%.3e'
     else:
-        raise Exception('Unkown method: {}'.format(args.method))
+        raise Exception(f'Unkown method: {args.method}')
 
     if args.use_smatrix:
         m1, m2 = s.shape
-        assert m1 == m2, "shape mismatch, {} vs {}".format(m1, m2)
+        assert m1 == m2, f"shape mismatch, {m1} vs {m2}"
         assert m1 == args.m
-        np.savetxt('s_matrix.txt', s, fmt = format)
+        np.savetxt('s_matrix.txt', s, fmt = '%.3e')
         np.save('s.npy', s)
     elif args.use_ematrix:
         m1, m2 = e.shape
-        assert m1 == m2, "shape mismatch, {} vs {}".format(m1, m2)
+        assert m1 == m2, f"shape mismatch, {m1} vs {m2}"
         assert m1 == args.m
-        np.savetxt('e_matrix.txt', e, fmt = format)
+        np.savetxt('e_matrix.txt', e, fmt = '%.3e')
         np.save('e.npy', e)
         np.save('s.npy', s) # save s.npy either way
     else:
         m, k = seq.shape
-        assert m == args.m, "m mismatch: seq has {} particles not {}".format(m, args.m)
+        assert m == args.m, f"m mismatch: seq has {m} particles not {args.m}"
         if args.k is not None:
             assert k == args.k, f"k mismatch: seq has {k} particle types not {args.k} for method {args.method} for sample {args.sample_folder}"
-        writeSeq(seq, format, args.save_npy)
+        if args.save_npy:
+            np.save('x.npy', seq)
 
     if args.plot:
         if args.use_smatrix:
@@ -706,29 +612,9 @@ def test_nmf_k_means():
 
 def test_random():
     args = getArgs()
-    # args.k = 4
-    # args.m = 1000
-    # args.p_switch = 0.05
-    # args.relabel = 'AB-D'
-    # seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel, args.seed)
-    # newer_seq = relabel_seq(seq, 'D-AB')
-    # newest_seq = relabel_seq(newer_seq, 'AB-D')
-    # print(np.array_equal(seq, newest_seq))
-    #
-    # args.k = 3
-    # args.relabel = None
-    # seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel, args.seed)
-    # new_seq = relabel_seq(seq, 'AB-D')
-    # newer_seq = relabel_seq(new_seq, 'D-AB')
-    # newest_seq = relabel_seq(newer_seq, 'AB-D')
-    # print(np.array_equal(seq, newer_seq))
-    # print(np.array_equal(new_seq, newest_seq))
-    #
-    # plot_seq_binary(seq, show = True, save = False, title = 'test1')
-
 
     args.k=4
-    seq = get_random_seq(args.m, args.p_switch, args.k, args.relabel, args.seed, exclusive = True)
+    seq = get_random_seq(args.m, args.p_switch, args.k, args.seed, exclusive = True)
 
     plot_seq_exclusive(seq, show = True, save = False, title = 'test2')
 

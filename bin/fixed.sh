@@ -10,11 +10,11 @@ nodes=10
 tasks=20
 samples=2000
 diag='false'
-nSweeps=50000
+nSweeps=10000
 pSwitch=0.05
 maxDiagChi=0.1
 overwrite=1
-dumpFrequency=1000
+dumpFrequency=100
 
 source activate python3.8_pytorch1.8.1_cuda11.1
 

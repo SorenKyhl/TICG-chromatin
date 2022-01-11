@@ -18,6 +18,9 @@ from neural_net_utils.utils import InteractionConverter, calculate_E_S
 from neural_net_utils.argparseSetup import str2int, str2bool, str2float, str2list2D, str2None
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+METHOD_FORMATS={'random':'%d', 'pca':'%.3e', 'pca_split':'%.3e', 'kpca':'%.3e',
+                'ground_truth':None, 'k_means':'%d', 'nmf':'%.3e', 'epigenetic':'%d',
+                'chromhmm':'%d', 'gnn':'%.3e'}
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
@@ -37,6 +40,7 @@ def getArgs():
     parser.add_argument('--use_ematrix', type=str2bool, default=False, help='True to use e_matrix')
     parser.add_argument('--use_smatrix', type=str2bool, default=False, help='True to use s_matrix')
     parser.add_argument('--sample_folder', type=str, help='location of sample for ground truth chi')
+    parser.add_argument('--relabel', type=str2None, help='specify mark combinations to be relabled (e.g. AB-C will relabel AB mark pairs as mark C)')
 
     # chi arguments
     parser.add_argument('--use_ground_truth_chi', type=str2bool, default=False, help='True to use ground truth chi and diag chi')
@@ -58,33 +62,77 @@ def getArgs():
     parser.add_argument('--ensure_distinguishable', action='store_true', help='true to ensure that corresponding psi is distinguishable')
 
     args = parser.parse_args()
+    args.format = '%.3e' # for writeSeq
     return args
 
-def concat2ToD(self, x):
-    # TODO
-    '''https://github.com/calico/basenji/blob/master/basenji/layers.py'''
-    # assume x is of shape N x C x m
-    # memory expensive
-    assert len(x.shape) == 2, "shape must be 2D"
+#### x, psi functions ####
+def relabel_x_to_psi(x, relabel_str):
+    '''
+    Relabels seq according to relabel_str.
+
+    Inputs:
+        x: m x k np array
+        relabel_str: string of format <old>-<new>
+
+    Outputs:
+        psi: bead labels np array
+
+    Example:
+    consider: <old> = AB, <new> = D, seq is m x 3
+    Any particle with both label A and label B, will be relabeled to have
+    label C and neither A nor B. Label C will be unaffected.
+
+
+    If len(<new>) = 1, then LETTERS.find(new) must be >= k
+    (i.e label <new> cannot be present in seq already)
+
+    If len(<new>) > 1, then len(<old>) must be 1
+    '''
     m, k = x.shape
 
-    x1 = np.tile(x, (1, 1, m))
-    x1 = np.reshape(x1, (-1, C, m, m))
-    x2 = np.transpose(x1, 2, 3)
-    out = np.cat((x1, x2), dim = 1)
+    old, new = relabel_str.split('-')
+    new_labels = [LETTERS.find(i) for i in new]
 
-    # use indices to permute x2
-    indices = []
-    for i in range(C):
-        indices.extend(range(i, i + C * (C-1) + 1, C))
-    indices = np.tensor(indices)
-    x2 = np.index_select(x2, dim = 1, index = indices)
+    old_labels = [LETTERS.find(i) for i in old]
+    all_labels = [LETTERS.find(i) for i in old+new]
 
-    out = np.einsum('ijkl,ijkl->ijkl', x1, x2)
+    if len(new_labels) == 1:
+        new_label = new_labels[0]
+        assert new_label >= k, "new_label already present"
+        psi = np.zeros((m, k+1))
+        psi[:, :k] = x
 
-    del x1, x2
-    return out
+        # find where to assing new_label
+        where = np.ones(m) # all True
+        for i in old_labels:
+            where = np.logical_and(where, x[:, i] == 1)
 
+        # assign new_label
+        psi[:, new_label] = where
+        # delete old_labels
+        for i in old_labels:
+            psi[:, i] -= where
+
+        # check that new_label is mutually exclusive from old_labels
+        row_sum = np.sum(psi[:, all_labels], axis = 1)
+        assert np.all(row_sum <= 1)
+    else: # new_label < k
+        assert len(old_labels) == 1, "too many old labels"
+        old_label = old_labels[0]
+        psi = np.delete(seq, old_label, axis = 1)
+
+        for i in new_labels:
+            where = np.logical_and(seq[:, i] == 0, seq[:, old_label] == 1)
+            psi[:, i] += where
+
+    return psi
+
+def writeSeq(seq, format='%.3e'):
+    m, k = seq.shape
+    for j in range(k):
+        np.savetxt(f'seq{j}.txt', seq[:, j], fmt = format)
+
+#### chi functions ####
 def generateRandomChi(args, decimals = 1, rng = np.random.default_rng()):
     '''Initializes random chi array.'''
 
@@ -188,7 +236,7 @@ def set_up_plaid_chi(args, config):
             args.k = rows
         else:
             assert args.k == rows, 'number of particle types does not match shape of chi'
-        assert rows == cols, "chi not square: {}".format(args.chi)
+        assert rows == cols, f"chi not square: {args.chi}"
         conv = InteractionConverter(args.k, args.chi)
         if not uniqueRows(conv.getE()):
             print('Warning: particles are not distinguishable')
@@ -229,6 +277,7 @@ def set_up_diag_chi(args, config, sample_config):
                 wr.writerow(np.array(config["diag_chis"]))
                 wr.writerow(np.array(config["diag_chis"]))
 
+
 def uniqueRows(array):
     if array is None:
         return False
@@ -251,17 +300,29 @@ def main():
     with open(args.default_config, 'rb') as f:
         config = json.load(f)
 
-    set_up_plaid_chi(args, config)
-    set_up_diag_chi(args, config, sample_config)
+    # set up seq
     if osp.exists('psi.npy'):
         seq = np.load('psi.npy')
     elif osp.exists('x.npy'):
         seq = np.load('x.npy')
+        if args.relabel is not None:
+            old, new = args.relabel.split('-')
+            assert len(new) == 1, f"unsupported relabel: {args.relabel}"
+            args.k += 1
+            seq = relabel_x_to_psi(seq, args.relabel)
+            np.save('psi.npy', seq)
     else:
         seq = None
 
+    # set up chi
+    set_up_plaid_chi(args, config)
+    set_up_diag_chi(args, config, sample_config)
+
+    # set up e, s
     if seq is not None:
-        # x is only None if doing max ent
+        # seq is only None if not doing max ent
+        writeSeq(seq, args.format)
+
         e, s = calculate_E_S(seq, args.chi)
 
         if args.use_smatrix:
@@ -290,7 +351,7 @@ def main():
             config["ematrix_filename"] = "e_matrix.txt"
     else:
         # save seq
-        config['bead_types'] = ['seq{}.txt'.format(i) for i in range(args.k)]
+        config['bead_types'] = [f'seq{i}.txt' for i in range(args.k)]
 
         # save nspecies
         config["nspecies"] = args.k
@@ -299,7 +360,7 @@ def main():
         rows, cols = args.chi.shape
         for row in range(rows):
             for col in range(row, cols):
-                key = 'chi{}{}'.format(LETTERS[row], LETTERS[col])
+                key = f'chi{LETTERS[row]}{LETTERS[col]}'
                 val = args.chi[row, col]
                 config[key] = val
 
@@ -333,7 +394,7 @@ def main():
     with open(args.ofile, 'w') as f:
         json.dump(config, f, indent = 2)
 
-
+#### test functions ####
 def test():
     args = getArgs()
     args.k = 8
