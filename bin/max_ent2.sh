@@ -58,6 +58,8 @@ useGroundTruthChi='true'
 max_ent
 
 method='PCA'
+numIterations=100
+goalSpecified='true'
 useGroundTruthChi='false'
 for k in 2 4 6
 do

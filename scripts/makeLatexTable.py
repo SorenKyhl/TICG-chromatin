@@ -191,6 +191,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
         else:
             ref = None
             print('ref missing')
+            print(data)
 
         for k in sorted(data.keys()):
             first = True # only write k for first row in section
