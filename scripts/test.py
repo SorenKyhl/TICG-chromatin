@@ -9,7 +9,6 @@ abspath = osp.abspath(__file__)
 dname = osp.dirname(abspath)
 sys.path.insert(0, dname)
 from makeLatexTable import METHODS
-from get_seq import relabel_seq
 
 paths = ['/home/erschultz/sequences_to_contact_maps',
         '/home/eric/sequences_to_contact_maps',
@@ -132,19 +131,33 @@ def makeDirsForMaxEnt(dataset, sample):
                 os.mkdir(osp.join(sample_folder, method, f'k{k}', f'replicate{replicate}'), mode = 0o755)
 
 def main():
-    dir = '/home/eric/sequences_to_contact_maps/dataset_08_29_21/samples/sample40'
+    psi = np.round(np.random.rand(4,3), 1)
+    chi = np.round(np.random.rand(3,3), 1)
 
-    x = np.load(osp.join(dir, 'x.npy'))
-    x_cluster = np.load(osp.join(dir, 'cluster', 'x.npy'))
-    print(np.array_equal(x, x_cluster))
+    s = psi @ chi @ psi.T
+    print(s)
 
-    for i in range(2):
-        seq = np.loadtxt(osp.join(dir, f'seq{i}.txt'))
-        seq_cluster = np.loadtxt(osp.join(dir, 'cluster', f'seq{i}.txt'))
-        print(np.array_equal(seq, seq_cluster))
+    s_sym = (s+s.T)/2
+    print(s_sym)
+
+    chi_sym = (chi + chi.T) / 2
+    s_sym2 = psi @ chi_sym @ psi.T
+    print(s_sym2)
+
+    print(np.allclose(s_sym, s_sym2))
+
+    s_sym3 = np.zeros_like(s_sym)
+    for i in range(4):
+        for j in range(4):
+            outer = np.outer(psi[i], psi[j])
+            mul = np.multiply(outer, chi_sym)
+            s_sym3[i,j] = np.sum(mul)
+    print(s_sym3)
+    print(np.allclose(s_sym, s_sym3))
 
 if __name__ == '__main__':
-    write_psi()
+    main()
+    # write_psi()
     # find_mising_ids()
     # check_seq('dataset_11_03_21')
     # upper_traingularize_chis()

@@ -51,7 +51,7 @@ dataset='dataset_01_11_22'
 sample=44
 
 method='ground_truth-psi'
-k=10
+k=4
 useGroundTruthChi='true'
 max_ent
 
@@ -59,14 +59,14 @@ method='PCA'
 numIterations=100
 goalSpecified='true'
 useGroundTruthChi='false'
-for k in 2 4 6
+for k in 2 4
 do
   max_ent
 done
 
-method='ground_truth'
-useS='true'
-max_ent
+# method='ground_truth'
+# useS='true'
+# max_ent
 
 wait
 

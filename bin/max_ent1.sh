@@ -37,8 +37,10 @@ if [ $local = 'true' ]
 then
   dir="/home/eric/sequences_to_contact_maps"
   scratchDir='/home/eric/scratch'
-  numIterations=2
+  numIterations=5
   finalSimProductionSweeps=5000
+  equilibSweeps=5000
+  productionSweeps=5000
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
   dir='/project2/depablo/erschultz'
@@ -52,7 +54,7 @@ dataset='dataset_01_11_22'
 sample=40
 
 method='ground_truth-psi'
-k=10
+k=4
 useGroundTruthChi='true'
 max_ent
 
@@ -60,14 +62,14 @@ method='PCA'
 numIterations=100
 goalSpecified='true'
 useGroundTruthChi='false'
-for k in 2 4 6
+for k in 2 4
 do
   max_ent
 done
 
-method='ground_truth'
-useS='true'
-max_ent
+# method='ground_truth'
+# useS='true'
+# max_ent
 
 
 wait

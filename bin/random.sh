@@ -20,7 +20,7 @@ minChi=-2
 maxChi=2
 fillDiag='none'
 chiSeed=27
-local='false'
+local='true'
 
 if [ $local = 'true' ]
 then

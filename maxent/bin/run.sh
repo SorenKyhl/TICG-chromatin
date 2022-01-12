@@ -173,6 +173,7 @@ fi
 mkdir -p $outputDir
 mv resources/chis* .
 mv resources/*.png .
+mv resources/*.log .
 touch track.log
 
 # iteration 0

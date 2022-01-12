@@ -45,13 +45,14 @@ max_ent_inner () {
   cd $scratchDirResources
   cp "${resources}/input1024.xyz" .
 
+  # generate sequences
+  echo "starting get_seq"
+  python3 ~/TICG-chromatin/scripts/get_seq.py --method $method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --save_npy --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --model_path $modelPath --seed $3 > seq.log
+
   # get config
   echo "starting get_config"
   python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi=-1 --max_chi=1 --save_chi_for_max_ent --goal_specified $goalSpecified --default_config "${resources}/default_config.json" --use_ematrix $useE --use_smatrix $useS --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_diag_chi $useGroundTruthDiagChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $RANDOM --sample_folder $sampleFolder > config.log
 
-  # generate sequences
-  echo "starting get_seq"
-  python3 ~/TICG-chromatin/scripts/get_seq.py --method $method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --save_npy --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --model_path $modelPath --seed $3 > seq.log
 
   # generate goals
   if [ $goalSpecified = 'true' ]

@@ -316,10 +316,13 @@ def main():
     # set up psi
     if osp.exists('psi.npy'):
         psi = np.load('psi.npy')
+        print(f'psi loaded with shape {psi.shape}')
     elif osp.exists('x.npy'):
         psi = np.load('x.npy')
+        print(f'psi (x) loaded with shape {psi.shape}')
     else:
         psi = None
+        print('psi is None')
 
     # set up e, s
     if psi is not None:
