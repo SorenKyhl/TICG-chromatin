@@ -57,6 +57,26 @@ do
   max_ent
 done
 
+wait
+
+dataset='dataset_01_12_21'
+method='PCA'
+k=1
+for sample in 40 41 42 43 44
+do
+  max_ent
+done
+
+wait
+
+dataset='dataset_01_11_21'
+method='PCA'
+k=1
+for sample in 40 41 42 43 44
+do
+  max_ent
+done
+
 
 wait
 
