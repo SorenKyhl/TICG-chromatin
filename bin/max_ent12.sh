@@ -49,7 +49,7 @@ fi
 
 STARTTIME=$(date +%s)
 i=11000
-dataset='dataset_01_11_21'
+dataset='dataset_01_11_22'
 method='PCA'
 k=1
 for sample in 40 41 42 43 44
