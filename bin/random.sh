@@ -8,11 +8,11 @@ k=4
 m=1024
 today=$(date +'%m_%d_%y')
 dataFolder="/project2/depablo/erschultz/dataset_01_12_22"
-startSample=1
+startSample=201
 relabel='none'
 nodes=10
 tasks=20
-samples=200
+samples=1800
 diag='true'
 nSweeps=1000000
 pSwitch=0.05
@@ -20,7 +20,7 @@ minChi=-2
 maxChi=2
 fillDiag='none'
 chiSeed=27
-local='true'
+local='false'
 
 if [ $local = 'true' ]
 then
@@ -53,5 +53,5 @@ do
   startSampleI=$(( $startSample + $samplesPerNode * $i ))
   endSampleI=$(( $startSampleI + $samplesPerNode - 1 ))
   echo $startSampleI $endSampleI
-  sbatch ~/TICG-chromatin/bin/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samplesPerNode $samplesPerTask $diag $scratchDir $i $nSweeps $pSwitch $minChi $maxChi $fillDiag $chiSeed
+  # sbatch ~/TICG-chromatin/bin/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samplesPerNode $samplesPerTask $diag $scratchDir $i $nSweeps $pSwitch $minChi $maxChi $fillDiag $chiSeed
 done
