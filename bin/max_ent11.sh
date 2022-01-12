@@ -49,13 +49,13 @@ fi
 
 STARTTIME=$(date +%s)
 i=10000
-dataset='dataset_12_29_21'
-method='PCA'
-k=1
-for sample in 40 1230 1718
-do
-  max_ent
-done
+# dataset='dataset_12_29_21'
+# method='PCA'
+# k=1
+# for sample in 40 1230 1718
+# do
+#   max_ent
+# done
 
 dataset='dataset_01_12_22'
 method='PCA'
