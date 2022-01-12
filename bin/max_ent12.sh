@@ -1,6 +1,6 @@
 #! /bin/bash
-#SBATCH --job-name=maxent11
-#SBATCH --output=logFiles/maxent11.out
+#SBATCH --job-name=maxent12
+#SBATCH --output=logFiles/maxent12.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20
@@ -48,16 +48,8 @@ else
 fi
 
 STARTTIME=$(date +%s)
-i=10000
-dataset='dataset_12_29_21'
-method='PCA'
-k=1
-for sample in 40 1230 1718
-do
-  max_ent
-done
-
-dataset='dataset_01_12_21'
+i=11000
+dataset='dataset_01_11_21'
 method='PCA'
 k=1
 for sample in 40 41 42 43 44
