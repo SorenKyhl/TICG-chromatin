@@ -92,6 +92,7 @@ def loadData(args):
                 for k_file in os.listdir(method_folder):
                     k_folder = osp.join(method_folder, k_file)
                     if osp.isdir(k_folder) and k_file.startswith('k'):
+                        print(k_folder)
                         k = str2int(k_file[1:])
                         if k is None:
                             k = 0
