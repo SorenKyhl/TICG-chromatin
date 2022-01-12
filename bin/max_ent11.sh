@@ -36,12 +36,10 @@ source ~/TICG-chromatin/bin/max_ent_fns.sh
 if [ $local = 'true' ]
 then
   dir="/home/eric/sequences_to_contact_maps"
-  dir='C:\\Users\\Eric\\OneDrive\\Documents\\Research\\Coding\\sequences_to_contact_maps'
   # dataFolder="/home/eric/dataset_test"
   finalSimProductionSweeps=1000
   numIterations=0
   scratchDir='/home/eric/scratch'
-  scratchDir='C:\\Users\\Eric\\OneDrive\\Documents\\Research\\Coding\\scratch'
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
   dir='/project2/depablo/erschultz'
@@ -52,8 +50,8 @@ fi
 STARTTIME=$(date +%s)
 i=10000
 dataset='dataset_12_29_21'
-method='ground_truth-x'
-k=4
+method='PCA'
+k=1
 for sample in 40 1230 1718
 do
   max_ent
@@ -62,8 +60,7 @@ done
 
 wait
 
-python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
-# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples --small "true"
+# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
 
 ENDTIME=$(date +%s)
 echo "total time:$(( $(( $ENDTIME - $STARTTIME )) / 60 )) minutes"
