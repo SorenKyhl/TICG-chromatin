@@ -47,15 +47,26 @@ fi
 
 STARTTIME=$(date +%s)
 i=6000
-dataset='dataset_12_29_21'
-method='nmf'
-for k in 4 6
+dataset='dataset_01_12_22'
+sample=41
+
+method='ground_truth-psi'
+k=10
+useGroundTruthChi='true'
+max_ent
+
+method='PCA'
+numIterations=100
+goalSpecified='true'
+useGroundTruthChi='false'
+for k in 2 4 6
 do
-  for sample in 40 1230 1718
-  do
-    max_ent
-  done
+  max_ent
 done
+
+method='ground_truth'
+useS='true'
+max_ent
 
 wait
 

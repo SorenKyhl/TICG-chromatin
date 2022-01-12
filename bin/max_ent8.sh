@@ -47,16 +47,26 @@ fi
 
 STARTTIME=$(date +%s)
 i=7000
-dataset='dataset_12_29_21'
+dataset='dataset_01_12_22'
+sample=42
+
+method='ground_truth-psi'
+k=10
+useGroundTruthChi='true'
+max_ent
+
 method='PCA'
-for k in 4 6
+numIterations=100
+goalSpecified='true'
+useGroundTruthChi='false'
+for k in 2 4 6
 do
-  for sample in 40 1230 1718
-  do
-    max_ent
-  done
+  max_ent
 done
 
+method='ground_truth'
+useS='true'
+max_ent
 wait
 
 python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
