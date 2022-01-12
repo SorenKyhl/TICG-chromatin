@@ -50,7 +50,7 @@ fi
 STARTTIME=$(date +%s)
 i=8000
 dataset='dataset_01_14_22'
-sample=4
+sample=24
 
 method='ground_truth-psi'
 k=4

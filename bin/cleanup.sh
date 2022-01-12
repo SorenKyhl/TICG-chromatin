@@ -6,24 +6,12 @@
 #SBATCH --ntasks=10
 #SBATCH --mem-per-cpu=1000
 
-cd /project2/depablo/erschultz/dataset_01_11_22
+cd /project2/depablo/erschultz/dataset_01_14_22
 
-cd sample40
-cd PCA
-rm -r k6
 
-cd ../../sample41
-cd PCA
-rm -r k6
+rm -r sample1 &
+rm -r sample2 &
+rm -r sample3 &
+rm -r sample4 &
 
-cd ../../sample42
-cd PCA
-rm -r k6
-
-cd ../../sample43
-cd PCA
-rm -r k6
-
-cd ../../sample44
-cd PCA
-rm -r k6
+wait
