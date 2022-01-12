@@ -41,5 +41,5 @@ dataset='dataset_01_12_22'
 for sample in 40 41 42 43 44
 do
   dataFolder="${dataDir}/${dataset}"
-  python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
+  python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample --samples "40-41-42-43-44"
 done
