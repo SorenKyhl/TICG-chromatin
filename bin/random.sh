@@ -1,18 +1,20 @@
 #! /bin/bash
 
+chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
 # chi="-1&1&0&0\\1&-2&0&-1\\0&0&-1&2\\0&-1&2&-1"
 # chi="-1&1\\1&0"
-chi='polynomial'
-k=4
+# chi='polynomial'
+k=3
 m=1024
 today=$(date +'%m_%d_%y')
-dataFolder="/project2/depablo/erschultz/dataset_01_12_22"
-startSample=201
-relabel='none'
-nodes=10
+dataFolder="/project2/depablo/erschultz/dataset_01_13_22"
+startSample=1
+relabel='AB-D'
+startNode=0
+nodes=1
 tasks=20
-samples=1800
-diag='true'
+samples=20
+diag='false'
 nSweeps=1000000
 pSwitch=0.05
 minChi=-2
@@ -47,10 +49,10 @@ mv TICG-engine ..
 
 cd ~/TICG-chromatin
 
-for i in $( seq 0 $(( $nodes - 1 )) )
+for i in $( seq $startNode $(( $nodes - 1 + $startNode )) )
 do
   startSampleI=$(( $startSample + $samplesPerNode * $i ))
   endSampleI=$(( $startSampleI + $samplesPerNode - 1 ))
-  echo $startSampleI $endSampleI
-  sbatch ~/TICG-chromatin/bin/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samplesPerNode $samplesPerTask $diag $scratchDir $i $nSweeps $pSwitch $minChi $maxChi $fillDiag $chiSeed
+  echo "TICG${i}" $startSampleI $endSampleI
+  # sbatch ~/TICG-chromatin/bin/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samplesPerNode $samplesPerTask $diag $scratchDir $i $nSweeps $pSwitch $minChi $maxChi $fillDiag $chiSeed
 done
