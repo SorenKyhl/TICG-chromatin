@@ -16,7 +16,7 @@ goalSpecified='true'
 numIterations=100 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 modelType='ContactGNNEnergy'
-local='false'
+local='true'
 useE='false'
 useS='false'
 useGroundTruthChi='false'
@@ -35,12 +35,12 @@ source ~/TICG-chromatin/bin/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dir="/home/eric/sequences_to_contact_maps"
+  dir="/home/eric/"
   scratchDir='/home/eric/scratch'
-  numIterations=5
-  finalSimProductionSweeps=5000
-  equilibSweeps=5000
-  productionSweeps=5000
+  numIterations=50
+  finalSimProductionSweeps=200000
+  equilibSweeps=10000
+  productionSweeps=50000
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
   dir='/project2/depablo/erschultz'
@@ -50,26 +50,24 @@ fi
 
 STARTTIME=$(date +%s)
 i=1
-dataset='dataset_01_13_22'
+dataset='dataset_test'
 sample=1
 
-method='ground_truth-psi'
-k=4
-useGroundTruthChi='true'
-max_ent
-
 method='PCA'
-numIterations=100
-goalSpecified='true'
-useGroundTruthChi='false'
-for k in 1 2 4
+for k in 2 4
 do
   max_ent
 done
 
-method='ground_truth'
-useS='true'
+method='ground_truth-psi'
+k=10
+useGroundTruthChi='true'
 max_ent
+
+
+# method='ground_truth'
+# useS='true'
+# max_ent
 
 
 wait

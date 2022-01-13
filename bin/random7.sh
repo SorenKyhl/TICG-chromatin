@@ -25,6 +25,8 @@ minChi=${15}
 maxChi=${16}
 fillDiag=${17}
 chiSeed=${18}
+maxDiagChi=${19}
+
 
 echo $@
 
@@ -36,7 +38,7 @@ do
   i=$(( i + $tasks * $scriptIndex ))
   echo $start $stop
   scratchDirI="${scratchDir}/TICG${i}"
-  ~/TICG-chromatin/bin/random_inner.sh $scratchDirI $k $chi $m $start $stop $dataFolder $relabel $diag $nSweeps $pSwitch $minChi $maxChi $fillDiag $chiSeed > ~/TICG-chromatin/logFiles/TICG${i}.log &
+  ~/TICG-chromatin/bin/random_inner.sh $scratchDirI $k $chi $m $start $stop $dataFolder $relabel $diag $nSweeps $pSwitch $minChi $maxChi $fillDiag $chiSeed $maxDiagChi > ~/TICG-chromatin/logFiles/TICG${i}.log &
 done
 
 wait

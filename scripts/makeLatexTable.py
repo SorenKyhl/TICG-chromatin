@@ -185,13 +185,22 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
         o.write("\\hline\\hline\n")
 
         # get reference data
-        if 'ground_truth-S' in data[0]:
+        if 0 in data.keys() and 'ground_truth-S' in data[0]:
             ref = data[0]['ground_truth-S']
             print('ref found')
         else:
-            ref = None
-            print('ref missing')
-            print(data)
+            # look for ground_truth-psi-chi
+            for key in data.keys():
+                if 'ground_truth-psi-chi' in data[key]:
+                    ref = data[key]['ground_truth-psi-chi']
+                    print('ref found: using ground_truth-psi-chi')
+                    break
+            else:
+                ref = None
+                print('ref missing')
+                for key in data.keys():
+                    print(f'key 1: {key}, key 2: {data[key].keys()}')
+
 
         for k in sorted(data.keys()):
             first = True # only write k for first row in section

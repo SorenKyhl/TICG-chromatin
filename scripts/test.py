@@ -18,6 +18,7 @@ for p in paths:
         sys.path.insert(1, p)
 
 from neural_net_utils.dataset_classes import make_dataset
+from result_summary_plots import *
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -131,29 +132,59 @@ def makeDirsForMaxEnt(dataset, sample):
                 os.mkdir(osp.join(sample_folder, method, f'k{k}', f'replicate{replicate}'), mode = 0o755)
 
 def main():
-    psi = np.round(np.random.rand(4,3), 1)
-    chi = np.round(np.random.rand(3,3), 1)
+    dir = '/home/eric/dataset_test/samples'
+    # 81 has diag on
+    x80 = np.load(osp.join(dir, 'sample80', 'x.npy'))
+    x81 = np.load(osp.join(dir, 'sample81', 'x.npy'))
 
-    s = psi @ chi @ psi.T
-    print(s)
+    s80 = np.load(osp.join(dir, 'sample80', 's.npy'))
+    s81 = np.load(osp.join(dir, 'sample81', 's.npy'))
 
-    s_sym = (s+s.T)/2
-    print(s_sym)
+    y80 = np.load(osp.join(dir, 'sample80', 'y.npy'))
+    y81 = np.load(osp.join(dir, 'sample81', 'y.npy'))
+    ydiag80 = np.load(osp.join(dir, 'sample80', 'y_diag.npy'))
+    ydiag81 = np.load(osp.join(dir, 'sample81', 'y_diag.npy'))
 
-    chi_sym = (chi + chi.T) / 2
-    s_sym2 = psi @ chi_sym @ psi.T
-    print(s_sym2)
+    # Compare PCs ##
+    print("\nY80")
+    PC_y80 = plot_top_PCs(y80)
 
-    print(np.allclose(s_sym, s_sym2))
+    print("\nY_diag80")
+    PC_ydiag80 = plot_top_PCs(ydiag80)
+    stat = pearsonround(PC_y80[0], PC_ydiag80[0])
+    print("Correlation between PC 1 of y_diag80 and y80: ", stat)
+    stat = pearsonround(PC_y80[1], PC_ydiag80[1])
+    print("Correlation between PC 2 of y_diag80 and y80: ", stat)
 
-    s_sym3 = np.zeros_like(s_sym)
-    for i in range(4):
-        for j in range(4):
-            outer = np.outer(psi[i], psi[j])
-            mul = np.multiply(outer, chi_sym)
-            s_sym3[i,j] = np.sum(mul)
-    print(s_sym3)
-    print(np.allclose(s_sym, s_sym3))
+
+    print("\nY_diag81")
+    PC_ydiag81 = plot_top_PCs(ydiag81)
+    stat = pearsonround(PC_ydiag81[0], PC_ydiag80[0])
+    print("Correlation between PC 1 of y_diag80 and y_diag81: ", stat)
+    stat = pearsonround(PC_ydiag81[1], PC_ydiag80[1])
+    print("Correlation between PC 2 of y_diag80 and y_diag81: ", stat)
+
+    print("\nS")
+    print(f'Rank: {np.linalg.matrix_rank(s80)}')
+    PC_s = plot_top_PCs(s80)
+    stat = pearsonround(PC_ydiag80[0], PC_s[0])
+    print("Correlation between PC 1 of y_diag80 and S: ", stat)
+    stat = pearsonround(PC_ydiag81[0], PC_s[0])
+    print("Correlation between PC 1 of y_diag81 and S: ", stat)
+
+    s_sym = (s80 + s80.T)/2
+    print("\nS_sym")
+    print(f'Rank: {np.linalg.matrix_rank(s_sym)}')
+    PC_s_sym = plot_top_PCs(s_sym)
+    stat = pearsonround(PC_ydiag80[0], PC_s_sym[0])
+    print("Correlation between PC 1 of y_diag80 and S_sym: ", stat)
+    stat = pearsonround(PC_ydiag80[1], PC_s_sym[1])
+    print("Correlation between PC 2 of y_diag80 and S_sym: ", stat)
+    stat = pearsonround(PC_ydiag81[0], PC_s_sym[0])
+    print("Correlation between PC 1 of y_diag81 and S_sym: ", stat)
+    stat = pearsonround(PC_ydiag81[1], PC_s_sym[1])
+    print("Correlation between PC 2 of y_diag81 and S_sym: ", stat)
+
 
 if __name__ == '__main__':
     main()

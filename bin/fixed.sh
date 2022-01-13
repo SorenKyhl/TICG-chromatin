@@ -1,20 +1,19 @@
 #! /bin/bash
-chi="-1&1&0&0\\1&-2&0&-1\\0&0&-1&2\\0&-1&2&-1"
-k=4
+chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
+k=3
 m=1024
 dataFolder="/home/eric/dataset_test"
 scratchDir='/home/eric/scratch'
+useE='false'
+useS='false'
 startSample=1
-relabel='none'
-nodes=10
-tasks=20
-samples=2000
+relabel='AB-D'
 diag='false'
-nSweeps=10000
+nSweeps=500000
 pSwitch=0.05
 maxDiagChi=0.1
 overwrite=1
-dumpFrequency=100
+dumpFrequency=50000
 
 source activate python3.8_pytorch1.8.1_cuda11.1
 
@@ -52,10 +51,10 @@ run()  {
 	fi
 
 	# generate sequences
-	python3 ~/TICG-chromatin/scripts/get_seq.py --method 'random' --exclusive 'true' --m $m --p_switch $pSwitch --k $k --save_npy --seed 12 >> log.log
+	python3 ~/TICG-chromatin/scripts/get_seq.py --method 'random' --exclusive 'false' --m $m --p_switch $pSwitch --k $k --save_npy --seed 12 >> log.log
 
 	# set up config.json
-	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --ensure_distinguishable --diag $diag --max_diag_chi $maxDiagChi --n_sweeps $nSweeps --dump_frequency $dumpFrequency --use_ematrix $useE --use_smatrix $useS --load_configuration_filename $init_config > log.log
+	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --ensure_distinguishable --diag $diag --max_diag_chi $maxDiagChi --relabel $relabel --n_sweeps $nSweeps --dump_frequency $dumpFrequency --use_ematrix $useE --use_smatrix $useS --load_configuration_filename $init_config --TICG_seed 35 > log.log
 
 	# run simulation
 	~/TICG-chromatin/TICG-engine >> log.log
@@ -76,8 +75,10 @@ run()  {
 # mv TICG-engine ..
 
 i=80
-useE=False
-useS=False
+run &
+
+i=81
+diag='true'
 run &
 
 wait

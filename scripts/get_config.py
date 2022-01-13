@@ -235,7 +235,7 @@ def set_up_plaid_chi(args, config):
         if args.k is None:
             args.k = rows
         else:
-            assert args.k == rows, 'number of particle types does not match shape of chi'
+            assert args.k == rows, f'number of particle types {args.k} does not match shape of chi {rows}'
         assert rows == cols, f"chi not square: {args.chi}"
         conv = InteractionConverter(args.k, args.chi)
         if not uniqueRows(conv.getE()):

@@ -19,7 +19,7 @@ chiSeed=${15}
 
 # other params
 method='random'
-maxDiagChi=0.1
+maxDiagChi=${16}
 overwrite=1
 dumpFrequency=50000
 if [ $chi = 'nonlinear' ]
