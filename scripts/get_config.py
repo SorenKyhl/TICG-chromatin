@@ -80,7 +80,7 @@ def relabel_x_to_psi(x, relabel_str):
     Example:
     consider: <old> = AB, <new> = D, seq is m x 3
     Any particle with both label A and label B, will be relabeled to have
-    label C and neither A nor B. Label C will be unaffected.
+    label D and neither A nor B. Label C will be unaffected.
 
 
     If len(<new>) = 1, then LETTERS.find(new) must be >= k
