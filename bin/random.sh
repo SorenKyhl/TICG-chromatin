@@ -1,26 +1,26 @@
 #! /bin/bash
 
 # chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
-chi="-1&1&0&0\\1&-2&0&-1\\0&0&-1&2\\0&-1&2&-1"
+# chi="-1&1&0&0\\1&-2&0&-1\\0&0&-1&2\\0&-1&2&-1"
 # chi="-1&1\\1&0"
-# chi='polynomial'
-k=3
+chi='polynomial'
+k=4
 m=1024
 today=$(date +'%m_%d_%y')
-dataFolder="/project2/depablo/erschultz/dataset_01_14_22"
+dataFolder="/project2/depablo/erschultz/dataset_01_15_22"
 startSample=1
-relabel='AB-D'
-startNode=1
+relabel='none'
+startNode=0
 nodes=1
 tasks=20
 samples=20
 diag='true'
 nSweeps=1000000
 pSwitch=0.05
-minChi=-2
+minChi=-1
 maxChi=2
 fillDiag='none'
-chiSeed=27
+chiSeed=29
 local='false'
 
 if [ $local = 'true' ]
