@@ -48,21 +48,18 @@ fi
 STARTTIME=$(date +%s)
 i=6000
 dataset='dataset_01_14_22'
-sample=22
-
-method='ground_truth-psi'
-k=4
-useGroundTruthChi='true'
-max_ent
+sample=23
 
 method='PCA'
-numIterations=100
-goalSpecified='true'
-useGroundTruthChi='false'
-for k in 1 2 4
+for k in 2 4 6
 do
   max_ent
 done
+
+method='ground_truth-psi'
+k=10
+useGroundTruthChi='true'
+max_ent
 
 method='ground_truth'
 useS='true'
