@@ -9,7 +9,7 @@ useS='false'
 startSample=1
 relabel='AB-D'
 diag='false'
-nSweeps=500000
+nSweeps=1000000
 pSwitch=0.05
 maxDiagChi=0.1
 overwrite=1
@@ -51,10 +51,10 @@ run()  {
 	fi
 
 	# generate sequences
-	python3 ~/TICG-chromatin/scripts/get_seq.py --method 'random' --exclusive 'false' --m $m --p_switch $pSwitch --k $k --save_npy --seed 12 >> log.log
+	python3 ~/TICG-chromatin/scripts/get_seq.py --method 'random' --exclusive 'false' --m $m --p_switch $pSwitch --k $k --save_npy --seed 14 >> log.log
 
 	# set up config.json
-	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --ensure_distinguishable --diag $diag --max_diag_chi $maxDiagChi --relabel $relabel --n_sweeps $nSweeps --dump_frequency $dumpFrequency --use_ematrix $useE --use_smatrix $useS --load_configuration_filename $init_config --TICG_seed 35 > log.log
+	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --ensure_distinguishable --diag $diag --max_diag_chi $maxDiagChi --relabel $relabel --n_sweeps $nSweeps --dump_frequency $dumpFrequency --use_ematrix $useE --use_smatrix $useS --load_configuration_filename $init_config --TICG_seed 38 > log.log
 
 	# run simulation
 	~/TICG-chromatin/TICG-engine >> log.log
@@ -74,10 +74,10 @@ run()  {
 # make
 # mv TICG-engine ..
 
-i=80
+i=82
 run &
 
-i=81
+i=83
 diag='true'
 run &
 

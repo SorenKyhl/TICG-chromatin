@@ -145,45 +145,90 @@ def main():
     ydiag80 = np.load(osp.join(dir, 'sample80', 'y_diag.npy'))
     ydiag81 = np.load(osp.join(dir, 'sample81', 'y_diag.npy'))
 
+    # # Compare PCs ##
+    # print("\nY80")
+    # PC_y80 = plot_top_PCs(y80)
+    #
+    # print("\nY_diag80")
+    # PC_ydiag80 = plot_top_PCs(ydiag80)
+    # stat = pearsonround(PC_y80[0], PC_ydiag80[0])
+    # print("Correlation between PC 1 of y_diag80 and y80: ", stat)
+    # stat = pearsonround(PC_y80[1], PC_ydiag80[1])
+    # print("Correlation between PC 2 of y_diag80 and y80: ", stat)
+    #
+    #
+    # print("\nY_diag81")
+    # PC_ydiag81 = plot_top_PCs(ydiag81)
+    # stat = pearsonround(PC_ydiag81[0], PC_ydiag80[0])
+    # print("Correlation between PC 1 of y_diag80 and y_diag81: ", stat)
+    # stat = pearsonround(PC_ydiag81[1], PC_ydiag80[1])
+    # print("Correlation between PC 2 of y_diag80 and y_diag81: ", stat)
+    #
+    # print("\nS")
+    # print(f'Rank: {np.linalg.matrix_rank(s80)}')
+    # PC_s = plot_top_PCs(s80)
+    # stat = pearsonround(PC_ydiag80[0], PC_s[0])
+    # print("Correlation between PC 1 of y_diag80 and S: ", stat)
+    # stat = pearsonround(PC_ydiag81[0], PC_s[0])
+    # print("Correlation between PC 1 of y_diag81 and S: ", stat)
+    #
+    # s_sym = (s80 + s80.T)/2
+    # print("\nS_sym")
+    # print(f'Rank: {np.linalg.matrix_rank(s_sym)}')
+    # PC_s_sym = plot_top_PCs(s_sym)
+    # stat = pearsonround(PC_ydiag80[0], PC_s_sym[0])
+    # print("Correlation between PC 1 of y_diag80 and S_sym: ", stat)
+    # stat = pearsonround(PC_ydiag80[1], PC_s_sym[1])
+    # print("Correlation between PC 2 of y_diag80 and S_sym: ", stat)
+    # stat = pearsonround(PC_ydiag81[0], PC_s_sym[0])
+    # print("Correlation between PC 1 of y_diag81 and S_sym: ", stat)
+    # stat = pearsonround(PC_ydiag81[1], PC_s_sym[1])
+    # print("Correlation between PC 2 of y_diag81 and S_sym: ", stat)
+
+
     # Compare PCs ##
-    print("\nY80")
+    print("\nA")
     PC_y80 = plot_top_PCs(y80)
 
-    print("\nY_diag80")
+    print("\nB")
+    PC_y81 = plot_top_PCs(y81)
+    stat = pearsonround(PC_y80[0], PC_y81[0])
+    print("Correlation between PC 1 of A and B: ", stat)
+
+    print("\nC")
     PC_ydiag80 = plot_top_PCs(ydiag80)
     stat = pearsonround(PC_y80[0], PC_ydiag80[0])
-    print("Correlation between PC 1 of y_diag80 and y80: ", stat)
+    print("Correlation between PC 1 of A and C: ", stat)
     stat = pearsonround(PC_y80[1], PC_ydiag80[1])
-    print("Correlation between PC 2 of y_diag80 and y80: ", stat)
+    print("Correlation between PC 2 of A and B: ", stat)
 
-
-    print("\nY_diag81")
+    print("\nD")
     PC_ydiag81 = plot_top_PCs(ydiag81)
     stat = pearsonround(PC_ydiag81[0], PC_ydiag80[0])
-    print("Correlation between PC 1 of y_diag80 and y_diag81: ", stat)
+    print("Correlation between PC 1 of C and D: ", stat)
     stat = pearsonround(PC_ydiag81[1], PC_ydiag80[1])
-    print("Correlation between PC 2 of y_diag80 and y_diag81: ", stat)
+    print("Correlation between PC 2 of C and D: ", stat)
 
-    print("\nS")
-    print(f'Rank: {np.linalg.matrix_rank(s80)}')
-    PC_s = plot_top_PCs(s80)
-    stat = pearsonround(PC_ydiag80[0], PC_s[0])
-    print("Correlation between PC 1 of y_diag80 and S: ", stat)
-    stat = pearsonround(PC_ydiag81[0], PC_s[0])
-    print("Correlation between PC 1 of y_diag81 and S: ", stat)
+    # print("\nS")
+    # print(f'Rank: {np.linalg.matrix_rank(s80)}')
+    # PC_s = plot_top_PCs(s80)
+    # stat = pearsonround(PC_ydiag80[0], PC_s[0])
+    # print("Correlation between PC 1 of C and S: ", stat)
+    # stat = pearsonround(PC_ydiag81[0], PC_s[0])
+    # print("Correlation between PC 1 of D and S: ", stat)
 
     s_sym = (s80 + s80.T)/2
-    print("\nS_sym")
+    print("\n\nS_sym")
     print(f'Rank: {np.linalg.matrix_rank(s_sym)}')
     PC_s_sym = plot_top_PCs(s_sym)
     stat = pearsonround(PC_ydiag80[0], PC_s_sym[0])
-    print("Correlation between PC 1 of y_diag80 and S_sym: ", stat)
+    print("Correlation between PC 1 of C and S_sym: ", stat)
     stat = pearsonround(PC_ydiag80[1], PC_s_sym[1])
-    print("Correlation between PC 2 of y_diag80 and S_sym: ", stat)
+    print("Correlation between PC 2 of C and S_sym: ", stat)
     stat = pearsonround(PC_ydiag81[0], PC_s_sym[0])
-    print("Correlation between PC 1 of y_diag81 and S_sym: ", stat)
+    print("Correlation between PC 1 of D and S_sym: ", stat)
     stat = pearsonround(PC_ydiag81[1], PC_s_sym[1])
-    print("Correlation between PC 2 of y_diag81 and S_sym: ", stat)
+    print("Correlation between PC 2 of D and S_sym: ", stat)
 
 
 if __name__ == '__main__':
