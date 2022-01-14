@@ -47,7 +47,7 @@ fi
 
 STARTTIME=$(date +%s)
 i=3000
-dataset='dataset_01_13_22'
+dataset='dataset_01_17_22'
 sample=4
 
 method='PCA'
