@@ -171,7 +171,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                 o.write("\\hline\n")
                 o.write("\\multicolumn{5}{|c|}{sample " + f'{sample_id}' + "} \\\ \n")
             o.write("\\hline\n")
-            o.write("Method & k & SCC & $\\Delta$ SCC & MSE-S \\\ \n")
+            o.write("Method & $\\ell$ & SCC & $\\Delta$ SCC & MSE-S \\\ \n")
         else:
             metrics = ['overall_pearson', 'avg_dist_pearson', 'scc', 's']
             o.write("\\begin{tabular}{|c|c|c|c|c|c|c|}\n")
