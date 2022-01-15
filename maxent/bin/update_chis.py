@@ -23,19 +23,12 @@ def main():
     with open(config_file, "r") as f:
         config = json.load(f)
 
-    allchis = np.atleast_2d(np.loadtxt('chis.txt'))
-    if len(allchis[0]) == 0:
-        # shape will be wrong if k = 1
-        allchis = allchis.T
-
-    # get last row of 'chis.txt'
-    try:
-        lastchis = list(allchis[int(args.it)])
-    except IndexError as e:
-        print('Index Error')
-        print('allchis:\n', np.round(allchis, 3))
-        print('it: ', int(args.it))
-        raise
+    # read in current chis
+    with open('chis.txt', "r") as f_chis:
+        lines = f_chis.readlines()
+        current_chis = lines[args.it].split()
+        current_chis = [float(x) for x in current_chis]
+    # print("current chi values: ", current_chis)
 
     counter = 0
     for i in range(args.k):
@@ -44,11 +37,11 @@ def main():
                 continue
             key = 'chi{}{}'.format(LETTERS[i], LETTERS[j])
             try:
-                config[key] = lastchis[counter]
+                config[key] = current_chis[counter]
             except IndexError as e:
                 print('Index Error')
-                print('allchis:\n', allchis)
-                print('lastchis:\n', lastchis)
+                print('lines:\n', lines)
+                print('current_chis:\n', current_chis)
                 print('k: ', args.k)
                 raise
             counter += 1

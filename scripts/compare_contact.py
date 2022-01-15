@@ -80,16 +80,17 @@ def comparePCA(y, yhat, dir):
     plt.close()
 
 # plotting functions
-def plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, args):
-    n, n = y.shape
-    triu_ind = np.triu_indices(n)
+def plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, dir):
+
+    m, _ = y.shape
+    triu_ind = np.triu_indices(m)
     overall_corr_diag, _ = pearsonr(y_diag[triu_ind], yhat_diag[triu_ind])
 
     overall_corr, corr_arr = calculateDistanceStratifiedCorrelation(y, yhat, mode = 'pearson')
     avg = np.nanmean(corr_arr)
 
     # save correlations to json
-    with open(osp.join(args.dir, 'distance_pearson.json'), 'w') as f:
+    with open(osp.join(dir, 'distance_pearson.json'), 'w') as f:
         temp_dict = {'overall_pearson': overall_corr,
                      'scc': overall_corr_diag,
                      'avg_dist_pearson': avg}
@@ -105,14 +106,14 @@ def plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, args):
     title +='\nAvg Dist Pearson R: {}'.format(avg)
     title +='\nSCC: {}'.format(overall_corr_diag)
 
-    plt.plot(np.arange(args.m-2), corr_arr, color = 'black')
+    plt.plot(np.arange(m-2), corr_arr, color = 'black')
     plt.ylim(-0.5, 1)
     plt.xlabel('Distance', fontsize = 16)
     plt.ylabel('Pearson Correlation Coefficient', fontsize = 16)
     plt.title(title, fontsize = 16)
 
     plt.tight_layout()
-    plt.savefig(osp.join(args.dir, 'distance_pearson.png'))
+    plt.savefig(osp.join(dir, 'distance_pearson.png'))
     plt.close()
 
 def main():
@@ -131,7 +132,7 @@ def main():
         meanDist = genomic_distance_statistics(yhat)
         yhat_diag = diagonal_preprocessing(yhat, meanDist)
 
-    plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, args)
+    plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, args.dir)
     comparePCA(y, yhat, args.dir)
 
 
