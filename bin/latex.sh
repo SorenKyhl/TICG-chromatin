@@ -4,7 +4,7 @@
 #SBATCH --time=0:30:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=1
-#SBATCH --mem-per-cpu=2000
+#SBATCH --mem-per-cpu=4000
 #SBATCH --qos=depablo-debug
 
 source activate python3.8_pytorch1.8.1_cuda10.2
@@ -37,8 +37,6 @@ dataDir='/project2/depablo/erschultz'
 #   python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
 # done
 
-# sample=21
-# samples="21-22-23-24"
 for dataset in 'dataset_11_03_21'
 do
   dataFolder="${dataDir}/${dataset}"
