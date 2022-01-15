@@ -6,19 +6,17 @@
 #SBATCH --ntasks=10
 #SBATCH --mem-per-cpu=1000
 
-cd /project2/depablo/erschultz/dataset_01_15_22
+cd /project2/depablo/erschultz/dataset_01_17_22/samples
 
 
-rm -r sample202* &
-rm -r sample201* &
-rm -r sample2001 &
-rm -r sample2002 &
-rm -r sample2003 &
-rm -r sample2004 &
-rm -r sample2005 &
-rm -r sample2006 &
-rm -r sample2007 &
-rm -r sample2008 &
-rm -r sample2009 &
+rm -r sample1 &
+rm -r sample1* &
+rm -r sample2 &
+rm -r sample3 &
+rm -r sample4 &
+rm -r sample5 &
 
 wait
+
+cd /project2/depablo/erschultz
+rm -r dataset_01_17_22

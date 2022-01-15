@@ -3,7 +3,7 @@
 #SBATCH --output=logFiles/latex.out
 #SBATCH --time=0:30:00
 #SBATCH --partition=depablo-ivyb
-#SBATCH --ntasks=1
+#SBATCH --ntasks=2
 #SBATCH --mem-per-cpu=4000
 #SBATCH --qos=depablo-debug
 
