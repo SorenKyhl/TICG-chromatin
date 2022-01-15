@@ -20,7 +20,7 @@ max_ent() {
 
   seed=$RANDOM
   format_method
-  for j in 1
+  for j in 1 2 3
   do
     scratchDirI="${scratchDir}/TICG_maxent${i}"
     mkdir -p $scratchDirI
