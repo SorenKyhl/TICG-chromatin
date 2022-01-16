@@ -49,21 +49,27 @@ fi
 
 STARTTIME=$(date +%s)
 i=1000
-dataset='dataset_01_17_22'
-sample=2
+dataset='dataset_01_15_22'
+sample=1230
 
 method='PCA'
-for k in 2 4 6
+for k in 1 2 4 6
 do
   max_ent
 done
 
-method='ground_truth-psi'
-k=10
-useGroundTruthChi='true'
-max_ent
+# method='ground_truth-psi'
+# k=10
+# useGroundTruthChi='true'
+# max_ent
+
 
 method='ground_truth'
+useS='true'
+max_ent
+
+method='GNN'
+modelID=70
 useS='true'
 max_ent
 

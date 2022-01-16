@@ -16,7 +16,7 @@ goalSpecified='true'
 numIterations=100 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 modelType='ContactGNNEnergy'
-local='true'
+local='false'
 useE='false'
 useS='false'
 useGroundTruthChi='false'
@@ -35,7 +35,7 @@ source ~/TICG-chromatin/bin/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dir="/home/eric/"
+  dir="/home/eric/sequences_to_contact_maps"
   scratchDir='/home/eric/scratch'
   numIterations=1
   finalSimProductionSweeps=5000
@@ -50,29 +50,28 @@ fi
 
 STARTTIME=$(date +%s)
 i=1
-dataset='dataset_test'
+dataset='dataset_01_15_22'
+sample=40
 
-for sample in 82 83
+method='PCA'
+for k in 1 2 4 6
 do
-  method='PCA'
-  for k in 8
-  do
-    max_ent
-  done
+  max_ent
 done
 
-# for sample in 82 83
-# do
-#   method='ground_truth-psi'
-#   k=4
-#   useGroundTruthChi='true'
-#   max_ent
-# done
-
-
-# method='ground_truth'
-# useS='true'
+# method='ground_truth-psi'
+# k=10
+# useGroundTruthChi='true'
 # max_ent
+
+method='ground_truth'
+useS='true'
+max_ent
+
+method='GNN'
+modelID=70
+useS='true'
+max_ent
 
 
 wait
