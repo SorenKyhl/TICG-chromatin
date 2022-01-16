@@ -35,9 +35,12 @@ source ~/TICG-chromatin/bin/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dataFolder="/home/eric/sequences_to_contact_maps/dataset_11_14_21"
-  # dataFolder="/home/eric/dataset_test"
+  dir="/home/eric/sequences_to_contact_maps"
   scratchDir='/home/eric/scratch'
+  numIterations=1
+  finalSimProductionSweeps=5000
+  equilibSweeps=1000
+  productionSweeps=5000
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
   dir='/project2/depablo/erschultz'
@@ -47,11 +50,11 @@ fi
 
 STARTTIME=$(date +%s)
 i=3000
-dataset='dataset_01_17_22'
-sample=4
+dataset='dataset_09_21_21'
+sample=1
 
 method='PCA'
-for k in 2 4 6
+for k in 1 2 4 6
 do
   max_ent
 done
