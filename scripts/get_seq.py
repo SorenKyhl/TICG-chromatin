@@ -27,8 +27,8 @@ for p in paths:
         sys.path.insert(1, p)
 
 from plotting_functions import plotContactMap
-from neural_net_utils.argparseSetup import str2bool, str2int, str2None
-from neural_net_utils.utils import calculate_E_S
+from neural_net_utils.argparseSetup import str2bool, str2int, str2None, getBaseParser, finalizeOpt
+from neural_net_utils.utils import calculate_E_S, s_to_E, loadSavedModel, getDataset, getDataLoaders
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -340,31 +340,77 @@ def get_ChromHMM_seq(ifile, k, start=35000000, end=60575000, res=25000, min_cove
 
     return seq, labels
 
-def get_energy_gnn(model_path, sample):
+def get_energy_gnn(model_path, sample_path):
     '''
     Loads output from GNN model to use as ematrix or smatrix
 
     Inputs:
         model_path: path to model results
-        sample: sample id (int)
+        sample_path: path to sample
 
     Outputs:
         s: np array of pairwise energies
     '''
-    # determine model_type
-    model_type = osp.split(osp.split(model_path)[0])[1]
-    print(model_type)
+    # extract sample info
+    sample = osp.split(sample_path)[1]
+    sample_id = int(sample[6:])
+    sample_path_split = osp.normpath(sample_path).split(os.sep)
+    sample_dataset = sample_path_split[-3]
+    print(sample, sample_id, sample_dataset)
 
+    # extract model info
+    model_path_split = osp.normpath(model_path).split(os.sep)
+    model_id = model_path_split[-1]
+    model_type = model_path_split[-2]
+    print(model_type)
     assert model_type == 'ContactGNNEnergy', f"Unrecognized model_type: {model_type}"
-    energy_hat_path = osp.join(model_path, f"sample{sample}/energy_hat.txt")
-    if osp.exists(energy_hat_path):
-        energy = np.loadtxt(energy_hat_path)
+
+    argparse_path = osp.join(model_path, 'argparse.txt')
+    with open(argparse_path, 'r') as f:
+        for line in f:
+            if line == '--data_folder\n':
+                break
+        data_folder = f.readline().strip()
+        gnn_dataset = osp.split(data_folder)[1]
+
+    if gnn_dataset != sample_dataset:
+        print(f'WARNING: dataset mismatch: {gnn_dataset} vs {sample_dataset}')
+
+        # set up argparse options
+        parser = getBaseParser()
+        sys.argv = [sys.argv[0]] # delete args from get_seq, otherwise gnn opt will try and use them
+        opt = parser.parse_args(['@{}'.format(argparse_path)])
+        opt.id = int(model_id)
+        opt = finalizeOpt(opt, parser, local = True) # use local = True to override use_scratch
+        opt.data_folder = osp.join('/',*sample_path_split[:-2]) # use sample_dataset not gnn_dataset
+        opt.output_mode = None # don't need output, since only predicting
+        print(opt)
+
+        # get model
+        model, _, _ = loadSavedModel(opt, False)
+
+        # get dataset
+        dataset = getDataset(opt, verbose = True, samples = [sample_id])
+
+        # get prediction
+        for i, data in enumerate(dataset):
+            data = data.to(opt.device)
+            yhat = model(data)
+            yhat = yhat.cpu().detach().numpy()
+            energy = yhat.reshape((opt.m,opt.m))
+
     else:
-        raise Exception(f's_path does not exist: {energy_hat_path}')
+        energy_hat_path = osp.join(model_path, f"{sample}/energy_hat.txt")
+        if osp.exists(energy_hat_path):
+            energy = np.loadtxt(energy_hat_path)
+        else:
+            raise Exception(f's_path does not exist: {energy_hat_path}')
+
 
     return energy
 
 def get_seq_gnn(k, model_path, sample, normalize):
+    # deprecated
     '''
     Loads output from GNN model to use as particle types, seq
 
@@ -546,19 +592,11 @@ def main():
     elif args.method.startswith('chromhmm'):
         seq, labels = get_ChromHMM_seq(args.ChromHMM_data_file, args.k)
     elif args.method.startswith('gnn'):
-        argparse_path = osp.join(args.model_path, 'argparse.txt')
-        with open(argparse_path, 'r') as f:
-            for line in f:
-                if line == '--data_folder\n':
-                    break
-            data_folder = f.readline().strip()
-            dataset = osp.split(data_folder)[1]
-        assert dataset == args.dataset, f'Dataset mismatch: {dataset} vs { args.dataset}'
-
         if args.use_smatrix:
-            s = get_energy_gnn(args.model_path, args.sample)
+            s = get_energy_gnn(args.model_path, args.sample_folder)
         elif args.use_ematrix:
-            e = get_energy_gnn(args.model_path, args.sample)
+            s = get_energy_gnn(args.model_path, args.sample_folder)
+            e = s_to_E(s)
         else:
             seq = get_seq_gnn(args.k, args.model_path, args.sample, args.normalize)
     else:

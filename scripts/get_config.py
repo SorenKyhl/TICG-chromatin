@@ -260,11 +260,14 @@ def set_up_plaid_chi(args, config):
 
 def set_up_diag_chi(args, config, sample_config):
     if args.use_ground_truth_diag_chi:
-        args.diag = sample_config["diagonal_on"] # overwrite args
-        try:
-            chi_diag = sample_config["diag_chis"]
-        except KeyError:
-            assert args.diag == False
+        if sample_config is not None:
+            args.diag = sample_config["diagonal_on"] # overwrite args
+            try:
+                chi_diag = sample_config["diag_chis"]
+            except KeyError:
+                assert args.diag == False
+        else:
+            print("WARNING: ground truth config missing")
     else:
         chi_diag = list(np.linspace(0, args.max_diag_chi, 20))
 
@@ -291,11 +294,14 @@ def main():
     args = getArgs()
     print(args)
 
+    sample_config = None # ground truth config file
+    # used to copy TICG seed and diag chis
     if args.sample_folder is not None:
-        with open(osp.join(args.sample_folder, 'config.json'), 'rb') as f:
-            sample_config = json.load(f)
-    else:
-        sample_config = None
+        sample_config_file = osp.join(args.sample_folder, 'config.json')
+        if osp.exists(sample_config_file):
+            with open(sample_config_file, 'rb') as f:
+                sample_config = json.load(f)
+
 
     with open(args.default_config, 'rb') as f:
         config = json.load(f)

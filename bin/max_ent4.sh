@@ -59,19 +59,15 @@ do
   max_ent
 done
 
-method='ground_truth-psi'
-k=10
-useGroundTruthChi='true'
-max_ent
-
-
-method='ground_truth'
+method='GNN'
+modelID=70
 useS='true'
 max_ent
 
+
 wait
 
-python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
+# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
 
 ENDTIME=$(date +%s)
 echo "total time:$(( $(( $ENDTIME - $STARTTIME )) / 60 )) minutes"
