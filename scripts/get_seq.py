@@ -579,7 +579,7 @@ def main():
         if calc:
             chi = np.load(osp.join(args.sample_folder, 'chis.npy'))[:args.m, :]
             e, s = calculate_E_S(psi, chi)
-    elif args.method.startswith('k_means'):
+    elif args.method.startswith('k_means') or args.method.startswith('k-means'):
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
         seq, args.labels = get_k_means_seq(y_diag, args.k)
         args.X = y_diag
