@@ -28,7 +28,7 @@ sample=40
 # dataSet='dataset_11_03_21'
 # dataSet='dataset_11_14_21'
 dataDir='/project2/depablo/erschultz'
-# dataDir='/home/eric'
+dataDir='/home/eric/sequences_to_contact_maps'
 
 # dataset='dataset_test'
 # for sample in 82 83
