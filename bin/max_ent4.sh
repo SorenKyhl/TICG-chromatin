@@ -53,11 +53,11 @@ i=3000
 dataset='dataset_09_21_21'
 sample=1
 
-method='PCA'
-for k in 1 2 4 6
-do
-  max_ent
-done
+# method='PCA'
+# for k in 1 2 4 6
+# do
+#   max_ent
+# done
 
 method='GNN'
 modelID=70
