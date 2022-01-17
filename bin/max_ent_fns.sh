@@ -1,16 +1,19 @@
 #! /bin/bash
 max_ent() {
-  if [ $useS = 'true' ] || [ $useE = 'true' ]
+  if [ $mode = 'plaid' ]
   then
-    useGroundTruthChi='false'
-    goalSpecified='false'
-    numIterations=0
-    k='none'
-  fi
-  if [ $useGroundTruthChi == 'true' ]
-  then
-    numIterations=0
-    goalSpecified='false'
+    if [ $useS = 'true' ] || [ $useE = 'true' ]
+    then
+      useGroundTruthChi='false'
+      goalSpecified='false'
+      numIterations=0
+      k='none'
+    fi
+    if [ $useGroundTruthChi == 'true' ]
+    then
+      numIterations=0
+      goalSpecified='false'
+    fi
   fi
   dataFolder="${dir}/${dataset}"
   modelPath="${results}/${modelType}/${modelID}"
@@ -47,7 +50,7 @@ max_ent_inner () {
 
   # generate sequences
   echo "starting get_seq"
-  python3 ~/TICG-chromatin/scripts/get_seq.py --method $method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --save_npy --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --model_path $modelPath --seed $3 > seq.log
+  python3 ~/TICG-chromatin/scripts/get_seq.py --method $method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --save_npy --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --model_path $modelPath --seed $3 --local $local > seq.log
 
   # get config
   echo "starting get_config"
@@ -58,7 +61,7 @@ max_ent_inner () {
   if [ $goalSpecified = 'true' ]
   then
     echo "starting goal_specified"
-    python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --k $k --contact_map "${sampleFolder}/y.npy"
+    python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --k $k --contact_map "${sampleFolder}/y.npy" --mode $mode
   fi
 
   echo $method_fmt

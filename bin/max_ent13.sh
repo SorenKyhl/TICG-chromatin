@@ -16,7 +16,7 @@ goalSpecified='true'
 numIterations=100 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 modelType='ContactGNNEnergy'
-local='false'
+local='true'
 useE='false'
 useS='false'
 useGroundTruthChi='false'
@@ -38,7 +38,7 @@ then
   dir="/home/eric/sequences_to_contact_maps"
   # dataFolder="/home/eric/dataset_test"
   finalSimProductionSweeps=1000
-  numIterations=0
+  numIterations=3
   scratchDir='/home/eric/scratch'
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
@@ -49,23 +49,16 @@ fi
 
 STARTTIME=$(date +%s)
 i=12000
-dataset='dataset_01_16_22'
-sample=82
+dataset='dataset_09_21_21'
+sample=1
 
-method='PCA'
-for k in 2 4 6
-do
-  max_ent
-done
-
-method='ground_truth-psi'
-k=10
-useGroundTruthChi='true'
+method='GNN'
+modelID=70
+useE='true'
+mode='diag'
 max_ent
 
-# method='ground_truth'
-# useS='true'
-# max_ent
+wait
 
 wait
 

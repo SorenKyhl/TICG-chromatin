@@ -8,15 +8,46 @@ import argparse
 import csv
 import time
 
+paths = ['/home/erschultz/sequences_to_contact_maps',
+        '/home/eric/sequences_to_contact_maps',
+        'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
+for p in paths:
+    if osp.exists(p):
+        sys.path.insert(1, p)
+
+from neural_net_utils.argparseSetup import str2int
+
+
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     parser.add_argument('--m', type=int, default=1024, help='number of particles, will crop seq{i}.txt and y')
-    parser.add_argument('--k', type=int, help='number of particle types (inferred from chi if None)')
+    parser.add_argument('--k', type=str2int, help='number of particle types (inferred from chi if None)')
     parser.add_argument('--contact_map', type=str, help='filepath to contact map')
     parser.add_argument('--verbose', action='store_true', help='true for verbose mode')
+    parser.add_argument('--mode', type=str, help='{"plaid", "diag", "both"}')
 
     args = parser.parse_args()
     return args
+
+def get_diag_goal(y, args):
+    return np.zeros(20)
+
+def get_plaid_goal(y, args):
+    for i in range(args.k):
+        seqi = np.loadtxt("seq{}.txt".format(i))[:args.m]
+        if args.verbose:
+            print('\ni={}'.format(i), seqi)
+        for j in range(args.k):
+            if j < i:
+                # don't double count
+                continue
+            seqj = np.loadtxt("seq{}.txt".format(j))[:args.m]
+            if args.verbose:
+                print('\tj={}'.format(j), seqj)
+            result = seqi @ y @ seqj
+            result /= args.m**2 # take average
+            result /= y_max # convert from freq to prob
+            obj_goal.append(result)
 
 def main():
     '''
@@ -41,31 +72,27 @@ def main():
         print('y_max: ', y_max)
         print(y, y.shape, y.dtype, '\n')
 
-    for i in range(args.k):
-        seqi = np.loadtxt("seq{}.txt".format(i))[:args.m]
-        if args.verbose:
-            print('\ni={}'.format(i), seqi)
-        for j in range(args.k):
-            if j < i:
-                # don't double count
-                continue
-            seqj = np.loadtxt("seq{}.txt".format(j))[:args.m]
-            if args.verbose:
-                print('\tj={}'.format(j), seqj)
-            result = seqi @ y @ seqj
-            result /= args.m**2 # take average
-            result /= y_max # convert from freq to prob
-            obj_goal.append(result)
+    if args.mode == 'both':
+        plaid_goal = get_plaid_goal(y, args)
+        diag_goal = get_diag_goal(y, args)
+    elif args.mode == 'plaid':
+        plaid_goal = get_plaid_goal(y, args)
+        diag_goal = np.zeros(20)
+    elif args.mode == 'diag':
+        plaid_goal = np.zeros(1) # idk if it matters what I put here
+        diag_goal = get_diag_goal(y, args)
+
 
     if args.verbose:
-        print('obj_goal: ', obj_goal)
+        print('obj_goal: ', plaid_goal)
 
     with open('obj_goal.txt', 'w', newline='') as f:
         wr = csv.writer(f, delimiter = '\t')
-        wr.writerow(obj_goal)
+        wr.writerow(plaid_goal)
+
     with open('obj_goal_diag.txt', 'w', newline='') as f:
         wr = csv.writer(f, delimiter = '\t')
-        wr.writerow(np.zeros(20))
+        wr.writerow(diag_goal)
 
 def test():
     sample_path='../sequences_to_contact_maps/dataset_08_24_21/samples/sample1201'

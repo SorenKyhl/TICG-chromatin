@@ -57,6 +57,8 @@ def getArgs():
                         help='location of ChromHMM data')
     parser.add_argument('--p_switch', type=float, default=0.05, help='probability to switch bead assignment (for method = random)')
     parser.add_argument('--kernel', type=str, default='poly', help='kernel for kernel PCA')
+    parser.add_argument('--local', type=str2bool, default=False, help='True for local mode (relevant to method = GNN)')
+
 
     # post-processing args
     parser.add_argument('--save_npy', action='store_true', help='true to save seq as .npy')
@@ -340,7 +342,7 @@ def get_ChromHMM_seq(ifile, k, start=35000000, end=60575000, res=25000, min_cove
 
     return seq, labels
 
-def get_energy_gnn(model_path, sample_path):
+def get_energy_gnn(model_path, sample_path, local):
     '''
     Loads output from GNN model to use as ematrix or smatrix
 
@@ -349,7 +351,7 @@ def get_energy_gnn(model_path, sample_path):
         sample_path: path to sample
 
     Outputs:
-        s: np array of pairwise energies
+        s: np array of pairwise energiesget_energy_gnn
     '''
     # extract sample info
     sample = osp.split(sample_path)[1]
@@ -381,7 +383,8 @@ def get_energy_gnn(model_path, sample_path):
         sys.argv = [sys.argv[0]] # delete args from get_seq, otherwise gnn opt will try and use them
         opt = parser.parse_args(['@{}'.format(argparse_path)])
         opt.id = int(model_id)
-        opt = finalizeOpt(opt, parser, local = True) # use local = True to override use_scratch
+        opt.use_scratch = False # override use_scratch
+        opt = finalizeOpt(opt, parser, local = local)
         opt.data_folder = osp.join('/',*sample_path_split[:-2]) # use sample_dataset not gnn_dataset
         opt.output_mode = None # don't need output, since only predicting
         print(opt)
@@ -593,9 +596,9 @@ def main():
         seq, labels = get_ChromHMM_seq(args.ChromHMM_data_file, args.k)
     elif args.method.startswith('gnn'):
         if args.use_smatrix:
-            s = get_energy_gnn(args.model_path, args.sample_folder)
+            s = get_energy_gnn(args.model_path, args.sample_folder, args.local)
         elif args.use_ematrix:
-            s = get_energy_gnn(args.model_path, args.sample_folder)
+            s = get_energy_gnn(args.model_path, args.sample_folder, args.local)
             e = s_to_E(s)
         else:
             seq = get_seq_gnn(args.k, args.model_path, args.sample, args.normalize)

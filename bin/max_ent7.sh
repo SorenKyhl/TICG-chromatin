@@ -47,23 +47,14 @@ fi
 
 STARTTIME=$(date +%s)
 i=6000
-dataset='dataset_01_18_22'
-sample=23
+dataset='dataset_01_15_22'
+sample=40
 
-method='PCA'
-for k in 2 4 6
+method='random'
+for k in 1 2 4 6
 do
   max_ent
 done
-
-method='ground_truth-psi'
-k=10
-useGroundTruthChi='true'
-max_ent
-
-method='ground_truth'
-useS='true'
-max_ent
 
 wait
 

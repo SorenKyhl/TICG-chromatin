@@ -195,9 +195,14 @@ def main():
     stat = pearsonround(PC_yD[1], PC_s_sym[1])
     print("Correlation between PC 2 of D and S_sym: ", stat)
 
+def main2():
+    dir = '/home/eric/sequences_to_contact_maps/dataset_09_21_21/samples/sample1'
+    y = np.load(osp.join(dir, 'y.npy'))
+    np.savetxt(osp.join(dir, 'y.txt'), y)
+
 
 if __name__ == '__main__':
-    main()
+    main2()
     # write_psi()
     # find_mising_ids()
     # check_seq('dataset_11_03_21')
