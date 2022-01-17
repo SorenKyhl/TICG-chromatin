@@ -37,7 +37,7 @@ dataDir='/project2/depablo/erschultz'
 #   python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
 # done
 
-for dataset in 'dataset_11_03_21'
+for dataset in 'dataset_01_15_22'
 do
   dataFolder="${dataDir}/${dataset}"
   python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample --samples $samples
