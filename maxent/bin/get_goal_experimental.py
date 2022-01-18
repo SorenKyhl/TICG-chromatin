@@ -33,6 +33,10 @@ def get_diag_goal(y, args):
     return np.zeros(20)
 
 def get_plaid_goal(y, args):
+    y_max = np.max(y)
+    if args.verbose:
+        print('y_max: ', y_max)
+        print(y, y.shape, y.dtype, '\n')
     for i in range(args.k):
         seqi = np.loadtxt("seq{}.txt".format(i))[:args.m]
         if args.verbose:
@@ -67,10 +71,6 @@ def main():
 
     y = y.astype(float) # ensure float
     y = y[:args.m, :args.m] # crop to m
-    y_max = np.max(y)
-    if args.verbose:
-        print('y_max: ', y_max)
-        print(y, y.shape, y.dtype, '\n')
 
     if args.mode == 'both':
         plaid_goal = get_plaid_goal(y, args)
