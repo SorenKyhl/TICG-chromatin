@@ -38,6 +38,7 @@ dataDir='/project2/depablo/erschultz'
 # done
 
 dataset=dataset_01_15_22
+samples='81-82-83'
 for sample in 81 82 83
 do
   dataFolder="${dataDir}/${dataset}"
