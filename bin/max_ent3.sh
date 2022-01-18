@@ -49,26 +49,28 @@ fi
 
 STARTTIME=$(date +%s)
 i=2000
-dataset='dataset_01_15_22'
+dataset='dataset_01_19_22'
 sample=1718
 
-method='random'
-for k in 1 2 4 6
+for method in 'random' 'PCA' 'k_means'
 do
-  max_ent
+  for k in 1 2 4 6
+  do
+    max_ent
+  done
 done
 
 method='ground_truth-x'
 k=4
 max_ent
 
-# method='ground_truth'
-# useS='true'
-# max_ent
-#
+method='ground_truth'
+useE='true'
+max_ent
+
 # method='GNN'
-# modelID=70
-# useS='true'
+# modelID=71
+# useE='true'
 # max_ent
 
 wait
