@@ -3,12 +3,22 @@
 # chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
 # chi="-1&1&0&0\\1&-2&0&-1\\0&0&-1&2\\0&-1&2&-1"
 # chi="-1&1\\1&0"
+chi="0.9000 & 0.9000 & -0.8000 & -0.6000 & 0.2000 & 0.8000 & -0.4000 & 0.9000 & 0.3000 & -0.70000 \\
+0.0000 & 0.2000 & 0.3000 & 0.2000 & 0.1000 & 0.7000 & 0.0000 & 0.3000 & 0.6000 & 0.20000 \\
+0.0000 & 0.0000 & -0.7000 & -0.4000 & -0.3000 & 0.3000 & 0.1000 & 0.0000 & 0.0000 & 0.40000 \\
+0.0000 & 0.0000 & 0.0000 & -0.3000 & 0.9000 & 0.4000 & 0.0000 & -0.2000 & -0.4000 & -0.50000 \\
+0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.7000 & 0.9000 & 0.7000 & 0.1000 & -0.6000 & -0.30000 \\
+0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.1000 & 1.0000 & 0.4000 & 0.5000 & -0.10000 \\
+0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.8000 & 1.0000 & 0.5000 & 0.00000 \\
+0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & -0.0000 & 0.8000 & -0.80000 \\
+0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & -0.7000 & 0.60000 \\
+0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.50000"
 chi='polynomial'
 k=4
 m=1024
 today=$(date +'%m_%d_%y')
 dataFolder="/project2/depablo/erschultz/dataset_01_17_22"
-startSample=-19
+startSample=1
 relabel='none'
 startNode=1
 nodes=2
@@ -22,7 +32,7 @@ maxChi=1
 fillDiag='none'
 chiSeed='none'
 maxDiagChi=0.2
-local='false'
+local='true'
 
 if [ $local = 'true' ]
 then
@@ -31,8 +41,8 @@ then
   startSample=1
   nSweeps=200000
   nodes=1
-  tasks=2
-  samples=2
+  tasks=4
+  samples=4
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
   scratchDir="/scratch/midway2/erschultz"
@@ -55,5 +65,5 @@ do
   startSampleI=$(( $startSample + $samplesPerNode * $i ))
   endSampleI=$(( $startSampleI + $samplesPerNode - 1 ))
   echo "TICG${i}" $startSampleI $endSampleI
-  sbatch ~/TICG-chromatin/bin/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samplesPerNode $samplesPerTask $diag $scratchDir $i $nSweeps $pSwitch $minChi $maxChi $fillDiag $chiSeed $maxDiagChi
+  bash ~/TICG-chromatin/bin/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samplesPerNode $samplesPerTask $diag $scratchDir $i $nSweeps $pSwitch $minChi $maxChi $fillDiag $chiSeed $maxDiagChi
 done
