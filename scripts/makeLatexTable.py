@@ -188,6 +188,9 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
         if 0 in data.keys() and 'ground_truth-S' in data[0]:
             ref = data[0]['ground_truth-S']
             print('ref found')
+        elif 0 in data.keys() and 'ground_truth-S' in data[0]:
+            ref = data[0]['ground_truth-E']
+            print('ref found')
         else:
             # look for ground_truth-psi-chi
             for key in data.keys():
