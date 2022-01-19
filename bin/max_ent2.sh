@@ -52,9 +52,17 @@ i=1000
 dataset='dataset_01_19_22'
 sample=1320
 
-for method in 'random' 'PCA' 'k_means'
+for method in 'random' 'PCA'
 do
   for k in 1 2 4 6
+  do
+    max_ent
+  done
+done
+
+for method in  'k_means'
+do
+  for k in 2 4 6
   do
     max_ent
   done
