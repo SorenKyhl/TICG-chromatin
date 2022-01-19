@@ -6,7 +6,7 @@
 #SBATCH --ntasks=10
 #SBATCH --mem-per-cpu=1000
 
-cd /project2/depablo/erschultz/dataset_01_19_21/samples
+cd /project2/depablo/erschultz/dataset_01_19_22/samples
 
 for i in $( seq 2001 2100 )
 do
