@@ -33,6 +33,7 @@ def get_diag_goal(y, args):
     return np.zeros(20)
 
 def get_plaid_goal(y, args):
+    obj_goal = []
     y_max = np.max(y)
     if args.verbose:
         print('y_max: ', y_max)
@@ -53,6 +54,8 @@ def get_plaid_goal(y, args):
             result /= y_max # convert from freq to prob
             obj_goal.append(result)
 
+    return obj_goal
+
 def main():
     '''
     Calculate goal observables from contact map.
@@ -60,7 +63,6 @@ def main():
     Currently obs_goal_diag is not suported.
     '''
     args = getArgs()
-    obj_goal = []
 
     if args.contact_map.endswith('.npy'):
         y = np.load(args.contact_map)
