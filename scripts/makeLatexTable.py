@@ -146,7 +146,7 @@ def loadData(args):
                             data[k][method]['s'].append(replicate_data['s'])
     return data
 
-def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_id = None):
+def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_id = None, ref = 'ground_truth'):
     '''
     Writes data to ofile in latex table format.
 
@@ -156,6 +156,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
         small: True to output smaller table with only methods in SMALL_METHODS and only SCC as metric')
         mode: file mode (e.g. 'w', 'a')
         sample_id: sample_id for table header; if set, table will show stdev over replicates for that sample
+        ref: which method to use as referencem supported options: {"ground truth", "GNN"}
     '''
     print('\nMAKING TABLE')
     header = header.replace('_', "\_")
@@ -185,24 +186,28 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
         o.write("\\hline\\hline\n")
 
         # get reference data
-        if 0 in data.keys() and 'ground_truth-S' in data[0]:
-            ref = data[0]['ground_truth-S']
-            print('ref found')
-        elif 0 in data.keys() and 'ground_truth-E' in data[0]:
-            ref = data[0]['ground_truth-E']
-            print('ref found')
-        else:
-            # look for ground_truth-psi-chi
-            for key in data.keys():
-                if 'ground_truth-psi-chi' in data[key]:
-                    ref = data[key]['ground_truth-psi-chi']
-                    print('ref found: using ground_truth-psi-chi')
-                    break
+        ref = None
+        if ref == 'ground_truth':
+            if 0 in data.keys() and 'ground_truth-S' in data[0]:
+                ref = data[0]['ground_truth-S']
+                print('ref found')
+            elif 0 in data.keys() and 'ground_truth-E' in data[0]:
+                ref = data[0]['ground_truth-E']
+                print('ref found')
             else:
-                ref = None
-                print('ref missing')
+                # look for ground_truth-psi-chi
                 for key in data.keys():
-                    print(f'key 1: {key}, key 2: {data[key].keys()}')
+                    if 'ground_truth-psi-chi' in data[key]:
+                        ref = data[key]['ground_truth-psi-chi']
+                        print('ref found: using ground_truth-psi-chi')
+                        break
+                else:
+                    print('ground truth missing')
+                    for key in data.keys():
+                        print(f'key 1: {key}, key 2: {data[key].keys()}')
+        elif ref == 'GNN':
+            pass
+             # TODO
 
 
         for k in sorted(data.keys()):

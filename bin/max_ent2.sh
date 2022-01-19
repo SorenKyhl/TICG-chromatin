@@ -50,7 +50,7 @@ fi
 STARTTIME=$(date +%s)
 i=1000
 dataset='dataset_01_19_22'
-sample=1320
+sample=1230
 
 for method in 'random' 'PCA'
 do
@@ -76,10 +76,10 @@ method='ground_truth'
 useE='true'
 max_ent
 
-# method='GNN'
-# modelID=71
-# useE='true'
-# max_ent
+method='GNN'
+modelID=71
+useE='true'
+max_ent
 
 wait
 
