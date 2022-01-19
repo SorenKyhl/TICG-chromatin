@@ -6,16 +6,9 @@
 #SBATCH --ntasks=10
 #SBATCH --mem-per-cpu=1000
 
-cd /project2/depablo/erschultz/dataset_09_21_21/samples/sample1
+cd /project2/depablo/erschultz/dataset_01_19_22/samples
 
-cd random/k2
-mkdir replicate1
-mv * replicate1
-
-cd ../k4
-mkdir replicate1
-mv * replicate1
-
-cd ../k6
-mkdir replicate1
-mv * replicate1
+for i in $( seq 2001 2100 )
+do
+  rm -r "sample${i}"
+done
