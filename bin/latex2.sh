@@ -1,6 +1,6 @@
 #! /bin/bash
-#SBATCH --job-name=latex
-#SBATCH --output=logFiles/latex.out
+#SBATCH --job-name=latex2
+#SBATCH --output=logFiles/latex2.out
 #SBATCH --time=0:30:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=2
@@ -32,7 +32,7 @@ dataDir='/project2/depablo/erschultz'
 # dataDir='/home/eric/sequences_to_contact_maps'
 
 
-dataset=dataset_10_27_21
+dataset=dataset_01_15_21
 dataFolder="${dataDir}/${dataset}"
 python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples --ref $ref
 

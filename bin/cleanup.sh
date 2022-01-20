@@ -6,7 +6,7 @@
 #SBATCH --ntasks=10
 #SBATCH --mem-per-cpu=1000
 
-cd /project2/depablo/erschultz/dataset_01_19_22/samples
+cd /project2/depablo/erschultz/dataset_01_15_22/samples
 
 cd sample40/k_means
 rm -r k1
