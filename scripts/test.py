@@ -61,7 +61,6 @@ def write_psi():
                 seq_i = np.loadtxt(osp.join(file_dir, 'seq{}.txt'.format(i)))
                 seq[:, i] = seq_i
             if not np.array_equal(seq, x):
-                ids_to_check.add(int(file[6:]))
                 print(int(file[6:]))
 
             x_linear_file = osp.join(file_dir, 'x_linear.npy')
