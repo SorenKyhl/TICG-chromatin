@@ -59,11 +59,11 @@ def welch_ttest(x1, x2, pval):
     df = (v1 / n1 + v2 / n2)**2 / (v1**2 / (n1**2 * (n1 - 1)) + v2**2 / (n2**2 * (n2 - 1)))
 
     # two side t-test
-    p = 2 * t.cdf(-abs(tstat), df)
+    p = 2 * ss.t.cdf(-abs(tstat), df)
 
     # upper and lower bounds
-    lb = delta - t.ppf(1-pval/2,df)*pooled_se
-    ub = delta + t.ppf(1-pval/2,df)*pooled_se
+    lb = delta - ss.t.ppf(1-pval/2,df)*pooled_se
+    ub = delta + ss.t.ppf(1-pval/2,df)*pooled_se
 
     # confidence interval
     conf = [ln, ub]
