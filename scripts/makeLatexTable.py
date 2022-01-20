@@ -66,7 +66,7 @@ def welch_ttest(x1, x2, pval):
     ub = delta + ss.t.ppf(1-pval/2,df)*pooled_se
 
     # confidence interval
-    conf = [ln, ub]
+    conf = [lb, ub]
 
     return tstat, p, conf
 
