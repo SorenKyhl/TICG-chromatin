@@ -19,7 +19,7 @@ source activate python3.8_pytorch1.8.1_cuda10.2
 # samples="11-13"
 # python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
 
-samples="40-1230-1718"
+samples="40-1230-1718-1751-1761"
 sample=40
 # dataSet='dataset_08_24_21'
 # dataSet='dataset_08_26_21'
