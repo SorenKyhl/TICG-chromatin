@@ -51,8 +51,8 @@ fi
 
 STARTTIME=$(date +%s)
 i=9000
-dataset='dataset_10_27_21'
-sample=1718
+dataset='dataset_01_15_22'
+sample=1751
 
 for method in 'random' 'PCA'
 do
@@ -71,16 +71,16 @@ do
 done
 
 method='ground_truth-x'
-k=2
+k=4
 max_ent
 
 method='ground_truth'
-useE='true'
+useS='true'
 max_ent
 
 method='GNN'
-modelID=34
-useE='true'
+modelID=70
+useS='true'
 max_ent
 
 wait
