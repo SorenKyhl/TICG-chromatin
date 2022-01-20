@@ -68,7 +68,7 @@ def write_psi():
                 x_linear = np.load(x_linear_file)
                 np.save(osp.join(file_dir, 'psi.npy'), x_linear)
 
-def check_seq(dataset):
+def check_seq():
     # dir = "/project2/depablo/erschultz/dataset_11_03_21/samples"
     dir = "/home/eric/sequences_to_contact_maps/dataset_11_03_21/samples"
     for file in os.listdir(dir):
@@ -77,18 +77,21 @@ def check_seq(dataset):
 
             xfile = osp.join(file_dir, 'x.npy')
             x = np.load(xfile)
-            m, k = x.shape
-            seq = np.zeros((m ,k))
+            m, _ = x.shape
+            k = 4
+            seq = np.zeros((m, k))
             for i in range(k):
                 seq_i = np.loadtxt(osp.join(file_dir, 'seq{}.txt'.format(i)))
                 seq[:, i] = seq_i
-            if not np.array_equal(seq, x):
-                print(int(file[6:]))
+            # if not np.array_equal(seq, x):
+            #     print(int(file[6:]))
 
             psi_file = osp.join(file_dir, 'psi.npy')
             if osp.exists(psi_file):
                 psi = np.load(psi_file)
                 if not np.array_equal(seq, psi):
+                    print(psi)
+                    print(seq)
                     print(int(file[6:]))
 
 def makeDirsForMaxEnt(dataset, sample):
@@ -174,7 +177,7 @@ def main2():
 
 if __name__ == '__main__':
     # main2()
-    write_psi()
+    check_seq()
     # find_mising_ids()
     # check_seq('dataset_11_03_21')
     # upper_traingularize_chis()
