@@ -122,11 +122,11 @@ def loadData(args):
                                 s = np.loadtxt(s_matrix_file2)
                             else:
                                 # load bead types
-                                x_file1 = osp.join(replicate_folder, 'resources', 'x_linear.npy')
+                                # x_file1 = osp.join(replicate_folder, 'resources', 'x_linear.npy')
                                 x_file2 = osp.join(replicate_folder, 'resources', 'x.npy')
-                                if osp.exists(x_file1):
-                                    x = np.load(x_file1)
-                                elif osp.exists(x_file2):
+                                # if osp.exists(x_file1):
+                                #     x = np.load(x_file1)
+                                if osp.exists(x_file2):
                                     x = np.load(x_file2)
                                 else:
                                     print(f'\tx not found for {replicate_folder}')
