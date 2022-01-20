@@ -42,34 +42,6 @@ def getArgs(data_folder = None, sample = None, samples = None):
 
     return args
 
-def welch_ttest(x1, x2, pval):
-    # https://stats.stackexchange.com/questions/475289/confidence-interval-for-2-sample-t-test-with-scipy
-    n1 = x1.size
-    n2 = x2.size
-    m1 = np.mean(x1)
-    m2 = np.mean(x2)
-
-    v1 = np.var(x1, ddof=1)
-    v2 = np.var(x2, ddof=1)
-
-    pooled_se = np.sqrt(v1 / n1 + v2 / n2)
-    delta = m1-m2
-
-    tstat = delta /  pooled_se
-    df = (v1 / n1 + v2 / n2)**2 / (v1**2 / (n1**2 * (n1 - 1)) + v2**2 / (n2**2 * (n2 - 1)))
-
-    # two side t-test
-    p = 2 * ss.t.cdf(-abs(tstat), df)
-
-    # upper and lower bounds
-    lb = delta - ss.t.ppf(1-pval/2,df)*pooled_se
-    ub = delta + ss.t.ppf(1-pval/2,df)*pooled_se
-
-    # confidence interval
-    conf = [lb, ub]
-
-    return tstat, p, conf
-
 def load_chi(replicate_folder, k):
     # find final it
     max_it = -1
@@ -291,11 +263,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                         try:
                             ref_result = np.mean(ref[metric], axis = 1)
                             if len(result) > 1:
-                                print(len(ref_result), len(result))
                                 stat, pval = ss.ttest_rel(ref_result, result)
-                                print(stat, pval)
-                                stat, pval, conf = welch_ttest(ref_result, result, 0.05)
-                                print(stat, pval, conf)
                                 if pval < 0.05:
                                     significant = True
                             delta_result = ref_result - result
@@ -318,7 +286,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                         if metric == 'scc':
                             text += f" & {delta_result_mean} $\pm$ {delta_result_std}"
                             if significant:
-                                text += '*'
+                                text += 'f *{pval}'
                     else:
                         text += f" & {result_mean}"
                         if metric == 'scc':
