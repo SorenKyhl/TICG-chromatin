@@ -16,7 +16,7 @@ goalSpecified='true'
 numIterations=100 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 modelType='ContactGNNEnergy'
-local='true'
+local='false'
 useE='false'
 useS='false'
 useGroundTruthChi='false'
@@ -50,16 +50,44 @@ fi
 
 STARTTIME=$(date +%s)
 i=5000
-dataset='dataset_test'
-sample=1
+dataset='dataset_11_03_21'
+sample=1751
 
-method='GNN'
-modelID=70
-useE=true
+for method in 'random' 'PCA'
+do
+  for k in 1 2 4 6
+  do
+    max_ent
+  done
+done
+
+for method in  'k_means'
+do
+  for k in 2 4 6
+  do
+    max_ent
+  done
+done
+
+method='ground_truth-x'
+k=3
 max_ent
 
+method='ground_truth-psi'
+k=4
+max_ent
+
+method='ground_truth'
+useE='true'
+max_ent
+
+method='GNN'
+modelID=42
+useE='true'
+max_ent
 
 wait
+
 
 # python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
 
