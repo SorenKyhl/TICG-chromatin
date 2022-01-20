@@ -207,8 +207,12 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                     for key in data.keys():
                         print(f'key 1: {key}, key 2: {data[key].keys()}')
         elif ref_mode == 'GNN':
-            pass
-             # TODO
+            if 0 in data.keys():
+                for method in data[0].keys():
+                    if 'GNN' in method:
+                        print(f'ref found: using {method}')
+                        ref = data[0][method]
+                        break
 
 
         for k in sorted(data.keys()):
