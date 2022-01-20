@@ -256,7 +256,10 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                         assert sample_results.shape[0] == 1, f"label {label}, metric {metric}, k {k_label}, results {sample_results}"
                         result = sample_results.reshape(-1)
                     else:
-                        result = np.mean(sample_results, axis = 1)
+                        if len(sample_results) > 1:
+                            result = np.mean(sample_results, axis = 1)
+                        else:
+                            result = sample_results
 
                     significant = False # two sided t test
                     if ref is not None and metric == 'scc':
