@@ -291,7 +291,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                         try:
                             ref_result = np.mean(ref[metric], axis = 1)
                             if len(result) > 1:
-                                print(ref_result, result)
+                                print(len(ref_result), len(result))
                                 stat, pval = ss.ttest_rel(ref_result, result)
                                 print(stat, pval)
                                 stat, pval, conf = welch_ttest(ref_result, result, 0.05)
