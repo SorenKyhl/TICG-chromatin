@@ -31,6 +31,7 @@ def getArgs(data_folder = None, sample = None, samples = None):
     parser.add_argument('--sample', type=int, default=sample, help='sample id')
     parser.add_argument('--samples', type=str2list, default=samples, help='list of sample ids separated by -')
     parser.add_argument('--sample_folder', type=str, help='location of input data')
+    parser.add_argument('--ref', type=str, default='ground_truth', help='ref for makeLatexTable')
 
     args = parser.parse_args()
 
@@ -146,7 +147,7 @@ def loadData(args):
                             data[k][method]['s'].append(replicate_data['s'])
     return data
 
-def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_id = None, ref = 'ground_truth'):
+def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_id = None, ref_mode = 'ground_truth'):
     '''
     Writes data to ofile in latex table format.
 
@@ -187,7 +188,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
 
         # get reference data
         ref = None
-        if ref == 'ground_truth':
+        if ref_mode == 'ground_truth':
             if 0 in data.keys() and 'ground_truth-S' in data[0]:
                 ref = data[0]['ground_truth-S']
                 print('ref found')
@@ -205,7 +206,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                     print('ground truth missing')
                     for key in data.keys():
                         print(f'key 1: {key}, key 2: {data[key].keys()}')
-        elif ref == 'GNN':
+        elif ref_mode == 'GNN':
             pass
              # TODO
 
@@ -303,7 +304,7 @@ def sort_method_keys(keys):
     return sorted_keys, sorted_labels
 
 def main(data_folder=None, sample=None):
-    args = getArgs(data_folder=data_folder, sample=sample)
+    args = getArgs(data_folder = data_folder, sample = sample)
     print(args)
 
     fname = 'max_ent_table.txt'
@@ -313,16 +314,16 @@ def main(data_folder=None, sample=None):
         data = loadData(args)
         ofile = osp.join(args.data_folder, fname)
 
-        makeLatexTable(data, ofile, dataset, small = True, mode = 'w')
-        makeLatexTable(data, ofile, dataset, small = False, mode = 'a')
+        makeLatexTable(data, ofile, dataset, small = True, mode = 'w', ref = args.ref)
+        makeLatexTable(data, ofile, dataset, small = False, mode = 'a', ref = args.ref)
 
     if args.sample is not None:
         args.samples = [args.sample]
         data = loadData(args)
         ofile = osp.join(args.sample_folder, fname)
 
-        makeLatexTable(data, ofile, dataset, small = True, mode = 'w', sample_id = args.sample)
-        makeLatexTable(data, ofile, dataset, small = False, mode = 'a', sample_id = args.sample)
+        makeLatexTable(data, ofile, dataset, small = True, mode = 'w', sample_id = args.sample, ref = args.ref)
+        makeLatexTable(data, ofile, dataset, small = False, mode = 'a', sample_id = args.sample, ref = args.ref)
 
 
 
