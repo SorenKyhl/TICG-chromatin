@@ -17,6 +17,8 @@ rm -r ground* &
 rm -r GNN* &
 rm -r nmf* &
 
+wait
+
 cd ../sample1230
 rm -r random &
 rm -r PCA* &
@@ -26,6 +28,8 @@ rm -r ground* &
 rm -r GNN* &
 rm -r nmf* &
 
+wait
+
 cd ../sample1718
 rm -r random &
 rm -r PCA* &
@@ -34,6 +38,8 @@ rm -r k_means &
 rm -r ground* &
 rm -r GNN* &
 rm -r nmf* &
+
+wait
 
 cd /project2/depablo/erschultz/dataset_11_03_21/samples
 
@@ -46,6 +52,8 @@ rm -r ground* &
 rm -r GNN* &
 rm -r nmf* &
 
+wait
+
 cd ../sample1230
 rm -r random &
 rm -r PCA* &
@@ -55,6 +63,8 @@ rm -r ground* &
 rm -r GNN* &
 rm -r nmf* &
 
+wait
+
 cd ../sample1718
 rm -r random &
 rm -r PCA* &
@@ -63,3 +73,5 @@ rm -r k_means &
 rm -r ground* &
 rm -r GNN* &
 rm -r nmf* &
+
+wait
