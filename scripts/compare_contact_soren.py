@@ -210,7 +210,7 @@ def main():
             raise Exception(f'invalid y format {args.y}')
         y = y[:args.m, :args.m] # crop to m
     else:
-        raise Exception(f'y does not exist at {args.y}'')
+        raise Exception(f'y does not exist at {args.y}')
 
     # load y_diag
     if args.y_diag is not None and osp.exists(args.y_diag):
@@ -230,7 +230,7 @@ def main():
             raise Exception(f'invalid yhat format {args.yhat}')
         yhat = yhat[:args.m, :args.m] # crop to m
     else:
-        raise Exception(f'yhat does not exist at {args.yhat}'')
+        raise Exception(f'yhat does not exist at {args.yhat}')
 
     # load yhat_diag
     if args.yhat_diag is not None and osp.exists(args.yhat_diag):

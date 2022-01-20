@@ -32,7 +32,7 @@ def getArgs(data_folder = None, sample = None, samples = None):
     parser.add_argument('--sample', type=int, default=sample, help='sample id')
     parser.add_argument('--samples', type=str2list, default=samples, help='list of sample ids separated by -')
     parser.add_argument('--sample_folder', type=str, help='location of input data')
-    parser.add_argument('--ref_mode', type=str, default='ground_truth', help='ref_mode for makeLatexTable')
+    parser.add_argument('--ref_mode', type=str, help='deprecated')
 
     args = parser.parse_args()
 
@@ -148,7 +148,7 @@ def loadData(args):
                             data[k][method]['s'].append(replicate_data['s'])
     return data
 
-def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_id = None, ref_mode = 'ground_truth'):
+def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_id = None):
     '''
     Writes data to ofile in latex table format.
 
@@ -188,33 +188,33 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
         o.write("\\hline\\hline\n")
 
         # get reference data
-        ref = None
-        if ref_mode == 'ground_truth':
-            if 0 in data.keys() and 'ground_truth-S' in data[0]:
-                ref = data[0]['ground_truth-S']
-                print('ref found')
-            elif 0 in data.keys() and 'ground_truth-E' in data[0]:
-                ref = data[0]['ground_truth-E']
-                print('ref found')
+        ground_truth_ref = None
+        if 0 in data.keys() and 'ground_truth-S' in data[0]:
+            ground_truth_ref = data[0]['ground_truth-S']
+            print('ref found')
+        elif 0 in data.keys() and 'ground_truth-E' in data[0]:
+            ground_truth_ref = data[0]['ground_truth-E']
+            print('ref found')
+        else:
+            # look for ground_truth-psi-chi
+            for key in data.keys():
+                if 'ground_truth-psi-chi' in data[key]:
+                    grount_truth_ref = data[key]['ground_truth-psi-chi']
+                    print('ref found: using ground_truth-psi-chi')
+                    break
             else:
-                # look for ground_truth-psi-chi
+                print('ground truth missing')
                 for key in data.keys():
-                    if 'ground_truth-psi-chi' in data[key]:
-                        ref = data[key]['ground_truth-psi-chi']
-                        print('ref found: using ground_truth-psi-chi')
-                        break
-                else:
-                    print('ground truth missing')
-                    for key in data.keys():
-                        print(f'key 1: {key}, key 2: {data[key].keys()}')
-        elif ref_mode == 'GNN':
-            if 0 in data.keys():
-                for method in data[0].keys():
-                    if 'GNN' in method:
-                        print(f'ref found: using {method}')
-                        ref = data[0][method]
-                        break
+                    print(f'key 1: {key}, key 2: {data[key].keys()}')
 
+        GNN_ref = None
+        if 0 in data.keys():
+            for method in data[0].keys():
+                if 'GNN' in method:
+                    print(f'ref found: using {method}')
+                    GNN_ref = data[0][method]
+                    # TODO get best GNN
+                    break
 
         for k in sorted(data.keys()):
             first = True # only write k for first row in section
@@ -234,11 +234,11 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
 
                 for metric in metrics:
                     if metric == 's':
-                        if ref is None:
+                        if ground_truth_ref is None:
                             continue
                             # skip this if no ref
                         s_list_sample = data[k][key][metric] # list of length samples, each entry is a list of replicates
-                        ref_s_list_sample = ref[metric]
+                        ref_s_list_sample = ground_truth_ref[metric]
                         sample_results = []
                         for s_list, ref_s_list in zip(s_list_sample, ref_s_list_sample): # iterates over samples
                             replicate_results = []
@@ -266,9 +266,9 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
 
 
                     significant = False # two sided t test
-                    if ref is not None and metric == 'scc':
+                    if GNN_ref is not None and metric == 'scc':
                         try:
-                            ref_result = np.mean(ref[metric], axis = 1)
+                            ref_result = np.mean(GNN_ref[metric], axis = 1)
                             if len(result) > 1:
                                 stat, pval = ss.ttest_rel(ref_result, result)
                                 if pval < 0.05:
@@ -333,16 +333,16 @@ def main(data_folder=None, sample=None):
         data = loadData(args)
         ofile = osp.join(args.data_folder, fname)
 
-        makeLatexTable(data, ofile, dataset, small = True, mode = 'w', ref_mode = args.ref_mode)
-        makeLatexTable(data, ofile, dataset, small = False, mode = 'a', ref_mode = args.ref_mode)
+        makeLatexTable(data, ofile, dataset, small = True, mode = 'w')
+        makeLatexTable(data, ofile, dataset, small = False, mode = 'a')
 
     if args.sample is not None:
         args.samples = [args.sample]
         data = loadData(args)
         ofile = osp.join(args.sample_folder, fname)
 
-        makeLatexTable(data, ofile, dataset, small = True, mode = 'w', sample_id = args.sample, ref_mode = args.ref_mode)
-        makeLatexTable(data, ofile, dataset, small = False, mode = 'a', sample_id = args.sample, ref_mode = args.ref_mode)
+        makeLatexTable(data, ofile, dataset, small = True, mode = 'w', sample_id = args.sample)
+        makeLatexTable(data, ofile, dataset, small = False, mode = 'a', sample_id = args.sample)
 
 
 
