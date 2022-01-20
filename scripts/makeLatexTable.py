@@ -65,7 +65,10 @@ def welch_ttest(x1, x2, pval):
     lb = delta - t.ppf(1-pval/2,df)*pooled_se
     ub = delta + t.ppf(1-pval/2,df)*pooled_se
 
-    return tstat, df, p, delta, lb, ub
+    # confidence interval
+    conf = [ln, ub]
+
+    return tstat, p, conf
 
 def load_chi(replicate_folder, k):
     # find final it
@@ -288,8 +291,11 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                         try:
                             ref_result = np.mean(ref[metric], axis = 1)
                             if len(ref) > 1:
+                                print(ref_result, result)
                                 stat, pval = ss.ttest_rel(ref_result, result)
                                 print(stat, pval)
+                                stat, pval, conf = welch_ttest(x1, x2, 0.05)
+                                print(stat, pval, conf)
                                 if pval < 0.05:
                                     significant = True
                             delta_result = ref_result - result
