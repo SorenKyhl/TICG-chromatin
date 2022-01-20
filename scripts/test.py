@@ -47,8 +47,8 @@ def upper_traingularize_chis():
         np.save(osp.join(file_dir, 'chis.npy'), chis)
 
 def write_psi():
-    dir = "/project2/depablo/erschultz/dataset_11_03_21/samples"
-    # dir = "/home/eric/sequences_to_contact_maps/dataset_11_03_21/samples"
+    # dir = "/project2/depablo/erschultz/dataset_11_03_21/samples"
+    dir = "/home/eric/sequences_to_contact_maps/dataset_11_03_21/samples"
     for file in os.listdir(dir):
         if file.startswith('sample'):
             file_dir = osp.join(dir, file)
@@ -69,56 +69,27 @@ def write_psi():
                 np.save(osp.join(file_dir, 'psi.npy'), x_linear)
 
 def check_seq(dataset):
-    # dir = "/project2/depablo/erschultz"
-    dir = '/home/eric/sequences_to_contact_maps'
-    if dataset is None:
-        datasets = os.listdir(dir)
-    else:
-        datasets = [dataset]
-    print(datasets)
-    for dataset in datasets:
-        if dataset.startswith("dataset") and osp.isdir(osp.join(dir, dataset)):
-            ids_to_check = set()
-            print(dataset)
-            dataset_samples = osp.join(dir, dataset, 'samples')
-            for file in os.listdir(dataset_samples):
-                passed = True
-                if file.startswith('sample'):
-                    file_dir = osp.join(dataset_samples, file)
-                    x = np.load(osp.join(file_dir, 'x.npy'))
-                    m, k = x.shape
-                    seq = np.zeros((m ,k))
-                    for i in range(k):
-                        seq_i = np.loadtxt(osp.join(file_dir, 'seq{}.txt'.format(i)))
-                        seq[:, i] = seq_i
-                    if not np.array_equal(seq, x):
-                        ids_to_check.add(int(file[6:]))
-                        print('fail1')
-                        passed = False
-                        # np.save(osp.join(file_dir, 'x.npy'), seq)
+    # dir = "/project2/depablo/erschultz/dataset_11_03_21/samples"
+    dir = "/home/eric/sequences_to_contact_maps/dataset_11_03_21/samples"
+    for file in os.listdir(dir):
+        if file.startswith('sample'):
+            file_dir = osp.join(dir, file)
 
-                    x_linear = np.load(osp.join(file_dir, 'x_linear.npy'))
-                    m, k = x_linear.shape
-                    seq = np.zeros((m ,k))
-                    for i in range(k):
-                        seq_i = np.loadtxt(osp.join(file_dir, 'seq{}.txt'.format(i)))
-                        seq[:, i] = seq_i
-                    if not np.array_equal(seq, x_linear):
-                        ids_to_check.add(int(file[6:]))
-                        print('fail2')
-                        passed = False
+            xfile = osp.join(file_dir, 'x.npy')
+            x = np.load(xfile)
+            m, k = x.shape
+            seq = np.zeros((m ,k))
+            for i in range(k):
+                seq_i = np.loadtxt(osp.join(file_dir, 'seq{}.txt'.format(i)))
+                seq[:, i] = seq_i
+            if not np.array_equal(seq, x):
+                print(int(file[6:]))
 
-                    if dataset.startswith("dataset_11_03"):
-                    # if int(file[6:]) > 10:
-                        row_sum = np.sum(x_linear[:, [0,1,3]], axis = 1)
-                        if not np.all(row_sum <= 1):
-                            ids_to_check.add(int(file[6:]))
-                            passed = False
-                            print('fail3')
-
-                    print(f'{file} passed: {passed}')
-
-            print(sorted(ids_to_check))
+            psi_file = osp.join(file_dir, 'psi.npy')
+            if osp.exists(psi_file):
+                psi = np.load(psi_file)
+                if not np.array_equal(seq, psi):
+                    print(int(file[6:]))
 
 def makeDirsForMaxEnt(dataset, sample):
     sample_folder = osp.join('../sequences_to_contact_maps', dataset, 'samples', 'sample{}'.format(sample))
