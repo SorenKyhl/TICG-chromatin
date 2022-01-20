@@ -47,12 +47,12 @@ def upper_traingularize_chis():
         np.save(osp.join(file_dir, 'chis.npy'), chis)
 
 def write_psi():
-    dir = "/project2/depablo/erschultz/dataset_12_12_21/samples"
-    # dir = "/home/eric/sequences_to_contact_maps/dataset_11_03_21/samples"
+    # dir = "/project2/depablo/erschultz/dataset_11_03_21/samples"
+    dir = "/home/eric/sequences_to_contact_maps/dataset_11_03_21/samples"
     for file in os.listdir(dir):
         if file.startswith('sample'):
             file_dir = osp.join(dir, file)
-            x_linear_file = osp.join(file_dir, 'x_linear.npy')
+
             xfile = osp.join(file_dir, 'x.npy')
             x = np.load(xfile)
             m, k = x.shape
@@ -64,6 +64,7 @@ def write_psi():
                 ids_to_check.add(int(file[6:]))
                 print(int(file[6:]))
 
+            x_linear_file = osp.join(file_dir, 'x_linear.npy')
             if osp.exists(x_linear_file):
                 x_linear = np.load(x_linear_file)
                 np.save(osp.join(file_dir, 'psi.npy'), x_linear)
@@ -202,8 +203,8 @@ def main2():
 
 
 if __name__ == '__main__':
-    main2()
-    # write_psi()
+    # main2()
+    write_psi()
     # find_mising_ids()
     # check_seq('dataset_11_03_21')
     # upper_traingularize_chis()
