@@ -31,7 +31,7 @@ def getArgs(data_folder = None, sample = None, samples = None):
     parser.add_argument('--sample', type=int, default=sample, help='sample id')
     parser.add_argument('--samples', type=str2list, default=samples, help='list of sample ids separated by -')
     parser.add_argument('--sample_folder', type=str, help='location of input data')
-    parser.add_argument('--ref', type=str, default='ground_truth', help='ref for makeLatexTable')
+    parser.add_argument('--ref_mode', type=str, default='ground_truth', help='ref_mode for makeLatexTable')
 
     args = parser.parse_args()
 
@@ -314,16 +314,16 @@ def main(data_folder=None, sample=None):
         data = loadData(args)
         ofile = osp.join(args.data_folder, fname)
 
-        makeLatexTable(data, ofile, dataset, small = True, mode = 'w', ref = args.ref)
-        makeLatexTable(data, ofile, dataset, small = False, mode = 'a', ref = args.ref)
+        makeLatexTable(data, ofile, dataset, small = True, mode = 'w', ref_mode = args.ref_mode)
+        makeLatexTable(data, ofile, dataset, small = False, mode = 'a', ref_mode = args.ref_mode)
 
     if args.sample is not None:
         args.samples = [args.sample]
         data = loadData(args)
         ofile = osp.join(args.sample_folder, fname)
 
-        makeLatexTable(data, ofile, dataset, small = True, mode = 'w', sample_id = args.sample, ref = args.ref)
-        makeLatexTable(data, ofile, dataset, small = False, mode = 'a', sample_id = args.sample, ref = args.ref)
+        makeLatexTable(data, ofile, dataset, small = True, mode = 'w', sample_id = args.sample, ref_mode = args.ref_mode)
+        makeLatexTable(data, ofile, dataset, small = False, mode = 'a', sample_id = args.sample, ref_mode = args.ref_mode)
 
 
 
