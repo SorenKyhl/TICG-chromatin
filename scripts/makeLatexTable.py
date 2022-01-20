@@ -262,7 +262,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                     if ref is not None and metric == 'scc':
                         try:
                             ref_result = np.mean(ref[metric], axis = 1)
-                            if len(ref) > 1
+                            if len(ref) > 1:
                                 stat, pval = ss.ttest_rel(ref_result, ss)
                                 print(stat, pval)
                                 if pval < 0.05:
