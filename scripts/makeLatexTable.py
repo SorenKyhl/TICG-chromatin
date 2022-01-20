@@ -290,11 +290,11 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                     if ref is not None and metric == 'scc':
                         try:
                             ref_result = np.mean(ref[metric], axis = 1)
-                            if len(ref) > 1:
+                            if len(result) > 1:
                                 print(ref_result, result)
                                 stat, pval = ss.ttest_rel(ref_result, result)
                                 print(stat, pval)
-                                stat, pval, conf = welch_ttest(x1, x2, 0.05)
+                                stat, pval, conf = welch_ttest(ref_result, result, 0.05)
                                 print(stat, pval, conf)
                                 if pval < 0.05:
                                     significant = True

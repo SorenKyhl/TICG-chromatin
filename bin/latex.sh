@@ -32,7 +32,7 @@ dataDir='/project2/depablo/erschultz'
 # dataDir='/home/eric/sequences_to_contact_maps'
 
 
-dataset=dataset_10_27_21
+dataset=dataset_01_19_22
 dataFolder="${dataDir}/${dataset}"
 python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples --ref $ref
 
