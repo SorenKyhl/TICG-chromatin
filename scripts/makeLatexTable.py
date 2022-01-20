@@ -6,6 +6,7 @@ import json
 import argparse
 from collections import defaultdict
 import numpy as np
+import scipy.statas as ss # ttest_rel
 
 from sklearn.metrics import mean_squared_error
 
@@ -257,9 +258,15 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                     else:
                         result = np.mean(sample_results, axis = 1)
 
+                    significant = False # two sided t test
                     if ref is not None and metric == 'scc':
                         try:
                             ref_result = np.mean(ref[metric], axis = 1)
+                            if len(ref) > 1
+                                stat, pval = ss.ttest_rel(ref_result, ss)
+                                print(stat, pval)
+                                if pval < 0.05:
+                                    significant = True
                             delta_result = ref_result - result
                             delta_result_mean = np.round(np.mean(delta_result), 3)
                         except ValueError as e:
@@ -279,6 +286,8 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                         text += f" & {result_mean} $\pm$ {result_std}"
                         if metric == 'scc':
                             text += f" & {delta_result_mean} $\pm$ {delta_result_std}"
+                            if significant:
+                                test += '*'
                     else:
                         text += f" & {result_mean}"
                         if metric == 'scc':
