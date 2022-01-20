@@ -47,8 +47,8 @@ def upper_traingularize_chis():
         np.save(osp.join(file_dir, 'chis.npy'), chis)
 
 def write_psi():
-    # dir = "/project2/depablo/erschultz/dataset_11_03_21/samples"
-    dir = "/home/eric/sequences_to_contact_maps/dataset_11_03_21/samples"
+    dir = "/project2/depablo/erschultz/dataset_11_03_21/samples"
+    # dir = "/home/eric/sequences_to_contact_maps/dataset_11_03_21/samples"
     for file in os.listdir(dir):
         if file.startswith('sample'):
             file_dir = osp.join(dir, file)
