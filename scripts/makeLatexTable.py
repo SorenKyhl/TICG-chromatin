@@ -6,7 +6,7 @@ import json
 import argparse
 from collections import defaultdict
 import numpy as np
-import scipy.statas as ss # ttest_rel
+import scipy.stats as ss # ttest_rel
 
 from sklearn.metrics import mean_squared_error
 
