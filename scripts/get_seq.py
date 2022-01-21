@@ -28,7 +28,7 @@ for p in paths:
 
 from plotting_functions import plotContactMap
 from neural_net_utils.argparseSetup import str2bool, str2int, str2None, getBaseParser, finalizeOpt
-from neural_net_utils.utils import calculate_E_S, s_to_E, loadSavedModel, getDataset, getDataLoaders
+from neural_net_utils.utils import s_to_E, load_E_S, load_X_psi, loadSavedModel, getDataset, getDataLoaders
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -510,7 +510,6 @@ def plot_seq_binary(seq, show = False, save = True, title = None, labels = None,
 def main():
     args = getArgs()
     print(args)
-
     if args.method.startswith('random'):
         seq = get_random_seq(args.m, args.p_switch, args.k, args.seed, args.exclusive)
     elif args.method == 'pca':
@@ -529,20 +528,7 @@ def main():
             input = np.load(osp.join(args.sample_folder, 'psi.npy'))[:args.m, :]
         seq = get_PCA_seq(input, args.k, args.normalize, use_kernel = True, kernel = args.kernel)
     elif args.method.startswith('ground_truth'):
-        x_file = osp.join(args.sample_folder, 'x.npy')
-        psi_file = osp.join(args.sample_folder, 'psi.npy')
-        if osp.exists(x_file):
-            x = np.load(x_file)[:args.m, :]
-            print(f'x loaded with shape {x.shape}')
-        else:
-            raise Exception(f'x not found for {args.sample_folder}')
-
-        if osp.exists(psi_file):
-            psi = np.load(psi_file)[:args.m, :]
-            print(f'psi loaded with shape {psi.shape}')
-        else:
-            psi = x
-            print(f'Warning: assuming x == psi for {args.sample_folder}')
+        x, psi = load_X_psi(args.sample_folder)
 
         if args.input is None:
             assert args.use_ematrix or args.use_smatrix
@@ -564,24 +550,9 @@ def main():
             seq_random = get_random_seq(args.m, args.p_switch, args.k - k, args.seed)
             seq = np.concatenate((seq, seq_random), axis = 1)
 
-        calc = False # TRUE if need to calculate e or s matrix
         if args.use_smatrix or args.use_ematrix:
-            s_matrix_file = osp.join(args.sample_folder, 's_matrix.txt')
-            if osp.exists(s_matrix_file):
-                s = np.loadtxt(s_matrix_file)
-            else:
-                calc = True
+            e, s = load_E_S(args.sample_folder, psi)
 
-            if args.use_ematrix:
-                e_matrix_file = osp.join(args.sample_folder, 'e_matrix.txt')
-                if osp.exists(e_matrix_file):
-                    e = np.loadtxt(e_matrix_file)
-                else:
-                    calc = True
-
-        if calc:
-            chi = np.load(osp.join(args.sample_folder, 'chis.npy'))[:args.m, :]
-            e, s = calculate_E_S(psi, chi)
     elif args.method.startswith('k_means') or args.method.startswith('k-means'):
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
         seq, args.labels = get_k_means_seq(y_diag, args.k)

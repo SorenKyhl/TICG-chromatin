@@ -18,7 +18,7 @@ for p in paths:
         sys.path.insert(1, p)
 
 from neural_net_utils.argparseSetup import str2int, str2bool, str2list
-from neural_net_utils.utils import calculate_S
+from neural_net_utils.utils import calculate_S, load_E_S
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 METHODS = ['ground_truth', 'random', 'PCA', 'PCA_split', 'kPCA', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM']
@@ -86,11 +86,7 @@ def nested_list_to_array(nested_list):
             sublist.append(None)
             len_sublist = len(sublist)
 
-    try:
-        return np.array(nested_list, dtype=float)
-    except Exception:
-        print('nested list', nested_list)
-        raise
+    return np.array(nested_list, dtype=float)
 
 
 def loadData(args):
@@ -109,6 +105,7 @@ def loadData(args):
 
     for sample in args.samples:
         sample_folder = osp.join(args.data_folder, 'samples', f'sample{sample}')
+        _, ground_truth_s = load_E_S(sample_folder)
         for method in os.listdir(sample_folder):
             method_folder = osp.join(sample_folder, method)
             # methods should be formatted such that method.split('-')[0] is in METHODS
@@ -146,12 +143,9 @@ def loadData(args):
                                 s = np.loadtxt(s_matrix_file2)
                             else:
                                 # load bead types
-                                # x_file1 = osp.join(replicate_folder, 'resources', 'x_linear.npy')
-                                x_file2 = osp.join(replicate_folder, 'resources', 'x.npy')
-                                # if osp.exists(x_file1):
-                                #     x = np.load(x_file1)
-                                if osp.exists(x_file2):
-                                    x = np.load(x_file2)
+                                x_file1 = osp.join(replicate_folder, 'resources', 'x.npy')
+                                if osp.exists(x_file1):
+                                    x = np.load(x_file1)
                                 else:
                                     print(f'\tx not found for {replicate_folder}')
                                     continue
@@ -162,7 +156,8 @@ def loadData(args):
                                 # caculate s
                                 s = calculate_S(x, chi)
 
-                            replicate_data['s'].append(s)
+                            mse = mean_squared_error(ground_truth_s, s)
+                            replicate_data['s'].append(mse)
 
                         # append replicate array to dictionary
                         if found_results:
@@ -237,7 +232,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                 if 'GNN' in method:
                     print(f'GNN found: using {method}')
                     GNN_ref = data[0][method]
-                    # TODO get best GNN
+                    # TODO get best GNN not first
                     break
 
         for k in sorted(data.keys()):
@@ -258,24 +253,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
 
                 for metric in metrics:
                     significant = False # two sided t test
-                    if metric == 's':
-                        if ground_truth_ref is None:
-                            continue
-                            # skip this if no ref
-                        s_list_sample = data[k][key][metric] # list of length samples, each entry is a list of replicates
-                        ref_s_list_sample = ground_truth_ref[metric]
-                        sample_results = []
-                        for s_list, ref_s_list in zip(s_list_sample, ref_s_list_sample): # iterates over samples
-                            replicate_results = []
-                            p_ref_s = -1
-                            ref_s = ref_s_list[0] # all the same so just grab index 0
-                            for s in s_list: # iterates over replicates
-                                replicate_results.append(mean_squared_error(ref_s, s))
-                            sample_results.append(replicate_results)
-
-                        sample_results = nested_list_to_array(sample_results)
-                    else:
-                        sample_results = nested_list_to_array(data[k][key][metric])
+                    sample_results = nested_list_to_array(data[k][key][metric])
 
                     if sample_id is not None:
                         assert sample_results.shape[0] == 1, f"label {label}, metric {metric}, k {k_label}, results {sample_results}"
