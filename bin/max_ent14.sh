@@ -35,12 +35,12 @@ source ~/TICG-chromatin/bin/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dir="/home/eric/sequences_to_contact_maps"
+  dir="/home/eric"
   scratchDir='/home/eric/scratch'
-  # numIterations=2
-  # finalSimProductionSweeps=5000
-  # equilibSweeps=1000
-  # productionSweeps=5000
+  numIterations=0
+  finalSimProductionSweeps=5000
+  equilibSweeps=1000
+  productionSweeps=5000
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
   dir='/project2/depablo/erschultz'
@@ -50,14 +50,13 @@ fi
 
 STARTTIME=$(date +%s)
 i=13000
-dataset='dataset_09_21_21'
-sample=1
-
-method='GNN'
-modelID=70
-useS='true'
-mode='plaid'
-max_ent
+dataset='dataset_test'
+sample=82
+method='PCA'
+for k in 2 4
+do
+  max_ent
+done
 
 wait
 

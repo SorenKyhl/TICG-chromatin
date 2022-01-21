@@ -86,7 +86,7 @@ def nested_list_to_array(nested_list):
             sublist.append(None)
             len_sublist = len(sublist)
 
-    return np.array(nested_list)
+    return np.array(nested_list, dtype=np.float)
 
 
 def loadData(args):
@@ -268,9 +268,9 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                                 replicate_results.append(mean_squared_error(ref_s, s))
                             sample_results.append(replicate_results)
 
-                        sample_results = nested_list_to_array(sample_results)
+                        sample_results = np.array(sample_results)
                     else:
-                        sample_results = nested_list_to_array(np.array(data[k][key][metric]))
+                        sample_results = nested_list_to_array(data[k][key][metric])
 
                     if sample_id is not None:
                         assert sample_results.shape[0] == 1, f"label {label}, metric {metric}, k {k_label}, results {sample_results}"
@@ -279,9 +279,9 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                         try:
                             result = np.mean(sample_results, axis = 1)
                         except Exception as e:
-                            print(e)
                             print(f'method {key}, k {k}, metric: {metric}')
                             print(sample_results)
+                            raise
 
 
                     significant = False # two sided t test
