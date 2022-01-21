@@ -253,6 +253,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                 text = f"{label} & {k_label}"
 
                 for metric in metrics:
+                    significant = False # two sided t test
                     if metric == 's':
                         if ground_truth_ref is None:
                             continue
@@ -278,20 +279,19 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                     else:
                         try:
                             result = np.nanmean(sample_results, axis = 1)
+                            if GNN_ref is not None:
+                                ref_result = np.nanmean(nested_list_to_array(GNN_ref[metric]), axis = 1)
+                                if len(result) > 1:
+                                    stat, pval = ss.ttest_rel(ref_result, result)
+                                    if pval < 0.05:
+                                        significant = True
                         except Exception as e:
                             print(f'method {key}, k {k}, metric: {metric}')
                             print(sample_results)
                             raise
 
-
-                    significant = False # two sided t test
                     if GNN_ref is not None and metric == 'scc':
                         try:
-                            ref_result = np.nanmean(nested_list_to_array(GNN_ref[metric]), axis = 1)
-                            if len(result) > 1:
-                                stat, pval = ss.ttest_rel(ref_result, result)
-                                if pval < 0.05:
-                                    significant = True
                             delta_result = ref_result - result
                             delta_result_mean = np.round(np.nanmean(delta_result), 3)
                         except ValueError as e:
@@ -312,8 +312,8 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                         text += f" & {result_mean} $\pm$ {result_std}"
                         if metric == 'scc':
                             text += f" & {delta_result_mean} $\pm$ {delta_result_std}"
-                            if significant:
-                                text += f' *{np.round(pval, 3)}'
+                        if significant:
+                            text += f' *{np.round(pval, 3)}'
                     else:
                         text += f" & {result_mean}"
                         if metric == 'scc':
