@@ -268,7 +268,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                                 replicate_results.append(mean_squared_error(ref_s, s))
                             sample_results.append(replicate_results)
 
-                        sample_results = np.array(sample_results)
+                        sample_results = nested_list_to_array(sample_results)
                     else:
                         sample_results = nested_list_to_array(data[k][key][metric])
 
