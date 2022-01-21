@@ -89,7 +89,7 @@ def nested_list_to_array(nested_list):
     try:
         return np.array(nested_list, dtype=float)
     except Exception:
-        print(nested_list)
+        print('nested list', nested_list)
         raise
 
 
@@ -291,8 +291,8 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                                         significant = True
                         except Exception as e:
                             print(f'method {key}, k {k}, metric: {metric}')
-                            print(ref_result)
-                            print(sample_results)
+                            print('GNN ref', GNN_ref[metric])
+                            print('sample results', sample_results)
                             raise
 
                     if GNN_ref is not None and metric == 'scc':
