@@ -277,7 +277,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                         result = sample_results.reshape(-1)
                     else:
                         try:
-                            result = np.mean(sample_results, axis = 1)
+                            result = np.nanmean(sample_results, axis = 1)
                         except Exception as e:
                             print(f'method {key}, k {k}, metric: {metric}')
                             print(sample_results)
@@ -287,13 +287,13 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                     significant = False # two sided t test
                     if GNN_ref is not None and metric == 'scc':
                         try:
-                            ref_result = np.mean(nested_list_to_array(GNN_ref[metric]), axis = 1)
+                            ref_result = np.nanmean(nested_list_to_array(GNN_ref[metric]), axis = 1)
                             if len(result) > 1:
                                 stat, pval = ss.ttest_rel(ref_result, result)
                                 if pval < 0.05:
                                     significant = True
                             delta_result = ref_result - result
-                            delta_result_mean = np.round(np.mean(delta_result), 3)
+                            delta_result_mean = np.round(np.nanmean(delta_result), 3)
                         except ValueError as e:
                             print(GNN_ref[metric])
                             print(f'method {key}, k {k}, metric: {metric}')
@@ -302,11 +302,11 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                     else:
                         delta_result_mean = None
 
-                    result_mean = np.round(np.mean(result), 3)
+                    result_mean = np.round(np.nanmean(result), 3)
                     if len(result) > 1:
-                        result_std = np.round(np.std(result), 3)
+                        result_std = np.round(np.nanstd(result), 3)
                         if delta_result_mean is not None:
-                            delta_result_std = np.round(np.std(delta_result), 3)
+                            delta_result_std = np.round(np.nanstd(delta_result), 3)
                         else:
                             delta_result_std = None
                         text += f" & {result_mean} $\pm$ {result_std}"
