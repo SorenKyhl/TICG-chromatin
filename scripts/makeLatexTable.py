@@ -86,7 +86,11 @@ def nested_list_to_array(nested_list):
             sublist.append(None)
             len_sublist = len(sublist)
 
-    return np.array(nested_list, dtype=float)
+    try:
+        return np.array(nested_list, dtype=float)
+    except Exception:
+        print(nested_list)
+        raise
 
 
 def loadData(args):
@@ -287,6 +291,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                                         significant = True
                         except Exception as e:
                             print(f'method {key}, k {k}, metric: {metric}')
+                            print(ref_result)
                             print(sample_results)
                             raise
 
