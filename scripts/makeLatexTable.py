@@ -226,7 +226,6 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                 print('ground truth missing')
                 for key in data.keys():
                     print(f'key 1: {key}, key 2: {data[key].keys()}')
-        print(ground_truth_ref)
 
         GNN_ref = None
         if 0 in data.keys():
@@ -236,7 +235,6 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                     GNN_ref = data[0][method]
                     # TODO get best GNN
                     break
-        print(GNN_ref)
 
         for k in sorted(data.keys()):
             first = True # only write k for first row in section
@@ -289,7 +287,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                     significant = False # two sided t test
                     if GNN_ref is not None and metric == 'scc':
                         try:
-                            ref_result = np.mean(GNN_ref[metric], axis = 1)
+                            ref_result = np.mean(nested_list_to_array(GNN_ref[metric]), axis = 1)
                             if len(result) > 1:
                                 stat, pval = ss.ttest_rel(ref_result, result)
                                 if pval < 0.05:
@@ -297,7 +295,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                             delta_result = ref_result - result
                             delta_result_mean = np.round(np.mean(delta_result), 3)
                         except ValueError as e:
-                            print(GNN_ref)
+                            print(GNN_ref[metric])
                             print(f'method {key}, k {k}, metric: {metric}')
                             raise
                             delta_result_mean = None
