@@ -25,7 +25,6 @@ METHODS = ['ground_truth', 'random', 'PCA', 'PCA_split', 'kPCA', 'k_means', 'nmf
 SMALL_METHODS = {'ground_truth', 'random', 'PCA', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM'}
 LABELS = ['Ground Truth', 'Random', 'PCA', 'PCA Split', 'kPCA', 'K-means', 'NMF', 'GNN', 'Epigenetic', 'ChromHMM']
 
-
 def getArgs(data_folder = None, sample = None, samples = None):
     parser = argparse.ArgumentParser(description='Base parser')
     parser.add_argument('--data_folder', type=str, default=data_folder, help='location of input data')
@@ -68,6 +67,27 @@ def load_chi(replicate_folder, k):
             chi[i,j] = config[f'chi{bead_i}{bead_j}']
 
     return chi
+
+def nested_list_to_array(nested_list):
+    '''
+    Safely converts nested list to np array when sublists are not all of same length (appends None)
+    '''
+
+    # find max length (i.e. max # of replicates for method)
+    max_len = -1
+    for sublist in nested_list:
+        if len(sublist) > max_len:
+            max_len = len(sublist)
+
+    # append nan to short lists
+    for sublist in nested_list:
+        len_sublist = len(sublist)
+        while len_sublist < max_len:
+            sublist.append(None)
+            len_sublist = len(sublist)
+
+    return np.array(nested_list)
+
 
 def loadData(args):
     '''
@@ -191,16 +211,16 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
         ground_truth_ref = None
         if 0 in data.keys() and 'ground_truth-S' in data[0]:
             ground_truth_ref = data[0]['ground_truth-S']
-            print('ref found')
+            print('ground truth found')
         elif 0 in data.keys() and 'ground_truth-E' in data[0]:
             ground_truth_ref = data[0]['ground_truth-E']
-            print('ref found')
+            print('ground truth found')
         else:
             # look for ground_truth-psi-chi
             for key in data.keys():
                 if 'ground_truth-psi-chi' in data[key]:
                     grount_truth_ref = data[key]['ground_truth-psi-chi']
-                    print('ref found: using ground_truth-psi-chi')
+                    print('ground truth found')
                     break
             else:
                 print('ground truth missing')
@@ -211,7 +231,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
         if 0 in data.keys():
             for method in data[0].keys():
                 if 'GNN' in method:
-                    print(f'ref found: using {method}')
+                    print(f'GNN found: using {method}')
                     GNN_ref = data[0][method]
                     # TODO get best GNN
                     break
@@ -248,9 +268,9 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                                 replicate_results.append(mean_squared_error(ref_s, s))
                             sample_results.append(replicate_results)
 
-                        sample_results = np.array(sample_results)
+                        sample_results = nested_list_to_array(sample_results)
                     else:
-                        sample_results = np.array(np.array(data[k][key][metric]))
+                        sample_results = nested_list_to_array(np.array(data[k][key][metric]))
 
                     if sample_id is not None:
                         assert sample_results.shape[0] == 1, f"label {label}, metric {metric}, k {k_label}, results {sample_results}"
@@ -262,7 +282,6 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                             print(e)
                             print(f'method {key}, k {k}, metric: {metric}')
                             print(sample_results)
-
 
 
                     significant = False # two sided t test
