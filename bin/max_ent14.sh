@@ -51,12 +51,16 @@ fi
 STARTTIME=$(date +%s)
 i=13000
 dataset='dataset_test'
-sample=82
-method='PCA'
-for k in 2 4
-do
-  max_ent
-done
+sample=81
+# method='PCA'
+# for k in 2 4
+# do
+#   max_ent
+# done
+
+method='ground_truth'
+useE='true'
+max_ent
 
 wait
 

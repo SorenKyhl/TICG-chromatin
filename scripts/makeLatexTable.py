@@ -219,13 +219,14 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
             # look for ground_truth-psi-chi
             for key in data.keys():
                 if 'ground_truth-psi-chi' in data[key]:
-                    grount_truth_ref = data[key]['ground_truth-psi-chi']
+                    ground_truth_ref = data[key]['ground_truth-psi-chi']
                     print('ground truth found')
                     break
             else:
                 print('ground truth missing')
                 for key in data.keys():
                     print(f'key 1: {key}, key 2: {data[key].keys()}')
+        print(ground_truth_ref)
 
         GNN_ref = None
         if 0 in data.keys():
@@ -235,6 +236,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                     GNN_ref = data[0][method]
                     # TODO get best GNN
                     break
+        print(GNN_ref)
 
         for k in sorted(data.keys()):
             first = True # only write k for first row in section
@@ -295,8 +297,9 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                             delta_result = ref_result - result
                             delta_result_mean = np.round(np.mean(delta_result), 3)
                         except ValueError as e:
-                            print(e)
+                            print(GNN_ref)
                             print(f'method {key}, k {k}, metric: {metric}')
+                            raise
                             delta_result_mean = None
                     else:
                         delta_result_mean = None
