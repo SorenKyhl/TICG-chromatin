@@ -86,7 +86,7 @@ def nested_list_to_array(nested_list):
             sublist.append(None)
             len_sublist = len(sublist)
 
-    return np.array(nested_list, dtype=np.float)
+    return np.array(nested_list, dtype=float)
 
 
 def loadData(args):
