@@ -1,5 +1,4 @@
 #! /bin/bash
-chi="-1&2&-1&1.5\\2&-1&-1&-0.5\\-1&-1&-1&1.5\\1.5&-0.5&1.5&-1"
 k=3
 m=1024
 dataFolder="/home/eric/dataset_test"
@@ -7,7 +6,7 @@ scratchDir='/home/eric/scratch'
 useE='false'
 useS='false'
 startSample=1
-relabel='AB-D'
+relabel='none'
 diag='false'
 nSweeps=1000000
 pSwitch=0.05
@@ -74,11 +73,16 @@ run()  {
 # make
 # mv TICG-engine ..
 
+chi="-1&0&0\\0&-1&0\\0&0&-1"
 i=82
 run &
 
+chi="1&0&0\\0&1&0\\0&0&1"
 i=83
-diag='true'
+run &
+
+chi="0&1&1\\1&0&1\\1&1&0"
+i=84
 run &
 
 wait

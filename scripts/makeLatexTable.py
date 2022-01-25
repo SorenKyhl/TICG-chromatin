@@ -18,7 +18,7 @@ for p in paths:
         sys.path.insert(1, p)
 
 from neural_net_utils.argparseSetup import str2int, str2bool, str2list
-from neural_net_utils.utils import calculate_S, load_E_S
+from neural_net_utils.utils import calculate_S, load_E_S, load_final_max_ent_chi
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 METHODS = ['ground_truth', 'random', 'PCA', 'PCA_split', 'kPCA', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM']
@@ -40,33 +40,6 @@ def getArgs(data_folder = None, sample = None, samples = None):
         args.sample_folder = osp.join(args.data_folder, 'samples', f'sample{args.sample}')
 
     return args
-
-def load_chi(replicate_folder, k):
-    # find final it
-    max_it = -1
-    for file in os.listdir(replicate_folder):
-        if osp.isdir(osp.join(replicate_folder, file)) and file.startswith('iteration'):
-            it = int(file[9:])
-            if it > max_it:
-                max_it = it
-
-    if max_it < 0:
-        raise Exception(f'max it not found for {replicate_folder}')
-
-    config_file = osp.join(replicate_folder, f'iteration{max_it}', 'config.json')
-    if osp.exists(config_file):
-        with open(config_file, 'rb') as f:
-            config = json.load(f)
-    else:
-        return None
-
-    chi = np.zeros((k,k))
-    for i, bead_i in enumerate(LETTERS[:k]):
-        for j in range(i,k):
-            bead_j = LETTERS[j]
-            chi[i,j] = config[f'chi{bead_i}{bead_j}']
-
-    return chi
 
 def nested_list_to_array(nested_list):
     '''
@@ -151,7 +124,7 @@ def loadData(args):
                                     continue
 
                                 # load chi
-                                chi = load_chi(replicate_folder, k)
+                                chi = load_final_max_ent_chi(replicate_folder, k)
 
                                 # caculate s
                                 s = calculate_S(x, chi)
