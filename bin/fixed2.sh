@@ -63,7 +63,7 @@ run()  {
 
 	# move inputs and outputs to own folder
 	mkdir -p $dir
-	mv config.json data_out log.log *.npy *.png *.txt $dir
+	mv config.json data_out *.log *.npy *.png *.txt $dir
 
 	# clean up
 	rm default_config.json *.xyz

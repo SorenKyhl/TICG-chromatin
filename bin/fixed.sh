@@ -1,6 +1,6 @@
 #! /bin/bash
 k=3
-m=10000
+m=1024
 dataFolder="/home/eric/dataset_test"
 scratchDir='/home/eric/scratch'
 useE='false'
@@ -50,10 +50,10 @@ run()  {
 	fi
 
 	# generate sequences
-	python3 ~/TICG-chromatin/scripts/get_seq.py --method 'random' --exclusive 'true' --m $m --p_switch $pSwitch --k $k --save_npy --seed 14 >> log.log
+	python3 ~/TICG-chromatin/scripts/get_seq.py --method 'random' --exclusive 'true' --m $m --p_switch $pSwitch --k $k --save_npy --seed 14 >> seq.log
 
 	# set up config.json
-	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --ensure_distinguishable --diag $diag --max_diag_chi $maxDiagChi --relabel $relabel --n_sweeps $nSweeps --dump_frequency $dumpFrequency --use_ematrix $useE --use_smatrix $useS --load_configuration_filename $init_config --TICG_seed 38 > log.log
+	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --e $e_dir --m $m --k $k --ensure_distinguishable --diag $diag --max_diag_chi $maxDiagChi --relabel $relabel --n_sweeps $nSweeps --dump_frequency $dumpFrequency --use_ematrix $useE --use_smatrix $useS --load_configuration_filename $init_config --TICG_seed 38 > config.log
 
 	# run simulation
 	~/TICG-chromatin/TICG-engine >> log.log
@@ -63,7 +63,7 @@ run()  {
 
 	# move inputs and outputs to own folder
 	mkdir -p $dir
-	mv config.json data_out log.log *.npy *.png *.txt $dir
+	mv config.json data_out *.log *.npy *.png *.txt $dir
 
 	# clean up
 	rm default_config.json *.xyz
@@ -73,8 +73,15 @@ run()  {
 # make
 # mv TICG-engine ..
 
-chi="-1&0&0\\0&-1&0\\0&0&-1"
-i=90
+useE='true'
+chi='none'
+e_dir='/home/eric/dataset_test/samples/sample90/e1024.npy'
+i=91
+run &
+
+e_dir='/home/eric/dataset_test/samples/sample90/e1024_2.npy'
+
+i=92
 run &
 #
 # chi="1&0&0\\0&1&0\\0&0&1"

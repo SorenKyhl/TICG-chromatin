@@ -351,7 +351,10 @@ def main():
 
     if args.e is not None:
         assert args.use_ematrix
-        e = np.load(args.e)
+        if osp.exists(args.e):
+            e = np.load(args.e)
+        else:
+            raise Exception(f'e does not exist at {args.e}')
         np.savetxt('e_matrix.txt', e, fmt='%0.5f')
         np.save('e.npy', e)
 

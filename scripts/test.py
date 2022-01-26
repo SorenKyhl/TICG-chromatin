@@ -107,68 +107,17 @@ def makeDirsForMaxEnt(dataset, sample):
                 os.mkdir(osp.join(sample_folder, method, f'k{k}', f'replicate{replicate}'), mode = 0o755)
 
 def main():
-    dir = '/home/eric/dataset_test/samples'
-    A = 'sample82'
-    B = 'sample83'
-    dirA=osp.join(dir, A)
-    dirB=osp.join(dir, B)
+    dir = '/home/eric/dataset_test/samples/sample90'
+    e = np.load(osp.join(dir, 'e.npy'))
 
-    # B and D has diag on
-    # C and D has diag normalized
-    xA = np.load(osp.join(dirA, 'x.npy'))
-    xB = np.load(osp.join(dirB, 'x.npy'))
+    e1024 = e[:1024, :1024]
+    print(e1024.shape)
+    np.save(osp.join(dir, 'e1024.npy'), e1024)
 
-    sA = np.load(osp.join(dirA, 's.npy'))
-    sB = np.load(osp.join(dirB, 's.npy'))
+    e1024_2 = e[6000:7024, 6000:7024]
+    print(e1024_2.shape)
 
-    yA = np.load(osp.join(dirA, 'y.npy'))
-    yB = np.load(osp.join(dirB, 'y.npy'))
-    yC = np.load(osp.join(dirA, 'y_diag.npy'))
-    yD = np.load(osp.join(dirB, 'y_diag.npy'))
-
-    # Compare PCs ##
-    print("\nA")
-    PC_yA = plot_top_PCs(yA, 'yA', odir = dirA, plot = True)
-
-    print("\n\nB")
-    PC_yB = plot_top_PCs(yB, 'yB', odir = dirB, plot = True)
-    stat = pearsonround(PC_yA[0], PC_yB[0])
-    print("Correlation between PC 1 of A and B: ", stat)
-
-    print("\nC")
-    PC_yC = plot_top_PCs(yC, 'ydiagC', odir = dirA, plot = True)
-    stat = pearsonround(PC_yA[0], PC_yC[0])
-    print("Correlation between PC 1 of A and C: ", stat)
-    stat = pearsonround(PC_yA[1], PC_yC[1])
-    print("Correlation between PC 2 of A and C: ", stat)
-
-    print("\nD")
-    PC_yD = plot_top_PCs(yD, 'ydiagD', odir = dirB, plot = True)
-    stat = pearsonround(PC_yD[0], PC_yC[0])
-    print("Correlation between PC 1 of C and D: ", stat)
-    stat = pearsonround(PC_yD[1], PC_yC[1])
-    print("Correlation between PC 2 of C and D: ", stat)
-
-    # print("\nS")
-    # print(f'Rank: {np.linalg.matrix_rank(sA)}')
-    # PC_s = plot_top_PCs(sA)
-    # stat = pearsonround(PC_yC[0], PC_s[0])
-    # print("Correlation between PC 1 of C and S: ", stat)
-    # stat = pearsonround(PC_yD[0], PC_s[0])
-    # print("Correlation between PC 1 of D and S: ", stat)
-
-    s_sym = (sA + sA.T)/2
-    print("\n\nS_sym")
-    print(f'Rank: {np.linalg.matrix_rank(s_sym)}')
-    PC_s_sym = plot_top_PCs(s_sym, 's_sym', odir = dirA, plot = True)
-    stat = pearsonround(PC_yC[0], PC_s_sym[0])
-    print("Correlation between PC 1 of C and S_sym: ", stat)
-    stat = pearsonround(PC_yC[1], PC_s_sym[1])
-    print("Correlation between PC 2 of C and S_sym: ", stat)
-    stat = pearsonround(PC_yD[0], PC_s_sym[0])
-    print("Correlation between PC 1 of D and S_sym: ", stat)
-    stat = pearsonround(PC_yD[1], PC_s_sym[1])
-    print("Correlation between PC 2 of D and S_sym: ", stat)
+    np.save(osp.join(dir, 'e1024_2.npy'), e1024_2)
 
 def main2():
     dir = '/home/eric/sequences_to_contact_maps/dataset_01_15_22/samples/sample40/PCA/k4/replicate1'
@@ -185,19 +134,114 @@ def main2():
 
     # calculate s
     e, s = calculate_E_S(x, chi)
-    np.save(osp.join(dir, 'iteration101', 's.npy'), s)
-    plotContactMap(s, ofile = osp.join(dir, 'iteration101', 's.png'), title = 'S', vmax = 'max', vmin = 'min', cmap = 'blue-red')
-    np.save(osp.join(dir, 'iteration101', 'e.npy'), e)
-    plotContactMap(e, ofile = osp.join(dir, 'iteration101', 'e.png'), title = 'E', vmax = 'max', vmin = 'min', cmap = 'blue-red')
-
     gt_e = np.load('/home/eric/sequences_to_contact_maps/dataset_01_15_22/samples/sample40/e.npy')
+
+    v_min_max = max(np.max(gt_e), -1 * np.min(gt_e))
+    v_min = v_min_max * -1
+    v_max = v_min_max
+    np.save(osp.join(dir, 'iteration101', 's.npy'), s)
+    plotContactMap(s, ofile = osp.join(dir, 'iteration101', 's.png'), title = 'S', vmax = v_max, vmin = v_min, cmap = 'blue-red')
+    np.save(osp.join(dir, 'iteration101', 'e.npy'), e)
+    plotContactMap(e, ofile = osp.join(dir, 'iteration101', 'e.png'), title = 'E_PCA', vmax = v_max, vmin = v_min, cmap = 'blue-red')
+
+    plotContactMap(gt_e, ofile = osp.join(dir, 'iteration101', 'e_gt.png'), title = 'E_gt', vmax = v_max, vmin = v_min, cmap = 'blue-red')
     dif = gt_e - e
-    plotContactMap(dif, ofile = osp.join(dir, 'iteration101', 'e_dif.png'), title = 'E - E_PCA', vmax = 'max', vmin = 'min', cmap = 'blue-red')
+    plotContactMap(dif, ofile = osp.join(dir, 'iteration101', 'e_dif.png'), title = 'E - E_PCA', vmax = v_max, vmin = v_min, cmap = 'blue-red')
+
+def scc_y_vs_y_rank1():
+    dir = '/home/eric/sequences_to_contact_maps/dataset_01_15_22/samples/sample40'
+    y = np.load(osp.join(dir, 'y.npy'))
+    y_diag = np.load(osp.join(dir, 'y_diag.npy'))
+
+    pca = PCA(n_components = 1)
+    y_transform = pca.fit_transform(y)
+    yhat = pca.inverse_transform(y_transform)
+    y_transform = pca.fit_transform(y_diag)
+    yhat_diag = pca.inverse_transform(y_transform)
+    plotContactMap(yhat, ofile = osp.join(dir, 'yhat_rank1.png'), vmax = 'max')
+    plotContactMap(yhat_diag, ofile = osp.join(dir, 'yhat_diag_rank1.png'), vmax = 'max')
+
+
+    m, _ = y.shape
+    triu_ind = np.triu_indices(m)
+
+    overall_corr, _ = pearsonr(y[triu_ind], yhat[triu_ind])
+    print('overall', overall_corr)
+    scc_A, _ = pearsonr(y_diag[triu_ind], yhat_diag[triu_ind])
+    print('scc_A', scc_A)
+
+
+    corr_arr = np.zeros(m-2)
+    corr_arr[0] = np.NaN
+    scc_B = 0
+    denom = np.sum([len(np.diagonal(y, offset = d)) for d in list(range(1, m-2))])
+    weights = 0
+    for d in range(1, m-2):
+        # n-1, n, and 0 are NaN always, so skip
+        y_diag = np.diagonal(y, offset = d)
+        yhat_diag = np.diagonal(yhat, offset = d)
+        corr, _ = pearsonr(y_diag, yhat_diag)
+        corr_arr[d] = corr
+        weight = len(y_diag) / denom
+        weights += weight
+        scc_B += weight * corr
+    print(corr_arr)
+    print('scc_B', scc_B)
+
+    avg = np.nanmean(corr_arr)
+    print('avg', avg)
+
+    plt.plot(np.arange(m-2), corr_arr, color = 'black')
+    plt.ylim(-0.5, 1)
+    plt.xlabel('Distance', fontsize = 16)
+    plt.ylabel('Pearson Correlation Coefficient', fontsize = 16)
+
+    plt.tight_layout()
+    plt.savefig(osp.join(dir, 'distance_pearson_y_vs_y_rank_1.png'))
+    plt.close()
+
+def is_scc_weighted_mean():
+    dir = '/home/eric/sequences_to_contact_maps/dataset_01_15_22/samples/sample40'
+    replicate = '/home/eric/sequences_to_contact_maps/dataset_01_15_22/samples/sample40/PCA/k4/replicate1/iteration101'
+    y = np.load(osp.join(dir, 'y.npy'))
+    y_diag = np.load(osp.join(dir, 'y_diag.npy'))
+    yhat = np.load(osp.join(replicate, 'y.npy'))
+    yhat_diag = np.load(osp.join(replicate, 'y_diag.npy'))
+
+    m, _ = y.shape
+    triu_ind = np.triu_indices(m)
+
+    overall_corr, _ = pearsonr(y[triu_ind], yhat[triu_ind])
+    print(overall_corr)
+    scc_A, _ = pearsonr(y_diag[triu_ind], yhat_diag[triu_ind])
+    print(scc_A)
+
+
+    corr_arr = np.zeros(m-2)
+    corr_arr[0] = np.NaN
+    scc_B = 0
+    denom = np.sum([d for d in list(range(1, m-2))])
+    for d in range(1, m-2):
+        # n-1, n, and 0 are NaN always, so skip
+        y_diag = np.diagonal(y, offset = d)
+        yhat_diag = np.diagonal(yhat, offset = d)
+        corr, _ = pearsonr(y_diag, yhat_diag)
+        corr_arr[d] = corr
+        weight = d / denom
+        scc_B += weight * corr
+    print(corr_arr)
+    print(scc_B)
+
+    avg = np.nanmean(corr_arr)
+    print(avg)
+
 
 
 
 if __name__ == '__main__':
-    main2()
+    # main()
+    # is_scc_weighted_mean()
+    scc_y_vs_y_rank1()
     # check_seq()
     # find_mising_ids()
     # check_seq('dataset_11_03_21')
