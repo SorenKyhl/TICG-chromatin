@@ -79,6 +79,7 @@ def loadData(args):
     for sample in args.samples:
         sample_folder = osp.join(args.data_folder, 'samples', f'sample{sample}')
         _, ground_truth_s = load_E_S(sample_folder)
+        ground_truth_s_sym = (ground_truth_s + ground_truth_s.T) / 2
         for method in os.listdir(sample_folder):
             method_folder = osp.join(sample_folder, method)
             # methods should be formatted such that method.split('-')[0] is in METHODS
@@ -126,10 +127,10 @@ def loadData(args):
                                 # load chi
                                 chi = load_final_max_ent_chi(replicate_folder, k)
 
-                                # caculate s
+                                # calculate s
                                 s = calculate_S(x, chi)
 
-                            mse = mean_squared_error(ground_truth_s, s)
+                            mse = mean_squared_error(ground_truth_s_sym, (s + s.T) / 2)
                             replicate_data['s'].append(mse)
 
                         # append replicate array to dictionary
