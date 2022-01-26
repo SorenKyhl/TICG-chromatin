@@ -61,7 +61,6 @@ def nested_list_to_array(nested_list):
 
     return np.array(nested_list, dtype=float)
 
-
 def loadData(args):
     '''
     Loads data from args.data_folder for each sample <i> in args.samples.

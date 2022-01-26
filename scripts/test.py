@@ -18,6 +18,7 @@ for p in paths:
         sys.path.insert(1, p)
 
 from neural_net_utils.dataset_classes import make_dataset
+from neural_net_utils.utils import *
 from result_summary_plots import *
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -170,14 +171,29 @@ def main():
     print("Correlation between PC 2 of D and S_sym: ", stat)
 
 def main2():
-    dir = '/home/eric/sequences_to_contact_maps/dataset_09_21_21/samples/sample1'
-    y = np.load(osp.join(dir, 'y.npy'))
-    np.savetxt(osp.join(dir, 'y.txt'), y)
+    dir = '/home/eric/sequences_to_contact_maps/dataset_01_15_22/samples/sample40/PCA/k4/replicate1'
+
+    x_file1 = osp.join(dir, 'resources', 'x.npy')
+    if osp.exists(x_file1):
+        x = np.load(x_file1)
+    else:
+        print(f'\tx not found for {dir}')
+
+    # load chi
+    k=4
+    chi = load_final_max_ent_chi(dir, k)
+
+    # calculate s
+    e, s = calculate_E_S(x, chi)
+    np.save(osp.join(dir, 'iteration101', 's.npy'), s)
+    plotContactMap(s, ofile = osp.join(dir, 'iteration101', 's.png'), title = 'S', vmax = 'max', vmin = 'min', cmap = 'blue-red')
+    np.save(osp.join(dir, 'iteration101', 'e.npy'), e)
+    plotContactMap(e, ofile = osp.join(dir, 'iteration101', 'e.png'), title = 'E', vmax = 'max', vmin = 'min', cmap = 'blue-red')
 
 
 if __name__ == '__main__':
-    # main2()
-    check_seq()
+    main2()
+    # check_seq()
     # find_mising_ids()
     # check_seq('dataset_11_03_21')
     # upper_traingularize_chis()

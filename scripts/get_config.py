@@ -52,6 +52,7 @@ def getArgs():
     parser.add_argument('--max_diag_chi', type=float, default=0.5, help='maximum diag chi value for np.linspace()')
 
     # plaid chi arguments
+    parser.add_argument('--e', type=str2None, help='path to e_matrix to use (.npy or .txt)')
     parser.add_argument('--chi', type=str2list2D, help='chi matrix using latex separator style (if None will chi be generated randomly)')
     parser.add_argument('--save_chi', action="store_true", help='true to save chi to wd')
     parser.add_argument('--save_chi_for_max_ent', action="store_true", help='true to save chi to wd in format needed for max ent')
@@ -339,13 +340,20 @@ def main():
 
         if args.use_smatrix:
             np.savetxt('s_matrix.txt', s, fmt='%0.5f')
-        np.save('s.npy', s)
+            np.save('s.npy', s)
         if args.use_ematrix:
             np.savetxt('e_matrix.txt', e, fmt='%0.5f')
+            np.save('e.npy', e)
+            np.save('s.npy', s) # save s either way
+        if args.m < 2000:
+            print(f'Rank of S: {np.linalg.matrix_rank(s)}')
+            print(f'Rank of E: {np.linalg.matrix_rank(e)}\n')
+
+    if args.e is not None:
+        assert args.use_ematrix
+        e = np.load(args.e)
+        np.savetxt('e_matrix.txt', e, fmt='%0.5f')
         np.save('e.npy', e)
-        print(f'Rank of S: {np.linalg.matrix_rank(s)}')
-        print(f'Rank of E: {np.linalg.matrix_rank(e)}')
-        print('\n')
 
     if args.use_ematrix or args.use_smatrix:
         config['bead_types'] = None
