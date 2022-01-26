@@ -1,5 +1,5 @@
 #! /bin/bash
-k=3
+k=2
 m=1024
 dataFolder="/home/eric/dataset_test"
 scratchDir='/home/eric/scratch'
@@ -50,11 +50,10 @@ run()  {
 	fi
 
 	# generate sequences
-	# python3 ~/TICG-chromatin/scripts/get_seq.py --method 'random' --exclusive 'true' --m $m --p_switch $pSwitch --k $k --save_npy --seed 14 >> seq.log
+	python3 ~/TICG-chromatin/scripts/get_seq.py --method 'random' --exclusive 'true' --m $m --p_switch $pSwitch --k $k --save_npy --seed 14 >> seq.log
 
 	# set up config.json
-	e_dir="/home/eric/sequences_to_contact_maps/dataset_01_15_22/samples/sample40/PCA/k4/replicate1/iteration101/e.npy"
-	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --e $e_dir --m $m --k $k --ensure_distinguishable --diag $diag --max_diag_chi $maxDiagChi --relabel $relabel --n_sweeps $nSweeps --dump_frequency $dumpFrequency --use_ematrix $useE --use_smatrix $useS --load_configuration_filename $init_config --TICG_seed 38 > config.log
+	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --ensure_distinguishable --diag $diag --max_diag_chi $maxDiagChi --relabel $relabel --n_sweeps $nSweeps --dump_frequency $dumpFrequency --use_ematrix $useE --use_smatrix $useS --load_configuration_filename $init_config --TICG_seed 38 > config.log
 
 	# run simulation
 	~/TICG-chromatin/TICG-engine >> log.log
@@ -74,9 +73,20 @@ run()  {
 # make
 # mv TICG-engine ..
 
-chi='none'
-useE='true'
-i=100
+chi="-1&0\\0&-1"
+i=80
+run &
+
+chi="1&0\\0&1"
+i=81
+run &
+
+chi="-3&0\\0&-3"
+i=82
+run &
+
+chi="1&2\\2&1"
+i=83
 run &
 
 

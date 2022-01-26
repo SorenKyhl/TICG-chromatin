@@ -190,6 +190,11 @@ def main2():
     np.save(osp.join(dir, 'iteration101', 'e.npy'), e)
     plotContactMap(e, ofile = osp.join(dir, 'iteration101', 'e.png'), title = 'E', vmax = 'max', vmin = 'min', cmap = 'blue-red')
 
+    gt_e = np.load('/home/eric/sequences_to_contact_maps/dataset_01_15_22/samples/sample40/e.npy')
+    dif = gt_e - e
+    plotContactMap(dif, ofile = osp.join(dir, 'iteration101', 'e_dif.png'), title = 'E - E_PCA', vmax = 'max', vmin = 'min', cmap = 'blue-red')
+
+
 
 if __name__ == '__main__':
     main2()
