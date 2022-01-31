@@ -4,7 +4,7 @@ import os.path as osp
 
 import numpy as np
 
-# ensure that I can find contact_map
+# ensure that I can find makeLatexTable
 abspath = osp.abspath(__file__)
 dname = osp.dirname(abspath)
 sys.path.insert(0, dname)
@@ -109,15 +109,25 @@ def makeDirsForMaxEnt(dataset, sample):
 def main():
     dir = '/home/eric/dataset_test/samples/sample90'
     e = np.load(osp.join(dir, 'e.npy'))
+    y = np.load(osp.join(dir, 'y.npy'))
+    y_max = np.max(y)
 
     e1024 = e[:1024, :1024]
     print(e1024.shape)
     np.save(osp.join(dir, 'e1024.npy'), e1024)
+    np.save(osp.join(dir, 'y1024.npy'), y[:1024, :1024])
+    plotContactMap(y[:1024, :1024] / y_max, ofile = osp.join(dir, 'y1024_prob.png'), vmax = 'mean')
 
     e1024_2 = e[6000:7024, 6000:7024]
     print(e1024_2.shape)
-
     np.save(osp.join(dir, 'e1024_2.npy'), e1024_2)
+    np.save(osp.join(dir, 'y1024_2.npy'), y[6000:7024, 6000:7024])
+    plotContactMap(y[6000:7024, 6000:7024] / y_max, ofile = osp.join(dir, 'y1024_2_prob.png'), vmax = 'mean')
+
+    dir = '/home/eric/dataset_test/samples/sample91'
+    y = np.load(osp.join(dir, 'y.npy'))
+    y_max = np.max(y)
+    plotContactMap(y / y_max, ofile = osp.join(dir, 'y_prob.png'), vmax = 'mean')
 
 def main2():
     dir = '/home/eric/sequences_to_contact_maps/dataset_01_15_22/samples/sample40/PCA/k4/replicate1'
@@ -149,8 +159,9 @@ def main2():
     plotContactMap(dif, ofile = osp.join(dir, 'iteration101', 'e_dif.png'), title = 'E - E_PCA', vmax = v_max, vmin = v_min, cmap = 'blue-red')
 
 def scc_y_vs_y_rank1():
-    dir = '/home/eric/sequences_to_contact_maps/dataset_01_15_22/samples/sample40'
+    dir = '/home/eric/sequences_to_contact_maps/dataset_01_16_22/samples/sample40'
     y = np.load(osp.join(dir, 'y.npy'))
+    ycopy = y.copy()
     y_diag = np.load(osp.join(dir, 'y_diag.npy'))
 
     pca = PCA(n_components = 1)
@@ -160,6 +171,10 @@ def scc_y_vs_y_rank1():
     yhat_diag = pca.inverse_transform(y_transform)
     plotContactMap(yhat, ofile = osp.join(dir, 'yhat_rank1.png'), vmax = 'max')
     plotContactMap(yhat_diag, ofile = osp.join(dir, 'yhat_diag_rank1.png'), vmax = 'max')
+
+    pca = PCA(n_components = 10)
+    pca.fit(ycopy)
+    plot_top_PCs(ycopy, 'name', dir)
 
 
     m, _ = y.shape

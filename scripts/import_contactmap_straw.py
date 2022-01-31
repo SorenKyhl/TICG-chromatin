@@ -19,10 +19,11 @@ for p in paths:
     if osp.exists(p):
         sys.path.insert(1, p)
 
-from neural_net_utils.utils import diagonal_preprocessing, generateDistStats
+from neural_net_utils.utils import diagonal_preprocessing
+from data_summary_plots import genomic_distance_statistics
 
 
-def import_contactmap_straw(filename, chrom=2, start=35000000, end=60575000, resolution=25000):
+def import_contactmap_straw(filename, chrom=2, start=35000000, end=60000000, resolution=5000):
 #def import_contactmap_straw(filename, chrom=2, start=22000000, end=60575000, resolution=25000):
     '''
     loads Hi-C contact map using straw https://github.com/aidenlab/straw/wiki
@@ -51,14 +52,19 @@ def import_contactmap_straw(filename, chrom=2, start=35000000, end=60575000, res
     return hic, xticks
 
 def main():
-    dataFolder ='/project2/depablo/erschultz/dataset_09_21_21'
-    # dataFolder='dataset_09_21_21'
-    os.mkdir(dataFolder, mode = 0o755)
-    os.mkdir(osp.join(dataFolder, 'samples'), mode = 0o755)
-    sample = 'sample1'
+    # dir ='/home/eric/sequences_to_contact_maps'
+    dir = '/project2/depablo/erschultz'
+    dataset='dataset_09_21_21'
+    dataFolder = osp.join(dir, dataset)
+    if not osp.exists(dataFolder):
+        os.mkdir(dataFolder, mode = 0o755)
+    if not osp.exists(osp.join(dataFolder, 'samples')):
+        os.mkdir(osp.join(dataFolder, 'samples'), mode = 0o755)
+    sample = 'sample2'
 
     sampleFolder = osp.join(dataFolder, 'samples', sample)
-    os.mkdir(sampleFolder, mode = 0o755)
+    if not osp.exists(sampleFolder):
+        os.mkdir(sampleFolder, mode = 0o755)
 
     ofile = osp.join(sampleFolder, 'y.npy')
     hic, xticks = import_contactmap_straw("https://s3.amazonaws.com/hicfiles/hiseq/degron/untreated/unsynchronized/combined.hic")
@@ -68,10 +74,10 @@ def main():
 
     plotContactMap(hic, ofile = osp.join(sampleFolder, 'y.png'), vmax = 'mean')
 
-    meanDist = generateDistStats(hic)
+    meanDist = genomic_distance_statistics(hic)
     y_diag_instance = diagonal_preprocessing(hic, meanDist)
     plotContactMap(y_diag_instance, ofile = osp.join(sampleFolder, 'y_diag_instance.png'), vmax = 'max')
-    np.save(osp.join(sampleFolder, 'y_diag_instance.npy'), y_diag_instance)
+    np.save(osp.join(sampleFolder, 'y_diag.npy'), y_diag_instance)
 
 if __name__ == '__main__':
     main()

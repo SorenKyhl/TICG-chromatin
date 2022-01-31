@@ -8,11 +8,11 @@ useS='false'
 startSample=1
 relabel='none'
 diag='false'
-nSweeps=200000
+nSweeps=500
 pSwitch=0.05
 maxDiagChi=0.1
 overwrite=1
-dumpFrequency=1000
+dumpFrequency=100
 
 source activate python3.8_pytorch1.8.1_cuda11.1
 
@@ -50,7 +50,7 @@ run()  {
 	fi
 
 	# generate sequences
-	python3 ~/TICG-chromatin/scripts/get_seq.py --method 'random' --exclusive 'true' --m $m --p_switch $pSwitch --k $k --save_npy --seed 14 >> seq.log
+	python3 ~/TICG-chromatin/scripts/get_seq.py --method 'random' --exclusive 'false' --m $m --p_switch $pSwitch --k $k --save_npy --seed 14 >> seq.log
 
 	# set up config.json
 	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --m $m --k $k --ensure_distinguishable --diag $diag --max_diag_chi $maxDiagChi --relabel $relabel --n_sweeps $nSweeps --dump_frequency $dumpFrequency --use_ematrix $useE --use_smatrix $useS --load_configuration_filename $init_config --TICG_seed 38 > config.log
@@ -73,21 +73,13 @@ run()  {
 # make
 # mv TICG-engine ..
 
-chi="-1&0\\0&-1"
-i=80
+chi="-3&0\\0&-3"
+i=82
 run &
 
-chi="1&0\\0&1"
-i=81
+chi="1&2\\2&1"
+i=83
 run &
-
-# chi="-3&0\\0&-3"
-# i=82
-# run &
-#
-# chi="1&2\\2&1"
-# i=83
-# run &
 
 
 wait
