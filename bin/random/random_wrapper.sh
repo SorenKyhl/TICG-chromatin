@@ -32,17 +32,17 @@ maxChi=1
 fillDiag='none'
 chiSeed='none'
 maxDiagChi=0.2
-local='false'
+local='true'
 
 if [ $local = 'true' ]
 then
   dataFolder="/home/eric/dataset_test"
   scratchDir='/home/eric/scratch'
   startSample=1
-  nSweeps=200000
+  nSweeps=2000
   nodes=1
-  tasks=4
-  samples=4
+  tasks=1
+  samples=1
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
   scratchDir="/scratch/midway2/erschultz"
@@ -65,5 +65,5 @@ do
   startSampleI=$(( $startSample + $samplesPerNode * $i ))
   endSampleI=$(( $startSampleI + $samplesPerNode - 1 ))
   echo "TICG${i}" $startSampleI $endSampleI
-  sbatch ~/TICG-chromatin/bin/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samplesPerNode $samplesPerTask $diag $scratchDir $i $nSweeps $pSwitch $minChi $maxChi $fillDiag $chiSeed $maxDiagChi
+  bash ~/TICG-chromatin/bin/random/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samplesPerNode $samplesPerTask $diag $scratchDir $i $nSweeps $pSwitch $minChi $maxChi $fillDiag $chiSeed $maxDiagChi
 done
