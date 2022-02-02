@@ -1,5 +1,4 @@
 {
-  "seed": 1,
   "production": true,
   "decay_length": 100,
   "nSweeps": 500000,

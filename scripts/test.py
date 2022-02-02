@@ -9,6 +9,7 @@ abspath = osp.abspath(__file__)
 dname = osp.dirname(abspath)
 sys.path.insert(0, dname)
 from makeLatexTable import METHODS
+from r_pca import R_pca
 
 paths = ['/home/erschultz/sequences_to_contact_maps',
         '/home/eric/sequences_to_contact_maps',
@@ -129,34 +130,21 @@ def main():
     y_max = np.max(y)
     plotContactMap(y / y_max, ofile = osp.join(dir, 'y_prob.png'), vmax = 'mean')
 
-def main2():
-    dir = '/home/eric/sequences_to_contact_maps/dataset_01_15_22/samples/sample40/PCA/k4/replicate1'
+def test_robust_PCA():
+    dir = '/home/eric/dataset_test/samples/sample81'
+    # dir = '/home/eric/sequences_to_contact_maps/dataset_09_21_21/samples/sample1'
+    y = np.load(osp.join(dir, 'y.npy'))
+    L, S = R_pca(y).fit(max_iter=500)
+    plotContactMap(L, ofile = osp.join(dir, 'RPCA_L.png'), vmax = np.mean(y))
+    plotContactMap(S, ofile = osp.join(dir, 'RPCA_S.png'), vmax = np.mean(y))
 
-    x_file1 = osp.join(dir, 'resources', 'x.npy')
-    if osp.exists(x_file1):
-        x = np.load(x_file1)
-    else:
-        print(f'\tx not found for {dir}')
+    y_diag = np.load(osp.join(dir, 'y_diag.npy'))
+    L, S = R_pca(y_diag).fit(max_iter=500)
+    plotContactMap(L, ofile = osp.join(dir, 'RPCA_L_diag.png'), vmax = np.max(y_diag))
+    plotContactMap(S, ofile = osp.join(dir, 'RPCA_S_diag.png'), vmax = np.max(y_diag))
 
-    # load chi
-    k=4
-    chi = load_final_max_ent_chi(dir, k)
 
-    # calculate s
-    e, s = calculate_E_S(x, chi)
-    gt_e = np.load('/home/eric/sequences_to_contact_maps/dataset_01_15_22/samples/sample40/e.npy')
 
-    v_min_max = max(np.max(gt_e), -1 * np.min(gt_e))
-    v_min = v_min_max * -1
-    v_max = v_min_max
-    np.save(osp.join(dir, 'iteration101', 's.npy'), s)
-    plotContactMap(s, ofile = osp.join(dir, 'iteration101', 's.png'), title = 'S', vmax = v_max, vmin = v_min, cmap = 'blue-red')
-    np.save(osp.join(dir, 'iteration101', 'e.npy'), e)
-    plotContactMap(e, ofile = osp.join(dir, 'iteration101', 'e.png'), title = 'E_PCA', vmax = v_max, vmin = v_min, cmap = 'blue-red')
-
-    plotContactMap(gt_e, ofile = osp.join(dir, 'iteration101', 'e_gt.png'), title = 'E_gt', vmax = v_max, vmin = v_min, cmap = 'blue-red')
-    dif = gt_e - e
-    plotContactMap(dif, ofile = osp.join(dir, 'iteration101', 'e_dif.png'), title = 'E - E_PCA', vmax = v_max, vmin = v_min, cmap = 'blue-red')
 
 def scc_y_vs_y_rank1():
     dir = '/home/eric/sequences_to_contact_maps/dataset_01_16_22/samples/sample40'
@@ -256,7 +244,8 @@ def is_scc_weighted_mean():
 if __name__ == '__main__':
     # main()
     # is_scc_weighted_mean()
-    scc_y_vs_y_rank1()
+    # scc_y_vs_y_rank1()
+    test_robust_PCA()
     # check_seq()
     # find_mising_ids()
     # check_seq('dataset_11_03_21')
