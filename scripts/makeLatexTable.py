@@ -124,7 +124,7 @@ def loadData(args):
                                     continue
 
                                 # load chi
-                                chi = load_final_max_ent_chi(replicate_folder, k)
+                                chi = load_final_max_ent_chi(k, replicate_folder)
 
                                 # calculate s
                                 s = calculate_S(x, chi)

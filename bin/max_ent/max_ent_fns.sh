@@ -73,6 +73,7 @@ max_ent_inner () {
 
   # compare results
   prodIt=$(($numIterations+1))
+  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --k $k --final_it $prodIt --replicate_folder $ofile --save_npy
   python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${ofile}/iteration${prodIt}/y.npy" --y_diag "$sampleFolder/y_diag.npy" --yhat_diag "${ofile}/iteration${prodIt}/y_diag.npy"
 
   echo "\n\n"
