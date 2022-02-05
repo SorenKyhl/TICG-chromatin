@@ -28,7 +28,7 @@ move() {
 	init_config="input${m}.xyz"
 	if [ -f $init_config ]
 	then
-		cp input1024.xyz "${scratchDirI}/input1024.xyz"
+		cp $init_config "${scratchDirI}/${init_config}"
 	else
 		init_config='none'
 	fi
@@ -66,7 +66,7 @@ random_inner() {
 	~/TICG-chromatin/TICG-engine > log.log
 
 	# calculate contact map
-	python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --save_npy
+	python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --save_npy --random_mode
 
 	# move inputs and outputs to own folder
 	mkdir -p $dir

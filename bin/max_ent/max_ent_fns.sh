@@ -45,16 +45,24 @@ max_ent_inner () {
   # move to scratch
   scratchDirResources="${1}/resources"
   mkdir -p $scratchDirResources
-  cd $scratchDirResources
-  cp "${resources}/input1024.xyz" .
 
+  cd $resources
+  init_config="input${m}.xyz"
+  if [ -f $init_config ]
+  then
+    cp $init_config $scratchDirResources
+  else
+    init_config='none'
+  fi
+
+  cd $scratchDirResources
   # generate sequences
   echo "starting get_seq"
   python3 ~/TICG-chromatin/scripts/get_seq.py --method $method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --save_npy --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --model_path $modelPath --seed $3 --local $local > seq.log
 
   # get config
   echo "starting get_config"
-  python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi=-1 --max_chi=1 --save_chi_for_max_ent --goal_specified $goalSpecified --default_config "${resources}/default_config.json" --use_ematrix $useE --use_smatrix $useS --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_diag_chi $useGroundTruthDiagChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $RANDOM --sample_folder $sampleFolder > config.log
+  python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi=-1 --max_chi=1 --save_chi_for_max_ent --goal_specified $goalSpecified --default_config "${resources}/default_config.json" --use_ematrix $useE --use_smatrix $useS --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_diag_chi $useGroundTruthDiagChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $RANDOM --sample_folder $sampleFolder --load_configuration_filename $init_config > config.log
 
 
   # generate goals
@@ -74,7 +82,7 @@ max_ent_inner () {
   # compare results
   prodIt=$(($numIterations+1))
   python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --k $k --final_it $prodIt --replicate_folder $ofile --save_npy
-  python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${ofile}/iteration${prodIt}/y.npy" --y_diag "$sampleFolder/y_diag.npy" --yhat_diag "${ofile}/iteration${prodIt}/y_diag.npy"
+  python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${ofile}/y.npy" --y_diag "$sampleFolder/y_diag.npy" --yhat_diag "${ofile}/y_diag.npy"
 
   echo "\n\n"
 }

@@ -6,7 +6,7 @@
 #SBATCH --ntasks=20
 #SBATCH --mem-per-cpu=2000
 
-m=1024
+m=1500
 k='none'
 samples='40-1230-1718'
 productionSweeps=50000
@@ -37,10 +37,10 @@ if [ $local = 'true' ]
 then
   dir="/home/eric"
   scratchDir='/home/eric/scratch'
-  numIterations=3
-  finalSimProductionSweeps=5000
-  equilibSweeps=1000
-  productionSweeps=5000
+  numIterations=60
+  # finalSimProductionSweeps=1000
+  # equilibSweeps=1000
+  # productionSweeps=1000
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
   dir='/project2/depablo/erschultz'
@@ -53,9 +53,9 @@ i=1
 dataset='dataset_test'
 
 method='PCA'
-for sample in 92
+for sample in 90 91 92 93
 do
-  for k in 1
+  for k in 1 2
   do
     max_ent
   done
