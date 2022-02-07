@@ -16,7 +16,7 @@ for p in paths:
     if osp.exists(p):
         sys.path.insert(1, p)
 
-from neural_net_utils.utils import diagonal_preprocessing, load_final_max_ent_S
+from neural_net_utils.utils import diagonal_preprocessing, load_final_max_ent_S, load_E_S
 from data_summary_plots import genomic_distance_statistics
 from plotting_functions import plotContactMap
 
@@ -55,26 +55,18 @@ def main():
 
     plotContactMap(y, ofile = osp.join(args.save_folder, 'y.png'), vmax = 'mean')
 
-    load_fns = [np.load, np.loadtxt]
     if args.random_mode:
-        s_files = [osp.join(args.sample_folder, i) for i in ['s.npy', 's_matrix.txt']]
-        for s_file, load_fn in zip(s_files, load_fns):
-            if osp.exists(s_file):
-                s = load_fn(s_file)
-                break
+        e, s = load_E_S(args.sample_folder)
     else:
         s = load_final_max_ent_S(args.k, args.replicate_folder, args.final_folder)
+        e = None
 
     if s is not None:
         plotContactMap(s, ofile = osp.join(args.save_folder, 's.png'), title = 'S', vmax = 'max', vmin = 'min', cmap = 'blue-red')
 
-    e_matrix_files = ['e.npy', 'e_matrix.txt']
-    # TODO: only checks wd
-    for e_matrix_file, load_fn in zip(e_matrix_files, load_fns):
-        if osp.exists(e_matrix_file):
-            e = load_fn(e_matrix_file)
-            plotContactMap(e, ofile = osp.join(args.save_folder, 'e.png'), title = 'E', vmax = 'max', vmin = 'min', cmap = 'blue-red')
-            break # don't plot twice
+    if e is not None:
+        plotContactMap(e, ofile = osp.join(args.save_folder, 'e.png'), title = 'E', vmax = 'max', vmin = 'min', cmap = 'blue-red')
+
 
     meanDist = genomic_distance_statistics(y)
     y_diag = diagonal_preprocessing(y, meanDist)

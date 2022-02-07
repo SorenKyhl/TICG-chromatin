@@ -9,8 +9,8 @@ startSample=1
 relabel='none'
 diag='true'
 nSweeps=1000000
-pSwitch=0.05
-maxDiagChi=0.1
+pSwitch=0.02
+maxDiagChi=0.2
 chiSeed='none'
 minChi=-1
 maxChi=-1
@@ -38,19 +38,29 @@ run()  {
 	random_inner
 
 	# clean up
-	rm default_config.json *.xyz
+	rm -f default_config.json *.xyz
 }
 
 # cd ~/TICG-chromatin/src
 # make
 # mv TICG-engine ..
 
-method='block-A200-B1100-A200'
-i=90
-for chi_i in -3 -2.5 -2 -1.5 -1 0 1
+method='random'
+exclusive='true'
+i=100
+for chi_i in -3 -2 -1 0 1
 do
-	# chi="-1&0&${chi_i}\\0&-1&0\\${chi_i}&0&-1"
-	chi="${chi_i}&0\\-1&${chi_i}"
+	chi="${chi_i}&0\\0&-1"
+	run &
+	i=$(($i + 1))
+done
+
+method='block-A200-B1100-A200'
+exclusive='false'
+i=110
+for chi_i in -3 -2.5 -2 -1.5 -1
+do
+	chi="${chi_i}&0\\0&-1"
 	run &
 	i=$(($i + 1))
 done

@@ -84,5 +84,5 @@ random() {
 	done
 
 	# clean up
-	rm default_config.json *.xyz
+	rm -f default_config.json *.xyz
 }
