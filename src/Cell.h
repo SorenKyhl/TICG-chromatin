@@ -39,6 +39,7 @@ public:
 	double getDiagEnergy(const std::vector<double> diag_chis);
 	double getBoundaryEnergy(const double boundary_chi, const double delta);
 	double getSmatrixEnergy(const std::vector<std::vector<double>> &Smatrix);
+	double getEmatrixEnergy(const std::vector<std::vector<double>> &Ematrix);
 
 	double bonds_to_beads(int bonds);
 

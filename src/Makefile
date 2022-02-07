@@ -1,5 +1,5 @@
 CC = g++
-FLAGS = -O3 -std=c++11
+FLAGS = -O3 -std=c++11 -fopenmp
 DEBUG_FLAGS = -g -std=c++11
 INCLUDE = -I ../include
 
@@ -25,3 +25,7 @@ debug:
 	g++ $(DEBUG_FLAGS) -I ../include -c Sim.cpp
 	g++ $(DEBUG_FLAGS) -c random_mars.cpp
 	g++ $(DEBUG_FLAGS) -I ../include -o TICG-engine main.cpp Grid.o Sim.o random_mars.o
+
+
+clean:
+	rm *.o

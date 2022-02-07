@@ -118,6 +118,7 @@ public:
 	std::vector<std::vector<double>> smatrix;
 	std::string smatrix_filename;
 	bool smatrix_on;
+	bool ematrix_on;
 
 	// methods
 	void run();
@@ -135,6 +136,7 @@ public:
 	void volParameters_new();
 	void loadConfiguration();
 	void initRandomCoil(double bondlength);
+	int countLines(std::string filepath);
 	void loadChipseq();
 	void constructBonds();
 	void print();

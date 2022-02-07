@@ -1,5 +1,7 @@
 #include "Sim.h"
 
+//TODO asasert the size of chipseq vector is the same as nbeads
+
 // assign variable to json key of the same name
 #define READ_JSON(json, var) read_json((json), (var), #var)
 template<class T>
@@ -15,6 +17,7 @@ void read_json(const nlohmann::json& json, T& var, std::string varname) {
 void Sim::run() {
 	readInput();            // load parameters from config.json
 	if (smatrix_on) { setupSmatrix(); }
+	if (ematrix_on) { setupSmatrix(); }
 	calculateParameters();  // calculates derived parameters
 	makeOutputFiles();      // open files
 	initialize();           // set particle positions and construct bonds
@@ -133,19 +136,28 @@ void Sim::readInput() {
 
 	if (plaid_on)
 	{
-		assert(config.contains("nspecies")); nspecies = config["nspecies"];
 		assert(config.contains("load_chipseq")); load_chipseq = config["load_chipseq"];
 
 		if (load_chipseq)
 		{
-			chis = Eigen::MatrixXd::Zero(nspecies, nspecies);
+			assert(config.contains("chipseq_files"));
+			for (auto file : config["chipseq_files"]) { chipseq_files.push_back(file); }
+		
+			assert(config.contains("nspecies")); nspecies = config["nspecies"];
+			Cell::ntypes = nspecies;
+			if (chipseq_files.size() != nspecies)
+			{
+				throw std::logic_error("Number of chipseq files: "
+						+ std::to_string(chipseq_files.size())
+						+ " must equal number of species: " + std::to_string(nspecies));
+			}
 
+			// set up chi matrix
+			chis = Eigen::MatrixXd::Zero(nspecies, nspecies);
 			char first = 'A' + 1;
 			for (int i=0; i<nspecies; i++)
 			{
-
 				// should be included even if load_chipseq is false... fix later
-
 				for (int j=i; j<nspecies; j++)
 				{
 					char first = 'A' + i;
@@ -157,21 +169,10 @@ void Sim::readInput() {
 					std::cout << chistring << " " << chis(i,j) << std::endl;
 				}
 			}
-
-			assert(config.contains("chipseq_files"));
-			for (auto file : config["chipseq_files"])
-			{
-				chipseq_files.push_back(file);
-			}
-
-
-			if (chipseq_files.size() != nspecies)
-			{
-				throw std::logic_error("Number of chipseq files: "
-						+ std::to_string(chipseq_files.size())
-						+ " must equal number of species: " + std::to_string(nspecies));
-			}
-			Cell::ntypes = nspecies;
+		}
+		else
+		{
+			nspecies = 0;
 		}
 	}
 	else
@@ -229,6 +230,8 @@ void Sim::readInput() {
 	assert(config.contains("boundary_chi")); boundary_chi  = config["boundary_chi"];
 	assert(config.contains("smatrix_filename")); smatrix_filename = config["smatrix_filename"];
 	assert(config.contains("smatrix_on")); smatrix_on = config["smatrix_on"];
+	//assert(config.contains("ematrix_on")); ematrix_on = config["ematrix_on"];
+	ematrix_on = false;
 	assert(config.contains("phi_solvent_max")); Cell::phi_solvent_max = config["phi_solvent_max"];
 	assert(config.contains("phi_chromatin")); Cell::phi_chromatin = config["phi_chromatin"];
 	assert(config.contains("kappa")); Cell::kappa = config["kappa"];
@@ -451,11 +454,27 @@ void Sim::initRandomCoil(double bondlength) {
 	}
 }
 
+int Sim::countLines(std::string filepath)
+{
+	int count = 0;
+	std::string line;
+
+	std::ifstream file(filepath);
+	while (getline(file, line))
+		count++;
+	return count;
+}
+
 void Sim::loadChipseq() {
 	// set up chipseq
 	int marktype = 0;
 	for (std::string chipseq_file : chipseq_files)
 	{
+		int nlines = countLines(chipseq_file);
+		if (nlines != nbeads)
+		{
+			throw std::runtime_error(chipseq_file + " (length : " + std::to_string(nlines) + ") is not the right size for a simulation with " + std::to_string(nbeads) + " particles.");
+		}
 		std::ifstream IFCHIPSEQ;
 		IFCHIPSEQ.open(chipseq_file);
 		if ( IFCHIPSEQ.good() )
@@ -517,6 +536,10 @@ double Sim::getNonBondedEnergy(const std::unordered_set<Cell*>& flagged_cells) {
 		if (smatrix_on)
 		{
 			U += grid.SmatrixEnergy(flagged_cells, smatrix, chis);
+		}
+		if (ematrix_on)
+		{
+			U += grid.EmatrixEnergy(flagged_cells, smatrix, chis);
 		}
 		else
 		{
@@ -1232,7 +1255,6 @@ void Sim::dumpObservables(int sweep) {
 	// beads are returned to their original state and typenums is updated
 	// but cell.phis is not
 	double U = grid.energy(grid.active_cells, chis); //to update phis in cells
-	double Udiag = grid.diagEnergy(grid.active_cells, diag_chis);
 	if (plaid_on)
 	{
 		obs_out = fopen(obs_out_filename.c_str(), "a");
@@ -1253,6 +1275,7 @@ void Sim::dumpObservables(int sweep) {
 
 	if (diagonal_on)
 	{
+		double Udiag = grid.diagEnergy(grid.active_cells, diag_chis); // to update phis_diag? jan 28-2022
 		diag_obs_out = fopen(diag_obs_out_filename.c_str(), "a");
 		fprintf(diag_obs_out, "%d", sweep);
 

@@ -20,6 +20,7 @@ void Grid::generate() {
 			}
 		}
 	}
+	std::cout << "Cells initialized, number: " << cells.size()*cells[0].size()*cells[0][0].size() << std::endl;
 };
 
 void Grid::setActiveCells() {
@@ -51,6 +52,7 @@ void Grid::setActiveCells() {
 			}
 		}
 	}
+	std::cout << "Active cells selected; number: " << active_cells.size() << std::endl;
 };
 
 void Grid::printActiveCells() {
@@ -134,6 +136,7 @@ double Grid::energy(const std::unordered_set<Cell*>& flagged_cells, const Eigen:
 double Grid::diagEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<double> diag_chis) {
 	// nonbonded volume interactions
 	double U = 0; 
+//#pragma omp parallel for reduction(+:U)
 	for(Cell* cell : flagged_cells)
 	{
 		U += cell->getDiagEnergy(diag_chis);
@@ -158,6 +161,17 @@ double Grid::SmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const
 	for(Cell* cell : flagged_cells)
 	{
 		double smatrixenergy = cell->getSmatrixEnergy(Smatrix);
+		U += smatrixenergy;
+	}
+	return U;
+};
+
+double Grid::EmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Smatrix, const Eigen::MatrixXd &chis) {
+	// nonbonded volume interactions
+	double U = 0; 
+	for(Cell* cell : flagged_cells)
+	{
+		double smatrixenergy = cell->getEmatrixEnergy(Smatrix);
 		U += smatrixenergy;
 	}
 	return U;
