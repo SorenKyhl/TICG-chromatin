@@ -52,9 +52,9 @@ i=1000
 dataset='dataset_01_15_22'
 sample=40
 
-for method in 'PCA'
+for method in 'random'
 do
-  for k in 2
+  for k in 6
   do
     max_ent
   done
