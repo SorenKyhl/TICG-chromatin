@@ -1,12 +1,12 @@
 #! /bin/bash
-#SBATCH --job-name=maxent4
-#SBATCH --output=logFiles/maxent4.out
+#SBATCH --job-name=maxent1
+#SBATCH --output=logFiles/maxent1.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20
 #SBATCH --mem-per-cpu=2000
 
-m=1024
+m=1500
 k='none'
 samples='40-1230-1718'
 productionSweeps=50000
@@ -16,7 +16,7 @@ goalSpecified='true'
 numIterations=100 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 modelType='ContactGNNEnergy'
-local='false'
+local='true'
 useE='false'
 useS='false'
 useGroundTruthChi='false'
@@ -31,16 +31,16 @@ epiData="${chipSeqFolder}/fold_change_control/processed"
 chromHMMData="${chipSeqFolder}/aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt"
 results=~/sequences_to_contact_maps/results
 
-source ~/TICG-chromatin/bin/max_ent_fns.sh
+source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dir="/home/eric/sequences_to_contact_maps"
+  dir="/home/eric"
   scratchDir='/home/eric/scratch'
-  # numIterations=1
-  # finalSimProductionSweeps=5000
+  numIterations=60
+  # finalSimProductionSweeps=1000
   # equilibSweeps=1000
-  # productionSweeps=5000
+  # productionSweeps=1000
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
   dir='/project2/depablo/erschultz'
@@ -49,42 +49,17 @@ else
 fi
 
 STARTTIME=$(date +%s)
-i=3000
-dataset='dataset_11_03_21'
-sample=1230
+i=1
+dataset='dataset_test'
 
-for method in 'random' 'PCA'
+method='PCA'
+for sample in 90 91 92 93
 do
-  for k in 1 2 4 6
+  for k in 1 2
   do
     max_ent
   done
 done
-
-for method in  'k_means'
-do
-  for k in 2 4 6
-  do
-    max_ent
-  done
-done
-
-method='ground_truth-x'
-k=3
-max_ent
-
-method='ground_truth-psi'
-k=4
-max_ent
-
-method='ground_truth'
-useE='true'
-max_ent
-
-method='GNN'
-modelID=42
-useE='true'
-max_ent
 
 
 wait

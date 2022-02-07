@@ -49,7 +49,7 @@ def getArgs():
     parser.add_argument('--k', type=str2int, default=2, help='sequences to generate')
 
     # args for specific methods
-    parser.add_argument('--seed', type=int, help='random seed for numpy')
+    parser.add_argument('--seed', type=str2int, help='random seed for numpy')
     parser.add_argument('--exclusive', type=str2bool, default=False, help='True to use mutually exusive label (for random method)')
     parser.add_argument('--model_path', type=str, help='path to GNN model')
     parser.add_argument('--epigenetic_data_folder', type=str, default=osp.join(chip_seq_data_local, 'fold_change_control/processed'), help='location of epigenetic data')
@@ -152,6 +152,32 @@ def get_random_seq(m, p_switch, k, seed, exclusive=False):
                 else:
                     seq[i, j] = rng.choice([1,0], p=[p_switch, 1 - p_switch])
 
+    return seq
+
+def get_block_seq(m, method, k):
+    seq = np.zeros((m, k))
+    method_split = re.split(r'[-+]', method)
+    method_split.pop(0)
+    lower_bead = 0
+    letters = set()
+    for s in method_split:
+        letter = s[0].upper()
+        letters.add(letter)
+        label = LETTERS.find(letter)
+
+        upper_bead = int(s[1:]) + lower_bead
+        assert upper_bead <= m, f"too many beads: {upper_bead}"
+        print(letter, lower_bead, upper_bead)
+
+        seq[lower_bead:upper_bead, label] = 1
+        lower_bead = upper_bead
+
+    assert upper_bead == m, f"not enough beads: {upper_bead}"
+    print(np.sum(seq, axis = 0))
+
+
+
+    assert len(letters) == k, f"not enough letters ({letters}) for k = {k}"
     return seq
 
 def get_PCA_split_seq(input, k):
@@ -512,6 +538,9 @@ def main():
     print(args)
     if args.method.startswith('random'):
         seq = get_random_seq(args.m, args.p_switch, args.k, args.seed, args.exclusive)
+    elif args.method.startswith('block'):
+        seq = get_block_seq(args.m, args.method, args.k)
+
     elif args.method == 'pca':
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
         seq = get_PCA_seq(y_diag, args.k, args.normalize)

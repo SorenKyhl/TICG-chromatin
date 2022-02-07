@@ -35,7 +35,7 @@ def getArgs():
     parser.add_argument('--dump_frequency', type=int, help='set to change dump frequency')
     parser.add_argument('--dump_stats_frequency', type=int, help='set to change dump stats frequency')
     parser.add_argument('--n_sweeps', type=int, help='set to change nSweeps')
-    parser.add_argument('--TICG_seed', type=int, help='set to change random seed for simulation')
+    parser.add_argument('--TICG_seed', type=str2int, help='set to change random seed for simulation')
     parser.add_argument('--use_ground_truth_TICG_seed', type=str2bool, help='True to copy seed from config file in sample_folder')
     parser.add_argument('--use_ematrix', type=str2bool, default=False, help='True to use e_matrix')
     parser.add_argument('--use_smatrix', type=str2bool, default=False, help='True to use s_matrix')
@@ -405,6 +405,9 @@ def main():
         config['seed'] = sample_config['seed']
     elif args.TICG_seed is not None:
         config['seed'] = args.TICG_seed
+    else:
+        rng = np.random.default_rng()
+        config['seed'] = int(rng.integers(1000)) # random int in [0, 1000)
 
     # save configuration filename
     if args.load_configuration_filename is None:

@@ -31,7 +31,7 @@ epiData="${chipSeqFolder}/fold_change_control/processed"
 chromHMMData="${chipSeqFolder}/aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt"
 results=~/sequences_to_contact_maps/results
 
-source ~/TICG-chromatin/bin/max_ent_fns.sh
+source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
