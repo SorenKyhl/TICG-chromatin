@@ -6,19 +6,6 @@
 #SBATCH --ntasks=10
 #SBATCH --mem-per-cpu=1000
 
-cd /project2/depablo/erschultz/dataset_01_19_22/samples
+cd ~/scratch-midway2
 
-cd sample40/k_means
-rm -r k1
-
-cd ../../sample1230/k_means
-rm -r k1
-
-cd ../../sample1718/k_means
-rm -r k1
-
-cd ../../sample1751/k_means
-rm -r k1
-
-cd ../../sample1761/k_means
-rm -r k1
+rm -r dataset_01_19_22
