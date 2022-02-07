@@ -39,7 +39,7 @@ do
   i=$(( i + $tasks * $scriptIndex ))
   echo $start $stop
   scratchDirI="${scratchDir}/TICG${i}"
-  random
+  random &
 done
 
 wait
