@@ -107,7 +107,12 @@ equilib_sweeps=${6:-10000}
 goal_specified=${7:-0}
 num_iterations=${8:-50}
 overwrite=${9:-0}
-scratchDir=${10:-'/scratch/midway2/erschultz/TICG_maxent'}
+trust_region=${10:-1}
+scratchDir=${11:-'/scratch/midway2/erschultz/TICG_maxent'}
+
+echo "running with trust region:"
+echo $trust_region
+
 
 # move to scratch
 if ! [[ -d $scratchDir ]]
@@ -214,8 +219,7 @@ then
 	do
 		run_simulation
 		# update chis via newton's method
-		python3 $proj_bin/newton_step.py $it $gamma $gamma_diag $mode $goal_specified >> track.log
-
+		python3 $proj_bin/newton_step.py $it $gamma $gamma_diag $mode $goal_specified $trust_region >> track.log
 		# update plots
 		python3 $proj_bin/plot_convergence.py --mode $mode --k $k
 		python3 $proj_bin/contactmap.py $it
