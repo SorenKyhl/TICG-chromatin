@@ -16,7 +16,7 @@ goalSpecified='true'
 numIterations=100 # iteration 1 + numIterations is production run to get contact map
 overwrite=1
 modelType='ContactGNNEnergy'
-local='true'
+local='false'
 useE='false'
 useS='false'
 useGroundTruthChi='false'
@@ -49,12 +49,12 @@ fi
 
 STARTTIME=$(date +%s)
 i=1000
-dataset='dataset_01_15_22'
-sample=40
+dataset='dataset_01_17_22'
 
-for method in 'random'
+method='PCA'
+for sample in 6 7 8 9 10
 do
-  for k in 6
+  for k in 1 2 3 4
   do
     max_ent
   done
