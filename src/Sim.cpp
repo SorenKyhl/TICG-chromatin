@@ -809,7 +809,6 @@ void Sim::MCmove_translate() {
 		for(int i=first; i<=last; i++)
 		{
 			old_cell_tmp = grid.getCell(beads[i]);
-			flagged_cells.insert(old_cell_tmp);
 
 			new_loc = beads[i].r + displacement;
 			new_cell_tmp = grid.getCell(new_loc);
@@ -818,6 +817,7 @@ void Sim::MCmove_translate() {
 			{
 				bead_swaps[i] = std::make_pair(old_cell_tmp, new_cell_tmp);
 				flagged_cells.insert(new_cell_tmp);
+				flagged_cells.insert(old_cell_tmp);
 			}
 		}
 		//t_flag.~Timer();
@@ -907,9 +907,9 @@ void Sim::MCmove_crankshaft() {
 
 	// compute axis of rotation, create quaternion
 	Eigen::RowVector3d axis = beads[last+1].r - beads[first-1].r;
-			double angle = step_crank*(rng->uniform()- 0.5); // random symmtric angle in cone size step_crank
+	double angle = step_crank*(rng->uniform()- 0.5); // random symmtric angle in cone size step_crank
 	Eigen::Quaterniond du;
-			du = Eigen::AngleAxisd(angle, axis.normalized()); // object representing this rotation
+	du = Eigen::AngleAxisd(angle, axis.normalized()); // object representing this rotation
 
 	// memory storage objects
 	std::vector<Eigen::RowVector3d> old_positions;
@@ -958,18 +958,16 @@ void Sim::MCmove_crankshaft() {
 			new_cell_tmp = grid.getCell(beads[i]);
 			old_cell_tmp = grid.getCell(old_positions[i-first]);
 
-			flagged_cells.insert(old_cell_tmp);
-
 			if (new_cell_tmp != old_cell_tmp)
 			{
-				flagged_cells.insert(new_cell_tmp);
 				bead_swaps[i] = std::make_pair(old_cell_tmp, new_cell_tmp);
+				flagged_cells.insert(new_cell_tmp);
+				flagged_cells.insert(old_cell_tmp);
 			}
 		}
 
 		// calculate old nonbonded energy based on flagged cells
 		if (nonbonded_on) Uold += getNonBondedEnergy(flagged_cells);
-
 
 		// Update grid
 		//for(std::pair<int, std::pair<Cell*, Cell*>> &x : bead_swaps)
@@ -1073,9 +1071,9 @@ void Sim::MCmove_pivot(int sweep) {
 	int last = (pivot < end) ? end : pivot-1;
 
 	// rotation objects
-			double angle = step_pivot*(rng->uniform()- 0.5); // random symmtric angle in cone size step_pivot
+	double angle = step_pivot*(rng->uniform()- 0.5); // random symmtric angle in cone size step_pivot
 	Eigen::RowVector3d axis;                     // random axis
-			axis = unit_vec(axis);
+	axis = unit_vec(axis);
 	Eigen::Quaterniond du {Eigen::AngleAxisd(angle, axis)}; // object representing this rotation
 
 	// memory storage objects
@@ -1119,12 +1117,11 @@ void Sim::MCmove_pivot(int sweep) {
 			new_cell_tmp = grid.getCell(beads[i]);
 			old_cell_tmp = grid.getCell(old_positions[i-first]);
 
-			flagged_cells.insert(old_cell_tmp);
-
 			if (new_cell_tmp != old_cell_tmp)
 			{
-				flagged_cells.insert(new_cell_tmp);
 				bead_swaps[i] = std::make_pair(old_cell_tmp, new_cell_tmp);
+				flagged_cells.insert(old_cell_tmp);
+				flagged_cells.insert(new_cell_tmp);
 			}
 		}
 
