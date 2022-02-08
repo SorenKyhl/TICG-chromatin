@@ -1,3 +1,7 @@
+'''
+Version of compare_contact.py with no dependencies.
+'''
+
 import os
 import os.path as osp
 import sys
@@ -13,16 +17,6 @@ from sklearn.decomposition import PCA
 
 import matplotlib.pyplot as plt
 
-paths = ['/home/erschultz/sequences_to_contact_maps',
-        '/home/eric/sequences_to_contact_maps',
-        'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
-for p in paths:
-    if osp.exists(p):
-        sys.path.insert(1, p)
-
-from neural_net_utils.utils import calculateDistanceStratifiedCorrelation, diagonal_preprocessing
-from data_summary_plots import genomic_distance_statistics
-
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     # '../../sequences_to_contact_maps/dataset_04_18_21'
@@ -36,6 +30,93 @@ def getArgs():
 
     args = parser.parse_args()
     return args
+
+def genomic_distance_statistics(y, mode = 'freq', stat = 'mean'):
+    '''
+    Calculates statistics of contact frequency/probability as a function of genomic distance
+    (i.e. along a give diagonal)
+
+    Inputs:
+        mode: freq for frequencies, prob for probabilities
+        stat: mean to calculate mean, var for variance
+
+    Outputs:
+        result: numpy array where result[d] is the contact frequency/probability stat at distance d
+    '''
+    if mode == 'prob':
+        y = y.copy() / np.max(y)
+
+    if stat == 'mean':
+        npStat = np.mean
+    elif stat == 'var':
+        npStat = np.var
+    n = len(y)
+    distances = range(0, n, 1)
+    result = np.zeros_like(distances).astype(float)
+    for d in distances:
+        result[d] = npStat(np.diagonal(y, offset = d))
+
+    return result
+
+def calculateDistanceStratifiedCorrelation(y, yhat, mode = 'pearson'):
+    """
+    Helper function to calculate correlation stratified by distance.
+
+    Inputs:
+        y: target
+        yhat: prediction
+        mode: pearson or spearman (str)
+
+    Outpus:
+        overall_corr: overall correlation
+        corr_arr: array of distance stratified correlations
+    """
+    if mode.lower() == 'pearson':
+        stat = pearsonr
+    elif mode.lower() == 'spearman':
+        stat = spearmanr
+
+    assert len(y.shape) == 2
+    n, n = y.shape
+    triu_ind = np.triu_indices(n)
+
+    overall_corr, _ = stat(y[triu_ind], yhat[triu_ind])
+
+    corr_arr = np.zeros(n-2)
+    corr_arr[0] = np.NaN
+    for d in range(1, n-2):
+        # n-1, n, and 0 are NaN always, so skip
+        y_diag = np.diagonal(y, offset = d)
+        yhat_diag = np.diagonal(yhat, offset = d)
+        corr, _ = stat(y_diag, yhat_diag)
+        corr_arr[d] = corr
+
+    return overall_corr, corr_arr
+
+def diagonal_preprocessing(y, meanDist):
+    """
+    Removes diagonal effect from contact map y.
+
+    Inputs:
+        y: contact map numpy array
+        mean: mean contact frequency where mean[dist] is the mean at a given distance
+
+    Outputs:
+        result: new contact map
+    """
+    result = np.zeros_like(y)
+    for i in range(len(y)):
+        for j in range(i + 1):
+            distance = i - j
+            exp_d = meanDist[distance]
+            if exp_d == 0:
+                # this is unlikely to happen
+                pass
+            else:
+                result[i,j] = y[i,j] / exp_d
+                result[j,i] = result[i,j]
+
+    return result
 
 def comparePCA(y, yhat, dir):
     # y
@@ -118,14 +199,40 @@ def plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, dir):
 
 def main():
     args = getArgs()
-    y = np.load(args.y)[:args.m, :args.m]
+
+    # load y
+    if osp.exists(args.y):
+        if args.y.endswith('.npy'):
+            y = np.load(args.y)
+        elif args.y.endswith('.txt'):
+            y = np.load_txt(args.y)
+        else:
+            raise Exception(f'invalid y format {args.y}')
+        y = y[:args.m, :args.m] # crop to m
+    else:
+        raise Exception(f'y does not exist at {args.y}')
+
+    # load y_diag
     if args.y_diag is not None and osp.exists(args.y_diag):
         y_diag = np.load(args.y_diag)[:args.m, :args.m]
     else:
         meanDist = genomic_distance_statistics(y)
         y_diag = diagonal_preprocessing(y, meanDist)
 
-    yhat = np.load(args.yhat)[:args.m, :args.m]
+    # load yhat
+    yhat = np.load(args.yhat)
+    if osp.exists(args.yhat):
+        if args.yhat.endswith('.npy'):
+            yhat = np.load(args.yhat)
+        elif args.yhat.endswith('.txt'):
+            yhat = np.load_txt(args.yhat)
+        else:
+            raise Exception(f'invalid yhat format {args.yhat}')
+        yhat = yhat[:args.m, :args.m] # crop to m
+    else:
+        raise Exception(f'yhat does not exist at {args.yhat}')
+
+    # load yhat_diag
     if args.yhat_diag is not None and osp.exists(args.yhat_diag):
         yhat_diag = np.load(args.yhat_diag)[:args.m, :args.m]
     else:

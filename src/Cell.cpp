@@ -111,6 +111,30 @@ double Cell::getSmatrixEnergy(const std::vector<std::vector<double>> &Smatrix)
 	return U;
 }
 
+double Cell::getEmatrixEnergy(const std::vector<std::vector<double>> &Ematrix)
+{
+	double U = 0;
+
+	std::vector<int> indices;
+	int imax = (int) contains.size();
+	for (const auto& elem : contains)
+	{
+		indices.push_back(elem->id);
+	}
+
+	assert(imax == indices.size());
+
+	for (int i=0; i<imax; i++)
+	{
+		for(int j=i; j<imax; j++)
+		{
+
+			U += Ematrix[indices[i]][indices[j]] * beadvol/vol;
+		}
+	}
+	return U;
+}
+
 double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
 	for (int i=0; i<diag_nbins; i++)
 	{
@@ -137,7 +161,7 @@ double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
 	}
 
 	// count pairwise contacts  -- include self-self interaction!!
-	for (int i=0; i<imax-1; i++)
+	for (int i=0; i<imax; i++)
 	{
 		for(int j=i; j<imax; j++)
 		{

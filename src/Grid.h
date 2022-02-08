@@ -11,7 +11,7 @@
 
 class Grid {
 public:
-	std::vector<std::vector<std::vector<Cell>>> cells; 
+	std::vector<std::vector<std::vector<Cell>>> cells;
 	std::unordered_set<Cell*> active_cells;       // cells marked as active (within simulation region)
 
 	double delta;              // grid cell size (length)
@@ -24,8 +24,8 @@ public:
 
 	// origin is the bottom-left-most grid cell for cubic simulations
 	// With grid moves on, it will diffuse with periodic boundaries
-	// inside the volume bounded by (-delta, -delta, -delta) and (0,0,0) 
-	Eigen::RowVector3d origin; 
+	// inside the volume bounded by (-delta, -delta, -delta) and (0,0,0)
+	Eigen::RowVector3d origin;
 
 	void generate();
 	void setActiveCells();
@@ -38,8 +38,9 @@ public:
 	double energy(const std::unordered_set<Cell*>& flagged_cells, const Eigen::MatrixXd &chis);
 	double diagEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<double> diag_chis);
 	double boundaryEnergy(const std::unordered_set<Cell*>& flagged_cells, const double boundary_chi);
-	double boundaryEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Smatrix);
+	// double boundaryEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Smatrix);
 	double SmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Smatrix, const Eigen::MatrixXd &chis);
+	double EmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Ematrix, const Eigen::MatrixXd &chis);
 	double get_ij_Contacts(int i, int j) ;
 	void getDiagObs(std::vector<double> &diag_obs);
 	double cellCount();

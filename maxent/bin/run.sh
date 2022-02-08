@@ -136,11 +136,6 @@ run_simulation () {
 	fi
 	~/TICG-chromatin/TICG-engine > production.log
 
-	if [ $it -gt $(($num_iterations - 1)) ]
-	then
-		# if last iteration, save contact map
-		python3 ~/TICG-chromatin/scripts/contact_map.py --save_npy
-	fi
 	mv data_out production_out
 	cd $scratchDir
 
@@ -173,6 +168,7 @@ fi
 mkdir -p $outputDir
 mv resources/chis* .
 mv resources/*.png .
+mv resources/*.log .
 touch track.log
 
 # iteration 0

@@ -5,6 +5,7 @@ import sys
 import straw
 import pandas as pd
 import numpy as np
+import multiprocessing
 
 # ensure that I can find contact_map
 abspath = osp.abspath(__file__)
@@ -19,11 +20,11 @@ for p in paths:
     if osp.exists(p):
         sys.path.insert(1, p)
 
-from neural_net_utils.utils import diagonal_preprocessing, generateDistStats
+from neural_net_utils.utils import diagonal_preprocessing
+from data_summary_plots import genomic_distance_statistics
 
 
-def import_contactmap_straw(filename, chrom=2, start=35000000, end=60575000, resolution=25000):
-#def import_contactmap_straw(filename, chrom=2, start=22000000, end=60575000, resolution=25000):
+def download_contactmap_straw(filename, chrom, start, end, resolution):
     '''
     loads Hi-C contact map using straw https://github.com/aidenlab/straw/wiki
     uses Knight-Ruiz matrix balancing (s.t. contact map is symmetric)
@@ -50,28 +51,53 @@ def import_contactmap_straw(filename, chrom=2, start=35000000, end=60575000, res
         #hic[i] /= np.mean(hic.diagonal())
     return hic, xticks
 
+def import_contactmap_straw(sample_folder, filename, chrom=2, start=22000000, end=60575000, resolution=25000):
+    hic, xticks = download_contactmap_straw("https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic", chrom, start, end, resolution)
+    m, _ = hic.shape
+
+    if not osp.exists(sample_folder):
+        os.mkdir(sample_folder, mode = 0o755)
+
+    with open(osp.join(sample_folder, 'import.log'), 'w') as f:
+        f.write(f'{filename}\nchrom={chrom}\nstart={start}\nend={end}\nresolution={resolution}\nbeads={m}')
+
+    np.save(osp.join(sample_folder, 'y.npy'), hic)
+    plotContactMap(hic, ofile = osp.join(sample_folder, 'y.png'), vmax = 'mean')
+
+    meanDist = genomic_distance_statistics(hic)
+    y_diag = diagonal_preprocessing(hic, meanDist)
+    plotContactMap(y_diag, ofile = osp.join(sample_folder, 'y_diag.png'), vmax = 'max')
+    np.save(osp.join(sample_folder, 'y_diag.npy'), y_diag)
+
 def main():
-    dataFolder ='/project2/depablo/erschultz/dataset_09_21_21'
-    # dataFolder='dataset_09_21_21'
-    os.mkdir(dataFolder, mode = 0o755)
-    os.mkdir(osp.join(dataFolder, 'samples'), mode = 0o755)
-    sample = 'sample1'
+    dir = 'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps'
+    # dir ='/home/eric/sequences_to_contact_maps'
+    # dir = '/project2/depablo/erschultz'
+    dataset='dataset_09_21_21'
+    dataFolder = osp.join(dir, dataset)
+    if not osp.exists(dataFolder):
+        os.mkdir(dataFolder, mode = 0o755)
+    if not osp.exists(osp.join(dataFolder, 'samples')):
+        os.mkdir(osp.join(dataFolder, 'samples'), mode = 0o755)
 
-    sampleFolder = osp.join(dataFolder, 'samples', sample)
-    os.mkdir(sampleFolder, mode = 0o755)
+    i = 2
+    start_end_resolution = [(22000000, 42000000, 5000), (100000000, 110000000, 5000), (120000000, 125000000, 5000),
+                            (22000000, 42000000, 10000), (100000000, 115000000, 10000), (120000000, 130000000, 10000),
+                            (22000000, 42000000, 25000), (100000000, 130000000, 25000), (130000000, 160000000, 25000),
+                            (22000000, 42000000, 50000), (100000000, 130000000, 50000), (130000000, 160000000, 50000)]
+    # set up for multiprocessing
+    mapping = []
+    for start, end, resolution in start_end_resolution:
+        for chromosome in [2, 7]:
+            m = (end - start) / resolution
+            print(i)
+            sampleFolder = osp.join(dataFolder, 'samples', f'sample{i}')
+            mapping.append((sampleFolder, "https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic", chromosome, start, end, resolution))
+            i += 1
 
-    ofile = osp.join(sampleFolder, 'y.npy')
-    hic, xticks = import_contactmap_straw("https://s3.amazonaws.com/hicfiles/hiseq/degron/untreated/unsynchronized/combined.hic")
-    print(hic.shape)
+    with multiprocessing.Pool(6) as p:
+        p.starmap(import_contactmap_straw, mapping)
 
-    np.save(osp.join(sampleFolder, 'y.npy'), hic)
-
-    plotContactMap(hic, ofile = osp.join(sampleFolder, 'y.png'), vmax = 'mean')
-
-    meanDist = generateDistStats(hic)
-    y_diag_instance = diagonal_preprocessing(hic, meanDist)
-    plotContactMap(y_diag_instance, ofile = osp.join(sampleFolder, 'y_diag_instance.png'), vmax = 'max')
-    np.save(osp.join(sampleFolder, 'y_diag_instance.npy'), y_diag_instance)
 
 if __name__ == '__main__':
     main()

@@ -1,6 +1,6 @@
 #! /bin/bash
-#SBATCH --job-name=TICG0
-#SBATCH --output=logFiles/random0.out
+#SBATCH --job-name=TICG2
+#SBATCH --output=logFiles/random2.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20
@@ -24,8 +24,13 @@ pSwitch=${14}
 minChi=${15}
 maxChi=${16}
 fillDiag=${17}
+chiSeed=${18}
+maxDiagChi=${19}
+
 
 echo $@
+
+source ~/TICG-chromatin/bin/random/random_fns.sh
 
 STARTTIME=$(date +%s)
 for i in $(seq 1 $tasks)
@@ -35,7 +40,7 @@ do
   i=$(( i + $tasks * $scriptIndex ))
   echo $start $stop
   scratchDirI="${scratchDir}/TICG${i}"
-  ~/TICG-chromatin/bin/random_inner.sh $scratchDirI $k $chi $m $start $stop $dataFolder $relabel $diag $nSweeps $pSwitch $minChi $maxChi $fillDiag > ~/TICG-chromatin/logFiles/TICG${i}.log &
+  random &
 done
 
 wait

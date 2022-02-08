@@ -15,6 +15,7 @@ void read_json(const nlohmann::json& json, T& var, std::string varname) {
 void Sim::run() {
 	readInput();            // load parameters from config.json
 	if (smatrix_on) { setupSmatrix(); }
+  if (ematrix_on) { setupEmatrix(); }
 	calculateParameters();  // calculates derived parameters
 	makeOutputFiles();      // open files
 	initialize();           // set particle positions and construct bonds
@@ -134,9 +135,9 @@ void Sim::readInput() {
 	if (plaid_on)
 	{
 		assert(config.contains("nspecies")); nspecies = config["nspecies"];
-		assert(config.contains("load_chipseq")); load_chipseq = config["load_chipseq"];
+		assert(config.contains("load_bead_types")); load_bead_types = config["load_bead_types"];
 
-		if (load_chipseq)
+		if (load_bead_types)
 		{
 			chis = Eigen::MatrixXd::Zero(nspecies, nspecies);
 
@@ -144,7 +145,7 @@ void Sim::readInput() {
 			for (int i=0; i<nspecies; i++)
 			{
 
-				// should be included even if load_chipseq is false... fix later
+				// should be included even if load_bead_types is false... fix later
 
 				for (int j=i; j<nspecies; j++)
 				{
@@ -158,17 +159,17 @@ void Sim::readInput() {
 				}
 			}
 
-			assert(config.contains("chipseq_files"));
-			for (auto file : config["chipseq_files"])
+			assert(config.contains("bead_types"));
+			for (auto file : config["bead_types"])
 			{
-				chipseq_files.push_back(file);
+				bead_type_files.push_back(file);
 			}
 
 
-			if (chipseq_files.size() != nspecies)
+			if (bead_type_files.size() != nspecies)
 			{
-				throw std::logic_error("Number of chipseq files: "
-						+ std::to_string(chipseq_files.size())
+				throw std::logic_error("Number of bead type files: "
+						+ std::to_string(bead_type_files.size())
 						+ " must equal number of species: " + std::to_string(nspecies));
 			}
 			Cell::ntypes = nspecies;
@@ -177,7 +178,7 @@ void Sim::readInput() {
 	else
 	{
 		nspecies = 0;
-		load_chipseq = false;
+		load_bead_types = false;
 	}
 
 	assert(config.contains("diagonal_on")); diagonal_on= config["diagonal_on"];
@@ -229,12 +230,14 @@ void Sim::readInput() {
 	assert(config.contains("boundary_chi")); boundary_chi  = config["boundary_chi"];
 	assert(config.contains("smatrix_filename")); smatrix_filename = config["smatrix_filename"];
 	assert(config.contains("smatrix_on")); smatrix_on = config["smatrix_on"];
+  assert(config.contains("ematrix_filename")); ematrix_filename = config["ematrix_filename"];
+	assert(config.contains("ematrix_on")); ematrix_on = config["ematrix_on"];
 	assert(config.contains("phi_solvent_max")); Cell::phi_solvent_max = config["phi_solvent_max"];
 	assert(config.contains("phi_chromatin")); Cell::phi_chromatin = config["phi_chromatin"];
 	assert(config.contains("kappa")); Cell::kappa = config["kappa"];
 	assert(config.contains("density_cap_on")); Cell::density_cap_on = config["density_cap_on"];
 	assert(config.contains("compressibility_on")); Cell::compressibility_on = config["compressibility_on"];
-	assert(config.contains("diag_pseudobeads_on")); Cell::diag_pseudobeads_on = config["diag_pseudobeads_on"];
+	// assert(config.contains("diag_pseudobeads_on")); Cell::diag_pseudobeads_on = config["diag_pseudobeads_on"];
 
 	//cellcount_on = config["cellcount_on"];
 
@@ -275,7 +278,7 @@ void Sim::makeOutputFiles() {
 	command = "cp config.json " + data_out_filename;
 	const int result = system(command.c_str());
 
-	for (const std::string file : chipseq_files)
+	for (const std::string file : bead_type_files)
 	{
 		command = "cp " + file + " " + data_out_filename;
 		const int result = system(command.c_str());
@@ -313,8 +316,8 @@ void Sim::initialize() {
 		initRandomCoil(bond_length);
 	}
 
-	// set up chipseq
-	if (load_chipseq) { loadChipseq(); }
+	// set up bead types
+	if (load_bead_types) { loadBeadTypes(); }
 
 	// set bonds
 	constructBonds();
@@ -342,7 +345,7 @@ void Sim::volParameters_new() {
 	grid.L= std::round(std::pow(vol ,1.0/3.0) / grid.delta); // number of grid cells per side // ROUNDED, won't exactly equal a desired volume frac
 
 	std::cout << "grid.L is: " << grid.L << std::endl;
-	total_volume = pow(grid.L*grid.delta/1000.0, 3); // micrometers^3 ONLY TRUE FOR CUBIC SIMULATIONS 
+	total_volume = pow(grid.L*grid.delta/1000.0, 3); // micrometers^3 ONLY TRUE FOR CUBIC SIMULATIONS
 	std::cout << "volume is: " << total_volume << std::endl;
 	std::cout << "volume fraction is: " << nbeads*Cell::beadvol/(total_volume*1000*1000*1000) << std::endl;
 
@@ -392,7 +395,7 @@ void Sim::loadConfiguration() {
 	std::cout << "checking if nbeads in config.json matches number of beads in the first line of <input>.xyz ... " << std::endl;
 	assert(init_nbeads == nbeads);
 	std::cout << "nbeads in config.json matches <input>.xyz" << std::endl;
-	
+
 	getline(IFILE, line); // comment line
 	std::cout << line << std::endl;
 
@@ -451,27 +454,27 @@ void Sim::initRandomCoil(double bondlength) {
 	}
 }
 
-void Sim::loadChipseq() {
-	// set up chipseq
+void Sim::loadBeadTypes() {
+	// set up bead types
 	int marktype = 0;
-	for (std::string chipseq_file : chipseq_files)
+	for (std::string bead_type_file : bead_type_files)
 	{
-		std::ifstream IFCHIPSEQ;
-		IFCHIPSEQ.open(chipseq_file);
-		if ( IFCHIPSEQ.good() )
+		std::ifstream IFBEADTYPE;
+		IFBEADTYPE.open(bead_type_file);
+		if ( IFBEADTYPE.good() )
 		{
 			for(int i=0; i<nbeads; i++)
 			{
 				//beads[i].d.reserve(nspecies);
 				beads[i].d.resize(nspecies);
-				IFCHIPSEQ >> beads[i].d[marktype];
+				IFBEADTYPE >> beads[i].d[marktype];
 			}
 			marktype++;
-			IFCHIPSEQ.close();
+			IFBEADTYPE.close();
 		}
 		else
 		{
-			throw std::runtime_error(chipseq_file + " does not exist or could not be opened");
+			throw std::runtime_error(bead_type_file + " does not exist or could not be opened");
 		}
 	}
 }
@@ -518,7 +521,11 @@ double Sim::getNonBondedEnergy(const std::unordered_set<Cell*>& flagged_cells) {
 		{
 			U += grid.SmatrixEnergy(flagged_cells, smatrix, chis);
 		}
-		else
+		else if (ematrix_on)
+    {
+      	U += grid.EmatrixEnergy(flagged_cells, ematrix, chis);
+    }
+    else
 		{
 			U += grid.energy(flagged_cells, chis);
 		}
@@ -1234,7 +1241,7 @@ void Sim::dumpEnergy(int sweep, double bonded=0, double nonbonded=0, double diag
 }
 
 void Sim::dumpObservables(int sweep) {
-	
+
 	// TODO phis are not updated unless energy function is called
 	// leads to error if dumping observables after a rejected move;
 	// beads are returned to their original state and typenums is updated
@@ -1351,4 +1358,21 @@ void Sim::setupSmatrix() {
 		}
 	}
 	std::cout << "loaded Smatrix, first element:" << smatrix[0][0] << std::endl;
+}
+
+void Sim::setupEmatrix() {
+	std::ifstream ematrixfile(ematrix_filename);
+
+	if ( !ematrixfile.good() ) {
+		throw std::runtime_error(ematrix_filename + " does not exist or cannot be opened");
+	}
+
+	ematrix.resize(nbeads);
+	for (int i=0; i<nbeads; i++) {
+		ematrix[i].resize(nbeads);
+		for (int j=0; j<nbeads; j++) {
+			ematrixfile >> ematrix[i][j];
+		}
+	}
+	std::cout << "loaded Ematrix, first element:" << ematrix[0][0] << std::endl;
 }
