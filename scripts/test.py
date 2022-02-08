@@ -21,6 +21,7 @@ for p in paths:
 from neural_net_utils.dataset_classes import make_dataset
 from neural_net_utils.utils import *
 from result_summary_plots import *
+from data_summary_plots import *
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -144,8 +145,6 @@ def test_robust_PCA():
     plotContactMap(S, ofile = osp.join(dir, 'RPCA_S_diag.png'), vmax = np.max(y_diag))
 
 
-
-
 def scc_y_vs_y_rank1():
     dir = '/home/eric/sequences_to_contact_maps/dataset_01_16_22/samples/sample40'
     y = np.load(osp.join(dir, 'y.npy'))
@@ -238,14 +237,37 @@ def is_scc_weighted_mean():
     avg = np.nanmean(corr_arr)
     print(avg)
 
+def main2():
+    dir = 'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps/dataset_09_21_21'
+
+    for i in range(1, 26):
+        sample_dir = osp.join(dir, f'samples/sample{i}')
+        y_diag = np.load(osp.join(sample_dir, 'y_diag.npy'))
+        m, _ = y_diag.shape
+
+        plotContactMap(y_diag, ofile = osp.join(sample_dir, 'y_diag.png'), vmax = 'max')
+
+
+    #     freq_arr = np.zeros((int(m * (m+1) / 2), 4)) # freq, sample, 0, 0
+    #
+    #     ind = 0
+    #     for i in range(m):
+    #         for j in range(i+1):
+    #             freq_arr[ind] = [y_diag[i,j], 2, 0, 0]
+    #             ind += 1
+    #
+    # print(np.percentile(y_diag, 99))
+    #
+    # plotFrequenciesForSample(freq_arr, dir, 'diag', sampleid = 2, k=None, split = None)
+
 
 
 
 if __name__ == '__main__':
-    # main()
+    main2()
     # is_scc_weighted_mean()
     # scc_y_vs_y_rank1()
-    test_robust_PCA()
+    # test_robust_PCA()
     # check_seq()
     # find_mising_ids()
     # check_seq('dataset_11_03_21')
