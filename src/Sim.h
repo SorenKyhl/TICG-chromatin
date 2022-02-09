@@ -118,6 +118,7 @@ public:
 	std::vector<std::vector<double>> smatrix;
 	std::string smatrix_filename;
 	bool smatrix_on;
+	bool ematrix_on;
 
 	std::vector<std::vector<double>> ematrix;
 	std::string ematrix_filename;
@@ -139,6 +140,7 @@ public:
 	void volParameters_new();
 	void loadConfiguration();
 	void initRandomCoil(double bondlength);
+	int countLines(std::string filepath);
 	void loadBeadTypes();
 	void constructBonds();
 	void print();

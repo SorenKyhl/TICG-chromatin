@@ -1,5 +1,7 @@
 #include "Sim.h"
 
+//TODO asasert the size of chipseq vector is the same as nbeads
+
 // assign variable to json key of the same name
 #define READ_JSON(json, var) read_json((json), (var), #var)
 template<class T>
@@ -15,7 +17,7 @@ void read_json(const nlohmann::json& json, T& var, std::string varname) {
 void Sim::run() {
 	readInput();            // load parameters from config.json
 	if (smatrix_on) { setupSmatrix(); }
-  if (ematrix_on) { setupEmatrix(); }
+	if (ematrix_on) { setupEmatrix(); }
 	calculateParameters();  // calculates derived parameters
 	makeOutputFiles();      // open files
 	initialize();           // set particle positions and construct bonds
@@ -137,16 +139,41 @@ void Sim::readInput() {
 		assert(config.contains("nspecies")); nspecies = config["nspecies"];
 		assert(config.contains("load_bead_types")); load_bead_types = config["load_bead_types"];
 
+
 		if (load_bead_types)
 		{
-			chis = Eigen::MatrixXd::Zero(nspecies, nspecies);
+			assert(config.contains("bead_type_files"));
+			for (auto file : config["bead_type_files"])
+			{
+				bead_type_files.push_back(file);
+			}
 
+			if (bead_type_files.size() != nspecies)
+			{
+				throw std::logic_error("Number of bead type files: "
+						+ std::to_string(bead_type_files.size())
+						+ " must equal number of species: " + std::to_string(nspecies));
+			}
+			Cell::ntypes = nspecies;
+
+			//assert(config.contains("chipseq_files"));
+			//for (auto file : config["chipseq_files"]) { chipseq_files.push_back(file); }
+		
+			//assert(config.contains("nspecies")); nspecies = config["nspecies"];
+			//Cell::ntypes = nspecies;
+			//if (chipseq_files.size() != nspecies)
+			//{
+				//throw std::logic_error("Number of chipseq files: "
+						//+ std::to_string(chipseq_files.size())
+						////+ " must equal number of species: " + std::to_string(nspecies));
+			//}
+
+			// set up chi matrix
+			chis = Eigen::MatrixXd::Zero(nspecies, nspecies);
 			char first = 'A' + 1;
 			for (int i=0; i<nspecies; i++)
 			{
-
-				// should be included even if load_bead_types is false... fix later
-
+				// should be included even if load_chipseq is false... fix later
 				for (int j=i; j<nspecies; j++)
 				{
 					char first = 'A' + i;
@@ -158,21 +185,6 @@ void Sim::readInput() {
 					std::cout << chistring << " " << chis(i,j) << std::endl;
 				}
 			}
-
-			assert(config.contains("bead_types"));
-			for (auto file : config["bead_types"])
-			{
-				bead_type_files.push_back(file);
-			}
-
-
-			if (bead_type_files.size() != nspecies)
-			{
-				throw std::logic_error("Number of bead type files: "
-						+ std::to_string(bead_type_files.size())
-						+ " must equal number of species: " + std::to_string(nspecies));
-			}
-			Cell::ntypes = nspecies;
 		}
 	}
 	else
@@ -230,7 +242,7 @@ void Sim::readInput() {
 	assert(config.contains("boundary_chi")); boundary_chi  = config["boundary_chi"];
 	assert(config.contains("smatrix_filename")); smatrix_filename = config["smatrix_filename"];
 	assert(config.contains("smatrix_on")); smatrix_on = config["smatrix_on"];
-  assert(config.contains("ematrix_filename")); ematrix_filename = config["ematrix_filename"];
+	assert(config.contains("ematrix_filename")); ematrix_filename = config["ematrix_filename"];
 	assert(config.contains("ematrix_on")); ematrix_on = config["ematrix_on"];
 	assert(config.contains("phi_solvent_max")); Cell::phi_solvent_max = config["phi_solvent_max"];
 	assert(config.contains("phi_chromatin")); Cell::phi_chromatin = config["phi_chromatin"];
@@ -238,9 +250,7 @@ void Sim::readInput() {
 	assert(config.contains("density_cap_on")); Cell::density_cap_on = config["density_cap_on"];
 	assert(config.contains("compressibility_on")); Cell::compressibility_on = config["compressibility_on"];
 	// assert(config.contains("diag_pseudobeads_on")); Cell::diag_pseudobeads_on = config["diag_pseudobeads_on"];
-
 	//cellcount_on = config["cellcount_on"];
-
 	assert(config.contains("seed"));
 	int seed = config["seed"];
 	rng = new RanMars(seed);
@@ -454,6 +464,17 @@ void Sim::initRandomCoil(double bondlength) {
 	}
 }
 
+int Sim::countLines(std::string filepath)
+{
+	int count = 0;
+	std::string line;
+
+	std::ifstream file(filepath);
+	while (getline(file, line))
+		count++;
+	return count;
+}
+
 void Sim::loadBeadTypes() {
 	// set up bead types
 	int marktype = 0;
@@ -461,6 +482,16 @@ void Sim::loadBeadTypes() {
 	{
 		std::ifstream IFBEADTYPE;
 		IFBEADTYPE.open(bead_type_file);
+
+		int nlines = countLines(chipseq_file);
+		if (nlines != nbeads)
+		{
+			throw std::runtime_error(chipseq_file + 
+					" (length : " + std::to_string(nlines) + 
+					") is not the right size for a simulation with " + 
+					std::to_string(nbeads) + " particles.");
+		}
+
 		if ( IFBEADTYPE.good() )
 		{
 			for(int i=0; i<nbeads; i++)
@@ -583,13 +614,21 @@ double Sim::randomExp(double mu, double decay) {
 
 void Sim::MC() {
 	std::cout << "Beginning Simulation" << std::endl;
-	for(int sweep = 0; sweep<nSweeps; sweep++)
+	for(int sweep = 1; sweep<nSweeps+1; sweep++)
 	{
 		//std::cout << sweep << std::endl;
 		double nonbonded;
 		//nonbonded = getNonBondedEnergy(grid.active_cells);
 		//std::cout << "beginning sim: nonbonded: " <<  grid.active_cells.size() << std::endl;
 
+		Timer t_pivot("pivoting", prof_timer_on);
+		for(int j=0; j<n_pivot; j++) {
+			MCmove_pivot(sweep);
+			//nonbonded = getNonBondedEnergy(grid.active_cells);
+			//std::cout << nonbonded << std::endl;
+		}
+		//t_pivot.~Timer();
+		
 		looping:
 		Timer t_translation("translating", prof_timer_on);
 		for(int j=0; j<n_trans; j++)
@@ -603,6 +642,14 @@ void Sim::MC() {
 		if (gridmove_on) MCmove_grid();
 		//nonbonded = getNonBondedEnergy(grid.active_cells);
 		//std::cout << nonbonded << std::endl;
+	
+		Timer t_crankshaft("Cranking", prof_timer_on);
+		for(int j=0; j<n_crank; j++) {
+			MCmove_crankshaft();
+			//nonbonded = getNonBondedEnergy(grid.active_cells);
+			//std::cout << nonbonded << std::endl;
+		}
+		//t_crankshaft.~Timer();
 
 		Timer t_displace("displacing", prof_timer_on);
 		for(int j=0; j<n_disp; j++)
@@ -613,53 +660,30 @@ void Sim::MC() {
 		}
 		//t_displace.~Timer();
 
-
-		Timer t_crankshaft("Cranking", prof_timer_on);
-		for(int j=0; j<n_crank; j++) {
-			MCmove_crankshaft();
-			//nonbonded = getNonBondedEnergy(grid.active_cells);
-			//std::cout << nonbonded << std::endl;
-		}
-		//t_crankshaft.~Timer();
-
-
 		Timer t_rotation("Rotating", prof_timer_on);
 		for(int j=0; j<n_rot; j++) {
 			MCmove_rotate();
 		}
 		//t_rotation.~Timer();
 
-
-		Timer t_pivot("pivoting", prof_timer_on);
-		for(int j=0; j<n_pivot; j++) {
-			MCmove_pivot(sweep);
-			//nonbonded = getNonBondedEnergy(grid.active_cells);
-			//std::cout << nonbonded << std::endl;
-		}
-		//t_pivot.~Timer();
-
-
 		if (sweep%dump_frequency == 0) {
 			std::cout << "Sweep number " << sweep << std::endl;
 			dumpData();
+			if (production) {dumpContacts(sweep);}
 
 			if (print_acceptance_rates) {
 				std::cout << "acceptance rate: " << (float) acc/((sweep+1)*nSteps)*100.0 << "%" << std::endl;
-
-				if (displacement_on) std::cout << "disp: " << (float) acc_disp/((sweep+1)*n_disp)*100 << "% \t";
-				if (translation_on) std::cout << "trans: " << (float) acc_trans/((sweep+1)*n_trans)*100 << "% \t";
-				if (crankshaft_on) std::cout << "crank: " << (float) acc_crank/((sweep+1)*n_crank)*100 << "% \t";
-				if (pivot_on) std::cout << "pivot: " << (float) acc_pivot/((sweep+1)*n_pivot)*100 << "% \t";
-				if (rotate_on) std::cout << "rot: " << (float) acc_rot/((sweep+1)*n_rot)*100 << "% \t";
+				if (displacement_on) std::cout << "disp: " << (float) acc_disp/(sweep*n_disp)*100 << "% \t";
+				if (translation_on) std::cout << "trans: " << (float) acc_trans/(sweep*n_trans)*100 << "% \t";
+				if (crankshaft_on) std::cout << "crank: " << (float) acc_crank/(sweep*n_crank)*100 << "% \t";
+				if (pivot_on) std::cout << "pivot: " << (float) acc_pivot/(sweep*n_pivot)*100 << "% \t";
+				if (rotate_on) std::cout << "rot: " << (float) acc_rot/(sweep*n_rot)*100 << "% \t";
 				//std::cout << "cellcount: " << grid.cellCount();
 				std::cout << std::endl;
-
 			}
-
-			if (production) {dumpContacts(sweep);}
 		}
 
-		if (sweep%dump_stats_frequency == 0)
+		if (sweep%dump_stats_frequency == 0) 
 		{
 			if (production)
 			{
@@ -681,7 +705,6 @@ void Sim::MC() {
 
 			dumpEnergy(sweep, bonded, nonbonded, diagonal, boundary);
 		}
-
 	}
 
 	// final contact map
@@ -801,7 +824,6 @@ void Sim::MCmove_translate() {
 		for(int i=first; i<=last; i++)
 		{
 			old_cell_tmp = grid.getCell(beads[i]);
-			flagged_cells.insert(old_cell_tmp);
 
 			new_loc = beads[i].r + displacement;
 			new_cell_tmp = grid.getCell(new_loc);
@@ -810,6 +832,7 @@ void Sim::MCmove_translate() {
 			{
 				bead_swaps[i] = std::make_pair(old_cell_tmp, new_cell_tmp);
 				flagged_cells.insert(new_cell_tmp);
+				flagged_cells.insert(old_cell_tmp);
 			}
 		}
 		//t_flag.~Timer();
@@ -899,9 +922,9 @@ void Sim::MCmove_crankshaft() {
 
 	// compute axis of rotation, create quaternion
 	Eigen::RowVector3d axis = beads[last+1].r - beads[first-1].r;
-			double angle = step_crank*(rng->uniform()- 0.5); // random symmtric angle in cone size step_crank
+	double angle = step_crank*(rng->uniform()- 0.5); // random symmtric angle in cone size step_crank
 	Eigen::Quaterniond du;
-			du = Eigen::AngleAxisd(angle, axis.normalized()); // object representing this rotation
+	du = Eigen::AngleAxisd(angle, axis.normalized()); // object representing this rotation
 
 	// memory storage objects
 	std::vector<Eigen::RowVector3d> old_positions;
@@ -950,18 +973,16 @@ void Sim::MCmove_crankshaft() {
 			new_cell_tmp = grid.getCell(beads[i]);
 			old_cell_tmp = grid.getCell(old_positions[i-first]);
 
-			flagged_cells.insert(old_cell_tmp);
-
 			if (new_cell_tmp != old_cell_tmp)
 			{
-				flagged_cells.insert(new_cell_tmp);
 				bead_swaps[i] = std::make_pair(old_cell_tmp, new_cell_tmp);
+				flagged_cells.insert(new_cell_tmp);
+				flagged_cells.insert(old_cell_tmp);
 			}
 		}
 
 		// calculate old nonbonded energy based on flagged cells
 		if (nonbonded_on) Uold += getNonBondedEnergy(flagged_cells);
-
 
 		// Update grid
 		//for(std::pair<int, std::pair<Cell*, Cell*>> &x : bead_swaps)
@@ -1065,9 +1086,9 @@ void Sim::MCmove_pivot(int sweep) {
 	int last = (pivot < end) ? end : pivot-1;
 
 	// rotation objects
-			double angle = step_pivot*(rng->uniform()- 0.5); // random symmtric angle in cone size step_pivot
+	double angle = step_pivot*(rng->uniform()- 0.5); // random symmtric angle in cone size step_pivot
 	Eigen::RowVector3d axis;                     // random axis
-			axis = unit_vec(axis);
+	axis = unit_vec(axis);
 	Eigen::Quaterniond du {Eigen::AngleAxisd(angle, axis)}; // object representing this rotation
 
 	// memory storage objects
@@ -1111,12 +1132,11 @@ void Sim::MCmove_pivot(int sweep) {
 			new_cell_tmp = grid.getCell(beads[i]);
 			old_cell_tmp = grid.getCell(old_positions[i-first]);
 
-			flagged_cells.insert(old_cell_tmp);
-
 			if (new_cell_tmp != old_cell_tmp)
 			{
-				flagged_cells.insert(new_cell_tmp);
 				bead_swaps[i] = std::make_pair(old_cell_tmp, new_cell_tmp);
+				flagged_cells.insert(old_cell_tmp);
+				flagged_cells.insert(new_cell_tmp);
 			}
 		}
 
@@ -1267,6 +1287,7 @@ void Sim::dumpObservables(int sweep) {
 
 	if (diagonal_on)
 	{
+		double Udiag = grid.diagEnergy(grid.active_cells, diag_chis); // to update phis_diag? jan 28-2022
 		diag_obs_out = fopen(diag_obs_out_filename.c_str(), "a");
 		fprintf(diag_obs_out, "%d", sweep);
 

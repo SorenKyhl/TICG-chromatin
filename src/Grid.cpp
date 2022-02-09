@@ -20,6 +20,7 @@ void Grid::generate() {
 			}
 		}
 	}
+	std::cout << "Cells initialized, number: " << cells.size()*cells[0].size()*cells[0][0].size() << std::endl;
 };
 
 void Grid::setActiveCells() {
@@ -51,6 +52,7 @@ void Grid::setActiveCells() {
 			}
 		}
 	}
+	std::cout << "Active cells selected; number: " << active_cells.size() << std::endl;
 };
 
 void Grid::printActiveCells() {
@@ -133,7 +135,8 @@ double Grid::energy(const std::unordered_set<Cell*>& flagged_cells, const Eigen:
 
 double Grid::diagEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<double> diag_chis) {
 	// nonbonded volume interactions
-	double U = 0;
+	double U = 0; 
+//#pragma omp parallel for reduction(+:U)
 	for(Cell* cell : flagged_cells)
 	{
 		U += cell->getDiagEnergy(diag_chis);

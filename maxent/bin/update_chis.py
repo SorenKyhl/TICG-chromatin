@@ -45,6 +45,7 @@ def main():
                 print('k: ', args.k)
                 raise
             counter += 1
+            print( i, j, counter)
 
     with open(config_file, "w") as f:
         json.dump(config, f)
