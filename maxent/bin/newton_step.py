@@ -189,28 +189,23 @@ def main():
     '''
 
     it = int(sys.argv[1])                    # iteration number
-    gamma_plaid  = float(sys.argv[2])        # damping coefficient
-    gamma_diag = float(sys.argv[3])          # dampling coefficient
-    mode = sys.argv[4]                       # plaid, diag, or both
-    goal_specified = str2bool(sys.argv[5])   # if true, will read from obj_goal.txt and obj_goal_diag.txt.
+    gamma = float(sys.argv[2])               # damping coefficient
+    mode = sys.argv[3]                       # plaid, diag, or both
+    goal_specified = str2bool(sys.argv[4])   # if true, will read from obj_goal.txt and obj_goal_diag.txt.
                                              # if false, will calculate goals from iteration1 observables
-    trust_region = float(sys.argv[6])
+    trust_region = float(sys.argv[5])
 
     print(goal_specified)
 
     print('Iteration Number {}'.format(it))
-    print("gamma_plaid: {}".format(gamma_plaid))
-    print("gamma_diag: {}".format(gamma_diag))
+    print("gamma: {}".format(gamma))
 
     if mode == "both":
-
         parameter_files = ["chis.txt", "chis_diag.txt"]
         obs_files = ["observables.traj", "diag_observables.traj"]
         convergence_files = ["convergence.txt", "convergence_diag.txt"]
         goal_files = ["obj_goal.txt", "obj_goal_diag.txt"]
-        gamma = gamma_plaid
         both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, it, goal_specified, trust_region)
-
     else:
         if mode == "diag":
             diag_fn = step
@@ -223,17 +218,14 @@ def main():
         obs_file = "diag_observables.traj"
         convergence_file = "convergence_diag.txt"
         goal_file = "obj_goal_diag.txt"
-        gamma = gamma_diag
         diag_fn(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified, trust_region)
 
         parameter_file = "chis.txt"
         obs_file = "observables.traj"
         convergence_file = "convergence.txt"
         goal_file = "obj_goal.txt"
-        gamma = gamma_plaid
         fn(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified, trust_region)
         print('\n')
-
 
 if __name__ == '__main__':
     main()
