@@ -238,7 +238,7 @@ void Sim::readInput() {
 	assert(config.contains("kappa")); Cell::kappa = config["kappa"];
 	assert(config.contains("density_cap_on")); Cell::density_cap_on = config["density_cap_on"];
 	assert(config.contains("compressibility_on")); Cell::compressibility_on = config["compressibility_on"];
-	// assert(config.contains("diag_pseudobeads_on")); Cell::diag_pseudobeads_on = config["diag_pseudobeads_on"];
+	assert(config.contains("diag_pseudobeads_on")); Cell::diag_pseudobeads_on = config["diag_pseudobeads_on"];
 	//cellcount_on = config["cellcount_on"];
 	assert(config.contains("seed"));
 	int seed = config["seed"];
