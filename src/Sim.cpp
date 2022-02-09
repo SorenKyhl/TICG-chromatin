@@ -156,18 +156,6 @@ void Sim::readInput() {
 			}
 			Cell::ntypes = nspecies;
 
-			//assert(config.contains("chipseq_files"));
-			//for (auto file : config["chipseq_files"]) { chipseq_files.push_back(file); }
-		
-			//assert(config.contains("nspecies")); nspecies = config["nspecies"];
-			//Cell::ntypes = nspecies;
-			//if (chipseq_files.size() != nspecies)
-			//{
-				//throw std::logic_error("Number of chipseq files: "
-						//+ std::to_string(chipseq_files.size())
-						////+ " must equal number of species: " + std::to_string(nspecies));
-			//}
-
 			// set up chi matrix
 			chis = Eigen::MatrixXd::Zero(nspecies, nspecies);
 			char first = 'A' + 1;
@@ -483,10 +471,10 @@ void Sim::loadBeadTypes() {
 		std::ifstream IFBEADTYPE;
 		IFBEADTYPE.open(bead_type_file);
 
-		int nlines = countLines(chipseq_file);
+		int nlines = countLines(bead_type_file);
 		if (nlines != nbeads)
 		{
-			throw std::runtime_error(chipseq_file + 
+			throw std::runtime_error(bead_type_file + 
 					" (length : " + std::to_string(nlines) + 
 					") is not the right size for a simulation with " + 
 					std::to_string(nbeads) + " particles.");

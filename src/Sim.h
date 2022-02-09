@@ -122,7 +122,6 @@ public:
 
 	std::vector<std::vector<double>> ematrix;
 	std::string ematrix_filename;
-	bool ematrix_on;
 
 	// methods
 	void run();
