@@ -74,7 +74,7 @@ max_ent_inner () {
 
   echo $method_fmt
   # apply max ent with newton's method
-  ~/TICG-chromatin/maxent/bin/run.sh $ofile $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite $1 $finalSimProductionSweeps
+  ~/TICG-chromatin/maxent/bin/run.sh $ofile $gamma $trust_region $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite $1 $finalSimProductionSweeps
 
   # run.sh moves all data to $ofile upon completion
   cd $ofile

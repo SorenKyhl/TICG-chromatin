@@ -57,8 +57,8 @@
 # command-line arguments
 today=$(date +'%m_%d_%y')
 outputDir=${1:-"/project2/depablo/erschultz/maxent_${today}"}
-gamma=${2:-0.00001}
-gamma_diag=${3:-0.00001}
+gamma=${2:-1}
+trust_region=${3:-10}
 mode=${4:-"plaid"}
 production_sweeps=${5:-50000}
 equilib_sweeps=${6:-10000}
@@ -144,7 +144,6 @@ run_simulation () {
 
 }
 
-
 # directory checks
 if [ -d $outputDir ]
 then
@@ -191,7 +190,7 @@ then
 	do
 		run_simulation
 		# update chis via newton's method
-		python3 $proj_bin/newton_step.py $it $gamma $gamma_diag $mode $goal_specified >> track.log
+		python3 $proj_bin/newton_step.py $it $gamma $mode $goal_specified $trust_region >> track.log
 
 		# update plots
 		python3 $proj_bin/plot_convergence.py --mode $mode --k $k

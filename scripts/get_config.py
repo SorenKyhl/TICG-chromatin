@@ -30,7 +30,8 @@ def getArgs():
     # config param arguments
     parser.add_argument('--m', type=int, default=1024, help='number of particles')
     parser.add_argument('--k', type=str2int, help='number of particle types (inferred from chi if None)')
-    parser.add_argument('--load_configuration_filename', type=str2None, default='input1024.xyz', help='file name of initial config (None to not load)')
+    parser.add_argument('--load_configuration_filename', type=str2None, default='input1024.xyz',
+                        help='file name of initial config (None to not load)')
     parser.add_argument('--goal_specified', type=str2bool, default=True, help='True will save two lines to chis.txt')
     parser.add_argument('--dump_frequency', type=int, help='set to change dump frequency')
     parser.add_argument('--dump_stats_frequency', type=int, help='set to change dump stats frequency')
@@ -40,7 +41,8 @@ def getArgs():
     parser.add_argument('--use_ematrix', type=str2bool, default=False, help='True to use e_matrix')
     parser.add_argument('--use_smatrix', type=str2bool, default=False, help='True to use s_matrix')
     parser.add_argument('--sample_folder', type=str, help='location of sample for ground truth chi')
-    parser.add_argument('--relabel', type=str2None, help='specify mark combinations to be relabled (e.g. AB-C will relabel AB mark pairs as mark C)')
+    parser.add_argument('--relabel', type=str2None,
+                        help='specify mark combinations to be relabled (e.g. AB-C will relabel AB mark pairs as mark C)')
 
     # chi arguments
     parser.add_argument('--use_ground_truth_chi', type=str2bool, default=False, help='True to use ground truth chi and diag chi')
@@ -359,7 +361,7 @@ def main():
         np.save('e.npy', e)
 
     if args.use_ematrix or args.use_smatrix:
-        config['bead_types'] = None
+        config['bead_type_files'] = None
         config["nspecies"] = 0
 
         # set up config
@@ -374,7 +376,7 @@ def main():
             config["ematrix_filename"] = "e_matrix.txt"
     else:
         # save seq
-        config['bead_types'] = [f'seq{i}.txt' for i in range(args.k)]
+        config['bead_type_files'] = [f'seq{i}.txt' for i in range(args.k)]
 
         # save nspecies
         config["nspecies"] = args.k

@@ -24,14 +24,14 @@ useGroundTruthDiagChi='true'
 useGroundTruthSeed='false'
 mode="plaid"
 gamma=0.00001
-gammaDiag=0.00001
+trust_region=10
 resources=~/TICG-chromatin/maxent/resources
 chipSeqFolder="/home/erschultz/sequences_to_contact_maps/chip_seq_data"
 epiData="${chipSeqFolder}/fold_change_control/processed"
 chromHMMData="${chipSeqFolder}/aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt"
 results=~/sequences_to_contact_maps/results
 
-source ~/TICG-chromatin/bin/max_ent_fns.sh
+source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
@@ -50,13 +50,23 @@ fi
 STARTTIME=$(date +%s)
 i=12000
 dataset='dataset_09_21_21'
-sample=1
+sample=23
+for method in 'PCA' 'nmf'
+do
+  for k in 1
+  do
+    max_ent
+  done
+done
 
-method='GNN'
-modelID=70
-useE='true'
-mode='diag'
-max_ent
+for method in 'PCA' 'k_means' 'nmf'
+do
+  for k in 2 4 6
+  do
+    max_ent
+  done
+done
+
 
 wait
 

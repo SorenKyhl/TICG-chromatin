@@ -24,7 +24,7 @@ useGroundTruthDiagChi='true'
 useGroundTruthSeed='false'
 mode="plaid"
 gamma=0.00001
-gammaDiag=0.00001
+trust_region=10
 resources=~/TICG-chromatin/maxent/resources
 chipSeqFolder="/home/erschultz/sequences_to_contact_maps/chip_seq_data"
 epiData="${chipSeqFolder}/fold_change_control/processed"
@@ -35,12 +35,12 @@ source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dir="/home/eric"
+  dir="/home/eric/sequences_to_contact_maps"
   scratchDir='/home/eric/scratch'
-  numIterations=60
-  # finalSimProductionSweeps=1000
-  # equilibSweeps=1000
-  # productionSweeps=1000
+  numIterations=1
+  finalSimProductionSweeps=1000
+  equilibSweeps=1000
+  productionSweeps=1000
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
   dir='/project2/depablo/erschultz'
