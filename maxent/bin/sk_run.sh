@@ -231,6 +231,7 @@ it=$(($num_iterations + 1))
 python3 $proj_bin/jsed.py "resources/${configFileName}" dump_frequency 50000 i
 production_sweeps=500000
 run_simulation
+python3 $proj_bin/contactmap.py $it
 
 # move data to output directory
 #mv $scratchDir/* $outputDir
