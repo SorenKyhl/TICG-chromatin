@@ -169,6 +169,7 @@ void Sim::readInput() {
 					std::string chistring = "chi";
 					chistring += first;
 					chistring += second;
+					assert(config.contains(chistring));
 					chis(i,j) = config[chistring];         //  i must be less than j
 					std::cout << chistring << " " << chis(i,j) << std::endl;
 				}
