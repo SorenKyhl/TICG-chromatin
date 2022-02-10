@@ -6,7 +6,7 @@
 #SBATCH --ntasks=10
 #SBATCH --mem-per-cpu=1000
 
-dir=/home/eric/sequences_to_contact_maps/dataset_11_14_21/samples
+dir=/project2/depablo/erschultz/dataset_11_14_21/samples
 
 for i in 40 1230 1718
 do
