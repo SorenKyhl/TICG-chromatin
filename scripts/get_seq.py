@@ -28,7 +28,8 @@ for p in paths:
 
 from plotting_functions import plotContactMap
 from neural_net_utils.argparseSetup import str2bool, str2int, str2None, getBaseParser, finalizeOpt
-from neural_net_utils.utils import s_to_E, load_E_S, load_X_psi, loadSavedModel, getDataset, getDataLoaders
+from neural_net_utils.utils import s_to_E, load_E_S, load_X_psi, loadSavedModel, getDataset, load_final_max_ent_S
+from result_summary_plots import project_S_to_psi_basis
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -45,7 +46,7 @@ def getArgs():
 
     # standard args
     parser.add_argument('--method', type=str, default='k_means', help='method for assigning particle types')
-    parser.add_argument('--m', type=int, default=1024, help='number of particles (will crop contact map)')
+    parser.add_argument('--m', type=int, default=1024, help='number of particles (will crop contact map) (-1 to infer)')
     parser.add_argument('--k', type=str2int, default=2, help='sequences to generate')
 
     # args for specific methods
@@ -61,11 +62,9 @@ def getArgs():
     parser.add_argument('--kernel', type=str, default='poly', help='kernel for kernel PCA')
     parser.add_argument('--local', type=str2bool, default=False, help='True for local mode (relevant to method = GNN)')
 
-
     # post-processing args
     parser.add_argument('--save_npy', action='store_true', help='true to save seq as .npy')
     parser.add_argument('--plot', action='store_true', help='true to plot seq as .png')
-
 
     args = parser.parse_args()
     # below args are
@@ -75,8 +74,9 @@ def getArgs():
     args.use_ematrix = False
     args.use_smatrix = False
     args.append_random = False # True to append random seq
-    args.load_learned_e = False # True to load e matrix learned from prior maxent and re-run
-    args.project = False # (assumes load_learned_e is True) True to project e into space of ground truth bead labels
+    args.load_chi = False # True to load e matrix learned from prior maxent and re-run
+    args.project = False # (assumes load_chi is True) True to project e into space of ground truth bead labels
+    args.method_copy = args.method
     args.method = args.method.lower()
     process_method(args)
 
@@ -113,29 +113,31 @@ def process_method(args):
     # for documentation, see comments in getArgs()
     method_split = re.split(r'[-+]', args.method)
     method_split.pop(0)
+    modes = set(method_split)
 
-    for mode in method_split:
-        if mode == 'x':
-            args.input = mode
-        elif mode == 'y':
-            args.input = mode
-        elif mode == 'psi':
-            args.input = mode
-        elif mode == 'binarize':
-            args.binarize = True
-        elif mode == 'normlize':
-            args.normalize = False
-        elif mode == 's':
-            args.use_smatrix = True
-        elif mode == 'e':
-            args.use_ematrix = True
-        elif mode == 'random':
-            args.append_random = True
-        elif mode == 'load':
-            args.load_learned_chi = True
-        elif mode == 'project':
-            assert args.load_learned_chi
-            args.project = True
+    if 'x' in modes:
+        args.input = mode
+    if 'y' in modes:
+        args.input = mode
+    if 'psi' in modes:
+        args.input = mode
+    if 'binarize' in modes:
+        args.binarize = True
+    if 'normlize' in modes:
+        args.normalize = False
+    if 's' in modes:
+        args.use_smatrix = True
+    if 'e' in modes:
+        args.use_ematrix = True
+        assert not args.use_smatrix
+    if 'random' in modes:
+        args.append_random = True
+    if 'load_chi' in modes:
+        args.load_chi = True
+        assert args.use_ematrix or args.use_smatrix
+    if 'project' in modes:
+        assert args.use_ematrix or args.use_smatrix
+        args.project = True
 
 ### GetSeq class ###
 class GetSeq():
@@ -444,11 +446,7 @@ class GetChi():
     def __init__(self, k):
         self.k = k
 
-# TODO
-class GetEnergy():
-    def __init__():
-        pass
-    def get_energy_gnn(model_path, sample_path, local):
+def get_energy_gnn(model_path, sample_path, local):
         '''
         Loads output from GNN model to use as ematrix or smatrix
 
@@ -457,7 +455,7 @@ class GetEnergy():
             sample_path: path to sample
 
         Outputs:
-            s: np array of pairwise energiesget_energy_gnn
+            s: np array of pairwise energies
         '''
         # extract sample info
         sample = osp.split(sample_path)[1]
@@ -580,7 +578,18 @@ def main():
     args = getArgs()
     print(args)
     getSeq = GetSeq(args.m, args.k)
-    if args.method.startswith('random'):
+    if args.load_chi:
+        method_split = re.split(r'[-+]', args.method_copy)
+        method_split.remove('load_chi')
+        method_split.remove('E')
+        if 'project' in method_split:
+            method_split.remove('project')
+        original_method = ''.join(method_split)
+        replicate_path = osp.join(args.sample_folder, original_method, f'k{args.k}', 'replicate1')
+        assert osp.exists(replicate_path), f"path does not exist: {replicate_path}"
+        s = load_final_max_ent_S(args.k, replicate_path, max_it_path = None)
+        e = s_to_E(s)
+    elif args.method.startswith('random'):
         seq = getSeq.get_random_seq(args.p_switch, args.seed, args.exclusive)
     elif args.method.startswith('block'):
         seq = getSeq.get_block_seq(args.method)
@@ -615,27 +624,28 @@ def main():
             raise Exception(f'Unrecognized input mode {args.input} for method {args.method} for sample {args.sample_folder}')
 
         if args.append_random:
+            # TODO this may be broken
             assert not args.use_smatrix and not args.use_ematrix
             _, k = seq.shape
             assert args.k is not None
             assert args.k > k, f"{args.k} not > {k}"
-            seq_random = get_random_seq(args.m, args.p_switch, args.k - k, args.seed)
+            seq_random = GetSeq(args.m, args.k - k).get_random_seq(args.p_switch, args.seed)
             seq = np.concatenate((seq, seq_random), axis = 1)
 
         if args.use_smatrix or args.use_ematrix:
             e, s = load_E_S(args.sample_folder, psi)
     elif args.method.startswith('k_means') or args.method.startswith('k-means'):
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))
-        seq, args.labels = get_k_means_seq(y_diag)
+        seq, args.labels = getSeq.get_k_means_seq(y_diag)
         args.X = y_diag
     elif args.method.startswith('nmf'):
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))
-        seq, args.labels = get_nmf_seq(y_diag, args.binarize)
+        seq, args.labels = getSeq.get_nmf_seq(y_diag, args.binarize)
         args.X = y_diag
     elif args.method.startswith('epigenetic'):
-        seq, marks = get_epigenetic_seq(args.epigenetic_data_folder)
+        seq, marks = getSeq.get_epigenetic_seq(args.epigenetic_data_folder)
     elif args.method.startswith('chromhmm'):
-        seq, labels = get_ChromHMM_seq(args.ChromHMM_data_file)
+        seq, labels = getSeq.get_ChromHMM_seq(args.ChromHMM_data_file)
     elif args.method.startswith('gnn'):
         if args.use_smatrix:
             s = get_energy_gnn(args.model_path, args.sample_folder, args.local)
@@ -647,16 +657,19 @@ def main():
     else:
         raise Exception(f'Unkown method: {args.method}')
 
-    if args.use_smatrix:
-        s = s[:args.m, :args.m]
-        np.savetxt('s_matrix.txt', s, fmt = '%.3e')
-        np.save('s.npy', s)
-    elif args.use_ematrix:
+    if args.use_smatrix or args.use_ematrix:
+        if args.project:
+            _, psi = load_X_psi(args.sample_folder)
+            s, e = project_S_to_psi_basis(s, psi)
         s = s[:args.m, :args.m]
         e = e[:args.m, :args.m]
-        np.savetxt('e_matrix.txt', e, fmt = '%.3e')
-        np.save('e.npy', e)
-        np.save('s.npy', s) # save s.npy either way
+        if args.use_smatrix:
+            np.savetxt('s_matrix.txt', s, fmt = '%.3e')
+            np.save('s.npy', s)
+        elif args.use_ematrix:
+            np.savetxt('e_matrix.txt', e, fmt = '%.3e')
+            np.save('e.npy', e)
+            np.save('s.npy', s)
     else:
         m, k = seq.shape
         assert m == args.m, f"m mismatch: seq has {m} particles not {args.m}"
@@ -667,9 +680,9 @@ def main():
 
     if args.plot:
         if args.use_smatrix:
-            plotContactMap(s, 's_matrix.png', vmin = 'min', vmax = 'max', cmap = 'blue-red')
+            plotContactMap(s, 's.png', vmin = 'min', vmax = 'max', cmap = 'blue-red')
         elif args.use_ematrix:
-            plotContactMap(e, 'e_matrix.png', vmin = 'min', vmax = 'max', cmap = 'blue-red')
+            plotContactMap(e, 'e.png', vmin = 'min', vmax = 'max', cmap = 'blue-red')
         elif args.method in {'k_means', 'chromhmm'} or (args.method == 'nmf' and args.binarize):
             plot_seq_exclusive(seq, labels=args.labels, X=args.X)
         elif args.binarize:

@@ -6,31 +6,7 @@
 #SBATCH --ntasks=20
 #SBATCH --mem-per-cpu=2000
 
-m=1024
-k='none'
-samples='40-1230-1718'
-productionSweeps=50000
-finalSimProductionSweeps=1000000
-equilibSweeps=10000
-goalSpecified='true'
-numIterations=100 # iteration 1 + numIterations is production run to get contact map
-overwrite=1
-modelType='ContactGNNEnergy'
 local='false'
-useE='false'
-useS='false'
-useGroundTruthChi='false'
-useGroundTruthDiagChi='true'
-useGroundTruthSeed='false'
-mode="plaid"
-gamma=0.00001
-trust_region=10
-resources=~/TICG-chromatin/maxent/resources
-chipSeqFolder="/home/erschultz/sequences_to_contact_maps/chip_seq_data"
-epiData="${chipSeqFolder}/fold_change_control/processed"
-chromHMMData="${chipSeqFolder}/aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt"
-results=~/sequences_to_contact_maps/results
-
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]

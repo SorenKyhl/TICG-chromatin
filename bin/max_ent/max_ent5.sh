@@ -6,38 +6,17 @@
 #SBATCH --ntasks=20
 #SBATCH --mem-per-cpu=2000
 
-m=1024
-k='none'
-samples='40-1230-1718'
-productionSweeps=50000
-finalSimProductionSweeps=1000000
-equilibSweeps=10000
-goalSpecified='true'
-numIterations=100 # iteration 1 + numIterations is production run to get contact map
-overwrite=1
-modelType='ContactGNNEnergy'
 local='false'
-useE='false'
-useS='false'
-useGroundTruthChi='false'
-useGroundTruthDiagChi='true'
-useGroundTruthSeed='false'
-mode="plaid"
-gamma=0.00001
-trust_region=10
-resources=~/TICG-chromatin/maxent/resources
-chipSeqFolder="/home/erschultz/sequences_to_contact_maps/chip_seq_data"
-epiData="${chipSeqFolder}/fold_change_control/processed"
-chromHMMData="${chipSeqFolder}/aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt"
-results=~/sequences_to_contact_maps/results
-
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dataFolder="/home/eric/sequences_to_contact_maps/dataset_11_14_21"
-  # dataFolder="/home/eric/dataset_test"
+  dir="/home/eric/sequences_to_contact_maps"
   scratchDir='/home/eric/scratch'
+  # numIterations=1
+  # finalSimProductionSweeps=5000
+  # equilibSweeps=1000
+  # productionSweeps=1000
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
   dir='/project2/depablo/erschultz'
@@ -47,41 +26,23 @@ fi
 
 STARTTIME=$(date +%s)
 i=4000
-dataset='dataset_11_03_21'
-sample=1718
+dataset='dataset_01_15_22'
+sample=40
 
-for method in 'random' 'PCA'
-do
-  for k in 1 2 4 6
-  do
-    max_ent
-  done
-done
-
-for method in  'k_means'
-do
-  for k in 2 4 6
-  do
-    max_ent
-  done
-done
-
-method='ground_truth-x'
-k=3
-max_ent
-
-method='ground_truth-psi'
-k=4
-max_ent
-
-method='ground_truth'
 useE='true'
-max_ent
 
-method='GNN'
-modelID=42
-useE='true'
-max_ent
+for project in 'true' 'false'
+do
+  loadChi='true'
+  method='PCA'
+  k=4
+  max_ent
+
+  loadChi='false'
+  method='GNN'
+  modelID=70
+  max_ent
+done
 
 wait
 

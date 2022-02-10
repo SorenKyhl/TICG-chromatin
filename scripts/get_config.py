@@ -271,6 +271,7 @@ def set_up_diag_chi(args, config, sample_config):
                 assert args.diag == False
         else:
             print("WARNING: ground truth config missing")
+            chi_diag = list(np.linspace(0, args.max_diag_chi, 20))
     else:
         chi_diag = list(np.linspace(0, args.max_diag_chi, 20))
 

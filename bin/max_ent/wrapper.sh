@@ -7,7 +7,7 @@
 # necessary to ensure log files are in right place
 cd ~/TICG-chromatin
 
-for i in 1 2 3 4 13 14
+for i in 13 14
 do
   echo $i
   sbatch ~/TICG-chromatin/bin/max_ent/max_ent${i}.sh
