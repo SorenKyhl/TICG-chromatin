@@ -6,7 +6,7 @@
 #SBATCH --ntasks=20
 #SBATCH --mem-per-cpu=2000
 
-m=1500
+m=1024
 k='none'
 samples='40-1230-1718'
 productionSweeps=50000
