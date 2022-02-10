@@ -116,11 +116,11 @@ def process_method(args):
     modes = set(method_split)
 
     if 'x' in modes:
-        args.input = mode
+        args.input = 'x'
     if 'y' in modes:
-        args.input = mode
+        args.input = 'y'
     if 'psi' in modes:
-        args.input = mode
+        args.input = 'psi'
     if 'binarize' in modes:
         args.binarize = True
     if 'normlize' in modes:
