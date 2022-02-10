@@ -32,9 +32,9 @@ method='ground_truth-x'
 k=12
 max_ent
 
-method='ground_truth-psi'
-k=15
-max_ent
+# method='ground_truth-psi'
+# k=15
+# max_ent
 #
 method='ground_truth'
 useE='true'

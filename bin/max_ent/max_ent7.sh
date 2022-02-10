@@ -13,7 +13,7 @@ if [ $local = 'true' ]
 then
   dir="/home/eric/sequences_to_contact_maps"
   scratchDir='/home/eric/scratch'
-  numIterations=1
+  numIterations=2
   finalSimProductionSweeps=5000
   equilibSweeps=1000
   productionSweeps=5000
@@ -33,10 +33,10 @@ method='ground_truth-x'
 k=12
 max_ent
 
-method='ground_truth-psi'
-k=15
-max_ent
-#
+# method='ground_truth-psi'
+# k=15
+# max_ent
+
 method='ground_truth'
 useE='true'
 max_ent

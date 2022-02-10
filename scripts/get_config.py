@@ -284,7 +284,6 @@ def set_up_diag_chi(args, config, sample_config):
                 wr.writerow(np.array(config["diag_chis"]))
                 wr.writerow(np.array(config["diag_chis"]))
 
-
 def uniqueRows(array):
     if array is None:
         return False

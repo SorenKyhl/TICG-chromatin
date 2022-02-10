@@ -6,17 +6,17 @@
 #SBATCH --ntasks=20
 #SBATCH --mem-per-cpu=2000
 
-local='false'
+local='true'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
   dir="/home/eric/sequences_to_contact_maps"
   scratchDir='/home/eric/scratch'
-  numIterations=0
-  finalSimProductionSweeps=2000
-  equilibSweeps=1000
-  productionSweeps=5000
+  numIterations=80
+  # finalSimProductionSweeps=2000
+  # equilibSweeps=1000
+  # productionSweeps=5000
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
   dir='/project2/depablo/erschultz'
@@ -29,17 +29,18 @@ i=5000
 dataset='dataset_11_14_21'
 sample=40
 
-for method in 'PCA' 'nmf'
-do
-  for k in 1
-  do
-    max_ent
-  done
-done
+# for method in 'PCA' 'nmf'
+# do
+#   for k in 1
+#   do
+#     max_ent
+#   done
+# done
 
 for method in 'PCA' 'k_means' 'nmf'
 do
-  for k in 2 4 6
+  for k in 4 6
+  # 2
   do
     max_ent
   done

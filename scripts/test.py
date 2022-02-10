@@ -27,7 +27,7 @@ LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 def repair_dataset_11_14_21():
     dir = '/project2/depabo/erschultz/dataset_11_14_21/samples'
-    dir = '/home/eric/sequences_to_contact_maps/dataset_11_14_21/samples'
+    # dir = '/home/eric/sequences_to_contact_maps/dataset_11_14_21/samples'
     chi = np.array([[-1,1.8,-0.5,1.8,0.1,1.3,-0.1,0.1,0.8,1.4,2,1.7,1.5,-0.2,1.1],
                     [0,-1,-0.6,0.6,0.8,-0.8,-0.7,-0.1,0,-0.4,-0.2,0.6,-0.9,1.4,0.3],
                     [0,0,-1,1.6,0,-0.2,-0.4,1.5,0.7,1.8,-0.7,-0.9,0.6,1,0.5],
