@@ -6,7 +6,7 @@
 #SBATCH --ntasks=20
 #SBATCH --mem-per-cpu=2000
 
-local='false'
+local='true'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
@@ -30,19 +30,21 @@ dataset='dataset_01_15_22'
 sample=40
 
 useE='true'
+method='ground_truth'
+max_ent
 
-for project in 'true' 'false'
-do
-  loadChi='true'
-  method='PCA'
-  k=4
-  max_ent
-
-  loadChi='false'
-  method='GNN'
-  modelID=70
-  max_ent
-done
+# for project in 'true' 'false'
+# do
+#   loadChi='true'
+#   method='PCA'
+#   k=4
+#   max_ent
+#
+#   loadChi='false'
+#   method='GNN'
+#   modelID=70
+#   max_ent
+# done
 
 wait
 

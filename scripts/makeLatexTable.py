@@ -231,6 +231,8 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                     if sample_id is not None:
                         assert sample_results.shape[0] == 1, f"label {label}, metric {metric}, k {k_label}, results {sample_results}"
                         result = sample_results.reshape(-1)
+                        if GNN_ref is not None:
+                            ref_result = nested_list_to_array(GNN_ref[metric]).reshape(-1)
                     else:
                         try:
                             result = np.nanmean(sample_results, axis = 1)

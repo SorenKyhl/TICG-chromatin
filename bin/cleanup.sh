@@ -6,11 +6,18 @@
 #SBATCH --ntasks=10
 #SBATCH --mem-per-cpu=1000
 
-dir=/home/eric/sequences_to_contact_maps/dataset_09_21_21/samples_small
+dir=/home/eric/sequences_to_contact_maps/dataset_11_14_21/samples
 
-for i in 6 7 8 9 10 11 12 13 14 15 17 18 19 20 21 23 24 25
+for i in 40 1230 1718
 do
   cd "${dir}/sample${i}"
-  rm -r PCA_analysis
-  rm *.png
+  rm -r kPCA-x* &
+  rm -r kPCA-y* &
+  rm -r GNN* &
+  rm -r ground* &
+  rm -r PCA_split* &
+  rm -r nmf &
+  rm -r PCA &
+  rm -r k_means &
+  wait
 done
