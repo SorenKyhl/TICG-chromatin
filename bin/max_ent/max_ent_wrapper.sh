@@ -1,5 +1,8 @@
 #! /bin/bash
 
+cd ~/TICG-chromatin/src
+make
+mv TICG-engine ..
 
 for i in 1 2 3 4 13 14
 do

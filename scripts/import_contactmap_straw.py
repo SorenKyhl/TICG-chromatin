@@ -33,7 +33,7 @@ def download_contactmap_straw(filename, chrom, start, end, resolution):
     raw_data = straw.straw("KR", filename, "2:0:129999999", "2:0:129999999", "BP", 100000)
     '''
     basepairs = ":".join((str(chrom), str(start), str(end)))
-    raw_data = straw.straw("KR", filename, basepairs, basepairs, "BP", resolution)
+    raw_data = straw.straw("NONE", filename, basepairs, basepairs, "BP", resolution)
     raw_data = np.array(raw_data)
     # raw data is a map between locus pairs and reads -- need to pivot into a matrix.
     df = pd.DataFrame(raw_data.transpose(), columns=['locus1 [bp]', 'locus2 [bp]', 'reads'])
@@ -42,6 +42,7 @@ def download_contactmap_straw(filename, chrom, start, end, resolution):
     filled = pivoted.fillna(0)
     trans = filled.transpose()
     hic = np.array(filled + trans)
+    print(hic)
     # normalize so rows and columns sum to 1
     for i, row in enumerate(hic):
         # row normalization:
@@ -49,6 +50,7 @@ def download_contactmap_straw(filename, chrom, start, end, resolution):
         # diag normalization
         hic[i] /= hic[i,i]
         #hic[i] /= np.mean(hic.diagonal())
+    print(hic)
     return hic, xticks
 
 def import_contactmap_straw(sample_folder, filename, chrom=2, start=22000000, end=60575000, resolution=25000):
@@ -63,6 +65,8 @@ def import_contactmap_straw(sample_folder, filename, chrom=2, start=22000000, en
 
     np.save(osp.join(sample_folder, 'y.npy'), hic)
     plotContactMap(hic, ofile = osp.join(sample_folder, 'y.png'), vmax = 'mean')
+    plotContactMap(hic, ofile = osp.join(sample_folder, 'y_max.png'), vmax = 'max')
+    np.savetxt(osp.join(sample_folder, 'y.txt'), hic)
 
     meanDist = genomic_distance_statistics(hic)
     y_diag = diagonal_preprocessing(hic, meanDist)
@@ -98,6 +102,27 @@ def main():
     with multiprocessing.Pool(6) as p:
         p.starmap(import_contactmap_straw, mapping)
 
+def main2():
+    dir = 'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps'
+    # dir ='/home/eric/sequences_to_contact_maps'
+    # dir = '/project2/depablo/erschultz'
+    dataset='dataset_09_21_21'
+    dataFolder = osp.join(dir, dataset)
+    if not osp.exists(dataFolder):
+        os.mkdir(dataFolder, mode = 0o755)
+    if not osp.exists(osp.join(dataFolder, 'samples')):
+        os.mkdir(osp.join(dataFolder, 'samples'), mode = 0o755)
+
+    i = 5
+    chromosome=7
+    start=100000000
+    end=110000000
+    resolution=5000
+    m = (end - start) / resolution
+    print(m)
+    sampleFolder = osp.join(dataFolder, 'samples', f'sample{i}')
+    import_contactmap_straw(sampleFolder, "https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic", chromosome, start, end, resolution)
+
 
 if __name__ == '__main__':
-    main()
+    main2()
