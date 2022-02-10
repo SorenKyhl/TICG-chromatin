@@ -144,7 +144,7 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region):
 
     if steplength > trust_region:
         step /= steplength
-        step *= trust_region 
+        step *= trust_region
         steplength = np.sqrt(step@step)
         print("======= OUTSIDE TRUST REGION =========")
         print("========= steplength: ", steplength)
@@ -154,12 +154,12 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region):
 
     new_chis = current_chis - step
     print("new chi values: ", new_chis)
-    
+
     howfar = np.sqrt(difference@difference)/np.sqrt(obj_goal@obj_goal)
 
     return new_chis, howfar
 
-def copy_chis(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified = None):
+def copy_chis(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified = None, trust_region = None):
     ''' for parameters that are not optimized, just copy chis to next iteration'''
     # load current chi parameters
     if osp.exists(parameter_file):

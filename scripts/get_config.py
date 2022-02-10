@@ -135,7 +135,7 @@ def writeSeq(seq, format='%.3e'):
     for j in range(k):
         np.savetxt(f'seq{j}.txt', seq[:, j], fmt = format)
 
-#### chi functions ####
+# chi functions
 def generateRandomChi(args, decimals = 1, rng = np.random.default_rng()):
     '''Initializes random chi array.'''
 

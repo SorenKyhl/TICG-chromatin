@@ -69,7 +69,7 @@ max_ent_inner () {
   if [ $goalSpecified = 'true' ]
   then
     echo "starting goal_specified"
-    python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --k $k --contact_map "${sampleFolder}/y.npy" --mode $mode
+    python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --k $k --contact_map "${sampleFolder}/y.npy" --mode $mode > goal.log
   fi
 
   echo $method_fmt
