@@ -26,7 +26,7 @@ from data_summary_plots import *
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 def repair_dataset_11_14_21():
-    dir = '/project2/depabo/erschultz/dataset_11_14_21/samples'
+    dir = '/project2/depablo/erschultz/dataset_11_14_21/samples'
     # dir = '/home/eric/sequences_to_contact_maps/dataset_11_14_21/samples'
     chi = np.array([[-1,1.8,-0.5,1.8,0.1,1.3,-0.1,0.1,0.8,1.4,2,1.7,1.5,-0.2,1.1],
                     [0,-1,-0.6,0.6,0.8,-0.8,-0.7,-0.1,0,-0.4,-0.2,0.6,-0.9,1.4,0.3],
@@ -47,6 +47,7 @@ def repair_dataset_11_14_21():
     for i in range(1, 2001):
         sample_dir = osp.join(dir, f'sample{i}')
         if not osp.exists(sample_dir):
+            print("{sample_dir} doesn't exist")
             continue
         x = np.load(osp.join(sample_dir, 'x.npy'))
         psi = np.zeros((1024, 15)) # transformation of x such that S = psi \chi psi^T
