@@ -139,7 +139,6 @@ void Sim::readInput() {
 		assert(config.contains("nspecies")); nspecies = config["nspecies"];
 		assert(config.contains("load_bead_types")); load_bead_types = config["load_bead_types"];
 
-
 		if (load_bead_types)
 		{
 			assert(config.contains("bead_type_files"));
@@ -174,6 +173,11 @@ void Sim::readInput() {
 					std::cout << chistring << " " << chis(i,j) << std::endl;
 				}
 			}
+		}
+		else
+		{
+			nspecies = 0;
+			load_bead_types = false;
 		}
 	}
 	else
@@ -542,10 +546,10 @@ double Sim::getNonBondedEnergy(const std::unordered_set<Cell*>& flagged_cells) {
 			U += grid.SmatrixEnergy(flagged_cells, smatrix, chis);
 		}
 		else if (ematrix_on)
-    {
-      	U += grid.EmatrixEnergy(flagged_cells, ematrix, chis);
-    }
-    else
+		{
+			U += grid.EmatrixEnergy(flagged_cells, ematrix, chis);
+		}
+		else
 		{
 			U += grid.energy(flagged_cells, chis);
 		}
@@ -562,6 +566,12 @@ double Sim::getNonBondedEnergy(const std::unordered_set<Cell*>& flagged_cells) {
 	auto stop = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
 	//std::cout << "NonBonded took " << duration.count() << "microseseconds "<< std::endl;
+	return U;
+}
+
+double Sim::getJustPlaidEnergy(const std::unordered_set<Cell*>& flagged_cells) {
+	// for when dumping energy;
+	double U = grid.energy(flagged_cells, chis);
 	return U;
 }
 
@@ -674,25 +684,12 @@ void Sim::MC() {
 
 		if (sweep%dump_stats_frequency == 0) 
 		{
+			dumpEnergy(sweep);
 			if (production)
 			{
 				updateContacts();  // calculate contact data, but dont dump to file
 				dumpObservables(sweep);
 			}
-
-			Timer t_allenergy("all energy", prof_timer_on);
-
-			double bonded = getAllBondedEnergy();
-			double nonbonded = 0;
-			nonbonded = nonbonded_on ? getNonBondedEnergy(grid.active_cells) : 0; // includes diagonal and boundary energy
-			double diagonal = 0;
-			diagonal = diagonal_on ? getJustDiagEnergy(grid.active_cells) : 0;
-			double boundary = 9;
-			boundary = boundary_attract_on ? getJustBoundaryEnergy(grid.active_cells) : 0;
-			//std::cout << "bonded " << bonded << " nonbonded " << nonbonded << std::endl;
-			//t_allenergy.~Timer();
-
-			dumpEnergy(sweep, bonded, nonbonded, diagonal, boundary);
 		}
 	}
 
@@ -1243,9 +1240,17 @@ void Sim::dumpData()  {
 	fclose(xyz_out);
 }
 
-void Sim::dumpEnergy(int sweep, double bonded=0, double nonbonded=0, double diagonal=0, double boundary=0) {
+void Sim::dumpEnergy(int sweep) {
+	double bonded = getAllBondedEnergy();
+	double plaid = 0;
+	plaid = plaid_on ? getJustPlaidEnergy(grid.active_cells) : 0; // includes diagonal and boundary energy
+	double diagonal = 0;
+	diagonal = diagonal_on ? getJustDiagEnergy(grid.active_cells) : 0;
+	double boundary = 0;
+
+	boundary = boundary_attract_on ? getJustBoundaryEnergy(grid.active_cells) : 0;
 	energy_out = fopen(energy_out_filename.c_str(), "a");
-	fprintf(energy_out, "%d\t %lf\t %lf\t %lf\t %lf\n", sweep, bonded, nonbonded, diagonal, boundary);
+	fprintf(energy_out, "%d\t %lf\t %lf\t %lf\t %lf\n", sweep, bonded, plaid, diagonal, boundary);
 	fclose(energy_out);
 }
 

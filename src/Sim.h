@@ -146,6 +146,7 @@ public:
 	double getAllBondedEnergy();
 	double getBondedEnergy(int first, int last);
 	double getNonBondedEnergy(const std::unordered_set<Cell*>& flagged_cells);
+	double getJustPlaidEnergy(const std::unordered_set<Cell*>& flagged_cells);
 	double getJustDiagEnergy(const std::unordered_set<Cell*>& flagged_cells);
 	double getJustBoundaryEnergy(const std::unordered_set<Cell*>& flagged_cells);
 	double getTotalEnergy(int first, int last, const std::unordered_set<Cell*>& flagged_cells);
@@ -158,7 +159,7 @@ public:
 	void MCmove_pivot(int sweep);
 	void MCmove_grid();
 	void dumpData() ;
-	void dumpEnergy(int sweep, double bonded, double nonbonded, double diagonal, double boundary);
+	void dumpEnergy(int sweep);
 	void dumpObservables(int sweep);
 	void dumpContacts(int sweep);
 
