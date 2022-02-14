@@ -97,7 +97,7 @@ def getArgs():
         else:
             raise Exception(f'binarize not yet supported for {args.method}')
     if args.normalize:
-        if args.method in {}:
+        if args.method in {'pca'}:
             pass # TODO
         else:
             raise Exception(f'normalize not yet supported for {args.method}')
@@ -241,7 +241,7 @@ class GetSeq():
             j += 2
         return seq
 
-    def get_PCA_seq(self, input, normalize, use_kernel = False, kernel=None):
+    def get_PCA_seq(self, input, normalize = False, use_kernel = False, kernel = None):
         '''
         Defines seq based on PCs of input.
 
@@ -257,6 +257,7 @@ class GetSeq():
         '''
         input = crop(input, self.m)
         if use_kernel:
+            assert kernel is not None
             pca = KernelPCA(kernel = kernel)
             pca.fit(input/np.std(input, axis = 0))
         else:
@@ -755,27 +756,28 @@ class Tester():
 
         seq = self.getSeq.get_seq_gnn(model_path, self.sample, normalize)
 
-    def test_kPCA():
-        args = getArgs()
-        args.sample_folder = "/home/eric/sequences_to_contact_maps/dataset_11_14_21/samples/sample40"
-        args.k = 4
-        input = np.load(osp.join(args.sample_folder, 'y_diag.npy'))
+    def test_PCA(self):
+        sample_folder = "/home/eric/sequences_to_contact_maps/dataset_11_14_21/samples/sample40"
+        k = 4
+        input = np.load(osp.join(sample_folder, 'y_diag.npy'))
 
-        seq = get_PCA_seq(input, args.k, args.normalize, use_kernel = True, kernel = args.kernel)
+        seq = self.getSeq.get_PCA_seq(input, use_kernel = True, kernel = 'polynomial')
+        plot_seq_continuous(seq, show = True, save = False, title = 'kPCA test')
 
-        seq = get_PCA_seq(input, args.k, args.normalize)
+        seq = self.getSeq.get_PCA_seq(input, normalize = True)
+        plot_seq_continuous(seq, show = True, save = False, title = 'PCA-normalize test')
 
     def test_suite(self):
         # self.test_nmf_k_means()
-        self.test_random()
+        # self.test_random()
         # self.test_epi()
         # self.test_ChromHMM()
         # self.test_GNN()
+        self.test_PCA()
 
 
 
 
 if __name__ ==  "__main__":
     main()
-    # test = Tester()
-    # test.test_suite()
+    # Tester().test_suite()
