@@ -6,12 +6,12 @@
 #SBATCH --ntasks=20
 #SBATCH --mem-per-cpu=2000
 
-local='true'
+local='false'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dir="/home/eric"
+  dir="/home/eric/sequences_to_contact_maps"
   # dataFolder="/home/eric/dataset_test"
   finalSimProductionSweeps=1000
   numIterations=0
@@ -25,12 +25,19 @@ fi
 
 STARTTIME=$(date +%s)
 i=11000
-dataset='dataset_test'
-sample=1
-
-for method in 'PCA'
+dataset='dataset_09_21_21'
+sample=14
+for method in 'PCA' 'nmf'
 do
-  for k in 2
+  for k in 1
+  do
+    max_ent
+  done
+done
+
+for method in 'PCA' 'k_means' 'nmf'
+do
+  for k in 2 4 6
   do
     max_ent
   done

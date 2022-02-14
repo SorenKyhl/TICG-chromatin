@@ -6,7 +6,7 @@
 #SBATCH --ntasks=20
 #SBATCH --mem-per-cpu=2000
 
-local='false'
+local='true'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
@@ -25,25 +25,23 @@ fi
 
 STARTTIME=$(date +%s)
 i=10000
-dataset='dataset_11_14_21'
-sample=1718
+dataset='dataset_09_21_21'
+sample=20
+for method in 'PCA' 'nmf'
+do
+  for k in 1
+  do
+    max_ent
+  done
+done
 
-method='ground_truth-x'
-k=12
-max_ent
-
-# method='ground_truth-psi'
-# k=15
-# max_ent
-#
-method='ground_truth'
-useE='true'
-max_ent
-
-method='GNN'
-modelID=50
-useE='true'
-max_ent
+for method in 'PCA' 'k_means' 'nmf'
+do
+  for k in 2 4 6
+  do
+    max_ent
+  done
+done
 
 wait
 
