@@ -1,4 +1,42 @@
 #! /bin/bash
+
+# directories
+resources=~/TICG-chromatin/maxent/resources
+results=~/sequences_to_contact_maps/results
+
+# sweep params
+productionSweeps=50000
+finalSimProductionSweeps=1000000
+equilibSweeps=10000
+numIterations=100 # iteration 1 + numIterations is production run to get contact map
+
+# energy params
+useE='false'
+useS='false'
+
+# general params
+overwrite=1
+loadChi='false'
+project='false'
+goalSpecified='true'
+modelType='ContactGNNEnergy'
+m=-1
+
+# ground truth params
+useGroundTruthChi='false'
+useGroundTruthDiagChi='true'
+useGroundTruthSeed='false'
+
+# newton's method params
+mode="plaid"
+gamma=0.00001
+trust_region=10
+
+# experimental data
+chipSeqFolder="/home/erschultz/sequences_to_contact_maps/chip_seq_data"
+epiData="${chipSeqFolder}/fold_change_control/processed"
+chromHMMData="${chipSeqFolder}/aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt"
+
 max_ent() {
   if [ $mode = 'plaid' ]
   then
@@ -7,7 +45,10 @@ max_ent() {
       useGroundTruthChi='false'
       goalSpecified='false'
       numIterations=0
-      k='none'
+      if ! [ $loadChi = 'true' ]
+      then
+        k='none'
+      fi
     fi
     if [ $useGroundTruthChi == 'true' ]
     then
@@ -69,12 +110,12 @@ max_ent_inner () {
   if [ $goalSpecified = 'true' ]
   then
     echo "starting goal_specified"
-    python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --k $k --contact_map "${sampleFolder}/y.npy" --mode $mode
+    python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --k $k --contact_map "${sampleFolder}/y.npy" --mode $mode > goal.log
   fi
 
   echo $method_fmt
   # apply max ent with newton's method
-  ~/TICG-chromatin/maxent/bin/run.sh $ofile $gamma $gammaDiag $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite $1 $finalSimProductionSweeps
+  ~/TICG-chromatin/maxent/bin/run.sh $ofile $gamma $trust_region $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite $1 $finalSimProductionSweeps
 
   # run.sh moves all data to $ofile upon completion
   cd $ofile
@@ -93,6 +134,16 @@ format_method () {
   if [ $method == 'GNN' ]
   then
     method_fmt="${method_fmt}-${modelID}"
+  fi
+
+  if [ $loadChi = 'true' ]
+  then
+    method_fmt="${method_fmt}-load_chi"
+  fi
+
+  if [ $project = 'true' ]
+  then
+    method_fmt="${method_fmt}-project"
   fi
 
   if [ $useGroundTruthChi = 'true' ]

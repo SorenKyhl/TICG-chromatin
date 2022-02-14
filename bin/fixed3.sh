@@ -37,6 +37,7 @@ run()  {
 
 	# clean up
 	rm -f default_config.json *.xyz
+	rm $scratchDiri
 }
 
 # cd ~/TICG-chromatin/src

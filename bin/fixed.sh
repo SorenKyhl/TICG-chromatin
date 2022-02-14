@@ -1,5 +1,5 @@
 #! /bin/bash
-k=3
+k=4
 m=1024
 dataFolder="/home/eric/dataset_test"
 scratchDir='/home/eric/scratch'
@@ -7,10 +7,10 @@ useE='false'
 useS='false'
 startSample=1
 relabel='none'
-diag='false'
-nSweeps=10000
-pSwitch=0.05
-maxDiagChi=0.1
+diag='true'
+nSweeps=1000000
+pSwitch=0.04
+maxDiagChi=0.2
 overwrite=1
 dumpFrequency=50000
 
@@ -50,16 +50,16 @@ run()  {
 	fi
 
 	# generate sequences
-	python3 ~/TICG-chromatin/scripts/get_seq.py --method 'random' --exclusive 'true' --m $m --p_switch $pSwitch --k $k --save_npy --seed 14 >> seq.log
+	python3 ~/TICG-chromatin/scripts/get_seq.py --method 'random' --exclusive 'false' --m $m --p_switch $pSwitch --k $k --save_npy --seed 'none' --scale_resolution $scaleResolution >> seq.log
 
 	# set up config.json
-	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --e $e_dir --m $m --k $k --ensure_distinguishable --diag $diag --max_diag_chi $maxDiagChi --relabel $relabel --n_sweeps $nSweeps --dump_frequency $dumpFrequency --use_ematrix $useE --use_smatrix $useS --load_configuration_filename $init_config --TICG_seed 38 > config.log
+	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --min_chi=$minChi --max_chi=$maxChi --m $m --k $k --ensure_distinguishable --diag $diag --max_diag_chi $maxDiagChi --relabel $relabel --n_sweeps $nSweeps --dump_frequency $dumpFrequency --use_ematrix $useE --use_smatrix $useS --load_configuration_filename $init_config --TICG_seed 38 > config.log
 
 	# run simulation
 	~/TICG-chromatin/TICG-engine >> log.log
 
 	# calculate contact map
-	python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --save_npy
+	python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --save_npy --random_mode
 
 	# move inputs and outputs to own folder
 	mkdir -p $dir
@@ -67,29 +67,27 @@ run()  {
 
 	# clean up
 	rm default_config.json *.xyz
+	rm -d $scratchDiri
 }
 
 # cd ~/TICG-chromatin/src
 # make
 # mv TICG-engine ..
 
-useE='true'
-chi='none'
-e_dir='/home/eric/dataset_test/samples/sample90/e1024.npy'
-i=91
-run &
+scaleResolution=25
+chi='polynomial'
+# maxChi=2
+# minChi=-2
+# for i in 80 81 82 83 84
+# do
+# 	run &
+# done
 
-e_dir='/home/eric/dataset_test/samples/sample90/e1024_2.npy'
-
-i=92
-run &
-#
-# chi="1&0&0\\0&1&0\\0&0&1"
-# i=83
-# run &
-#
-# chi="0&1&1\\1&0&1\\1&1&0"
-# i=84
-# run &
+maxChi=3
+minChi=-3
+for i in 85 86 87 88 89
+do
+	run &
+done
 
 wait

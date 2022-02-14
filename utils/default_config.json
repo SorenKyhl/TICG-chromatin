@@ -39,5 +39,6 @@
   "phi_chromatin": 0.06966,
   "kappa": 0,
   "density_cap_on": true,
-  "compressibility_on": false
+  "compressibility_on": false,
+  "diag_pseudobeads_on": true
 }

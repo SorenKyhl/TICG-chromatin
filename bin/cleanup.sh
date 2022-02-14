@@ -6,6 +6,18 @@
 #SBATCH --ntasks=10
 #SBATCH --mem-per-cpu=1000
 
-cd ~/scratch-midway2
+dir=/project2/depablo/erschultz/dataset_11_14_21/samples
 
-rm -r dataset_01_19_22
+for i in 40 1230 1718
+do
+  cd "${dir}/sample${i}"
+  rm -r kPCA-x* &
+  rm -r kPCA-y* &
+  rm -r GNN* &
+  rm -r ground* &
+  rm -r PCA_split* &
+  rm -r nmf &
+  rm -r PCA &
+  rm -r k_means &
+  wait
+done

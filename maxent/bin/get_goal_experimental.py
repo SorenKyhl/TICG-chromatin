@@ -20,8 +20,7 @@ from neural_net_utils.argparseSetup import str2int
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
-    parser.add_argument('--m', type=int, default=1024, help='number of particles, will crop seq{i}.txt and y')
-    parser.add_argument('--k', type=str2int, help='number of particle types (inferred from chi if None)')
+    parser.add_argument('--k', type=int, help='number of particle types')
     parser.add_argument('--contact_map', type=str, help='filepath to contact map')
     parser.add_argument('--verbose', action='store_true', help='true for verbose mode')
     parser.add_argument('--mode', type=str, help='{"plaid", "diag", "both"}')
@@ -32,25 +31,25 @@ def getArgs():
 def get_diag_goal(y, args):
     return np.zeros(20)
 
-def get_plaid_goal(y, args):
+def get_plaid_goal(y, m, args):
     obj_goal = []
     y_max = np.max(y)
     if args.verbose:
         print('y_max: ', y_max)
         print(y, y.shape, y.dtype, '\n')
     for i in range(args.k):
-        seqi = np.loadtxt("seq{}.txt".format(i))[:args.m]
+        seqi = np.loadtxt(f"seq{i}.txt")
         if args.verbose:
-            print('\ni={}'.format(i), seqi)
+            print(f'\ni={i}', seqi)
         for j in range(args.k):
             if j < i:
                 # don't double count
                 continue
-            seqj = np.loadtxt("seq{}.txt".format(j))[:args.m]
+            seqj = np.loadtxt(f"seq{j}.txt")
             if args.verbose:
-                print('\tj={}'.format(j), seqj)
+                print(f'\tj={j}', seqj)
             result = seqi @ y @ seqj
-            result /= args.m**2 # take average
+            result /= m**2 # take average
             result /= y_max # convert from freq to prob
             obj_goal.append(result)
 
@@ -69,20 +68,22 @@ def main():
     elif args.contact_map.endswith('.txt'):
         y = np.loadtxt(args.contact_map)
     else:
-        raise Exception("contact map format not recognized: {}".format(args.contact_map))
+        raise Exception(f"contact map format not recognized: {args.contact_map}")
 
+    seqi = np.loadtxt("seq0.txt")
+    m = len(seqi)
     y = y.astype(float) # ensure float
-    y = y[:args.m, :args.m] # crop to m
+    y = y[:m, :m] # crop to m
 
     if args.mode == 'both':
-        plaid_goal = get_plaid_goal(y, args)
+        plaid_goal = get_plaid_goal(y, m, args)
         diag_goal = get_diag_goal(y, args)
     elif args.mode == 'plaid':
-        plaid_goal = get_plaid_goal(y, args)
+        plaid_goal = get_plaid_goal(y, m, args)
         diag_goal = np.zeros(20)
     elif args.mode == 'diag':
-        plaid_goal = np.zeros(1) # idk if it matters what I put here
-        diag_goal = get_diag_goal(y, args)
+        plaid_goal = np.zeros(1) # shouldn't matter what goes here
+        diag_goal = get_diag_goal(y, m, args)
 
 
     if args.verbose:
@@ -127,15 +128,15 @@ def test():
     obj_goal = []
     for i in range(k):
         # seqi = x[:, i]
-        seqi = np.loadtxt(osp.join(sample_path, "seq{}.txt".format(i)))[:m]
-        print('\ni={}'.format(i), seqi)
+        seqi = np.loadtxt(osp.join(sample_path, f"seq{i}.txt"))[:m]
+        print(f'\ni={i}', seqi)
         for j in range(k):
             if j < i:
                 # don't double count
                 continue
             # seqj = x[:, j]
-            seqj = np.loadtxt(osp.join(sample_path, "seq{}.txt".format(j)))[:m]
-            print('\tj={}'.format(j), seqj)
+            seqj = np.loadtxt(osp.join(sample_path, f"seq{i}.txt"))[:m]
+            print(f'\tj={j}', seqj)
             result = seqi @ y @ seqj
             # outer = np.outer(seqi, seqj)
             # result = np.sum(outer * y)

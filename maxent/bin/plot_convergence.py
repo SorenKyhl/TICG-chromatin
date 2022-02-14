@@ -19,21 +19,21 @@ def main():
     args = getArgs()
     assert args.mode in {'plaid', 'diag', 'both'}
 
-    if args.mode == 'plaid' or args.mode == 'both' or args.mode == 'diag':
-        # convergence plot
-        convergence = np.loadtxt('convergence.txt')
+    # convergence plot
+    convergence = np.loadtxt('convergence.txt')
+    plt.plot(convergence)
+    plt.xlabel('Iteration')
+    plt.savefig("pconvergence.png")
+    plt.close()
+
+    if osp.exists('convergence_diag.txt'):
+        convergence = np.loadtxt('convergence_diag.txt')
         plt.plot(convergence)
         plt.xlabel('Iteration')
-        plt.savefig("pconvergence.png")
+        plt.savefig("pconvergence_diag.png")
         plt.close()
 
-        if osp.exists('convergence_diag.txt'):
-            convergence = np.loadtxt('convergence_diag.txt')
-            plt.plot(convergence)
-            plt.xlabel('Iteration')
-            plt.savefig("pconvergence_diag.png")
-            plt.close()
-
+    if args.mode in {'plaid', 'both'}:
         # chis plot
         chis = np.loadtxt('chis.txt')
         if chis.ndim < 2:
@@ -52,6 +52,7 @@ def main():
         plt.savefig("pchis.png")
         plt.close()
 
+    if args.mode in {'diag', 'both'}:
         # diag chis plot
         diag_chis = np.loadtxt('chis_diag.txt')
         plt.plot(diag_chis)

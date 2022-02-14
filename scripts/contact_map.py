@@ -16,14 +16,15 @@ for p in paths:
     if osp.exists(p):
         sys.path.insert(1, p)
 
-from neural_net_utils.utils import diagonal_preprocessing, load_final_max_ent_S, load_E_S
+from neural_net_utils.utils import diagonal_preprocessing, load_final_max_ent_S, load_E_S, crop
+from neural_net_utils.argparseSetup import str2int
 from data_summary_plots import genomic_distance_statistics
 from plotting_functions import plotContactMap
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
-    parser.add_argument('--m', type=int, default=1024, help='number of particles')
-    parser.add_argument('--k', type=int, help='number of bead labels')
+    parser.add_argument('--m', type=int, default=1024, help='number of particles (-1 to infer)')
+    parser.add_argument('--k', type=str2int, help='number of bead labels')
     parser.add_argument('--save_npy', action='store_true', help='true to save y as .npy')
     parser.add_argument('--random_mode', action='store_true', help='true for random_mode, default is max_ent mode')
 
@@ -51,7 +52,7 @@ def main():
         y_path = osp.join(args.final_folder, "production_out", "contacts.txt")
 
     if osp.exists(y_path):
-        y = np.loadtxt(y_path)[:args.m, :args.m]
+        y = crop(np.loadtxt(y_path), args.m)
 
     plotContactMap(y, ofile = osp.join(args.save_folder, 'y.png'), vmax = 'mean')
 
