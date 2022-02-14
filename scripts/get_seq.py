@@ -26,9 +26,9 @@ for p in paths:
     if osp.exists(p):
         sys.path.insert(1, p)
 
-from plotting_functions import plotContactMap
+from plotting_functions import plotContactMap, plot_seq_binary
 from neural_net_utils.argparseSetup import str2bool, str2int, str2None, getBaseParser, finalizeOpt
-from neural_net_utils.utils import s_to_E, load_E_S, load_X_psi, loadSavedModel, getDataset, load_final_max_ent_S
+from neural_net_utils.utils import s_to_E, load_E_S, load_X_psi, loadSavedModel, getDataset, load_final_max_ent_S, crop
 from result_summary_plots import project_S_to_psi_basis
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -48,6 +48,8 @@ def getArgs():
     parser.add_argument('--method', type=str, default='k_means', help='method for assigning particle types')
     parser.add_argument('--m', type=int, default=1024, help='number of particles (will crop contact map) (-1 to infer)')
     parser.add_argument('--k', type=str2int, default=2, help='sequences to generate')
+    parser.add_argument('--scale_resolution', type=str2int, default=1,
+                        help="generate seq at higher resolution, find average frequency at lower resolution") # TODO rename and document better
 
     # args for specific methods
     parser.add_argument('--seed', type=str2int, help='random seed for numpy')
@@ -106,6 +108,8 @@ def getArgs():
             pass
         else:
             raise Exception(f'exclusive not yet supported for {args.method}')
+    if args.scale_resolution != 1:
+        assert args.method == 'random', f"{args.method} not supported yet"
 
     return args
 
@@ -145,18 +149,19 @@ class GetSeq():
         self.m = m
         self.k = k
 
-    def get_random_seq(self, p_switch, seed = None, exclusive=False):
+    def get_random_seq(self, p_switch, seed = None, exclusive=False, scale_resolution=1):
         rng = np.random.default_rng(seed)
+        p_switch /= scale_resolution
+        m = self.m * scale_resolution
 
-        seq = np.zeros((self.m, self.k))
+        seq = np.zeros((m, self.k))
         if exclusive:
             transition_probs = [1 - p_switch] # keep label with p = 1-p_switch
             transition_probs.extend([p_switch/(self.k-1)]*(self.k-1)) # remaining transitions have sum to p_switch
-            print(transition_probs)
 
-            ind = np.empty(self.m)
+            ind = np.empty(m)
             ind[0] = rng.choice(range(self.k), size = 1)
-            for i in range(1, self.m):
+            for i in range(1, m):
                 prev_label = ind[i-1]
                 other_labels = list(range(self.k))
                 other_labels.remove(prev_label)
@@ -164,7 +169,6 @@ class GetSeq():
                 choices = [prev_label]
                 choices.extend(other_labels)
                 ind[i] = rng.choice(choices, p=transition_probs)
-            print('ind', ind)
             for row, col in enumerate(ind):
                 seq[row, int(col)] = 1
         else:
@@ -175,6 +179,18 @@ class GetSeq():
                         seq[i, j] = rng.choice([1,0], p=[1 - p_switch, p_switch])
                     else:
                         seq[i, j] = rng.choice([1,0], p=[p_switch, 1 - p_switch])
+
+        if scale_resolution != 1:
+            seq_high_resolution = seq.copy()
+            seq = np.zeros((self.m, self.k))
+            for i in range(self.m):
+                lower = i * scale_resolution
+                upper = lower + scale_resolution
+                slice = seq_high_resolution[lower:upper, :]
+                sum = np.sum(slice, axis = 0)
+                sum /= scale_resolution
+                # sum /= np.sum(sum)
+                seq[i, :] = np.nan_to_num(sum)
 
         return seq
 
@@ -205,7 +221,7 @@ class GetSeq():
         return seq
 
     def get_PCA_split_seq(self, input):
-        input = input[:self.m, :self.m]
+        input = crop(input, self.m)
         pca = PCA()
         pca.fit(input/np.std(input, axis = 0))
         seq = np.zeros((self.m, self.k))
@@ -239,7 +255,7 @@ class GetSeq():
         Outputs:
             seq: array of particle types
         '''
-        input = input[:self.m, :self.m]
+        input = crop(input, self.m)
         if use_kernel:
             pca = KernelPCA(kernel = kernel)
             pca.fit(input/np.std(input, axis = 0))
@@ -271,7 +287,7 @@ class GetSeq():
         return seq
 
     def get_k_means_seq(self, y, kr = True):
-        y = y[:self.m, :self.m]
+        y = crop(y, self.m)
 
         if kr:
             yKR = np.log(knightRuiz(y))
@@ -298,7 +314,7 @@ class GetSeq():
             seq: bead types
             labels: categorical labels for bead types (None if binarize is True)
         '''
-        input = input[:self.m, :self.m]
+        input = crop(input, self.m)
 
         nmf = NMF(n_components = self.k, max_iter = 1000, init=None)
         nmf.fit(input)
@@ -545,38 +561,35 @@ def plot_seq_exclusive(seq, labels=None, X=None, show = False, save = True, titl
         plt.show()
     plt.close()
 
-def plot_seq_binary(seq, show = False, save = True, title = None, labels = None, x_axis = True):
-    '''Plotting function for *non* mutually exclusive binary particle types'''
-    # TODO make figure wider and less tall
+def plot_seq_continuous(seq, show = False, save = True, title = None):
     m, k = seq.shape
     cmap = matplotlib.cm.get_cmap('tab10')
     ind = np.arange(k) % cmap.N
     colors = plt.cycler('color', cmap(ind))
 
+    plt.figure(figsize=(6, 3))
     for i, c in enumerate(colors):
-        x = np.argwhere(seq[:, i] == 1)
-        if labels is None:
-            label_i = i
-        else:
-            label_i = labels[i]
-        plt.scatter(x, np.ones_like(x) * i, label = label_i, color = c['color'], s=1)
+        plt.plot(np.arange(0, m), seq[:, i], label = i, color = c['color'])
 
-    plt.legend()
     ax = plt.gca()
-    ax.axes.get_yaxis().set_visible(False)
-    if not x_axis:
-        ax.axes.get_xaxis().set_visible(False)
     if title is not None:
         plt.title(title, fontsize=16)
-    if save:
-        plt.savefig('seq.png')
+    plt.legend()
+    plt.tight_layout()
     if show:
         plt.show()
+    if save:
+        plt.savefig('seq.png')
     plt.close()
 
 def main():
     args = getArgs()
     print(args)
+    if args.m == -1:
+        # infer m
+        x, _ = load_X_psi(args.sample_folder)
+        args.m, _ = x.shape
+
     getSeq = GetSeq(args.m, args.k)
     if args.load_chi:
         method_split = re.split(r'[-+]', args.method_copy)
@@ -590,7 +603,7 @@ def main():
         s = load_final_max_ent_S(args.k, replicate_path, max_it_path = None)
         e = s_to_E(s)
     elif args.method.startswith('random'):
-        seq = getSeq.get_random_seq(args.p_switch, args.seed, args.exclusive)
+        seq = getSeq.get_random_seq(args.p_switch, args.seed, args.exclusive, args.scale_resolution)
     elif args.method.startswith('block'):
         seq = getSeq.get_block_seq(args.method)
     elif args.method == 'pca':
@@ -661,8 +674,8 @@ def main():
         if args.project:
             _, psi = load_X_psi(args.sample_folder)
             s, e = project_S_to_psi_basis(s, psi)
-        s = s[:args.m, :args.m]
-        e = e[:args.m, :args.m]
+        s = crop(s, args.m)
+        e = crop(e, args.m)
         if args.use_smatrix:
             np.savetxt('s_matrix.txt', s, fmt = '%.3e')
             np.save('s.npy', s)
@@ -694,8 +707,8 @@ class Tester():
         self.dataset = 'dataset_01_15_22'
         self.sample = 40
         self.sample_folder = osp.join('/home/eric/sequences_to_contact_maps', self.dataset, f'samples/sample{self.sample}')
-        self.m = 1024
-        self.k = 4
+        self.m = 300
+        self.k = 3
         self.getSeq = GetSeq(self.m, self.k)
 
     def test_nmf_k_means(self):
@@ -712,7 +725,10 @@ class Tester():
 
     def test_random(self):
         seq = self.getSeq.get_random_seq(p_switch=0.05, exclusive = True)
-        plot_seq_exclusive(seq, show = True, save = False, title = 'random-exclusive test')
+        # plot_seq_exclusive(seq, show = True, save = False, title = 'random-exclusive test')
+
+        seq = self.getSeq.get_random_seq(p_switch=0.03, exclusive = False, scale_resolution = 25)
+        plot_seq_continuous(seq, show = True, save = False, title = 'random_scale_resolution test')
 
     def test_epi(self):
         args = getArgs()
@@ -745,13 +761,12 @@ class Tester():
 
         seq = get_PCA_seq(input, args.k, args.normalize)
 
-
     def test_suite(self):
         # self.test_nmf_k_means()
-        # self.test_random()
+        self.test_random()
         # self.test_epi()
         # self.test_ChromHMM()
-        self.test_GNN()
+        # self.test_GNN()
 
 
 

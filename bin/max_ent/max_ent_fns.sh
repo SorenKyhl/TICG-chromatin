@@ -20,7 +20,7 @@ loadChi='false'
 project='false'
 goalSpecified='true'
 modelType='ContactGNNEnergy'
-m=1024
+m=-1
 
 # ground truth params
 useGroundTruthChi='false'

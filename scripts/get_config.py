@@ -28,7 +28,7 @@ def getArgs():
     parser.add_argument('--ofile', type=str, default='config.json', help='path to output config file')
 
     # config param arguments
-    parser.add_argument('--m', type=int, default=1024, help='number of particles')
+    parser.add_argument('--m', type=int, default=1024, help='number of particles (-1 to infer)')
     parser.add_argument('--k', type=str2int, help='number of particle types (inferred from chi if None)')
     parser.add_argument('--load_configuration_filename', type=str2None, default='input1024.xyz',
                         help='file name of initial config (None to not load)')
@@ -308,6 +308,15 @@ def main():
 
     with open(args.default_config, 'rb') as f:
         config = json.load(f)
+
+    if args.m == -1:
+        if osp.exists('x.npy'):
+            x = np.load('x.npy')
+            args.m, _ = x.shape
+        elif osp.exists('e.npy'):
+            e = np.load('e.npy')
+            args.m, _ = e.shape
+        print(f'inferred m = {args.m}')
 
     if args.relabel is not None:
         x = np.load('x.npy')

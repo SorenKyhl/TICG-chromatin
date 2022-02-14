@@ -20,7 +20,7 @@ for p in paths:
     if osp.exists(p):
         sys.path.insert(1, p)
 
-from neural_net_utils.utils import calculateDistanceStratifiedCorrelation, diagonal_preprocessing
+from neural_net_utils.utils import calculateDistanceStratifiedCorrelation, diagonal_preprocessing, crop
 from data_summary_plots import genomic_distance_statistics
 
 def getArgs():
@@ -31,7 +31,7 @@ def getArgs():
     parser.add_argument('--y_diag', type=str, help='location of input y_diag')
     parser.add_argument('--yhat', type=str, help='location of input yhat')
     parser.add_argument('--yhat_diag', type=str, help='location of input y_diag')
-    parser.add_argument('--m', type=int, default=1024, help='number of particles')
+    parser.add_argument('--m', type=int, default=1024, help='number of particles (-1 to infer)')
     parser.add_argument('--dir', type=str, default='', help='location to write to')
 
     args = parser.parse_args()
@@ -118,19 +118,20 @@ def plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, dir):
 
 def main():
     args = getArgs()
-    y = np.load(args.y)[:args.m, :args.m]
+    y = crop(np.load(args.y), args.m)
     if args.y_diag is not None and osp.exists(args.y_diag):
-        y_diag = np.load(args.y_diag)[:args.m, :args.m]
+        y_diag = crop(np.load(args.y_diag), args.m)
     else:
         meanDist = genomic_distance_statistics(y)
         y_diag = diagonal_preprocessing(y, meanDist)
 
-    yhat = np.load(args.yhat)[:args.m, :args.m]
+    yhat = crop(np.load(args.yhat), args.m)
     if args.yhat_diag is not None and osp.exists(args.yhat_diag):
-        yhat_diag = np.load(args.yhat_diag)[:args.m, :args.m]
+        yhat_diag = crop(np.load(args.yhat_diag), args.m)
     else:
         meanDist = genomic_distance_statistics(yhat)
         yhat_diag = diagonal_preprocessing(yhat, meanDist)
+
 
     plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, args.dir)
     comparePCA(y, yhat, args.dir)

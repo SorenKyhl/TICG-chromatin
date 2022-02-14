@@ -68,8 +68,6 @@ def repair_dataset_11_14_21():
         psi[:, 14] = np.logical_xor(x[:, 8], x[:, 9]) # either I or J
         np.save(osp.join(sample_dir, 'psi.npy'), psi)
 
-
-
 def find_mising_ids():
     ids = set(range(1, 2001))
     dir = "/project2/depablo/erschultz/dataset_10_27_21/samples"

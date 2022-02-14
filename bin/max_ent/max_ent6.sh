@@ -37,7 +37,9 @@ sample=40
 #   done
 # done
 
-for method in 'PCA' 'k_means' 'nmf'
+trust_region=1000
+for method in 'PCA'
+# 'k_means' 'nmf'
 do
   for k in 4 6
   # 2
