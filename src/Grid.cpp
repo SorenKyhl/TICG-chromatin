@@ -1,5 +1,6 @@
-
 #include "Grid.h"
+
+bool Grid::parallel;
 
 void Grid::generate() {
 	origin = {-delta/2.0,-delta/2.0,-delta/2.0};
@@ -136,11 +137,24 @@ double Grid::energy(const std::unordered_set<Cell*>& flagged_cells, const Eigen:
 double Grid::diagEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<double> diag_chis) {
 	// nonbonded volume interactions
 	double U = 0; 
-//#pragma omp parallel for reduction(+:U)
-	for(Cell* cell : flagged_cells)
+
+	if (parallel)
 	{
-		U += cell->getDiagEnergy(diag_chis);
+		std::vector<Cell*> flagged_cells_vec(flagged_cells.begin(), flagged_cells.end());
+		#pragma omp parallel for reduction(+:U)
+		for(Cell* cell : flagged_cells_vec)
+		{
+			U += cell->getDiagEnergy(diag_chis);
+		}
 	}
+	else
+	{
+		for(Cell* cell : flagged_cells)
+		{
+			U += cell->getDiagEnergy(diag_chis);
+		}
+	}
+
 	return U;
 };
 

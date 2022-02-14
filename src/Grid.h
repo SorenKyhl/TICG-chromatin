@@ -21,6 +21,7 @@ public:
 	double radius;                // radius of simulation volume in [nanometers]
 	int boundary_radius;          // radius of boundary in units of grid cells
 	Eigen::RowVector3d sphere_center; // center of spherical boundary
+	static bool parallel;
 
 	// origin is the bottom-left-most grid cell for cubic simulations
 	// With grid moves on, it will diffuse with periodic boundaries
