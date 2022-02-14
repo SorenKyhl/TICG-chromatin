@@ -6,13 +6,31 @@ mode=${2:-"both"}
 gamma=${3:-1}
 trust_region=${4:-10}
 equilib_sweeps=${5:-10000}
-production_sweeps=${6:-500000}
+production_sweeps=${6:-50000}
 num_iterations=${7:-100}
 goal_specified=${8:-1}
 overwrite=${9:-0}
 
-echo "running with trust region:"
+echo "running maxent with:"
+echo "dir:"
+echo $scratchDir
+echo "mode:"
+echo $mode
+echo "gamma:"
+echo $gamma
+echo "trust_region:"
 echo $trust_region
+echo "equilib_sweeps"
+echo $equilib_sweeps
+echo "production_sweeps"
+echo $production_sweeps
+echo "num_iterations"
+echo $num_iterations
+echo "goal_specified"
+echo $goal_specified
+echo "overwrite"
+echo $overwrite
+
 
 # move to scratch
 if ! [[ -d $scratchDir ]]

@@ -7,3 +7,4 @@ data_out
 test
 __pycache__
 *.ipynb_checkpoints
+debug
