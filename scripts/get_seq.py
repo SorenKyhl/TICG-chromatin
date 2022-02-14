@@ -28,7 +28,7 @@ for p in paths:
 
 from plotting_functions import plotContactMap, plot_seq_binary
 from neural_net_utils.argparseSetup import str2bool, str2int, str2None, getBaseParser, finalizeOpt
-from neural_net_utils.utils import s_to_E, load_E_S, load_X_psi, loadSavedModel, getDataset, load_final_max_ent_S, crop
+from neural_net_utils.utils import s_to_E, load_E_S, load_X_psi, load_Y, loadSavedModel, getDataset, load_final_max_ent_S, crop
 from result_summary_plots import project_S_to_psi_basis
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -587,8 +587,12 @@ def main():
     print(args)
     if args.m == -1:
         # infer m
-        x, _ = load_X_psi(args.sample_folder)
-        args.m, _ = x.shape
+        x, _ = load_X_psi(args.sample_folder, throw_exception = False)
+        y, _ = load_Y(args.sample_folder, throw_exception = False)
+        if x is not None:
+            args.m, _ = x.shape
+        elif y is not None:
+            args.m, _ = y.shape
 
     getSeq = GetSeq(args.m, args.k)
     if args.load_chi:

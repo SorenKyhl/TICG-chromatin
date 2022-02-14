@@ -10,7 +10,7 @@ relabel='none'
 diag='true'
 nSweeps=1000000
 pSwitch=0.04
-maxDiagChi=0.1
+maxDiagChi=0.2
 overwrite=1
 dumpFrequency=50000
 
@@ -67,7 +67,7 @@ run()  {
 
 	# clean up
 	rm default_config.json *.xyz
-	rm $scratchDiri
+	rm -d $scratchDiri
 }
 
 # cd ~/TICG-chromatin/src
