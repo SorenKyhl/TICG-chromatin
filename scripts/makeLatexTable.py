@@ -18,7 +18,7 @@ for p in paths:
         sys.path.insert(1, p)
 
 from neural_net_utils.argparseSetup import str2int, str2bool, str2list
-from neural_net_utils.utils import calculate_S, load_E_S, load_final_max_ent_chi
+from neural_net_utils.utils import calculate_S, load_E_S, load_final_max_ent_chi, load_Y
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 METHODS = ['ground_truth', 'random', 'PCA', 'PCA_split', 'kPCA', 'RPCA', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM']
@@ -78,6 +78,7 @@ def loadData(args):
     for sample in args.samples:
         sample_folder = osp.join(args.data_folder, 'samples', f'sample{sample}')
         ground_truth_e, _ = load_E_S(sample_folder, throw_exception = False)
+        ground_truth_y, _ = load_Y(sample_folder)
         for method in os.listdir(sample_folder):
             method_folder = osp.join(sample_folder, method)
             # methods should be formatted such that method.split('-')[0] is in METHODS
@@ -106,7 +107,7 @@ def loadData(args):
                                 print(f"\tMISSING: {json_file}")
                                 continue
 
-                            mse = None
+                            rmse_e = None
                             if ground_truth_e is not None:
                                 # load bead types
                                 psi_file = osp.join(replicate_folder, 'resources', 'x.npy')
@@ -117,22 +118,34 @@ def loadData(args):
                                     print(f'\tpsi not found for {replicate_folder}')
 
                                 # load chi
-                                chi = load_final_max_ent_chi(k, replicate_folder)
+                                chi = load_final_max_ent_chi(k, replicate_folder, throw_exception = False)
 
                                 # load energy
                                 e, s = load_E_S(replicate_folder, psi = psi, chi = chi, throw_exception = False)
 
                                 if e is not None:
-                                    mse = mean_squared_error(ground_truth_e, e)
+                                    rmse_e = mean_squared_error(ground_truth_e, e, squared = False)
+                            replicate_data['rmse-e'].append(rmse_e)
 
-                            replicate_data['e'].append(mse)
+                            rmse_y = None
+                            if ground_truth_y is not None:
+                                y_file = osp.join(replicate_folder, 'y.npy')
+                                if osp.exists(y_file):
+                                    y = np.load(y_file)
+                                    rmse_y = mean_squared_error(ground_truth_y, y, squared = False)
+
+                                else:
+                                    print(f'\ty not found for {replicate_folder}')
+                            replicate_data['rmse-y'].append(rmse_y)
+
 
                         # append replicate array to dictionary
                         if found_results:
                             data[k][method]['overall_pearson'].append(replicate_data['overall_pearson'])
                             data[k][method]['scc'].append(replicate_data['scc'])
                             data[k][method]['avg_dist_pearson'].append(replicate_data['avg_dist_pearson'])
-                            data[k][method]['e'].append(replicate_data['e'])
+                            data[k][method]['rmse-e'].append(replicate_data['rmse-e'])
+                            data[k][method]['rmse-y'].append(replicate_data['rmse-y'])
     return data
 
 def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_id = None):
@@ -153,7 +166,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
         # set up first rows of table
         o.write("\\begin{center}\n")
         if small:
-            metrics = ['scc', 'e']
+            metrics = ['scc', 'rmse-e']
             o.write("\\begin{tabular}{|c|c|c|c|c|}\n")
             o.write("\\hline\n")
             o.write("\\multicolumn{5}{|c|}{" + header + "} \\\ \n")
@@ -161,17 +174,17 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                 o.write("\\hline\n")
                 o.write("\\multicolumn{5}{|c|}{sample " + f'{sample_id}' + "} \\\ \n")
             o.write("\\hline\n")
-            o.write("Method & $\\ell$ & SCC & $\\Delta$ SCC & MSE-S \\\ \n")
+            o.write("Method & $\\ell$ & SCC & $\\Delta$ SCC & RMSE-E \\\ \n")
         else:
-            metrics = ['overall_pearson', 'avg_dist_pearson', 'scc', 'e']
-            o.write("\\begin{tabular}{|c|c|c|c|c|c|c|}\n")
+            metrics = ['overall_pearson', 'avg_dist_pearson', 'scc', 'rmse-e', 'rmse-y']
+            o.write("\\begin{tabular}{|c|c|c|c|c|c|c|c|}\n")
             o.write("\\hline\n")
-            o.write("\\multicolumn{7}{|c|}{" + header + "} \\\ \n")
+            o.write("\\multicolumn{8}{|c|}{" + header + "} \\\ \n")
             if sample_id is not None:
                 o.write("\\hline\n")
-                o.write("\\multicolumn{7}{|c|}{sample " + f'{sample_id}' + "} \\\ \n")
+                o.write("\\multicolumn{8}{|c|}{sample " + f'{sample_id}' + "} \\\ \n")
             o.write("\\hline\n")
-            o.write("Method & k & Pearson R & Avg Dist Pearson R & SCC & $\\Delta$  SCC & MSE-E \\\ \n")
+            o.write("Method & k & Pearson R & Avg Dist Pearson R & SCC & $\\Delta$  SCC & RMSE-E & RMSE-Y \\\ \n")
         o.write("\\hline\\hline\n")
 
         # get reference data
