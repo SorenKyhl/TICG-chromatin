@@ -18,6 +18,7 @@ abspath = osp.abspath(__file__)
 dname = osp.dirname(abspath)
 sys.path.insert(0, dname)
 from knightRuiz import knightRuiz
+from r_pca import R_pca
 
 paths = ['/home/erschultz/sequences_to_contact_maps',
         '/home/eric/sequences_to_contact_maps',
@@ -97,7 +98,7 @@ def getArgs():
         else:
             raise Exception(f'binarize not yet supported for {args.method}')
     if args.normalize:
-        if args.method in {'pca'}:
+        if args.method.startswith('pca') or args.method.startswith('rpca'):
             pass # TODO
         else:
             raise Exception(f'normalize not yet supported for {args.method}')
@@ -127,8 +128,8 @@ def process_method(args):
         args.input = 'psi'
     if 'binarize' in modes:
         args.binarize = True
-    if 'normlize' in modes:
-        args.normalize = False
+    if 'normalize' in modes:
+        args.normalize = True
     if 's' in modes:
         args.use_smatrix = True
     if 'e' in modes:
@@ -188,8 +189,8 @@ class GetSeq():
                 upper = lower + scale_resolution
                 slice = seq_high_resolution[lower:upper, :]
                 sum = np.sum(slice, axis = 0)
-                sum /= scale_resolution
-                # sum /= np.sum(sum)
+                # sum /= scale_resolution
+                sum /= np.sum(sum)
                 seq[i, :] = np.nan_to_num(sum)
 
         return seq
@@ -220,7 +221,7 @@ class GetSeq():
         assert len(letters) == self.k, f"not enough letters ({letters}) for k = {self.k}"
         return seq
 
-    def get_PCA_split_seq(self, input):
+    def get_PCA_split_seq(self, input, normalize = False):
         input = crop(input, self.m)
         pca = PCA()
         pca.fit(input/np.std(input, axis = 0))
@@ -233,11 +234,24 @@ class GetSeq():
 
             pcpos = pc.copy()
             pcpos[pc < 0] = 0 # zero negative part
+            if normalize:
+                max = np.max(pcpos)
+                # multiply by scale such that val x scale = 1
+                scale = 1/val
+                pcpos *= scale
             seq[:,j] = pcpos
 
             pcneg = pc.copy()
             pcneg[pc > 0] = 0 # zero positive part
+            pcneg *= -1 # make positive
+            if normalize:
+                max = np.max(pcneg)
+                # multiply by scale such that val x scale = 1
+                scale = 1/val
+                pcneg *= scale
             seq[:,j+1] = pcneg * -1
+
+
             j += 2
         return seq
 
@@ -247,7 +261,6 @@ class GetSeq():
 
         Inputs:
             input: matrix to perform PCA on
-            k: numper of particle types / principal components to use
             normalize: True to normalize particle types / principal components to [-1, 1]
             use_kernel: True to use kernel PCA
             kernel: type of kernel to use
@@ -286,6 +299,25 @@ class GetSeq():
             seq[:,j] = pc
 
         return seq
+
+    def get_RPCA_seq(self, input, normalize = False, max_it = 2000):
+        '''
+        Defines seq based on PCs of input.
+
+        Inputs:
+            input: matrix to perform PCA on
+            normalize: True to normalize particle types / principal components to [-1, 1]
+
+        Outputs:
+            seq: array of particle types
+        '''
+        input = crop(input, self.m)
+        input = input + 1e-8
+        input = np.log(input)
+
+        L, _ = R_pca(input).fit(max_iter=max_it)
+
+        return self.get_PCA_seq(L, normalize)
 
     def get_k_means_seq(self, y, kr = True):
         y = crop(y, self.m)
@@ -611,19 +643,26 @@ def main():
         seq = getSeq.get_random_seq(args.p_switch, args.seed, args.exclusive, args.scale_resolution)
     elif args.method.startswith('block'):
         seq = getSeq.get_block_seq(args.method)
-    elif args.method == 'pca':
-        y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))
-        seq = getSeq.get_PCA_seq(y_diag, args.normalize)
     elif args.method.startswith('pca_split'):
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))
         seq = getSeq.get_PCA_split_seq(y_diag)
+    elif args.method.startswith('pca'):
+        y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))
+        seq = getSeq.get_PCA_seq(y_diag, args.normalize)
+    elif args.method.startswith('rpca'):
+        L_file = osp.join(args.sample_folder, 'PCA_analysis', 'L_log.npy')
+        if osp.exists(L_file):
+            L = np.load(L_file)
+            seq = getSeq.get_PCA_seq(L, args.normalize)
+        else:
+            y = np.load(osp.join(args.sample_folder, 'y.npy'))
+            seq = getSeq.get_RPCA_seq(y, args.normalize)
     elif args.method.startswith('kpca'):
-        input_type = args.method.split('-')[1]
-        if input_type.lower() == 'y':
+        if args.input == 'y':
             input = np.load(osp.join(args.sample_folder, 'y_diag.npy'))
-        elif input_type.lower() == 'x':
+        elif args.input == 'x':
             input = np.load(osp.join(args.sample_folder, 'x.npy'))
-        elif input_type.lower() == 'psi':
+        elif args.input == 'psi':
             input = np.load(osp.join(args.sample_folder, 'psi.npy'))
         seq = getSeq.get_PCA_seq(input, args.normalize, use_kernel = True, kernel = args.kernel)
     elif args.method.startswith('ground_truth'):
@@ -709,9 +748,9 @@ def main():
 ### Tester class ###
 class Tester():
     def __init__(self):
-        self.dataset = 'dataset_01_15_22'
-        self.sample = 40
-        self.sample_folder = osp.join('/home/eric/sequences_to_contact_maps', self.dataset, f'samples/sample{self.sample}')
+        self.dataset = 'dataset_test'
+        self.sample = 85
+        self.sample_folder = osp.join('/home/eric', self.dataset, f'samples/sample{self.sample}')
         self.m = 300
         self.k = 3
         self.getSeq = GetSeq(self.m, self.k)
@@ -757,15 +796,20 @@ class Tester():
         seq = self.getSeq.get_seq_gnn(model_path, self.sample, normalize)
 
     def test_PCA(self):
-        sample_folder = "/home/eric/sequences_to_contact_maps/dataset_11_14_21/samples/sample40"
+        sample_folder = "/home/eric/dataset_test/samples/sample85"
         k = 4
         input = np.load(osp.join(sample_folder, 'y_diag.npy'))
+        y = np.load(osp.join(sample_folder, 'y.npy'))
 
         seq = self.getSeq.get_PCA_seq(input, use_kernel = True, kernel = 'polynomial')
-        plot_seq_continuous(seq, show = True, save = False, title = 'kPCA test')
+        # plot_seq_continuous(seq, show = True, save = False, title = 'kPCA test')
 
         seq = self.getSeq.get_PCA_seq(input, normalize = True)
-        plot_seq_continuous(seq, show = True, save = False, title = 'PCA-normalize test')
+        # plot_seq_continuous(seq, show = True, save = False, title = 'PCA-normalize test')
+
+        seq = self.getSeq.get_RPCA_seq(y, normalize = True, max_it = 500)
+        plot_seq_continuous(seq, show = True, save = False, title = 'RPCA test')
+
 
     def test_suite(self):
         # self.test_nmf_k_means()

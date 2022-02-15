@@ -27,6 +27,7 @@ class R_pca:
             self.mu = mu
         else:
             self.mu = np.prod(self.D.shape) / (4 * np.linalg.norm(self.D, ord=1))
+            print('mu=', self.mu)
 
         self.mu_inv = 1 / self.mu
 

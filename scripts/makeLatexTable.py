@@ -21,9 +21,9 @@ from neural_net_utils.argparseSetup import str2int, str2bool, str2list
 from neural_net_utils.utils import calculate_S, load_E_S, load_final_max_ent_chi
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-METHODS = ['ground_truth', 'random', 'PCA', 'PCA_split', 'kPCA', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM']
+METHODS = ['ground_truth', 'random', 'PCA', 'PCA_split', 'kPCA', 'RPCA', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM']
 SMALL_METHODS = {'ground_truth', 'random', 'PCA', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM'}
-LABELS = ['Ground Truth', 'Random', 'PCA', 'PCA Split', 'kPCA', 'K-means', 'NMF', 'GNN', 'Epigenetic', 'ChromHMM']
+LABELS = ['Ground Truth', 'Random', 'PCA', 'PCA Split', 'kPCA', 'RPCA', 'K-means', 'NMF', 'GNN', 'Epigenetic', 'ChromHMM']
 
 def getArgs(data_folder = None, sample = None, samples = None):
     parser = argparse.ArgumentParser(description='Base parser')

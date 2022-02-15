@@ -185,8 +185,9 @@ def test_p():
 
 
 def test_robust_PCA():
-    dir = '/home/eric/dataset_test/rpca_test2'
+
     if False:
+        dir = '/home/eric/dataset_test/rpca_test'
         n = 1000
         r = 10
         x = np.random.rand(n, r)
@@ -205,30 +206,69 @@ def test_robust_PCA():
         plotContactMap(S, ofile = osp.join(dir, 'RPCA_S.png'), vmax = np.mean(y))
 
     if True:
+        dir = '/home/eric/dataset_test/rpca_test2'
         dataset_test = '/home/eric/dataset_test/samples'
         l0 = np.load(osp.join(dataset_test, 'sample20/PCA_analysis/y_diag_rank_1.npy'))
         p = np.load(osp.join(dataset_test, 'sample22/y.npy'))
-        p = p / np.max(p)
+        p = p / np.max(p) + 1e-8
         # m = np.load(osp.join(dataset_test, 'sample21/y.npy'))
         m = l0*p
         s0 = m - l0
-        plotContactMap(l0, ofile = osp.join(dir, 'L0.png'), vmax = 'max')
-        plotContactMap(m, ofile = osp.join(dir, 'M.png'), vmax = 'mean')
-        plotContactMap(s0, ofile = osp.join(dir, 'S0.png'), vmin = 'min', vmax = 'mean', cmap='blue-red')
-        plotContactMap(p, ofile = osp.join(dir, 'P.png'), vmax = 'mean')
+        l0_log = np.log(l0)
+        p_log = np.log(p)
+        print('p', np.min(p_log))
+        m_log = np.log(m)
+        print(np.min(m_log))
+        # plotContactMap(l0, ofile = osp.join(dir, 'L0.png'), vmax = 'max')
+        # plotContactMap(l0_log, ofile = osp.join(dir, 'L0_log.png'), vmax = 'max')
+        # plotContactMap(m, ofile = osp.join(dir, 'M.png'), vmax = 'mean')
+        # plotContactMap(m_log, ofile = osp.join(dir, 'M_log.png'), vmin = 'min', vmax = 'max')
+        # plotContactMap(s0, ofile = osp.join(dir, 'S0.png'), vmin = 'min', vmax = 'mean', cmap='blue-red')
 
-        L, S = R_pca(m).fit(max_iter=200)
-        plotContactMap(L, ofile = osp.join(dir, 'RPCA_L.png'), vmax = 'mean')
-        plotContactMap(S, ofile = osp.join(dir, 'RPCA_S.png'), vmin = 'min', vmax = 'max', cmap='blue-red')
+        # plotContactMap(p, ofile = osp.join(dir, 'P.png'), vmax = 'mean')
+        # plotContactMap(p_log, ofile = osp.join(dir, 'P_log.png'), vmin = 'min', vmax = 'max')
 
-        ydiag = np.load(osp.join(dataset_test, 'sample21/y_diag.npy'))
-        ydiag_rank_1 = np.load(osp.join(dataset_test, 'sample21/PCA_analysis/y_diag_rank_1.npy'))
-        dif = ydiag - ydiag_rank_1
-        plotContactMap(ydiag, ofile = osp.join(dir, 'ydiag.png'), vmax = 'max')
-        plotContactMap(ydiag_rank_1, ofile = osp.join(dir, 'ydiag_rank_1.png'), vmax = 'max')
-        plotContactMap(dif, ofile = osp.join(dir, 'dif.png'), vmin = 'min', vmax = 'max', cmap='blue-red')
+        # L, S = R_pca(m).fit(max_iter=200)
+        # plotContactMap(L, ofile = osp.join(dir, 'RPCA_L.png'), vmax = 'mean')
+        # plotContactMap(S, ofile = osp.join(dir, 'RPCA_S.png'), vmin = 'min', vmax = 'max', cmap='blue-red')
+        L_log, S_log = R_pca(m_log).fit(max_iter=2000)
+        plotContactMap(L_log, ofile = osp.join(dir, 'RPCA_L_log.png'), vmin = 'min', vmax = 'max')
+        plotContactMap(S_log, ofile = osp.join(dir, 'RPCA_S_log.png'), vmin = 'min', vmax = 'max', cmap='blue-red')
+        L_log_exp = np.exp(L_log)
+        S_log_exp = np.exp(S_log)
+        plotContactMap(L_log_exp, ofile = osp.join(dir, 'RPCA_L_log_exp.png'), vmax = 'max')
+        plotContactMap(S_log_exp, ofile = osp.join(dir, 'RPCA_S_log_exp.png'), vmin = 'min', vmax = 'max', cmap='blue-red')
+
+        PC_m = plot_top_PCs(m, inp_type='m', verbose = True, odir = dir, plot = True)
+        meanDist = genomic_distance_statistics(m)
+        m_diag = diagonal_preprocessing(m, meanDist)
+        PC_m_diag = plot_top_PCs(m_diag, inp_type='m_diag', verbose = True, odir = dir, plot = True)
+
+        # plot_top_PCs(L_log_exp, inp_type='L_log_exp', verbose = True, odir = dir, plot = True)
+        PC_L_log = plot_top_PCs(L_log, inp_type='L_log', verbose = True, odir = dir, plot = True)
+        stat = pearsonround(PC_L_log[0], PC_m[0])
+        print("Correlation between PC 1 of L_log and M: ", stat)
+        stat = pearsonround(PC_L_log[1], PC_m[1])
+        print("Correlation between PC 2 of L_log and M: ", stat)
+        meanDist = genomic_distance_statistics(L_log)
+        L_log_diag = diagonal_preprocessing(L_log, meanDist)
+        PC_L_log_diag = plot_top_PCs(L_log_diag, inp_type='L_log_diag', verbose = True, odir = dir, plot = True)
+        stat = pearsonround(PC_L_log_diag[0], PC_m_diag[0])
+        print("Correlation between PC 1 of L_log_diag and M_diag: ", stat)
+        stat = pearsonround(PC_L_log_diag[1], PC_m_diag[1])
+        print("Correlation between PC 2 of L_log_diag and M_diag: ", stat)
+        # plot_top_PCs(m_log, inp_type='m_log', verbose = True, odir = dir, plot = True)
+        # meanDist = genomic_distance_statistics(m_log)
+        # m_log_diag = diagonal_preprocessing(m_log, meanDist)
+        # plot_top_PCs(m_log_diag, inp_type='m_log_diag', verbose = True, odir = dir, plot = True)
 
 
+        # ydiag = np.load(osp.join(dataset_test, 'sample21/y_diag.npy'))
+        # ydiag_rank_1 = np.load(osp.join(dataset_test, 'sample21/PCA_analysis/y_diag_rank_1.npy'))
+        # dif = ydiag - ydiag_rank_1
+        # plotContactMap(ydiag, ofile = osp.join(dir, 'ydiag.png'), vmax = 'max')
+        # plotContactMap(ydiag_rank_1, ofile = osp.join(dir, 'ydiag_rank_1.png'), vmax = 'max')
+        # plotContactMap(dif, ofile = osp.join(dir, 'dif.png'), vmin = 'min', vmax = 'max', cmap='blue-red')
 
 
     if False:
