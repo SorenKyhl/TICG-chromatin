@@ -35,7 +35,6 @@ do
   for sample in 85 86 87 88 89
   do
     for k in 4 6
-
     do
       max_ent
     done

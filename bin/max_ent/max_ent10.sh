@@ -27,7 +27,6 @@ fi
 
 STARTTIME=$(date +%s)
 i=9000
-dataset='dataset_01_15_22'
 dataset='dataset_11_14_21'
 sample=1718
 
