@@ -244,6 +244,16 @@ void Sim::readInput() {
 	assert(config.contains("compressibility_on")); Cell::compressibility_on = config["compressibility_on"];
 	assert(config.contains("diag_pseudobeads_on")); Cell::diag_pseudobeads_on = config["diag_pseudobeads_on"];
 	assert(config.contains("parallel")); Grid::parallel = config["parallel"];
+
+	if (Grid::parallel)
+	{
+		assert(config.contains("set_num_threads")); set_num_threads = config["set_num_threads"];
+		if (set_num_threads)
+		{
+			assert(config.contains("num_threads")); num_threads= config["num_threads"];
+			omp_set_num_threads(num_threads);
+		}
+	}
 	//cellcount_on = config["cellcount_on"];
 	assert(config.contains("seed"));
 	int seed = config["seed"];

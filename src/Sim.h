@@ -108,6 +108,9 @@ public:
 
 	unsigned long nbeads_moved = 0;
 
+	bool set_num_threads;
+	int num_threads;
+
 	std::vector<std::vector<int>> contact_map;
 	int contact_resolution; //= 500;
 	bool dump_density;
