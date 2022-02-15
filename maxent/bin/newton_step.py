@@ -45,6 +45,7 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_
         lines = f_chis.readlines()
         current_chis = lines[it].split()
         current_chis = [float(x) for x in current_chis]
+        current_chis = np.array(current_chis)
     print("current chi values: ", current_chis)
 
     # get current observable values
@@ -54,7 +55,6 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_
     lam = df.mean().values
     B = df.cov().values
 
-    current_chis = np.array(current_chis)
 
     new_chis, howfar = newton(lam, obj_goal, B,  gamma, current_chis, trust_region)
 
@@ -85,8 +85,18 @@ def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, 
     #print("obj goal: ", obj_goal)
 
     # read in current chis
-    current_chis = np.hstack([np.loadtxt(f)[-1] for f in parameter_files])
+    nchis = [None, None]
+    current_chis = []
+    for i, f in enumerate(parameter_files):
+        with open(f, "r") as f_chis:
+            lines = f_chis.readlines()
+            f_current_chis = lines[it].split()
+            f_current_chis = [float(x) for x in f_current_chis]
+            nchis[i] = len(f_current_chis)
+            current_chis.extend(f_current_chis)
+    current_chis = np.array(current_chis)
     print("current chi values: ", current_chis)
+
 
     # get current observable values
     it_root = osp.join("iteration{}".format(it), "production_out")
@@ -111,15 +121,13 @@ def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, 
 
 
     index = 0;
-    for f in parameter_files:
-        nchis = len(np.loadtxt(f)[-1])
-
+    for i, f in enumerate(parameter_files):
         f_chis = open(f, "a")
-        np.savetxt(f_chis, new_chis[index:index+nchis], newline=" ", fmt="%.5f")
+        np.savetxt(f_chis, new_chis[index:index+nchis[i]], newline=" ", fmt="%.5f")
         f_chis.write("\n")
         f_chis.close()
 
-        index += nchis
+        index += nchis[i]
 
     for f in convergence_files:
         with open(f, "a") as f:
