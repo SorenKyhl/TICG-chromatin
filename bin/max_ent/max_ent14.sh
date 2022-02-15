@@ -13,10 +13,10 @@ if [ $local = 'true' ]
 then
   dir="/home/eric/sequences_to_contact_maps"
   scratchDir='/home/eric/scratch'
-  numIterations=0
-  finalSimProductionSweeps=5000
+  numIterations=4
+  finalSimProductionSweeps=1000
   equilibSweeps=1000
-  productionSweeps=5000
+  productionSweeps=1000
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
   dir='/project2/depablo/erschultz'
@@ -28,6 +28,8 @@ STARTTIME=$(date +%s)
 i=13000
 dataset='dataset_09_21_21'
 sample=8
+mode='both'
+diag='true'
 for method in 'PCA' 'nmf'
 do
   for k in 1

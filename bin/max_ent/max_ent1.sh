@@ -28,13 +28,14 @@ STARTTIME=$(date +%s)
 i=1
 dataset='dataset_test'
 
-trust_region=1000
+trust_region=10
 # useE='true'
-for method in 'k_means'
+for method in 'RPCA-normalize'
 do
   for sample in 85 86 87 88 89
   do
-    for k in 2 6
+    for k in 4 6
+
     do
       max_ent
     done

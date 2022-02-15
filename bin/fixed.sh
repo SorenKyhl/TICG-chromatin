@@ -76,18 +76,19 @@ run()  {
 
 scaleResolution=25
 chi='polynomial'
-# maxChi=2
-# minChi=-2
-# for i in 80 81 82 83 84
-# do
-# 	run &
-# done
-
 maxChi=3
 minChi=-3
-for i in 85 86 87 88 89
+diag='false'
+for i in 80 81 82 83 84
 do
 	run &
 done
+
+# maxChi=3
+# minChi=-3
+# for i in 85 86 87 88 89
+# do
+# 	run &
+# done
 
 wait

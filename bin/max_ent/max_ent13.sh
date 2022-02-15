@@ -27,19 +27,20 @@ fi
 STARTTIME=$(date +%s)
 i=12000
 dataset='dataset_09_21_21'
-sample=23
-# for method in 'PCA' 'nmf'
-# do
-#   for k in 1
-#   do
-#     max_ent
-#   done
-# done
+sample=2
+mode='both'
+diag='true'
+for method in 'PCA' 'nmf'
+do
+  for k in 1
+  do
+    max_ent
+  done
+done
 
 for method in 'PCA' 'k_means' 'nmf'
 do
-  for k in 2
-   # 4 6
+  for k in 2 4 6
   do
     max_ent
   done

@@ -54,9 +54,9 @@ samplesPerTask=$(( $samplesPerNode / $tasks ))
 echo "samples per node" $samplesPerNode
 echo "samples per task" $samplesPerTask
 
-cd ~/TICG-chromatin/src
-make
-mv TICG-engine ..
+# cd ~/TICG-chromatin/src
+# make
+# mv TICG-engine ..
 
 cd ~/TICG-chromatin
 

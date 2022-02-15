@@ -21,6 +21,8 @@ project='false'
 goalSpecified='true'
 modelType='ContactGNNEnergy'
 m=-1
+diag='false'
+diagBins=20
 
 # ground truth params
 useGroundTruthChi='false'
@@ -38,7 +40,7 @@ epiData="${chipSeqFolder}/fold_change_control/processed"
 chromHMMData="${chipSeqFolder}/aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt"
 
 max_ent() {
-  if [ $mode = 'plaid' ]
+  if [ $mode = 'plaid' ] || [ $mode = 'both' ]
   then
     if [ $useS = 'true' ] || [ $useE = 'true' ]
     then
@@ -56,6 +58,12 @@ max_ent() {
       goalSpecified='false'
     fi
   fi
+
+  if [ $mode = 'diag' ] || [ $mode = 'both' ]
+  then
+    diag='true'
+  fi
+
   dataFolder="${dir}/${dataset}"
   modelPath="${results}/${modelType}/${modelID}"
   sampleFolder="${dataFolder}/samples/sample${sample}"
@@ -103,14 +111,14 @@ max_ent_inner () {
 
   # get config
   echo "starting get_config"
-  python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi=-1 --max_chi=1 --save_chi_for_max_ent --goal_specified $goalSpecified --default_config "${resources}/default_config.json" --use_ematrix $useE --use_smatrix $useS --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_diag_chi $useGroundTruthDiagChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $RANDOM --sample_folder $sampleFolder --load_configuration_filename $init_config > config.log
+  python3 ~/TICG-chromatin/scripts/get_config.py --k $k --m $m --min_chi=-1 --max_chi=1 --save_chi_for_max_ent --goal_specified $goalSpecified --default_config "${resources}/default_config.json" --use_ematrix $useE --use_smatrix $useS --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_diag_chi $useGroundTruthDiagChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $RANDOM --sample_folder $sampleFolder --load_configuration_filename $init_config --diag $diag --diag_bins $diagBins > config.log
 
 
   # generate goals
   if [ $goalSpecified = 'true' ]
   then
     echo "starting goal_specified"
-    python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --k $k --contact_map "${sampleFolder}/y.npy" --mode $mode > goal.log
+    python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --k $k --contact_map "${sampleFolder}/y.npy" --mode $mode --diag_bins $diagBins > goal.log
   fi
 
   echo $method_fmt
