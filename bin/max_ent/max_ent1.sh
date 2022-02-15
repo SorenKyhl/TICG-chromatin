@@ -29,12 +29,12 @@ i=1
 dataset='dataset_test'
 
 trust_region=1000
-useE='true'
-for method in 'ground_truth'
+# useE='true'
+for method in 'k_means'
 do
-  for sample in 80 81 85 86
+  for sample in 85 86 87 88 89
   do
-    for k in 4
+    for k in 2 6
     do
       max_ent
     done

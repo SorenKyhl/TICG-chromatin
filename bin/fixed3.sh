@@ -8,19 +8,19 @@ useS='false'
 startSample=1
 relabel='none'
 diag='false'
-nSweeps=10000
+nSweeps=100000
 pSwitch=0.05
-maxDiagChi=0.1
+maxDiagChi=0.2
 chiSeed='none'
 minChi=-1
 maxChi=-1
 fillDiag='none'
 overwrite=1
-dumpFrequency=100
+dumpFrequency=1000
 TICGSeed='none'
 npySeed='12' # for get_seq
 method='random'
-exclusive='false'
+exclusive='true'
 
 source activate python3.8_pytorch1.8.1_cuda11.1
 
@@ -37,17 +37,20 @@ run()  {
 
 	# clean up
 	rm -f default_config.json *.xyz
-	rm $scratchDiri
+	rm -d $scratchDirI
 }
 
 # cd ~/TICG-chromatin/src
 # make
 # mv TICG-engine ..
 
-chi="polynomial"
-for i in 1 2 3 4 5
-do
-	run &
-done
+chi="0&0\\0&0"
+# diag='false'
+# i=20
+# run &
+
+diag='true'
+i=22
+run &
 
 wait

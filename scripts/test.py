@@ -174,18 +174,80 @@ def main():
     y_max = np.max(y)
     plotContactMap(y / y_max, ofile = osp.join(dir, 'y_prob.png'), vmax = 'mean')
 
-def test_robust_PCA():
-    dir = '/home/eric/dataset_test/samples/sample81'
-    # dir = '/home/eric/sequences_to_contact_maps/dataset_09_21_21/samples/sample1'
+def test_p():
+    dir = '/home/eric/dataset_test/samples/sample21'
     y = np.load(osp.join(dir, 'y.npy'))
-    L, S = R_pca(y).fit(max_iter=500)
-    plotContactMap(L, ofile = osp.join(dir, 'RPCA_L.png'), vmax = np.mean(y))
-    plotContactMap(S, ofile = osp.join(dir, 'RPCA_S.png'), vmax = np.mean(y))
+    ydiag = np.load(osp.join(dir, 'y_diag.npy'))
+    p = y / ydiag
+    print(p.shape)
+    plotContactMap(p, ofile = osp.join(dir, 'p.png'), vmax = 10)
+    print(p)
 
-    y_diag = np.load(osp.join(dir, 'y_diag.npy'))
-    L, S = R_pca(y_diag).fit(max_iter=500)
-    plotContactMap(L, ofile = osp.join(dir, 'RPCA_L_diag.png'), vmax = np.max(y_diag))
-    plotContactMap(S, ofile = osp.join(dir, 'RPCA_S_diag.png'), vmax = np.max(y_diag))
+
+def test_robust_PCA():
+    dir = '/home/eric/dataset_test/rpca_test2'
+    if False:
+        n = 1000
+        r = 10
+        x = np.random.rand(n, r)
+        y = np.random.rand(r, n)
+        l_0 = x @ y
+        s_0 = np.random.binomial(n = 1, p = 0.3, size = (n, n))
+
+        inp = l_0 + s_0
+
+        plotContactMap(l_0, ofile = osp.join(dir, 'L.png'), vmax = 'max')
+        plotContactMap(s_0, ofile = osp.join(dir, 'S.png'), vmax = 1)
+        plotContactMap(inp, ofile = osp.join(dir, 'inp.png'), vmax = 'max')
+
+        L, S = R_pca(inp).fit(max_iter=200)
+        plotContactMap(L, ofile = osp.join(dir, 'RPCA_L.png'), vmax = np.mean(y))
+        plotContactMap(S, ofile = osp.join(dir, 'RPCA_S.png'), vmax = np.mean(y))
+
+    if True:
+        dataset_test = '/home/eric/dataset_test/samples'
+        l0 = np.load(osp.join(dataset_test, 'sample20/PCA_analysis/y_diag_rank_1.npy'))
+        p = np.load(osp.join(dataset_test, 'sample22/y.npy'))
+        p = p / np.max(p)
+        # m = np.load(osp.join(dataset_test, 'sample21/y.npy'))
+        m = l0*p
+        s0 = m - l0
+        plotContactMap(l0, ofile = osp.join(dir, 'L0.png'), vmax = 'max')
+        plotContactMap(m, ofile = osp.join(dir, 'M.png'), vmax = 'mean')
+        plotContactMap(s0, ofile = osp.join(dir, 'S0.png'), vmin = 'min', vmax = 'mean', cmap='blue-red')
+        plotContactMap(p, ofile = osp.join(dir, 'P.png'), vmax = 'mean')
+
+        L, S = R_pca(m).fit(max_iter=200)
+        plotContactMap(L, ofile = osp.join(dir, 'RPCA_L.png'), vmax = 'mean')
+        plotContactMap(S, ofile = osp.join(dir, 'RPCA_S.png'), vmin = 'min', vmax = 'max', cmap='blue-red')
+
+        ydiag = np.load(osp.join(dataset_test, 'sample21/y_diag.npy'))
+        ydiag_rank_1 = np.load(osp.join(dataset_test, 'sample21/PCA_analysis/y_diag_rank_1.npy'))
+        dif = ydiag - ydiag_rank_1
+        plotContactMap(ydiag, ofile = osp.join(dir, 'ydiag.png'), vmax = 'max')
+        plotContactMap(ydiag_rank_1, ofile = osp.join(dir, 'ydiag_rank_1.png'), vmax = 'max')
+        plotContactMap(dif, ofile = osp.join(dir, 'dif.png'), vmin = 'min', vmax = 'max', cmap='blue-red')
+
+
+
+
+    if False:
+        # dir = '/home/eric/dataset_test/samples/sample104'
+        dir = '/home/eric/sequences_to_contact_maps/dataset_09_21_21/samples/sample1'
+        y = np.load(osp.join(dir, 'y.npy'))
+        # L, S = R_pca(y).fit(max_iter=200)
+        # plotContactMap(L, ofile = osp.join(dir, 'RPCA_L.png'), vmax = np.mean(y))
+        # plotContactMap(S, ofile = osp.join(dir, 'RPCA_S.png'), vmax = np.mean(y))
+
+        # l = 1/np.sqrt(1024) * 1/100
+        y_diag = np.load(osp.join(dir, 'y_diag.npy'))
+        L, S = R_pca(y_diag).fit(max_iter=200)
+        plotContactMap(L, ofile = osp.join(dir, 'RPCA_L_diag.png'), vmin='min', vmax = 'max')
+        plotContactMap(S, ofile = osp.join(dir, 'RPCA_S_diag.png'), vmin='min', vmax = np.max(S), cmap='blue-red')
+        plotContactMap(y_diag, ofile = osp.join(dir, 'y_diag.png'), vmax = 'max')
+        plot_top_PCs(L, verbose = True)
+
+
 
 
 def scc_y_vs_y_rank1():
@@ -307,11 +369,12 @@ def main2():
 
 
 if __name__ == '__main__':
-    repair_dataset_11_14_21()
+    # repair_dataset_11_14_21()
     # main2()
     # is_scc_weighted_mean()
     # scc_y_vs_y_rank1()
-    # test_robust_PCA()
+    test_robust_PCA()
+    # test_p()
     # check_seq()
     # find_mising_ids()
     # check_seq('dataset_11_03_21')
