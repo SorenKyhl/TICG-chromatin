@@ -40,5 +40,8 @@
   "kappa": 0,
   "density_cap_on": true,
   "compressibility_on": false,
-  "diag_pseudobeads_on": true
+  "diag_pseudobeads_on": true,
+  "parallel": false,
+  "set_num_threads": true,
+  "num_threads": 2
 }

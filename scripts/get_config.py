@@ -51,6 +51,7 @@ def getArgs():
 
     # diag chi arguments
     parser.add_argument('--diag', type=str2bool, default=False, help='True for diagonal interactions')
+    parser.add_argument('--diag_bins', type=str2int, default=20, help='number of diagonal bins')
     parser.add_argument('--max_diag_chi', type=float, default=0.5, help='maximum diag chi value for np.linspace()')
 
     # plaid chi arguments
@@ -271,9 +272,9 @@ def set_up_diag_chi(args, config, sample_config):
                 assert args.diag == False
         else:
             print("WARNING: ground truth config missing")
-            chi_diag = list(np.linspace(0, args.max_diag_chi, 20))
+            chi_diag = list(np.linspace(0, args.max_diag_chi, args.diag_bins))
     else:
-        chi_diag = list(np.linspace(0, args.max_diag_chi, 20))
+        chi_diag = list(np.linspace(0, args.max_diag_chi, args.diag_bins))
 
     config["diagonal_on"] = args.diag
     if args.diag:

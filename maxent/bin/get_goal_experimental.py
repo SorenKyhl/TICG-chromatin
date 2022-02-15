@@ -8,28 +8,38 @@ import argparse
 import csv
 import time
 
-paths = ['/home/erschultz/sequences_to_contact_maps',
-        '/home/eric/sequences_to_contact_maps',
-        'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
-for p in paths:
-    if osp.exists(p):
-        sys.path.insert(1, p)
-
-from neural_net_utils.argparseSetup import str2int
-
-
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     parser.add_argument('--k', type=int, help='number of particle types')
     parser.add_argument('--contact_map', type=str, help='filepath to contact map')
     parser.add_argument('--verbose', action='store_true', help='true for verbose mode')
     parser.add_argument('--mode', type=str, help='{"plaid", "diag", "both"}')
+    parser.add_argument('--diag_bins', type=int, help='number of diagonal bins')
 
     args = parser.parse_args()
     return args
 
-def get_diag_goal(y, args):
-    return np.zeros(20)
+def get_diag_goal(y, bins):
+    m, _ = y.shape
+    binsize = m / bins
+
+    measure = []
+    correction = []
+    for b in range(bins):
+        mask = np.zeros_like(y) # use mask to compute weighted average
+        for i in range(m):
+            for j in range(m):
+                if int((i-j)/binsize) == b:
+                    mask[i,j] = 1
+                    mask[j,i] = 1
+                    if i == j:
+                        mask[i,j] = 2
+        measure.append(np.mean((mask*y).flatten()))
+        correction.append(np.sum(mask)/m**2)
+
+    measure = np.array(measure)
+    correction = np.array(correction)
+    return measure
 
 def get_plaid_goal(y, m, args):
     obj_goal = []
@@ -77,13 +87,13 @@ def main():
 
     if args.mode == 'both':
         plaid_goal = get_plaid_goal(y, m, args)
-        diag_goal = get_diag_goal(y, args)
+        diag_goal = get_diag_goal(y, args.diag_bins)
     elif args.mode == 'plaid':
         plaid_goal = get_plaid_goal(y, m, args)
         diag_goal = np.zeros(20)
     elif args.mode == 'diag':
         plaid_goal = np.zeros(1) # shouldn't matter what goes here
-        diag_goal = get_diag_goal(y, m, args)
+        diag_goal = get_diag_goal(y, args.diag_bins)
 
 
     if args.verbose:
@@ -147,5 +157,13 @@ def test():
     print(np.round(obj_goal, 7))
     print(obj_goal / lam)
 
+def test2():
+    dir = '/home/eric/dataset_test/samples/sample85'
+    y = np.load(osp.join(dir, 'y.npy'))
+    goal = get_diag_goal(y, 10)
+    print(goal)
+
+
 if __name__ == '__main__':
     main()
+    # test2()
