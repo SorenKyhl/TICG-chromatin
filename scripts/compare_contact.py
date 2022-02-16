@@ -40,11 +40,11 @@ def getArgs():
 def comparePCA(y, yhat, dir):
     # y
     pca_y = PCA()
-    pca_y.fit(y)
+    pca_y.fit(y/np.std(y))
 
     # yhat
     pca_yhat = PCA()
-    pca_yhat.fit(yhat)
+    pca_yhat.fit(yhat/np.std(yhat))
 
     results = [['Component Index', 'Accuracy', 'Pearson R']]
 

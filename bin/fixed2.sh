@@ -75,26 +75,26 @@ run()  {
 # make
 # mv TICG-engine ..
 
-dir='/home/eric/sequences_to_contact_maps/dataset_01_15_22/samples/sample40'
+dir='/home/eric/sequences_to_contact_maps/dataset_11_14_21/samples/sample40'
 useE='true'
 chi='none'
-#
-# e="${dir}/e.npy"
-# for i in 70 71
-# do
-# 	run &
-# done
-#
-# e="${dir}/PCA_analysis/e_1.npy"
-# i=72
-# run &
+
+e="${dir}/e.npy"
+for i in 60 61
+do
+	run &
+done
+
+e="${dir}/PCA_analysis/e_1.npy"
+i=62
+run &
 
 e="${dir}/PCA_analysis/e_2.npy"
-i=73
+i=63
 run &
 
 e="${dir}/PCA_analysis/e_3.npy"
-i=74
+i=64
 run &
 
 

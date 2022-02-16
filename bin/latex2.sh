@@ -38,5 +38,7 @@ dataFolder="${dataDir}/${dataset}"
 #
 for sample in 85 86 87 88 89
 do
-  python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
+  python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample &
 done
+
+wait

@@ -34,7 +34,7 @@ for method in 'RPCA-normalize'
 do
   for sample in 85 86 87 88 89
   do
-    for k in 4 6
+    for k in 2
     do
       max_ent
     done
