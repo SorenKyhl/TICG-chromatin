@@ -31,7 +31,7 @@ from plotting_functions import plotContactMap, plot_seq_binary
 from neural_net_utils.argparseSetup import str2bool, str2int, str2None, getBaseParser, finalizeOpt
 from neural_net_utils.utils import s_to_E, load_E_S, load_X_psi, load_Y, loadSavedModel, getDataset, load_final_max_ent_S, diagonal_preprocessing, crop
 from result_summary_plots import project_S_to_psi_basis
-from neural_net_utils.utils import calculateDistanceStratifiedCorrelation,
+from neural_net_utils.utils import calculateDistanceStratifiedCorrelation
 from data_summary_plots import genomic_distance_statistics
 
 
