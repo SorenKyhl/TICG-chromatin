@@ -29,8 +29,11 @@ for p in paths:
 
 from plotting_functions import plotContactMap, plot_seq_binary
 from neural_net_utils.argparseSetup import str2bool, str2int, str2None, getBaseParser, finalizeOpt
-from neural_net_utils.utils import s_to_E, load_E_S, load_X_psi, load_Y, loadSavedModel, getDataset, load_final_max_ent_S, crop
+from neural_net_utils.utils import s_to_E, load_E_S, load_X_psi, load_Y, loadSavedModel, getDataset, load_final_max_ent_S, diagonal_preprocessing, crop
 from result_summary_plots import project_S_to_psi_basis
+from neural_net_utils.utils import calculateDistanceStratifiedCorrelation,
+from data_summary_plots import genomic_distance_statistics
+
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -79,6 +82,8 @@ def getArgs():
     args.append_random = False # True to append random seq
     args.load_chi = False # True to load e matrix learned from prior maxent and re-run
     args.project = False # (assumes load_chi is True) True to project e into space of ground truth bead labels
+    args.exp = False # (for RPCA) convert from log space back to original space
+    args.diag = False # (for RPCA) apply diagonal processing
     args.method_copy = args.method
     args.method = args.method.lower()
     process_method(args)
@@ -143,6 +148,10 @@ def process_method(args):
     if 'project' in modes:
         assert args.use_ematrix or args.use_smatrix
         args.project = True
+    if 'exp' in modes:
+        args.exp = True
+    if 'diag' in modes:
+        args.diag = True
 
 ### GetSeq class ###
 class GetSeq():
@@ -300,7 +309,7 @@ class GetSeq():
 
         return seq
 
-    def get_RPCA_seq(self, input, normalize = False, max_it = 2000):
+    def get_RPCA_seq(self, input, normalize = False, exp = False, diag = False, max_it = 2000):
         '''
         Defines seq based on PCs of input.
 
@@ -316,6 +325,12 @@ class GetSeq():
         input = np.log(input)
 
         L, _ = R_pca(input).fit(max_iter=max_it)
+
+        if exp:
+            L = np.exp(L)
+        if diag:
+            meanDist = genomic_distance_statistics(L)
+            L = diagonal_preprocessing(L, meanDist)
 
         return self.get_PCA_seq(L, normalize)
 
@@ -653,10 +668,15 @@ def main():
         L_file = osp.join(args.sample_folder, 'PCA_analysis', 'L_log.npy')
         if osp.exists(L_file):
             L = np.load(L_file)
+            if exp:
+                L = np.exp(L)
+            if diag:
+                meanDist = genomic_distance_statistics(L)
+                L = diagonal_preprocessing(L, meanDist)
             seq = getSeq.get_PCA_seq(L, args.normalize)
         else:
             y = np.load(osp.join(args.sample_folder, 'y.npy'))
-            seq = getSeq.get_RPCA_seq(y, args.normalize)
+            seq = getSeq.get_RPCA_seq(y, args.normalize, args.exp, args.diag)
     elif args.method.startswith('kpca'):
         if args.input == 'y':
             input = np.load(osp.join(args.sample_folder, 'y_diag.npy'))

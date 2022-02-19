@@ -25,12 +25,12 @@ fi
 
 STARTTIME=$(date +%s)
 i=2000
-dataset='dataset_01_17_22'
+dataset='dataset_01_15_22'
 
-method='PCA'
-for sample in 11 12 13 14 15
+method='RPCA-normalize'
+for sample in 40 1230 1718 1751 1761
 do
-  for k in 1 2 3 4
+  for k in 2 4 6
   do
     max_ent
   done
