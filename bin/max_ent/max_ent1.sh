@@ -30,11 +30,11 @@ dataset='dataset_test'
 
 trust_region=10
 # useE='true'
-for method in 'RPCA-normalize'
+for method in 'PCA-normalize'
 do
-  for sample in 85 86 87 88 89
+  for sample in 80 81 82 83 84
   do
-    for k in 2
+    for k in 4 6
     do
       max_ent
     done
