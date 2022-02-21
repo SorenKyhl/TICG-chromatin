@@ -27,6 +27,8 @@ STARTTIME=$(date +%s)
 i=10000
 dataset='dataset_09_21_21'
 sample=20
+gamma=0.001
+trust_region=100
 mode='both'
 diag='true'
 for method in 'PCA-normalize' 'nmf'
