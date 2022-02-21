@@ -25,25 +25,27 @@ fi
 
 STARTTIME=$(date +%s)
 i=8000
-dataset='dataset_11_14_21'
-sample=1230
+dataset='dataset_09_21_21'
+sample=1
+gamma=0.001
+trust_region=100
+mode='both'
+diag='false'
+for method in 'PCA-normalize' 'nmf'
+do
+  for k in 1
+  do
+    max_ent
+  done
+done
 
-method='ground_truth-x'
-k=12
-max_ent
-
-# method='ground_truth-psi'
-# k=15
-# max_ent
-#
-method='ground_truth'
-useE='true'
-max_ent
-
-method='GNN'
-modelID=50
-useE='true'
-max_ent
+for method in 'PCA-normalize' 'k_means' 'nmf'
+do
+  for k in 2 4 6
+  do
+    max_ent
+  done
+done
 
 wait
 

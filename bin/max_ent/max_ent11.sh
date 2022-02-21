@@ -26,11 +26,11 @@ fi
 STARTTIME=$(date +%s)
 i=10000
 dataset='dataset_09_21_21'
-sample=20
+sample=14
 gamma=0.001
 trust_region=100
 mode='both'
-diag='true'
+diag='false'
 for method in 'PCA-normalize' 'nmf'
 do
   for k in 1
