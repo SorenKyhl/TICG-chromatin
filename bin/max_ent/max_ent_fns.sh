@@ -178,7 +178,7 @@ format_method () {
   # diag
   if [ $diag = 'true' ]
   then
-  method_fmt="${method_fmt}-diag"
+  method_fmt="${method_fmt}-diagOn"
   fi
 
   echo $method_fmt
