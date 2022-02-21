@@ -71,11 +71,8 @@ run()  {
 	rm $scratchDiri
 }
 
-# cd ~/TICG-chromatin/src
-# make
-# mv TICG-engine ..
 
-dir='/home/eric/sequences_to_contact_maps/dataset_11_14_21/samples/sample40'
+dir='/project2/depablo/erschultz/dataset_11_14_21/samples/sample40'
 useE='true'
 chi='none'
 

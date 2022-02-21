@@ -86,6 +86,7 @@ done
 
 # maxChi=3
 # minChi=-3
+# diag='true'
 # for i in 85 86 87 88 89
 # do
 # 	run &

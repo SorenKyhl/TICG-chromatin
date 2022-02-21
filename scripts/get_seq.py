@@ -84,6 +84,7 @@ def getArgs():
     args.project = False # (assumes load_chi is True) True to project e into space of ground truth bead labels
     args.exp = False # (for RPCA) convert from log space back to original space
     args.diag = False # (for RPCA) apply diagonal processing
+    args.rank = None # max rank for energy matrix
     args.method_copy = args.method
     args.method = args.method.lower()
     process_method(args)
@@ -152,6 +153,10 @@ def process_method(args):
         args.exp = True
     if 'diag' in modes:
         args.diag = True
+
+    for mode in modes:
+        if mode.startswith('rank'):
+            args.rank = int(mode[4])
 
 ### GetSeq class ###
 class GetSeq():
@@ -740,6 +745,15 @@ def main():
             s, e = project_S_to_psi_basis(s, psi)
         s = crop(s, args.m)
         e = crop(e, args.m)
+        if args.rank is not None:
+            pca = PCA(n_components = args.rank)
+            s_transform = pca.fit_transform(s)
+            print(s_transform.shape)
+            print(f'Rank of S: {np.linalg.matrix_rank(s_transform)}')
+            print(pca.components_.shape)
+            s = pca.inverse_transform(s_transform)
+            e_transform = pca.fit_transform(e)
+            e = pca.inverse_transform(e_transform)
         if args.use_smatrix:
             np.savetxt('s_matrix.txt', s, fmt = '%.3e')
             np.save('s.npy', s)
@@ -747,6 +761,10 @@ def main():
             np.savetxt('e_matrix.txt', e, fmt = '%.3e')
             np.save('e.npy', e)
             np.save('s.npy', s)
+
+        if args.m < 2000:
+            print(f'Rank of S: {np.linalg.matrix_rank(s)}')
+            print(f'Rank of E: {np.linalg.matrix_rank(e)}\n')
     else:
         m, k = seq.shape
         assert m == args.m, f"m mismatch: seq has {m} particles not {args.m}"
@@ -757,9 +775,9 @@ def main():
 
     if args.plot:
         if args.use_smatrix:
-            plotContactMap(s, 's.png', vmin = 'min', vmax = 'max', cmap = 'blue-red')
+            plotContactMap(s, 's.png', vmin = 'min', vmax = 'max', cmap = 'blue-red', title = 'S')
         elif args.use_ematrix:
-            plotContactMap(e, 'e.png', vmin = 'min', vmax = 'max', cmap = 'blue-red')
+            plotContactMap(e, 'e.png', vmin = 'min', vmax = 'max', cmap = 'blue-red', title = 'E')
         elif args.method in {'k_means', 'chromhmm'} or (args.method == 'nmf' and args.binarize):
             plot_seq_exclusive(seq, labels=args.labels, X=args.X)
         elif args.binarize:
