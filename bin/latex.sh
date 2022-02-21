@@ -21,14 +21,14 @@ dataDir='/project2/depablo/erschultz'
 # dataDir='/home/eric/sequences_to_contact_maps'
 
 
-dataset=dataset_09_21_21
+dataset=dataset_01_15_22
 # sample='81-82'
 dataFolder="${dataDir}/${dataset}"
-# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
+python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
 #
 
 
-for sample in 2 8 14 20
+for sample in 40 1230 1718 1751 1761
 # 1230 1718
 do
   python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample

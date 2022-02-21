@@ -175,5 +175,11 @@ format_method () {
   method_fmt="${method_fmt}-seed"
   fi
 
+  # diag
+  if [ $diag = 'true' ]
+  then
+  method_fmt="${method_fmt}-diag"
+  fi
+
   echo $method_fmt
 }

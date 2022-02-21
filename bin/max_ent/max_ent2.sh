@@ -6,7 +6,7 @@
 #SBATCH --ntasks=20
 #SBATCH --mem-per-cpu=2000
 
-local='false'
+local='true'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
@@ -34,7 +34,8 @@ for j in 1
 # 2 3
 do
   method="${basemethod}${j}"
-  for sample in 40 1230 1718 1751 1761
+  for sample in 40
+  # 1230 1718 1751 1761
   do
     max_ent
   done
