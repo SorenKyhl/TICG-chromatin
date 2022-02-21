@@ -27,8 +27,6 @@ fi
 STARTTIME=$(date +%s)
 i=1
 dataset='dataset_test'
-
-trust_region=10
 # useE='true'
 for method in 'PCA-normalize'
 do

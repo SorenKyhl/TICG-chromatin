@@ -7,7 +7,7 @@
 #SBATCH --mem-per-cpu=4000
 #SBATCH --qos=depablo-debug
 
-# source activate python3.8_pytorch1.8.1_cuda10.2
+source activate python3.8_pytorch1.8.1_cuda11.1
 
 # dataFolder='/project2/depablo/erschultz/dataset_09_21_21'
 # samples=1
@@ -36,7 +36,7 @@ samples="80-81"
 dataFolder="${dataDir}/${dataset}"
 # python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
 #
-for sample in 85 86 87 88 89
+for sample in 80 81 82 83 84
 do
   python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample &
 done

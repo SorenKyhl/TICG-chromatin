@@ -45,7 +45,7 @@ def getArgs():
 
     # input data args
     parser.add_argument('--data_folder', type=str, default=osp.join(seq_local,'dataset_01_15_22'), help='location of input data')
-    parser.add_argument('--sample', type=int, default=40, help='sample id')
+    parser.add_argument('--sample', type=str, default='40', help='sample id')
     parser.add_argument('--sample_folder', type=str, help='location of input data')
 
     # standard args
@@ -752,8 +752,7 @@ def main():
             print(f'Rank of S: {np.linalg.matrix_rank(s_transform)}')
             print(pca.components_.shape)
             s = pca.inverse_transform(s_transform)
-            e_transform = pca.fit_transform(e)
-            e = pca.inverse_transform(e_transform)
+            e = s_to_E(s)
         if args.use_smatrix:
             np.savetxt('s_matrix.txt', s, fmt = '%.3e')
             np.save('s.npy', s)

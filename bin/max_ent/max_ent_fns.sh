@@ -31,8 +31,8 @@ useGroundTruthSeed='false'
 
 # newton's method params
 mode="plaid"
-gamma=1
-trust_region=10
+trust_region=1000
+gamma=0.00001
 
 # experimental data
 chipSeqFolder="/home/erschultz/sequences_to_contact_maps/chip_seq_data"
