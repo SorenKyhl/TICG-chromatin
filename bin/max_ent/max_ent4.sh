@@ -27,7 +27,8 @@ fi
 STARTTIME=$(date +%s)
 i=3000
 dataset='dataset_01_15_22'
-
+trust_region=1000
+gamma=0.00001
 method='RPCA-normalize-exp'
 for sample in 40 1230 1718 1751 1761
 do
