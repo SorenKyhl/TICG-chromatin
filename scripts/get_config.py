@@ -161,19 +161,21 @@ def generateRandomChi(args, decimals = 1, rng = np.random.default_rng()):
 
 def getChis(args):
     rng = np.random.default_rng(args.chi_seed)
-    conv = InteractionConverter(args.k, generateRandomChi(args, rng = rng))
-    if args.ensure_distinguishable:
+    chi = generateRandomChi(args, rng = rng)
+    if args.ensure_distinguishable and args.k < 10: # if k is too large this is too RAM intensive
+        conv = InteractionConverter(args.k, chi)
         max_it = 10
         it = 0
-        while not uniqueRows(conv.getE()) and it < max_it: # defaults to False
+        while not uniqueRows(conv.getS()) and it < max_it: # defaults to False
             # generate random chi
             conv.chi = generateRandomChi(args, rng = rng)
             it += 1
         if it == max_it:
             print('Warning: maximum iteration reached')
             print('Warning: particles are not distinguishable')
+        chi = conv.chi
 
-    return conv.chi
+    return chi
 
 def set_up_plaid_chi(args, config):
     if args.use_ground_truth_chi:
@@ -222,7 +224,7 @@ def set_up_plaid_chi(args, config):
                             [0,0,0,0,0,0,0,0,0,0,0,0,-1,0.6,-0.6],
                             [0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0.2],
                             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1]])
-        elif args.chi == 'polynomial':
+        elif args.chi.startswith('polynomial'):
             x = np.load('x.npy') # original particle types that interact nonlinearly
             ind = np.triu_indices(args.k)
             args.k = int(args.k*(args.k+1)/2)
@@ -242,7 +244,7 @@ def set_up_plaid_chi(args, config):
             assert args.k == rows, f'number of particle types {args.k} does not match shape of chi {rows}'
         assert rows == cols, f"chi not square: {args.chi}"
         conv = InteractionConverter(args.k, args.chi)
-        if not uniqueRows(conv.getE()):
+        if not uniqueRows(conv.getS()):
             print('Warning: particles are not distinguishable')
 
     # save chi
@@ -357,9 +359,9 @@ def main():
             np.savetxt('e_matrix.txt', e, fmt='%0.5f')
             np.save('e.npy', e)
             np.save('s.npy', s) # save s either way
-        if args.m < 2000:
-            print(f'Rank of S: {np.linalg.matrix_rank(s)}')
-            print(f'Rank of E: {np.linalg.matrix_rank(e)}\n')
+        # if args.m < 2000 and args.k < 10:
+        #     print(f'Rank of S: {np.linalg.matrix_rank(s)}')
+        #     print(f'Rank of E: {np.linalg.matrix_rank(e)}\n')
 
     if args.e is not None:
         assert args.use_ematrix

@@ -18,9 +18,9 @@ fillDiag='none'
 overwrite=1
 dumpFrequency=1000
 TICGSeed='none'
-npySeed='12' # for get_seq
+npySeed='none' # for get_seq
 method='random'
-exclusive='true'
+exclusive='false'
 
 source activate python3.8_pytorch1.8.1_cuda11.1
 
@@ -44,13 +44,23 @@ run()  {
 # make
 # mv TICG-engine ..
 
-chi="0&0\\0&0"
-# diag='false'
-# i=20
-# run &
+chi="nonlinear"
+pSwitch=0.1
+k=12
+i=120
+# nSweeps=1000
+run &
 
-diag='true'
-i=22
+pSwitch=0.05
+i=121
+run &
+
+pSwitch=0.01
+i=122
+run &
+
+pSwitch=0.005
+i=123
 run &
 
 wait

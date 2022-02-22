@@ -6,7 +6,7 @@
 #SBATCH --ntasks=20
 #SBATCH --mem-per-cpu=2000
 
-local='false'
+local='true'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
@@ -27,33 +27,35 @@ fi
 STARTTIME=$(date +%s)
 i=1000
 dataset='dataset_11_14_21'
-basemethod='ground_truth-rank'
-useE='true'
-for j in 1 2 3 4
-do
-  method="${basemethod}${j}"
-  for sample in 40 1230 1718 1751 1761
-  do
-    max_ent
-  done
-done
-
-# dataset='dataset_11_14_21'
-# method='PCA'
-# # useE='true'
-# for j in 1
-# # 2 3 4
+# basemethod='ground_truth-rank'
+# useE='true'
+# for j in 1 2 3 4
 # do
-#   for l in 40
-#    # 1230 1718 1751 1761
+#   method="${basemethod}${j}"
+#   for sample in 40
+#   # 1230 1718 1751 1761
 #   do
-#     sample="${l}/ground_truth-rank${j}-E/knone/replicate1"
-#     for k in 4 6
-#     do
-#       max_ent
-#     done
+#     max_ent
 #   done
 # done
+
+dataset='dataset_11_14_21'
+method='PCA-normalize'
+# useE='true'
+for j in 1 2
+# 3 4
+do
+  for l in 40
+   # 1230 1718 1751 1761
+  do
+    sample="${l}/ground_truth-rank${j}-E/knone/replicate1"
+    for k in 4 6
+
+    do
+      max_ent
+    done
+  done
+done
 
 wait
 

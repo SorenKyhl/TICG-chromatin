@@ -28,9 +28,9 @@ STARTTIME=$(date +%s)
 i=1
 dataset='dataset_test'
 # useE='true'
-for method in 'PCA-normalize'
+for method in 'PCA'
 do
-  for sample in 80 81 82 83 84
+  for sample in 120 121 122 123
   do
     for k in 4 6
     do

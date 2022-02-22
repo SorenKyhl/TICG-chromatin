@@ -747,7 +747,7 @@ def main():
         e = crop(e, args.m)
         if args.rank is not None:
             pca = PCA(n_components = args.rank)
-            s_transform = pca.fit_transform(s)
+            s_transform = pca.fit_transform((s+s.T)/2)
             print(s_transform.shape)
             print(f'Rank of S: {np.linalg.matrix_rank(s_transform)}')
             print(pca.components_.shape)
