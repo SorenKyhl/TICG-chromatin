@@ -1,21 +1,12 @@
+import json
 import os.path as osp
-import sys
 
 import numpy as np
-import json
-import math
 
+from ..sequences_to_contact_maps.scripts.plotting_functions import \
+    plotContactMap
+from ..sequences_to_contact_maps.scripts.xyz_utils import xyzLoad
 
-
-paths = ['/home/erschultz/sequences_to_contact_maps',
-        '/home/eric/sequences_to_contact_maps',
-        'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
-for p in paths:
-    if osp.exists(p):
-        sys.path.insert(1, p)
-
-from neural_net_utils.xyz_utils import *
-from plotting_functions import plotContactMap
 
 def xyz_to_contact(xyz, grid_size):
     m, _ = xyz.shape

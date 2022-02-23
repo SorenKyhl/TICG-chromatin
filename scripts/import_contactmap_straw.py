@@ -1,27 +1,17 @@
+import multiprocessing
 import os
 import os.path as osp
-import sys
+
+import numpy as np
+import pandas as pd
 
 import straw
-import pandas as pd
-import numpy as np
-import multiprocessing
 
-# ensure that I can find contact_map
-abspath = osp.abspath(__file__)
-dname = osp.dirname(abspath)
-sys.path.insert(0, dname)
-from contact_map import *
-
-paths = ['/home/erschultz/sequences_to_contact_maps',
-        '/home/eric/Research/sequences_to_contact_maps',
-        'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
-for p in paths:
-    if osp.exists(p):
-        sys.path.insert(1, p)
-
-from neural_net_utils.utils import diagonal_preprocessing
-from data_summary_plots import genomic_distance_statistics
+from ..sequences_to_contact_maps.scripts.data_summary_plots import \
+    genomic_distance_statistics
+from ..sequences_to_contact_maps.scripts.plotting_functions import \
+    plotContactMap
+from ..sequences_to_contact_maps.scripts.utils import diagonal_preprocessing
 
 
 def download_contactmap_straw(filename, chrom, start, end, resolution):

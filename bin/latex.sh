@@ -7,7 +7,7 @@
 #SBATCH --mem-per-cpu=4000
 #SBATCH --qos=depablo-debug
 
-source activate python3.8_pytorch1.8.1_cuda10.2
+source activate python3.8_pytorch1.8.1_cuda11.1
 
 samples="40-1230-1718"
 sample=40
@@ -17,19 +17,20 @@ sample=40
 # dataSet='dataset_10_27_21'
 # dataSet='dataset_11_03_21'
 # dataSet='dataset_11_14_21'
-dataDir='/project2/depablo/erschultz'
-# dataDir='/home/eric/sequences_to_contact_maps'
+# dataDir='/project2/depablo/erschultz'
+dataDir='/home/eric/sequences_to_contact_maps'
 
 
-dataset=dataset_09_21_21
+dataset=dataset_11_14_21
 # sample='81-82'
 dataFolder="${dataDir}/${dataset}"
 # python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
 #
 
 
-for sample in 1 14 8
+for j in 1 2 3 4
 # 1230 1718
 do
+  sample="40/ground_truth-rank${j}-E/knone/replicate1"
   python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
 done

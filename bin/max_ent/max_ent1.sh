@@ -32,7 +32,7 @@ for method in 'PCA'
 do
   for sample in 120 121 122 123
   do
-    for k in 4 6
+    for k in 2 8
     do
       max_ent
     done

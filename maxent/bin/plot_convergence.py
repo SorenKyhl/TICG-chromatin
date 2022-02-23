@@ -1,8 +1,8 @@
+import argparse
 import os
 import os.path as osp
 
 import matplotlib.pyplot as plt
-import argparse
 import numpy as np
 
 LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'

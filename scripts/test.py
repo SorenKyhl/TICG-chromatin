@@ -1,27 +1,18 @@
-import sys
 import os
 import os.path as osp
 
+import matplotlib.pyplot as plt
 import numpy as np
 
-# ensure that I can find makeLatexTable
-abspath = osp.abspath(__file__)
-dname = osp.dirname(abspath)
-sys.path.insert(0, dname)
-from makeLatexTable import METHODS
-from r_pca import R_pca
-
-paths = ['/home/erschultz/sequences_to_contact_maps',
-        '/home/eric/sequences_to_contact_maps',
-        'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
-for p in paths:
-    if osp.exists(p):
-        sys.path.insert(1, p)
-
-from neural_net_utils.dataset_classes import make_dataset
-from neural_net_utils.utils import *
-from result_summary_plots import *
-from data_summary_plots import *
+from ..sequences_to_contact_maps.scripts.data_summary_plots import \
+    genomic_distance_statistics
+from ..sequences_to_contact_maps.scripts.dataset_classes import make_dataset
+from ..sequences_to_contact_maps.scripts.plotting_functions import \
+    plotContactMap
+from ..sequences_to_contact_maps.scripts.r_pca import R_pca
+from ..sequences_to_contact_maps.scripts.result_summary_plots import \
+    plot_top_PCs
+from ..sequences_to_contact_maps.scripts.utils import pearsonround
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 

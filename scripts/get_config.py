@@ -1,21 +1,20 @@
+import argparse
+import csv
+import json
 import os.path as osp
 
-import argparse
-import json
 import numpy as np
-import sys
-import csv
 from sklearn.metrics.pairwise import polynomial_kernel
 
-paths = ['/home/erschultz/sequences_to_contact_maps',
-        '/home/eric/sequences_to_contact_maps',
-        'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
-for p in paths:
-    if osp.exists(p):
-        sys.path.insert(1, p)
-
-from neural_net_utils.utils import InteractionConverter, calculate_E_S
-from neural_net_utils.argparseSetup import str2int, str2bool, str2float, str2list2D, str2None
+from ..sequences_to_contact_maps.scripts.argparseSetup import (str2bool,
+                                                               str2float,
+                                                               str2int,
+                                                               str2list2D,
+                                                               str2None)
+from ..sequences_to_contact_maps.scripts.InteractionConverter import \
+    InteractionConverter
+from ..sequences_to_contact_maps.scripts.utils import (calculate_E_S,
+                                                       calculate_S)
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 METHOD_FORMATS={'random':'%d', 'pca':'%.3e', 'pca_split':'%.3e', 'kpca':'%.3e',
@@ -72,7 +71,7 @@ def getArgs():
 #### x, psi functions ####
 def relabel_x_to_psi(x, relabel_str):
     '''
-    Relabels seq according to relabel_str.
+    Relabels x according to relabel_str.
 
     Inputs:
         x: m x k np array
@@ -82,13 +81,13 @@ def relabel_x_to_psi(x, relabel_str):
         psi: bead labels np array
 
     Example:
-    consider: <old> = AB, <new> = D, seq is m x 3
+    consider: <old> = AB, <new> = D, x is m x 3
     Any particle with both label A and label B, will be relabeled to have
     label D and neither A nor B. Label C will be unaffected.
 
 
     If len(<new>) = 1, then LETTERS.find(new) must be >= k
-    (i.e label <new> cannot be present in seq already)
+    (i.e label <new> cannot be present in x already)
 
     If len(<new>) > 1, then len(<old>) must be 1
     '''
@@ -123,10 +122,10 @@ def relabel_x_to_psi(x, relabel_str):
     else: # new_label < k
         assert len(old_labels) == 1, "too many old labels"
         old_label = old_labels[0]
-        psi = np.delete(seq, old_label, axis = 1)
+        psi = np.delete(x, old_label, axis = 1)
 
         for i in new_labels:
-            where = np.logical_and(seq[:, i] == 0, seq[:, old_label] == 1)
+            where = np.logical_and(x[:, i] == 0, x[:, old_label] == 1)
             psi[:, i] += where
 
     return psi

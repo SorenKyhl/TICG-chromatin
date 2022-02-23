@@ -42,15 +42,29 @@ dataset='dataset_11_14_21'
 dataset='dataset_11_14_21'
 method='PCA-normalize'
 # useE='true'
-for j in 1 2
-# 3 4
+# for j in 3 4
+# do
+#   for l in 40
+#    # 1230 1718 1751 1761
+#   do
+#     sample="${l}/ground_truth-rank${j}-E/knone/replicate1"
+#     for k in 4 6
+#     do
+#       max_ent
+#     done
+#   done
+# done
+
+dataset='dataset_11_14_21'
+method='ground_truth'
+useE='true'
+for j in 1 2 3 4
 do
   for l in 40
    # 1230 1718 1751 1761
   do
     sample="${l}/ground_truth-rank${j}-E/knone/replicate1"
-    for k in 4 6
-
+    for k in 1
     do
       max_ent
     done

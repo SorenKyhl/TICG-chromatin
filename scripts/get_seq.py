@@ -1,39 +1,32 @@
+import argparse
 import os
 import os.path as osp
-import sys
-
-import numpy as np
-import argparse
 import re
+import sys
 
 import matplotlib
 import matplotlib.pyplot as plt
-
-from sklearn.decomposition import PCA, NMF, KernelPCA
+import numpy as np
+from knightRuiz import knightRuiz
+from plotting_functions import plot_seq_binary, plotContactMap
 from sklearn.cluster import KMeans
+from sklearn.decomposition import NMF, PCA, KernelPCA
 from sklearn.metrics import silhouette_score
 
-# ensure that I can find knightRuiz
-abspath = osp.abspath(__file__)
-dname = osp.dirname(abspath)
-sys.path.insert(0, dname)
-from knightRuiz import knightRuiz
-from r_pca import R_pca
-
-paths = ['/home/erschultz/sequences_to_contact_maps',
-        '/home/eric/sequences_to_contact_maps',
-        'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
-for p in paths:
-    if osp.exists(p):
-        sys.path.insert(1, p)
-
-from plotting_functions import plotContactMap, plot_seq_binary
-from neural_net_utils.argparseSetup import str2bool, str2int, str2None, getBaseParser, finalizeOpt
-from neural_net_utils.utils import s_to_E, load_E_S, load_X_psi, load_Y, loadSavedModel, getDataset, load_final_max_ent_S, diagonal_preprocessing, crop
-from result_summary_plots import project_S_to_psi_basis
-from neural_net_utils.utils import calculateDistanceStratifiedCorrelation
-from data_summary_plots import genomic_distance_statistics
-
+from ..sequences_to_contact_maps.scripts.argparseSetup import (finalizeOpt,
+                                                               getBaseParser,
+                                                               str2bool,
+                                                               str2int)
+from ..sequences_to_contact_maps.scripts.data_summary_plots import \
+    genomic_distance_statistics
+from ..sequences_to_contact_maps.scripts.load_utils import (
+    load_E_S, load_final_max_ent_S, load_X_psi, load_Y, loadSavedModel)
+from ..sequences_to_contact_maps.scripts.r_pca import R_pca
+from ..sequences_to_contact_maps.scripts.result_summary_plots import \
+    project_S_to_psi_basis
+from ..sequences_to_contact_maps.scripts.utils import (crop,
+                                                       diagonal_preprocessing,
+                                                       getDataset, s_to_E)
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -99,17 +92,17 @@ def getArgs():
     if args.binarize:
         if args.method in {'k_means', 'chromhmm'}:
             print(f"{args.method} is binarized by default")
-        elif args.method in {'nmf'}:
+        elif args.method in {'nmf'} or args.method.startswith('block'):
             args.exclusive = True # will also be exclusive
         else:
             raise Exception(f'binarize not yet supported for {args.method}')
     if args.normalize:
         if args.method.startswith('pca') or args.method.startswith('rpca'):
-            pass # TODO
+            pass
         else:
             raise Exception(f'normalize not yet supported for {args.method}')
     if args.exclusive:
-        if args.method in {'nmf'}:
+        if args.method in {'nmf'} or args.method.startswith('block'):
             args.binarize = True # will also be binary
         elif args.method in {'random'}:
             pass
@@ -210,6 +203,9 @@ class GetSeq():
         return seq
 
     def get_block_seq(self, method):
+        '''
+        Method should be formatted likc "block-A100-B100"
+        '''
         seq = np.zeros((self.m, self.k))
         method_split = re.split(r'[-+]', method)
         method_split.pop(0)
@@ -221,13 +217,13 @@ class GetSeq():
             label = LETTERS.find(letter)
 
             upper_bead = int(s[1:]) + lower_bead
-            assert upper_bead <= m, f"too many beads: {upper_bead}"
+            assert upper_bead <= self.m, f"too many beads: {upper_bead}"
             print(letter, lower_bead, upper_bead)
 
             seq[lower_bead:upper_bead, label] = 1
             lower_bead = upper_bead
 
-        assert upper_bead == m, f"not enough beads: {upper_bead}"
+        assert upper_bead == self.m, f"not enough beads: {upper_bead}"
         print(np.sum(seq, axis = 0))
 
 
@@ -691,14 +687,16 @@ def main():
             input = np.load(osp.join(args.sample_folder, 'psi.npy'))
         seq = getSeq.get_PCA_seq(input, args.normalize, use_kernel = True, kernel = args.kernel)
     elif args.method.startswith('ground_truth'):
-        x, psi = load_X_psi(args.sample_folder)
+        x, psi = load_X_psi(args.sample_folder, throw_exception = False)
 
         if args.input is None:
             assert args.use_ematrix or args.use_smatrix
         elif args.input == 'x':
+            assert x is not None
             seq = x
             print(f'seq loaded with shape {seq.shape}')
         elif args.input == 'psi':
+            assert psi is not None
             seq = psi
             # this input will reproduce ground_truth-S barring random seed
             print(f'seq loaded with shape {seq.shape}')

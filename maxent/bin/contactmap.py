@@ -1,13 +1,13 @@
-import numpy as np
-import pandas as pd
+import sys
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import sys
-from scipy import linalg
-import seaborn as sns
-
+import numpy as np
 import palettable
+import pandas as pd
+import seaborn as sns
 from palettable.colorbrewer.sequential import Reds_3
+from scipy import linalg
 
 mycmap = mpl.colors.LinearSegmentedColormap.from_list('custom',
                                              [(0,    'white'),
@@ -37,4 +37,3 @@ plt.savefig(it_dir + "/contact" + str(it) + ".png")
 #R-B
 #sns.heatmap(df/(mean1), vmax=1, cmap=mybwr)
 #plt.savefig(it_dir + "/contact" + str(it) + "bwr.png")
-

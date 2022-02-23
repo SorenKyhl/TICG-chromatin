@@ -1,9 +1,10 @@
 import os.path as osp
 import sys
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+
 
 def str2bool(v):
     """

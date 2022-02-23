@@ -1,27 +1,18 @@
-import os
-import os.path as osp
-import sys
-
-import numpy as np
 import argparse
 import csv
 import json
-
-from scipy.stats import spearmanr, pearsonr
-
-from sklearn.decomposition import PCA
+import os.path as osp
 
 import matplotlib.pyplot as plt
+import numpy as np
+from scipy.stats import pearsonr
+from sklearn.decomposition import PCA
 
-paths = ['/home/erschultz/sequences_to_contact_maps',
-        '/home/eric/sequences_to_contact_maps',
-        'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
-for p in paths:
-    if osp.exists(p):
-        sys.path.insert(1, p)
+from ..sequences_to_contact_maps.scripts.data_summary_plots import \
+    genomic_distance_statistics
+from ..sequences_to_contact_maps.scripts.utils import (
+    calculateDistanceStratifiedCorrelation, crop, diagonal_preprocessing)
 
-from neural_net_utils.utils import calculateDistanceStratifiedCorrelation, diagonal_preprocessing, crop
-from data_summary_plots import genomic_distance_statistics
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')

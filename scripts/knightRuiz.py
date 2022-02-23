@@ -1,9 +1,9 @@
 # Taken from: https://github.com/ay-lab/HiCKRy
 
-import scipy.sparse as sps
-import numpy as np
-import sys
 import os.path as osp
+
+import numpy as np
+import scipy.sparse as sps
 
 ##FUNCTION DESCRIPTION
 # knighRuizAlg is an implementation of the matrix balancing algorithm

@@ -1,30 +1,17 @@
 """
 Script for comparing contacts after having already run max ent.
 """
+import argparse
 import os
 import os.path as osp
-import sys
 
-import matplotlib
 import numpy as np
-import argparse
 
-abspath = osp.abspath(__file__)
-dname = osp.dirname(abspath)
-sys.path.insert(0, dname)
-from contact_map import plotContactMap
-from compare_contact import plotDistanceStratifiedPearsonCorrelation, comparePCA
-from makeLatexTable import METHODS
-
-paths = ['/home/erschultz/sequences_to_contact_maps',
-        '/home/eric/Research/sequences_to_contact_maps',
-        'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
-for p in paths:
-    if osp.exists(p):
-        sys.path.insert(1, p)
-
-from neural_net_utils.utils import diagonal_preprocessing
-from data_summary_plots import genomic_distance_statistics
+from ..sequences_to_contact_maps.scripts.data_summary_plots import \
+    genomic_distance_statistics
+from ..sequences_to_contact_maps.scripts.utils import diagonal_preprocessing
+from .compare_contact import (comparePCA,
+                              plotDistanceStratifiedPearsonCorrelation)
 
 
 def getArgs():
@@ -46,26 +33,18 @@ def main():
     y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))[:args.m, :args.m]
 
     for file in os.listdir(args.sample_folder):
-        if file in METHODS:
-            for k_file in os.listdir(osp.join(args.sample_folder, file)):
+        file_path = osp.join(args.sample_folder, file)
+        if osp.isdir(file_path) and file.startswith('ground'):
+            for k_file in os.listdir(file_path):
                 k_file_path = osp.join(args.sample_folder, file, k_file)
                 if osp.isdir(k_file_path):
                     for replicate_file in os.listdir(k_file_path):
                         replicate_file_path = osp.join(k_file_path, replicate_file)
                         if osp.isdir(replicate_file_path):
                             print(replicate_file_path)
-                            # find max it
-                            max_it = -1
-                            for file3 in os.listdir(replicate_file_path):
-                                if file3.startswith('iteration'):
-                                    it = int(file3[9:])
-                                    if it > max_it:
-                                        max_it = it
+                            yhat = np.load(osp.join(replicate_file_path, 'y.npy')).astype(float)
 
-                            max_it_path = osp.join(replicate_file_path, 'iteration{}'.format(max_it))
-                            yhat = np.load(osp.join(max_it_path, 'y.npy'))[:args.m, :args.m].astype(float)
-
-                            yhat_diag_path = osp.join(max_it_path, 'y_diag.npy')
+                            yhat_diag_path = osp.join(replicate_file_path, 'y_diag.npy')
                             if osp.exists(yhat_diag_path):
                                 yhat_diag = np.load(yhat_diag_path)
                             else:

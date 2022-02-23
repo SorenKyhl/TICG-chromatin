@@ -8,16 +8,15 @@
 #SBATCH --mem-per-cpu=2000
 
 
-dataFolder='/home/eric/dataset_test'
-k=3
+dataFolder='/home/eric/sequences_to_contact_maps/dataset_11_14_21'
 m=1500
+finalIt=1
 
-source activate python3.8_pytorch1.8.1_cuda10.2
+source activate python3.8_pytorch1.8.1_cuda11.1
 
 
-for sample in 80 81 82 83 84 85 86
+for sample in 40
 do
-  dir="${dataFolder}/samples/sample${sample}"
-  ifile="${dir}/data_out/contacts.txt"
-  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --ifile $ifile --odir $dir --save_npy
+  replicateFolder="${dataFolder}/samples/sample${sample}/ground_truth-rank4-E/knone/replicate1/ground_truth-E/knone/replicate1"
+  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --replicate_folder $replicateFolder --save_npy --final_it $finalIt
 done

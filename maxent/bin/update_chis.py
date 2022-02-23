@@ -1,9 +1,10 @@
+import argparse
+import json
 import os
 import os.path as osp
-import json
-import numpy as np
 import sys
-import argparse
+
+import numpy as np
 
 LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
