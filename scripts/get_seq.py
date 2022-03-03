@@ -8,31 +8,20 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from knightRuiz import knightRuiz
-from plotting_functions import plot_seq_binary, plotContactMap
+from seq2contact import (LETTERS, R_pca, crop, diagonal_preprocessing,
+                         finalize_opt, genomic_distance_statistics,
+                         get_base_parser, get_dataset, load_E_S,
+                         load_final_max_ent_S, load_saved_model, load_X_psi,
+                         load_Y, plot_seq_binary, plotContactMap,
+                         project_S_to_psi_basis, s_to_E, str2bool, str2int)
 from sklearn.cluster import KMeans
 from sklearn.decomposition import NMF, PCA, KernelPCA
 from sklearn.metrics import silhouette_score
 
-from ..sequences_to_contact_maps.scripts.argparseSetup import (finalizeOpt,
-                                                               getBaseParser,
-                                                               str2bool,
-                                                               str2int)
-from ..sequences_to_contact_maps.scripts.data_summary_plots import \
-    genomic_distance_statistics
-from ..sequences_to_contact_maps.scripts.load_utils import (
-    load_E_S, load_final_max_ent_S, load_X_psi, load_Y, loadSavedModel)
-from ..sequences_to_contact_maps.scripts.r_pca import R_pca
-from ..sequences_to_contact_maps.scripts.result_summary_plots import \
-    project_S_to_psi_basis
-from ..sequences_to_contact_maps.scripts.utils import (crop,
-                                                       diagonal_preprocessing,
-                                                       getDataset, s_to_E)
-
-LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
-    seq_local = '../sequences_to_contact_maps'
+    seq_local = '..../sequences_to_contact_maps'
     chip_seq_data_local = osp.join(seq_local, 'chip_seq_data')
     # "./project2/depablo/erschultz/dataset_04_18_21"
 
@@ -246,8 +235,8 @@ class GetSeq():
             pcpos[pc < 0] = 0 # zero negative part
             if normalize:
                 max = np.max(pcpos)
-                # multiply by scale such that val x scale = 1
-                scale = 1/val
+                # multiply by scale such that max x scale = 1
+                scale = 1/max
                 pcpos *= scale
             seq[:,j] = pcpos
 
@@ -256,8 +245,8 @@ class GetSeq():
             pcneg *= -1 # make positive
             if normalize:
                 max = np.max(pcneg)
-                # multiply by scale such that val x scale = 1
-                scale = 1/val
+                # multiply by scale such that max x scale = 1
+                scale = 1/max
                 pcneg *= scale
             seq[:,j+1] = pcneg * -1
 
@@ -548,21 +537,21 @@ def get_energy_gnn(model_path, sample_path, local):
             print(f'WARNING: dataset mismatch: {gnn_dataset} vs {sample_dataset}')
 
             # set up argparse options
-            parser = getBaseParser()
+            parser = get_base_parser()
             sys.argv = [sys.argv[0]] # delete args from get_seq, otherwise gnn opt will try and use them
             opt = parser.parse_args(['@{}'.format(argparse_path)])
             opt.id = int(model_id)
             opt.use_scratch = False # override use_scratch
-            opt = finalizeOpt(opt, parser, local = local)
+            opt = finalize_opt(opt, parser, local = local)
             opt.data_folder = osp.join('/',*sample_path_split[:-2]) # use sample_dataset not gnn_dataset
             opt.output_mode = None # don't need output, since only predicting
             print(opt)
 
             # get model
-            model, _, _ = loadSavedModel(opt, False)
+            model, _, _ = load_saved_model(opt, False)
 
             # get dataset
-            dataset = getDataset(opt, verbose = True, samples = [sample_id])
+            dataset = get_dataset(opt, verbose = True, samples = [sample_id])
 
             # get prediction
             for i, data in enumerate(dataset):
@@ -669,9 +658,9 @@ def main():
         L_file = osp.join(args.sample_folder, 'PCA_analysis', 'L_log.npy')
         if osp.exists(L_file):
             L = np.load(L_file)
-            if exp:
+            if args.exp:
                 L = np.exp(L)
-            if diag:
+            if args.diag:
                 meanDist = genomic_distance_statistics(L)
                 L = diagonal_preprocessing(L, meanDist)
             seq = getSeq.get_PCA_seq(L, args.normalize)

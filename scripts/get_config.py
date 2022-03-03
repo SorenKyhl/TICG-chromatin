@@ -4,19 +4,11 @@ import json
 import os.path as osp
 
 import numpy as np
+from seq2contact import (LETTERS, InteractionConverter, calculate_E_S,
+                         calculate_S, str2bool, str2float, str2int, str2list2D,
+                         str2None)
 from sklearn.metrics.pairwise import polynomial_kernel
 
-from ..sequences_to_contact_maps.scripts.argparseSetup import (str2bool,
-                                                               str2float,
-                                                               str2int,
-                                                               str2list2D,
-                                                               str2None)
-from ..sequences_to_contact_maps.scripts.InteractionConverter import \
-    InteractionConverter
-from ..sequences_to_contact_maps.scripts.utils import (calculate_E_S,
-                                                       calculate_S)
-
-LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 METHOD_FORMATS={'random':'%d', 'pca':'%.3e', 'pca_split':'%.3e', 'kpca':'%.3e',
                 'ground_truth':None, 'k_means':'%d', 'nmf':'%.3e', 'epigenetic':'%d',
                 'chromhmm':'%d', 'gnn':'%.3e'}

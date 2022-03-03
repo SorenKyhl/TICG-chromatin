@@ -8,7 +8,7 @@ useS='false'
 startSample=1
 relabel='none'
 diag='false'
-nSweeps=10000
+nSweeps=50000
 pSwitch=0.05
 maxDiagChi=0.2
 chiSeed='none'
@@ -25,6 +25,8 @@ exclusive='true'
 source activate python3.8_pytorch1.8.1_cuda11.1
 
 source ~/TICG-chromatin/bin/random/random_fns.sh
+
+cd ~/TICG-chromatin
 
 run()  {
 	# move utils to scratch

@@ -27,7 +27,6 @@ dataFolder="${dataDir}/${dataset}"
 # python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
 #
 
-
 for j in 1 2 3 4
 # 1230 1718
 do

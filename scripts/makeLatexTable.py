@@ -6,12 +6,9 @@ from collections import defaultdict
 
 import numpy as np
 import scipy.stats as ss
+from seq2contact import (load_E_S, load_final_max_ent_chi, load_Y, str2int,
+                         str2list)
 from sklearn.metrics import mean_squared_error
-
-from ..sequences_to_contact_maps.scripts.argparseSetup import str2int, str2list
-from ..sequences_to_contact_maps.scripts.load_utils import (
-    load_final_max_ent_chi, load_Y)
-from ..sequences_to_contact_maps.scripts.utils import load_E_S
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 METHODS = ['ground_truth', 'random', 'PCA', 'PCA_split', 'kPCA', 'RPCA', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM']

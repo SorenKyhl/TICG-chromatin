@@ -6,12 +6,9 @@ import os.path as osp
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import pearsonr
+from seq2contact import (calc_dist_strat_corr, crop, diagonal_preprocessing,
+                         genomic_distance_statistics)
 from sklearn.decomposition import PCA
-
-from ..sequences_to_contact_maps.scripts.data_summary_plots import \
-    genomic_distance_statistics
-from ..sequences_to_contact_maps.scripts.utils import (
-    calculateDistanceStratifiedCorrelation, crop, diagonal_preprocessing)
 
 
 def getArgs():
@@ -77,7 +74,7 @@ def plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, dir):
     triu_ind = np.triu_indices(m)
     overall_corr_diag, _ = pearsonr(y_diag[triu_ind], yhat_diag[triu_ind])
 
-    overall_corr, corr_arr = calculateDistanceStratifiedCorrelation(y, yhat, mode = 'pearson')
+    overall_corr, corr_arr = calc_dist_strat_corr(y, yhat, mode = 'pearson')
     avg = np.nanmean(corr_arr)
 
     # save correlations to json

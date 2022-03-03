@@ -3,18 +3,8 @@ import os.path as osp
 
 import matplotlib.pyplot as plt
 import numpy as np
+from seq2contact import *
 
-from ..sequences_to_contact_maps.scripts.data_summary_plots import \
-    genomic_distance_statistics
-from ..sequences_to_contact_maps.scripts.dataset_classes import make_dataset
-from ..sequences_to_contact_maps.scripts.plotting_functions import \
-    plotContactMap
-from ..sequences_to_contact_maps.scripts.r_pca import R_pca
-from ..sequences_to_contact_maps.scripts.result_summary_plots import \
-    plot_top_PCs
-from ..sequences_to_contact_maps.scripts.utils import pearsonround
-
-LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 def repair_dataset_11_14_21():
     dir = '/project2/depablo/erschultz/dataset_11_14_21/samples'
@@ -397,15 +387,13 @@ def main2():
     # plotFrequenciesForSample(freq_arr, dir, 'diag', sampleid = 2, k=None, split = None)
 
 
-
-
 if __name__ == '__main__':
     # repair_dataset_11_14_21()
     # main2()
     # is_scc_weighted_mean()
     # scc_y_vs_y_rank1()
-    test_robust_PCA()
-    # test_p()
+    # test_robust_PCA()
+    test_p()
     # check_seq()
     # find_mising_ids()
     # check_seq('dataset_11_03_21')

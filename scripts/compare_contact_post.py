@@ -6,12 +6,9 @@ import os
 import os.path as osp
 
 import numpy as np
-
-from ..sequences_to_contact_maps.scripts.data_summary_plots import \
-    genomic_distance_statistics
-from ..sequences_to_contact_maps.scripts.utils import diagonal_preprocessing
-from .compare_contact import (comparePCA,
-                              plotDistanceStratifiedPearsonCorrelation)
+from compare_contact import (comparePCA,
+                             plotDistanceStratifiedPearsonCorrelation)
+from seq2contact import diagonal_preprocessing, genomic_distance_statistics
 
 
 def getArgs():

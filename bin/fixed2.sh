@@ -48,7 +48,7 @@ chi="polynomial"
 pSwitch=0.1
 k=6
 i=130
-nSweeps=1000
+nSweeps=100
 run &
 
 # pSwitch=0.05

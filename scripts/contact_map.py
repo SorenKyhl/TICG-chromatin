@@ -5,16 +5,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-
-from ..sequences_to_contact_maps.scripts.argparseSetup import str2int
-from ..sequences_to_contact_maps.scripts.data_summary_plots import \
-    genomic_distance_statistics
-from ..sequences_to_contact_maps.scripts.plotting_functions import \
-    plotContactMap
-from ..sequences_to_contact_maps.scripts.utils import (crop,
-                                                       diagonal_preprocessing,
-                                                       load_E_S,
-                                                       load_final_max_ent_S)
+from seq2contact import (crop, diagonal_preprocessing,
+                         genomic_distance_statistics, load_E_S,
+                         load_final_max_ent_S, plotContactMap, str2int)
 
 
 def getArgs():

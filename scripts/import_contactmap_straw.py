@@ -4,14 +4,10 @@ import os.path as osp
 
 import numpy as np
 import pandas as pd
+from seq2contact import (diagonal_preprocessing, genomic_distance_statistics,
+                         import, plotContactMap)
 
 import straw
-
-from ..sequences_to_contact_maps.scripts.data_summary_plots import \
-    genomic_distance_statistics
-from ..sequences_to_contact_maps.scripts.plotting_functions import \
-    plotContactMap
-from ..sequences_to_contact_maps.scripts.utils import diagonal_preprocessing
 
 
 def download_contactmap_straw(filename, chrom, start, end, resolution):
