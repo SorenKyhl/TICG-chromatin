@@ -23,9 +23,9 @@ from sequences_to_contact_maps.utils.load_utils import (load_E_S,
                                                         load_X_psi, load_Y)
 from sequences_to_contact_maps.utils.neural_net_utils import (get_dataset,
                                                               load_saved_model)
-from sequences_to_contact_maps.utils.plotting_utils import (plot_seq_binary,
-                                                            plot_top_PCs,
-                                                            plotContactMap)
+from sequences_to_contact_maps.utils.plotting_utils import (plot_matrix,
+                                                            plot_seq_binary,
+                                                            plot_top_PCs)
 from sequences_to_contact_maps.utils.R_pca import R_pca
 from sequences_to_contact_maps.utils.utils import (LETTERS,
                                                    calc_dist_strat_corr, crop,

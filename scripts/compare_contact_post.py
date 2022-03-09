@@ -6,6 +6,7 @@ import os
 import os.path as osp
 
 import numpy as np
+
 from compare_contact import (comparePCA,
                              plotDistanceStratifiedPearsonCorrelation)
 from seq2contact import diagonal_preprocessing, genomic_distance_statistics
