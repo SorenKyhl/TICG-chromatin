@@ -4,10 +4,10 @@ import os.path as osp
 
 import numpy as np
 import pandas as pd
-from seq2contact import (diagonal_preprocessing, genomic_distance_statistics,
-                         import, plotContactMap)
-
 import straw
+
+from seq2contact import (diagonal_preprocessing, genomic_distance_statistics,
+                         import, plot_matrix)
 
 
 def download_contactmap_straw(filename, chrom, start, end, resolution):
@@ -50,13 +50,13 @@ def import_contactmap_straw(sample_folder, filename, chrom=2, start=22000000, en
         f.write(f'{filename}\nchrom={chrom}\nstart={start}\nend={end}\nresolution={resolution}\nbeads={m}')
 
     np.save(osp.join(sample_folder, 'y.npy'), hic)
-    plotContactMap(hic, ofile = osp.join(sample_folder, 'y.png'), vmax = 'mean')
-    plotContactMap(hic, ofile = osp.join(sample_folder, 'y_max.png'), vmax = 'max')
+    plot_matrix(hic, ofile = osp.join(sample_folder, 'y.png'), vmax = 'mean')
+    plot_matrix(hic, ofile = osp.join(sample_folder, 'y_max.png'), vmax = 'max')
     np.savetxt(osp.join(sample_folder, 'y.txt'), hic)
 
     meanDist = genomic_distance_statistics(hic)
     y_diag = diagonal_preprocessing(hic, meanDist)
-    plotContactMap(y_diag, ofile = osp.join(sample_folder, 'y_diag.png'), vmax = 'max')
+    plot_matrix(y_diag, ofile = osp.join(sample_folder, 'y_diag.png'), vmax = 'max')
     np.save(osp.join(sample_folder, 'y_diag.npy'), y_diag)
 
 def main():

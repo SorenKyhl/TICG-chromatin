@@ -6,9 +6,10 @@ import os.path as osp
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import pearsonr
+from sklearn.decomposition import PCA
+
 from seq2contact import (calc_dist_strat_corr, crop, diagonal_preprocessing,
                          genomic_distance_statistics)
-from sklearn.decomposition import PCA
 
 
 def getArgs():
