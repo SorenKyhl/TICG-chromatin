@@ -1,7 +1,7 @@
 import sys
 
 for p in ['/home/eric/', '/home/eric/sequences_to_contact_maps',
-        '/home/erschultz, /home/erschultz/sequences_to_contact_maps']:
+        '/home/erschultz', '/home/erschultz/sequences_to_contact_maps']:
     sys.path.insert(1, p)
 
 from sequences_to_contact_maps.result_summary_plots import \
