@@ -13,11 +13,14 @@ do
   cd "${dir}/sample${i}"
   rm -r kPCA-x* &
   rm -r kPCA-y* &
-  # rm -r GNN* &
+  rm -r GNN* &
   rm -r ground* &
   rm -r PCA_split* &
   rm -r nmf* &
   rm -r PCA* &
   rm -r k_means* &
+  rm -r ChromHMM* &
+  rm -r epigeneitc* &
+  rm -r random* &
   wait
 done
