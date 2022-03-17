@@ -570,35 +570,6 @@ def get_energy_gnn(model_path, sample_path, local):
 
         return energy
 
-def plot_seq_exclusive(seq, labels=None, X=None, show = False, save = True, title = None):
-    '''Plotting function for mutually exclusive binary particle types'''
-    # TODO make figure wider and less tall
-    m, k = seq.shape
-    cmap = matplotlib.cm.get_cmap('tab10')
-    ind = np.arange(k) % cmap.N
-    colors = plt.cycler('color', cmap(ind))
-
-    for i, c in enumerate(colors):
-        x = np.argwhere(seq[:, i] == 1)
-        plt.scatter(x, np.ones_like(x), label = i, color = c['color'], s=1)
-
-    if X is not None and labels is not None:
-        score = silhouette_score(X, labels)
-        lower_title = f'\nsilhouette score: {np.round(score, 3)}'
-    else:
-        lower_title = ''
-
-    plt.legend()
-    ax = plt.gca()
-    ax.axes.get_yaxis().set_visible(False)
-    if title is not None:
-        plt.title(title + lower_title, fontsize=16)
-    if save:
-        plt.savefig('seq.png')
-    if show:
-        plt.show()
-    plt.close()
-
 def plot_seq_continuous(seq, show = False, save = True, title = None):
     m, k = seq.shape
     cmap = matplotlib.cm.get_cmap('tab10')
