@@ -8,7 +8,7 @@
 
 dir=/project2/depablo/erschultz/dataset_09_21_21/samples
 
-for i in 2 8 14 20
+for i in 1 2 8 14 20
 do
   cd "${dir}/sample${i}"
   rm -r kPCA-x* &
