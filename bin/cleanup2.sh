@@ -6,11 +6,6 @@
 #SBATCH --ntasks=10
 #SBATCH --mem-per-cpu=1000
 
-cd ~/scratch-midway2
+cd /project2/depablo/erschultz
 
-rm -r TICG_maxent10* &
-rm -r TICG_maxent11* &
-rm -r TICG_maxent12* &
-rm -r TICG_maxent13* &
-
-wait
+rm -r dataset_01_18_22
