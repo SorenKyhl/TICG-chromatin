@@ -7,16 +7,17 @@ import sys
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.cluster import KMeans
+from sklearn.decomposition import NMF, PCA, KernelPCA
+from sklearn.metrics import silhouette_score
+
 from knightRuiz import knightRuiz
 from seq2contact import (LETTERS, R_pca, crop, diagonal_preprocessing,
                          finalize_opt, genomic_distance_statistics,
                          get_base_parser, get_dataset, load_E_S,
                          load_final_max_ent_S, load_saved_model, load_X_psi,
-                         load_Y, plot_seq_binary, plotContactMap,
+                         load_Y, plot_matrix, plot_seq_binary,
                          project_S_to_psi_basis, s_to_E, str2bool, str2int)
-from sklearn.cluster import KMeans
-from sklearn.decomposition import NMF, PCA, KernelPCA
-from sklearn.metrics import silhouette_score
 
 
 def getArgs():
@@ -732,9 +733,9 @@ def main():
 
     if args.plot:
         if args.use_smatrix:
-            plotContactMap(s, 's.png', vmin = 'min', vmax = 'max', cmap = 'blue-red', title = 'S')
+            plot_matrix(s, 's.png', vmin = 'min', vmax = 'max', cmap = 'blue-red', title = 'S')
         elif args.use_ematrix:
-            plotContactMap(e, 'e.png', vmin = 'min', vmax = 'max', cmap = 'blue-red', title = 'E')
+            plot_matrix(e, 'e.png', vmin = 'min', vmax = 'max', cmap = 'blue-red', title = 'E')
         elif args.method in {'k_means', 'chromhmm'} or (args.method == 'nmf' and args.binarize):
             plot_seq_exclusive(seq, labels=args.labels, X=args.X)
         elif args.binarize:
