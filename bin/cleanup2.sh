@@ -6,7 +6,7 @@
 #SBATCH --ntasks=10
 #SBATCH --mem-per-cpu=1000
 
-cd cd ~/scratch-midway2/
+cd ~/scratch-midway2
 
 rm -r dataset* &
 rm -r TICG_maxent8* &
