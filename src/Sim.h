@@ -128,6 +128,7 @@ public:
 
 	// methods
 	void run();
+	void xyzToContact();
 	void setupContacts();
 	void updateContacts();
 	void updateContactsGrid();

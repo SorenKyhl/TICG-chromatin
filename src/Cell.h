@@ -12,7 +12,7 @@ public:
 	Eigen::RowVector3d r; // corner of cell RELATIVE TO ORIGIN... the grid origin diffuses
 	std::unordered_set<Bead*> contains; // beads associated inside this gridpoint
 	double vol;		                // volume of cell
-	static const int beadvol = 520; // volume of a bead in the cell.
+	static double beadvol; // volume of a bead in the cell.
 
 	static int ntypes;  // number of bead types
 	std::vector<double> typenums = std::vector<double>(ntypes); // always up-to-date

@@ -29,6 +29,19 @@ void Sim::run() {
 	assert (grid.checkCellConsistency(nbeads));
 }
 
+void Sim::xyzToContact()
+{
+	readInput();
+	beads.resize(nbeads);
+	calculateParameters();
+	loadConfiguration();
+	grid.generate();
+	grid.meshBeads(beads);
+	grid.setActiveCells();
+	setupContacts();
+	dumpContacts(0);
+}
+
 void Sim::setupContacts() {
 	std::cout << "setting up contacts" << std::endl;
 	int nbins = nbeads/contact_resolution;
@@ -244,6 +257,7 @@ void Sim::readInput() {
 	assert(config.contains("compressibility_on")); Cell::compressibility_on = config["compressibility_on"];
 	assert(config.contains("diag_pseudobeads_on")); Cell::diag_pseudobeads_on = config["diag_pseudobeads_on"];
 	assert(config.contains("parallel")); Grid::parallel = config["parallel"];
+	assert(config.contains("beadvol")); Cell::beadvol  = config["beadvol"];
 
 	if (Grid::parallel)
 	{
@@ -251,7 +265,7 @@ void Sim::readInput() {
 		if (set_num_threads)
 		{
 			assert(config.contains("num_threads")); num_threads= config["num_threads"];
-			omp_set_num_threads(num_threads);
+			//omp_set_num_threads(num_threads);
 		}
 	}
 	//cellcount_on = config["cellcount_on"];
@@ -371,6 +385,7 @@ void Sim::calculateParameters() {
 	std::cout << "grid size is : " << grid.delta << std::endl;
 	step_grid = grid.delta/10.0; // size of grid displacement MC moves
 
+	std::cout << "bead volume is : " << Cell::beadvol << std::endl;
 	volParameters();
 	volParameters_new();
 

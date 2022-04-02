@@ -3,6 +3,7 @@
 bool Grid::parallel;
 
 void Grid::generate() {
+	
 	origin = {-delta/2.0,-delta/2.0,-delta/2.0};
 
 	// need L+1 grid cells per direction to fully enclose simulation boundary

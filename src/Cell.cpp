@@ -1,6 +1,7 @@
 #include "Cell.h"
 
 //TOOD: phase out
+double Cell::beadvol;
 int Cell::ntypes;
 int Cell::diag_nbins;
 double Cell::diag_binsize;
