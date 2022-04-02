@@ -1,4 +1,6 @@
 {
+	"beadvol": 520,
+	"parallel": false,
 	"ematrix_on": false,
 	"ematrix_filename": "off",
     "diag_pseudobeads_on": true,
