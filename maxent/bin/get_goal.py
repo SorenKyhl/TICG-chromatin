@@ -1,7 +1,8 @@
+import sys
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import sys
 
 '''TICG-MaxEnt algorithm. Calculates goal observables from simulation data
 this is for testing maxent on data generated from simulations,

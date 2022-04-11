@@ -6,7 +6,7 @@
 #SBATCH --ntasks=20
 #SBATCH --mem-per-cpu=2000
 
-local='false'
+local='true'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
@@ -26,21 +26,17 @@ fi
 
 STARTTIME=$(date +%s)
 i=3000
-dataset='dataset_01_17_22'
-
+dataset='dataset_11_14_21'
 method='PCA'
-for sample in 16 17 18 19 20
+for sample in 40
 do
-  for k in 1 2 3 4
+  for k in 2 4 6 8
   do
     max_ent
   done
 done
 
-
 wait
-
-# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
 
 ENDTIME=$(date +%s)
 echo "total time:$(( $(( $ENDTIME - $STARTTIME )) / 60 )) minutes"

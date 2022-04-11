@@ -1,25 +1,15 @@
-import os
+import argparse
 import os.path as osp
-import sys
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib
-import matplotlib.pyplot as plt
 import seaborn as sns
-import argparse
 
-paths = ['/home/erschultz/sequences_to_contact_maps',
-        '/home/eric/sequences_to_contact_maps',
-        'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
-for p in paths:
-    if osp.exists(p):
-        sys.path.insert(1, p)
+from seq2contact import (crop, diagonal_preprocessing,
+                         genomic_distance_statistics, load_E_S,
+                         load_final_max_ent_S, plot_matrix, str2int)
 
-from neural_net_utils.utils import diagonal_preprocessing, load_final_max_ent_S, load_E_S, crop
-from neural_net_utils.argparseSetup import str2int
-from data_summary_plots import genomic_distance_statistics
-from plotting_functions import plotContactMap
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
@@ -53,8 +43,10 @@ def main():
 
     if osp.exists(y_path):
         y = crop(np.loadtxt(y_path), args.m)
+    else:
+        raise Exception(f"y path does not exist: {y_path}")
 
-    plotContactMap(y, ofile = osp.join(args.save_folder, 'y.png'), vmax = 'mean')
+    plot_matrix(y, ofile = osp.join(args.save_folder, 'y.png'), vmax = 'mean')
 
     if args.random_mode:
         e, s = load_E_S(args.sample_folder)
@@ -63,15 +55,16 @@ def main():
         e = None
 
     if s is not None:
-        plotContactMap(s, ofile = osp.join(args.save_folder, 's.png'), title = 'S', vmax = 'max', vmin = 'min', cmap = 'blue-red')
+        plot_matrix(s, ofile = osp.join(args.save_folder, 's.png'), title = 'S', vmax = 'max', vmin = 'min', cmap = 'blue-red')
 
     if e is not None:
-        plotContactMap(e, ofile = osp.join(args.save_folder, 'e.png'), title = 'E', vmax = 'max', vmin = 'min', cmap = 'blue-red')
+        # TODO this should work every time
+        plot_matrix(e, ofile = osp.join(args.save_folder, 'e.png'), title = 'E', vmax = 'max', vmin = 'min', cmap = 'blue-red')
 
 
     meanDist = genomic_distance_statistics(y)
     y_diag = diagonal_preprocessing(y, meanDist)
-    plotContactMap(y_diag, ofile = osp.join(args.save_folder, 'y_diag.png'), vmax = 'max')
+    plot_matrix(y_diag, ofile = osp.join(args.save_folder, 'y_diag.png'), vmax = 'max')
 
 
     if args.save_npy:

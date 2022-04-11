@@ -1,48 +1,34 @@
+import argparse
 import os
 import os.path as osp
-import sys
-
-import numpy as np
-import argparse
 import re
+import sys
 
 import matplotlib
 import matplotlib.pyplot as plt
-
-from sklearn.decomposition import PCA, NMF, KernelPCA
+import numpy as np
 from sklearn.cluster import KMeans
+from sklearn.decomposition import NMF, PCA, KernelPCA
 from sklearn.metrics import silhouette_score
 
-# ensure that I can find knightRuiz
-abspath = osp.abspath(__file__)
-dname = osp.dirname(abspath)
-sys.path.insert(0, dname)
 from knightRuiz import knightRuiz
-from r_pca import R_pca
+from seq2contact import (LETTERS, R_pca, crop, diagonal_preprocessing,
+                         finalize_opt, genomic_distance_statistics,
+                         get_base_parser, get_dataset, load_E_S,
+                         load_final_max_ent_S, load_saved_model, load_X_psi,
+                         load_Y, plot_matrix, plot_seq_binary,
+                         project_S_to_psi_basis, s_to_E, str2bool, str2int)
 
-paths = ['/home/erschultz/sequences_to_contact_maps',
-        '/home/eric/sequences_to_contact_maps',
-        'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
-for p in paths:
-    if osp.exists(p):
-        sys.path.insert(1, p)
-
-from plotting_functions import plotContactMap, plot_seq_binary
-from neural_net_utils.argparseSetup import str2bool, str2int, str2None, getBaseParser, finalizeOpt
-from neural_net_utils.utils import s_to_E, load_E_S, load_X_psi, load_Y, loadSavedModel, getDataset, load_final_max_ent_S, crop
-from result_summary_plots import project_S_to_psi_basis
-
-LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
-    seq_local = '../sequences_to_contact_maps'
+    seq_local = '..../sequences_to_contact_maps'
     chip_seq_data_local = osp.join(seq_local, 'chip_seq_data')
     # "./project2/depablo/erschultz/dataset_04_18_21"
 
     # input data args
     parser.add_argument('--data_folder', type=str, default=osp.join(seq_local,'dataset_01_15_22'), help='location of input data')
-    parser.add_argument('--sample', type=int, default=40, help='sample id')
+    parser.add_argument('--sample', type=str, default='40', help='sample id')
     parser.add_argument('--sample_folder', type=str, help='location of input data')
 
     # standard args
@@ -79,6 +65,9 @@ def getArgs():
     args.append_random = False # True to append random seq
     args.load_chi = False # True to load e matrix learned from prior maxent and re-run
     args.project = False # (assumes load_chi is True) True to project e into space of ground truth bead labels
+    args.exp = False # (for RPCA) convert from log space back to original space
+    args.diag = False # (for RPCA) apply diagonal processing
+    args.rank = None # max rank for energy matrix
     args.method_copy = args.method
     args.method = args.method.lower()
     process_method(args)
@@ -93,17 +82,17 @@ def getArgs():
     if args.binarize:
         if args.method in {'k_means', 'chromhmm'}:
             print(f"{args.method} is binarized by default")
-        elif args.method in {'nmf'}:
+        elif args.method in {'nmf'} or args.method.startswith('block'):
             args.exclusive = True # will also be exclusive
         else:
             raise Exception(f'binarize not yet supported for {args.method}')
     if args.normalize:
         if args.method.startswith('pca') or args.method.startswith('rpca'):
-            pass # TODO
+            pass
         else:
             raise Exception(f'normalize not yet supported for {args.method}')
     if args.exclusive:
-        if args.method in {'nmf'}:
+        if args.method in {'nmf'} or args.method.startswith('block'):
             args.binarize = True # will also be binary
         elif args.method in {'random'}:
             pass
@@ -143,6 +132,14 @@ def process_method(args):
     if 'project' in modes:
         assert args.use_ematrix or args.use_smatrix
         args.project = True
+    if 'exp' in modes:
+        args.exp = True
+    if 'diag' in modes:
+        args.diag = True
+
+    for mode in modes:
+        if mode.startswith('rank'):
+            args.rank = int(mode[4])
 
 ### GetSeq class ###
 class GetSeq():
@@ -196,6 +193,9 @@ class GetSeq():
         return seq
 
     def get_block_seq(self, method):
+        '''
+        Method should be formatted likc "block-A100-B100"
+        '''
         seq = np.zeros((self.m, self.k))
         method_split = re.split(r'[-+]', method)
         method_split.pop(0)
@@ -207,13 +207,13 @@ class GetSeq():
             label = LETTERS.find(letter)
 
             upper_bead = int(s[1:]) + lower_bead
-            assert upper_bead <= m, f"too many beads: {upper_bead}"
+            assert upper_bead <= self.m, f"too many beads: {upper_bead}"
             print(letter, lower_bead, upper_bead)
 
             seq[lower_bead:upper_bead, label] = 1
             lower_bead = upper_bead
 
-        assert upper_bead == m, f"not enough beads: {upper_bead}"
+        assert upper_bead == self.m, f"not enough beads: {upper_bead}"
         print(np.sum(seq, axis = 0))
 
 
@@ -236,8 +236,8 @@ class GetSeq():
             pcpos[pc < 0] = 0 # zero negative part
             if normalize:
                 max = np.max(pcpos)
-                # multiply by scale such that val x scale = 1
-                scale = 1/val
+                # multiply by scale such that max x scale = 1
+                scale = 1/max
                 pcpos *= scale
             seq[:,j] = pcpos
 
@@ -246,8 +246,8 @@ class GetSeq():
             pcneg *= -1 # make positive
             if normalize:
                 max = np.max(pcneg)
-                # multiply by scale such that val x scale = 1
-                scale = 1/val
+                # multiply by scale such that max x scale = 1
+                scale = 1/max
                 pcneg *= scale
             seq[:,j+1] = pcneg * -1
 
@@ -300,7 +300,7 @@ class GetSeq():
 
         return seq
 
-    def get_RPCA_seq(self, input, normalize = False, max_it = 2000):
+    def get_RPCA_seq(self, input, normalize = False, exp = False, diag = False, max_it = 2000):
         '''
         Defines seq based on PCs of input.
 
@@ -316,6 +316,12 @@ class GetSeq():
         input = np.log(input)
 
         L, _ = R_pca(input).fit(max_iter=max_it)
+
+        if exp:
+            L = np.exp(L)
+        if diag:
+            meanDist = genomic_distance_statistics(L)
+            L = diagonal_preprocessing(L, meanDist)
 
         return self.get_PCA_seq(L, normalize)
 
@@ -532,21 +538,21 @@ def get_energy_gnn(model_path, sample_path, local):
             print(f'WARNING: dataset mismatch: {gnn_dataset} vs {sample_dataset}')
 
             # set up argparse options
-            parser = getBaseParser()
+            parser = get_base_parser()
             sys.argv = [sys.argv[0]] # delete args from get_seq, otherwise gnn opt will try and use them
             opt = parser.parse_args(['@{}'.format(argparse_path)])
             opt.id = int(model_id)
             opt.use_scratch = False # override use_scratch
-            opt = finalizeOpt(opt, parser, local = local)
+            opt = finalize_opt(opt, parser, local = local)
             opt.data_folder = osp.join('/',*sample_path_split[:-2]) # use sample_dataset not gnn_dataset
             opt.output_mode = None # don't need output, since only predicting
             print(opt)
 
             # get model
-            model, _, _ = loadSavedModel(opt, False)
+            model, _, _ = load_saved_model(opt, False)
 
             # get dataset
-            dataset = getDataset(opt, verbose = True, samples = [sample_id])
+            dataset = get_dataset(opt, verbose = True, samples = [sample_id])
 
             # get prediction
             for i, data in enumerate(dataset):
@@ -564,35 +570,6 @@ def get_energy_gnn(model_path, sample_path, local):
 
 
         return energy
-
-def plot_seq_exclusive(seq, labels=None, X=None, show = False, save = True, title = None):
-    '''Plotting function for mutually exclusive binary particle types'''
-    # TODO make figure wider and less tall
-    m, k = seq.shape
-    cmap = matplotlib.cm.get_cmap('tab10')
-    ind = np.arange(k) % cmap.N
-    colors = plt.cycler('color', cmap(ind))
-
-    for i, c in enumerate(colors):
-        x = np.argwhere(seq[:, i] == 1)
-        plt.scatter(x, np.ones_like(x), label = i, color = c['color'], s=1)
-
-    if X is not None and labels is not None:
-        score = silhouette_score(X, labels)
-        lower_title = f'\nsilhouette score: {np.round(score, 3)}'
-    else:
-        lower_title = ''
-
-    plt.legend()
-    ax = plt.gca()
-    ax.axes.get_yaxis().set_visible(False)
-    if title is not None:
-        plt.title(title + lower_title, fontsize=16)
-    if save:
-        plt.savefig('seq.png')
-    if show:
-        plt.show()
-    plt.close()
 
 def plot_seq_continuous(seq, show = False, save = True, title = None):
     m, k = seq.shape
@@ -653,10 +630,15 @@ def main():
         L_file = osp.join(args.sample_folder, 'PCA_analysis', 'L_log.npy')
         if osp.exists(L_file):
             L = np.load(L_file)
+            if args.exp:
+                L = np.exp(L)
+            if args.diag:
+                meanDist = genomic_distance_statistics(L)
+                L = diagonal_preprocessing(L, meanDist)
             seq = getSeq.get_PCA_seq(L, args.normalize)
         else:
             y = np.load(osp.join(args.sample_folder, 'y.npy'))
-            seq = getSeq.get_RPCA_seq(y, args.normalize)
+            seq = getSeq.get_RPCA_seq(y, args.normalize, args.exp, args.diag)
     elif args.method.startswith('kpca'):
         if args.input == 'y':
             input = np.load(osp.join(args.sample_folder, 'y_diag.npy'))
@@ -666,14 +648,16 @@ def main():
             input = np.load(osp.join(args.sample_folder, 'psi.npy'))
         seq = getSeq.get_PCA_seq(input, args.normalize, use_kernel = True, kernel = args.kernel)
     elif args.method.startswith('ground_truth'):
-        x, psi = load_X_psi(args.sample_folder)
+        x, psi = load_X_psi(args.sample_folder, throw_exception = False)
 
         if args.input is None:
             assert args.use_ematrix or args.use_smatrix
         elif args.input == 'x':
+            assert x is not None
             seq = x
             print(f'seq loaded with shape {seq.shape}')
         elif args.input == 'psi':
+            assert psi is not None
             seq = psi
             # this input will reproduce ground_truth-S barring random seed
             print(f'seq loaded with shape {seq.shape}')
@@ -720,6 +704,14 @@ def main():
             s, e = project_S_to_psi_basis(s, psi)
         s = crop(s, args.m)
         e = crop(e, args.m)
+        if args.rank is not None:
+            pca = PCA(n_components = args.rank)
+            s_transform = pca.fit_transform((s+s.T)/2)
+            print(s_transform.shape)
+            print(f'Rank of S: {np.linalg.matrix_rank(s_transform)}')
+            print(pca.components_.shape)
+            s = pca.inverse_transform(s_transform)
+            e = s_to_E(s)
         if args.use_smatrix:
             np.savetxt('s_matrix.txt', s, fmt = '%.3e')
             np.save('s.npy', s)
@@ -727,6 +719,10 @@ def main():
             np.savetxt('e_matrix.txt', e, fmt = '%.3e')
             np.save('e.npy', e)
             np.save('s.npy', s)
+
+        if args.m < 2000:
+            print(f'Rank of S: {np.linalg.matrix_rank(s)}')
+            print(f'Rank of E: {np.linalg.matrix_rank(e)}\n')
     else:
         m, k = seq.shape
         assert m == args.m, f"m mismatch: seq has {m} particles not {args.m}"
@@ -737,9 +733,9 @@ def main():
 
     if args.plot:
         if args.use_smatrix:
-            plotContactMap(s, 's.png', vmin = 'min', vmax = 'max', cmap = 'blue-red')
+            plot_matrix(s, 's.png', vmin = 'min', vmax = 'max', cmap = 'blue-red', title = 'S')
         elif args.use_ematrix:
-            plotContactMap(e, 'e.png', vmin = 'min', vmax = 'max', cmap = 'blue-red')
+            plot_matrix(e, 'e.png', vmin = 'min', vmax = 'max', cmap = 'blue-red', title = 'E')
         elif args.method in {'k_means', 'chromhmm'} or (args.method == 'nmf' and args.binarize):
             plot_seq_exclusive(seq, labels=args.labels, X=args.X)
         elif args.binarize:

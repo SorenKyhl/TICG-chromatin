@@ -1,9 +1,10 @@
 import os.path as osp
 import sys
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+
 
 def str2bool(v):
     """
@@ -143,7 +144,7 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region):
     print("========= step before gamma: ", steplength)
     print('step: ', step)
     print('lam: ', lam)
-    print('B: ', B)
+    # print('B: ', B)
 
     step *= gamma
     steplength = np.sqrt(step@step)
@@ -161,7 +162,7 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region):
         print('lam: ', lam)
 
     new_chis = current_chis - step
-    print("new chi values: ", new_chis)
+    print(f"new chi values: {new_chis}\n")
 
     howfar = np.sqrt(difference@difference)/np.sqrt(obj_goal@obj_goal)
 
@@ -203,10 +204,9 @@ def main():
                                              # if false, will calculate goals from iteration1 observables
     trust_region = float(sys.argv[5])
 
-    print(goal_specified)
-
-    print('Iteration Number {}'.format(it))
-    print("gamma: {}".format(gamma))
+    print(f'Goal specified: {goal_specified}')
+    print(f'Iteration Number {it}')
+    print(f"gamma: {gamma}")
 
     if mode == "both":
         parameter_files = ["chis.txt", "chis_diag.txt"]
@@ -233,7 +233,6 @@ def main():
         convergence_file = "convergence.txt"
         goal_file = "obj_goal.txt"
         fn(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified, trust_region)
-        print('\n')
 
 if __name__ == '__main__':
     main()

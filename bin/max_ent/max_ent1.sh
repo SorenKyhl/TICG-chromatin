@@ -27,14 +27,12 @@ fi
 STARTTIME=$(date +%s)
 i=1
 dataset='dataset_test'
-
-trust_region=10
 # useE='true'
-for method in 'RPCA-normalize'
+for method in 'PCA'
 do
-  for sample in 85 86 87 88 89
+  for sample in 120 121 122 123
   do
-    for k in 4 6
+    for k in 2 8
     do
       max_ent
     done
@@ -43,8 +41,6 @@ done
 
 
 wait
-
-# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
 
 ENDTIME=$(date +%s)
 echo "total time:$(( $(( $ENDTIME - $STARTTIME )) / 60 )) minutes"

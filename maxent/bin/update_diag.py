@@ -1,7 +1,9 @@
-import json
-import numpy as np
-import sys
 import argparse
+import json
+import sys
+
+import numpy as np
+
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')

@@ -1,27 +1,13 @@
+import multiprocessing
 import os
 import os.path as osp
-import sys
 
-import straw
-import pandas as pd
 import numpy as np
-import multiprocessing
+import pandas as pd
+import straw
 
-# ensure that I can find contact_map
-abspath = osp.abspath(__file__)
-dname = osp.dirname(abspath)
-sys.path.insert(0, dname)
-from contact_map import *
-
-paths = ['/home/erschultz/sequences_to_contact_maps',
-        '/home/eric/Research/sequences_to_contact_maps',
-        'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
-for p in paths:
-    if osp.exists(p):
-        sys.path.insert(1, p)
-
-from neural_net_utils.utils import diagonal_preprocessing
-from data_summary_plots import genomic_distance_statistics
+from seq2contact import (diagonal_preprocessing, genomic_distance_statistics,
+                         import, plot_matrix)
 
 
 def download_contactmap_straw(filename, chrom, start, end, resolution):
@@ -64,13 +50,13 @@ def import_contactmap_straw(sample_folder, filename, chrom=2, start=22000000, en
         f.write(f'{filename}\nchrom={chrom}\nstart={start}\nend={end}\nresolution={resolution}\nbeads={m}')
 
     np.save(osp.join(sample_folder, 'y.npy'), hic)
-    plotContactMap(hic, ofile = osp.join(sample_folder, 'y.png'), vmax = 'mean')
-    plotContactMap(hic, ofile = osp.join(sample_folder, 'y_max.png'), vmax = 'max')
+    plot_matrix(hic, ofile = osp.join(sample_folder, 'y.png'), vmax = 'mean')
+    plot_matrix(hic, ofile = osp.join(sample_folder, 'y_max.png'), vmax = 'max')
     np.savetxt(osp.join(sample_folder, 'y.txt'), hic)
 
     meanDist = genomic_distance_statistics(hic)
     y_diag = diagonal_preprocessing(hic, meanDist)
-    plotContactMap(y_diag, ofile = osp.join(sample_folder, 'y_diag.png'), vmax = 'max')
+    plot_matrix(y_diag, ofile = osp.join(sample_folder, 'y_diag.png'), vmax = 'max')
     np.save(osp.join(sample_folder, 'y_diag.npy'), y_diag)
 
 def main():

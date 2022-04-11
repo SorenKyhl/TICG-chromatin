@@ -31,8 +31,8 @@ useGroundTruthSeed='false'
 
 # newton's method params
 mode="plaid"
+trust_region=1000
 gamma=0.00001
-trust_region=10
 
 # experimental data
 chipSeqFolder="/home/erschultz/sequences_to_contact_maps/chip_seq_data"
@@ -173,6 +173,12 @@ format_method () {
   if [ $useGroundTruthSeed = 'true' ]
   then
   method_fmt="${method_fmt}-seed"
+  fi
+
+  # diag
+  if [ $diag = 'true' ]
+  then
+  method_fmt="${method_fmt}-diagOn"
   fi
 
   echo $method_fmt

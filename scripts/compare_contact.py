@@ -1,27 +1,16 @@
-import os
-import os.path as osp
-import sys
-
-import numpy as np
 import argparse
 import csv
 import json
-
-from scipy.stats import spearmanr, pearsonr
-
-from sklearn.decomposition import PCA
+import os.path as osp
 
 import matplotlib.pyplot as plt
+import numpy as np
+from scipy.stats import pearsonr
+from sklearn.decomposition import PCA
 
-paths = ['/home/erschultz/sequences_to_contact_maps',
-        '/home/eric/sequences_to_contact_maps',
-        'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
-for p in paths:
-    if osp.exists(p):
-        sys.path.insert(1, p)
+from seq2contact import (calc_dist_strat_corr, crop, diagonal_preprocessing,
+                         genomic_distance_statistics)
 
-from neural_net_utils.utils import calculateDistanceStratifiedCorrelation, diagonal_preprocessing, crop
-from data_summary_plots import genomic_distance_statistics
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
@@ -40,11 +29,11 @@ def getArgs():
 def comparePCA(y, yhat, dir):
     # y
     pca_y = PCA()
-    pca_y.fit(y)
+    pca_y.fit(y/np.std(y))
 
     # yhat
     pca_yhat = PCA()
-    pca_yhat.fit(yhat)
+    pca_yhat.fit(yhat/np.std(yhat))
 
     results = [['Component Index', 'Accuracy', 'Pearson R']]
 
@@ -86,7 +75,7 @@ def plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, dir):
     triu_ind = np.triu_indices(m)
     overall_corr_diag, _ = pearsonr(y_diag[triu_ind], yhat_diag[triu_ind])
 
-    overall_corr, corr_arr = calculateDistanceStratifiedCorrelation(y, yhat, mode = 'pearson')
+    overall_corr, corr_arr = calc_dist_strat_corr(y, yhat, mode = 'pearson')
     avg = np.nanmean(corr_arr)
 
     # save correlations to json

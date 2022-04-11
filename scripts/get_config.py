@@ -1,23 +1,14 @@
+import argparse
+import csv
+import json
 import os.path as osp
 
-import argparse
-import json
 import numpy as np
-import sys
-import csv
+from seq2contact import (LETTERS, InteractionConverter, calculate_E_S,
+                         calculate_S, str2bool, str2float, str2int, str2list2D,
+                         str2None)
 from sklearn.metrics.pairwise import polynomial_kernel
 
-paths = ['/home/erschultz/sequences_to_contact_maps',
-        '/home/eric/sequences_to_contact_maps',
-        'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
-for p in paths:
-    if osp.exists(p):
-        sys.path.insert(1, p)
-
-from neural_net_utils.utils import InteractionConverter, calculate_E_S
-from neural_net_utils.argparseSetup import str2int, str2bool, str2float, str2list2D, str2None
-
-LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 METHOD_FORMATS={'random':'%d', 'pca':'%.3e', 'pca_split':'%.3e', 'kpca':'%.3e',
                 'ground_truth':None, 'k_means':'%d', 'nmf':'%.3e', 'epigenetic':'%d',
                 'chromhmm':'%d', 'gnn':'%.3e'}
@@ -72,7 +63,7 @@ def getArgs():
 #### x, psi functions ####
 def relabel_x_to_psi(x, relabel_str):
     '''
-    Relabels seq according to relabel_str.
+    Relabels x according to relabel_str.
 
     Inputs:
         x: m x k np array
@@ -82,13 +73,13 @@ def relabel_x_to_psi(x, relabel_str):
         psi: bead labels np array
 
     Example:
-    consider: <old> = AB, <new> = D, seq is m x 3
+    consider: <old> = AB, <new> = D, x is m x 3
     Any particle with both label A and label B, will be relabeled to have
     label D and neither A nor B. Label C will be unaffected.
 
 
     If len(<new>) = 1, then LETTERS.find(new) must be >= k
-    (i.e label <new> cannot be present in seq already)
+    (i.e label <new> cannot be present in x already)
 
     If len(<new>) > 1, then len(<old>) must be 1
     '''
@@ -123,10 +114,10 @@ def relabel_x_to_psi(x, relabel_str):
     else: # new_label < k
         assert len(old_labels) == 1, "too many old labels"
         old_label = old_labels[0]
-        psi = np.delete(seq, old_label, axis = 1)
+        psi = np.delete(x, old_label, axis = 1)
 
         for i in new_labels:
-            where = np.logical_and(seq[:, i] == 0, seq[:, old_label] == 1)
+            where = np.logical_and(x[:, i] == 0, x[:, old_label] == 1)
             psi[:, i] += where
 
     return psi
@@ -161,19 +152,21 @@ def generateRandomChi(args, decimals = 1, rng = np.random.default_rng()):
 
 def getChis(args):
     rng = np.random.default_rng(args.chi_seed)
-    conv = InteractionConverter(args.k, generateRandomChi(args, rng = rng))
-    if args.ensure_distinguishable:
+    chi = generateRandomChi(args, rng = rng)
+    if args.ensure_distinguishable and args.k < 10: # if k is too large this is too RAM intensive
+        conv = InteractionConverter(args.k, chi)
         max_it = 10
         it = 0
-        while not uniqueRows(conv.getE()) and it < max_it: # defaults to False
+        while not uniqueRows(conv.getS()) and it < max_it: # defaults to False
             # generate random chi
             conv.chi = generateRandomChi(args, rng = rng)
             it += 1
         if it == max_it:
             print('Warning: maximum iteration reached')
             print('Warning: particles are not distinguishable')
+        chi = conv.chi
 
-    return conv.chi
+    return chi
 
 def set_up_plaid_chi(args, config):
     if args.use_ground_truth_chi:
@@ -222,7 +215,7 @@ def set_up_plaid_chi(args, config):
                             [0,0,0,0,0,0,0,0,0,0,0,0,-1,0.6,-0.6],
                             [0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0.2],
                             [0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1]])
-        elif args.chi == 'polynomial':
+        elif args.chi.startswith('polynomial'):
             x = np.load('x.npy') # original particle types that interact nonlinearly
             ind = np.triu_indices(args.k)
             args.k = int(args.k*(args.k+1)/2)
@@ -242,7 +235,7 @@ def set_up_plaid_chi(args, config):
             assert args.k == rows, f'number of particle types {args.k} does not match shape of chi {rows}'
         assert rows == cols, f"chi not square: {args.chi}"
         conv = InteractionConverter(args.k, args.chi)
-        if not uniqueRows(conv.getE()):
+        if not uniqueRows(conv.getS()):
             print('Warning: particles are not distinguishable')
 
     # save chi
@@ -357,9 +350,9 @@ def main():
             np.savetxt('e_matrix.txt', e, fmt='%0.5f')
             np.save('e.npy', e)
             np.save('s.npy', s) # save s either way
-        if args.m < 2000:
-            print(f'Rank of S: {np.linalg.matrix_rank(s)}')
-            print(f'Rank of E: {np.linalg.matrix_rank(e)}\n')
+        # if args.m < 2000 and args.k < 10:
+        #     print(f'Rank of S: {np.linalg.matrix_rank(s)}')
+        #     print(f'Rank of E: {np.linalg.matrix_rank(e)}\n')
 
     if args.e is not None:
         assert args.use_ematrix

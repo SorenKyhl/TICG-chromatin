@@ -2,20 +2,16 @@
 Version of compare_contact.py with no dependencies.
 '''
 
-import os
-import os.path as osp
-import sys
-
-import numpy as np
 import argparse
 import csv
 import json
-
-from scipy.stats import spearmanr, pearsonr
-
-from sklearn.decomposition import PCA
+import os.path as osp
 
 import matplotlib.pyplot as plt
+import numpy as np
+from scipy.stats import pearsonr, spearmanr
+from sklearn.decomposition import PCA
+
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')

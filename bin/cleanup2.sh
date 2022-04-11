@@ -6,40 +6,14 @@
 #SBATCH --ntasks=10
 #SBATCH --mem-per-cpu=1000
 
-cd /project2/depablo/erschultz/dataset_11_03_21/samples
+cd ~/scratch-midway2
 
-cd sample40
-rm -r random &
-rm -r PCA &
-rm -r PCA_split &
-rm -r kPCA* &
-rm -r k_means &
-rm -r ground* &
-rm -r GNN* &
-rm -r nmf* &
-
-wait
-
-cd ../sample1230
-rm -r random &
-rm -r PCA &
-rm -r PCA_split &
-rm -r kPCA* &
-rm -r k_means &
-rm -r ground* &
-rm -r GNN* &
-rm -r nmf* &
-
-wait
-
-cd ../sample1718
-rm -r random &
-rm -r PCA &
-rm -r PCA_split &
-rm -r kPCA* &
-rm -r k_means &
-rm -r ground* &
-rm -r GNN* &
-rm -r nmf* &
+rm -r dataset* &
+rm -r TICG_maxent8* &
+rm -r TICG_maxent9* &
+rm -r TICG_maxent10* &
+rm -r TICG_maxent11* &
+rm -r TICG_maxent12* &
+rm -r TICG_maxent9* &
 
 wait

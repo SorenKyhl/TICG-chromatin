@@ -28,9 +28,11 @@ STARTTIME=$(date +%s)
 i=13000
 dataset='dataset_09_21_21'
 sample=8
+gamma=0.001
+trust_region=100
 mode='both'
 diag='true'
-for method in 'PCA' 'nmf'
+for method in 'PCA-normalize' 'nmf'
 do
   for k in 1
   do
@@ -38,7 +40,7 @@ do
   done
 done
 
-for method in 'PCA' 'k_means' 'nmf'
+for method in 'PCA-normalize' 'k_means' 'nmf'
 do
   for k in 2 4 6
   do

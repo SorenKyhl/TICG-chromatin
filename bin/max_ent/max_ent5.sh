@@ -6,7 +6,7 @@
 #SBATCH --ntasks=20
 #SBATCH --mem-per-cpu=2000
 
-local='true'
+local='false'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
@@ -27,24 +27,18 @@ fi
 STARTTIME=$(date +%s)
 i=4000
 dataset='dataset_01_15_22'
-sample=40
+trust_region=1000
+gamma=0.00001
+method='RPCA-normalize-exp-diag'
+for sample in 40 1230 1718 1751 1761
+do
+  for k in 2 4 6
+  do
+    max_ent
+  done
+done
 
-useE='true'
-method='ground_truth'
-max_ent
-
-# for project in 'true' 'false'
-# do
-#   loadChi='true'
-#   method='PCA'
-#   k=4
-#   max_ent
-#
-#   loadChi='false'
-#   method='GNN'
-#   modelID=70
-#   max_ent
-# done
+wait
 
 wait
 

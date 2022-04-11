@@ -1,24 +1,14 @@
+import argparse
+import json
 import os
 import os.path as osp
-import sys
-
-import json
-import argparse
 from collections import defaultdict
+
 import numpy as np
-import scipy.stats as ss # ttest_rel
-
+import scipy.stats as ss
+from seq2contact import (load_E_S, load_final_max_ent_chi, load_Y, str2int,
+                         str2list)
 from sklearn.metrics import mean_squared_error
-
-paths = ['/home/erschultz/sequences_to_contact_maps',
-        '/home/eric/sequences_to_contact_maps',
-        'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
-for p in paths:
-    if osp.exists(p):
-        sys.path.insert(1, p)
-
-from neural_net_utils.argparseSetup import str2int, str2bool, str2list
-from neural_net_utils.utils import calculate_S, load_E_S, load_final_max_ent_chi, load_Y
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 METHODS = ['ground_truth', 'random', 'PCA', 'PCA_split', 'kPCA', 'RPCA', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM']
@@ -28,7 +18,7 @@ LABELS = ['Ground Truth', 'Random', 'PCA', 'PCA Split', 'kPCA', 'RPCA', 'K-means
 def getArgs(data_folder = None, sample = None, samples = None):
     parser = argparse.ArgumentParser(description='Base parser')
     parser.add_argument('--data_folder', type=str, default=data_folder, help='location of input data')
-    parser.add_argument('--sample', type=int, default=sample, help='sample id')
+    parser.add_argument('--sample', type=str, default=sample, help='sample id')
     parser.add_argument('--samples', type=str2list, default=samples, help='list of sample ids separated by -')
     parser.add_argument('--sample_folder', type=str, help='location of input data')
     parser.add_argument('--ref_mode', type=str, help='deprecated')

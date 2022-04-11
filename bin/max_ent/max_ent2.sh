@@ -11,11 +11,12 @@ source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dir="/home/eric"
-  # dataFolder="/home/eric/dataset_test"
+  dir="/home/eric/sequences_to_contact_maps"
   scratchDir='/home/eric/scratch'
-  numIterations=80
-  # finalSimProductionSweeps=5000
+  # numIterations=1
+  # finalSimProductionSweeps=1000
+  # equilibSweeps=1000
+  # productionSweeps=10000
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
   dir='/project2/depablo/erschultz'
@@ -25,14 +26,45 @@ fi
 
 STARTTIME=$(date +%s)
 i=1000
-dataset='dataset_test'
+dataset='dataset_11_14_21'
+# basemethod='ground_truth-rank'
+# useE='true'
+# for j in 1 2 3 4
+# do
+#   method="${basemethod}${j}"
+#   for sample in 40
+#   # 1230 1718 1751 1761
+#   do
+#     max_ent
+#   done
+# done
 
-trust_region=1000
-for method in 'PCA' 'k_means'
+dataset='dataset_11_14_21'
+method='PCA-normalize'
+# useE='true'
+# for j in 3 4
+# do
+#   for l in 40
+#    # 1230 1718 1751 1761
+#   do
+#     sample="${l}/ground_truth-rank${j}-E/knone/replicate1"
+#     for k in 4 6
+#     do
+#       max_ent
+#     done
+#   done
+# done
+
+dataset='dataset_11_14_21'
+method='ground_truth'
+useE='true'
+for j in 1 2 3 4
 do
-  for sample in 85 86 87 88 89
+  for l in 40
+   # 1230 1718 1751 1761
   do
-    for k in 4
+    sample="${l}/ground_truth-rank${j}-E/knone/replicate1"
+    for k in 1
     do
       max_ent
     done
@@ -40,8 +72,6 @@ do
 done
 
 wait
-
-python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
 
 ENDTIME=$(date +%s)
 echo "total time:$(( $(( $ENDTIME - $STARTTIME )) / 60 )) minutes"

@@ -1,29 +1,10 @@
-import sys
 import os
 import os.path as osp
 
+import matplotlib.pyplot as plt
 import numpy as np
+from seq2contact import *
 
-# ensure that I can find makeLatexTable
-abspath = osp.abspath(__file__)
-dname = osp.dirname(abspath)
-sys.path.insert(0, dname)
-from makeLatexTable import METHODS
-from r_pca import R_pca
-
-paths = ['/home/erschultz/sequences_to_contact_maps',
-        '/home/eric/sequences_to_contact_maps',
-        'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps']
-for p in paths:
-    if osp.exists(p):
-        sys.path.insert(1, p)
-
-from neural_net_utils.dataset_classes import make_dataset
-from neural_net_utils.utils import *
-from result_summary_plots import *
-from data_summary_plots import *
-
-LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 def repair_dataset_11_14_21():
     dir = '/project2/depablo/erschultz/dataset_11_14_21/samples'
@@ -406,15 +387,13 @@ def main2():
     # plotFrequenciesForSample(freq_arr, dir, 'diag', sampleid = 2, k=None, split = None)
 
 
-
-
 if __name__ == '__main__':
     # repair_dataset_11_14_21()
     # main2()
     # is_scc_weighted_mean()
     # scc_y_vs_y_rank1()
-    test_robust_PCA()
-    # test_p()
+    # test_robust_PCA()
+    test_p()
     # check_seq()
     # find_mising_ids()
     # check_seq('dataset_11_03_21')

@@ -1,12 +1,13 @@
-import os.path as osp
-
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
-import sys
 import argparse
 import csv
+import os.path as osp
+import sys
 import time
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
