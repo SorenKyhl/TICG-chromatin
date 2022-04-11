@@ -198,10 +198,10 @@ double Grid::get_ij_Contacts(int i, int j)
 	double obs  = 0;
 	for(Cell* cell : active_cells)
 	{
-		obs += cell->phis[i] * cell->phis[j];
+		obs += cell->typenums[i] * cell->typenums[j];
 	}
 
-	obs /= active_cells.size();
+	//obs /= active_cells.size();
 	return obs;
 };
 
@@ -212,19 +212,22 @@ void Grid::getDiagObs(std::vector<double> &diag_obs) {
 		{
 			if (Cell::diagonal_linear) {
 				//diag_obs[i] += cell->diag_phis[i];
-				diag_obs[i] += cell->diag_phis[i] * cell->diag_phis[i];
+				diag_obs[i] += cell->diag_phis[i] * cell->diag_phis[i] / (Cell::beadvol*Cell::beadvol/(cell->vol*cell->vol));
 			}
 			else {
-				diag_obs[i] += cell->diag_phis[i] * cell->diag_phis[i];
+				diag_obs[i] += cell->diag_phis[i] * cell->diag_phis[i] / (Cell::beadvol*Cell::beadvol/(cell->vol*cell->vol));
 			}
 		}
 	}
 
+	/*
 	for (int i=0; i<diag_obs.size(); i++)
 	{
 		diag_obs[i] /= active_cells.size();
 	}
+	*/
 };
+
 
 double Grid::getChromatinVolfrac2()
 {
