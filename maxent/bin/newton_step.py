@@ -55,6 +55,9 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_
     lam = df.mean().values
     B = df.cov().values
 
+    vbead = 520
+    vcell = 28.7**3
+    B /= vcell/vbead
 
     new_chis, howfar = newton(lam, obj_goal, B,  gamma, current_chis, trust_region)
 
@@ -97,7 +100,6 @@ def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, 
     current_chis = np.array(current_chis)
     print("current chi values: ", current_chis)
 
-
     # get current observable values
     it_root = osp.join("iteration{}".format(it), "production_out")
 
@@ -108,14 +110,18 @@ def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, 
         df = df.drop(df.columns[0] ,axis=1)
         df_total= pd.concat((df_total, df), axis=1)
 
-    scale_factor = 7**3
-    df_total *= scale_factor
-    obj_goal *= scale_factor
-
-    print("obj goal: ", obj_goal)
+    #df_total /= np.max(obj_goal)
+    #obj_goal /= np.max(obj_goal)
 
     lam = df_total.mean().values
     B = df_total.cov().values
+
+    vbead = 520
+    vcell = 28.7**3
+    B /= vcell/vbead
+
+    print("obj goal: ", obj_goal)
+    print("lam: ", lam)
 
     new_chis, howfar = newton(lam, obj_goal, B, gamma, current_chis, trust_region)
 
@@ -143,6 +149,7 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region):
     print("========= step before gamma: ", steplength)
     print('step: ', step)
     print('lam: ', lam)
+    print('difference: ', difference)
     print('B: ', B)
 
     step *= gamma
@@ -159,6 +166,9 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region):
         print("========= trust_region: ", trust_region)
         print('step: ', step)
         print('lam: ', lam)
+
+    plt.plot(difference)
+    plt.savefig("difference.png")
 
     new_chis = current_chis - step
     print("new chi values: ", new_chis)
