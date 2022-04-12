@@ -7,10 +7,6 @@ import sys
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.cluster import KMeans
-from sklearn.decomposition import NMF, PCA, KernelPCA
-from sklearn.metrics import silhouette_score
-
 from knightRuiz import knightRuiz
 from seq2contact import (LETTERS, R_pca, crop, diagonal_preprocessing,
                          finalize_opt, genomic_distance_statistics,
@@ -18,6 +14,9 @@ from seq2contact import (LETTERS, R_pca, crop, diagonal_preprocessing,
                          load_final_max_ent_S, load_saved_model, load_X_psi,
                          load_Y, plot_matrix, plot_seq_binary,
                          project_S_to_psi_basis, s_to_E, str2bool, str2int)
+from sklearn.cluster import KMeans
+from sklearn.decomposition import NMF, PCA, KernelPCA
+from sklearn.metrics import silhouette_score
 
 
 def getArgs():
@@ -501,7 +500,7 @@ class GetChi():
     def __init__(self, k):
         self.k = k
 
-def get_energy_gnn(model_path, sample_path, local):
+def get_energy_gnn(model_path, sample_path, local, m):
         '''
         Loads output from GNN model to use as ematrix or smatrix
 
@@ -543,7 +542,8 @@ def get_energy_gnn(model_path, sample_path, local):
             opt = parser.parse_args(['@{}'.format(argparse_path)])
             opt.id = int(model_id)
             opt.use_scratch = False # override use_scratch
-            opt = finalize_opt(opt, parser, local = local)
+            opt = finalize_opt(opt, parser, local = local, debug = True)
+            opt.m = m # override m
             opt.data_folder = osp.join('/',*sample_path_split[:-2]) # use sample_dataset not gnn_dataset
             opt.output_mode = None # don't need output, since only predicting
             print(opt)
@@ -689,9 +689,9 @@ def main():
         seq, labels = getSeq.get_ChromHMM_seq(args.ChromHMM_data_file)
     elif args.method.startswith('gnn'):
         if args.use_smatrix:
-            s = get_energy_gnn(args.model_path, args.sample_folder, args.local)
+            s = get_energy_gnn(args.model_path, args.sample_folder, args.local, args.m)
         elif args.use_ematrix:
-            s = get_energy_gnn(args.model_path, args.sample_folder, args.local)
+            s = get_energy_gnn(args.model_path, args.sample_folder, args.local, args.m)
             e = s_to_E(s)
         else:
             seq = getSeq.get_seq_gnn(args.model_path, args.sample, args.normalize)

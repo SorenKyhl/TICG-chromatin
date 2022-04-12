@@ -6,17 +6,17 @@
 #SBATCH --ntasks=20
 #SBATCH --mem-per-cpu=2000
 
-local='true'
+local='false'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dir="/home/eric/sequences_to_contact_maps"
-  scratchDir='/home/eric/scratch'
-  # numIterations=1
-  # finalSimProductionSweeps=1000
-  # equilibSweeps=1000
-  # productionSweeps=10000
+  dir="/home/erschultz"
+  scratchDir='/home/erschultz/scratch'
+  numIterations=1
+  finalSimProductionSweeps=1000
+  equilibSweeps=1000
+  productionSweeps=10000
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
   dir='/project2/depablo/erschultz'
@@ -26,23 +26,16 @@ fi
 
 STARTTIME=$(date +%s)
 i=2000
-dataset='dataset_11_14_21'
-
-
-dataset='dataset_11_14_21'
-method='k_means'
-for j in 1 2 3 4
+dataset='dataset_01_17_22'
+useE='true'
+for method in 'ground_truth'
 do
-  for l in 40
-   # 1230 1718 1751 1761
+  for sample in 1 2 3 4 5 6 7 8
   do
-    sample="${l}/ground_truth-rank${j}-E/knone/replicate1"
-    for k in 4 6
-    do
-      max_ent
-    done
+    max_ent
   done
 done
+
 
 wait
 

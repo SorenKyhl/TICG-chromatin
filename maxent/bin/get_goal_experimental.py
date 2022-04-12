@@ -22,10 +22,10 @@ def getArgs():
 
 def get_diag_goal(y, bins):
     m, _ = y.shape
+    y_max = np.max(y)
     binsize = m / bins
 
     measure = []
-    correction = []
     for b in range(bins):
         mask = np.zeros_like(y) # use mask to compute weighted average
         for i in range(m):
@@ -35,11 +35,9 @@ def get_diag_goal(y, bins):
                     mask[j,i] = 1
                     if i == j:
                         mask[i,j] = 2
-        measure.append(np.mean((mask*y).flatten()))
-        correction.append(np.sum(mask)/m**2)
+        measure.append(np.sum((mask*y).flatten()))
 
-    measure = np.array(measure)
-    correction = np.array(correction)
+    measure = np.array(measure / y_max)
     return measure
 
 def get_plaid_goal(y, m, args):
@@ -60,7 +58,7 @@ def get_plaid_goal(y, m, args):
             if args.verbose:
                 print(f'\tj={j}', seqj)
             result = seqi @ y @ seqj
-            result /= m**2 # take average
+            # result /= m**2 # take average
             result /= y_max # convert from freq to prob
             obj_goal.append(result)
 
@@ -98,7 +96,8 @@ def main():
 
 
     if args.verbose:
-        print('obj_goal: ', plaid_goal)
+        print('plaid_goal: ', plaid_goal)
+        print('diag_goal: ', diag_goal)
 
     with open('obj_goal.txt', 'w', newline='') as f:
         wr = csv.writer(f, delimiter = '\t')

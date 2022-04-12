@@ -6,10 +6,9 @@ import os.path as osp
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import pearsonr
-from sklearn.decomposition import PCA
-
 from seq2contact import (calc_dist_strat_corr, crop, diagonal_preprocessing,
                          genomic_distance_statistics)
+from sklearn.decomposition import PCA
 
 
 def getArgs():
@@ -70,29 +69,29 @@ def comparePCA(y, yhat, dir):
 
 # plotting functions
 def plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, dir):
-
     m, _ = y.shape
     triu_ind = np.triu_indices(m)
+    overall_corr, _ = pearsonr(y[triu_ind], yhat[triu_ind])
     overall_corr_diag, _ = pearsonr(y_diag[triu_ind], yhat_diag[triu_ind])
-
-    overall_corr, corr_arr = calc_dist_strat_corr(y, yhat, mode = 'pearson')
-    avg = np.nanmean(corr_arr)
+    print(y.shape, yhat.shape, type(y), type(yhat))
+    avg_diag, corr_arr = calc_dist_strat_corr(y, yhat, mode = 'pearson',
+                                            return_arr = True)
 
     # save correlations to json
     with open(osp.join(dir, 'distance_pearson.json'), 'w') as f:
         temp_dict = {'overall_pearson': overall_corr,
                      'scc': overall_corr_diag,
-                     'avg_dist_pearson': avg}
+                     'avg_dist_pearson': avg_diag}
         json.dump(temp_dict, f)
 
     # round
     overall_corr_diag = np.round(overall_corr_diag, 3)
-    avg = np.round(avg, 3)
+    avg_diag = np.round(avg_diag, 3)
     overall_corr = np.round(overall_corr, 3)
 
     # format title
     title = 'Overall Pearson R: {}'.format(overall_corr)
-    title +='\nAvg Dist Pearson R: {}'.format(avg)
+    title +='\nAvg Dist Pearson R: {}'.format(avg_diag)
     title +='\nSCC: {}'.format(overall_corr_diag)
 
     plt.plot(np.arange(m-2), corr_arr, color = 'black')

@@ -38,6 +38,7 @@
   "phi_solvent_max": 0.5,
   "phi_chromatin": 0.06966,
   "kappa": 0,
+  "beadvol": 520,
   "density_cap_on": true,
   "compressibility_on": false,
   "diag_pseudobeads_on": true,

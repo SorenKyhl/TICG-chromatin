@@ -6,7 +6,7 @@
 #SBATCH --ntasks=20
 #SBATCH --mem-per-cpu=2000
 
-local='true'
+local='false'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
@@ -26,11 +26,12 @@ fi
 
 STARTTIME=$(date +%s)
 i=3000
-dataset='dataset_11_14_21'
-method='PCA'
-for sample in 40
+dataset='dataset_01_17_22'
+useE='true'
+modelID=109
+for method in 'GNN'
 do
-  for k in 2 4 6 8
+  for sample in 1 2 3 4 5 6 7 8
   do
     max_ent
   done

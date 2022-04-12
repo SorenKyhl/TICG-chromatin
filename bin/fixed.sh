@@ -1,14 +1,14 @@
 #! /bin/bash
 k=2
 m=800
-dataFolder="/home/eric/dataset_test"
-scratchDir='/home/eric/scratch'
+dataFolder="/home/erschultz/dataset_test"
+scratchDir='/home/erschultz/scratch'
 useE='false'
 useS='false'
 startSample=1
 relabel='none'
 diag='false'
-nSweeps=50000
+nSweeps=2000
 pSwitch=0.05
 maxDiagChi=0.2
 chiSeed='none'
@@ -16,7 +16,7 @@ minChi=-1
 maxChi=-1
 fillDiag='none'
 overwrite=1
-dumpFrequency=1
+dumpFrequency=100
 TICGSeed='none'
 npySeed='12' # for get_seq
 method='random'
@@ -46,15 +46,10 @@ run()  {
 # make
 # mv TICG-engine ..
 
-i=30
-method='block-A100-B600-A100'
+i=1
+chi='none'
 diag='true'
-for j in -3 -2.5 -2 -1.5 -1 -0.5 0
-do
-	chi="${j}&0\\0&-1"
-	run &
-	i=$(($i+1))
-done
+run &
 
 
 wait
