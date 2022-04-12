@@ -11,22 +11,20 @@ source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dir="/home/eric"
-  scratchDir='/home/eric/scratch'
-  numIterations=80
-  # finalSimProductionSweeps=1000
-  # equilibSweeps=1000
-  # productionSweeps=10000
-  source activate python3.8_pytorch1.8.1_cuda11.1
+  dir="/home/erschultz"
+  scratchDir='/home/erschultz/scratch'
+  numIterations=1
+  finalSimProductionSweeps=1000
+  equilibSweeps=1000
+  productionSweeps=10000
+  source activate python3.9_pytorch1.11
 else
-  dir='/project2/depablo/erschultz'
-  scratchDir='/scratch/midway2/erschultz'
-  source activate python3.8_pytorch1.8.1_cuda10.2_2
+  source activate python3.9_pytorch1.11_cuda10.2
 fi
 
 STARTTIME=$(date +%s)
 i=1
-dataset='dataset_01_17_22'
+dataset='dataset_test'
 # useE='true'
 for method in 'PCA-normalize'
 do

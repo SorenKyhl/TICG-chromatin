@@ -3,6 +3,8 @@
 # directories
 resources=~/TICG-chromatin/maxent/resources
 results=~/sequences_to_contact_maps/results
+dir='/project2/depablo/erschultz'
+scratchDir='/scratch/midway2/erschultz'
 
 # sweep params
 productionSweeps=50000

@@ -21,7 +21,7 @@ then
 else
   dir='/project2/depablo/erschultz'
   scratchDir='/scratch/midway2/erschultz'
-  source activate python3.8_pytorch1.8.1_cuda10.2_2
+  source activate python3.9_pytorch1.11_cuda10.2
 fi
 
 STARTTIME=$(date +%s)

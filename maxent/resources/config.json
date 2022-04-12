@@ -1,5 +1,5 @@
 {
-  "seed": 20535,
+  "seed": 17595,
   "production": true,
   "decay_length": 100,
   "nSweeps": 500000,
@@ -58,7 +58,7 @@
   "smatrix_filename": "s_matrix.txt",
   "smatrix_on": false,
   "ematrix_filename": "e_matrix.txt",
-  "ematrix_on": true,
+  "ematrix_on": false,
   "phi_solvent_max": 0.5,
   "phi_chromatin": 0.06966,
   "kappa": 0,
@@ -69,8 +69,11 @@
   "parallel": false,
   "set_num_threads": true,
   "num_threads": 2,
-  "bead_type_files": null,
-  "nspecies": 0,
+  "bead_type_files": [
+    "seq0.txt"
+  ],
+  "nspecies": 1,
+  "chiAA": -0.6,
   "nbeads": -1,
   "load_configuration_filename": "none"
 }
