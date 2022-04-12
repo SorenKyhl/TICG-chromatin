@@ -1,8 +1,8 @@
 #! /bin/bash
 
-cd ~/TICG-chromatin/src
-make
-mv TICG-engine ..
+# cd ~/TICG-chromatin/src
+# make
+# mv TICG-engine ..
 
 # necessary to ensure log files are in right place
 cd ~/TICG-chromatin
