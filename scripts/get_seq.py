@@ -533,41 +533,38 @@ def get_energy_gnn(model_path, sample_path, local, m):
             data_folder = f.readline().strip()
             gnn_dataset = osp.split(data_folder)[1]
 
-        if gnn_dataset != sample_dataset:
-            print(f'WARNING: dataset mismatch: {gnn_dataset} vs {sample_dataset}')
-
-            # set up argparse options
-            parser = get_base_parser()
-            sys.argv = [sys.argv[0]] # delete args from get_seq, otherwise gnn opt will try and use them
-            opt = parser.parse_args(['@{}'.format(argparse_path)])
-            opt.id = int(model_id)
-            opt.use_scratch = False # override use_scratch
-            opt = finalize_opt(opt, parser, local = local, debug = True)
-            opt.m = m # override m
-            opt.data_folder = osp.join('/',*sample_path_split[:-2]) # use sample_dataset not gnn_dataset
-            opt.output_mode = None # don't need output, since only predicting
-            print(opt)
-
-            # get model
-            model, _, _ = load_saved_model(opt, False)
-
-            # get dataset
-            dataset = get_dataset(opt, verbose = True, samples = [sample_id])
-
-            # get prediction
-            for i, data in enumerate(dataset):
-                data = data.to(opt.device)
-                yhat = model(data)
-                yhat = yhat.cpu().detach().numpy()
-                energy = yhat.reshape((opt.m,opt.m))
-
-        else:
+        if gnn_dataset == sample_dataset:
             energy_hat_path = osp.join(model_path, f"{sample}/energy_hat.txt")
             if osp.exists(energy_hat_path):
                 energy = np.loadtxt(energy_hat_path)
-            else:
-                raise Exception(f's_path does not exist: {energy_hat_path}')
+                return energy
+        else:
+            print(f'WARNING: dataset mismatch: {gnn_dataset} vs {sample_dataset}')
 
+        # set up argparse options
+        parser = get_base_parser()
+        sys.argv = [sys.argv[0]] # delete args from get_seq, otherwise gnn opt will try and use them
+        opt = parser.parse_args(['@{}'.format(argparse_path)])
+        opt.id = int(model_id)
+        opt.use_scratch = False # override use_scratch
+        opt = finalize_opt(opt, parser, local = local, debug = True)
+        opt.m = m # override m
+        opt.data_folder = osp.join('/',*sample_path_split[:-2]) # use sample_dataset not gnn_dataset
+        opt.output_mode = None # don't need output, since only predicting
+        print(opt)
+
+        # get model
+        model, _, _ = load_saved_model(opt, False)
+
+        # get dataset
+        dataset = get_dataset(opt, verbose = True, samples = [sample_id])
+
+        # get prediction
+        for i, data in enumerate(dataset):
+            data = data.to(opt.device)
+            yhat = model(data)
+            yhat = yhat.cpu().detach().numpy()
+            energy = yhat.reshape((opt.m,opt.m))
 
         return energy
 
