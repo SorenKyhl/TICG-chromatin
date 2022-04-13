@@ -24,7 +24,7 @@ fi
 
 STARTTIME=$(date +%s)
 i=1
-dataset='dataset_test'
+dataset='dataset_01_17_22'
 # useE='true'
 for method in 'PCA-normalize'
 do
