@@ -8,8 +8,6 @@
 
 local='false'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
-module unload gcc
-module load gcc/10.2.0
 
 if [ $local = 'true' ]
 then
