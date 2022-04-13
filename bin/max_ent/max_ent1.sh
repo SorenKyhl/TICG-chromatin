@@ -19,7 +19,7 @@ then
   productionSweeps=10000
   source activate python3.9_pytorch1.11
 else
-  source activate python3.9_pytorch1.11_cuda10.2
+  source activate python3.9_pytorch1.9_cuda10.2
 fi
 
 STARTTIME=$(date +%s)

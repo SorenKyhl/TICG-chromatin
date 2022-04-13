@@ -19,9 +19,7 @@ then
   # productionSweeps=5000
   source activate python3.8_pytorch1.8.1_cuda11.1
 else
-  dir='/project2/depablo/erschultz'
-  scratchDir='/scratch/midway2/erschultz'
-  source activate python3.9_pytorch1.11_cuda10.2
+  source activate python3.9_pytorch1.9_cuda10.2
 fi
 
 STARTTIME=$(date +%s)
@@ -31,7 +29,8 @@ useE='true'
 modelID=109
 for method in 'GNN'
 do
-  for sample in 1 2 3 4 5 6 7 8
+  for sample in 1
+  # 2 3 4 5 6 7 8
   do
     max_ent
   done
