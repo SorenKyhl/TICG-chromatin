@@ -121,16 +121,17 @@ def check_seq():
                     print(seq)
                     print(int(file[6:]))
 
-def makeDirsForMaxEnt(dataset, sample):
-    sample_folder = osp.join('../sequences_to_contact_maps', dataset, 'samples', 'sample{}'.format(sample))
-    assert osp.exists(sample_folder)
+def makeDirsForMaxEnt(dataset):
+    for sample in [1, 2, 3]:
+        sample_folder = osp.join('../sequences_to_contact_maps', dataset, 'samples', f'sample{sample}')
+        assert osp.exists(sample_folder)
 
-    for method in ['ground-truth', 'ground_truth-S', 'PCA', 'k_means', 'nmf', 'GNN-44-S']:
-        os.mkdir(osp.join(sample_folder, method), mode = 0o755)
-        for k in [2, 4]:
-            os.mkdir(osp.join(sample_folder, method, f'k{k}'), mode = 0o755)
-            for replicate in [1]:
-                os.mkdir(osp.join(sample_folder, method, f'k{k}', f'replicate{replicate}'), mode = 0o755)
+        for method in ['ground_truth-E', 'GNN-109-E']:
+            os.mkdir(osp.join(sample_folder, method), mode = 0o755)
+            for k in ['none']:
+                os.mkdir(osp.join(sample_folder, method, f'k{k}'), mode = 0o755)
+                for replicate in [1]:
+                    os.mkdir(osp.join(sample_folder, method, f'k{k}', f'replicate{replicate}'), mode = 0o755)
 
 def main():
     dir = '/home/eric/dataset_test/samples/sample90'
@@ -393,9 +394,9 @@ if __name__ == '__main__':
     # is_scc_weighted_mean()
     # scc_y_vs_y_rank1()
     # test_robust_PCA()
-    test_p()
+    # test_p()
     # check_seq()
     # find_mising_ids()
     # check_seq('dataset_11_03_21')
     # upper_traingularize_chis()
-    # makeDirsForMaxEnt("dataset_08_29_21", 40)
+    makeDirsForMaxEnt("dataset_01_17_22")
