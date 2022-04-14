@@ -12,6 +12,7 @@ from sequences_to_contact_maps.utils.argparse_utils import (finalize_opt,
                                                             str2list,
                                                             str2list2D,
                                                             str2None)
+from sequences_to_contact_maps.utils.clean_directories import clean_directories
 from sequences_to_contact_maps.utils.dataset_classes import make_dataset
 from sequences_to_contact_maps.utils.energy_utils import (calculate_E_S,
                                                           calculate_S, s_to_E)

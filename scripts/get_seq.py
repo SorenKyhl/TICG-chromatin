@@ -8,12 +8,13 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from knightRuiz import knightRuiz
-from seq2contact import (LETTERS, R_pca, crop, diagonal_preprocessing,
-                         finalize_opt, genomic_distance_statistics,
-                         get_base_parser, get_dataset, load_E_S,
-                         load_final_max_ent_S, load_saved_model, load_X_psi,
-                         load_Y, plot_matrix, plot_seq_binary,
-                         project_S_to_psi_basis, s_to_E, str2bool, str2int)
+from seq2contact import (LETTERS, R_pca, clean_directories, crop,
+                         diagonal_preprocessing, finalize_opt,
+                         genomic_distance_statistics, get_base_parser,
+                         get_dataset, load_E_S, load_final_max_ent_S,
+                         load_saved_model, load_X_psi, load_Y, plot_matrix,
+                         plot_seq_binary, project_S_to_psi_basis, s_to_E,
+                         str2bool, str2int)
 from sklearn.cluster import KMeans
 from sklearn.decomposition import NMF, PCA, KernelPCA
 from sklearn.metrics import silhouette_score
@@ -551,6 +552,7 @@ def get_energy_gnn(model_path, sample_path, local, m):
         opt.m = m # override m
         opt.data_folder = osp.join('/',*sample_path_split[:-2]) # use sample_dataset not gnn_dataset
         opt.output_mode = None # don't need output, since only predicting
+        opt.root_name = f'GNN{opt.id}-{sample}' # need this to be unique
         print(opt)
 
         # get model
@@ -565,6 +567,10 @@ def get_energy_gnn(model_path, sample_path, local, m):
             yhat = model(data)
             yhat = yhat.cpu().detach().numpy()
             energy = yhat.reshape((opt.m,opt.m))
+
+        # cleanup
+        # opt.root is set in utils.get_dataset
+        clean_directories(GNN_path = opt.root)
 
         return energy
 
