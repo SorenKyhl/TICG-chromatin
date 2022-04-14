@@ -7,7 +7,7 @@
 #SBATCH --mem-per-cpu=4000
 #SBATCH --qos=depablo-debug
 
-source activate python3.8_pytorch1.8.1_cuda10.2_2
+source activate python3.9_pytorch1.9_cuda10.2
 dataDir='/project2/depablo/erschultz'
 # dataDir='/home/erschultz/sequences_to_contact_maps'
 
