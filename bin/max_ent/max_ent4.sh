@@ -29,7 +29,8 @@ useE='true'
 modelID=109
 for method in 'GNN'
 do
-  for sample in 1 2 3 4 5 6 7 8
+  for sample in 6
+  # 7 8
   do
     max_ent
   done
