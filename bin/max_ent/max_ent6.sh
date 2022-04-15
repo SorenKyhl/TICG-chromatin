@@ -17,11 +17,7 @@ then
   # finalSimProductionSweeps=2000
   # equilibSweeps=1000
   # productionSweeps=5000
-  source activate python3.8_pytorch1.8.1_cuda11.1
-else
-  dir='/project2/depablo/erschultz'
-  scratchDir='/scratch/midway2/erschultz'
-  source activate python3.9_pytorch1.11_cuda10.2
+  source activate python3.9_pytorch1.11
 fi
 
 STARTTIME=$(date +%s)

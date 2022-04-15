@@ -18,8 +18,6 @@ then
   equilibSweeps=1000
   productionSweeps=10000
   source activate python3.9_pytorch1.11
-else
-  source activate python3.9_pytorch1.9_cuda10.2
 fi
 
 STARTTIME=$(date +%s)

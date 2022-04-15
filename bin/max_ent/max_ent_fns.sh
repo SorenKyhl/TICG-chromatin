@@ -1,4 +1,7 @@
 #! /bin/bash
+source activate python3.9_pytorch1.9_cuda10.2
+module unload gcc # not sure if this is necessary
+module load gcc/10.2.0
 
 # directories
 resources=~/TICG-chromatin/maxent/resources

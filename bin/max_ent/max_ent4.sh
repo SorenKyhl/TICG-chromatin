@@ -17,9 +17,7 @@ then
   finalSimProductionSweeps=5000
   equilibSweeps=1000
   productionSweeps=5000
-  source activate python3.9_pytorch1.9
-else
-  source activate python3.9_pytorch1.9_cuda10.2
+  source activate python3.9_pytorch1.11
 fi
 
 STARTTIME=$(date +%s)

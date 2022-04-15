@@ -27,44 +27,65 @@ def getArgs():
     # "./project2/depablo/erschultz/dataset_04_18_21"
 
     # input data args
-    parser.add_argument('--data_folder', type=str, default=osp.join(seq_local,'dataset_01_15_22'), help='location of input data')
-    parser.add_argument('--sample', type=str, default='40', help='sample id')
-    parser.add_argument('--sample_folder', type=str, help='location of input data')
+    parser.add_argument('--data_folder', type=str, default=osp.join(seq_local,'dataset_01_15_22'),
+                        help='location of input data')
+    parser.add_argument('--sample', type=str, default='40',
+                        help='sample id')
+    parser.add_argument('--sample_folder', type=str,
+                        help='location of input data')
 
     # standard args
-    parser.add_argument('--method', type=str, default='k_means', help='method for assigning particle types')
-    parser.add_argument('--m', type=int, default=1024, help='number of particles (will crop contact map) (-1 to infer)')
-    parser.add_argument('--k', type=str2int, default=2, help='sequences to generate')
+    parser.add_argument('--method', type=str, default='k_means',
+                        help='method for assigning particle types')
+    parser.add_argument('--m', type=int, default=1024,
+                        help='number of particles (will crop contact map) (-1 to infer)')
+    parser.add_argument('--k', type=str2int, default=2,
+                        help='sequences to generate')
     parser.add_argument('--scale_resolution', type=str2int, default=1,
-                        help="generate seq at higher resolution, find average frequency at lower resolution") # TODO rename and document better
+                        help="generate seq at higher resolution, "
+                            "find average frequency at lower resolution")
+                        # TODO rename and document better
 
     # args for specific methods
-    parser.add_argument('--seed', type=str2int, help='random seed for numpy')
-    parser.add_argument('--exclusive', type=str2bool, default=False, help='True to use mutually exusive label (for random method)')
-    parser.add_argument('--model_path', type=str, help='path to GNN model')
-    parser.add_argument('--epigenetic_data_folder', type=str, default=osp.join(chip_seq_data_local, 'fold_change_control/processed'),
+    parser.add_argument('--seed', type=str2int,
+                        help='random seed for numpy')
+    parser.add_argument('--exclusive', type=str2bool, default=False,
+                        help='True to use mutually exusive label (for random method)')
+    parser.add_argument('--model_path', type=str,
+                        help='path to GNN model')
+    parser.add_argument('--epigenetic_data_folder', type=str,
+                        default=osp.join(chip_seq_data_local, 'fold_change_control/processed'),
                         help='location of epigenetic data')
     parser.add_argument('--ChromHMM_data_file', type=str,
-                        default=osp.join(chip_seq_data_local, 'aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt'),
+                        default=osp.join(chip_seq_data_local,
+                                        'aligned_reads/ChromHMM_15/STATEBYLINE/'
+                                        'HTC116_15_chr2_statebyline.txt'),
                         help='location of ChromHMM data')
-    parser.add_argument('--p_switch', type=float, default=0.05, help='probability to switch bead assignment (for method = random)')
-    parser.add_argument('--kernel', type=str, default='poly', help='kernel for kernel PCA')
-    parser.add_argument('--local', type=str2bool, default=False, help='True for local mode (relevant to method = GNN)')
+    parser.add_argument('--p_switch', type=float, default=0.05,
+                        help='probability to switch bead assignment (for method = random)')
+    parser.add_argument('--kernel', type=str, default='poly',
+                        help='kernel for kernel PCA')
+    parser.add_argument('--local', type=str2bool, default=False,
+                        help='True for local mode (relevant to method = GNN)')
 
     # post-processing args
-    parser.add_argument('--save_npy', action='store_true', help='true to save seq as .npy')
-    parser.add_argument('--plot', action='store_true', help='true to plot seq as .png')
+    parser.add_argument('--save_npy', action='store_true',
+                        help='true to save seq as .npy')
+    parser.add_argument('--plot', action='store_true',
+                        help='true to plot seq as .png')
 
     args = parser.parse_args()
     # below args are
     args.input = None # input in {y, x, psi}
     args.binarize = False # True to binarize labels (not implemented for all methods)') # TODO
-    args.normalize = False # True to normalize labels to [0,1] (or [-1, 1] for some methods) (not implemented for all methods)') # TODO
+    args.normalize = False # True to normalize labels to [0,1] (or [-1, 1] for some methods)
+        # (not implemented for all methods)') # TODO
     args.use_ematrix = False
     args.use_smatrix = False
     args.append_random = False # True to append random seq
     args.load_chi = False # True to load e matrix learned from prior maxent and re-run
-    args.project = False # (assumes load_chi is True) True to project e into space of ground truth bead labels
+    args.project = False # True to project e into space of ground truth bead labels
+        # (assumes load_chi is True)
     args.exp = False # (for RPCA) convert from log space back to original space
     args.diag = False # (for RPCA) apply diagonal processing
     args.rank = None # max rank for energy matrix
@@ -155,7 +176,8 @@ class GetSeq():
         seq = np.zeros((m, self.k))
         if exclusive:
             transition_probs = [1 - p_switch] # keep label with p = 1-p_switch
-            transition_probs.extend([p_switch/(self.k-1)]*(self.k-1)) # remaining transitions have sum to p_switch
+            transition_probs.extend([p_switch/(self.k-1)]*(self.k-1))
+            # remaining transitions have to sum to p_switch
 
             ind = np.empty(m)
             ind[0] = rng.choice(range(self.k), size = 1)
@@ -370,7 +392,8 @@ class GetSeq():
             seq = H.T
             return seq, None
 
-    def get_epigenetic_seq(self, data_folder, start=35000000, end=60575000, res=25000, chr='2', min_coverage_prcnt=5):
+    def get_epigenetic_seq(self, data_folder, start=35000000, end=60575000,
+                            res=25000, chr='2', min_coverage_prcnt=5):
         '''
         Loads experimental epigenetic data from data_folder to use as particle types.
 
@@ -420,7 +443,8 @@ class GetSeq():
 
         return seq, marks
 
-    def get_ChromHMM_seq(self, ifile, start=35000000, end=60575000, res=25000, min_coverage_prcnt=5):
+    def get_ChromHMM_seq(self, ifile, start=35000000, end=60575000, res=25000,
+                        min_coverage_prcnt=5):
         start = int(start / res)
         end = int(end / res)
         m = end - start + 1 # number of particle in simulation
@@ -512,18 +536,21 @@ def get_energy_gnn(model_path, sample_path, local, m):
         Outputs:
             s: np array of pairwise energies
         '''
+        print('\nget_energy_gnn')
+
         # extract sample info
         sample = osp.split(sample_path)[1]
         sample_id = int(sample[6:])
         sample_path_split = osp.normpath(sample_path).split(os.sep)
         sample_dataset = sample_path_split[-3]
+
         print(sample, sample_id, sample_dataset)
 
         # extract model info
         model_path_split = osp.normpath(model_path).split(os.sep)
         model_id = model_path_split[-1]
         model_type = model_path_split[-2]
-        print('Model type', model_type)
+        print(f'Model type: {model_type}')
         assert model_type == 'ContactGNNEnergy', f"Unrecognized model_type: {model_type}"
 
         argparse_path = osp.join(model_path, 'argparse.txt')
@@ -553,6 +580,7 @@ def get_energy_gnn(model_path, sample_path, local, m):
         opt.data_folder = osp.join('/',*sample_path_split[:-2]) # use sample_dataset not gnn_dataset
         opt.output_mode = None # don't need output, since only predicting
         opt.root_name = f'GNN{opt.id}-{sample}' # need this to be unique
+        opt.log_file = sys.stdout # change
         print(opt)
 
         # get model
@@ -569,7 +597,7 @@ def get_energy_gnn(model_path, sample_path, local, m):
             energy = yhat.reshape((opt.m,opt.m))
 
         # cleanup
-        # opt.root is set in utils.get_dataset
+        # opt.root is set in get_dataset
         clean_directories(GNN_path = opt.root)
 
         return energy
@@ -615,12 +643,14 @@ def main():
         if 'project' in method_split:
             method_split.remove('project')
         original_method = ''.join(method_split)
-        replicate_path = osp.join(args.sample_folder, original_method, f'k{args.k}', 'replicate1')
+        replicate_path = osp.join(args.sample_folder, original_method, f'k{args.k}',
+                                    'replicate1')
         assert osp.exists(replicate_path), f"path does not exist: {replicate_path}"
         s = load_final_max_ent_S(args.k, replicate_path, max_it_path = None)
         e = s_to_E(s)
     elif args.method.startswith('random'):
-        seq = getSeq.get_random_seq(args.p_switch, args.seed, args.exclusive, args.scale_resolution)
+        seq = getSeq.get_random_seq(args.p_switch, args.seed, args.exclusive,
+                                    args.scale_resolution)
     elif args.method.startswith('block'):
         seq = getSeq.get_block_seq(args.method)
     elif args.method.startswith('pca_split'):
@@ -665,7 +695,8 @@ def main():
             # this input will reproduce ground_truth-S barring random seed
             print(f'seq loaded with shape {seq.shape}')
         else:
-            raise Exception(f'Unrecognized input mode {args.input} for method {args.method} for sample {args.sample_folder}')
+            raise Exception(f'Unrecognized input mode {args.input} for method {args.method} '
+                            f'for sample {args.sample_folder}')
 
         if args.append_random:
             # TODO this may be broken
@@ -730,7 +761,8 @@ def main():
         m, k = seq.shape
         assert m == args.m, f"m mismatch: seq has {m} particles not {args.m}"
         if args.k is not None:
-            assert k == args.k, f"k mismatch: seq has {k} particle types not {args.k} for method {args.method} for sample {args.sample_folder}"
+            assert k == args.k, f'''k mismatch: seq has {k} particle types not {args.k}
+                                for method {args.method} for sample {args.sample_folder}'''
         if args.save_npy:
             np.save('x.npy', seq)
 
@@ -760,32 +792,39 @@ class Tester():
         seq, labels = self.getSeq.get_nmf_seq(y_diag, binarize = False)
 
         seq, labels = self.getSeq.get_nmf_seq(y_diag, binarize = True)
-        plot_seq_exclusive(seq, labels=labels, X=y_diag, show=True, save=False, title='nmf-binarize test')
+        plot_seq_exclusive(seq, labels = labels, X = y_diag, show = True,
+                            save = False, title = 'nmf-binarize test')
 
 
         seq, labels = self.getSeq.get_k_means_seq(y_diag, kr = True)
-        plot_seq_exclusive(seq, labels=labels, X=y_diag, show=True, save=False, title='k_means test')
+        plot_seq_exclusive(seq, labels = labels, X = y_diag, show = True,
+                            save = False, title = 'k_means test')
 
     def test_random(self):
         seq = self.getSeq.get_random_seq(p_switch=0.05, exclusive = True)
         # plot_seq_exclusive(seq, show = True, save = False, title = 'random-exclusive test')
 
-        seq = self.getSeq.get_random_seq(p_switch=0.03, exclusive = False, scale_resolution = 25)
-        plot_seq_continuous(seq, show = True, save = False, title = 'random_scale_resolution test')
+        seq = self.getSeq.get_random_seq(p_switch=0.03, exclusive = False,
+                                        scale_resolution = 25)
+        plot_seq_continuous(seq, show = True, save = False,
+                            title = 'random_scale_resolution test')
 
     def test_epi(self):
         args = getArgs()
         seq, marks = self.getSeq.get_epigenetic_seq(args.epigenetic_data_folder)
         print(marks)
-        plot_seq_binary(seq, show = True, save = False, title = 'epi test', labels = marks, x_axis = False)
+        plot_seq_binary(seq, show = True, save = False, title = 'epi test',
+                        labels = marks, x_axis = False)
 
     def test_ChromHMM(self):
         args = getArgs()
         k = 15
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))
 
-        seq, labels = self.getSeq.get_ChromHMM_seq(args.ChromHMM_data_file, k, min_coverage_prcnt = 0)
-        plot_seq_exclusive(seq, labels=labels, X=y_diag, show=True, save=False, title='ChromHMM test')
+        seq, labels = self.getSeq.get_ChromHMM_seq(args.ChromHMM_data_file, k,
+                                                    min_coverage_prcnt = 0)
+        plot_seq_exclusive(seq, labels=labels, X=y_diag, show=True, save=False,
+                            title='ChromHMM test')
 
     def test_GNN(self):
         k = 2
