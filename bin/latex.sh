@@ -13,12 +13,12 @@ dataDir='/project2/depablo/erschultz'
 
 
 dataset='dataset_01_17_22'
-samples='1-2-3-4-5'
+samples='1-2-3-4-5-6-7-8'
 dataFolder="${dataDir}/${dataset}"
 python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
 #
 
-for sample in 1 2 3 4 5
+for sample in 6 7 8
 do
   python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
 done
