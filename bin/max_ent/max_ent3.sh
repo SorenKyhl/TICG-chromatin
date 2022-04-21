@@ -34,8 +34,6 @@ do
   max_ent
 done
 
-
-
 wait
 
 

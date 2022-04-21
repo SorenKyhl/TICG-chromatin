@@ -24,26 +24,14 @@ fi
 
 STARTTIME=$(date +%s)
 i=5000
-dataset='dataset_11_14_21'
-sample=40
-
-# for method in 'PCA' 'nmf'
-# do
-#   for k in 1
-#   do
-#     max_ent
-#   done
-# done
-
-trust_region=1000
-for method in 'PCA'
-# 'k_means' 'nmf'
+dataset='dataset_01_17_22'
+useE='true'
+diagPseudobeadsOn='false'
+method='GNN'
+modelID=137
+for sample in 1 2 3 4 5 6 7 8
 do
-  for k in 4 6
-  # 2
-  do
-    max_ent
-  done
+  max_ent
 done
 
 wait
