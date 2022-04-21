@@ -34,6 +34,8 @@ def getArgs():
     parser.add_argument('--sample_folder', type=str, help='location of sample for ground truth chi')
     parser.add_argument('--relabel', type=str2None,
                         help='specify mark combinations to be relabled (e.g. AB-C will relabel AB mark pairs as mark C)')
+    parser.add_argument('--diag_pseudobeads_on', type=str2bool, default=True)
+
 
     # chi arguments
     parser.add_argument('--use_ground_truth_chi', type=str2bool, default=False, help='True to use ground truth chi and diag chi')
@@ -398,6 +400,9 @@ def main():
     # save nSweeps
     if args.n_sweeps is not None:
         config['nSweeps'] = args.n_sweeps
+
+    # save diag_pseudobeads_on
+    config['diag_pseudobeads_on'] = args.diag_pseudobeads_on
 
     # save dump frequency
     if args.dump_frequency is not None:
