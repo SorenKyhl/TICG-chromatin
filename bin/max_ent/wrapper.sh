@@ -9,7 +9,8 @@
 # necessary to ensure log files are in right place
 cd ~/TICG-chromatin
 
-for i in 1 2
+for i in 3
+# 1 2
 # 4 5 6
 do
   echo $i
