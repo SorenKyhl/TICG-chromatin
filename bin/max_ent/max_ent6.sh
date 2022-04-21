@@ -24,14 +24,16 @@ fi
 
 STARTTIME=$(date +%s)
 i=5000
-dataset='dataset_01_17_22'
-useE='true'
-diagPseudobeadsOn='false'
-method='GNN'
-modelID=137
-for sample in 1 2 3 4 5 6 7 8
+dataset='dataset_09_21_21'
+method='PCA-normalize'
+mode='both'
+numIterations=100
+for k in 2 4 6
 do
-  max_ent
+  for sample in 1 2 8 14 20
+  do
+    max_ent
+  done
 done
 
 wait
