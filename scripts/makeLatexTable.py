@@ -272,8 +272,8 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                             text += f' *{np.round(pval, 3)}'
                     else:
                         text += f" & {result_mean}"
-                        if metric == 'scc':
-                            text += f" & {delta_result_mean}"
+                        # if metric == 'scc':
+                        #     text += f" & {delta_result_mean}"
 
                 text += " \\\ \n"
 
