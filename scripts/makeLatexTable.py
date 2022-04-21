@@ -156,7 +156,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
         # set up first rows of table
         o.write("\\begin{center}\n")
         if small:
-            metrics = ['scc', 'rmse-e']
+            metrics = ['scc', 'rmse-e', 'rmse-y']
             o.write("\\begin{tabular}{|c|c|c|c|c|}\n")
             o.write("\\hline\n")
             o.write("\\multicolumn{5}{|c|}{" + header + "} \\\ \n")
@@ -164,17 +164,17 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                 o.write("\\hline\n")
                 o.write("\\multicolumn{5}{|c|}{sample " + f'{sample_id}' + "} \\\ \n")
             o.write("\\hline\n")
-            o.write("Method & $\\ell$ & SCC & $\\Delta$ SCC & RMSE-E \\\ \n")
+            o.write("Method & $\\ell$ & SCC & RMSE-E & RMSE-Y \\\ \n")
         else:
             metrics = ['overall_pearson', 'avg_dist_pearson', 'scc', 'rmse-e', 'rmse-y']
-            o.write("\\begin{tabular}{|c|c|c|c|c|c|c|c|}\n")
+            o.write("\\begin{tabular}{|c|c|c|c|c|c|c|}\n")
             o.write("\\hline\n")
-            o.write("\\multicolumn{8}{|c|}{" + header + "} \\\ \n")
+            o.write("\\multicolumn{7}{|c|}{" + header + "} \\\ \n")
             if sample_id is not None:
                 o.write("\\hline\n")
-                o.write("\\multicolumn{8}{|c|}{sample " + f'{sample_id}' + "} \\\ \n")
+                o.write("\\multicolumn{7}{|c|}{sample " + f'{sample_id}' + "} \\\ \n")
             o.write("\\hline\n")
-            o.write("Method & k & Pearson R & Avg Dist Pearson R & SCC & $\\Delta$  SCC & RMSE-E & RMSE-Y \\\ \n")
+            o.write("Method & k & Pearson R & Avg Dist Pearson R & SCC & RMSE-E & RMSE-Y\\\ \n")
         o.write("\\hline\\hline\n")
 
         # get reference data
@@ -246,28 +246,28 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                             print('sample results', sample_results)
                             raise
 
-                    if GNN_ref is not None and metric == 'scc':
-                        try:
-                            delta_result = ref_result - result
-                            delta_result_mean = np.round(np.nanmean(delta_result), 3)
-                        except ValueError as e:
-                            print(GNN_ref[metric])
-                            print(f'method {key}, k {k}, metric: {metric}')
-                            raise
-                            delta_result_mean = None
-                    else:
-                        delta_result_mean = None
+                    # if GNN_ref is not None and metric == 'scc':
+                    #     try:
+                    #         delta_result = ref_result - result
+                    #         delta_result_mean = np.round(np.nanmean(delta_result), 3)
+                    #     except ValueError as e:
+                    #         print(GNN_ref[metric])
+                    #         print(f'method {key}, k {k}, metric: {metric}')
+                    #         raise
+                    #         delta_result_mean = None
+                    # else:
+                    #     delta_result_mean = None
 
                     result_mean = np.round(np.nanmean(result), 3)
                     if len(result) > 1:
                         result_std = np.round(np.nanstd(result), 3)
-                        if delta_result_mean is not None:
-                            delta_result_std = np.round(np.nanstd(delta_result), 3)
-                        else:
-                            delta_result_std = None
+                        # if delta_result_mean is not None:
+                        #     delta_result_std = np.round(np.nanstd(delta_result), 3)
+                        # else:
+                        #     delta_result_std = None
                         text += f" & {result_mean} $\pm$ {result_std}"
-                        if metric == 'scc':
-                            text += f" & {delta_result_mean} $\pm$ {delta_result_std}"
+                        # if metric == 'scc':
+                        #     text += f" & {delta_result_mean} $\pm$ {delta_result_std}"
                         if significant:
                             text += f' *{np.round(pval, 3)}'
                     else:
