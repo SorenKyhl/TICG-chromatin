@@ -11,13 +11,15 @@ import pandas as pd
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
-    parser.add_argument('--k', type=int, help='number of particle types')
+    parser.add_argument('--k', type=str, help='number of particle types')
     parser.add_argument('--contact_map', type=str, help='filepath to contact map')
     parser.add_argument('--verbose', action='store_true', help='true for verbose mode')
     parser.add_argument('--mode', type=str, help='{"plaid", "diag", "both"}')
     parser.add_argument('--diag_bins', type=int, help='number of diagonal bins')
 
     args = parser.parse_args()
+    if args.k.isdigit():
+        args.k = int(args.k)
     return args
 
 def get_diag_goal(y, bins):
@@ -71,6 +73,7 @@ def main():
     Currently obs_goal_diag is not suported.
     '''
     args = getArgs()
+    print(args)
 
     if args.contact_map.endswith('.npy'):
         y = np.load(args.contact_map)
@@ -78,11 +81,13 @@ def main():
         y = np.loadtxt(args.contact_map)
     else:
         raise Exception(f"contact map format not recognized: {args.contact_map}")
-
-    seqi = np.loadtxt("seq0.txt")
-    m = len(seqi)
     y = y.astype(float) # ensure float
-    y = y[:m, :m] # crop to m
+
+    file = "seq0.txt"
+    if osp.exists(file):
+        seqi = np.loadtxt(file)
+        m = len(seqi)
+        y = y[:m, :m] # crop to m
 
     if args.mode == 'both':
         plaid_goal = get_plaid_goal(y, m, args)

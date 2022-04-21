@@ -46,27 +46,29 @@ epiData="${chipSeqFolder}/fold_change_control/processed"
 chromHMMData="${chipSeqFolder}/aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt"
 
 max_ent() {
-  if [ $mode = 'plaid' ] || [ $mode = 'both' ]
+  if [ $useS = 'true' ] || [ $useE = 'true' ]
   then
-    if [ $useS = 'true' ] || [ $useE = 'true' ]
-    then
-      useGroundTruthChi='false'
-      goalSpecified='false'
-      numIterations=0
-      if ! [ $loadChi = 'true' ]
-      then
-        k='none'
-      fi
-    fi
-    if [ $useGroundTruthChi == 'true' ]
+    useGroundTruthChi='false' # defaults to false anyways
+    if ! [ $mode = 'diag' ]
     then
       numIterations=0
       goalSpecified='false'
     fi
+    if ! [ $loadChi = 'true' ]
+    then
+      k='none'
+    fi
+  fi
+
+  if [ $useGroundTruthChi == 'true' ] && ! [ $mode = 'plaid' ]
+  then
+    numIterations=0
+    goalSpecified='false'
   fi
 
   if [ $mode = 'diag' ] || [ $mode = 'both' ]
   then
+    useGroundTruthDiagChi='false'
     diag='true'
   fi
 

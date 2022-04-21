@@ -107,7 +107,7 @@ run_simulation () {
 			python3 $proj_bin/update_chis.py --it $it --k $k
 		elif [ $mode == "diag" ];
 		then
-			python3 $proj_bin/update_diag.py $it
+			python3 $proj_bin/update_diag.py --it $it
 		elif [ $mode == "both" ];
 		then
 			python3 $proj_bin/update_chis.py --it $it --k $k

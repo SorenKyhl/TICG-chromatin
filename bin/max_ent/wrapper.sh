@@ -10,7 +10,7 @@
 cd ~/TICG-chromatin
 
 for i in 4 5
-# 1 2 3 
+# 3
 do
   echo $i
   sbatch ~/TICG-chromatin/bin/max_ent/max_ent${i}.sh

@@ -27,13 +27,13 @@ i=2000
 dataset='dataset_01_17_22'
 useE='true'
 diagPseudobeadsOn='false'
-for method in 'ground_truth'
+method='GNN'
+modelID=109
+for sample in 1 2 3 4 5 6 7 8
 do
-  for sample in 1 2 3 4 5 6 7 8
-  do
-    max_ent
-  done
+  max_ent
 done
+
 
 
 wait
