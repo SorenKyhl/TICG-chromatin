@@ -27,7 +27,10 @@ i=3000
 dataset='dataset_09_21_21'
 useE='true'
 method='GNN'
-for modelID in 109 137 72
+mode='diag'
+numIterations=50
+for modelID in 109
+# 137 72
 do
   for sample in 1 2 8 14 20
   do

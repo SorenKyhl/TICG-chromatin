@@ -24,12 +24,15 @@ fi
 
 STARTTIME=$(date +%s)
 i=4000
-dataset='dataset_09_02_21'
+dataset='dataset_09_21_21'
 useE='true'
-modelID=46
-for method in 'GNN'
+method='GNN'
+mode='diag'
+numIterations=50
+for modelID in 137
+# 109 72
 do
-  for sample in 40 1230 1718
+  for sample in 1 2 8 14 20
   do
     max_ent
   done
