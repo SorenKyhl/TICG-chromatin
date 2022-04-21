@@ -5,6 +5,8 @@
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20
 #SBATCH --mem-per-cpu=2000
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=erschultz@uchicago.edu
 
 local='false'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
@@ -22,12 +24,12 @@ fi
 
 STARTTIME=$(date +%s)
 i=3000
-dataset='dataset_01_17_22'
+dataset='dataset_09_21_21'
 useE='true'
-modelID=109
-for method in 'GNN'
+method='GNN'
+for modelID in 109 137 72
 do
-  for sample in 6 7 8
+  for sample in 1 2 8 14 20
   do
     max_ent
   done

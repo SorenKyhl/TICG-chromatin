@@ -8,7 +8,7 @@ useS='false'
 startSample=1
 relabel='none'
 diag='false'
-nSweeps=2000
+nSweeps=100000
 pSwitch=0.05
 maxDiagChi=0.2
 chiSeed='none'
@@ -22,7 +22,7 @@ npySeed='12' # for get_seq
 method='random'
 exclusive='true'
 
-source activate python3.8_pytorch1.8.1_cuda11.1
+source activate python3.8_pytorch1.8.1
 
 source ~/TICG-chromatin/bin/random/random_fns.sh
 
@@ -49,6 +49,10 @@ run()  {
 i=1
 chi='none'
 diag='true'
+run &
+
+i=2
+maxDiagChi=10
 run &
 
 

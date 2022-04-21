@@ -140,7 +140,7 @@ run_simulation () {
 	cd $scratchDir
 
 	ENDTIME=$(date +%s)
-	echo "finished iteration ${it}: $(( $(( $ENDTIME - $STARTTIME )) / 60 )) minutes"
+	echo "finished iteration ${it}: $(( $(( $ENDTIME - $STARTTIME )) / 60 )) minutes ($(( $ENDTIME - $STARTTIME )) seconds)"
 
 }
 
@@ -184,6 +184,7 @@ then
 fi
 
 # maxent optimization
+OVERALLSTARTTIME=$(date +%s)
 if [ $num_iterations -gt 0 ]
 then
 	for it in $(seq 1 $(($num_iterations)))
@@ -202,6 +203,9 @@ it=$(($num_iterations + 1))
 python3 $proj_bin/jsed.py "resources/${configFileName}" dump_frequency 50000 i
 production_sweeps=$final_sim_production_sweeps
 run_simulation
+OVERALLENDTIME=$(date +%s)
+echo "finished entire simulation: $(( $(( $OVERALLENDTIME - $OVERALLSTARTTIME )) / 60 )) minutes ($(( $OVERALLENDTIME - $OVERALLSTARTTIME )) seconds)"
+
 
 # move data to output directory
 mv $scratchDir/* $outputDir
