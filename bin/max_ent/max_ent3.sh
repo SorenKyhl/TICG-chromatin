@@ -28,6 +28,7 @@ dataset='dataset_01_17_22'
 useE='true'
 diagPseudobeadsOn='false'
 method='GNN'
+mode='diag'
 modelID=136
 for sample in 1 2 3 4 5 6 7 8
 do
