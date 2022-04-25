@@ -1,4 +1,5 @@
 import argparse
+import csv
 import json
 import os
 import os.path as osp
@@ -87,7 +88,6 @@ def loadData(args):
                             json_file = osp.join(replicate_folder, 'distance_pearson.json')
                             if osp.exists(json_file):
                                 found_results = True
-                                # print(f"Loading: {json_file}")
                                 with open(json_file, 'r') as f:
                                     results = json.load(f)
                                     replicate_data['overall_pearson'].append(results['overall_pearson'])
@@ -128,6 +128,19 @@ def loadData(args):
                                     print(f'\ty not found for {replicate_folder}')
                             replicate_data['rmse-y'].append(rmse_y)
 
+                            time = None
+                            bash_file = osp.join(replicate_folder, 'bash.log')
+                            if osp.exists(bash_file):
+                                with open(bash_file, 'r') as f:
+                                    for line in f:
+                                        if 'finished entire simulation' in line:
+                                            left = line.find('(')
+                                            right = line.find(')')
+                                            time = line[left+1:right].split(' ')[0]
+                                            time = int(time)
+                                            time /= 60 # minutes
+                            replicate_data['time'].append(time)
+
 
                         # append replicate array to dictionary
                         if found_results:
@@ -136,6 +149,7 @@ def loadData(args):
                             data[k][method]['avg_dist_pearson'].append(replicate_data['avg_dist_pearson'])
                             data[k][method]['rmse-e'].append(replicate_data['rmse-e'])
                             data[k][method]['rmse-y'].append(replicate_data['rmse-y'])
+                            data[k][method]['time'].append(replicate_data['time'])
     return data
 
 def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_id = None):
@@ -156,25 +170,25 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
         # set up first rows of table
         o.write("\\begin{center}\n")
         if small:
-            metrics = ['scc', 'rmse-e', 'rmse-y']
-            o.write("\\begin{tabular}{|c|c|c|c|c|}\n")
+            metrics = ['scc', 'rmse-e', 'rmse-y', 'time']
+            o.write("\\begin{tabular}{|c|c|c|c|c|c|}\n")
             o.write("\\hline\n")
-            o.write("\\multicolumn{5}{|c|}{" + header + "} \\\ \n")
+            o.write("\\multicolumn{6}{|c|}{" + header + "} \\\ \n")
             if sample_id is not None:
                 o.write("\\hline\n")
-                o.write("\\multicolumn{5}{|c|}{sample " + f'{sample_id}' + "} \\\ \n")
+                o.write("\\multicolumn{6}{|c|}{sample " + f'{sample_id}' + "} \\\ \n")
             o.write("\\hline\n")
-            o.write("Method & $\\ell$ & SCC & RMSE-E & RMSE-Y \\\ \n")
+            o.write("Method & $\\ell$ & SCC & RMSE-E & RMSE-Y & TIME \\\ \n")
         else:
-            metrics = ['overall_pearson', 'avg_dist_pearson', 'scc', 'rmse-e', 'rmse-y']
-            o.write("\\begin{tabular}{|c|c|c|c|c|c|c|}\n")
+            metrics = ['overall_pearson', 'avg_dist_pearson', 'scc', 'rmse-e', 'rmse-y', 'time']
+            o.write("\\begin{tabular}{|c|c|c|c|c|c|c|c|}\n")
             o.write("\\hline\n")
-            o.write("\\multicolumn{7}{|c|}{" + header + "} \\\ \n")
+            o.write("\\multicolumn{8}{|c|}{" + header + "} \\\ \n")
             if sample_id is not None:
                 o.write("\\hline\n")
-                o.write("\\multicolumn{7}{|c|}{sample " + f'{sample_id}' + "} \\\ \n")
+                o.write("\\multicolumn{8}{|c|}{sample " + f'{sample_id}' + "} \\\ \n")
             o.write("\\hline\n")
-            o.write("Method & k & Pearson R & Avg Dist Pearson R & SCC & RMSE-E & RMSE-Y\\\ \n")
+            o.write("Method & k & Pearson R & Avg Dist Pearson R & SCC & RMSE-E & RMSE-Y & TIME\\\ \n")
         o.write("\\hline\\hline\n")
 
         # get reference data
@@ -227,7 +241,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                     sample_results = nested_list_to_array(data[k][key][metric])
 
                     if sample_id is not None:
-                        assert sample_results.shape[0] == 1, f"label {label}, metric {metric}, k {k_label}, results {sample_results}"
+                        assert sample_results.shape[0] == 1, f"label {label}, metric {metric}, k {k_label}, results {data[k][key][metric]}"
                         result = sample_results.reshape(-1)
                         if GNN_ref is not None:
                             ref_result = nested_list_to_array(GNN_ref[metric]).reshape(-1)

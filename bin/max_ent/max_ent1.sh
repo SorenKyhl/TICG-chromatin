@@ -27,7 +27,7 @@ i=1
 dataset='dataset_01_17_22'
 # useE='true'
 diagPseudobeadsOn='false'
-mode='diag'
+mode='both'
 for method in 'PCA-normalize'
 do
   for sample in 1 2 3 4

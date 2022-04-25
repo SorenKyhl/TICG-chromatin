@@ -575,6 +575,7 @@ def get_energy_gnn(model_path, sample_path, local, m):
         opt = parser.parse_args(['@{}'.format(argparse_path)])
         opt.id = int(model_id)
         opt.use_scratch = False # override use_scratch
+        print(opt)
         opt = finalize_opt(opt, parser, local = local, debug = True)
         opt.m = m # override m
         opt.data_folder = osp.join('/',*sample_path_split[:-2]) # use sample_dataset not gnn_dataset
