@@ -23,7 +23,7 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
-def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified, trust_region):
+def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified, trust_region, method):
 
     # get goals
     if goal_specified:
@@ -60,7 +60,7 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_
     vcell = 28.7**3
     B /= vcell/vbead
 
-    new_chis, howfar = newton(lam, obj_goal, B,  gamma, current_chis, trust_region)
+    new_chis, howfar = newton(lam, obj_goal, B,  gamma, current_chis, trust_region, method)
 
     f_chis = open(parameter_file, "a")
     np.savetxt(f_chis, new_chis, newline=" ", fmt="%.5f")
@@ -70,7 +70,7 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_
     with open(convergence_file, "a") as f:
         f.write(str(howfar) + '\n')
 
-def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, it, goal_specified, trust_region):
+def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, it, goal_specified, trust_region, method):
 
     # get goals
     if goal_specified:
@@ -124,7 +124,7 @@ def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, 
     print("obj goal: ", obj_goal)
     print("lam: ", lam)
 
-    new_chis, howfar = newton(lam, obj_goal, B, gamma, current_chis, trust_region)
+    new_chis, howfar = newton(lam, obj_goal, B, gamma, current_chis, trust_region, method)
 
 
     index = 0;
@@ -140,10 +140,13 @@ def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, 
         with open(f, "a") as f:
             f.write(str(howfar) + '\n')
 
-def newton(lam, obj_goal, B, gamma, current_chis, trust_region):
+def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method):
     difference = obj_goal - lam
     Binv = np.linalg.pinv(B)
-    step = Binv@difference
+    if method == "n":
+        step = Binv@difference
+    elif method == "g":
+        step = difference
 
     steplength = np.sqrt(step@step)
 
@@ -213,17 +216,19 @@ def main():
     goal_specified = str2bool(sys.argv[4])   # if true, will read from obj_goal.txt and obj_goal_diag.txt.
                                              # if false, will calculate goals from iteration1 observables
     trust_region = float(sys.argv[5])
+    method = str(sys.argv[6])
 
     print(f'Goal specified: {goal_specified}')
     print(f'Iteration Number {it}')
     print(f"gamma: {gamma}")
+    print(f"method: {method}")
 
     if mode == "both":
         parameter_files = ["chis.txt", "chis_diag.txt"]
         obs_files = ["observables.traj", "diag_observables.traj"]
         convergence_files = ["convergence.txt", "convergence_diag.txt"]
         goal_files = ["obj_goal.txt", "obj_goal_diag.txt"]
-        both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, it, goal_specified, trust_region)
+        both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, it, goal_specified, trust_region, method)
     else:
         if mode == "diag":
             diag_fn = step
@@ -236,13 +241,13 @@ def main():
         obs_file = "diag_observables.traj"
         convergence_file = "convergence_diag.txt"
         goal_file = "obj_goal_diag.txt"
-        diag_fn(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified, trust_region)
+        diag_fn(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified, trust_region, method)
 
         parameter_file = "chis.txt"
         obs_file = "observables.traj"
         convergence_file = "convergence.txt"
         goal_file = "obj_goal.txt"
-        fn(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified, trust_region)
+        fn(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified, trust_region, method)
 
 if __name__ == '__main__':
     main()

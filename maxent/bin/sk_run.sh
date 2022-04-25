@@ -4,12 +4,13 @@ today=$(date +'%m_%d_%y')
 scratchDir=${1:-'/scratch/midway2/erschultz/TICG_maxent'}
 mode=${2:-"both"}
 gamma=${3:-1}
-trust_region=${4:-1000000}
-equilib_sweeps=${5:-10}
+trust_region=${4:-10000}
+equilib_sweeps=${5:-10000}
 production_sweeps=${6:-50000}
 num_iterations=${7:-100}
-goal_specified=${8:-1}
+goal_specified=${8:-0}
 overwrite=${9:-0}
+method=${10:-"n"}
 
 echo "running maxent with:"
 echo "dir:"
@@ -30,7 +31,8 @@ echo "goal_specified"
 echo $goal_specified
 echo "overwrite"
 echo $overwrite
-
+echo "method"
+echo $method
 
 # move to scratch
 if ! [[ -d $scratchDir ]]
@@ -121,7 +123,7 @@ then
 	do
 		run_simulation
 		# update chis via newton's method
-		python3 $proj_bin/newton_step.py $it $gamma $mode $goal_specified $trust_region >> track.log
+		python3 $proj_bin/newton_step.py $it $gamma $mode $goal_specified $trust_region $method >> track.log
 		# update plots
 		python3 $proj_bin/plot_convergence.py --mode $mode --k $k
 		python3 $proj_bin/contactmap.py $it
