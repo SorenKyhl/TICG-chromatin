@@ -36,7 +36,7 @@ then
   source activate python3.9_pytorch1.9
 else
   scratchDir="/scratch/midway2/erschultz"
-  source activate python3.9_pytorch1.9.1_cuda10.2
+  source activate python3.9_pytorch1.9_cuda10.2
 fi
 
 samplesPerNode=$(( $samples / $nodes ))
