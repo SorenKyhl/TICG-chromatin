@@ -1,4 +1,9 @@
 #! /bin/bash
+
+module unload gcc # not sure if this is necessary
+module load gcc/10.2.0
+
+
 param_setup() {
 	# other params
 	method='random'
