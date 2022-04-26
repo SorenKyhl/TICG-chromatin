@@ -6,10 +6,9 @@ import os
 import os.path as osp
 
 import numpy as np
-
 from compare_contact import (comparePCA,
                              plotDistanceStratifiedPearsonCorrelation)
-from seq2contact import diagonal_preprocessing, genomic_distance_statistics
+from seq2contact import DiagonalPreprocessing
 
 
 def getArgs():
@@ -46,8 +45,8 @@ def main():
                             if osp.exists(yhat_diag_path):
                                 yhat_diag = np.load(yhat_diag_path)
                             else:
-                                meanDist = genomic_distance_statistics(yhat)
-                                yhat_diag= diagonal_preprocessing(yhat, meanDist)
+                                meanDist = DiagonalPreprocessing.genomic_distance_statistics(yhat)
+                                yhat_diag = DiagonalPreprocessing.process(yhat, meanDist)
 
                             plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, dir = replicate_file_path)
                             comparePCA(y, yhat, dir = replicate_file_path)

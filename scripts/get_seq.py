@@ -8,13 +8,12 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from knightRuiz import knightRuiz
-from seq2contact import (LETTERS, R_pca, clean_directories, crop,
-                         diagonal_preprocessing, finalize_opt,
-                         genomic_distance_statistics, get_base_parser,
-                         get_dataset, load_E_S, load_final_max_ent_S,
-                         load_saved_model, load_X_psi, load_Y, plot_matrix,
-                         plot_seq_binary, project_S_to_psi_basis, s_to_E,
-                         str2bool, str2int)
+from seq2contact import (LETTERS, DiagonalPreprocessing, R_pca,
+                         clean_directories, crop, finalize_opt,
+                         get_base_parser, get_dataset, load_E_S,
+                         load_final_max_ent_S, load_saved_model, load_X_psi,
+                         load_Y, plot_matrix, plot_seq_binary,
+                         project_S_to_psi_basis, s_to_E, str2bool, str2int)
 from sklearn.cluster import KMeans
 from sklearn.decomposition import NMF, PCA, KernelPCA
 from sklearn.metrics import silhouette_score
@@ -342,8 +341,8 @@ class GetSeq():
         if exp:
             L = np.exp(L)
         if diag:
-            meanDist = genomic_distance_statistics(L)
-            L = diagonal_preprocessing(L, meanDist)
+            meanDist = DiagonalPreprocessing.genomic_distance_statistics(L)
+            L = DiagonalPreprocessing.process(L, meanDist)
 
         return self.get_PCA_seq(L, normalize)
 
@@ -667,8 +666,8 @@ def main():
             if args.exp:
                 L = np.exp(L)
             if args.diag:
-                meanDist = genomic_distance_statistics(L)
-                L = diagonal_preprocessing(L, meanDist)
+                meanDist = DiagonalPreprocessing.genomic_distance_statistics(L)
+                L = DiagonalPreprocessing.process(L, meanDist)
             seq = getSeq.get_PCA_seq(L, args.normalize)
         else:
             y = np.load(osp.join(args.sample_folder, 'y.npy'))

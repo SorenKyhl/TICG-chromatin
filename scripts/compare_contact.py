@@ -6,8 +6,7 @@ import os.path as osp
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import pearsonr
-from seq2contact import (calc_dist_strat_corr, crop, diagonal_preprocessing,
-                         genomic_distance_statistics)
+from seq2contact import DiagonalPreprocessing, calc_dist_strat_corr, crop
 from sklearn.decomposition import PCA
 
 
@@ -110,15 +109,15 @@ def main():
     if args.y_diag is not None and osp.exists(args.y_diag):
         y_diag = crop(np.load(args.y_diag), args.m)
     else:
-        meanDist = genomic_distance_statistics(y)
-        y_diag = diagonal_preprocessing(y, meanDist)
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
+        y_diag = DiagonalPreprocessing.process(y, meanDist)
 
     yhat = crop(np.load(args.yhat), args.m)
     if args.yhat_diag is not None and osp.exists(args.yhat_diag):
         yhat_diag = crop(np.load(args.yhat_diag), args.m)
     else:
-        meanDist = genomic_distance_statistics(yhat)
-        yhat_diag = diagonal_preprocessing(yhat, meanDist)
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(yhat)
+        yhat_diag = DiagonalPreprocessing.process(yhat, meanDist)
 
 
     plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, args.dir)

@@ -9,7 +9,8 @@ param_setup() {
 	method='random'
 	exclusive='false'
 	overwrite=1
-	dumpFrequency=50000
+	dumpFrequency=200
+	# 50000
 	npySeed='none'
 	TICGSeed='none'
 	if [ $chi = 'nonlinear' ]

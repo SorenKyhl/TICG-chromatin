@@ -22,17 +22,19 @@ maxChi=2
 fillDiag='none'
 chiSeed='none'
 maxDiagChi=10
-local='false'
+local='true'
 
 if [ $local = 'true' ]
 then
   dataFolder="/home/erschultz/dataset_test"
   scratchDir='/home/erschultz/scratch'
-  startSample=3
-  nSweeps=500000
+  startSample=7
+  m=3620
+  nSweeps=20000
   nodes=1
   tasks=3
   samples=3
+
   source activate python3.9_pytorch1.9
 else
   scratchDir="/scratch/midway2/erschultz"
@@ -55,5 +57,5 @@ do
   startSampleI=$(( $startSample + $samplesPerNode * $i ))
   endSampleI=$(( $startSampleI + $samplesPerNode - 1 ))
   echo "TICG${i}" $startSampleI $endSampleI
-  sbatch ~/TICG-chromatin/bin/random/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samplesPerNode $samplesPerTask $diag $scratchDir $i $nSweeps $pSwitch $minChi $maxChi $fillDiag $chiSeed $maxDiagChi
+  bash ~/TICG-chromatin/bin/random/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samplesPerNode $samplesPerTask $diag $scratchDir $i $nSweeps $pSwitch $minChi $maxChi $fillDiag $chiSeed $maxDiagChi
 done

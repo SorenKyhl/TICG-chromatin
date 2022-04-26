@@ -4,10 +4,9 @@ import os.path as osp
 
 import numpy as np
 import pandas as pd
-import straw
+from seq2contact import DiagonalPreprocessing, import, plot_matrix
 
-from seq2contact import (diagonal_preprocessing, genomic_distance_statistics,
-                         import, plot_matrix)
+import straw
 
 
 def download_contactmap_straw(filename, chrom, start, end, resolution):
@@ -54,8 +53,8 @@ def import_contactmap_straw(sample_folder, filename, chrom=2, start=22000000, en
     plot_matrix(hic, ofile = osp.join(sample_folder, 'y_max.png'), vmax = 'max')
     np.savetxt(osp.join(sample_folder, 'y.txt'), hic)
 
-    meanDist = genomic_distance_statistics(hic)
-    y_diag = diagonal_preprocessing(hic, meanDist)
+    meanDist = DiagonalPreprocessing.genomic_distance_statistics(hic)
+    y_diag = DiagonalPreprocessing.process(hic, meanDist)
     plot_matrix(y_diag, ofile = osp.join(sample_folder, 'y_diag.png'), vmax = 'max')
     np.save(osp.join(sample_folder, 'y_diag.npy'), y_diag)
 

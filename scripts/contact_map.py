@@ -5,9 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-
-from seq2contact import (crop, diagonal_preprocessing,
-                         genomic_distance_statistics, load_E_S,
+from seq2contact import (DiagonalPreprocessing, crop, load_E_S,
                          load_final_max_ent_S, plot_matrix, str2int)
 
 
@@ -62,8 +60,8 @@ def main():
         plot_matrix(e, ofile = osp.join(args.save_folder, 'e.png'), title = 'E', vmax = 'max', vmin = 'min', cmap = 'blue-red')
 
 
-    meanDist = genomic_distance_statistics(y)
-    y_diag = diagonal_preprocessing(y, meanDist)
+    meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
+    y_diag = DiagonalPreprocessing.process(y, meanDist)
     plot_matrix(y_diag, ofile = osp.join(args.save_folder, 'y_diag.png'), vmax = 'max')
 
 

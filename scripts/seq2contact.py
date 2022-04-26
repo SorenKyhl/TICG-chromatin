@@ -29,7 +29,6 @@ from sequences_to_contact_maps.utils.plotting_utils import (plot_matrix,
                                                             plot_top_PCs)
 from sequences_to_contact_maps.utils.R_pca import R_pca
 from sequences_to_contact_maps.utils.utils import (LETTERS,
+                                                   DiagonalPreprocessing,
                                                    calc_dist_strat_corr, crop,
-                                                   diagonal_preprocessing,
-                                                   genomic_distance_statistics,
                                                    pearson_round)
