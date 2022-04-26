@@ -8,12 +8,6 @@
 
 cd ~/scratch-midway2
 
-rm -r dataset* &
-rm -r TICG_maxent8* &
-rm -r TICG_maxent9* &
-rm -r TICG_maxent10* &
-rm -r TICG_maxent11* &
-rm -r TICG_maxent12* &
-rm -r TICG_maxent9* &
+mv dataset_01_17_22 /project2/depablo/erschultz/dataset_01_17_22
 
 wait
