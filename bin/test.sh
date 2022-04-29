@@ -8,6 +8,6 @@
 #SBATCH --qos=depablo-debug
 
 
-source activate python3.8_pytorch1.8.1_cuda10.2
+source activate python3.9_pytorch1.9_cuda10.2
 
 python3 ~/TICG-chromatin/scripts/test.py

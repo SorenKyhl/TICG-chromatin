@@ -59,7 +59,7 @@ def find_mising_ids():
             data_out_path = osp.join(dir, file, 'data_out')
             x_path = osp.join(dir, file, 'x.npy')
             y_path = osp.join(dir, file, 'y_diag.npy')
-            if osp.exists(data_out_path) and osp.exists(x_path) and  osp.exists(y_path):
+            if osp.exists(data_out_path) and osp.exists(x_path) and osp.exists(y_path):
                 ids.remove(id)
 
     print(ids, len(ids))
