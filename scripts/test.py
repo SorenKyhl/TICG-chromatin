@@ -4,6 +4,7 @@ import os.path as osp
 import matplotlib.pyplot as plt
 import numpy as np
 from seq2contact import *
+from sklearn.linear_model import LinearRegression
 
 
 def repair_dataset_11_14_21():
@@ -51,13 +52,14 @@ def repair_dataset_11_14_21():
 
 def find_mising_ids():
     ids = set(range(1, 2001))
-    dir = "/project2/depablo/erschultz/dataset_10_27_21/samples"
+    dir = "/project2/depablo/erschultz/dataset_04_26_22/samples"
     for file in os.listdir(dir):
         if file.startswith('sample'):
             id = int(file[6:])
             data_out_path = osp.join(dir, file, 'data_out')
             x_path = osp.join(dir, file, 'x.npy')
-            if osp.exists(data_out_path) and osp.exists(x_path):
+            y_path = osp.join(dir, file, 'y_diag.npy')
+            if osp.exists(data_out_path) and osp.exists(x_path), osp.exists(y_path):
                 ids.remove(id)
 
     print(ids, len(ids))
@@ -132,29 +134,6 @@ def makeDirsForMaxEnt(dataset):
                 os.mkdir(osp.join(sample_folder, method, f'k{k}'), mode = 0o755)
                 for replicate in [1]:
                     os.mkdir(osp.join(sample_folder, method, f'k{k}', f'replicate{replicate}'), mode = 0o755)
-
-def main():
-    dir = '/home/eric/dataset_test/samples/sample90'
-    e = np.load(osp.join(dir, 'e.npy'))
-    y = np.load(osp.join(dir, 'y.npy'))
-    y_max = np.max(y)
-
-    e1024 = e[:1024, :1024]
-    print(e1024.shape)
-    np.save(osp.join(dir, 'e1024.npy'), e1024)
-    np.save(osp.join(dir, 'y1024.npy'), y[:1024, :1024])
-    plotContactMap(y[:1024, :1024] / y_max, ofile = osp.join(dir, 'y1024_prob.png'), vmax = 'mean')
-
-    e1024_2 = e[6000:7024, 6000:7024]
-    print(e1024_2.shape)
-    np.save(osp.join(dir, 'e1024_2.npy'), e1024_2)
-    np.save(osp.join(dir, 'y1024_2.npy'), y[6000:7024, 6000:7024])
-    plotContactMap(y[6000:7024, 6000:7024] / y_max, ofile = osp.join(dir, 'y1024_2_prob.png'), vmax = 'mean')
-
-    dir = '/home/eric/dataset_test/samples/sample91'
-    y = np.load(osp.join(dir, 'y.npy'))
-    y_max = np.max(y)
-    plotContactMap(y / y_max, ofile = osp.join(dir, 'y_prob.png'), vmax = 'mean')
 
 def test_p():
     dir = '/home/eric/dataset_test/samples/sample21'
@@ -269,9 +248,6 @@ def test_robust_PCA():
         plotContactMap(y_diag, ofile = osp.join(dir, 'y_diag.png'), vmax = 'max')
         plot_top_PCs(L, verbose = True)
 
-
-
-
 def scc_y_vs_y_rank1():
     dir = '/home/eric/sequences_to_contact_maps/dataset_01_16_22/samples/sample40'
     y = np.load(osp.join(dir, 'y.npy'))
@@ -364,39 +340,40 @@ def is_scc_weighted_mean():
     avg = np.nanmean(corr_arr)
     print(avg)
 
-def main2():
-    dir = 'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps/dataset_09_21_21'
-
-    for i in range(1, 26):
-        sample_dir = osp.join(dir, f'samples/sample{i}')
-        y_diag = np.load(osp.join(sample_dir, 'y_diag.npy'))
-        m, _ = y_diag.shape
-
-        plotContactMap(y_diag, ofile = osp.join(sample_dir, 'y_diag.png'), vmax = 'max')
-
-
-    #     freq_arr = np.zeros((int(m * (m+1) / 2), 4)) # freq, sample, 0, 0
+def main():
+    m=200
+    # e = np.zeros((m, m))
+    # e[100, :] = 10
+    # e[:, 100] = 10
+    # np.savetxt('/home/erschultz/dataset_test/e_zero.txt', e)
     #
-    #     ind = 0
-    #     for i in range(m):
-    #         for j in range(i+1):
-    #             freq_arr[ind] = [y_diag[i,j], 2, 0, 0]
-    #             ind += 1
-    #
-    # print(np.percentile(y_diag, 99))
-    #
-    # plotFrequenciesForSample(freq_arr, dir, 'diag', sampleid = 2, k=None, split = None)
+    # e = np.ones((m, m))
+    # e[100, :] = -5
+    # e[:, 100] = -5
+    # np.savetxt('/home/erschultz/dataset_test/e_one.txt', e)
+
+    dir = '/home/erschultz/dataset_test/samples/sample10'
+    y = np.load(osp.join(dir, 'y.npy'))[np.triu_indices(m, 12)].reshape(-1, 1)
+    e = np.load(osp.join(dir, 'e.npy'))[np.triu_indices(m, 12)].reshape(-1, 1)
+    reg = LinearRegression()
+    reg.fit(y, e)
+    score = reg.score(y, e)
+    print('\n\tLinear Regression')
+    print(f'\tR^2: {score}')
+    print(f'\tcoefficients: {reg.coef_}, {reg.intercept_}')
+
+
 
 
 if __name__ == '__main__':
     # repair_dataset_11_14_21()
-    # main2()
+    # main()
     # is_scc_weighted_mean()
     # scc_y_vs_y_rank1()
     # test_robust_PCA()
     # test_p()
     # check_seq()
-    # find_mising_ids()
+    find_mising_ids()
     # check_seq('dataset_11_03_21')
     # upper_traingularize_chis()
-    makeDirsForMaxEnt("dataset_01_17_22")
+    # makeDirsForMaxEnt("dataset_01_17_22")

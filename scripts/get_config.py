@@ -171,6 +171,8 @@ def getChis(args):
     return chi
 
 def set_up_plaid_chi(args, config):
+    if args.k == 0:
+        return
     if args.use_ground_truth_chi:
         args.chi = np.load(osp.join(args.sample_folder, 'chis.npy'))
         print(args.chi)
@@ -359,7 +361,12 @@ def main():
     if args.e is not None:
         assert args.use_ematrix
         if osp.exists(args.e):
-            e = np.load(args.e)
+            if args.e.endswith('.npy'):
+                e = np.load(args.e)
+            elif args.e.endswith('.txt'):
+                e = np.loadtxt(args.e)
+            else:
+                raise Exception(f'unrecongined file format for {args.e}')
         else:
             raise Exception(f'e does not exist at {args.e}')
         np.savetxt('e_matrix.txt', e, fmt='%0.5f')
@@ -379,6 +386,10 @@ def main():
             # save ematrix_on
             config['ematrix_on'] = True
             config["ematrix_filename"] = "e_matrix.txt"
+    elif args.k == 0:
+            config['plaid_on'] = False
+            config['bead_type_files'] = None
+            config["nspecies"] = 0
     else:
         # save seq
         config['bead_type_files'] = [f'seq{i}.txt' for i in range(args.k)]

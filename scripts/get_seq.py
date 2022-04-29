@@ -626,6 +626,8 @@ def plot_seq_continuous(seq, show = False, save = True, title = None):
 def main():
     args = getArgs()
     print(args)
+    if args.k == 0:
+        return
     if args.m == -1:
         # infer m
         x, _ = load_X_psi(args.sample_folder, throw_exception = False)

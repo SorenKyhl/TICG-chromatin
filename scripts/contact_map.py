@@ -33,6 +33,7 @@ def getArgs():
 
 def main():
     args = getArgs()
+    print(args)
 
     if args.random_mode:
         y_path = osp.join(args.sample_folder, 'data_out', 'contacts.txt')
@@ -47,7 +48,12 @@ def main():
     plot_matrix(y, ofile = osp.join(args.save_folder, 'y.png'), vmax = 'mean')
 
     if args.random_mode:
-        e, s = load_E_S(args.sample_folder)
+        if args.k == 0:
+            throw = False
+        else:
+            throw = True
+        e, s = load_E_S(args.sample_folder, throw_exception = throw)
+        print(e, s)
     else:
         s = load_final_max_ent_S(args.k, args.replicate_folder, args.final_folder)
         e = None
@@ -67,8 +73,9 @@ def main():
 
     if args.save_npy:
         np.save(osp.join(args.save_folder, 'y.npy'), y.astype(np.int16))
-        np.save(osp.join(args.save_folder, 's.npy'), s)
         np.save(osp.join(args.save_folder, 'y_diag.npy'), y_diag)
+        if s is not None:
+            np.save(osp.join(args.save_folder, 's.npy'), s)
 
 if __name__ == '__main__':
     main()

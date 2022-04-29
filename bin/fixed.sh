@@ -1,6 +1,6 @@
 #! /bin/bash
 k=2
-m=800
+m=200
 dataFolder="/home/erschultz/dataset_test"
 scratchDir='/home/erschultz/scratch'
 useE='false'
@@ -8,7 +8,7 @@ useS='false'
 startSample=1
 relabel='none'
 diag='false'
-nSweeps=100000
+nSweeps=3000000
 pSwitch=0.05
 maxDiagChi=0.2
 chiSeed='none'
@@ -16,7 +16,7 @@ minChi=-1
 maxChi=-1
 fillDiag='none'
 overwrite=1
-dumpFrequency=100
+dumpFrequency=50000
 TICGSeed='none'
 npySeed='12' # for get_seq
 method='random'
@@ -46,14 +46,17 @@ run()  {
 # make
 # mv TICG-engine ..
 
-i=1
+k=0
 chi='none'
-diag='true'
+diag='false'
+useE='true'
+
+i=10
+e='/home/erschultz/dataset_test/e_zero.txt'
 run &
 
-i=2
-maxDiagChi=10
+i=11
+e='/home/erschultz/dataset_test/e_one.txt'
 run &
-
 
 wait
