@@ -334,7 +334,7 @@ void Sim::initialize() {
 
 	// set configuration
 	beads.resize(nbeads);  // uses default constructor initialization to create nbeads;
-	std::cout << "load configuratin is " << load_configuration << std::endl;
+	std::cout << "load configuration is " << load_configuration << std::endl;
 	if(load_configuration)
 	{
 		loadConfiguration();
@@ -392,7 +392,6 @@ void Sim::calculateParameters() {
 	grid.boundary_radius = std::round(grid.radius); // radius in units of grid cells
 	// sphere center needs to be centered on a multiple of grid delta
 	//grid.sphere_center = {grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta};
-	grid.origin = {grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta};
 
 	exp_decay = nbeads/decay_length;             // size of exponential falloff for MCmove second bead choice
 	exp_decay_crank = nbeads/decay_length;
