@@ -1,16 +1,48 @@
 #!/bin/bash
 
 today=$(date +'%m_%d_%y')
-scratchDir=${1:-'/scratch/midway2/erschultz/TICG_maxent'}
-mode=${2:-"both"}
-gamma=${3:-1}
-trust_region=${4:-10000}
-equilib_sweeps=${5:-10000}
-production_sweeps=${6:-50000}
-num_iterations=${7:-100}
-goal_specified=${8:-0}
-overwrite=${9:-0}
-method=${10:-"n"}
+scratchDir='/scratch/midway2/erschultz/TICG_maxent'
+mode="both" # c
+gamma=1
+trust_region=10000 # t
+equilib_sweeps=10000 # e
+production_sweeps=50000 # p
+num_iterations=100 #  n
+goal_specified=1 # g
+overwrite=0 # o
+method="n" # m
+
+show_help()
+{
+	echo "-h help"  
+	echo "-s scratchDir"
+	echo "-c [ both | plaid | diag ]"
+	echo "-g gamma"
+	echo "-t trust_region"
+	echo "-e equilib_sweeps"
+	echo "-p production_sweeps"
+	echo "-n num_iterations"
+	echo "-x goal_specified"
+	echo "-o overwrite"
+	echo "-m [ n | g ]"
+}
+
+
+while getopts "hxos:c:g:t:e:p:n:m:" opt; do
+	case $opt in
+		h) show_help ;;
+		s) scratchDir=$(pwd)/$OPTARG ;;
+		c) mode=$OPTARG ;;
+		g) gamma=$OPTARG ;;
+		t) trust_region=$OPTARG ;;
+		e) equilib_sweeps=$OPTARG ;;
+		p) production_sweeps=$OPTARG ;;
+		n) num_iterations=$OPTARG ;;
+		x) goal_specified=1 ;;
+		o) overwrite=1 ;;
+		m) method=$OPTARG ;;
+	esac
+done
 
 echo "running maxent with:"
 echo "dir:"
@@ -124,6 +156,7 @@ then
 		run_simulation
 		# update chis via newton's method
 		python3 $proj_bin/newton_step.py $it $gamma $mode $goal_specified $trust_region $method >> track.log
+		mv diff*.png iteration$it
 		# update plots
 		python3 $proj_bin/plot_convergence.py --mode $mode --k $k
 		python3 $proj_bin/contactmap.py $it
