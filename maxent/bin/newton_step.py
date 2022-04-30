@@ -56,9 +56,9 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_
     lam = df.mean().values
     B = df.cov().values
 
-    vbead = 520
-    vcell = 28.7**3
-    B /= vcell/vbead
+    # vbead = 520
+    # vcell = 28.7**3
+    # B /= vcell/vbead
 
     new_chis, howfar = newton(lam, obj_goal, B,  gamma, current_chis, trust_region, method)
 
@@ -117,9 +117,9 @@ def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, 
     lam = df_total.mean().values
     B = df_total.cov().values
 
-    vbead = 520
-    vcell = 28.7**3
-    B /= vcell/vbead
+    # vbead = 520
+    # vcell = 28.7**3
+    # B /= vcell/vbead
 
     print("obj goal: ", obj_goal)
     print("lam: ", lam)
@@ -171,8 +171,8 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method):
         print('step: ', step)
         print('lam: ', lam)
 
-    plt.plot(difference)
-    plt.savefig("difference.png")
+    plt.plot(-1*difference)
+    plt.savefig("-1*difference.png")
 
     new_chis = current_chis - step
     print(f"new chi values: {new_chis}\n")
@@ -181,7 +181,7 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method):
 
     return new_chis, howfar
 
-def copy_chis(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified = None, trust_region = None):
+def copy_chis(parameter_file, obs_file, convergence_file, goal_file, gamma, it, goal_specified = None, trust_region = None, method = None):
     ''' for parameters that are not optimized, just copy chis to next iteration'''
     # load current chi parameters
     if osp.exists(parameter_file):

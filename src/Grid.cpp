@@ -198,7 +198,7 @@ double Grid::get_ij_Contacts(int i, int j)
 	double obs  = 0;
 	for(Cell* cell : active_cells)
 	{
-		obs += cell->typenums[i] * cell->typenums[j];
+		obs += cell->typenums[i] * cell->typenums[j] * cell->beadvol / cell->vol;
 	}
 
 	//obs /= active_cells.size();
@@ -212,10 +212,10 @@ void Grid::getDiagObs(std::vector<double> &diag_obs) {
 		{
 			if (Cell::diagonal_linear) {
 				//diag_obs[i] += cell->diag_phis[i];
-				diag_obs[i] += cell->diag_phis[i] * cell->diag_phis[i] / (Cell::beadvol*Cell::beadvol/(cell->vol*cell->vol));
+				diag_obs[i] += cell->diag_phis[i] * cell->diag_phis[i] * cell->vol / cell->beadvol ;
 			}
 			else {
-				diag_obs[i] += cell->diag_phis[i] * cell->diag_phis[i] / (Cell::beadvol*Cell::beadvol/(cell->vol*cell->vol));
+				diag_obs[i] += cell->diag_phis[i] * cell->diag_phis[i] * cell->vol / cell->beadvol ;
 			}
 		}
 	}
