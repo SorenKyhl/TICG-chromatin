@@ -318,7 +318,7 @@ bool Sim::outside_boundary(Eigen::RowVector3d r) {
 
 	if (grid.cubic_boundary)
 	{
-		is_out = (r.minCoeff() < 0 || r.maxCoeff() > grid.L*grid.delta);
+		is_out = (r.minCoeff() < 0 || r.maxCoeff() > grid.side_length);
 	}
 	else if (grid.spherical_boundary)
 	{
@@ -370,11 +370,15 @@ void Sim::volParameters() {
 void Sim::volParameters_new() {
 	double vol_beads = nbeads*Cell::beadvol;
 	double vol  = vol_beads/Cell::phi_chromatin;
-	grid.L= std::round(std::pow(vol ,1.0/3.0) / grid.delta); // number of grid cells per side // ROUNDED, won't exactly equal a desired volume frac
+	grid.side_length = std::pow(vol, 1.0/3.0);
 
+	grid.L= std::ceil(grid.side_length / grid.delta); // number of grid cells per side // ROUNDED, won't exactly equal a desired volume frac
+
+	std::cout << "grid.side_length is: " << grid.side_length << std::endl;
 	std::cout << "grid.L is: " << grid.L << std::endl;
-	total_volume = pow(grid.L*grid.delta/1000.0, 3); // micrometers^3 ONLY TRUE FOR CUBIC SIMULATIONS
-	std::cout << "volume is: " << total_volume << std::endl;
+	//total_volume = pow(grid.L*grid.delta/1000.0, 3); // micrometers^3 ONLY TRUE FOR CUBIC SIMULATIONS
+	total_volume = pow(grid.side_length/1000.0, 3.0);
+	std::cout << "simulation volume is: " << total_volume << " um^3" << std::endl;
 	std::cout << "volume fraction is: " << nbeads*Cell::beadvol/(total_volume*1000*1000*1000) << std::endl;
 
 	grid.radius = std::pow(3*vol/(4*M_PI), 1.0/3.0); // radius of simulation volume
@@ -386,7 +390,7 @@ void Sim::calculateParameters() {
 	step_grid = grid.delta/10.0; // size of grid displacement MC moves
 
 	std::cout << "bead volume is : " << Cell::beadvol << std::endl;
-	volParameters();
+	//volParameters();
 	volParameters_new();
 
 	grid.boundary_radius = std::round(grid.radius); // radius in units of grid cells
