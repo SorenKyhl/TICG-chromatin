@@ -1,52 +1,55 @@
 #!/bin/bash
 
 today=$(date +'%m_%d_%y')
-scratchDir='/scratch/midway2/erschultz/TICG_maxent'
+outputDir='/scratch/midway2/erschultz/TICG_maxent'
 mode="both" # c
 gamma=1
 trust_region=10000 # t
 equilib_sweeps=10000 # e
-production_sweeps=50000 # p
+production_sweeps=50000 # s
 num_iterations=100 #  n
 goal_specified=1 # g
 overwrite=0 # o
 method="n" # m
+parallel_cores=0
 
 show_help()
 {
 	echo "-h help"  
-	echo "-s scratchDir"
+	echo "-o outputDir"
 	echo "-c [ both | plaid | diag ]"
 	echo "-g gamma"
 	echo "-t trust_region"
 	echo "-e equilib_sweeps"
-	echo "-p production_sweeps"
+	echo "-s production_sweeps"
 	echo "-n num_iterations"
 	echo "-x goal_specified"
-	echo "-o overwrite"
+	echo "-w overwrite"
 	echo "-m [ n | g ]"
+	echo "-p parallel_cores"
 }
 
 
-while getopts "hxos:c:g:t:e:p:n:m:" opt; do
+while getopts "hxwo:c:g:t:e:s:n:m:p:" opt; do
 	case $opt in
 		h) show_help ;;
-		s) scratchDir=$(pwd)/$OPTARG ;;
+		o) outputDir=$(pwd)/$OPTARG ;;
 		c) mode=$OPTARG ;;
 		g) gamma=$OPTARG ;;
 		t) trust_region=$OPTARG ;;
 		e) equilib_sweeps=$OPTARG ;;
-		p) production_sweeps=$OPTARG ;;
+		s) production_sweeps=$OPTARG ;;
 		n) num_iterations=$OPTARG ;;
 		x) goal_specified=1 ;;
-		o) overwrite=1 ;;
+		w) overwrite=1 ;;
 		m) method=$OPTARG ;;
+		p) parallel_cores=$OPTARG ;;
 	esac
 done
 
 echo "running maxent with:"
 echo "dir:"
-echo $scratchDir
+echo $outputDir
 echo "mode:"
 echo $mode
 echo "gamma:"
@@ -65,16 +68,18 @@ echo "overwrite"
 echo $overwrite
 echo "method"
 echo $method
+echo "parallel"
+echo $parallel_cores
 
 # move to scratch
-if ! [[ -d $scratchDir ]]
+if ! [[ -d $outputDir ]]
 then
-	echo "scratchDir does not exist"
-	mkdir $scratchDir
+	echo "outputDir does not exist"
+	mkdir $outputDir
 	#exit 1
 fi
-cp -r resources $scratchDir
-cd $scratchDir
+cp -r resources $outputDir
+cd $outputDir
 
 if ! [[ -d resources ]]
 then
@@ -123,17 +128,42 @@ run_simulation () {
 	python3 $proj_bin/jsed.py $configFileName load_configuration_filename $saveFileName s
 	python3 $proj_bin/jsed.py $configFileName nSweeps $production_sweeps i
 	python3 $proj_bin/jsed.py $configFileName seed $RANDOM i
-	~/Documents/TICG-chromatin/src/TICG-engine > production.log
+
+	if [ "$parallel_cores" -eq 0 ]
+	then
+		~/Documents/TICG-chromatin/src/TICG-engine > production.log
+	else
+		run_parallel
+	fi
 
 	if [ $it -gt $(($num_iterations - 1)) ]
 	then
 		python3 ~/Documents/TICG-chromatin/scripts/contact_map.py --save_npy
 	fi
 	mv data_out production_out
-	cd $scratchDir
+	cd $outputDir
 
 	ENDTIME=$(date +%s)
 	echo "finished iteration ${it}: $(($ENDTIME - $STARTTIME)) seconds"
+}
+
+run_parallel()
+{
+	for (( i=1; i<=$parallel_cores; i++ ))
+	do
+		python3 $proj_bin/jsed.py $configFileName seed $RANDOM i
+		./TICG-engine "core$i" > "core$i.log" &
+	done
+	wait
+
+	mkdir production_out
+	cp core1/* production_out
+	cat core*/energy.traj > production_out/energy.traj
+	cat core*/observables.traj > production_out/observables.traj
+	cat core*/diag_observables.traj > production_out/diag_observables.traj
+	cat core*/output.xyz > production_out/output.xyz
+
+	python3 $proj_bin/cat_contacts.py core*/contacts.txt production_out/contacts.txt
 }
 
 # iteration 0
