@@ -24,12 +24,11 @@ fi
 
 STARTTIME=$(date +%s)
 i=2000
-dataset='dataset_01_17_22'
+dataset='dataset_04_27_22'
 useE='true'
-diagPseudobeadsOn='false'
 method='GNN'
 mode='diag'
-modelID=136
+modelID=150
 for sample in 1 2 3 4 5 6 7 8
 do
   max_ent

@@ -24,15 +24,16 @@ fi
 
 STARTTIME=$(date +%s)
 i=5000
-dataset='dataset_09_21_21'
-method='PCA-normalize'
-mode='both'
-numIterations=100
-for k in 2 4 6
+dataset='dataset_04_27_22'
+# useE='true'
+for method in 'PCA-normalize'
 do
-  for sample in 1 2 8 14 20
+  for sample in 1 2 3 4
   do
-    max_ent
+    for k in 2 4 6 8
+    do
+      max_ent
+    done
   done
 done
 

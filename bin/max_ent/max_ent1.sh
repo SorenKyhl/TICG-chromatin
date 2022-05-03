@@ -24,9 +24,8 @@ fi
 
 STARTTIME=$(date +%s)
 i=1
-dataset='dataset_01_17_22'
+dataset='dataset_04_27_22'
 # useE='true'
-diagPseudobeadsOn='false'
 mode='both'
 for method in 'PCA-normalize'
 do
