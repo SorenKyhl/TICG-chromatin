@@ -24,25 +24,18 @@ fi
 
 STARTTIME=$(date +%s)
 i=6000
-dataset='dataset_11_14_21'
-sample=40
-
-method='ground_truth-x'
-k=12
-max_ent
-
-# method='ground_truth-psi'
-# k=15
-# max_ent
-
-method='ground_truth'
-useE='true'
-max_ent
-
-method='GNN'
-modelID=50
-useE='true'
-max_ent
+dataset='dataset_04_26_22'
+mode='both'
+for method in 'PCA-normalize'
+do
+  for sample in 1 2 3 4
+  do
+    for k in 2 4 6 8
+    do
+      max_ent
+    done
+  done
+done
 
 wait
 

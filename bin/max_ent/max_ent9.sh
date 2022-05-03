@@ -23,26 +23,13 @@ fi
 
 STARTTIME=$(date +%s)
 i=8000
-dataset='dataset_09_21_21'
-sample=1
-gamma=0.001
-trust_region=100
-mode='both'
-diag='false'
-for method in 'PCA-normalize' 'nmf'
+dataset='dataset_04_26_22'
+useE='true'
+method='GNN'
+modelID=150
+for sample in 1 2 3 4 5 6 7 8
 do
-  for k in 1
-  do
-    max_ent
-  done
-done
-
-for method in 'PCA-normalize' 'k_means' 'nmf'
-do
-  for k in 2 4 6
-  do
-    max_ent
-  done
+  max_ent
 done
 
 wait
