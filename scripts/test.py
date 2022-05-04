@@ -124,13 +124,14 @@ def check_seq():
                     print(int(file[6:]))
 
 def makeDirsForMaxEnt(dataset):
-    for sample in [1, 2, 3]:
-        sample_folder = osp.join('../sequences_to_contact_maps', dataset, 'samples', f'sample{sample}')
+    for sample in [1]:
+        dir = '/home/erschultz/sequences_to_contact_maps'
+        sample_folder = osp.join(dir, dataset, 'samples', f'sample{sample}')
         assert osp.exists(sample_folder)
 
-        for method in ['ground_truth-E', 'GNN-109-E']:
+        for method in ['PCA', 'PCA-normalize']:
             os.mkdir(osp.join(sample_folder, method), mode = 0o755)
-            for k in ['none']:
+            for k in [2, 4, 6, 8]:
                 os.mkdir(osp.join(sample_folder, method, f'k{k}'), mode = 0o755)
                 for replicate in [1]:
                     os.mkdir(osp.join(sample_folder, method, f'k{k}', f'replicate{replicate}'), mode = 0o755)
@@ -373,7 +374,7 @@ if __name__ == '__main__':
     # test_robust_PCA()
     # test_p()
     # check_seq()
-    find_mising_ids()
+    # find_mising_ids()
     # check_seq('dataset_11_03_21')
     # upper_traingularize_chis()
-    # makeDirsForMaxEnt("dataset_01_17_22")
+    makeDirsForMaxEnt("dataset_04_27_22")

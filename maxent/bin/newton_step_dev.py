@@ -34,7 +34,6 @@ def getArgs():
 
     return args
 
-
 def str2bool(v):
     """
     Helper function for argparser, converts str to boolean for various string inputs.
@@ -93,9 +92,7 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it,
     new_chis, howfar = newton(lam, obj_goal, B,  gamma, current_chis, trust_region)
 
     if min_val is not None:
-        print(new_chis)
         new_chis[new_chis < min_val] = min_val
-        print(new_chis)
 
     f_chis = open(parameter_file, "a")
     np.savetxt(f_chis, new_chis, newline=" ", fmt="%.5f")
@@ -105,8 +102,8 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it,
     with open(convergence_file, "a") as f:
         f.write(str(howfar) + '\n')
 
-def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, it, goal_specified, trust_region):
-
+def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, it,
+    goal_specified, trust_region):
     # get goals
     if goal_specified:
         print("READING FROM OBJ_GOAL")
@@ -214,7 +211,7 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region):
     return new_chis, howfar
 
 def copy_chis(parameter_file, obs_file, convergence_file, goal_file, gamma, it,
-        goal_specified = None, trust_region = None, min_val = None):
+            goal_specified = None, trust_region = None, min_val = None):
     ''' for parameters that are not optimized, just copy chis to next iteration'''
     # load current chi parameters
     if osp.exists(parameter_file):
@@ -255,27 +252,28 @@ def main():
         goal_files = ["obj_goal.txt", "obj_goal_diag.txt"]
         both_step(parameter_files, obs_files, convergence_files, goal_files,
                     args.gamma, args.it, args.goal_specified, args.trust_region)
-    else:
-        if args.mode == "diag":
-            diag_fn = step
-            fn = copy_chis
-        elif args.mode == "plaid":
-            diag_fn = copy_chis
-            fn = step
+        return
 
-        parameter_file = "chis_diag.txt"
-        obs_file = "diag_observables.traj"
-        convergence_file = "convergence_diag.txt"
-        goal_file = "obj_goal_diag.txt"
-        diag_fn(parameter_file, obs_file, convergence_file, goal_file,
-                    args.gamma, args.it, args.goal_specified, args.trust_region, args.min_diag_chi)
+    if args.mode == "diag":
+        diag_fn = step
+        fn = copy_chis
+    elif args.mode == "plaid":
+        diag_fn = copy_chis
+        fn = step
 
-        parameter_file = "chis.txt"
-        obs_file = "observables.traj"
-        convergence_file = "convergence.txt"
-        goal_file = "obj_goal.txt"
-        fn(parameter_file, obs_file, convergence_file, goal_file,
-                    args.gamma, args.it, args.goal_specified, args.trust_region, None)
+    parameter_file = "chis_diag.txt"
+    obs_file = "diag_observables.traj"
+    convergence_file = "convergence_diag.txt"
+    goal_file = "obj_goal_diag.txt"
+    diag_fn(parameter_file, obs_file, convergence_file, goal_file,
+                args.gamma, args.it, args.goal_specified, args.trust_region, args.min_diag_chi)
+
+    parameter_file = "chis.txt"
+    obs_file = "observables.traj"
+    convergence_file = "convergence.txt"
+    goal_file = "obj_goal.txt"
+    fn(parameter_file, obs_file, convergence_file, goal_file,
+                args.gamma, args.it, args.goal_specified, args.trust_region, None)
 
 if __name__ == '__main__':
     main()

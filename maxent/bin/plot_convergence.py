@@ -2,6 +2,7 @@ import argparse
 import os
 import os.path as osp
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -55,9 +56,17 @@ def main():
     if args.mode in {'diag', 'both'}:
         # diag chis plot
         diag_chis = np.loadtxt('chis_diag.txt')
-        plt.plot(diag_chis)
+        _, k = diag_chis.shape
+        cmap = matplotlib.cm.get_cmap('tab20')
+        ind = np.arange(k) % cmap.N
+        colors = plt.cycler('color', cmap(ind))
+
+        for i, c in enumerate(colors):
+            plt.plot(diag_chis[:, i], label = i, color = c['color'])
         plt.xlabel("Iteration")
         plt.ylabel("chi_diagonal value")
+        plt.legend(loc=(1.04,0))
+        plt.tight_layout()
         plt.savefig("pchis_diag.png")
         plt.close()
 
@@ -65,30 +74,24 @@ def main():
 def test():
     args = getArgs()
     args.k = 1
-    convergence = np.loadtxt('../sequences_to_contact_maps/dataset_08_26_21/samples/sample40/GNN-23/k1/convergence.txt')
-    plt.plot(convergence)
-    plt.xlabel('Iteration')
-    plt.show()
+    dataset = '/home/erschultz/sequences_to_contact_maps/dataset_04_27_22/samples/'
+    diag_chis = np.loadtxt(osp.join(dataset, 'sample1/PCA-normalize-diagOn/k2/replicate1/chis_diag.txt'))
+    _, k = diag_chis.shape
 
-    chis = np.loadtxt('../sequences_to_contact_maps/dataset_08_26_21/samples/sample40/GNN-23/k1/chis.txt')
-    if chis.ndim < 2:
-        # shape will be wrong if k = 1
-        chis = np.atleast_2d(chis).T
-        print(chis.shape)
-    counter = 0
-    for i in range(args.k):
-        for j in range(args.k):
-            if j < i:
-                continue
-            chistr = "chi{}{}".format(LETTERS[i], LETTERS[j])
-            print(chis[:, counter])
-            plt.plot(chis[:, counter], label = chistr)
-            counter += 1
-    plt.xlabel('Iteration')
-    plt.ylabel('chi value')
-    plt.legend()
+    cmap = matplotlib.cm.get_cmap('tab20')
+    ind = np.arange(k) % cmap.N
+    colors = plt.cycler('color', cmap(ind))
+
+    for i, c in enumerate(colors):
+        plt.plot(diag_chis[:, i], label = i, color = c['color'])
+    plt.xlabel("Iteration")
+    plt.ylabel("chi_diagonal value")
+    plt.legend(loc=(1.04,0))
+    plt.tight_layout()
     plt.show()
+    plt.close()
 
 
 if __name__ == '__main__':
     main()
+    # test()

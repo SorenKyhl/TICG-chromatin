@@ -15,18 +15,21 @@ if [ $local = 'true' ]
 then
   dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
-  numIterations=100
-  productionSweeps=500000
+  numIterations=2
+  finalSimProductionSweeps=1000
+  equilibSweeps=1000
+  productionSweeps=10000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
 i=10000
 dataset='dataset_test'
-sample=10
-mode='plaid'
-method='PCA'
-for k in 1 2 4
+sample=1
+mode='diag'
+useE='true'
+method='ground_truth'
+for k in 'none'
 do
   max_ent
 done

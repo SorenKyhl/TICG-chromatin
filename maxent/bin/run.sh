@@ -191,7 +191,7 @@ then
 	do
 		run_simulation
 		# update chis via newton's method
-		python3 $proj_bin/newton_step.py $it $gamma $mode $goal_specified $trust_region >> track.log
+		python3 $proj_bin/newton_step.py --it $it --gamma $gamma --mode $mode --goal_specified $goal_specified --trust_region $trust_region --min_diag_chi 0 >> track.log
 
 		# update plots
 		python3 $proj_bin/plot_convergence.py --mode $mode --k $k
