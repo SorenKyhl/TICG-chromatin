@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from seq2contact import (DiagonalPreprocessing, crop, load_E_S,
-                         load_final_max_ent_S, plot_matrix, str2int)
+                         load_final_max_ent_S, plot_matrix, s_to_E, str2int)
 
 
 def getArgs():
@@ -56,13 +56,12 @@ def main():
         print(e, s)
     else:
         s = load_final_max_ent_S(args.k, args.replicate_folder, args.final_folder)
-        e = None
+        e = s_to_E(s)
 
     if s is not None:
         plot_matrix(s, ofile = osp.join(args.save_folder, 's.png'), title = 'S', vmax = 'max', vmin = 'min', cmap = 'blue-red')
 
     if e is not None:
-        # TODO this should work every time
         plot_matrix(e, ofile = osp.join(args.save_folder, 'e.png'), title = 'E', vmax = 'max', vmin = 'min', cmap = 'blue-red')
 
 

@@ -310,7 +310,7 @@ def is_scc_weighted_mean():
     replicate = '/home/eric/sequences_to_contact_maps/dataset_01_15_22/samples/sample40/PCA/k4/replicate1/iteration101'
     y = np.load(osp.join(dir, 'y.npy'))
     y_diag = np.load(osp.join(dir, 'y_diag.npy'))
-    yhat = np.load(osp.join(replicate, 'y.npy'))
+    yhat = np.load(osp.joiPCAn(replicate, 'y.npy'))
     yhat_diag = np.load(osp.join(replicate, 'y_diag.npy'))
 
     m, _ = y.shape

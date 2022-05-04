@@ -245,7 +245,8 @@ class GetSeq():
     def get_PCA_split_seq(self, input, normalize = False):
         input = crop(input, self.m)
         pca = PCA()
-        pca.fit(input/np.std(input, axis = 0))
+        pca.fit(input)
+        # /np.std(input, axis = 0)
         seq = np.zeros((self.m, self.k))
 
         j = 0
