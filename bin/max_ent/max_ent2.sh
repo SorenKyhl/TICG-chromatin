@@ -22,14 +22,16 @@ then
   source activate python3.9_pytorch1.11
 fi
 
+productionSweeps=200000
+equilibSweeps=20000
 STARTTIME=$(date +%s)
 i=1000
 dataset='dataset_04_27_22'
 # useE='true'
 mode='both'
-for method in 'PCA-normalize'
+for method in 'k_means'
 do
-  for sample in 5 6 7 8
+  for sample in 1 2 3 4
   do
     for k in 2 4 6 8
     do

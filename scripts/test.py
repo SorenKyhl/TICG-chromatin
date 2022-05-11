@@ -1,6 +1,7 @@
 import os
 import os.path as osp
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from seq2contact import *
@@ -341,6 +342,25 @@ def is_scc_weighted_mean():
     avg = np.nanmean(corr_arr)
     print(avg)
 
+def plot_convergence():
+    dataset = '/home/erschultz/sequences_to_contact_maps/dataset_04_27_22/samples/'
+    diag_chis = np.loadtxt(osp.join(dataset, 'sample1/PCA-normalize-diagOn/k2/replicate1/chis_diag.txt'))
+    _, k = diag_chis.shape
+
+    cmap = matplotlib.cm.get_cmap('tab20')
+    ind = np.arange(k) % cmap.N
+    colors = plt.cycler('color', cmap(ind))
+
+    for i, c in enumerate(colors):
+        plt.plot(diag_chis[:, i], label = i, color = c['color'])
+    plt.xlabel("Iteration")
+    plt.ylabel("chi_diagonal value")
+    plt.legend(loc=(1.04,0))
+    plt.yscale('log')
+    plt.tight_layout()
+    plt.show()
+    plt.close()
+
 def main():
     m=200
     # e = np.zeros((m, m))
@@ -367,6 +387,7 @@ def main():
 
 
 if __name__ == '__main__':
+    plot_convergence()
     # repair_dataset_11_14_21()
     # main()
     # is_scc_weighted_mean()
@@ -377,4 +398,4 @@ if __name__ == '__main__':
     # find_mising_ids()
     # check_seq('dataset_11_03_21')
     # upper_traingularize_chis()
-    makeDirsForMaxEnt("dataset_04_27_22")
+    # makeDirsForMaxEnt("dataset_04_27_22")

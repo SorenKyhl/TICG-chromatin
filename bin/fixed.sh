@@ -1,26 +1,31 @@
 #! /bin/bash
-k=2
-m=200
-dataFolder="/home/erschultz/dataset_test"
+k=3
+m=1024
+dataFolder="/home/erschultz/sequences_to_contact_maps/dataset_04_27_22"
 scratchDir='/home/erschultz/scratch'
 useE='false'
 useS='false'
 startSample=1
 relabel='none'
 diag='false'
-nSweeps=3000000
+nSweeps=500000
 pSwitch=0.05
-maxDiagChi=0.2
-chiSeed='none'
-minChi=-1
-maxChi=-1
+maxDiagChi=5
+chiSeed=89
+chi='none'
+minChi=-2
+maxChi=1
 fillDiag='none'
 overwrite=1
-dumpFrequency=50000
-TICGSeed='none'
-npySeed='12' # for get_seq
+dumpFrequency=10000
+TICGSeed=14
+npySeed=12 # for get_seq
 method='random'
-exclusive='true'
+exclusive='false'
+e='none'
+chiConstant=0
+chiDiagConstant=0
+sConstant=0
 
 source activate python3.8_pytorch1.8.1
 
@@ -42,21 +47,32 @@ run()  {
 	rm -d $scratchDirI
 }
 
-# cd ~/TICG-chromatin/src
+# cd ~/TICG-chromatin/srcs
 # make
 # mv TICG-engine ..
 
-k=0
-chi='none'
-diag='false'
+k=1
+nSweeps=1000000
+diag='true'
+maxDiagChi=10
 useE='true'
-
-i=10
-e='/home/erschultz/dataset_test/e_zero.txt'
+s="${dataFolder}/samples/sample1/s_pca_3_min_MSE.npy"
+i=0
 run &
 
-i=11
-e='/home/erschultz/dataset_test/e_one.txt'
-run &
+# sConstant=10
+# chiDiagConstant=-454.613
+# i=13
+# run &
+#
+# i=14
+# sConstant=-10
+# chiDiagConstant=454.613
+# run &
+
+# i=15
+# sConstant=5
+# chiDiagConstant=-5
+# run &
 
 wait

@@ -5,8 +5,8 @@ import os.path as osp
 
 import numpy as np
 from seq2contact import (LETTERS, InteractionConverter, calculate_E_S,
-                         calculate_S, str2bool, str2float, str2int, str2list2D,
-                         str2None)
+                         calculate_S, s_to_E, str2bool, str2float, str2int,
+                         str2list, str2list2D, str2None)
 from sklearn.metrics.pairwise import polynomial_kernel
 
 METHOD_FORMATS={'random':'%d', 'pca':'%.3e', 'pca_split':'%.3e', 'kpca':'%.3e',
@@ -15,48 +15,88 @@ METHOD_FORMATS={'random':'%d', 'pca':'%.3e', 'pca_split':'%.3e', 'kpca':'%.3e',
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
-    parser.add_argument('--default_config', type=str, default='default_config.json', help='path to default config file')
-    parser.add_argument('--ofile', type=str, default='config.json', help='path to output config file')
+    parser.add_argument('--default_config', type=str, default='default_config.json',
+                        help='path to default config file')
+    parser.add_argument('--ofile', type=str, default='config.json',
+                            help='path to output config file')
 
     # config param arguments
-    parser.add_argument('--m', type=int, default=1024, help='number of particles (-1 to infer)')
-    parser.add_argument('--k', type=str2int, help='number of particle types (inferred from chi if None)')
+    parser.add_argument('--m', type=int, default=1024,
+                        help='number of particles (-1 to infer)')
+    parser.add_argument('--k', type=str2int,
+                        help='number of particle types (inferred from chi if None)')
     parser.add_argument('--load_configuration_filename', type=str2None, default='input1024.xyz',
                         help='file name of initial config (None to not load)')
-    parser.add_argument('--goal_specified', type=str2bool, default=True, help='True will save two lines to chis.txt')
-    parser.add_argument('--dump_frequency', type=int, help='set to change dump frequency')
-    parser.add_argument('--dump_stats_frequency', type=int, help='set to change dump stats frequency')
-    parser.add_argument('--n_sweeps', type=int, help='set to change nSweeps')
-    parser.add_argument('--TICG_seed', type=str2int, help='set to change random seed for simulation')
-    parser.add_argument('--use_ground_truth_TICG_seed', type=str2bool, help='True to copy seed from config file in sample_folder')
-    parser.add_argument('--use_ematrix', type=str2bool, default=False, help='True to use e_matrix')
-    parser.add_argument('--use_smatrix', type=str2bool, default=False, help='True to use s_matrix')
-    parser.add_argument('--sample_folder', type=str, help='location of sample for ground truth chi')
+    parser.add_argument('--goal_specified', type=str2bool, default=True,
+                        help='True will save two lines to chis.txt')
+    parser.add_argument('--dump_frequency', type=int,
+                        help='set to change dump frequency')
+    parser.add_argument('--dump_stats_frequency', type=int,
+                        help='set to change dump stats frequency')
+    parser.add_argument('--n_sweeps', type=int,
+                        help='set to change nSweeps')
+    parser.add_argument('--TICG_seed', type=str2int,
+                        help='set to change random seed for simulation')
+    parser.add_argument('--use_ground_truth_TICG_seed', type=str2bool,
+                        help='True to copy seed from config file in sample_folder')
+    parser.add_argument('--use_ematrix', type=str2bool, default=False,
+                        help='True to use e_matrix')
+    parser.add_argument('--use_smatrix', type=str2bool, default=False,
+                        help='True to use s_matrix')
+    parser.add_argument('--s_constant', type=str2float, default=0,
+                        help='constant to add to S')
+    parser.add_argument('--sample_folder', type=str,
+                        help='location of sample for ground truth chi')
     parser.add_argument('--relabel', type=str2None,
-                        help='specify mark combinations to be relabled (e.g. AB-C will relabel AB mark pairs as mark C)')
+                        help='specify mark combinations to be relabled'
+                            '(e.g. AB-C will relabel AB mark pairs as mark C)')
     parser.add_argument('--diag_pseudobeads_on', type=str2bool, default=True)
 
 
     # chi arguments
-    parser.add_argument('--use_ground_truth_chi', type=str2bool, default=False, help='True to use ground truth chi and diag chi')
-    parser.add_argument('--use_ground_truth_diag_chi', type=str2bool, default=False, help='True to use ground truth diag chi')
-    parser.add_argument('--chi_seed', type=str2int, default=None, help='seed for generating chi')
+    parser.add_argument('--use_ground_truth_chi', type=str2bool, default=False,
+                        help='True to use ground truth chi and diag chi')
+    parser.add_argument('--use_ground_truth_diag_chi', type=str2bool, default=False,
+                        help='True to use ground truth diag chi')
+    parser.add_argument('--chi_seed', type=str2int, default=None,
+                        help='seed for generating chi')
+    parser.add_argument('--chi_constant', type=str2float, default=0,
+                        help='constant to add to chi')
 
     # diag chi arguments
-    parser.add_argument('--diag', type=str2bool, default=False, help='True for diagonal interactions')
-    parser.add_argument('--diag_bins', type=str2int, default=20, help='number of diagonal bins')
-    parser.add_argument('--max_diag_chi', type=float, default=0.5, help='maximum diag chi value for np.linspace()')
+    parser.add_argument('--chi_diag', type=str2list,
+                        help='diag chi (None to generate via max_diag_chi and diag_bins)')
+    parser.add_argument('--diag', type=str2bool, default=False,
+                        help='True for diagonal interactions')
+    parser.add_argument('--diag_bins', type=str2int, default=20,
+                        help='number of diagonal bins')
+    parser.add_argument('--max_diag_chi', type=float, default=0.5,
+                        help='maximum diag chi value for np.linspace()')
+    parser.add_argument('--chi_diag_constant', type=str2float, default=0,
+                        help='constant to add to chi diag')
 
     # plaid chi arguments
-    parser.add_argument('--e', type=str2None, help='path to e_matrix to use (.npy or .txt)')
-    parser.add_argument('--chi', type=str2list2D, help='chi matrix using latex separator style (if None will chi be generated randomly)')
-    parser.add_argument('--save_chi', action="store_true", help='true to save chi to wd')
-    parser.add_argument('--save_chi_for_max_ent', action="store_true", help='true to save chi to wd in format needed for max ent')
-    parser.add_argument('--min_chi', type=float, default=-1., help='minimum chi value for random generation')
-    parser.add_argument('--max_chi', type=float, default=1., help='maximum chi value for random generation')
-    parser.add_argument('--fill_diag', type=str2float, help='fill diag of chi with given value (None to skip)')
-    parser.add_argument('--fill_offdiag', type=str2float, help='fill off diag of chi with given value (None to skip)')
-    parser.add_argument('--ensure_distinguishable', action='store_true', help='true to ensure that corresponding psi is distinguishable')
+    parser.add_argument('--e', type=str2None,
+                        help='path to e_matrix to use (.npy or .txt)')
+    parser.add_argument('--s', type=str2None,
+                        help='path to s_matrix to use (.npy or .txt)')
+    parser.add_argument('--chi', type=str2list2D,
+                        help='chi matrix using latex separator style'
+                            '(if None will chi be generated randomly)')
+    parser.add_argument('--save_chi', action="store_true",
+                        help='true to save chi to wd')
+    parser.add_argument('--save_chi_for_max_ent', action="store_true",
+                        help='true to save chi to wd in format needed for max ent')
+    parser.add_argument('--min_chi', type=float, default=-1.,
+                        help='minimum chi value for random generation')
+    parser.add_argument('--max_chi', type=float, default=1.,
+                        help='maximum chi value for random generation')
+    parser.add_argument('--fill_diag', type=str2float,
+                        help='fill diag of chi with given value (None to skip)')
+    parser.add_argument('--fill_offdiag', type=str2float,
+                        help='fill off diag of chi with given value (None to skip)')
+    parser.add_argument('--ensure_distinguishable', action='store_true',
+                        help='true to ensure that corresponding psi is distinguishable')
 
     args = parser.parse_args()
     args.format = '%.3e' # for writeSeq
@@ -242,8 +282,10 @@ def set_up_plaid_chi(args, config):
         if not uniqueRows(conv.getS()):
             print('Warning: particles are not distinguishable')
 
+
     # save chi
     if args.chi is not None:
+        args.chi += args.chi_constant
         if args.save_chi:
             print(f'Rank of chi: {np.linalg.matrix_rank(args.chi)}')
             np.savetxt('chis.txt', args.chi, fmt='%0.5f')
@@ -260,22 +302,28 @@ def set_up_plaid_chi(args, config):
                     wr.writerow(chi[np.triu_indices(args.k)])
 
 def set_up_diag_chi(args, config, sample_config):
+    chi_diag = None
     if args.use_ground_truth_diag_chi:
         if sample_config is not None:
             args.diag = sample_config["diagonal_on"] # overwrite args
             try:
-                chi_diag = sample_config["diag_chis"]
+                chi_diag = np.array(sample_config["diag_chis"])
             except KeyError:
                 assert args.diag == False
         else:
             print("WARNING: ground truth config missing")
-            chi_diag = list(np.linspace(0, args.max_diag_chi, args.diag_bins))
+            chi_diag = np.linspace(0, args.max_diag_chi, args.diag_bins)
+    elif args.chi_diag is not None:
+        chi_diag = np.array(args.chi_diag)
     else:
-        chi_diag = list(np.linspace(0, args.max_diag_chi, args.diag_bins))
+        chi_diag = np.linspace(0, args.max_diag_chi, args.diag_bins)
+
+    if chi_diag is not None:
+        chi_diag += args.chi_diag_constant
 
     config["diagonal_on"] = args.diag
     if args.diag:
-        config["diag_chis"] = chi_diag
+        config["diag_chis"] = list(chi_diag)
         if args.save_chi_for_max_ent:
             with open('chis_diag.txt', 'w', newline='') as f:
                 wr = csv.writer(f, delimiter = '\t')
@@ -347,6 +395,8 @@ def main():
 
         e, s = calculate_E_S(psi, args.chi)
 
+        s += args.s_constant
+
         if args.use_smatrix:
             np.savetxt('s_matrix.txt', s, fmt='%0.5f')
             np.save('s.npy', s)
@@ -371,6 +421,25 @@ def main():
             raise Exception(f'e does not exist at {args.e}')
         np.savetxt('e_matrix.txt', e, fmt='%0.5f')
         np.save('e.npy', e)
+    elif args.s is not None:
+        assert args.use_smatrix or args.use_ematrix
+        if osp.exists(args.s):
+            if args.s.endswith('.npy'):
+                s = np.load(args.s)
+            elif args.s.endswith('.txt'):
+                s = np.loadtxt(args.s)
+            else:
+                raise Exception(f'unrecongined file format for {args.s}')
+        else:
+            raise Exception(f's does not exist at {args.s}')
+
+        np.save('s.npy', s)
+        if args.use_ematrix:
+            e = s_to_E(s)
+            np.savetxt('e_matrix.txt', e, fmt='%0.5f')
+            np.save('e.npy', e)
+        else:
+            np.savetxt('s_matrix.txt', s, fmt='%0.5f')
 
     if args.use_ematrix or args.use_smatrix:
         config['bead_type_files'] = None

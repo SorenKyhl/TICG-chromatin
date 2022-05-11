@@ -13,10 +13,10 @@ from seq2contact import (LETTERS, DiagonalPreprocessing, R_pca,
                          get_base_parser, get_dataset, load_E_S,
                          load_final_max_ent_S, load_saved_model, load_X_psi,
                          load_Y, plot_matrix, plot_seq_binary,
-                         project_S_to_psi_basis, s_to_E, str2bool, str2int)
+                         plot_seq_exclusive, project_S_to_psi_basis, s_to_E,
+                         str2bool, str2int)
 from sklearn.cluster import KMeans
 from sklearn.decomposition import NMF, PCA, KernelPCA
-from sklearn.metrics import silhouette_score
 
 
 def getArgs():

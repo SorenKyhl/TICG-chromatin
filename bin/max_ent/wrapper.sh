@@ -9,10 +9,10 @@
 # necessary to ensure log files are in right place
 cd ~/TICG-chromatin
 
-for i in 4
-# 3 9 10
-# 7 8
-# 1 2 4 5 6
+for i in 2 3 4 9 10
+# 3 - didn't work OSError
+# 9 10 - didn't work Bus error
+# 4 - didn't work OSError
 do
   echo $i
   sbatch ~/TICG-chromatin/bin/max_ent/max_ent${i}.sh
