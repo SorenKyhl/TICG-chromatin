@@ -34,7 +34,6 @@ def getArgs():
 
     return args
 
-
 def str2bool(v):
     """
     Helper function for argparser, converts str to boolean for various string inputs.
@@ -93,9 +92,7 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it,
     new_chis, howfar = newton(lam, obj_goal, B,  gamma, current_chis, trust_region)
 
     if min_val is not None:
-        print(new_chis)
         new_chis[new_chis < min_val] = min_val
-        print(new_chis)
 
     f_chis = open(parameter_file, "a")
     np.savetxt(f_chis, new_chis, newline=" ", fmt="%.5f")
@@ -105,7 +102,8 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it,
     with open(convergence_file, "a") as f:
         f.write(str(howfar) + '\n')
 
-def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, it, goal_specified, trust_region):
+def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, it,
+        goal_specified, trust_region, min_val):
 
     # get goals
     if goal_specified:
@@ -165,7 +163,10 @@ def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, 
     index = 0;
     for i, f in enumerate(parameter_files):
         f_chis = open(f, "a")
-        np.savetxt(f_chis, new_chis[index:index+nchis[i]], newline=" ", fmt="%.5f")
+        new_chis_i = new_chis[index:index+nchis[i]]
+        if 'diag' in f:
+            new_chis_i[new_chis_i < min_val] = min_val
+        np.savetxt(f_chis, new_chis_i, newline=" ", fmt="%.5f")
         f_chis.write("\n")
         f_chis.close()
 
@@ -254,7 +255,8 @@ def main():
         convergence_files = ["convergence.txt", "convergence_diag.txt"]
         goal_files = ["obj_goal.txt", "obj_goal_diag.txt"]
         both_step(parameter_files, obs_files, convergence_files, goal_files,
-                    args.gamma, args.it, args.goal_specified, args.trust_region)
+                    args.gamma, args.it, args.goal_specified, args.trust_region,
+                    args.min_diag_chi)
     else:
         if args.mode == "diag":
             diag_fn = step
@@ -268,7 +270,8 @@ def main():
         convergence_file = "convergence_diag.txt"
         goal_file = "obj_goal_diag.txt"
         diag_fn(parameter_file, obs_file, convergence_file, goal_file,
-                    args.gamma, args.it, args.goal_specified, args.trust_region, args.min_diag_chi)
+                    args.gamma, args.it, args.goal_specified, args.trust_region,
+                    args.min_diag_chi)
 
         parameter_file = "chis.txt"
         obs_file = "observables.traj"

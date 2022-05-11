@@ -49,7 +49,7 @@ def main():
                 counter += 1
         plt.xlabel('Iteration')
         plt.ylabel('chi value')
-        plt.legend()
+        plt.legend(loc=(1.04,0))
         plt.savefig("pchis.png")
         plt.close()
 
