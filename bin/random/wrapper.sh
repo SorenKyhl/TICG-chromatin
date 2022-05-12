@@ -5,20 +5,30 @@
 # chi="0&0\\0&0"
 chi='polynomial'
 k=4
-m=2018
+m=1024
 today=$(date +'%m_%d_%y')
-dataFolder="/project2/depablo/erschultz/dataset_04_26_22"
-startSample=1075
+
+
+
+
+
+
+
+
+
+dataFolder="/project2/depablo/erschultz/dataset_05_12_22"
+startSample=1
 relabel='none'
-startNode=5
-nodes=1
-tasks=1
-samples=1
+startNode=0
+nodes=20
+tasks=20
+samples=2000
+
 diag='true'
 nSweeps=1000000
 pSwitch=0.05
-minChi=-2
-maxChi=2
+minChi=-1
+maxChi=1
 fillDiag='none'
 chiSeed='none'
 maxDiagChi=10
@@ -33,7 +43,6 @@ then
   nodes=1
   tasks=2
   samples=2
-
   source activate python3.9_pytorch1.9
 else
   scratchDir="/scratch/midway2/erschultz"

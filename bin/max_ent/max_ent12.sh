@@ -17,22 +17,23 @@ then
   scratchDir='/home/erschultz/scratch'
   numIterations=60
   # finalSimProductionSweeps=1000
-  equilibSweeps=20000
-  productionSweeps=200000
+  # equilibSweeps=200
+  # productionSweeps=2000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
 i=11000
-dataset='dataset_04_27_22'
+dataset='dataset_01_17_22'
 useE='false'
 mode='plaid'
-for method in 'PCA-normalize'
+diagPseudobeadsOn='false'
+for method in 'PCA-normalize' 'PCA-normalize-scale'
 do
   for sample in 1
    # 2 3 4
   do
-    for k in 5 6 10
+    for k in 1 2 3 4 6
     # 2 4 6 8
     do
       max_ent
