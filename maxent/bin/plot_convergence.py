@@ -50,6 +50,7 @@ def main():
         plt.xlabel('Iteration')
         plt.ylabel('chi value')
         plt.legend(loc=(1.04,0))
+        plt.tight_layout()
         plt.savefig("pchis.png")
         plt.close()
 

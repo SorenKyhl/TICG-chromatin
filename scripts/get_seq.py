@@ -14,7 +14,7 @@ from seq2contact import (LETTERS, DiagonalPreprocessing, R_pca,
                          load_final_max_ent_S, load_saved_model, load_X_psi,
                          load_Y, plot_matrix, plot_seq_binary,
                          plot_seq_exclusive, project_S_to_psi_basis, s_to_E,
-                         str2bool, str2int)
+                         str2bool, str2int, str2None)
 from sklearn.cluster import KMeans
 from sklearn.decomposition import NMF, PCA, KernelPCA
 
@@ -34,7 +34,7 @@ def getArgs():
                         help='location of input data')
 
     # standard args
-    parser.add_argument('--method', type=str, default='k_means',
+    parser.add_argument('--method', type=str2None, default='k_means',
                         help='method for assigning particle types')
     parser.add_argument('--m', type=int, default=1024,
                         help='number of particles (will crop contact map) (-1 to infer)')
@@ -79,6 +79,7 @@ def getArgs():
     args.binarize = False # True to binarize labels (not implemented for all methods)') # TODO
     args.normalize = False # True to normalize labels to [0,1] (or [-1, 1] for some methods)
         # (not implemented for all methods)') # TODO
+    args.scale = False # True to scale variance for PCA
     args.use_ematrix = False
     args.use_smatrix = False
     args.append_random = False # True to append random seq
@@ -89,8 +90,9 @@ def getArgs():
     args.diag = False # (for RPCA) apply diagonal processing
     args.rank = None # max rank for energy matrix
     args.method_copy = args.method
-    args.method = args.method.lower()
-    process_method(args)
+    if args.method is not None:
+        args.method = args.method.lower()
+        process_method(args)
 
     args.labels = None
     args.X = None # X for silhouette_score
@@ -139,6 +141,8 @@ def process_method(args):
         args.binarize = True
     if 'normalize' in modes:
         args.normalize = True
+    if 'scale' in modes:
+        args.scale = True
     if 's' in modes:
         args.use_smatrix = True
     if 'e' in modes:
@@ -277,7 +281,8 @@ class GetSeq():
             j += 2
         return seq
 
-    def get_PCA_seq(self, input, normalize = False, use_kernel = False, kernel = None):
+    def get_PCA_seq(self, input, normalize = False, scale = False,
+                    use_kernel = False, kernel = None):
         '''
         Defines seq based on PCs of input.
 
@@ -294,10 +299,13 @@ class GetSeq():
         if use_kernel:
             assert kernel is not None
             pca = KernelPCA(kernel = kernel)
-            pca.fit(input/np.std(input, axis = 0))
         else:
             pca = PCA()
+
+        if scale:
             pca.fit(input/np.std(input, axis = 0))
+        else:
+            pca.fit(input)
 
         seq = np.zeros((self.m, self.k))
         for j in range(self.k):
@@ -322,7 +330,8 @@ class GetSeq():
 
         return seq
 
-    def get_RPCA_seq(self, input, normalize = False, exp = False, diag = False, max_it = 2000):
+    def get_RPCA_seq(self, input, normalize = False, scale = False, exp = False,
+                        diag = False, max_it = 2000):
         '''
         Defines seq based on PCs of input.
 
@@ -345,7 +354,7 @@ class GetSeq():
             meanDist = DiagonalPreprocessing.genomic_distance_statistics(L)
             L = DiagonalPreprocessing.process(L, meanDist)
 
-        return self.get_PCA_seq(L, normalize)
+        return self.get_PCA_seq(L, normalize, scale)
 
     def get_k_means_seq(self, y, kr = True):
         y = crop(y, self.m)
@@ -484,7 +493,7 @@ class GetSeq():
 
         return seq, labels
 
-    def get_seq_gnn(self, model_path, sample, normalize):
+    def get_seq_gnn(self, model_path, sample, normalize, scale):
         # deprecated (seems to work but no promises)
         '''
         Loads output from GNN model to use as particle types, seq
@@ -514,7 +523,7 @@ class GetSeq():
             else:
                 raise Exception(f's_path does not exist: {energy_hat_path}')
 
-            seq = self.get_PCA_seq(energy_hat, normalize)
+            seq = self.get_PCA_seq(energy_hat, normalize, scale)
         else:
             raise Exception(f"Unrecognized model_type: {model_type}")
 
@@ -651,6 +660,8 @@ def main():
         assert osp.exists(replicate_path), f"path does not exist: {replicate_path}"
         s = load_final_max_ent_S(args.k, replicate_path, max_it_path = None)
         e = s_to_E(s)
+    elif args.method is None:
+        return
     elif args.method.startswith('random'):
         seq = getSeq.get_random_seq(args.p_switch, args.seed, args.exclusive,
                                     args.scale_resolution)
@@ -661,7 +672,7 @@ def main():
         seq = getSeq.get_PCA_split_seq(y_diag)
     elif args.method.startswith('pca'):
         y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))
-        seq = getSeq.get_PCA_seq(y_diag, args.normalize)
+        seq = getSeq.get_PCA_seq(y_diag, args.normalize, args.scale)
     elif args.method.startswith('rpca'):
         L_file = osp.join(args.sample_folder, 'PCA_analysis', 'L_log.npy')
         if osp.exists(L_file):
@@ -671,7 +682,7 @@ def main():
             if args.diag:
                 meanDist = DiagonalPreprocessing.genomic_distance_statistics(L)
                 L = DiagonalPreprocessing.process(L, meanDist)
-            seq = getSeq.get_PCA_seq(L, args.normalize)
+            seq = getSeq.get_PCA_seq(L, args.normalize, args.scale)
         else:
             y = np.load(osp.join(args.sample_folder, 'y.npy'))
             seq = getSeq.get_RPCA_seq(y, args.normalize, args.exp, args.diag)
@@ -682,7 +693,7 @@ def main():
             input = np.load(osp.join(args.sample_folder, 'x.npy'))
         elif args.input == 'psi':
             input = np.load(osp.join(args.sample_folder, 'psi.npy'))
-        seq = getSeq.get_PCA_seq(input, args.normalize, use_kernel = True, kernel = args.kernel)
+        seq = getSeq.get_PCA_seq(input, args.normalize, args.scale, use_kernel = True, kernel = args.kernel)
     elif args.method.startswith('ground_truth'):
         x, psi = load_X_psi(args.sample_folder, throw_exception = False)
 
