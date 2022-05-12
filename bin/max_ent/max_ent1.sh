@@ -13,9 +13,9 @@ source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dir="/home/erschultz"
+  dir="/home/erschultz/sequences_to_contact_maps"
   scratchDir='/home/erschultz/scratch'
-  # numIterations=1
+  numIterations=60
   # finalSimProductionSweeps=1000
   # equilibSweeps=1000
   # productionSweeps=10000
@@ -24,15 +24,15 @@ fi
 
 STARTTIME=$(date +%s)
 i=1
-dataset='dataset_test'
+dataset='dataset_04_27_22'
 useE='false'
 mode='plaid'
-for method in 'k_means'
+for method in 'PCA-normalize' 'PCA-normalize-scale'
 do
-  for sample in 9
+  for sample in 1
    # 2 3 4
   do
-    for k in 2
+    for k in 2 3 4 5 6 8
     # 2 4 6 8
     do
       max_ent

@@ -51,28 +51,17 @@ run()  {
 # make
 # mv TICG-engine ..
 
-k=1
+k='none'
+method='none'
 nSweeps=1000000
 diag='true'
 maxDiagChi=10
 useE='true'
-s="${dataFolder}/samples/sample1/s_pca_3_min_MSE.npy"
-i=0
-run &
+for i in 3 8
+do
+	s="${dataFolder}/samples/sample1/s_pca_${i}_min_MSE.npy"
+	run &
+done
 
-# sConstant=10
-# chiDiagConstant=-454.613
-# i=13
-# run &
-#
-# i=14
-# sConstant=-10
-# chiDiagConstant=454.613
-# run &
-
-# i=15
-# sConstant=5
-# chiDiagConstant=-5
-# run &
 
 wait
