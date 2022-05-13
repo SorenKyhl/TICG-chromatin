@@ -7,8 +7,8 @@ from collections import defaultdict
 
 import numpy as np
 import scipy.stats as ss
-from seq2contact import (load_E_S, load_final_max_ent_chi, load_Y, str2int,
-                         str2list)
+from seq2contact import (ArgparserConverter, load_E_S, load_final_max_ent_chi,
+                         load_Y)
 from sklearn.metrics import mean_squared_error
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -18,9 +18,11 @@ LABELS = ['Ground Truth', 'Random', 'PCA', 'PCA Split', 'kPCA', 'RPCA', 'K-means
 
 def getArgs(data_folder = None, sample = None, samples = None):
     parser = argparse.ArgumentParser(description='Base parser')
+    AC = ArgparserConverter()
+
     parser.add_argument('--data_folder', type=str, default=data_folder, help='location of input data')
     parser.add_argument('--sample', type=str, default=sample, help='sample id')
-    parser.add_argument('--samples', type=str2list, default=samples, help='list of sample ids separated by -')
+    parser.add_argument('--samples', type=AC.str2list, default=samples, help='list of sample ids separated by -')
     parser.add_argument('--sample_folder', type=str, help='location of input data')
     parser.add_argument('--ref_mode', type=str, help='deprecated')
 
@@ -79,7 +81,7 @@ def loadData(args):
                 for k_file in os.listdir(method_folder):
                     k_folder = osp.join(method_folder, k_file)
                     if osp.isdir(k_folder) and k_file.startswith('k'):
-                        k = str2int(k_file[1:])
+                        k = AC.str2int(k_file[1:])
                         if k is None:
                             k = 0
                         replicate_data = defaultdict(list)

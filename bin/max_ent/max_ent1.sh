@@ -8,7 +8,7 @@
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=erschultz@uchicago.edu
 
-local='true'
+local='false'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
@@ -17,23 +17,22 @@ then
   scratchDir='/home/erschultz/scratch'
   numIterations=60
   # finalSimProductionSweeps=1000
-  # equilibSweeps=1000
-  # productionSweeps=10000
+  # productionSweeps=100000
+  # equilibSweeps=20000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
 i=1
-dataset='dataset_04_27_22'
+dataset='dataset_05_12_22'
 useE='false'
-mode='plaid'
+mode='both'
 for method in 'PCA-normalize' 'PCA-normalize-scale'
 do
   for sample in 1
    # 2 3 4
   do
-    for k in 2 3 4 5 6 8
-    # 2 4 6 8
+    for k in 1 2 4 6 8 10
     do
       max_ent
     done

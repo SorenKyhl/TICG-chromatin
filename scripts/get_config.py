@@ -4,9 +4,8 @@ import json
 import os.path as osp
 
 import numpy as np
-from seq2contact import (LETTERS, InteractionConverter, calculate_E_S,
-                         calculate_S, s_to_E, str2bool, str2float, str2int,
-                         str2list, str2list2D, str2None)
+from seq2contact import (LETTERS, ArgparserConverter, InteractionConverter,
+                         calculate_E_S, calculate_S, s_to_E)
 from sklearn.metrics.pairwise import polynomial_kernel
 
 METHOD_FORMATS={'random':'%d', 'pca':'%.3e', 'pca_split':'%.3e', 'kpca':'%.3e',
@@ -15,6 +14,8 @@ METHOD_FORMATS={'random':'%d', 'pca':'%.3e', 'pca_split':'%.3e', 'kpca':'%.3e',
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
+    AC = ArgparserConverter()
+
     parser.add_argument('--default_config', type=str, default='default_config.json',
                         help='path to default config file')
     parser.add_argument('--ofile', type=str, default='config.json',
@@ -23,11 +24,11 @@ def getArgs():
     # config param arguments
     parser.add_argument('--m', type=int, default=1024,
                         help='number of particles (-1 to infer)')
-    parser.add_argument('--k', type=str2int,
+    parser.add_argument('--k', type=AC.str2int,
                         help='number of particle types (inferred from chi if None)')
-    parser.add_argument('--load_configuration_filename', type=str2None, default='input1024.xyz',
+    parser.add_argument('--load_configuration_filename', type=AC.str2None, default='input1024.xyz',
                         help='file name of initial config (None to not load)')
-    parser.add_argument('--goal_specified', type=str2bool, default=True,
+    parser.add_argument('--goal_specified', type=AC.str2bool, default=True,
                         help='True will save two lines to chis.txt')
     parser.add_argument('--dump_frequency', type=int,
                         help='set to change dump frequency')
@@ -35,52 +36,52 @@ def getArgs():
                         help='set to change dump stats frequency')
     parser.add_argument('--n_sweeps', type=int,
                         help='set to change nSweeps')
-    parser.add_argument('--TICG_seed', type=str2int,
+    parser.add_argument('--TICG_seed', type=AC.str2int,
                         help='set to change random seed for simulation')
-    parser.add_argument('--use_ground_truth_TICG_seed', type=str2bool,
+    parser.add_argument('--use_ground_truth_TICG_seed', type=AC.str2bool,
                         help='True to copy seed from config file in sample_folder')
-    parser.add_argument('--use_ematrix', type=str2bool, default=False,
+    parser.add_argument('--use_ematrix', type=AC.str2bool, default=False,
                         help='True to use e_matrix')
-    parser.add_argument('--use_smatrix', type=str2bool, default=False,
+    parser.add_argument('--use_smatrix', type=AC.str2bool, default=False,
                         help='True to use s_matrix')
-    parser.add_argument('--s_constant', type=str2float, default=0,
+    parser.add_argument('--s_constant', type=AC.str2float, default=0,
                         help='constant to add to S')
     parser.add_argument('--sample_folder', type=str,
                         help='location of sample for ground truth chi')
-    parser.add_argument('--relabel', type=str2None,
+    parser.add_argument('--relabel', type=AC.str2None,
                         help='specify mark combinations to be relabled'
                             '(e.g. AB-C will relabel AB mark pairs as mark C)')
-    parser.add_argument('--diag_pseudobeads_on', type=str2bool, default=True)
+    parser.add_argument('--diag_pseudobeads_on', type=AC.str2bool, default=True)
 
 
     # chi arguments
-    parser.add_argument('--use_ground_truth_chi', type=str2bool, default=False,
+    parser.add_argument('--use_ground_truth_chi', type=AC.str2bool, default=False,
                         help='True to use ground truth chi and diag chi')
-    parser.add_argument('--use_ground_truth_diag_chi', type=str2bool, default=False,
+    parser.add_argument('--use_ground_truth_diag_chi', type=AC.str2bool, default=False,
                         help='True to use ground truth diag chi')
-    parser.add_argument('--chi_seed', type=str2int, default=None,
+    parser.add_argument('--chi_seed', type=AC.str2int, default=None,
                         help='seed for generating chi')
-    parser.add_argument('--chi_constant', type=str2float, default=0,
+    parser.add_argument('--chi_constant', type=AC.str2float, default=0,
                         help='constant to add to chi')
 
     # diag chi arguments
-    parser.add_argument('--chi_diag', type=str2list,
+    parser.add_argument('--chi_diag', type=AC.str2list,
                         help='diag chi (None to generate via max_diag_chi and diag_bins)')
-    parser.add_argument('--diag', type=str2bool, default=False,
+    parser.add_argument('--diag', type=AC.str2bool, default=False,
                         help='True for diagonal interactions')
-    parser.add_argument('--diag_bins', type=str2int, default=20,
+    parser.add_argument('--diag_bins', type=AC.str2int, default=20,
                         help='number of diagonal bins')
     parser.add_argument('--max_diag_chi', type=float, default=0.5,
                         help='maximum diag chi value for np.linspace()')
-    parser.add_argument('--chi_diag_constant', type=str2float, default=0,
+    parser.add_argument('--chi_diag_constant', type=AC.str2float, default=0,
                         help='constant to add to chi diag')
 
     # plaid chi arguments
-    parser.add_argument('--e', type=str2None,
+    parser.add_argument('--e', type=AC.str2None,
                         help='path to e_matrix to use (.npy or .txt)')
-    parser.add_argument('--s', type=str2None,
+    parser.add_argument('--s', type=AC.str2None,
                         help='path to s_matrix to use (.npy or .txt)')
-    parser.add_argument('--chi', type=str2list2D,
+    parser.add_argument('--chi', type=AC.str2list2D,
                         help='chi matrix using latex separator style'
                             '(if None will chi be generated randomly)')
     parser.add_argument('--save_chi', action="store_true",
@@ -91,9 +92,9 @@ def getArgs():
                         help='minimum chi value for random generation')
     parser.add_argument('--max_chi', type=float, default=1.,
                         help='maximum chi value for random generation')
-    parser.add_argument('--fill_diag', type=str2float,
+    parser.add_argument('--fill_diag', type=AC.str2float,
                         help='fill diag of chi with given value (None to skip)')
-    parser.add_argument('--fill_offdiag', type=str2float,
+    parser.add_argument('--fill_offdiag', type=AC.str2float,
                         help='fill off diag of chi with given value (None to skip)')
     parser.add_argument('--ensure_distinguishable', action='store_true',
                         help='true to ensure that corresponding psi is distinguishable')

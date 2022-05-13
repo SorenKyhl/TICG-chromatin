@@ -7,15 +7,6 @@ chi='polynomial'
 k=4
 m=1024
 today=$(date +'%m_%d_%y')
-
-
-
-
-
-
-
-
-
 dataFolder="/project2/depablo/erschultz/dataset_05_12_22"
 startSample=1
 relabel='none'

@@ -7,7 +7,7 @@
 #SBATCH --mem-per-cpu=4000
 #SBATCH --qos=depablo-debug
 
-source activate python3.8_pytorch1.8.1_cuda11.1
+source activate python3.9_pytorch1.9_cuda10.2
 
 samples="40-1230-1718-1751-1761"
 sample=40
@@ -21,12 +21,12 @@ sample=40
 dataDir='/home/eric/sequences_to_contact_maps'
 
 
-dataset=dataset_11_14_21
-samples="80-81"
+dataset=dataset_04_27_22
+samples="1-2-3-4"
 dataFolder="${dataDir}/${dataset}"
-# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
-#
-for sample in 40
+python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
+
+for sample in 1 2 3 4
 do
   python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample &
 done

@@ -5,14 +5,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from seq2contact import (DiagonalPreprocessing, crop, load_E_S,
-                         load_final_max_ent_S, plot_matrix, s_to_E, str2int)
+from seq2contact import (ArgparserConverter, DiagonalPreprocessing, crop,
+                         load_E_S, load_final_max_ent_S, plot_matrix, s_to_E)
 
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
+    AC = ArgparserConverter()
+
     parser.add_argument('--m', type=int, default=1024, help='number of particles (-1 to infer)')
-    parser.add_argument('--k', type=str2int, help='number of bead labels')
+    parser.add_argument('--k', type=AC.str2int, help='number of bead labels')
     parser.add_argument('--save_npy', action='store_true', help='true to save y as .npy')
     parser.add_argument('--random_mode', action='store_true', help='true for random_mode, default is max_ent mode')
 

@@ -9,10 +9,9 @@
 # necessary to ensure log files are in right place
 cd ~/TICG-chromatin
 
-for i in 2 3 4 9 10
-# 3 - didn't work OSError
-# 9 10 - didn't work Bus error
-# 4 - didn't work OSError
+for i in 1 3 
+# 2 - see latex2
+# 9 10 - don't fit in GPU
 do
   echo $i
   sbatch ~/TICG-chromatin/bin/max_ent/max_ent${i}.sh

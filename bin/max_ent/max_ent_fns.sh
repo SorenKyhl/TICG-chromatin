@@ -10,9 +10,9 @@ dir='/project2/depablo/erschultz'
 scratchDir='/scratch/midway2/erschultz'
 
 # sweep params
-productionSweeps=50000
+productionSweeps=100000
 finalSimProductionSweeps=1000000
-equilibSweeps=10000
+equilibSweeps=20000
 numIterations=80 # iteration 1 + numIterations is production run to get contact map
 
 # energy params
@@ -115,7 +115,7 @@ max_ent_inner () {
   cd $scratchDirResources
   # generate sequences
   echo "starting get_seq"
-  python3 ~/TICG-chromatin/scripts/get_seq.py --method $method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --save_npy --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --model_path $modelPath --seed $3 --local $local > seq.log
+  python3 ~/TICG-chromatin/scripts/get_seq.py --method $method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --save_npy --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --model_path $modelPath --seed $3 > seq.log
 
   # get config
   echo "starting get_config"

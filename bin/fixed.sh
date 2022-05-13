@@ -57,7 +57,7 @@ nSweeps=1000000
 diag='true'
 maxDiagChi=10
 useE='true'
-for i in 3 8
+for i in 10
 do
 	s="${dataFolder}/samples/sample1/s_pca_${i}_min_MSE.npy"
 	run &

@@ -5,13 +5,9 @@ for p in ['/home/erschultz', '/home/erschultz/sequences_to_contact_maps']:
 
 from sequences_to_contact_maps.result_summary_plots import \
     project_S_to_psi_basis
-from sequences_to_contact_maps.utils.argparse_utils import (finalize_opt,
-                                                            get_base_parser,
-                                                            str2bool,
-                                                            str2float, str2int,
-                                                            str2list,
-                                                            str2list2D,
-                                                            str2None)
+from sequences_to_contact_maps.utils.argparse_utils import (ArgparserConverter,
+                                                            finalize_opt,
+                                                            get_base_parser)
 from sequences_to_contact_maps.utils.clean_directories import clean_directories
 from sequences_to_contact_maps.utils.dataset_classes import make_dataset
 from sequences_to_contact_maps.utils.energy_utils import (calculate_E_S,

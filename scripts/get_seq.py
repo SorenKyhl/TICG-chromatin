@@ -8,13 +8,12 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from knightRuiz import knightRuiz
-from seq2contact import (LETTERS, DiagonalPreprocessing, R_pca,
-                         clean_directories, crop, finalize_opt,
+from seq2contact import (LETTERS, ArgparserConverter, DiagonalPreprocessing,
+                         R_pca, clean_directories, crop, finalize_opt,
                          get_base_parser, get_dataset, load_E_S,
                          load_final_max_ent_S, load_saved_model, load_X_psi,
                          load_Y, plot_matrix, plot_seq_binary,
-                         plot_seq_exclusive, project_S_to_psi_basis, s_to_E,
-                         str2bool, str2int, str2None)
+                         plot_seq_exclusive, project_S_to_psi_basis, s_to_E)
 from sklearn.cluster import KMeans
 from sklearn.decomposition import NMF, PCA, KernelPCA
 
@@ -24,6 +23,7 @@ def getArgs():
     seq_local = '..../sequences_to_contact_maps'
     chip_seq_data_local = osp.join(seq_local, 'chip_seq_data')
     # "./project2/depablo/erschultz/dataset_04_18_21"
+    AC = ArgparserConverter()
 
     # input data args
     parser.add_argument('--data_folder', type=str, default=osp.join(seq_local,'dataset_01_15_22'),
@@ -34,21 +34,21 @@ def getArgs():
                         help='location of input data')
 
     # standard args
-    parser.add_argument('--method', type=str2None, default='k_means',
+    parser.add_argument('--method', type=AC.str2None, default='k_means',
                         help='method for assigning particle types')
     parser.add_argument('--m', type=int, default=1024,
                         help='number of particles (will crop contact map) (-1 to infer)')
-    parser.add_argument('--k', type=str2int, default=2,
+    parser.add_argument('--k', type=AC.str2int, default=2,
                         help='sequences to generate')
-    parser.add_argument('--scale_resolution', type=str2int, default=1,
+    parser.add_argument('--scale_resolution', type=AC.str2int, default=1,
                         help="generate seq at higher resolution, "
                             "find average frequency at lower resolution")
                         # TODO rename and document better
 
     # args for specific methods
-    parser.add_argument('--seed', type=str2int,
+    parser.add_argument('--seed', type=AC.str2int,
                         help='random seed for numpy')
-    parser.add_argument('--exclusive', type=str2bool, default=False,
+    parser.add_argument('--exclusive', type=AC.str2bool, default=False,
                         help='True to use mutually exusive label (for random method)')
     parser.add_argument('--model_path', type=str,
                         help='path to GNN model')
@@ -64,8 +64,6 @@ def getArgs():
                         help='probability to switch bead assignment (for method = random)')
     parser.add_argument('--kernel', type=str, default='poly',
                         help='kernel for kernel PCA')
-    parser.add_argument('--local', type=str2bool, default=False,
-                        help='True for local mode (relevant to method = GNN)')
 
     # post-processing args
     parser.add_argument('--save_npy', action='store_true',
@@ -534,7 +532,7 @@ class GetChi():
     def __init__(self, k):
         self.k = k
 
-def get_energy_gnn(model_path, sample_path, local, m):
+def get_energy_gnn(model_path, sample_path, m):
         '''
         Loads output from GNN model to use as ematrix or smatrix
 
@@ -583,9 +581,8 @@ def get_energy_gnn(model_path, sample_path, local, m):
         sys.argv = [sys.argv[0]] # delete args from get_seq, otherwise gnn opt will try and use them
         opt = parser.parse_args(['@{}'.format(argparse_path)])
         opt.id = int(model_id)
-        opt.use_scratch = False # override use_scratch
         print(opt)
-        opt = finalize_opt(opt, parser, local = local, debug = True)
+        opt = finalize_opt(opt, parser, local = True, debug = True)
         opt.m = m # override m
         opt.data_folder = osp.join('/',*sample_path_split[:-2]) # use sample_dataset not gnn_dataset
         opt.output_mode = None # don't need output, since only predicting
@@ -737,9 +734,9 @@ def main():
         seq, labels = getSeq.get_ChromHMM_seq(args.ChromHMM_data_file)
     elif args.method.startswith('gnn'):
         if args.use_smatrix:
-            s = get_energy_gnn(args.model_path, args.sample_folder, args.local, args.m)
+            s = get_energy_gnn(args.model_path, args.sample_folder, args.m)
         elif args.use_ematrix:
-            s = get_energy_gnn(args.model_path, args.sample_folder, args.local, args.m)
+            s = get_energy_gnn(args.model_path, args.sample_folder, args.m)
             e = s_to_E(s)
         else:
             seq = getSeq.get_seq_gnn(args.model_path, args.sample, args.normalize)
