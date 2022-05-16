@@ -126,7 +126,7 @@ max_ent_inner () {
   if [ $goalSpecified = 'true' ]
   then
     echo "starting goal_specified"
-    python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --k $k --contact_map "${sampleFolder}/y.npy" --mode $mode --diag_bins $diagBins > goal.log
+    python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --contact_map "${sampleFolder}/y.npy" --mode $mode --diag_bins $diagBins > goal.log
   fi
 
   echo $method_fmt
@@ -138,8 +138,8 @@ max_ent_inner () {
 
   # compare results
   prodIt=$(($numIterations+1))
-  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --k $k --final_it $prodIt --replicate_folder $ofile --save_npy
-  python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${ofile}/y.npy" --y_diag "$sampleFolder/y_diag.npy" --yhat_diag "${ofile}/y_diag.npy"
+  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --k $k --final_it $prodIt --replicate_folder $ofile --save_npy > contact.log
+  python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${ofile}/y.npy" --y_diag "$sampleFolder/y_diag.npy" --yhat_diag "${ofile}/y_diag.npy" >> contact.log
 
   echo "\n\n"
 }

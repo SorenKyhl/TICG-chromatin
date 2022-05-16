@@ -8,32 +8,33 @@
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=erschultz@uchicago.edu
 
-local='false'
+local='true'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dir="/home/eric/sequences_to_contact_maps"
-  scratchDir='/home/eric/scratch'
+  dir="/home/erschultz"
+  scratchDir='/home/erschultz/scratch'
   # numIterations=1
   # finalSimProductionSweeps=1000
   # equilibSweeps=1000
-  # productionSweeps=10000
+  # productionSweeps=1000
   source activate python3.9_pytorch1.11
 fi
 
-productionSweeps=200000
-equilibSweeps=20000
+# productionSweeps=200000
+# equilibSweeps=20000
 STARTTIME=$(date +%s)
 i=1000
-dataset='dataset_04_27_22'
+dataset='dataset_test'
 # useE='true'
 mode='both'
-for method in 'k_means'
+for method in 'PCA-normalize+constant'
 do
-  for sample in 1 2 3 4
+  for sample in 12 15
+   # 2 3 4
   do
-    for k in 2 4 6 8
+    for k in 2 4
     do
       max_ent
     done
