@@ -1,7 +1,7 @@
 #! /bin/bash
 k=3
 m=1024
-dataFolder="/home/erschultz/sequences_to_contact_maps/dataset_04_27_22"
+dataFolder="/home/erschultz/dataset_test2"
 scratchDir='/home/erschultz/scratch'
 useE='false'
 useS='false'
@@ -11,18 +11,19 @@ diag='false'
 nSweeps=500000
 pSwitch=0.05
 maxDiagChi=5
-chiSeed=89
+chiSeed='none'
 chi='none'
 minChi=-2
 maxChi=1
 fillDiag='none'
 overwrite=1
 dumpFrequency=10000
-TICGSeed=14
-npySeed=12 # for get_seq
+TICGSeed='none'
+npySeed='none' # for get_seq
 method='random'
 exclusive='false'
 e='none'
+s='none'
 chiConstant=0
 chiDiagConstant=0
 sConstant=0
@@ -51,16 +52,22 @@ run()  {
 # make
 # mv TICG-engine ..
 
-k='none'
-method='none'
+k=4
+method='random'
+chi='polynomial'
 nSweeps=1000000
 diag='true'
 maxDiagChi=10
 useE='true'
-for i in 10
+m=1024
+for i in $( seq 1 18 )
 do
-	s="${dataFolder}/samples/sample1/s_pca_${i}_min_MSE.npy"
+	echo "i=${i}, m=${m}"
 	run &
+	if [ $( expr $i % 3 ) -eq 0 ]
+	then
+		m=$(( $m * 2 ))
+	fi
 done
 
 
