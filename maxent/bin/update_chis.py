@@ -5,13 +5,13 @@ import os.path as osp
 import sys
 
 import numpy as np
+import sympy
 
 LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     parser.add_argument('--it', type=int, help='current iteration')
-    parser.add_argument('--k', type=int, help='number of particle types')
 
     args = parser.parse_args()
     return args
@@ -31,9 +31,13 @@ def main():
         current_chis = [float(x) for x in current_chis]
     # print("current chi values: ", current_chis)
 
+    k = sympy.Symbol('k')
+    result = sympy.solvers.solve(k*(k-1)/2 + k - len(current_chis))
+    k = np.max(result) # discard negative solution
+
     counter = 0
-    for i in range(args.k):
-        for j in range(args.k):
+    for i in range(k):
+        for j in range(k):
             if j < i:
                 continue
             key = 'chi{}{}'.format(LETTERS[i], LETTERS[j])
@@ -42,8 +46,8 @@ def main():
             except IndexError as e:
                 print('Index Error')
                 print('lines:\n', lines)
-                print('current_chis:\n', current_chis)
-                print('k: ', args.k)
+                print('current_chis:\n', current_chis, len(current_chis))
+                print('k: ', result, k)
                 raise
             counter += 1
 

@@ -24,8 +24,8 @@ def getArgs():
     # config param arguments
     parser.add_argument('--m', type=int, default=1024,
                         help='number of particles (-1 to infer)')
-    parser.add_argument('--k', type=AC.str2int,
-                        help='number of particle types (inferred from chi if None)')
+    # parser.add_argument('--k', type=AC.str2int,
+    #                     help='number of particle types (inferred from chi if None)')
     parser.add_argument('--load_configuration_filename', type=AC.str2None, default='input1024.xyz',
                         help='file name of initial config (None to not load)')
     parser.add_argument('--goal_specified', type=AC.str2bool, default=True,
@@ -212,16 +212,16 @@ def getChis(args):
     return chi
 
 def set_up_plaid_chi(args, config):
-    if args.k == 0:
+    if args.k is None:
         return
+
     if args.use_ground_truth_chi:
         args.chi = np.load(osp.join(args.sample_folder, 'chis.npy'))
         print(args.chi)
         _, k = args.chi.shape
         assert k == args.k, f"cols of ground truth chi {args.k} doesn't match cols of seq {k}"
     elif args.chi is None:
-        if args.k is not None:
-            args.chi = getChis(args)
+        args.chi = getChis(args)
     elif isinstance(args.chi, str):
         if args.chi == 'nonlinear':
             x = np.load('x.npy') # original particle types that interact nonlinearly
@@ -274,10 +274,7 @@ def set_up_plaid_chi(args, config):
         # zero lower triangle
         args.chi = np.triu(args.chi)
         rows, cols = args.chi.shape
-        if args.k is None:
-            args.k = rows
-        else:
-            assert args.k == rows, f'number of particle types {args.k} does not match shape of chi {rows}'
+        assert args.k == rows, f'number of particle types {args.k} does not match shape of chi {rows}'
         assert rows == cols, f"chi not square: {args.chi}"
         conv = InteractionConverter(args.k, args.chi)
         if not uniqueRows(conv.getS()):
@@ -365,6 +362,16 @@ def main():
             args.m, _ = e.shape
         print(f'inferred m = {args.m}')
 
+    if osp.exists('psi.npy'):
+        psi = np.load('psi.npy')
+        _, args.k = psi.shape
+    elif osp.exists('x.npy'):
+        x = np.load('x.npy')
+        _, args.k = x.shape
+    else:
+        args.k = None
+    print(f'inferred k = {args.k}')
+
     if args.relabel is not None:
         x = np.load('x.npy')
         old, new = args.relabel.split('-')
@@ -405,9 +412,6 @@ def main():
             np.savetxt('e_matrix.txt', e, fmt='%0.5f')
             np.save('e.npy', e)
             np.save('s.npy', s) # save s either way
-        # if args.m < 2000 and args.k < 10:
-        #     print(f'Rank of S: {np.linalg.matrix_rank(s)}')
-        #     print(f'Rank of E: {np.linalg.matrix_rank(e)}\n')
 
     if args.e is not None:
         assert args.use_ematrix
@@ -456,7 +460,7 @@ def main():
             # save ematrix_on
             config['ematrix_on'] = True
             config["ematrix_filename"] = "e_matrix.txt"
-    elif args.k == 0:
+    elif args.k is None:
             config['plaid_on'] = False
             config['bead_type_files'] = None
             config["nspecies"] = 0
@@ -512,91 +516,92 @@ def main():
         json.dump(config, f, indent = 2)
 
 #### test functions ####
-def test():
-    args = getArgs()
-    args.k = 8
-    args.fill_diag = -1
-    print(generateRandomChi(args))
+class tester():
+    def test():
+        args = getArgs()
+        args.k = 8
+        args.fill_diag = -1
+        print(generateRandomChi(args))
 
-    args.fill_diag = None
-    args.fill_offdiag = 0
-    print(generateRandomChi(args))
+        args.fill_diag = None
+        args.fill_offdiag = 0
+        print(generateRandomChi(args))
 
-def test_nonlinear_chi():
-    args = getArgs()
-    rng = np.random.default_rng(14)
-    args.k = 10
-    p_switch = 0.05
-    x = np.zeros((args.m, args.k))
-    x[0, :] = np.random.choice([1,0], size = args.k)
-    for j in range(args.k):
-        for i in range(1, args.m):
-            if x[i-1, j] == 1:
-                x[i, j] = rng.choice([1,0], p=[1 - p_switch, p_switch])
-            else:
-                x[i, j] = rng.choice([1,0], p=[p_switch, 1 - p_switch])
+    def test_nonlinear_chi():
+        args = getArgs()
+        rng = np.random.default_rng(14)
+        args.k = 10
+        p_switch = 0.05
+        x = np.zeros((args.m, args.k))
+        x[0, :] = np.random.choice([1,0], size = args.k)
+        for j in range(args.k):
+            for i in range(1, args.m):
+                if x[i-1, j] == 1:
+                    x[i, j] = rng.choice([1,0], p=[1 - p_switch, p_switch])
+                else:
+                    x[i, j] = rng.choice([1,0], p=[p_switch, 1 - p_switch])
 
-    psi = np.zeros((args.m, 15))
-    psi[:, 0] = (np.sum(x[:, 0:3], axis = 1) == 1) # exactly 1 of A, B, C
-    psi[:, 1] = (np.sum(x[:, 0:3], axis = 1) == 2) # exactly 2 of A, B, C
-    psi[:, 2] = (np.sum(x[:, 0:3], axis = 1) == 3) # A, B, and C
-    psi[:, 3] = x[:, 3] # D
-    psi[:, 4] = x[:, 4] # E
-    psi[:, 5] = np.logical_and(x[:, 3], x[:, 4]) # D and E
-    psi[:, 6] = np.logical_and(x[:, 3], x[:, 5]) # D and F
-    psi[:, 7] = np.logical_xor(x[:, 0], x[:, 5]) # either A or F
-    psi[:, 8] = x[:, 6] # G
-    psi[:, 9] = np.logical_and(np.logical_and(x[:, 6], x[:, 7]), np.logical_not(x[:, 4])) # G and H and not E
-    psi[:, 10] = x[:, 7] # H
-    psi[:, 11] = x[:, 8] # I
-    psi[:, 12] = x[:, 9] # J
-    psi[:, 13] = np.logical_or(x[:, 7], x[:, 8]) # H or I
-    psi[:, 14] = np.logical_xor(x[:, 8], x[:, 9]) # either I or J
+        psi = np.zeros((args.m, 15))
+        psi[:, 0] = (np.sum(x[:, 0:3], axis = 1) == 1) # exactly 1 of A, B, C
+        psi[:, 1] = (np.sum(x[:, 0:3], axis = 1) == 2) # exactly 2 of A, B, C
+        psi[:, 2] = (np.sum(x[:, 0:3], axis = 1) == 3) # A, B, and C
+        psi[:, 3] = x[:, 3] # D
+        psi[:, 4] = x[:, 4] # E
+        psi[:, 5] = np.logical_and(x[:, 3], x[:, 4]) # D and E
+        psi[:, 6] = np.logical_and(x[:, 3], x[:, 5]) # D and F
+        psi[:, 7] = np.logical_xor(x[:, 0], x[:, 5]) # either A or F
+        psi[:, 8] = x[:, 6] # G
+        psi[:, 9] = np.logical_and(np.logical_and(x[:, 6], x[:, 7]), np.logical_not(x[:, 4])) # G and H and not E
+        psi[:, 10] = x[:, 7] # H
+        psi[:, 11] = x[:, 8] # I
+        psi[:, 12] = x[:, 9] # J
+        psi[:, 13] = np.logical_or(x[:, 7], x[:, 8]) # H or I
+        psi[:, 14] = np.logical_xor(x[:, 8], x[:, 9]) # either I or J
 
-    print(psi)
+        print(psi)
 
-    args.k = 15
-    args.fill_diag = -1
-    args.max_chi = 2
-    args.min_chi = 0
-    chi = getChis(args)
-    print(chi)
+        args.k = 15
+        args.fill_diag = -1
+        args.max_chi = 2
+        args.min_chi = 0
+        chi = getChis(args)
+        print(chi)
 
-    s = calculate_S(psi, chi)
-    print(s)
+        s = calculate_S(psi, chi)
+        print(s)
 
-def test_polynomial_chi():
-    args = getArgs()
-    rng = np.random.default_rng(14)
-    args.k = 4
-    args.m = 5
-    p_switch = 0.05
-    x = np.zeros((args.m, args.k))
-    x[0, :] = np.random.choice([1,0], size = args.k)
-    for j in range(args.k):
-        for i in range(1, args.m):
-            if x[i-1, j] == 1:
-                x[i, j] = rng.choice([1,0], p=[1 - p_switch, p_switch])
-            else:
-                x[i, j] = rng.choice([1,0], p=[p_switch, 1 - p_switch])
+    def test_polynomial_chi():
+        args = getArgs()
+        rng = np.random.default_rng(14)
+        args.k = 4
+        args.m = 5
+        p_switch = 0.05
+        x = np.zeros((args.m, args.k))
+        x[0, :] = np.random.choice([1,0], size = args.k)
+        for j in range(args.k):
+            for i in range(1, args.m):
+                if x[i-1, j] == 1:
+                    x[i, j] = rng.choice([1,0], p=[1 - p_switch, p_switch])
+                else:
+                    x[i, j] = rng.choice([1,0], p=[p_switch, 1 - p_switch])
 
-    for i in range(args.m):
-        print(x[i])
-        result = polynomial_kernel(x[i].reshape(-1, 1), x[i].reshape(-1, 1), degree=1, coef0=0)
+        for i in range(args.m):
+            print(x[i])
+            result = polynomial_kernel(x[i].reshape(-1, 1), x[i].reshape(-1, 1), degree=1, coef0=0)
+            print('\t', result)
+            result = np.outer(x[i], x[i])
+            print('\t', result)
+
+            print(x[i].reshape(-1, 1).T @ x[i].reshape(-1, 1))
+
+        print('---')
+        print(x)
+        print('--')
+        result = polynomial_kernel(x, x, degree=1, coef0=0)
         print('\t', result)
-        result = np.outer(x[i], x[i])
-        print('\t', result)
-
-        print(x[i].reshape(-1, 1).T @ x[i].reshape(-1, 1))
-
-    print('---')
-    print(x)
-    print('--')
-    result = polynomial_kernel(x, x, degree=1, coef0=0)
-    print('\t', result)
 
 
 if __name__ == '__main__':
     main()
-    # test_nonlinear_chi()
-    # test_polynomial_chi()
+    # tester.test_nonlinear_chi()
+    # tester.test_polynomial_chi()

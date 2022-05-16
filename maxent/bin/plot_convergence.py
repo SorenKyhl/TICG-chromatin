@@ -5,13 +5,13 @@ import os.path as osp
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import sympy
 
 LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     parser.add_argument('--mode', type=str, help='{plaid, diag, both}')
-    parser.add_argument('--k', type=int, help='number of particle types')
 
     args = parser.parse_args()
     return args
@@ -39,9 +39,14 @@ def main():
         chis = np.loadtxt('chis.txt')
         if chis.ndim < 2:
             chis = np.atleast_2d(chis).T
+
+        k = sympy.Symbol('k')
+        result = sympy.solvers.solve(k*(k-1)/2 + k - chis.shape[1])
+        k = np.max(result) # discard negative solution
+
         counter = 0
-        for i in range(args.k):
-            for j in range(args.k):
+        for i in range(k):
+            for j in range(k):
                 if j < i:
                     continue
                 chistr = "chi{}{}".format(LETTERS[i], LETTERS[j])

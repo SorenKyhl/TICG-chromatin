@@ -104,13 +104,13 @@ run_simulation () {
 		# no need to update if num_iterations==0
 		if [ $mode == "plaid" ];
 		then
-			python3 $proj_bin/update_chis.py --it $it --k $k
+			python3 $proj_bin/update_chis.py --it $it
 		elif [ $mode == "diag" ];
 		then
 			python3 $proj_bin/update_diag.py --it $it
 		elif [ $mode == "both" ];
 		then
-			python3 $proj_bin/update_chis.py --it $it --k $k
+			python3 $proj_bin/update_chis.py --it $it
 			python3 $proj_bin/update_diag.py --it $it
 		fi
 	fi
@@ -194,7 +194,7 @@ then
 		python3 $proj_bin/newton_step.py --it $it --gamma $gamma --mode $mode --goal_specified $goal_specified --trust_region $trust_region --min_diag_chi 0 >> track.log
 
 		# update plots
-		python3 $proj_bin/plot_convergence.py --mode $mode --k $k
+		python3 $proj_bin/plot_convergence.py --mode $mode
 	done
 fi
 

@@ -11,15 +11,12 @@ import pandas as pd
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
-    parser.add_argument('--k', type=str, help='number of particle types')
     parser.add_argument('--contact_map', type=str, help='filepath to contact map')
     parser.add_argument('--verbose', action='store_true', help='true for verbose mode')
     parser.add_argument('--mode', type=str, help='{"plaid", "diag", "both"}')
     parser.add_argument('--diag_bins', type=int, help='number of diagonal bins')
 
     args = parser.parse_args()
-    if args.k.isdigit():
-        args.k = int(args.k)
     return args
 
 def get_diag_goal(y, bins):
@@ -48,15 +45,18 @@ def get_plaid_goal(y, m, args):
     if args.verbose:
         print('y_max: ', y_max)
         print(y, y.shape, y.dtype, '\n')
-    for i in range(args.k):
-        seqi = np.loadtxt(f"seq{i}.txt")
+
+    x = np.load('x.npy')
+    _, k = x.shape
+    for i in range(k):
+        seqi = x[:,i]
         if args.verbose:
             print(f'\ni={i}', seqi)
-        for j in range(args.k):
+        for j in range(k):
             if j < i:
                 # don't double count
                 continue
-            seqj = np.loadtxt(f"seq{j}.txt")
+            seqj = x[:,j]
             if args.verbose:
                 print(f'\tj={j}', seqj)
             result = seqi @ y @ seqj

@@ -87,6 +87,7 @@ def getArgs():
     args.exp = False # (for RPCA) convert from log space back to original space
     args.diag = False # (for RPCA) apply diagonal processing
     args.rank = None # max rank for energy matrix
+    args.add_constant = False # add constant seq (all ones)
     args.method_copy = args.method
     if args.method is not None:
         args.method = args.method.lower()
@@ -158,6 +159,8 @@ def process_method(args):
         args.exp = True
     if 'diag' in modes:
         args.diag = True
+    if 'constant' in modes:
+        args.add_constant = True
 
     for mode in modes:
         if mode.startswith('rank'):
@@ -774,6 +777,10 @@ def main():
         if args.k is not None:
             assert k == args.k, f'''k mismatch: seq has {k} particle types not {args.k}
                                 for method {args.method} for sample {args.sample_folder}'''
+
+        if args.add_constant:
+            seq = np.concatenate((seq, np.ones((m, 1))), axis = 1)
+
         if args.save_npy:
             np.save('x.npy', seq)
 

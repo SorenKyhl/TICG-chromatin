@@ -44,6 +44,7 @@ def main():
 
     if osp.exists(y_path):
         y = crop(np.loadtxt(y_path), args.m)
+        args.m = len(y)
     else:
         raise Exception(f"y path does not exist: {y_path}")
 
@@ -55,9 +56,8 @@ def main():
         else:
             throw = True
         e, s = load_E_S(args.sample_folder, throw_exception = throw)
-        print(e, s)
     else:
-        s = load_final_max_ent_S(args.k, args.replicate_folder, args.final_folder)
+        s = load_final_max_ent_S(args.replicate_folder, args.final_folder)
         e = s_to_E(s)
 
     if s is not None:
@@ -66,10 +66,10 @@ def main():
     if e is not None:
         plot_matrix(e, ofile = osp.join(args.save_folder, 'e.png'), title = 'E', vmax = 'max', vmin = 'min', cmap = 'blue-red')
 
-
-    meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
-    y_diag = DiagonalPreprocessing.process(y, meanDist)
-    plot_matrix(y_diag, ofile = osp.join(args.save_folder, 'y_diag.png'), vmax = 'max')
+    if args.m < 3000: # takes a long time for large m and not really necessary
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
+        y_diag = DiagonalPreprocessing.process(y, meanDist)
+        plot_matrix(y_diag, ofile = osp.join(args.save_folder, 'y_diag.png'), vmax = 'max')
 
 
     if args.save_npy:
