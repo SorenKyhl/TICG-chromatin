@@ -7,7 +7,16 @@
 #SBATCH --mem-per-cpu=4000
 #SBATCH --qos=depablo-debug
 
-source activate python3.9_pytorch1.9_cuda10.2
+local='false'
+if [ $local = 'true' ]
+then
+  dataDir='/project2/depablo/erschultz'
+  source activate python3.9_pytorch1.9
+else
+  dataDir='/home/erschultz/sequences_to_contact_maps'
+  source activate python3.9_pytorch1.9_cuda10.2
+fi
+
 
 samples="40-1230-1718-1751-1761"
 sample=40
@@ -17,9 +26,6 @@ sample=40
 # dataSet='dataset_10_27_21'
 # dataSet='dataset_11_03_21'
 # dataSet='dataset_11_14_21'
-dataDir='/project2/depablo/erschultz'
-# dataDir='/home/erschultz/sequences_to_contact_maps'
-
 
 dataset=dataset_04_27_22
 samples="1-2-3-4"
