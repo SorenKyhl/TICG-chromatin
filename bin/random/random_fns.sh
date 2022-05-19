@@ -15,6 +15,7 @@ param_setup() {
 	chiConstant=0
 	chiDiagConstant=0
 	sConstant=0
+	pSwitch='none' # using lmbda instead
 	npySeed='none'
 	TICGSeed='none'
 	if [ $chi = 'nonlinear' ]
@@ -67,7 +68,7 @@ check_dir() {
 
 random_inner() {
 	# generate sequences
-	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --exclusive $exclusive --m $m --lmbda $lmbda --k $k --save_npy --seed $npySeed > seq.log
+	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --exclusive $exclusive --m $m --p_switch $pSwitch --lmbda $lmbda --k $k --save_npy --seed $npySeed > seq.log
 
 	# set up config.json
 	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --chi_seed $chiSeed --m $m --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable --diag $diag --max_diag_chi $maxDiagChi --n_sweeps $nSweeps --dump_frequency $dumpFrequency --TICG_seed $TICGSeed --use_ematrix $useE --use_smatrix $useS --load_configuration_filename $init_config --relabel $relabel --e $e --s $s --chi_constant=$chiConstant --chi_diag_constant=$chiDiagConstant --s_constant=$sConstant > config.log

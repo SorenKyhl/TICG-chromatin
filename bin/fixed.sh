@@ -10,6 +10,7 @@ relabel='none'
 diag='false'
 nSweeps=500000
 pSwitch=0.05
+lmbda='none'
 maxDiagChi=5
 chiSeed='none'
 chi='none'
@@ -56,11 +57,12 @@ k=4
 method='random'
 chi='polynomial'
 nSweeps=1000000
+dumpFrequency=1000
 diag='true'
 maxDiagChi=10
 useE='true'
-m=1024
-for i in $( seq 1 18 )
+m=512
+for i in $( seq 1 3 )
 do
 	echo "i=${i}, m=${m}"
 	run &
