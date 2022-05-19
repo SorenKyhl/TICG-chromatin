@@ -15,24 +15,25 @@ if [ $local = 'true' ]
 then
   dir="/home/erschultz/sequences_to_contact_maps"
   scratchDir='/home/erschultz/scratch'
-  numIterations=60
-  # finalSimProductionSweeps=1000
-  # productionSweeps=100000
-  # equilibSweeps=20000
+  numIterations=1
+  finalSimProductionSweeps=1000
+  productionSweeps=100000
+  equilibSweeps=20000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
 i=1
 dataset='dataset_05_12_22'
-useE='false'
-mode='both'
-for method in 'PCA-normalize' 'PCA-normalize-scale'
+useE='true'
+mode='diag'
+method='ground_truth'
+for mode in 'diag' 'plaid'
 do
   for sample in 1
    # 2 3 4
   do
-    for k in 1 2 4 6 8 10
+    for k in 'none'
     do
       max_ent
     done

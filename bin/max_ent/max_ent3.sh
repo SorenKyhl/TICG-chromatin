@@ -28,7 +28,7 @@ dataset='dataset_04_27_22'
 useE='true'
 method='GNN'
 mode='diag'
-modelID=150
+modelID=149
 for sample in 1 2 3 4 5 6 7 8
 do
   max_ent

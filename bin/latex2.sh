@@ -17,9 +17,6 @@ else
   source activate python3.9_pytorch1.9_cuda10.2
 fi
 
-
-samples="40-1230-1718-1751-1761"
-sample=40
 # dataSet='dataset_08_24_21'
 # dataSet='dataset_08_26_21'
 # dataSet='dataset_08_29_21'

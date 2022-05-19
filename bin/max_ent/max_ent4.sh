@@ -24,14 +24,19 @@ fi
 
 STARTTIME=$(date +%s)
 i=3000
-dataset='dataset_04_27_22'
+dataset='dataset_09_21_21'
 useE='true'
-method='ground_truth'
-mode='diag'
-for sample in 1
- # 2 3 4 5 6 7 8
+mode='both'
+for method in 'GNN'
 do
-  max_ent
+  for sample in 1 2 8 14 20
+   # 2 3 4
+  do
+    for modelID in 149 150
+    do
+      max_ent
+    done
+  done
 done
 
 wait

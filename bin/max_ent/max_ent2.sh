@@ -8,7 +8,7 @@
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=erschultz@uchicago.edu
 
-local='true'
+local='false'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
@@ -22,19 +22,17 @@ then
   source activate python3.9_pytorch1.11
 fi
 
-# productionSweeps=200000
-# equilibSweeps=20000
 STARTTIME=$(date +%s)
 i=1000
-dataset='dataset_test'
+dataset='dataset_09_21_21'
 # useE='true'
 mode='both'
-for method in 'PCA-normalize+constant'
+for method in 'PCA-normalize'
 do
-  for sample in 12 15
+  for sample in 1 2 8 14 20
    # 2 3 4
   do
-    for k in 2 4
+    for k in 2 4 6
     do
       max_ent
     done
