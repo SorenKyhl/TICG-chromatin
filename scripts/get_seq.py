@@ -60,8 +60,12 @@ def getArgs():
                                         'aligned_reads/ChromHMM_15/STATEBYLINE/'
                                         'HTC116_15_chr2_statebyline.txt'),
                         help='location of ChromHMM data')
-    parser.add_argument('--p_switch', type=float, default=0.05,
+    parser.add_argument('--p_switch', type=AC.str2float, default=None,
                         help='probability to switch bead assignment (for method = random)')
+    parser.add_argument('--lmbda', type=AC.str2float, default=0.8,
+                        help='lambda for Markov matrix of method = random')
+    parser.add_argument('--f', type=AC.str2float, default=0.5,
+                        help='mark frequency for method = random')
     parser.add_argument('--kernel', type=str, default='poly',
                         help='kernel for kernel PCA')
 
@@ -172,49 +176,73 @@ class GetSeq():
         self.m = m
         self.k = k
 
-    def get_random_seq(self, p_switch, seed = None, exclusive=False, scale_resolution=1):
+    def get_random_seq(self, lmbda = None, f = None, p_switch = None,
+                        seed = None, exclusive = False, scale_resolution = 1):
         rng = np.random.default_rng(seed)
-        p_switch /= scale_resolution
+        assert (p_switch is not None) ^ (lmbda is not None)
+
         m = self.m * scale_resolution
-
         seq = np.zeros((m, self.k))
-        if exclusive:
-            transition_probs = [1 - p_switch] # keep label with p = 1-p_switch
-            transition_probs.extend([p_switch/(self.k-1)]*(self.k-1))
-            # remaining transitions have to sum to p_switch
 
-            ind = np.empty(m)
-            ind[0] = rng.choice(range(self.k), size = 1)
-            for i in range(1, m):
-                prev_label = ind[i-1]
-                other_labels = list(range(self.k))
-                other_labels.remove(prev_label)
+        if p_switch is not None:
+            p_switch /= scale_resolution
 
-                choices = [prev_label]
-                choices.extend(other_labels)
-                ind[i] = rng.choice(choices, p=transition_probs)
-            for row, col in enumerate(ind):
-                seq[row, int(col)] = 1
+            if exclusive:
+                transition_probs = [1 - p_switch] # keep label with p = 1-p_switch
+                transition_probs.extend([p_switch/(self.k-1)]*(self.k-1))
+                # remaining transitions have to sum to p_switch
+
+                ind = np.empty(m)
+                ind[0] = rng.choice(range(self.k), size = 1)
+                for i in range(1, m):
+                    prev_label = ind[i-1]
+                    other_labels = list(range(self.k))
+                    other_labels.remove(prev_label)
+
+                    choices = [prev_label]
+                    choices.extend(other_labels)
+                    ind[i] = rng.choice(choices, p=transition_probs)
+                for row, col in enumerate(ind):
+                    seq[row, int(col)] = 1
+            else:
+                seq[0, :] = rng.choice([1,0], size = self.k)
+                for j in range(self.k):
+                    for i in range(1, m):
+                        if seq[i-1, j] == 1:
+                            seq[i, j] = rng.choice([1,0], p=[1 - p_switch, p_switch])
+                        else:
+                            seq[i, j] = rng.choice([1,0], p=[p_switch, 1 - p_switch])
+
+            if scale_resolution != 1:
+                seq_high_resolution = seq.copy()
+                seq = np.zeros((self.m, self.k))
+                for i in range(self.m):
+                    lower = i * scale_resolution
+                    upper = lower + scale_resolution
+                    slice = seq_high_resolution[lower:upper, :]
+                    sum = np.sum(slice, axis = 0)
+                    # sum /= scale_resolution
+                    sum /= np.sum(sum)
+                    seq[i, :] = np.nan_to_num(sum)
         else:
+            assert scale_resolution == 1, 'not supported yet'
+            # lmda is not None
+            if f is None:
+                f = 0.5
+                print('Using f = 0.5')
+
             seq[0, :] = rng.choice([1,0], size = self.k)
             for j in range(self.k):
                 for i in range(1, m):
                     if seq[i-1, j] == 1:
-                        seq[i, j] = rng.choice([1,0], p=[1 - p_switch, p_switch])
+                        p11 = f*(1-lmbda)+lmbda
+                        seq[i, j] = rng.choice([1,0], p = [p11, 1 - p11])
                     else:
-                        seq[i, j] = rng.choice([1,0], p=[p_switch, 1 - p_switch])
+                        # equals 0
+                        p00 = f*(lmbda-1) + 1
+                        seq[i, j] = rng.choice([1,0], p = [1 - p00, p00])
 
-        if scale_resolution != 1:
-            seq_high_resolution = seq.copy()
-            seq = np.zeros((self.m, self.k))
-            for i in range(self.m):
-                lower = i * scale_resolution
-                upper = lower + scale_resolution
-                slice = seq_high_resolution[lower:upper, :]
-                sum = np.sum(slice, axis = 0)
-                # sum /= scale_resolution
-                sum /= np.sum(sum)
-                seq[i, :] = np.nan_to_num(sum)
+
 
         return seq
 
@@ -663,7 +691,7 @@ def main():
     elif args.method is None:
         return
     elif args.method.startswith('random'):
-        seq = getSeq.get_random_seq(args.p_switch, args.seed, args.exclusive,
+        seq = getSeq.get_random_seq(args.lmbda, args.f, args.p_switch, args.seed, args.exclusive,
                                     args.scale_resolution)
     elif args.method.startswith('block'):
         seq = getSeq.get_block_seq(args.method)
@@ -718,7 +746,7 @@ def main():
             _, k = seq.shape
             assert args.k is not None
             assert args.k > k, f"{args.k} not > {k}"
-            seq_random = GetSeq(args.m, args.k - k).get_random_seq(args.p_switch, args.seed)
+            seq_random = GetSeq(args.m, args.k - k).get_random_seq(args.lmbda, args.f, args.p_switch, args.seed)
             seq = np.concatenate((seq, seq_random), axis = 1)
 
         if args.use_smatrix or args.use_ematrix:
@@ -800,7 +828,7 @@ class Tester():
         self.dataset = 'dataset_test'
         self.sample = 85
         self.sample_folder = osp.join('/home/eric', self.dataset, f'samples/sample{self.sample}')
-        self.m = 300
+        self.m = 3000
         self.k = 3
         self.getSeq = GetSeq(self.m, self.k)
 
@@ -819,8 +847,12 @@ class Tester():
                             save = False, title = 'k_means test')
 
     def test_random(self):
+        seq = self.getSeq.get_random_seq(lmbda=0.8, exclusive = False)
+        plot_seq_continuous(seq, show = True, save = False,
+                            title = 'random_lmbda_resolution test')
+
         seq = self.getSeq.get_random_seq(p_switch=0.05, exclusive = True)
-        # plot_seq_exclusive(seq, show = True, save = False, title = 'random-exclusive test')
+        plot_seq_exclusive(seq, show = True, save = False, title = 'random-exclusive test')
 
         seq = self.getSeq.get_random_seq(p_switch=0.03, exclusive = False,
                                         scale_resolution = 25)
@@ -869,11 +901,11 @@ class Tester():
 
     def test_suite(self):
         # self.test_nmf_k_means()
-        # self.test_random()
+        self.test_random()
         # self.test_epi()
         # self.test_ChromHMM()
         # self.test_GNN()
-        self.test_PCA()
+        # self.test_PCA()
 
 
 

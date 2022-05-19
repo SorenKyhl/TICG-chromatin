@@ -48,7 +48,7 @@ run()  {
 	rm -d $scratchDirI
 }
 
-# cd ~/TICG-chromatin/srcs
+# cd ~/TICG-chromatin/src
 # make
 # mv TICG-engine ..
 

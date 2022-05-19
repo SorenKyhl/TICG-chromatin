@@ -60,16 +60,18 @@ def main():
         s = load_final_max_ent_S(args.replicate_folder, args.final_folder)
         e = s_to_E(s)
 
-    if s is not None:
-        plot_matrix(s, ofile = osp.join(args.save_folder, 's.png'), title = 'S', vmax = 'max', vmin = 'min', cmap = 'blue-red')
+    meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
+    y_diag = DiagonalPreprocessing.process(y, meanDist)
 
-    if e is not None:
-        plot_matrix(e, ofile = osp.join(args.save_folder, 'e.png'), title = 'E', vmax = 'max', vmin = 'min', cmap = 'blue-red')
-
-    if args.m < 3000: # takes a long time for large m and not really necessary
-        meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
-        y_diag = DiagonalPreprocessing.process(y, meanDist)
+    if args.m < 5000:
+        # takes a long time for large m and not really necessary
         plot_matrix(y_diag, ofile = osp.join(args.save_folder, 'y_diag.png'), vmax = 'max')
+
+        if s is not None:
+            plot_matrix(s, ofile = osp.join(args.save_folder, 's.png'), title = 'S', vmax = 'max', vmin = 'min', cmap = 'blue-red')
+
+        if e is not None:
+            plot_matrix(e, ofile = osp.join(args.save_folder, 'e.png'), title = 'E', vmax = 'max', vmin = 'min', cmap = 'blue-red')
 
 
     if args.save_npy:
