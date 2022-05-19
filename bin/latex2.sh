@@ -10,10 +10,10 @@
 local='false'
 if [ $local = 'true' ]
 then
-  dataDir='/project2/depablo/erschultz'
+  dataDir='/home/erschultz/sequences_to_contact_maps'
   source activate python3.9_pytorch1.9
 else
-  dataDir='/home/erschultz/sequences_to_contact_maps'
+  dataDir='/project2/depablo/erschultz'
   source activate python3.9_pytorch1.9_cuda10.2
 fi
 

@@ -1,6 +1,6 @@
 #! /bin/bash
-#SBATCH --job-name=latex
-#SBATCH --output=logFiles/latex.out
+#SBATCH --job-name=latex3
+#SBATCH --output=logFiles/latex3.out
 #SBATCH --time=0:30:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=2
@@ -17,14 +17,24 @@ else
   source activate python3.9_pytorch1.9_cuda10.2
 fi
 
-dataset='dataset_04_17_22'
-samples='1-2-3-4-5-6-7-8'
+
+samples="40-1230-1718-1751-1761"
+sample=40
+# dataSet='dataset_08_24_21'
+# dataSet='dataset_08_26_21'
+# dataSet='dataset_08_29_21'
+# dataSet='dataset_10_27_21'
+# dataSet='dataset_11_03_21'
+# dataSet='dataset_11_14_21'
+
+dataset=dataset_05_12_22
+samples="1-2-3-4"
 dataFolder="${dataDir}/${dataset}"
 # python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
-#
 
 for sample in 1
- # 2 3 4 5 6 7 8
 do
-  python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
+  python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample &
 done
+
+wait
