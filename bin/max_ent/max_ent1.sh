@@ -26,7 +26,6 @@ STARTTIME=$(date +%s)
 i=1
 dataset='dataset_05_12_22'
 useE='true'
-mode='diag'
 method='ground_truth'
 for mode in 'diag' 'plaid'
 do
@@ -39,6 +38,21 @@ do
     done
   done
 done
+
+mode='diag'
+method='GNN'
+for modelID in 149 150
+do
+  for sample in 1
+   # 2 3 4
+  do
+    for k in 'none'
+    do
+      max_ent
+    done
+  done
+done
+
 
 
 wait

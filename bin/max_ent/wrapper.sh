@@ -9,7 +9,8 @@
 # necessary to ensure log files are in right place
 cd ~/TICG-chromatin
 
-for i in 1 2 3 4
+for i in 1
+# 2 3 4
 # 9 10 - don't fit in GPU
 do
   echo $i
