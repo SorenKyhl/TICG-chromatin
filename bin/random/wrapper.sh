@@ -5,15 +5,15 @@
 # chi="0&0\\0&0"
 chi='polynomial'
 k=4
-m=512
+m=32768
 today=$(date +'%m_%d_%y')
 dataFolder="/project2/depablo/erschultz/dataset_05_18_22"
-startSample=1
+startSample=13
 relabel='none'
-startNode=0
-nodes=7
+startNode=6
+nodes=1
 tasks=3
-samples=21
+samples=1
 
 diag='true'
 nSweeps=1000000
@@ -56,6 +56,6 @@ do
   startSampleI=$(( $startSample + $samplesPerNode * $i ))
   endSampleI=$(( $startSampleI + $samplesPerNode - 1 ))
   echo "TICG${i}" $startSampleI $endSampleI "m=${m}"
-  sbatch ~/TICG-chromatin/bin/random/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samplesPerNode $samplesPerTask $diag $scratchDir $i $nSweeps $lmbda $minChi $maxChi $fillDiag $chiSeed $maxDiagChi
+  # sbatch ~/TICG-chromatin/bin/random/random${i}.sh $chi $k $m $dataFolder $startSampleI $relabel $tasks $samplesPerNode $samplesPerTask $diag $scratchDir $i $nSweeps $lmbda $minChi $maxChi $fillDiag $chiSeed $maxDiagChi
   m=$(( $m * 2 ))
 done
