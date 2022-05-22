@@ -24,20 +24,14 @@ fi
 
 STARTTIME=$(date +%s)
 i=11000
-dataset='dataset_01_17_22'
-useE='false'
-mode='plaid'
-diagPseudobeadsOn='false'
-for method in 'PCA-normalize' 'PCA-normalize-scale'
+dataset='dataset_05_18_22'
+mode='both'
+method='PCA-normalize'
+for sample in 19
 do
-  for sample in 1
-   # 2 3 4
+  for k in 2 4 6 8
   do
-    for k in 1 2 3 4 6
-    # 2 4 6 8
-    do
-      max_ent
-    done
+    max_ent
   done
 done
 
