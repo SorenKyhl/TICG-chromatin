@@ -17,7 +17,7 @@ else
   source activate python3.9_pytorch1.9_cuda10.2
 fi
 
-dataset='dataset_04_17_22'
+dataset='dataset_05_12_22'
 samples='1-2-3-4-5-6-7-8'
 dataFolder="${dataDir}/${dataset}"
 # python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples

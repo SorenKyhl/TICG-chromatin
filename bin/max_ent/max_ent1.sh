@@ -8,7 +8,7 @@
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=erschultz@uchicago.edu
 
-local='false'
+local='true'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
@@ -17,8 +17,8 @@ then
   scratchDir='/home/erschultz/scratch'
   numIterations=1
   finalSimProductionSweeps=1000
-  productionSweeps=100000
-  equilibSweeps=20000
+  productionSweeps=1000
+  equilibSweeps=200
   source activate python3.9_pytorch1.9
 fi
 
@@ -27,7 +27,7 @@ i=1
 dataset='dataset_05_12_22'
 useE='true'
 method='ground_truth'
-for mode in 'diag' 'plaid'
+for mode in 'plaid' 'diag'
 do
   for sample in 1
    # 2 3 4
@@ -38,20 +38,20 @@ do
     done
   done
 done
-
-mode='diag'
-method='GNN'
-for modelID in 149 150
-do
-  for sample in 1
-   # 2 3 4
-  do
-    for k in 'none'
-    do
-      max_ent
-    done
-  done
-done
+#
+# mode='diag'
+# method='GNN'
+# for modelID in 149 150
+# do
+#   for sample in 1
+#    # 2 3 4
+#   do
+#     for k in 'none'
+#     do
+#       max_ent
+#     done
+#   done
+# done
 
 
 

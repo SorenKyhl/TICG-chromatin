@@ -17,9 +17,6 @@ else
   source activate python3.9_pytorch1.9_cuda10.2
 fi
 
-
-samples="40-1230-1718-1751-1761"
-sample=40
 # dataSet='dataset_08_24_21'
 # dataSet='dataset_08_26_21'
 # dataSet='dataset_08_29_21'
@@ -27,12 +24,10 @@ sample=40
 # dataSet='dataset_11_03_21'
 # dataSet='dataset_11_14_21'
 
-dataset=dataset_05_12_22
-samples="1-2-3-4"
+dataset='dataset_09_21_21'
 dataFolder="${dataDir}/${dataset}"
-# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
 
-for sample in 1
+for sample in 1 2 8 14 20
 do
   python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample &
 done

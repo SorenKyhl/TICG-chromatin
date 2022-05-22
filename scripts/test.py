@@ -65,39 +65,6 @@ def find_mising_ids():
 
     print(ids, len(ids))
 
-def upper_traingularize_chis():
-    dir = "/project2/depablo/erschultz/dataset_08_26_21"
-    samples = make_dataset(dir)
-    for file in samples:
-        file_dir = osp.join(dir, file)
-        chis = np.load(osp.join(file_dir, 'chis.npy'))
-        chis = np.triu(chis)
-
-        np.savetxt(osp.join(file_dir, 'chis.txt'), chis, fmt='%0.5f')
-        np.save(osp.join(file_dir, 'chis.npy'), chis)
-
-def write_psi():
-    # dir = "/project2/depablo/erschultz/dataset_11_03_21/samples"
-    dir = "/home/eric/sequences_to_contact_maps/dataset_11_03_21/samples"
-    for file in os.listdir(dir):
-        if file.startswith('sample'):
-            file_dir = osp.join(dir, file)
-
-            xfile = osp.join(file_dir, 'x.npy')
-            x = np.load(xfile)
-            m, k = x.shape
-            seq = np.zeros((m ,k))
-            for i in range(k):
-                seq_i = np.loadtxt(osp.join(file_dir, 'seq{}.txt'.format(i)))
-                seq[:, i] = seq_i
-            if not np.array_equal(seq, x):
-                print(int(file[6:]))
-
-            x_linear_file = osp.join(file_dir, 'x_linear.npy')
-            if osp.exists(x_linear_file):
-                x_linear = np.load(x_linear_file)
-                np.save(osp.join(file_dir, 'psi.npy'), x_linear)
-
 def check_seq():
     # dir = "/project2/depablo/erschultz/dataset_11_03_21/samples"
     dir = "/home/eric/sequences_to_contact_maps/dataset_11_03_21/samples"
@@ -145,7 +112,6 @@ def test_p():
     print(p.shape)
     plotContactMap(p, ofile = osp.join(dir, 'p.png'), vmax = 10)
     print(p)
-
 
 def test_robust_PCA():
 
@@ -397,5 +363,4 @@ if __name__ == '__main__':
     # check_seq()
     # find_mising_ids()
     # check_seq('dataset_11_03_21')
-    # upper_traingularize_chis()
     # makeDirsForMaxEnt("dataset_04_27_22")

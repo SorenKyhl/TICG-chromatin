@@ -8,7 +8,7 @@
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=erschultz@uchicago.edu
 
-local='true'
+local='false'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
@@ -24,16 +24,18 @@ fi
 
 STARTTIME=$(date +%s)
 i=9000
-dataset='dataset_04_26_22'
-useE='true'
-method='GNN'
-mode='diag'
-modelID=150
-for sample in 1
-# 2 3 4 5 6 7 8
+dataset='dataset_05_18_22'
+mode='both'
+method='PCA-normalize'
+for sample in 17 18 19
 do
-  max_ent
+  for k in 2 4 6 8
+  do
+    max_ent
+  done
 done
+
+
 
 wait
 

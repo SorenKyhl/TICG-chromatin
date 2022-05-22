@@ -24,7 +24,7 @@ fi
 # dataSet='dataset_11_03_21'
 # dataSet='dataset_11_14_21'
 
-dataset=dataset_04_27_22
+dataset='dataset_04_27_22'
 samples="1-2-3-4"
 dataFolder="${dataDir}/${dataset}"
 python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples

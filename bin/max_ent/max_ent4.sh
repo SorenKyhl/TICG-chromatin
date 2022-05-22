@@ -29,7 +29,7 @@ useE='true'
 mode='both'
 for method in 'GNN'
 do
-  for sample in 1 2 8 14 20
+  for sample in 1 8 14 20
    # 2 3 4
   do
     for modelID in 149 150

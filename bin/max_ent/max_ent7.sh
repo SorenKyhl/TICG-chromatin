@@ -24,22 +24,18 @@ fi
 
 STARTTIME=$(date +%s)
 i=6000
-dataset='dataset_04_26_22'
+dataset='dataset_05_18_22'
 mode='both'
-for method in 'PCA-normalize'
+method='PCA-normalize'
+for sample in 5 6 7 8
 do
-  for sample in 1 2 3 4
+  for k in 2 4 6 8
   do
-    for k in 2 4 6 8
-    do
-      max_ent
-    done
+    max_ent
   done
 done
 
 wait
-
-# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
 
 ENDTIME=$(date +%s)
 echo "total time:$(( $(( $ENDTIME - $STARTTIME )) / 60 )) minutes"

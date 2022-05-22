@@ -24,21 +24,18 @@ fi
 
 STARTTIME=$(date +%s)
 i=4000
-dataset='dataset_04_27_22'
+dataset='dataset_05_18_22'
 useE='true'
-method='ground_truth'
-for sample in 1
- # 2 3 4 5 6 7 8
+method='GNN'
+modelID=150
+mode='diag'
+for sample in 1 2 3 4 5 6 7 8 9 10 11 12 13
 do
   max_ent
 done
 
 
 wait
-
-wait
-
-# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
 
 ENDTIME=$(date +%s)
 echo "total time:$(( $(( $ENDTIME - $STARTTIME )) / 60 )) minutes"

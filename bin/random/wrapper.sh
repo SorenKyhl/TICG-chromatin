@@ -12,7 +12,7 @@ startSample=13
 relabel='none'
 startNode=6
 nodes=1
-tasks=3
+tasks=1
 samples=1
 
 diag='true'
