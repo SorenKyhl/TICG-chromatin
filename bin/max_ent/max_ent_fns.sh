@@ -13,7 +13,7 @@ scratchDir='/scratch/midway2/erschultz'
 productionSweeps=100000
 finalSimProductionSweeps=1000000
 equilibSweeps=20000
-numIterations=80 # iteration 1 + numIterations is production run to get contact map
+numIterations=70 # iteration 1 + numIterations is production run to get contact map
 
 # energy params
 useE='false'
