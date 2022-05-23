@@ -1,7 +1,7 @@
 #! /bin/bash
 #SBATCH --job-name=maxent8
 #SBATCH --output=logFiles/maxent8.out
-#SBATCH --time=24:00:00
+#SBATCH --time=1-24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20
 #SBATCH --mem-per-cpu=2000

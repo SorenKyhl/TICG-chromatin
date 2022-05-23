@@ -1,21 +1,21 @@
 #! /bin/bash
 #SBATCH --job-name=maxent12
 #SBATCH --output=logFiles/maxent12.out
-#SBATCH --time=24:00:00
+#SBATCH --time=1-24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20
 #SBATCH --mem-per-cpu=2000
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=erschultz@uchicago.edu
 
-local='true'
+local='false'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dir="/home/erschultz/sequences_to_contact_maps"
+  dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
-  numIterations=60
+  # numIterations=1
   # finalSimProductionSweeps=1000
   # equilibSweeps=200
   # productionSweeps=2000

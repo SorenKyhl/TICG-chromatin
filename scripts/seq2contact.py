@@ -14,7 +14,7 @@ from sequences_to_contact_maps.utils.energy_utils import (calculate_E_S,
                                                           calculate_S, s_to_E)
 from sequences_to_contact_maps.utils.InteractionConverter import \
     InteractionConverter
-from sequences_to_contact_maps.utils.load_utils import (load_E_S,
+from sequences_to_contact_maps.utils.load_utils import (load_E_S, load_Y_diag,
                                                         load_final_max_ent_chi,
                                                         load_final_max_ent_S,
                                                         load_X_psi, load_Y)

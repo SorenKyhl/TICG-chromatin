@@ -12,7 +12,7 @@ from seq2contact import (LETTERS, ArgparserConverter, DiagonalPreprocessing,
                          R_pca, clean_directories, crop, finalize_opt,
                          get_base_parser, get_dataset, load_E_S,
                          load_final_max_ent_S, load_saved_model, load_X_psi,
-                         load_Y, plot_matrix, plot_seq_binary,
+                         load_Y, plot_matrix, plot_seq_binary, load_Y_diag,
                          plot_seq_exclusive, project_S_to_psi_basis, s_to_E)
 from sklearn.cluster import KMeans
 from sklearn.decomposition import NMF, PCA, KernelPCA
@@ -626,6 +626,7 @@ def get_energy_gnn(model_path, sample_path, m):
 
         # get dataset
         dataset = get_dataset(opt, verbose = True, samples = [sample_id])
+        print(dataset)
 
         # get prediction
         for i, data in enumerate(dataset):
@@ -696,10 +697,10 @@ def main():
     elif args.method.startswith('block'):
         seq = getSeq.get_block_seq(args.method)
     elif args.method.startswith('pca_split'):
-        y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))
+        y_diag = load_Y_diag(args.sample_folder)
         seq = getSeq.get_PCA_split_seq(y_diag)
     elif args.method.startswith('pca'):
-        y_diag = np.load(osp.join(args.sample_folder, 'y_diag.npy'))
+        y_diag = load_Y_diag(args.sample_folder)
         seq = getSeq.get_PCA_seq(y_diag, args.normalize, args.scale)
     elif args.method.startswith('rpca'):
         L_file = osp.join(args.sample_folder, 'PCA_analysis', 'L_log.npy')
@@ -716,7 +717,7 @@ def main():
             seq = getSeq.get_RPCA_seq(y, args.normalize, args.exp, args.diag)
     elif args.method.startswith('kpca'):
         if args.input == 'y':
-            input = np.load(osp.join(args.sample_folder, 'y_diag.npy'))
+            input = load_Y_diag(args.sample_folder)
         elif args.input == 'x':
             input = np.load(osp.join(args.sample_folder, 'x.npy'))
         elif args.input == 'psi':

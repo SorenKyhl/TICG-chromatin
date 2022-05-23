@@ -1,7 +1,7 @@
 #! /bin/bash
 #SBATCH --job-name=maxent9
 #SBATCH --output=logFiles/maxent9.out
-#SBATCH --time=24:00:00
+#SBATCH --time=1-24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20
 #SBATCH --mem-per-cpu=2000
@@ -24,14 +24,14 @@ fi
 STARTTIME=$(date +%s)
 i=8000
 dataset='dataset_05_18_22'
-mode='both'
-method='PCA-normalize'
-for sample in 13 14 15 16
+useE='true'
+method='GNN'
+modelID=150
+mode='diag'
+for sample in 17 18
+# 19
 do
-  for k in 2 4 6 8
-  do
-    max_ent
-  done
+  max_ent
 done
 
 wait

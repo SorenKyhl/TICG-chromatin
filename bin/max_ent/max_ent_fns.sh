@@ -46,12 +46,13 @@ epiData="${chipSeqFolder}/fold_change_control/processed"
 chromHMMData="${chipSeqFolder}/aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt"
 
 max_ent() {
+  numIterationsCopy=$numIterations
   if [ $useS = 'true' ] || [ $useE = 'true' ]
   then
     useGroundTruthChi='false' # defaults to false anyways
     if ! [ $mode = 'diag' ]
     then
-      numIterations=0
+      numIterationsCopy=0
       goalSpecified='false'
     fi
     if ! [ $loadChi = 'true' ]
@@ -62,7 +63,7 @@ max_ent() {
 
   if [ $useGroundTruthChi == 'true' ] && ! [ $mode = 'plaid' ]
   then
-    numIterations=0
+    numIterationsCopy=0
     goalSpecified='false'
   fi
 
@@ -131,13 +132,13 @@ max_ent_inner () {
 
   echo $method_fmt
   # apply max ent with newton's method
-  ~/TICG-chromatin/maxent/bin/run.sh $ofile $gamma $trust_region $mode $productionSweeps $equilibSweeps $goalSpecified $numIterations $overwrite $1 $finalSimProductionSweeps
+  ~/TICG-chromatin/maxent/bin/run.sh $ofile $gamma $trust_region $mode $productionSweeps $equilibSweeps $goalSpecified $numIterationsCopy $overwrite $1 $finalSimProductionSweeps
 
   # run.sh moves all data to $ofile upon completion
   cd $ofile
 
   # compare results
-  prodIt=$(($numIterations+1))
+  prodIt=$(($numIterationsCopy+1))
   python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --k $k --final_it $prodIt --replicate_folder $ofile --save_npy > contact.log
   python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${ofile}/y.npy" --y_diag "$sampleFolder/y_diag.npy" --yhat_diag "${ofile}/y_diag.npy" >> contact.log
 

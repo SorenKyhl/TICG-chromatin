@@ -315,6 +315,10 @@ def set_up_diag_chi(args, config, sample_config):
         chi_diag = np.array(args.chi_diag)
     else:
         chi_diag = np.linspace(0, args.max_diag_chi, args.diag_bins)
+        chi_diag = np.array([51.92181, 67.09196, 76.38870, 80.90643, 79.13167, 82.49367,
+                            82.21692, 84.95322, 87.65721, 86.45633, 91.04278, 91.69538,
+                            87.34007, 86.75101, 85.60672, 92.24463, 91.09976, 96.46557,
+                            84.80262, 86.29535])
 
     if chi_diag is not None:
         chi_diag += args.chi_diag_constant

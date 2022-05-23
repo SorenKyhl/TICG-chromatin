@@ -1,7 +1,7 @@
 #! /bin/bash
 #SBATCH --job-name=maxent5
 #SBATCH --output=logFiles/maxent5.out
-#SBATCH --time=24:00:00
+#SBATCH --time=1-24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20
 #SBATCH --mem-per-cpu=2000
@@ -29,7 +29,7 @@ useE='true'
 method='GNN'
 modelID=150
 mode='diag'
-for sample in 1 2 3 4 5 6 7 8 9 10 11 12 13
+for sample in 1 2 3 4 5 6 7
 do
   max_ent
 done

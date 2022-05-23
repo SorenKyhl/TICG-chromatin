@@ -68,6 +68,8 @@ overwrite=${9:-0}
 scratchDir=${10:-'/scratch/midway2/erschultz/TICG_maxent'}
 final_sim_production_sweeps=${11:-1000000}
 
+echo $@
+
 # cd to scratch
 if ! [[ -d $scratchDir ]]
 then

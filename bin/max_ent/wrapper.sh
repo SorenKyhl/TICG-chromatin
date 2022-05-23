@@ -9,9 +9,9 @@
 # necessary to ensure log files are in right place
 cd ~/TICG-chromatin
 
-for i in 10 12
-# 1 4 5 6 7 8 9 11 - running
-# 1 4 - partially/maybe worked, re running
+for i in 1 4 12 8 5 6 7 13 14 11 9
+# 9 - only ran part of it
+# 10 - broke ??
 # 2 3 - worked see latex
 do
   echo $i

@@ -1,7 +1,7 @@
 #! /bin/bash
 #SBATCH --job-name=maxent1
 #SBATCH --output=logFiles/maxent1.out
-#SBATCH --time=24:00:00
+#SBATCH --time=1-24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20
 #SBATCH --mem-per-cpu=2000
@@ -13,9 +13,9 @@ source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dir="/home/erschultz/sequences_to_contact_maps"
+  dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
-  numIterations=1
+  numIterations=2
   finalSimProductionSweeps=1000
   productionSweeps=1000
   equilibSweeps=200
@@ -38,20 +38,20 @@ do
     done
   done
 done
-#
-# mode='diag'
-# method='GNN'
-# for modelID in 149 150
-# do
-#   for sample in 1
-#    # 2 3 4
-#   do
-#     for k in 'none'
-#     do
-#       max_ent
-#     done
-#   done
-# done
+
+mode='diag'
+method='GNN'
+for modelID in 149 150
+do
+  for sample in 1
+   # 2 3 4
+  do
+    for k in 'none'
+    do
+      max_ent
+    done
+  done
+done
 
 
 
