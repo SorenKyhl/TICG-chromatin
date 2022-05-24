@@ -4,7 +4,7 @@
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20
-#SBATCH --mem-per-cpu=2000
+#SBATCH --mem=0
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=erschultz@uchicago.edu
 
@@ -29,7 +29,7 @@ useE='true'
 method='GNN'
 modelID=150
 mode='diag'
-for sample in 8 9 10 11
+for sample in 8 9 10
 do
   max_ent
 done

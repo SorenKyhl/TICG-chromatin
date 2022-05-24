@@ -51,45 +51,36 @@ def repair_dataset_11_14_21():
         psi[:, 14] = np.logical_xor(x[:, 8], x[:, 9]) # either I or J
         np.save(osp.join(sample_dir, 'psi.npy'), psi)
 
-def find_mising_ids():
-    ids = set(range(1, 2001))
-    dir = "/project2/depablo/erschultz/dataset_04_26_22/samples"
+def check_seq(dataset):
+    dir = osp.join("/project2/depablo/erschultz", dataset, "samples")
+    dir = osp.join("/home/erschultz", dataset, "samples")
+    ids = set()
     for file in os.listdir(dir):
         if file.startswith('sample'):
             id = int(file[6:])
-            data_out_path = osp.join(dir, file, 'data_out')
-            x_path = osp.join(dir, file, 'x.npy')
-            y_path = osp.join(dir, file, 'y_diag.npy')
-            if osp.exists(data_out_path) and osp.exists(x_path) and osp.exists(y_path):
-                ids.remove(id)
-
-    print(ids, len(ids))
-
-def check_seq():
-    # dir = "/project2/depablo/erschultz/dataset_11_03_21/samples"
-    dir = "/home/eric/sequences_to_contact_maps/dataset_11_03_21/samples"
-    for file in os.listdir(dir):
-        if file.startswith('sample'):
             file_dir = osp.join(dir, file)
+            try:
+                x, psi, chi, e, s, y, ydiag = load_all(path, data_folder = dataFolder,
+                                                    save = False,
+                                                    throw_exception = True)
 
-            xfile = osp.join(file_dir, 'x.npy')
-            x = np.load(xfile)
-            m, _ = x.shape
-            k = 4
-            seq = np.zeros((m, k))
-            for i in range(k):
-                seq_i = np.loadtxt(osp.join(file_dir, 'seq{}.txt'.format(i)))
-                seq[:, i] = seq_i
-            # if not np.array_equal(seq, x):
-            #     print(int(file[6:]))
+                m, k = psi.shape
+                seq = np.zeros((m, k))
+                for i in range(k):
+                    seq_i = np.loadtxt(osp.join(file_dir, 'seq{}.txt'.format(i)))
+                    seq[:, i] = seq_i
 
-            psi_file = osp.join(file_dir, 'psi.npy')
-            if osp.exists(psi_file):
-                psi = np.load(psi_file)
                 if not np.array_equal(seq, psi):
                     print(psi)
                     print(seq)
-                    print(int(file[6:]))
+                    print(id)
+                    ids.add(id)
+            except Exception as e:
+                print(e, f'id={id}')
+                ids.add(id)
+                continue
+
+    print(ids, len(ids))
 
 def makeDirsForMaxEnt(dataset):
     for sample in [1]:
@@ -103,15 +94,6 @@ def makeDirsForMaxEnt(dataset):
                 os.mkdir(osp.join(sample_folder, method, f'k{k}'), mode = 0o755)
                 for replicate in [1]:
                     os.mkdir(osp.join(sample_folder, method, f'k{k}', f'replicate{replicate}'), mode = 0o755)
-
-def test_p():
-    dir = '/home/eric/dataset_test/samples/sample21'
-    y = np.load(osp.join(dir, 'y.npy'))
-    ydiag = np.load(osp.join(dir, 'y_diag.npy'))
-    p = y / ydiag
-    print(p.shape)
-    plotContactMap(p, ofile = osp.join(dir, 'p.png'), vmax = 10)
-    print(p)
 
 def test_robust_PCA():
 
@@ -308,59 +290,15 @@ def is_scc_weighted_mean():
     avg = np.nanmean(corr_arr)
     print(avg)
 
-def plot_convergence():
-    dataset = '/home/erschultz/sequences_to_contact_maps/dataset_04_27_22/samples/'
-    diag_chis = np.loadtxt(osp.join(dataset, 'sample1/PCA-normalize-diagOn/k2/replicate1/chis_diag.txt'))
-    _, k = diag_chis.shape
-
-    cmap = matplotlib.cm.get_cmap('tab20')
-    ind = np.arange(k) % cmap.N
-    colors = plt.cycler('color', cmap(ind))
-
-    for i, c in enumerate(colors):
-        plt.plot(diag_chis[:, i], label = i, color = c['color'])
-    plt.xlabel("Iteration")
-    plt.ylabel("chi_diagonal value")
-    plt.legend(loc=(1.04,0))
-    plt.yscale('log')
-    plt.tight_layout()
-    plt.show()
-    plt.close()
-
-def main():
-    m=200
-    # e = np.zeros((m, m))
-    # e[100, :] = 10
-    # e[:, 100] = 10
-    # np.savetxt('/home/erschultz/dataset_test/e_zero.txt', e)
-    #
-    # e = np.ones((m, m))
-    # e[100, :] = -5
-    # e[:, 100] = -5
-    # np.savetxt('/home/erschultz/dataset_test/e_one.txt', e)
-
-    dir = '/home/erschultz/dataset_test/samples/sample10'
-    y = np.load(osp.join(dir, 'y.npy'))[np.triu_indices(m, 12)].reshape(-1, 1)
-    e = np.load(osp.join(dir, 'e.npy'))[np.triu_indices(m, 12)].reshape(-1, 1)
-    reg = LinearRegression()
-    reg.fit(y, e)
-    score = reg.score(y, e)
-    print('\n\tLinear Regression')
-    print(f'\tR^2: {score}')
-    print(f'\tcoefficients: {reg.coef_}, {reg.intercept_}')
 
 
 
 
 if __name__ == '__main__':
-    plot_convergence()
     # repair_dataset_11_14_21()
-    # main()
     # is_scc_weighted_mean()
     # scc_y_vs_y_rank1()
     # test_robust_PCA()
-    # test_p()
     # check_seq()
     # find_mising_ids()
-    # check_seq('dataset_11_03_21')
     # makeDirsForMaxEnt("dataset_04_27_22")

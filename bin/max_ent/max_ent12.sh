@@ -4,7 +4,7 @@
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20
-#SBATCH --mem-per-cpu=2000
+#SBATCH --mem=0
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=erschultz@uchicago.edu
 
@@ -29,7 +29,8 @@ mode='both'
 method='PCA-normalize'
 for sample in 19
 do
-  for k in 2 4 6 8
+  for k in 2 4
+  # 6 8
   do
     max_ent
   done

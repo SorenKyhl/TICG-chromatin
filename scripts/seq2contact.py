@@ -17,7 +17,7 @@ from sequences_to_contact_maps.utils.InteractionConverter import \
 from sequences_to_contact_maps.utils.load_utils import (load_E_S, load_Y_diag,
                                                         load_final_max_ent_chi,
                                                         load_final_max_ent_S,
-                                                        load_X_psi, load_Y)
+                                                        load_X_psi, load_Y, load_all)
 from sequences_to_contact_maps.utils.neural_net_utils import (get_dataset,
                                                               load_saved_model)
 from sequences_to_contact_maps.utils.plotting_utils import (plot_matrix,
