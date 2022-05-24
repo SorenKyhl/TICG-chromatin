@@ -8,6 +8,7 @@
 
 cd ~/scratch-midway2
 
-mv dataset_01_17_22 /project2/depablo/erschultz/dataset_01_17_22
+rm -r dataset_04*
+rm -r dataset_05*
 
 wait
