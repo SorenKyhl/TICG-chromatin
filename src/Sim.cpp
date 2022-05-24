@@ -1270,7 +1270,8 @@ void Sim::dumpData()  {
 }
 
 void Sim::dumpEnergy(int sweep) {
-	double bonded = getAllBondedEnergy();
+	double bonded = 0;
+	bonded = bonded_on ? getAllBondedEnergy() : 0;
 	double plaid = 0;
 	plaid = plaid_on ? getJustPlaidEnergy(grid.active_cells) : 0; // includes diagonal and boundary energy
 	double diagonal = 0;

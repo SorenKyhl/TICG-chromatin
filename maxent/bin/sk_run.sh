@@ -12,6 +12,7 @@ goal_specified=1 # g
 overwrite=0 # o
 method="n" # m
 parallel_cores=0
+randomize_seed=1 # r
 
 show_help()
 {
@@ -30,7 +31,7 @@ show_help()
 }
 
 
-while getopts "hxwo:c:g:t:e:s:n:m:p:" opt; do
+while getopts "hxwo:c:g:t:e:s:n:m:p:r:" opt; do
 	case $opt in
 		h) show_help ;;
 		o) outputDir=$(pwd)/$OPTARG ;;
@@ -44,6 +45,7 @@ while getopts "hxwo:c:g:t:e:s:n:m:p:" opt; do
 		w) overwrite=1 ;;
 		m) method=$OPTARG ;;
 		p) parallel_cores=$OPTARG ;;
+		r) randomize_seed=$OPTARG ;;
 	esac
 done
 
@@ -70,6 +72,19 @@ echo "method"
 echo $method
 echo "parallel"
 echo $parallel_cores
+echo "randomize_seed"
+echo $randomize_seed
+
+
+get_rng ()
+{
+    if [[ $randomize_seed -eq 1 ]]
+    then
+        echo $RANDOM
+    else
+        echo 1
+    fi
+}
 
 # move to scratch
 if ! [[ -d $outputDir ]]
@@ -127,7 +142,7 @@ run_simulation () {
 	# set up production run
 	python3 $proj_bin/jsed.py $configFileName load_configuration_filename $saveFileName s
 	python3 $proj_bin/jsed.py $configFileName nSweeps $production_sweeps i
-	python3 $proj_bin/jsed.py $configFileName seed $RANDOM i
+	python3 $proj_bin/jsed.py $configFileName seed $(get_rng) i
 
 	if [ "$parallel_cores" -eq 0 ]
 	then
@@ -151,7 +166,7 @@ run_parallel()
 {
 	for (( i=1; i<=$parallel_cores; i++ ))
 	do
-		python3 $proj_bin/jsed.py $configFileName seed $RANDOM i
+		python3 $proj_bin/jsed.py $configFileName seed $(get_rng) i
 		./TICG-engine "core$i" > "core$i.log" &
 	done
 	wait
@@ -186,10 +201,10 @@ then
 		run_simulation
 		# update chis via newton's method
 		python3 $proj_bin/newton_step.py $it $gamma $mode $goal_specified $trust_region $method >> track.log
-		mv diff*.png iteration$it
 		# update plots
 		python3 $proj_bin/plot_convergence.py --mode $mode --k $k
 		python3 $proj_bin/contactmap.py $it
+		(cd iteration$it && python3 $proj_bin/analysis.py)
 	done
 fi
 
