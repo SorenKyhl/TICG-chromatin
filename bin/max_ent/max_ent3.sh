@@ -25,13 +25,15 @@ fi
 STARTTIME=$(date +%s)
 i=2000
 dataset='dataset_04_27_22'
-useE='true'
-method='GNN'
-mode='diag'
-modelID=149
-for sample in 1 2 3 4 5 6 7 8
+method='PCA-normalize'
+mode='both'
+for sample in 1 2 3 4
+ # 5 6 7 8
 do
-  max_ent
+  for k in 2 4 6 8
+  do
+    max_ent
+  done
 done
 
 wait

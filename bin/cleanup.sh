@@ -6,9 +6,13 @@
 #SBATCH --ntasks=10
 #SBATCH --mem-per-cpu=1000
 
-dir=/project2/depablo/erschultz/dataset_04_26_22/samples
+dir=/project2/depablo/erschultz/dataset_09_21_21/samples
 
-for i in $( seq 2001 4400 )
+for i in 1 2 8 14 20
 do
-  rm -r "sample${i}"
+  cd "${dir}/sample${i}"
+  cd GNN-137-E-diagOn
+  rm -r k
+  cd ../GNN-109-E-diagOn
+  rm -r k
 done
