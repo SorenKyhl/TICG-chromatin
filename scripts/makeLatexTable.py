@@ -12,19 +12,27 @@ from seq2contact import (ArgparserConverter, load_E_S, load_final_max_ent_chi,
 from sklearn.metrics import mean_squared_error
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-METHODS = ['ground_truth', 'random', 'PCA', 'PCA_split', 'kPCA', 'RPCA', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM']
-SMALL_METHODS = {'ground_truth', 'random', 'PCA', 'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM'}
-LABELS = ['Ground Truth', 'Random', 'PCA', 'PCA Split', 'kPCA', 'RPCA', 'K-means', 'NMF', 'GNN', 'Epigenetic', 'ChromHMM']
+METHODS = ['ground_truth', 'random', 'PCA', 'PCA_split', 'kPCA', 'RPCA',
+            'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM']
+SMALL_METHODS = {'ground_truth', 'random', 'PCA', 'k_means', 'nmf', 'GNN',
+            'epigenetic', 'ChromHMM'}
+LABELS = ['Ground Truth', 'Random', 'PCA', 'PCA Split', 'kPCA', 'RPCA',
+            'K-means', 'NMF', 'GNN', 'Epigenetic', 'ChromHMM']
 
 def getArgs(data_folder = None, sample = None, samples = None):
     parser = argparse.ArgumentParser(description='Base parser')
     AC = ArgparserConverter()
 
-    parser.add_argument('--data_folder', type=str, default=data_folder, help='location of input data')
-    parser.add_argument('--sample', type=str, default=sample, help='sample id')
-    parser.add_argument('--samples', type=AC.str2list, default=samples, help='list of sample ids separated by -')
-    parser.add_argument('--sample_folder', type=str, help='location of input data')
-    parser.add_argument('--ref_mode', type=str, help='deprecated')
+    parser.add_argument('--data_folder', type=str, default=data_folder,
+                            help='location of input data')
+    parser.add_argument('--sample', type=str, default=sample,
+                            help='sample id')
+    parser.add_argument('--samples', type=AC.str2list, default=samples,
+                            help='list of sample ids separated by -')
+    parser.add_argument('--sample_folder', type=str,
+                        help='location of input data')
+    parser.add_argument('--experimental', type=save_true,
+                        help="True for experimental data mode - ground truth won't be present")
 
     args = parser.parse_args()
 
@@ -154,7 +162,8 @@ def loadData(args):
                             data[k][method]['time'].append(replicate_data['time'])
     return data
 
-def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_id = None):
+def makeLatexTable(data, ofile, header = '', small = False, mode = 'w',
+                    sample_id = None, experimental = False):
     '''
     Writes data to ofile in latex table format.
 
@@ -164,9 +173,9 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
         small: True to output smaller table with only methods in SMALL_METHODS and only SCC as metric')
         mode: file mode (e.g. 'w', 'a')
         sample_id: sample_id for table header; if set, table will show stdev over replicates for that sample
-        ref: which method to use as referencem supported options: {"ground truth", "GNN"}
+        experimental: True if ground_truth won't be present
     '''
-    print('\nMAKING TABLE')
+    print(f'\nMAKING TABLE-small={small}')
     header = header.replace('_', "\_")
     with open(ofile, mode) as o:
         # set up first rows of table
@@ -195,23 +204,24 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
 
         # get reference data
         ground_truth_ref = None
-        if 0 in data.keys() and 'ground_truth-S' in data[0]:
-            ground_truth_ref = data[0]['ground_truth-S']
-            print('ground truth found')
-        elif 0 in data.keys() and 'ground_truth-E' in data[0]:
-            ground_truth_ref = data[0]['ground_truth-E']
-            print('ground truth found')
-        else:
-            # look for ground_truth-psi-chi
-            for key in data.keys():
-                if 'ground_truth-psi-chi' in data[key]:
-                    ground_truth_ref = data[key]['ground_truth-psi-chi']
-                    print('ground truth found')
-                    break
+        if not experimental:
+            if 0 in data.keys() and 'ground_truth-S' in data[0]:
+                ground_truth_ref = data[0]['ground_truth-S']
+                print('ground truth found')
+            elif 0 in data.keys() and 'ground_truth-E' in data[0]:
+                ground_truth_ref = data[0]['ground_truth-E']
+                print('ground truth found')
             else:
-                print('ground truth missing')
+                # look for ground_truth-psi-chi
                 for key in data.keys():
-                    print(f'key 1: {key}, key 2: {data[key].keys()}')
+                    if 'ground_truth-psi-chi' in data[key]:
+                        ground_truth_ref = data[key]['ground_truth-psi-chi']
+                        print('ground truth found')
+                        break
+                else:
+                    print('ground truth missing')
+                    for key in data.keys():
+                        print(f'key 1: {key}, key 2: {data[key].keys()}')
 
         GNN_ref = None
         if 0 in data.keys():
@@ -243,7 +253,9 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                     sample_results = nested_list_to_array(data[k][key][metric])
 
                     if sample_id is not None:
-                        assert sample_results.shape[0] == 1, f"label {label}, metric {metric}, k {k_label}, results {data[k][key][metric]}"
+                        assert sample_results.shape[0] == 1, f"label {label}, "
+                                                f"metric {metric}, k {k_label}, "
+                                                f"results {data[k][key][metric]}"
                         result = sample_results.reshape(-1)
                         if GNN_ref is not None:
                             ref_result = nested_list_to_array(GNN_ref[metric]).reshape(-1)
@@ -262,34 +274,14 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w', sample_i
                             print('sample results', sample_results)
                             raise
 
-                    # if GNN_ref is not None and metric == 'scc':
-                    #     try:
-                    #         delta_result = ref_result - result
-                    #         delta_result_mean = np.round(np.nanmean(delta_result), 3)
-                    #     except ValueError as e:
-                    #         print(GNN_ref[metric])
-                    #         print(f'method {key}, k {k}, metric: {metric}')
-                    #         raise
-                    #         delta_result_mean = None
-                    # else:
-                    #     delta_result_mean = None
-
                     result_mean = np.round(np.nanmean(result), 3)
                     if len(result) > 1:
                         result_std = np.round(np.nanstd(result), 3)
-                        # if delta_result_mean is not None:
-                        #     delta_result_std = np.round(np.nanstd(delta_result), 3)
-                        # else:
-                        #     delta_result_std = None
                         text += f" & {result_mean} $\pm$ {result_std}"
-                        # if metric == 'scc':
-                        #     text += f" & {delta_result_mean} $\pm$ {delta_result_std}"
                         if significant:
                             text += f' *{np.round(pval, 3)}'
                     else:
                         text += f" & {result_mean}"
-                        # if metric == 'scc':
-                        #     text += f" & {delta_result_mean}"
 
                 text += " \\\ \n"
 
@@ -316,7 +308,7 @@ def sort_method_keys(keys):
 
 def main(data_folder=None, sample=None):
     args = getArgs(data_folder = data_folder, sample = sample)
-    print(args)
+    print('-'*100, '\n', args)
 
     fname = 'max_ent_table.txt'
     dataset = osp.split(args.data_folder)[1]
@@ -325,18 +317,21 @@ def main(data_folder=None, sample=None):
         data = loadData(args)
         ofile = osp.join(args.data_folder, fname)
 
-        makeLatexTable(data, ofile, dataset, small = True, mode = 'w')
-        makeLatexTable(data, ofile, dataset, small = False, mode = 'a')
+        makeLatexTable(data, ofile, dataset, small = True, mode = 'w',
+                        experimental = args.experimental)
+        makeLatexTable(data, ofile, dataset, small = False, mode = 'a',
+                        experimental = args.experimental)
 
     if args.sample is not None:
         args.samples = [args.sample]
         data = loadData(args)
         ofile = osp.join(args.sample_folder, fname)
 
-        makeLatexTable(data, ofile, dataset, small = True, mode = 'w', sample_id = args.sample)
-        makeLatexTable(data, ofile, dataset, small = False, mode = 'a', sample_id = args.sample)
+        makeLatexTable(data, ofile, dataset, small = True, mode = 'w',
+                        sample_id = args.sample, experimental = args.experimental)
 
-
+        makeLatexTable(data, ofile, dataset, small = False, mode = 'a',
+                        sample_id = args.sample, experimental = args.experimental)
 
 if __name__ == '__main__':
     main()
