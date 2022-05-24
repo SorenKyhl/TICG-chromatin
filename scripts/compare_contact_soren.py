@@ -1,5 +1,6 @@
 '''
 Version of compare_contact.py with no dependencies.
+Not actively maintained.
 '''
 
 import argparse

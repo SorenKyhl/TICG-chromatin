@@ -7,62 +7,16 @@ import numpy as np
 from seq2contact import *
 from sklearn.linear_model import LinearRegression
 
-
-def repair_dataset_11_14_21():
-    dir = '/project2/depablo/erschultz/dataset_11_14_21/samples'
-    # dir = '/home/eric/sequences_to_contact_maps/dataset_11_14_21/samples'
-    chi = np.array([[-1,1.8,-0.5,1.8,0.1,1.3,-0.1,0.1,0.8,1.4,2,1.7,1.5,-0.2,1.1],
-                    [0,-1,-0.6,0.6,0.8,-0.8,-0.7,-0.1,0,-0.4,-0.2,0.6,-0.9,1.4,0.3],
-                    [0,0,-1,1.6,0,-0.2,-0.4,1.5,0.7,1.8,-0.7,-0.9,0.6,1,0.5],
-                    [0,0,0,-1,0.8,1.3,-0.6,0.7,0.1,1.4,0.6,0.7,-0.6,0.5,0.5],
-                    [0,0,0,0,-1,0.9,0.2,1.5,1.7,0.1,-0.7,0.8,0.7,1.6,1.6],
-                    [0,0,0,0,0,-1,0.6,-0.2,0.8,0.7,-1,-0.9,1.6,0.8,0.3],
-                    [0,0,0,0,0,0,-1,-0.2,-0.6,1.8,-0.6,1.9,1.1,0.4,-0.4],
-                    [0,0,0,0,0,0,0,-1,1.7,-0.4,1.7,0.2,1.2,1.8,-0.1],
-                    [0,0,0,0,0,0,0,0,-1,0.7,0.2,0.8,-0.4,1.4,1.3],
-                    [0,0,0,0,0,0,0,0,0,-1,-0.4,0.5,1.9,0.1,0.1],
-                    [0,0,0,0,0,0,0,0,0,0,-1,0.9,1,1.3,1],
-                    [0,0,0,0,0,0,0,0,0,0,0,-1,1.5,-0.1,0.7],
-                    [0,0,0,0,0,0,0,0,0,0,0,0,-1,0.6,-0.6],
-                    [0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0.2],
-                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1]])
-
-    for i in range(1, 2001):
-        sample_dir = osp.join(dir, f'sample{i}')
-        if not osp.exists(sample_dir):
-            print("{sample_dir} doesn't exist")
-            continue
-        x = np.load(osp.join(sample_dir, 'x.npy'))
-        psi = np.zeros((1024, 15)) # transformation of x such that S = psi \chi psi^T
-        psi[:, 0] = (np.sum(x[:, 0:3], axis = 1) == 1) # exactly 1 of A, B, C
-        psi[:, 1] = (np.sum(x[:, 0:3], axis = 1) == 2) # exactly 2 of A, B, C
-        psi[:, 2] = (np.sum(x[:, 0:3], axis = 1) == 3) # A, B, and C
-        psi[:, 3] = x[:, 3] # D
-        psi[:, 4] = x[:, 4] # E
-        psi[:, 5] = np.logical_and(x[:, 3], x[:, 4]) # D and E
-        psi[:, 6] = np.logical_and(x[:, 3], x[:, 5]) # D and F
-        psi[:, 7] = np.logical_xor(x[:, 0], x[:, 5]) # either A or F
-        psi[:, 8] = x[:, 6] # G
-        psi[:, 9] = np.logical_and(np.logical_and(x[:, 6], x[:, 7]), np.logical_not(x[:, 4])) # G and H and not E
-        psi[:, 10] = x[:, 7] # H
-        psi[:, 11] = x[:, 8] # I
-        psi[:, 12] = x[:, 9] # J
-        psi[:, 13] = np.logical_or(x[:, 7], x[:, 8]) # H or I
-        psi[:, 14] = np.logical_xor(x[:, 8], x[:, 9]) # either I or J
-        np.save(osp.join(sample_dir, 'psi.npy'), psi)
-
-def check_seq(dataset):
+def check_dataset(dataset):
     dir = osp.join("/project2/depablo/erschultz", dataset, "samples")
-    dir = osp.join("/home/erschultz", dataset, "samples")
+    # dir = osp.join("/home/erschultz", dataset, "samples")
     ids = set()
     for file in os.listdir(dir):
         if file.startswith('sample'):
             id = int(file[6:])
             file_dir = osp.join(dir, file)
             try:
-                x, psi, chi, e, s, y, ydiag = load_all(path, data_folder = dataFolder,
-                                                    save = False,
-                                                    throw_exception = True)
+                x, psi, chi, e, s, y, ydiag = load_all(file_dir)
 
                 m, k = psi.shape
                 seq = np.zeros((m, k))
@@ -76,7 +30,7 @@ def check_seq(dataset):
                     print(id)
                     ids.add(id)
             except Exception as e:
-                print(e, f'id={id}')
+                print(f'id={id}: {e}')
                 ids.add(id)
                 continue
 
@@ -295,10 +249,8 @@ def is_scc_weighted_mean():
 
 
 if __name__ == '__main__':
-    # repair_dataset_11_14_21()
     # is_scc_weighted_mean()
     # scc_y_vs_y_rank1()
     # test_robust_PCA()
-    # check_seq()
-    # find_mising_ids()
+    check_dataset('dataset_05_12_22')
     # makeDirsForMaxEnt("dataset_04_27_22")
