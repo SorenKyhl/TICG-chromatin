@@ -39,7 +39,7 @@ def get_diag_goal(y, bins):
     measure = np.array(measure / y_max)
     return measure
 
-def get_plaid_goal(y, m, args):
+def get_plaid_goal(y, args):
     obj_goal = []
     y_max = np.max(y)
     if args.verbose:
@@ -60,7 +60,6 @@ def get_plaid_goal(y, m, args):
             if args.verbose:
                 print(f'\tj={j}', seqj)
             result = seqi @ y @ seqj
-            # result /= m**2 # take average
             result /= y_max # convert from freq to prob
             obj_goal.append(result)
 
@@ -90,10 +89,10 @@ def main():
         y = y[:m, :m] # crop to m
 
     if args.mode == 'both':
-        plaid_goal = get_plaid_goal(y, m, args)
+        plaid_goal = get_plaid_goal(y, args)
         diag_goal = get_diag_goal(y, args.diag_bins)
     elif args.mode == 'plaid':
-        plaid_goal = get_plaid_goal(y, m, args)
+        plaid_goal = get_plaid_goal(y, args)
         diag_goal = np.zeros(20)
     elif args.mode == 'diag':
         plaid_goal = np.zeros(1) # shouldn't matter what goes here
@@ -163,7 +162,8 @@ def test():
     print(obj_goal / lam)
 
 def test2():
-    dir = '/home/eric/dataset_test/samples/sample85'
+    args = getArgs()
+    dir = '/home/erschultz/dataset_test/samples/sample1'
     y = np.load(osp.join(dir, 'y.npy'))
     goal = get_diag_goal(y, 10)
     print(goal)
