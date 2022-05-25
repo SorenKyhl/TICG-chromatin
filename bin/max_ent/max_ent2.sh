@@ -8,7 +8,7 @@
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=erschultz@uchicago.edu
 
-local='true'
+local='false'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
@@ -29,10 +29,9 @@ mode='both'
 method='k_means'
 for k in 2 4 6
 do
-  for sample in 1
-  # 2 8 14 20
+  for sample in 1 2 8 14 20
   do
-    max_ent_resume 3
+    max_ent
   done
 done
 
