@@ -253,9 +253,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w',
                     sample_results = nested_list_to_array(data[k][key][metric])
 
                     if sample_id is not None:
-                        assert sample_results.shape[0] == 1, f"label {label}, "
-                                                f"metric {metric}, k {k_label}, "
-                                                f"results {data[k][key][metric]}"
+                        assert sample_results.shape[0] == 1, f"label {label}, metric {metric}, k {k_label}, results {data[k][key][metric]}"
                         result = sample_results.reshape(-1)
                         if GNN_ref is not None:
                             ref_result = nested_list_to_array(GNN_ref[metric]).reshape(-1)
