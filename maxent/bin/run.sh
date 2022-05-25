@@ -210,15 +210,15 @@ then
 	done
 fi
 
-# # run longer simulation
-# it=$(($num_iterations + 1))
-# python3 $proj_bin/jsed.py "resources/${configFileName}" dump_frequency 50000 i
-# production_sweeps=$final_sim_production_sweeps
-# run_simulation
-# OVERALLENDTIME=$(date +%s)
-# echo "finished entire simulation: $(( $(( $OVERALLENDTIME - $OVERALLSTARTTIME )) / 60 )) minutes ($(( $OVERALLENDTIME - $OVERALLSTARTTIME )) seconds)"
-#
-#
-# # move data to output directory
-# mv $scratchDir/* $outputDir
-# rm -d $scratchDir
+# run longer simulation
+it=$(($num_iterations + 1))
+python3 $proj_bin/jsed.py "resources/${configFileName}" dump_frequency 50000 i
+production_sweeps=$final_sim_production_sweeps
+run_simulation
+OVERALLENDTIME=$(date +%s)
+echo "finished entire simulation: $(( $(( $OVERALLENDTIME - $OVERALLSTARTTIME )) / 60 )) minutes ($(( $OVERALLENDTIME - $OVERALLSTARTTIME )) seconds)"
+
+
+# move data to output directory
+mv $scratchDir/* $outputDir
+rm -d $scratchDir
