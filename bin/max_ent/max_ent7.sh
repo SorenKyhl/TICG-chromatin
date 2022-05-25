@@ -29,8 +29,7 @@ useE='true'
 method='GNN'
 modelID=150
 mode='diag'
-for sample in 11 12
-# 13
+for sample in 12
 do
   max_ent
 done
