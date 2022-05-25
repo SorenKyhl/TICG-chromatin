@@ -13,9 +13,9 @@ source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dir="/home/erschultz"
+  dir="/home/erschultz/sequences_to_contact_maps"
   scratchDir='/home/erschultz/scratch'
-  numIterations=2
+  numIterations=5
   finalSimProductionSweeps=1000
   productionSweeps=1000
   equilibSweeps=200
@@ -29,8 +29,7 @@ useE='true'
 method='ground_truth'
 for mode in 'plaid' 'diag'
 do
-  for sample in 1
-   # 2 3 4
+  for sample in 1 2 3 4
   do
     for k in 'none'
     do
@@ -43,8 +42,7 @@ mode='diag'
 method='GNN'
 for modelID in 149 150
 do
-  for sample in 1
-   # 2 3 4
+  for sample in 1 2 3 4
   do
     for k in 'none'
     do

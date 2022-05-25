@@ -30,7 +30,8 @@ method='PCA-normalize'
 for sample in 15
  # 16
 do
-  for k in 2 4 6 8
+  for k in 2 4
+  # 6 8
   do
     max_ent
   done

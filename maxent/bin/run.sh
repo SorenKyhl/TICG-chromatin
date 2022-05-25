@@ -63,10 +63,11 @@ mode=${4:-"plaid"}
 production_sweeps=${5:-50000}
 equilib_sweeps=${6:-10000}
 goal_specified=${7:-"false"}
-num_iterations=${8:-50}
-overwrite=${9:-0}
-scratchDir=${10:-'/scratch/midway2/erschultz/TICG_maxent'}
-final_sim_production_sweeps=${11:-1000000}
+start_iteration=${8:-1}
+num_iterations=${9:-50}
+overwrite=${10:-0}
+scratchDir=${11:-'/scratch/midway2/erschultz/TICG_maxent'}
+final_sim_production_sweeps=${12:-1000000}
 
 echo $@
 
@@ -99,8 +100,14 @@ fi
 run_simulation () {
 	STARTTIME=$(date +%s)
 	# resources must be in working directory
-	mkdir "iteration$it"
-	cp resources/* "iteration$it"
+	itDir="iteration$it"
+	if [ -d $itDir ]
+	then
+		echo "removing ${itDir}"
+		rm -r $itDir
+	fi
+	mkdir $itDir
+	cp resources/* $itDir
 	if [ $num_iterations -gt 0 ]
 	then
 		# no need to update if num_iterations==0
@@ -167,10 +174,13 @@ then
 fi
 
 mkdir -p $outputDir
-mv resources/chis* .
-mv resources/*.png .
-mv resources/*.log .
-touch track.log
+if [ $start_iteration -le 1 ]
+then
+	mv resources/chis* .
+	mv resources/*.png .
+	mv resources/*.log .
+	touch track.log
+fi
 
 # iteration 0
 it=0
@@ -189,7 +199,7 @@ fi
 OVERALLSTARTTIME=$(date +%s)
 if [ $num_iterations -gt 0 ]
 then
-	for it in $(seq 1 $(($num_iterations)))
+	for it in $(seq $start_iteration $num_iterations)
 	do
 		run_simulation
 		# update chis via newton's method
@@ -200,15 +210,15 @@ then
 	done
 fi
 
-# run longer simulation
-it=$(($num_iterations + 1))
-python3 $proj_bin/jsed.py "resources/${configFileName}" dump_frequency 50000 i
-production_sweeps=$final_sim_production_sweeps
-run_simulation
-OVERALLENDTIME=$(date +%s)
-echo "finished entire simulation: $(( $(( $OVERALLENDTIME - $OVERALLSTARTTIME )) / 60 )) minutes ($(( $OVERALLENDTIME - $OVERALLSTARTTIME )) seconds)"
-
-
-# move data to output directory
-mv $scratchDir/* $outputDir
-rm -d $scratchDir
+# # run longer simulation
+# it=$(($num_iterations + 1))
+# python3 $proj_bin/jsed.py "resources/${configFileName}" dump_frequency 50000 i
+# production_sweeps=$final_sim_production_sweeps
+# run_simulation
+# OVERALLENDTIME=$(date +%s)
+# echo "finished entire simulation: $(( $(( $OVERALLENDTIME - $OVERALLSTARTTIME )) / 60 )) minutes ($(( $OVERALLENDTIME - $OVERALLSTARTTIME )) seconds)"
+#
+#
+# # move data to output directory
+# mv $scratchDir/* $outputDir
+# rm -d $scratchDir

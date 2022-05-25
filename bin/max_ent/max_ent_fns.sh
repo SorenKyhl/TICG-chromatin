@@ -45,41 +45,46 @@ chipSeqFolder="/home/erschultz/sequences_to_contact_maps/chip_seq_data"
 epiData="${chipSeqFolder}/fold_change_control/processed"
 chromHMMData="${chipSeqFolder}/aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt"
 
+max_ent_resume(){
+  # args:
+  # 1 = start iteration
+  param_setup
+  format_method
+  for j in 1
+  do
+    scratchDirI="${scratchDir}/TICG_maxent${i}"
+    mkdir -p $scratchDirI
+    cd $scratchDirI
+    max_ent_resume_inner $scratchDirI $j $1 >> bash.log &
+    i=$(( $i + 1 ))
+  done
+}
+
+max_ent_resume_inner(){
+  # args:
+  # 1 = scratchDir
+  # 2 = replicate index
+  # 3 = start iteration
+  ofile="${sampleFolder}/${method_fmt}/k${k}/replicate${2}"
+  echo $ofile
+  echo $method_fmt
+
+  # apply max ent with newton's method
+  ~/TICG-chromatin/maxent/bin/run.sh $ofile $gamma $trust_region $mode $productionSweeps $equilibSweeps $goalSpecified $3 $numIterationsCopy $overwrite $1 $finalSimProductionSweeps
+
+  # run.sh moves all data to $ofile upon completion
+  cd $ofile
+
+  # compare results
+  prodIt=$(($numIterationsCopy+1))
+  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --k $k --final_it $prodIt --replicate_folder $ofile --save_npy > contact.log
+  python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${ofile}/y.npy" --y_diag "$sampleFolder/y_diag.npy" --yhat_diag "${ofile}/y_diag.npy" >> contact.log
+
+  echo ''
+}
+
 max_ent() {
-  numIterationsCopy=$numIterations
-  if [ $useS = 'true' ] || [ $useE = 'true' ]
-  then
-    useGroundTruthChi='false' # defaults to false anyways
-    if ! [ $mode = 'diag' ]
-    then
-      numIterationsCopy=0
-      goalSpecified='false'
-    fi
-    if ! [ $loadChi = 'true' ]
-    then
-      k='none'
-    fi
-  fi
-
-  if [ $useGroundTruthChi == 'true' ] && ! [ $mode = 'plaid' ]
-  then
-    numIterationsCopy=0
-    goalSpecified='false'
-  fi
-
-  if [ $mode = 'diag' ] || [ $mode = 'both' ]
-  then
-    useGroundTruthDiagChi='false'
-    diag='true'
-  fi
-
-  dataFolder="${dir}/${dataset}"
-  modelPath="${results}/${modelType}/${modelID}"
-  sampleFolder="${dataFolder}/samples/sample${sample}"
-  scratchDirI="${scratchDir}/TICG_maxent${i}"
-  mkdir -p $scratchDirI
-
-  seed=$RANDOM
+  param_setup
   format_method
   for j in 1
   do
@@ -89,7 +94,6 @@ max_ent() {
     max_ent_inner $scratchDirI $j $seed > bash.log &
     i=$(( $i + 1 ))
   done
-
 }
 
 max_ent_inner () {
@@ -132,7 +136,7 @@ max_ent_inner () {
 
   echo $method_fmt
   # apply max ent with newton's method
-  ~/TICG-chromatin/maxent/bin/run.sh $ofile $gamma $trust_region $mode $productionSweeps $equilibSweeps $goalSpecified $numIterationsCopy $overwrite $1 $finalSimProductionSweeps
+  ~/TICG-chromatin/maxent/bin/run.sh $ofile $gamma $trust_region $mode $productionSweeps $equilibSweeps $goalSpecified 1 $numIterationsCopy $overwrite $1 $finalSimProductionSweeps
 
   # run.sh moves all data to $ofile upon completion
   cd $ofile
@@ -142,7 +146,7 @@ max_ent_inner () {
   python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --k $k --final_it $prodIt --replicate_folder $ofile --save_npy > contact.log
   python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${ofile}/y.npy" --y_diag "$sampleFolder/y_diag.npy" --yhat_diag "${ofile}/y_diag.npy" >> contact.log
 
-  echo "\n\n"
+  echo ''
 }
 
 format_method () {
@@ -191,4 +195,39 @@ format_method () {
   fi
 
   echo $method_fmt
+}
+
+param_setup(){
+  numIterationsCopy=$numIterations
+  if [ $useS = 'true' ] || [ $useE = 'true' ]
+  then
+    useGroundTruthChi='false' # defaults to false anyways
+    if ! [ $mode = 'diag' ]
+    then
+      numIterationsCopy=0
+      goalSpecified='false'
+    fi
+    if ! [ $loadChi = 'true' ]
+    then
+      k='none'
+    fi
+  fi
+
+  if [ $useGroundTruthChi == 'true' ] && ! [ $mode = 'plaid' ]
+  then
+    numIterationsCopy=0
+    goalSpecified='false'
+  fi
+
+  if [ $mode = 'diag' ] || [ $mode = 'both' ]
+  then
+    useGroundTruthDiagChi='false'
+    diag='true'
+  fi
+
+  dataFolder="${dir}/${dataset}"
+  modelPath="${results}/${modelType}/${modelID}"
+  sampleFolder="${dataFolder}/samples/sample${sample}"
+
+  seed=$RANDOM
 }
