@@ -9,11 +9,11 @@
 # necessary to ensure log files are in right place
 cd ~/TICG-chromatin
 
-for i in 3
-# 5 7 9 10 11 12 - running
-# 6 13 14 - running
-# 1 3 4 5 - done
+for i in 3 12
+# 5 6 7 10 13 14 - running
+# 1 4 5 - done
 # 8 - think it worked - check latex
+# 9 11 - insufficent RAM
 # 10 11 12 14 - only ran part of it
 do
   echo $i
