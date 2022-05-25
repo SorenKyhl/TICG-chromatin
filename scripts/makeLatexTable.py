@@ -31,7 +31,7 @@ def getArgs(data_folder = None, sample = None, samples = None):
                             help='list of sample ids separated by -')
     parser.add_argument('--sample_folder', type=str,
                         help='location of input data')
-    parser.add_argument('--experimental', type=save_true,
+    parser.add_argument('--experimental', action=store_true,
                         help="True for experimental data mode - ground truth won't be present")
 
     args = parser.parse_args()
