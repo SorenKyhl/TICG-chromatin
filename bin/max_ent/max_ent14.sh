@@ -33,7 +33,7 @@ do
   for k in 2 4
   # 6 8
   do
-    max_ent
+    max_ent_resume 63
   done
 done
 

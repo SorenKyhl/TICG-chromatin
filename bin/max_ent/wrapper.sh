@@ -9,8 +9,8 @@
 # necessary to ensure log files are in right place
 cd ~/TICG-chromatin
 
-for i in 8 15
-# 1 2 3 4 5 6 7 10 13 14  - running
+for i in 1 2 6 10 13 14
+# 14 15  - running
 # 9 11 - insufficent RAM
 # 12 - obscure error due to size of array
 # 10 11 12 14 - only ran part of it

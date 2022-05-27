@@ -31,7 +31,7 @@ modelID=150
 mode='diag'
 for sample in 10
 do
-  max_ent_resume 63
+  max_ent_resume 70
 done
 
 wait
