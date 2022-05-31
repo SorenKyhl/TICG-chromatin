@@ -14,10 +14,11 @@ from sequences_to_contact_maps.utils.energy_utils import (calculate_E_S,
                                                           calculate_S, s_to_E)
 from sequences_to_contact_maps.utils.InteractionConverter import \
     InteractionConverter
-from sequences_to_contact_maps.utils.load_utils import (load_E_S, load_Y_diag,
+from sequences_to_contact_maps.utils.load_utils import (load_all, load_E_S,
                                                         load_final_max_ent_chi,
                                                         load_final_max_ent_S,
-                                                        load_X_psi, load_Y, load_all)
+                                                        load_X_psi, load_Y,
+                                                        load_Y_diag)
 from sequences_to_contact_maps.utils.neural_net_utils import (get_dataset,
                                                               load_saved_model)
 from sequences_to_contact_maps.utils.plotting_utils import (plot_matrix,

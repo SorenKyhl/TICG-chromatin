@@ -4,9 +4,8 @@ import os.path as osp
 
 import numpy as np
 import pandas as pd
-from seq2contact import DiagonalPreprocessing, import, plot_matrix
-
 import straw
+from seq2contact import DiagonalPreprocessing, import, plot_matrix
 
 
 def download_contactmap_straw(filename, chrom, start, end, resolution):

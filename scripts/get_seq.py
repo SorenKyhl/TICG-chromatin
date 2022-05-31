@@ -12,7 +12,7 @@ from seq2contact import (LETTERS, ArgparserConverter, DiagonalPreprocessing,
                          R_pca, clean_directories, crop, finalize_opt,
                          get_base_parser, get_dataset, load_E_S,
                          load_final_max_ent_S, load_saved_model, load_X_psi,
-                         load_Y, plot_matrix, plot_seq_binary, load_Y_diag,
+                         load_Y, load_Y_diag, plot_matrix, plot_seq_binary,
                          plot_seq_exclusive, project_S_to_psi_basis, s_to_E)
 from sklearn.cluster import KMeans
 from sklearn.decomposition import NMF, PCA, KernelPCA
@@ -827,20 +827,20 @@ def main():
 class Tester():
     def __init__(self):
         self.dataset = 'dataset_test'
-        self.sample = 85
-        self.sample_folder = osp.join('/home/eric', self.dataset, f'samples/sample{self.sample}')
-        self.m = 3000
-        self.k = 3
+        self.sample = 1
+        self.sample_folder = osp.join('/home/erschultz', self.dataset, f'samples/sample{self.sample}')
+        self.m = 512
+        self.k = 2
         self.getSeq = GetSeq(self.m, self.k)
 
     def test_nmf_k_means(self):
         y_diag = np.load(osp.join(self.sample_folder, 'y_diag.npy'))
 
-        seq, labels = self.getSeq.get_nmf_seq(y_diag, binarize = False)
-
-        seq, labels = self.getSeq.get_nmf_seq(y_diag, binarize = True)
-        plot_seq_exclusive(seq, labels = labels, X = y_diag, show = True,
-                            save = False, title = 'nmf-binarize test')
+        # seq, labels = self.getSeq.get_nmf_seq(y_diag, binarize = False)
+        #
+        # seq, labels = self.getSeq.get_nmf_seq(y_diag, binarize = True)
+        # plot_seq_exclusive(seq, labels = labels, X = y_diag, show = True,
+        #                     save = False, title = 'nmf-binarize test')
 
 
         seq, labels = self.getSeq.get_k_means_seq(y_diag, kr = True)
@@ -901,8 +901,8 @@ class Tester():
 
 
     def test_suite(self):
-        # self.test_nmf_k_means()
-        self.test_random()
+        self.test_nmf_k_means()
+        # self.test_random()
         # self.test_epi()
         # self.test_ChromHMM()
         # self.test_GNN()

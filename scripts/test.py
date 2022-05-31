@@ -7,6 +7,7 @@ import numpy as np
 from seq2contact import *
 from sklearn.linear_model import LinearRegression
 
+
 def check_dataset(dataset):
     dir = osp.join("/project2/depablo/erschultz", dataset, "samples")
     # dir = osp.join("/home/erschultz", dataset, "samples")

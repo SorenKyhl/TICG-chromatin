@@ -142,14 +142,17 @@ def loadData(args):
                             bash_file = osp.join(replicate_folder, 'bash.log')
                             if osp.exists(bash_file):
                                 with open(bash_file, 'r') as f:
+                                    times = np.zeros((100))
                                     for line in f:
-                                        if 'finished entire simulation' in line:
+                                        if 'finished iteration' in line:
+                                            it = int(line.split(' ')[2].replace(':', ''))
                                             left = line.find('(')
                                             right = line.find(')')
-                                            time = line[left+1:right].split(' ')[0]
-                                            time = int(time)
-                                            time /= 60 # minutes
-                                            # TODO - doesnt' work if simulation split in half due to slrm time limit
+                                            t = line[left+1:right].split(' ')[0]
+                                            times[it] = int(t)
+
+                            time = np.sum(times)
+                            time /= 60 # to minutes
                             replicate_data['time'].append(time)
 
 
