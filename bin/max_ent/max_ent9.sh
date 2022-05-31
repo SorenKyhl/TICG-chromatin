@@ -25,10 +25,10 @@ STARTTIME=$(date +%s)
 i=8000
 dataset='dataset_05_18_22'
 useE='true'
-method='GNN'
-modelID=150
-mode='diag'
-for sample in 13
+method='PCA-normalize'
+mode='both'
+k=8
+for sample in 15
 do
   max_ent
 done

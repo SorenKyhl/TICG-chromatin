@@ -27,10 +27,9 @@ i=9000
 dataset='dataset_05_18_22'
 mode='both'
 method='PCA-normalize'
-for sample in 17
-# 18
+for sample in 16
 do
-  for k in 2 4 6 8
+  for k in 2
   do
     max_ent
   done

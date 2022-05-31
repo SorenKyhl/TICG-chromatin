@@ -26,10 +26,9 @@ STARTTIME=$(date +%s)
 i=6000
 dataset='dataset_05_18_22'
 useE='true'
-method='GNN'
-modelID=150
+method='ground_truth'
 mode='diag'
-for sample in 12
+for sample in 11
 do
   max_ent
 done

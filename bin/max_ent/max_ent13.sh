@@ -27,11 +27,11 @@ i=12000
 dataset='dataset_05_18_22'
 mode='both'
 method='PCA-normalize'
-for sample in 13 14
+for sample in 16
 do
-  for k in 2 4 6 8
+  for k in 6
   do
-    max_ent_resume 50
+    max_ent
   done
 done
 

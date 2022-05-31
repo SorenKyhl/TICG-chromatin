@@ -26,7 +26,7 @@ STARTTIME=$(date +%s)
 i=3000
 dataset='dataset_05_18_22'
 useE='true'
-mode='diag'
+mode='plaid'
 method='ground_truth'
 for sample in 1 2 3 4 5 6
 do

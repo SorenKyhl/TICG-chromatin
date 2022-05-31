@@ -49,11 +49,18 @@ method='random'
 nSweeps=1000000
 diag='true'
 maxDiagChi=2
-for i in $( seq 11 20 )
+m=512
+for i in $( seq 1 40 )
 do
-	echo "i=${i}, maxDiagChi=${maxDiagChi}"
+	echo "i=${i}, m=${m}, maxDiagChi=${maxDiagChi}"
 	run &
 	maxDiagChi=$(( $maxDiagChi + 2 ))
+	if [ $( expr $i % 10 ) -eq 0 ]
+	then
+		m=$(( $m * 2 ))
+		maxDiagChi=2
+		wait
+	fi
 done
 
 wait

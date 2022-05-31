@@ -17,7 +17,7 @@ def getArgs():
                                 'False to calculate goals from iteration 1')
     parser.add_argument('--trust_region', type=float,
                             help='newton step trust region')
-    parser.add_argument('--min_diag_chi', type=float,
+    parser.add_argument('--min_diag_chi', type=str2float,
                             help='min value of diag chi during newton step')
 
     args, _ = parser.parse_known_args()
@@ -33,6 +33,26 @@ def getArgs():
         args.trust_region = float(sys.argv[5])
 
     return args
+
+def str2float(v):
+    """
+    Helper function for argparser, converts str to float if possible.
+
+    Inputs:
+        v: string
+    """
+    if v is None:
+        return v
+    elif isinstance(v, str):
+        if v.lower() == 'none':
+            return None
+        elif v.replace('.', '').replace('-', '').isnumeric():
+            return float(v)
+        else:
+            raise argparse.ArgumentTypeError('none or float expected not {}'.format(v))
+    else:
+        raise argparse.ArgumentTypeError('String value expected.')
+
 
 def str2bool(v):
     """
@@ -164,7 +184,7 @@ def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, 
     for i, f in enumerate(parameter_files):
         f_chis = open(f, "a")
         new_chis_i = new_chis[index:index+nchis[i]]
-        if 'diag' in f:
+        if 'diag' in f and min_val is not None:
             new_chis_i[new_chis_i < min_val] = min_val
         np.savetxt(f_chis, new_chis_i, newline=" ", fmt="%.5f")
         f_chis.write("\n")

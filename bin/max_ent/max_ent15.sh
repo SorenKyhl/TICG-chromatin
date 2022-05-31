@@ -26,13 +26,13 @@ STARTTIME=$(date +%s)
 i=14000
 dataset='dataset_05_18_22'
 useE='true'
-mode='diag'
-method='GNN'
-modelID=150
-for sample in 1 2 3 4 5 6 7 8 9
+method='ground_truth'
+mode='plaid'
+for sample in 7 8 9
 do
   max_ent
 done
+
 
 wait
 

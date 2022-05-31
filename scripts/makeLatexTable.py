@@ -149,6 +149,7 @@ def loadData(args):
                                             time = line[left+1:right].split(' ')[0]
                                             time = int(time)
                                             time /= 60 # minutes
+                                            # TODO - doesnt' work if simulation split in half due to slrm time limit
                             replicate_data['time'].append(time)
 
 
