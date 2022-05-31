@@ -31,7 +31,7 @@ for k in 2 4 6
 do
   for sample in 1 2 8 14 20
   do
-    max_ent_resume 70
+    max_ent
   done
 done
 
