@@ -31,7 +31,7 @@ for sample in 16
 do
   for k in 8
   do
-    mmax_ent
+    max_ent
   done
 done
 
