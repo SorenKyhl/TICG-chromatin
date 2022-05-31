@@ -7,7 +7,7 @@
 #SBATCH --mem=0
 #SBATCH --qos=depablo-debug
 
-local='false'
+local='true'
 if [ $local = 'true' ]
 then
   dataDir='/home/erschultz/sequences_to_contact_maps'
@@ -27,7 +27,8 @@ fi
 dataset='dataset_05_18_22'
 dataFolder="${dataDir}/${dataset}"
 
-for sample in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18
+for sample in 1
+# 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18
  # 19
 do
   python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample &

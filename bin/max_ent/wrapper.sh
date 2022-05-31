@@ -9,7 +9,7 @@
 # necessary to ensure log files are in right place
 cd ~/TICG-chromatin
 
-for i in 9 14
+for i in 4
 # 1 2 5 6 7 8 9 10 11 13 14 - running
 # 3 - look closely here
 # 12 - obscure error due to size of array

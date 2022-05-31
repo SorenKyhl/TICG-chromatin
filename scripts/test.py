@@ -1,5 +1,6 @@
 import os
 import os.path as osp
+from collections import defaultdict
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -245,6 +246,63 @@ def is_scc_weighted_mean():
     avg = np.nanmean(corr_arr)
     print(avg)
 
+def time_comparison():
+    dir = '/project2/depablo/erschultz/dataset_05_18_22/samples'
+    dir = '/home/erschultz/sequences_to_contact_maps/dataset_05_18_22/samples'
+
+    times_dict = defaultdict(lambda: np.full([4, 3], np.nan))
+    # dictionary with keys = method : vals = array of times with rows = sizes, cols = replicate samples
+    it = 1
+    for row in range(4):
+        for col in range(3):
+            print(it)
+            sample_dir = osp.join(dir, f'sample{it}')
+            max_ent_file = osp.join(sample_dir, 'max_ent_table.txt')
+            it += 1
+            if not osp.exists(max_ent_file):
+                continue
+
+            with open(osp.join(max_ent_file, ), 'r') as f:
+                line = f.readline()
+                while not line.startswith('Method'):
+                    line = f.readline()
+                line = f.readline()
+
+                while not line.startswith('\end'):
+                    if line.startswith('\hline'):
+                        line = f.readline()
+                    line_list = line.split(' & ')
+                    try:
+                        k = line_list[1]
+                        method = line_list[0].replace('-normalize', '')
+                        if k.isdigit():
+                            label = f'{method}_k{k}'
+                        else:
+                            label = f'{method}'
+                        time = float(line_list[-1].split(' ')[0])
+                    except:
+                        print(line)
+                        raise
+                    times_dict[label][row,col] = time
+                    f.readline()
+                    line = f.readline()
+
+    print(times_dict)
+    for method, arr in times_dict.items():
+        if 'diag' not in method:
+            continue
+        print(method)
+        print(arr, arr.shape)
+        times = np.nanmean(arr, axis = 1)
+        print(times)
+        plt.plot([512, 1024, 2048, 4096], times, label = method)
+    plt.ylabel('Time (mins)')
+    plt.xlabel('Simulation size')
+    plt.legend()
+    plt.savefig(osp.join(dir, 'time.png'))
+    plt.close()
+
+
 
 
 
@@ -253,5 +311,6 @@ if __name__ == '__main__':
     # is_scc_weighted_mean()
     # scc_y_vs_y_rank1()
     # test_robust_PCA()
-    check_dataset('dataset_05_12_22')
+    # check_dataset('dataset_05_12_22')
+    time_comparison()
     # makeDirsForMaxEnt("dataset_04_27_22")

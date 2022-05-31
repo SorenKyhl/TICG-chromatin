@@ -139,22 +139,35 @@ def loadData(args):
                             replicate_data['rmse-y'].append(rmse_y)
 
                             time = None
+                            convergence_file = osp.join(replicate_folder, 'convergence_diag.txt')
+                            converged_it = None
+                            if osp.exists(convergence_file):
+                                with open(convergence_file, 'r') as f:
+                                    for i, line in enumerate(f):
+                                        val = float(line.strip())
+                                        if val < 0.05:
+                                            # convergence cutoff of 0.05 * initial loss
+                                            converged_it = i
+                                            break
+
                             bash_file = osp.join(replicate_folder, 'bash.log')
-                            if osp.exists(bash_file):
+                            if osp.exists(bash_file) and converged_it is not None:
                                 with open(bash_file, 'r') as f:
-                                    times = np.zeros((100))
+                                    times = np.zeros((converged_it+1))
                                     for line in f:
                                         if 'finished iteration' in line:
                                             it = int(line.split(' ')[2].replace(':', ''))
-                                            left = line.find('(')
-                                            right = line.find(')')
-                                            t = line[left+1:right].split(' ')[0]
-                                            times[it] = int(t)
+                                            if it <= converged_it:
+                                                left = line.find('(')
+                                                right = line.find(')')
+                                                t = int(line[left+1:right].split(' ')[0])
+                                                times[it] = t
 
-                            time = np.sum(times)
-                            time /= 60 # to minutes
+                                time = np.sum(times)
+                                time /= 60 # to minutes
+                                replicate_data['final_time'].append(t / 60)
                             replicate_data['time'].append(time)
-
+                            replicate_data['converged_it'].append(converged_it)
 
                         # append replicate array to dictionary
                         if found_results:
@@ -164,6 +177,8 @@ def loadData(args):
                             data[k][method]['rmse-e'].append(replicate_data['rmse-e'])
                             data[k][method]['rmse-y'].append(replicate_data['rmse-y'])
                             data[k][method]['time'].append(replicate_data['time'])
+                            data[k][method]['final_time'].append(replicate_data['final_time'])
+                            data[k][method]['converged_it'].append(replicate_data['converged_it'])
     return data
 
 def makeLatexTable(data, ofile, header = '', small = False, mode = 'w',
@@ -195,15 +210,16 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w',
             o.write("\\hline\n")
             o.write("Method & $\\ell$ & SCC & RMSE-E & RMSE-Y & TIME \\\ \n")
         else:
-            metrics = ['overall_pearson', 'avg_dist_pearson', 'scc', 'rmse-e', 'rmse-y', 'time']
-            o.write("\\begin{tabular}{|c|c|c|c|c|c|c|c|}\n")
+            metrics = ['overall_pearson', 'avg_dist_pearson', 'scc', 'rmse-e', 'rmse-y',
+                        'converged_it', 'final_time', 'time']
+            o.write("\\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}\n")
             o.write("\\hline\n")
-            o.write("\\multicolumn{8}{|c|}{" + header + "} \\\ \n")
+            o.write("\\multicolumn{10}{|c|}{" + header + "} \\\ \n")
             if sample_id is not None:
                 o.write("\\hline\n")
-                o.write("\\multicolumn{8}{|c|}{sample " + f'{sample_id}' + "} \\\ \n")
+                o.write("\\multicolumn{10}{|c|}{sample " + f'{sample_id}' + "} \\\ \n")
             o.write("\\hline\n")
-            o.write("Method & k & Pearson R & Avg Dist Pearson R & SCC & RMSE-E & RMSE-Y & TIME\\\ \n")
+            o.write("Method & k & Pearson & Avg Dist Pearson & SCC & RMSE-E & RMSE-Y & Converged & Final Time & Time\\\ \n")
         o.write("\\hline\\hline\n")
 
         # get reference data
