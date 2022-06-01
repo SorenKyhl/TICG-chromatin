@@ -26,7 +26,7 @@ def getArgs():
 
 def main():
     args = getArgs()
-    y, y_diag = load_Y(args.sample_folder):
+    y, y_diag = load_Y(args.sample_folder)
 
     for file in os.listdir(args.sample_folder):
         file_path = osp.join(args.sample_folder, file)

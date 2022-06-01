@@ -26,7 +26,7 @@ from sequences_to_contact_maps.utils.plotting_utils import (plot_matrix,
                                                             plot_seq_exclusive,
                                                             plot_top_PCs)
 from sequences_to_contact_maps.utils.R_pca import R_pca
-from sequences_to_contact_maps.utils.utils import (LETTERS,
+from sequences_to_contact_maps.utils.utils import (LETTERS, SCC,
                                                    DiagonalPreprocessing,
                                                    calc_dist_strat_corr, crop,
                                                    pearson_round)
