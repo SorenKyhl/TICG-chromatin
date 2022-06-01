@@ -31,7 +31,7 @@ for sample in 16
 do
   for k in 2
   do
-    max_ent
+    max_ent_resume 24
   done
 done
 

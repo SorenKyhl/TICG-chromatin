@@ -29,7 +29,7 @@ mode='both'
 k=8
 for sample in 15
 do
-  max_ent
+  max_ent_resume 44
 done
 
 wait

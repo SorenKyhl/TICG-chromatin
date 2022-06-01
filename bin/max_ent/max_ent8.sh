@@ -30,7 +30,7 @@ method='ground_truth'
 mode='diag'
 for sample in 12
 do
-  max_ent
+  max_ent_resume 67
 done
 
 wait
