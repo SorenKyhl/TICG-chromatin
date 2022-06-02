@@ -20,14 +20,14 @@ def getArgs():
 
     args = parser.parse_args()
     if args.sample_folder is None:
-        args.sample_folder = osp.join(args.data_folder, 'samples', 'sample{}'.format(args.sample))
-        print(args.sample_folder)
+        args.sample_folder = osp.join(args.data_folder, 'samples', f'sample{args.sample}')
+
+    print('sample folder:', args.sample_folder)
     return args
 
 def main():
     args = getArgs()
     y, y_diag = load_Y(args.sample_folder)
-
     for file in os.listdir(args.sample_folder):
         file_path = osp.join(args.sample_folder, file)
         if osp.isdir(file_path):
