@@ -24,6 +24,7 @@ fi
 
 STARTTIME=$(date +%s)
 i=4000
+numIterations=50
 dataset='dataset_05_18_22'
 useE='true'
 method='ground_truth'

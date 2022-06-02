@@ -9,9 +9,8 @@
 # necessary to ensure log files are in right place
 cd ~/TICG-chromatin
 
-for i in 1 10 11 13 14
-# 10 11 13 14 -running
-# 4 - done
+for i in 5
+# 1 10 11 13 14 -running
 # 3 - look closely here
 # 12 - obscure error due to size of array
 # GNN doesnt work for sample 13 or larger in 5_18 - insufficent RAM
