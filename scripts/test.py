@@ -248,7 +248,7 @@ def is_scc_weighted_mean():
 
 def time_comparison():
     dir = '/project2/depablo/erschultz/dataset_05_18_22/samples'
-    dir = '/home/erschultz/sequences_to_contact_maps/dataset_05_18_22/samples'
+    # dir = '/home/erschultz/sequences_to_contact_maps/dataset_05_18_22/samples'
 
     times_dict = defaultdict(lambda: np.full([4, 3], np.nan))
     # dictionary with keys = method : vals = array of times with rows = sizes, cols = replicate samples
