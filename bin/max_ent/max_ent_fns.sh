@@ -39,6 +39,7 @@ useGroundTruthSeed='false'
 mode="plaid"
 trust_region=1000
 gamma=1
+minDiagChi='none'
 
 # experimental data
 chipSeqFolder="/home/erschultz/sequences_to_contact_maps/chip_seq_data"
@@ -136,7 +137,7 @@ max_ent_inner () {
 
   echo $method_fmt
   # apply max ent with newton's method
-  ~/TICG-chromatin/maxent/bin/run.sh $ofile $gamma $trust_region $mode $productionSweeps $equilibSweeps $goalSpecifiedCopy 1 $numIterationsCopy $overwrite $1 $finalSimProductionSweeps
+  ~/TICG-chromatin/maxent/bin/run.sh $ofile $gamma $trust_region $minDiagChi $mode $productionSweeps $equilibSweeps $goalSpecifiedCopy 1 $numIterationsCopy $overwrite $1 $finalSimProductionSweeps
 
   # run.sh moves all data to $ofile upon completion
   cd $ofile

@@ -59,15 +59,16 @@ today=$(date +'%m_%d_%y')
 outputDir=${1:-"/project2/depablo/erschultz/maxent_${today}"}
 gamma=${2:-1}
 trust_region=${3:-10}
-mode=${4:-"plaid"}
-production_sweeps=${5:-50000}
-equilib_sweeps=${6:-10000}
-goal_specified=${7:-"false"}
-start_iteration=${8:-1}
-num_iterations=${9:-50}
-overwrite=${10:-0}
-scratchDir=${11:-'/scratch/midway2/erschultz/TICG_maxent'}
-final_sim_production_sweeps=${12:-1000000}
+minDiagChi=${4:-"none"}
+mode=${5:-"plaid"}
+production_sweeps=${6:-50000}
+equilib_sweeps=${7:-10000}
+goal_specified=${8:-"false"}
+start_iteration=${9:-1}
+num_iterations=${10:-50}
+overwrite=${11:-0}
+scratchDir=${12:-'/scratch/midway2/erschultz/TICG_maxent'}
+final_sim_production_sweeps=${13:-1000000}
 
 echo $@
 
@@ -203,7 +204,7 @@ then
 	do
 		run_simulation
 		# update chis via newton's method
-		python3 $proj_bin/newton_step.py --it $it --gamma $gamma --mode $mode --goal_specified $goal_specified --trust_region $trust_region --min_diag_chi 'none' >> track.log
+		python3 $proj_bin/newton_step.py --it $it --gamma $gamma --mode $mode --goal_specified $goal_specified --trust_region $trust_region --min_diag_chi $minDiagChi >> track.log
 
 		# update plots
 		python3 $proj_bin/plot_convergence.py --mode $mode
