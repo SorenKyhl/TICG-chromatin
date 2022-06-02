@@ -24,6 +24,7 @@ fi
 
 STARTTIME=$(date +%s)
 i=9000
+numIterations=50
 dataset='dataset_05_18_22'
 mode='both'
 method='PCA-normalize'
@@ -31,7 +32,7 @@ for sample in 16
 do
   for k in 2
   do
-    max_ent_resume 24
+    max_ent_resume 46
   done
 done
 
