@@ -248,7 +248,7 @@ def is_scc_weighted_mean():
 
 def time_comparison():
     dir = '/project2/depablo/erschultz/dataset_05_18_22/samples'
-    # dir = '/home/erschultz/sequences_to_contact_maps/dataset_05_18_22/samples'
+    dir = '/home/erschultz/sequences_to_contact_maps/dataset_05_18_22/samples'
 
     times_dict = defaultdict(lambda: np.full([4, 3], np.nan))
     # dictionary with keys = method : vals = array of times with rows = sizes, cols = replicate samples
@@ -288,29 +288,36 @@ def time_comparison():
                     line = f.readline()
 
 
-    cmap = matplotlib.cm.get_cmap('tab20') 
+    cmap = matplotlib.cm.get_cmap('tab20')
     ind = np.arange(len(times_dict))
     colors = plt.cycler('color', cmap(ind))
-    for i, (method, arr) in enumeate(times_dict.items()):
+    linstyles = ['dotted', 'dashed', 'dashdot', (0, (5, 10)), (0, (3, 10, 1, 10, 1, 10))]
+    for c, method in zip(colors, sorted(times_dict.keys())):
         if 'diag' not in method:
             continue
+        arr = times_dict[method]
         print(method)
         print(arr, arr.shape)
         times = np.nanmean(arr, axis = 1)
-	times_std = np.std(arr, axis = 1)
+        np.nan_to_num(times, copy = False, nan=-100)
+        times_std = np.std(arr, axis = 1)
+        np.nan_to_num(times_std, copy = False)
         print(times)
-	print()
+        print(times_std)
+        print()
 
-	if method.startswith('PCA'):
-	    color = 'k'
-	    line_style='dashed'
-	else:
-	    line_style='solid'
-	    color = colors[i]['color']
+        if method.startswith('PCA'):
+            color = 'k'
+            line_style = linstyles.pop(0)
+        else:
+            line_style = 'solid'
+        color = c['color']
         plt.errorbar([512, 1024, 2048, 4096], times, yerr = times_std, label = method, color = color, ls = line_style)
-	
+
+
     plt.ylabel('Time (mins)')
     plt.xlabel('Simulation size')
+    plt.ylim((0, None))
     plt.legend()
     plt.savefig(osp.join(dir, 'time.png'))
     plt.close()
