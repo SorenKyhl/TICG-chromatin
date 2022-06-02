@@ -287,15 +287,28 @@ def time_comparison():
                     f.readline()
                     line = f.readline()
 
-    print(times_dict)
-    for method, arr in times_dict.items():
+
+    cmap = matplotlib.cm.get_cmap('tab20') 
+    ind = np.arange(len(times_dict))
+    colors = plt.cycler('color', cmap(ind))
+    for i, (method, arr) in enumeate(times_dict.items()):
         if 'diag' not in method:
             continue
         print(method)
         print(arr, arr.shape)
         times = np.nanmean(arr, axis = 1)
+	times_std = np.std(arr, axis = 1)
         print(times)
-        plt.plot([512, 1024, 2048, 4096], times, label = method)
+	print()
+
+	if method.startswith('PCA'):
+	    color = 'k'
+	    line_style='dashed'
+	else:
+	    line_style='solid'
+	    color = colors[i]['color']
+        plt.errorbar([512, 1024, 2048, 4096], times, yerr = times_std, label = method, color = color, ls = line_style)
+	
     plt.ylabel('Time (mins)')
     plt.xlabel('Simulation size')
     plt.legend()
