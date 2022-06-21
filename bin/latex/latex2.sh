@@ -17,13 +17,6 @@ else
   source activate python3.9_pytorch1.9_cuda10.2
 fi
 
-# dataSet='dataset_08_24_21'
-# dataSet='dataset_08_26_21'
-# dataSet='dataset_08_29_21'
-# dataSet='dataset_10_27_21'
-# dataSet='dataset_11_03_21'
-# dataSet='dataset_11_14_21'
-
 dataset='dataset_04_27_22'
 samples="1-2-3-4"
 dataFolder="${dataDir}/${dataset}"

@@ -63,6 +63,8 @@ def getArgs():
                         help='seed for generating chi')
     parser.add_argument('--chi_constant', type=AC.str2float, default=0,
                         help='constant to add to chi')
+    parser.add_argument('--chi_multiplier', type=AC.str2float, default=1,
+                        help='multiplier to multiply by chi')
 
     # diag chi arguments
     parser.add_argument('--chi_diag', type=AC.str2list,
@@ -284,6 +286,7 @@ def set_up_plaid_chi(args, config):
     # save chi
     if args.chi is not None:
         args.chi += args.chi_constant
+        args.chi *= args.chi_multiplier
         if args.save_chi:
             print(f'Rank of chi: {np.linalg.matrix_rank(args.chi)}')
             np.savetxt('chis.txt', args.chi, fmt='%0.5f')
