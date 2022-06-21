@@ -26,7 +26,7 @@ debug:
 	g++ $(DEBUG_FLAGS) -I ../include -c Grid.cpp
 	g++ $(DEBUG_FLAGS) -I ../include -c Sim.cpp
 	g++ $(DEBUG_FLAGS) -c random_mars.cpp
-	g++ $(DEBUG_FLAGS) -I ../include -o $(EXE) $(MAIN) Grid.o Sim.o random_mars.o
+	g++ $(DEBUG_FLAGS) -I ../include -o TICG-debug $(MAIN) Grid.o Sim.o random_mars.o
 
 
 clean:

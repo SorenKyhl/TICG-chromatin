@@ -19,6 +19,8 @@ def getArgs():
                             help='newton step trust region')
     parser.add_argument('--min_diag_chi', type=str2float,
                             help='min value of diag chi during newton step')
+    parser.add_argument('--method', type=str,
+                            help='method for newtons method')
 
     args, _ = parser.parse_known_args()
 
@@ -31,6 +33,7 @@ def getArgs():
         args.goal_specified = str2bool(sys.argv[4])   # if true, will read from obj_goal.txt and obj_goal_diag.txt.
                                              # if false, will calculate goals from iteration1 observables
         args.trust_region = float(sys.argv[5])
+        args.method = sys.argv[6]
 
     return args
 
@@ -72,7 +75,7 @@ def str2bool(v):
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
 def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it,
-        goal_specified, trust_region, min_val):
+        goal_specified, trust_region, min_val, method):
 
     # get goals
     if goal_specified:
@@ -105,11 +108,11 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it,
     lam = df.mean().values
     B = df.cov().values
 
-    vbead = 520
-    vcell = 28.7**3
-    B /= vcell/vbead
+    # vbead = 520
+    # vcell = 28.7**3
+    # B /= vcell/vbead
 
-    new_chis, howfar = newton(lam, obj_goal, B,  gamma, current_chis, trust_region)
+    new_chis, howfar = newton(lam, obj_goal, B,  gamma, current_chis, trust_region, method)
 
     if min_val is not None:
         new_chis[new_chis < min_val] = min_val
@@ -123,7 +126,7 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it,
         f.write(str(howfar) + '\n')
 
 def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, it,
-        goal_specified, trust_region, min_val):
+        goal_specified, trust_region, min_val, method):
 
     # get goals
     if goal_specified:
@@ -170,14 +173,14 @@ def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, 
     lam = df_total.mean().values
     B = df_total.cov().values
 
-    vbead = 520
-    vcell = 28.7**3
-    B /= vcell/vbead
+    # vbead = 520
+    # vcell = 28.7**3
+    # B /= vcell/vbead
 
     print("obj goal: ", obj_goal)
     print("lam: ", lam)
 
-    new_chis, howfar = newton(lam, obj_goal, B, gamma, current_chis, trust_region)
+    new_chis, howfar = newton(lam, obj_goal, B, gamma, current_chis, trust_region, method)
 
 
     index = 0;
@@ -196,10 +199,13 @@ def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, 
         with open(f, "a") as f:
             f.write(str(howfar) + '\n')
 
-def newton(lam, obj_goal, B, gamma, current_chis, trust_region):
+def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method):
     difference = obj_goal - lam
     Binv = np.linalg.pinv(B)
-    step = Binv@difference
+    if method == "n":
+        step = Binv@difference
+    elif method == "g":
+        step = difference
 
     steplength = np.sqrt(step@step)
 
@@ -224,8 +230,8 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region):
         print('step: ', step)
         print('lam: ', lam)
 
-    plt.plot(difference)
-    plt.savefig("difference.png")
+    plt.plot(-1*difference)
+    plt.savefig("-1*difference.png")
 
     new_chis = current_chis - step
     print(f"new chi values: {new_chis}\n")
@@ -235,7 +241,7 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region):
     return new_chis, howfar
 
 def copy_chis(parameter_file, obs_file, convergence_file, goal_file, gamma, it,
-        goal_specified = None, trust_region = None, min_val = None):
+        goal_specified = None, trust_region = None, min_val = None, method = None):
     ''' for parameters that are not optimized, just copy chis to next iteration'''
     # load current chi parameters
     if osp.exists(parameter_file):
@@ -276,7 +282,7 @@ def main():
         goal_files = ["obj_goal.txt", "obj_goal_diag.txt"]
         both_step(parameter_files, obs_files, convergence_files, goal_files,
                     args.gamma, args.it, args.goal_specified, args.trust_region,
-                    args.min_diag_chi)
+                    args.min_diag_chi, args.method)
     else:
         if args.mode == "diag":
             diag_fn = step
@@ -291,14 +297,15 @@ def main():
         goal_file = "obj_goal_diag.txt"
         diag_fn(parameter_file, obs_file, convergence_file, goal_file,
                     args.gamma, args.it, args.goal_specified, args.trust_region,
-                    args.min_diag_chi)
+                    args.min_diag_chi, args.method)
 
         parameter_file = "chis.txt"
         obs_file = "observables.traj"
         convergence_file = "convergence.txt"
         goal_file = "obj_goal.txt"
         fn(parameter_file, obs_file, convergence_file, goal_file,
-                    args.gamma, args.it, args.goal_specified, args.trust_region, None)
+                    args.gamma, args.it, args.goal_specified, args.trust_region,
+                    None, args.method)
 
 if __name__ == '__main__':
     main()

@@ -17,7 +17,8 @@ public:
 	double delta;              // grid cell size (length)
 	bool cubic_boundary = true;
 	bool spherical_boundary = false;
-	int L;                        // size of cubic boundary in units of grid cells
+	int L;                        // size of cubic boundary in units of grid cells (ceil side_length/delta)
+	double side_length;           // size of cubic boundary in units of nm
 	double radius;                // radius of simulation volume in [nanometers]
 	int boundary_radius;          // radius of boundary in units of grid cells
 	Eigen::RowVector3d sphere_center; // center of spherical boundary
