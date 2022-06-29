@@ -6,31 +6,27 @@ module load gcc/10.2.0
 
 param_setup() {
 	# other params
-	method='random'
+	seqMethod='random'
 	exclusive='false'
+	pSwitch='none' # using lmbda instead
+	seqSeed='none'
+
 	overwrite=1
 	dumpFrequency=50000
 	e='none'
 	s='none'
+	sConstant=0
+	useE='false'
+	useS='false'
+
+	chi='none'
 	chiConstant=0
 	chiMultiplier=1
+
 	chiDiagConstant=0
-	sConstant=0
-	pSwitch='none' # using lmbda instead
-	npySeed='none'
+	chiDiagSlope=1
+
 	TICGSeed='none'
-	if [ $chi = 'nonlinear' ]
-	then
-		useE='true'
-		useS='false'
-	elif [ $chi = 'polynomial' ]
-	then
-		useE='true'
-		useS='false'
-	else
-		useE='false'
-		useS='false'
-	fi
 }
 
 move() {
@@ -69,10 +65,10 @@ check_dir() {
 
 random_inner() {
 	# generate sequences
-	python3 ~/TICG-chromatin/scripts/get_seq.py --method $method --exclusive $exclusive --m $m --p_switch $pSwitch --lmbda $lmbda --k $k --save_npy --seed $npySeed > seq.log
+	python3 ~/TICG-chromatin/scripts/get_params.py --seq_method $seqMethod --exclusive $exclusive --m $m --p_switch $pSwitch --lmbda $lmbda --k $k --save_npy --seq_seed $seqSeed --chi=$chi --chi_method $chiMethod --chi_seed $chiSeed --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable --diag_chi_method $chiDiagMethod --diag_chi_slope $chiDiagSlope --max_diag_chi $maxDiagChi --chi_constant=$chiConstant --chi_multiplier=$chiMultiplier --diag_chi_constant=$chiDiagConstant > params.log
 
 	# set up config.json
-	python3 ~/TICG-chromatin/scripts/get_config.py --save_chi --chi=$chi --chi_seed $chiSeed --m $m --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable --diag $diag --max_diag_chi $maxDiagChi --n_sweeps $nSweeps --dump_frequency $dumpFrequency --TICG_seed $TICGSeed --use_ematrix $useE --use_smatrix $useS --load_configuration_filename $init_config --relabel $relabel --e $e --s $s --chi_constant=$chiConstant --chi_multiplier=$chiMultiplier --chi_diag_constant=$chiDiagConstant --s_constant=$sConstant > config.log
+	python3 ~/TICG-chromatin/scripts/get_config.py --m $m --n_sweeps $nSweeps --dump_frequency $dumpFrequency --TICG_seed $TICGSeed --use_ematrix $useE --use_smatrix $useS --load_configuration_filename $init_config --relabel $relabel --e $e --s $s  > config.log
 
 	# run simulation
 	~/TICG-chromatin/TICG-engine > log.log

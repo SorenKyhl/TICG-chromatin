@@ -26,6 +26,7 @@ project='false'
 goalSpecified='true'
 modelType='ContactGNNEnergy'
 m=-1
+k=-1
 diag='false'
 diagBins=20
 diagPseudobeadsOn='true'
@@ -121,11 +122,11 @@ max_ent_inner () {
   cd $scratchDirResources
   # generate sequences
   echo "starting get_seq"
-  python3 ~/TICG-chromatin/scripts/get_seq.py --method $method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --save_npy --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --model_path $modelPath --seed $3 > seq.log
+  python3 ~/TICG-chromatin/scripts/get_params.py --method $method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --gnn_model_path $GNNModelPath --seq_seed $3 --chi_method 'random' --min_chi=-1 --max_chi=1 --diag_chi_method 'linear' --diag_bins $diagBins --diag_pseudobeads_on $diagPseudobeadsOn > params.log
 
   # get config
   echo "starting get_config"
-  python3 ~/TICG-chromatin/scripts/get_config.py --m $m --min_chi=-1 --max_chi=1 --save_chi_for_max_ent --goal_specified $goalSpecifiedCopy --default_config "${resources}/default_config.json" --use_ematrix $useE --use_smatrix $useS --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_diag_chi $useGroundTruthDiagChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $RANDOM --sample_folder $sampleFolder --load_configuration_filename $init_config --diag $diag --diag_bins $diagBins --diag_pseudobeads_on $diagPseudobeadsOn > config.log
+  python3 ~/TICG-chromatin/scripts/get_config.py --m $m --max_ent --default_config "${resources}/default_config.json" --use_ematrix $useE --use_smatrix $useS --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_diag_chi $useGroundTruthDiagChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $RANDOM --sample_folder $sampleFolder --load_configuration_filename $init_config > config.log
 
 
   # generate goals
@@ -133,6 +134,8 @@ max_ent_inner () {
   then
     echo "starting goal_specified"
     python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --contact_map "${sampleFolder}/y.npy" --mode $mode --diag_bins $diagBins > goal.log
+  else
+    echo "goal_specified is false"
   fi
 
   echo $method_fmt
@@ -151,11 +154,11 @@ max_ent_inner () {
 }
 
 format_method () {
-  method_fmt=$method
+  method_fmt=$seqMethod
 
   if [ $method == 'GNN' ]
   then
-    method_fmt="${method_fmt}-${modelID}"
+    method_fmt="${method_fmt}-${GNNModelID}"
   fi
 
   if [ $loadChi = 'true' ]
@@ -211,7 +214,7 @@ param_setup(){
     fi
     if ! [ $loadChi = 'true' ]
     then
-      k='none'
+      k=0
     fi
   fi
 
@@ -228,7 +231,7 @@ param_setup(){
   fi
 
   dataFolder="${dir}/${dataset}"
-  modelPath="${results}/${modelType}/${modelID}"
+  GNNModelPath="${results}/${modelType}/${GNNModelID}"
   sampleFolder="${dataFolder}/samples/sample${sample}"
 
   seed=$RANDOM

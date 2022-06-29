@@ -7,7 +7,7 @@
 #SBATCH --nodes=1
 #SBATCH --mem-per-cpu=2000
 
-chi=$1
+chiMethod=$1
 k=$2
 m=$3
 dataFolder=$4
@@ -16,7 +16,7 @@ relabel=$6
 tasks=$7
 samples=$8
 samplesPerTask=$9
-diag=${10}
+chiDiagMethod=${10}
 scratchDir=${11}
 scriptIndex=${12}
 nSweeps=${13}
@@ -37,7 +37,7 @@ do
   start=$(( $(( $(( $i - 1 ))*$samples / $tasks ))+$startSample ))
   stop=$(( $start + $samplesPerTask - 1 ))
   i=$(( i + $tasks * $scriptIndex ))
-  echo $start $stop
+  echo "start=" $start "stop=" $stop
   scratchDirI="${scratchDir}/TICG${i}"
   random &
 done

@@ -14,8 +14,8 @@ nSweeps=500000
 lmbda=0.8
 maxDiagChi=5
 chiSeed='31'
-npySeed='31'
-chi='none'
+seqSeed='31'
+chiMethod='random'
 minChi=-0.4
 maxChi=0.4
 fillDiag='none'
@@ -44,8 +44,6 @@ run()  {
 # make
 # mv TICG-engine ..
 
-
-method='random'
 nSweeps=1000000
 diag='true'
 maxDiagChi=2

@@ -4,13 +4,10 @@ import json
 import os.path as osp
 
 import numpy as np
-from seq2contact import (LETTERS, ArgparserConverter, InteractionConverter,
-                         calculate_E_S, calculate_S, s_to_E)
+from seq2contact import (LETTERS, ArgparserConverter, calculate_E_S,
+                         calculate_S, s_to_E)
 from sklearn.metrics.pairwise import polynomial_kernel
 
-METHOD_FORMATS={'random':'%d', 'pca':'%.3e', 'pca_split':'%.3e', 'kpca':'%.3e',
-                'ground_truth':None, 'k_means':'%d', 'nmf':'%.3e', 'epigenetic':'%d',
-                'chromhmm':'%d', 'gnn':'%.3e'}
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
@@ -24,12 +21,11 @@ def getArgs():
     # config param arguments
     parser.add_argument('--m', type=int, default=1024,
                         help='number of particles (-1 to infer)')
-    # parser.add_argument('--k', type=AC.str2int,
-    #                     help='number of particle types (inferred from chi if None)')
-    parser.add_argument('--load_configuration_filename', type=AC.str2None, default='input1024.xyz',
+    parser.add_argument('--load_configuration_filename', type=AC.str2None,
+                        default='input1024.xyz',
                         help='file name of initial config (None to not load)')
-    parser.add_argument('--goal_specified', type=AC.str2bool, default=True,
-                        help='True will save two lines to chis.txt')
+    # parser.add_argument('--goal_specified', type=AC.str2bool, default=False,
+    #                     help='True will save two lines to chis.txt')
     parser.add_argument('--dump_frequency', type=int,
                         help='set to change dump frequency')
     parser.add_argument('--dump_stats_frequency', type=int,
@@ -44,69 +40,31 @@ def getArgs():
                         help='True to use e_matrix')
     parser.add_argument('--use_smatrix', type=AC.str2bool, default=False,
                         help='True to use s_matrix')
-    parser.add_argument('--s_constant', type=AC.str2float, default=0,
-                        help='constant to add to S')
     parser.add_argument('--sample_folder', type=str,
                         help='location of sample for ground truth chi')
     parser.add_argument('--relabel', type=AC.str2None,
                         help='specify mark combinations to be relabled'
                             '(e.g. AB-C will relabel AB mark pairs as mark C)')
     parser.add_argument('--diag_pseudobeads_on', type=AC.str2bool, default=True)
-
-
-    # chi arguments
     parser.add_argument('--use_ground_truth_chi', type=AC.str2bool, default=False,
                         help='True to use ground truth chi and diag chi')
     parser.add_argument('--use_ground_truth_diag_chi', type=AC.str2bool, default=False,
                         help='True to use ground truth diag chi')
-    parser.add_argument('--chi_seed', type=AC.str2int, default=None,
-                        help='seed for generating chi')
-    parser.add_argument('--chi_constant', type=AC.str2float, default=0,
-                        help='constant to add to chi')
-    parser.add_argument('--chi_multiplier', type=AC.str2float, default=1,
-                        help='multiplier to multiply by chi')
-
-    # diag chi arguments
-    parser.add_argument('--chi_diag', type=AC.str2list,
-                        help='diag chi (None to generate via max_diag_chi and diag_bins)')
-    parser.add_argument('--diag', type=AC.str2bool, default=False,
-                        help='True for diagonal interactions')
-    parser.add_argument('--diag_bins', type=AC.str2int, default=20,
-                        help='number of diagonal bins')
-    parser.add_argument('--max_diag_chi', type=float, default=0.5,
-                        help='maximum diag chi value for np.linspace()')
-    parser.add_argument('--chi_diag_constant', type=AC.str2float, default=0,
-                        help='constant to add to chi diag')
-
-    # plaid chi arguments
+    parser.add_argument('--max_ent', action="store_true",
+                        help='true to save chi to wd in format needed for max ent')
     parser.add_argument('--e', type=AC.str2None,
                         help='path to e_matrix to use (.npy or .txt)')
     parser.add_argument('--s', type=AC.str2None,
                         help='path to s_matrix to use (.npy or .txt)')
-    parser.add_argument('--chi', type=AC.str2list2D,
-                        help='chi matrix using latex separator style'
-                            '(if None will chi be generated randomly)')
-    parser.add_argument('--save_chi', action="store_true",
-                        help='true to save chi to wd')
-    parser.add_argument('--save_chi_for_max_ent', action="store_true",
-                        help='true to save chi to wd in format needed for max ent')
-    parser.add_argument('--min_chi', type=float, default=-1.,
-                        help='minimum chi value for random generation')
-    parser.add_argument('--max_chi', type=float, default=1.,
-                        help='maximum chi value for random generation')
-    parser.add_argument('--fill_diag', type=AC.str2float,
-                        help='fill diag of chi with given value (None to skip)')
-    parser.add_argument('--fill_offdiag', type=AC.str2float,
-                        help='fill off diag of chi with given value (None to skip)')
-    parser.add_argument('--ensure_distinguishable', action='store_true',
-                        help='true to ensure that corresponding psi is distinguishable')
+
+
 
     args = parser.parse_args()
-    args.format = '%.3e' # for writeSeq
     return args
 
 #### x, psi functions ####
 def relabel_x_to_psi(x, relabel_str):
+    # may no longer work
     '''
     Relabels x according to relabel_str.
 
@@ -172,174 +130,6 @@ def writeSeq(seq, format='%.3e'):
     for j in range(k):
         np.savetxt(f'seq{j}.txt', seq[:, j], fmt = format)
 
-# chi functions
-def generateRandomChi(args, decimals = 1, rng = np.random.default_rng()):
-    '''Initializes random chi array.'''
-
-    # create array with random values in [minval, maxVal]
-    rands = rng.random(size=(args.k, args.k)) * (args.max_chi - args.min_chi) + args.min_chi
-
-    # zero lower triangle
-    chi = np.triu(rands)
-
-    if args.fill_offdiag is not None:
-        # fills off diag chis with value of fill_offdiag
-        chi_diag = np.diagonal(chi)
-        chi = np.ones((args.k, args.k)) * args.fill_offdiag
-        di = np.diag_indices(args.k)
-        chi[di] = chi_diag
-    if args.fill_diag is not None:
-        # fills diag chis with value of fill_diag
-        di = np.diag_indices(args.k)
-        chi[di] = args.fill_diag
-
-    return np.round(chi, decimals = decimals)
-
-def getChis(args):
-    rng = np.random.default_rng(args.chi_seed)
-    chi = generateRandomChi(args, rng = rng)
-    if args.ensure_distinguishable and args.k < 10: # if k is too large this is too RAM intensive
-        conv = InteractionConverter(args.k, chi)
-        max_it = 10
-        it = 0
-        while not uniqueRows(conv.getS()) and it < max_it: # defaults to False
-            # generate random chi
-            conv.chi = generateRandomChi(args, rng = rng)
-            it += 1
-        if it == max_it:
-            print('Warning: maximum iteration reached')
-            print('Warning: particles are not distinguishable')
-        chi = conv.chi
-
-    return chi
-
-def set_up_plaid_chi(args, config):
-    if args.k is None:
-        return
-
-    if args.use_ground_truth_chi:
-        args.chi = np.load(osp.join(args.sample_folder, 'chis.npy'))
-        print(args.chi)
-        _, k = args.chi.shape
-        assert k == args.k, f"cols of ground truth chi {args.k} doesn't match cols of seq {k}"
-    elif args.chi is None:
-        args.chi = getChis(args)
-    elif isinstance(args.chi, str):
-        if args.chi == 'nonlinear':
-            x = np.load('x.npy') # original particle types that interact nonlinearly
-            assert args.k >= 10
-            psi = np.zeros((args.m, 15)) # transformation of x such that S = psi \chi psi^T
-            psi[:, 0] = (np.sum(x[:, 0:3], axis = 1) == 1) # exactly 1 of A, B, C
-            psi[:, 1] = (np.sum(x[:, 0:3], axis = 1) == 2) # exactly 2 of A, B, C
-            psi[:, 2] = (np.sum(x[:, 0:3], axis = 1) == 3) # A, B, and C
-            psi[:, 3] = x[:, 3] # D
-            psi[:, 4] = x[:, 4] # E
-            psi[:, 5] = np.logical_and(x[:, 3], x[:, 4]) # D and E
-            psi[:, 6] = np.logical_and(x[:, 3], x[:, 5]) # D and F
-            psi[:, 7] = np.logical_xor(x[:, 0], x[:, 5]) # either A or F
-            psi[:, 8] = x[:, 6] # G
-            psi[:, 9] = np.logical_and(np.logical_and(x[:, 6], x[:, 7]), np.logical_not(x[:, 4])) # G and H and not E
-            psi[:, 10] = x[:, 7] # H
-            psi[:, 11] = x[:, 8] # I
-            psi[:, 12] = x[:, 9] # J
-            psi[:, 13] = np.logical_or(x[:, 7], x[:, 8]) # H or I
-            psi[:, 14] = np.logical_xor(x[:, 8], x[:, 9]) # either I or J
-
-            np.save('psi.npy', psi)
-            args.k = 15
-            args.chi = np.array([[-1,1.8,-0.5,1.8,0.1,1.3,-0.1,0.1,0.8,1.4,2,1.7,1.5,-0.2,1.1],
-                            [0,-1,-0.6,0.6,0.8,-0.8,-0.7,-0.1,0,-0.4,-0.2,0.6,-0.9,1.4,0.3],
-                            [0,0,-1,1.6,0,-0.2,-0.4,1.5,0.7,1.8,-0.7,-0.9,0.6,1,0.5],
-                            [0,0,0,-1,0.8,1.3,-0.6,0.7,0.1,1.4,0.6,0.7,-0.6,0.5,0.5],
-                            [0,0,0,0,-1,0.9,0.2,1.5,1.7,0.1,-0.7,0.8,0.7,1.6,1.6],
-                            [0,0,0,0,0,-1,0.6,-0.2,0.8,0.7,-1,-0.9,1.6,0.8,0.3],
-                            [0,0,0,0,0,0,-1,-0.2,-0.6,1.8,-0.6,1.9,1.1,0.4,-0.4],
-                            [0,0,0,0,0,0,0,-1,1.7,-0.4,1.7,0.2,1.2,1.8,-0.1],
-                            [0,0,0,0,0,0,0,0,-1,0.7,0.2,0.8,-0.4,1.4,1.3],
-                            [0,0,0,0,0,0,0,0,0,-1,-0.4,0.5,1.9,0.1,0.1],
-                            [0,0,0,0,0,0,0,0,0,0,-1,0.9,1,1.3,1],
-                            [0,0,0,0,0,0,0,0,0,0,0,-1,1.5,-0.1,0.7],
-                            [0,0,0,0,0,0,0,0,0,0,0,0,-1,0.6,-0.6],
-                            [0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0.2],
-                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1]])
-        elif args.chi.startswith('polynomial'):
-            x = np.load('x.npy') # original particle types that interact nonlinearly
-            ind = np.triu_indices(args.k)
-            args.k = int(args.k*(args.k+1)/2)
-            psi = np.zeros((args.m, args.k))
-            for i in range(args.m):
-                psi[i] = np.outer(x[i], x[i])[ind]
-
-            np.save('psi.npy', psi)
-            args.chi = getChis(args)
-    else:
-        # zero lower triangle
-        args.chi = np.triu(args.chi)
-        rows, cols = args.chi.shape
-        assert args.k == rows, f'number of particle types {args.k} does not match shape of chi {rows}'
-        assert rows == cols, f"chi not square: {args.chi}"
-        conv = InteractionConverter(args.k, args.chi)
-        if not uniqueRows(conv.getS()):
-            print('Warning: particles are not distinguishable')
-
-
-    # save chi
-    if args.chi is not None:
-        args.chi += args.chi_constant
-        args.chi *= args.chi_multiplier
-        if args.save_chi:
-            print(f'Rank of chi: {np.linalg.matrix_rank(args.chi)}')
-            np.savetxt('chis.txt', args.chi, fmt='%0.5f')
-            np.save('chis.npy', args.chi)
-        elif args.save_chi_for_max_ent:
-            with open('chis.txt', 'w', newline='') as f:
-                wr = csv.writer(f, delimiter = '\t')
-                wr.writerow(args.chi[np.triu_indices(args.k)])
-                if args.goal_specified:
-                    wr.writerow(args.chi[np.triu_indices(args.k)])
-                else:
-                    # get random chi
-                    chi = getChis(args)
-                    wr.writerow(chi[np.triu_indices(args.k)])
-
-def set_up_diag_chi(args, config, sample_config):
-    chi_diag = None
-    if args.use_ground_truth_diag_chi:
-        if sample_config is not None:
-            args.diag = sample_config["diagonal_on"] # overwrite args
-            try:
-                chi_diag = np.array(sample_config["diag_chis"])
-            except KeyError:
-                assert args.diag == False
-        else:
-            print("WARNING: ground truth config missing")
-            chi_diag = np.linspace(0, args.max_diag_chi, args.diag_bins)
-    elif args.chi_diag is not None:
-        chi_diag = np.array(args.chi_diag)
-    else:
-        chi_diag = np.linspace(0, args.max_diag_chi, args.diag_bins)
-
-    if chi_diag is not None:
-        chi_diag += args.chi_diag_constant
-
-    config["diagonal_on"] = args.diag
-    if args.diag:
-        config["diag_chis"] = list(chi_diag)
-        if args.save_chi_for_max_ent:
-            with open('chis_diag.txt', 'w', newline='') as f:
-                wr = csv.writer(f, delimiter = '\t')
-                wr.writerow(np.array(config["diag_chis"]))
-                wr.writerow(np.array(config["diag_chis"]))
-
-def uniqueRows(array):
-    if array is None:
-        return False
-
-    if len(np.unique(array, axis=0)) / len(array) == 1.:
-        return True
-    else:
-        return False
-
 def main():
     args = getArgs()
     print(args)
@@ -357,6 +147,7 @@ def main():
         config = json.load(f)
 
     if args.m == -1:
+        # need to infer m
         if osp.exists('x.npy'):
             x = np.load('x.npy')
             args.m, _ = x.shape
@@ -365,6 +156,7 @@ def main():
             args.m, _ = e.shape
         print(f'inferred m = {args.m}')
 
+    # infer k
     if osp.exists('psi.npy'):
         psi = np.load('psi.npy')
         _, args.k = psi.shape
@@ -372,7 +164,7 @@ def main():
         x = np.load('x.npy')
         _, args.k = x.shape
     else:
-        args.k = None
+        args.k = 0
     print(f'inferred k = {args.k}')
 
     if args.relabel is not None:
@@ -383,10 +175,45 @@ def main():
         psi = relabel_x_to_psi(x, args.relabel)
         np.save('psi.npy', psi)
 
+    # load chi
+    chi_file = 'chis.npy'
+    if args.use_ground_truth_chi:
+        args.chi = np.load(osp.join(args.sample_folder, 'chis.npy'))
+        _, k = args.chi.shape
+        np.save(chi_file, args.chi)
+        assert k == args.k, f"cols of ground truth chi {args.k} doesn't match cols of seq {k}"
+    elif osp.exists(chi_file):
+        args.chi = np.load(chi_file)
 
-    # set up chi
-    set_up_plaid_chi(args, config)
-    set_up_diag_chi(args, config, sample_config)
+        if args.max_ent:
+            with open('chis.txt', 'w', newline='') as f:
+                wr = csv.writer(f, delimiter = '\t')
+                wr.writerow(args.chi[np.triu_indices(args.k)])
+                wr.writerow(args.chi[np.triu_indices(args.k)])
+    else:
+        args.chi = None
+
+    # load diag chi
+    diag_chis_file = 'diag_chis.npy'
+    if args.use_ground_truth_diag_chi:
+        assert sample_config is not None, 'ground truth config missing'
+        config["diagonal_on"] = sample_config["diagonal_on"]
+        if config["diagonal_on"]:
+            diag_chis = np.array(sample_config["diag_chis"])
+            config["diag_chis"] = list(diag_chis)
+            np.save(diag_chis_file, diag_chis)
+    elif osp.exists(diag_chis_file):
+        diag_chis = np.load(diag_chis_file)
+        config["diag_chis"] = list(diag_chis)
+        config["diagonal_on"] = True
+
+        if args.max_ent:
+            with open('chis_diag.txt', 'w', newline='') as f:
+                wr = csv.writer(f, delimiter = '\t')
+                wr.writerow(diag_chis)
+                wr.writerow(diag_chis)
+    else:
+        config["diagonal_on"] = False
 
     # set up psi
     if osp.exists('psi.npy'):
@@ -402,11 +229,9 @@ def main():
     # set up e, s
     if psi is not None:
         # psi is only None if not doing max ent
-        writeSeq(psi, args.format)
+        writeSeq(psi)
 
         e, s = calculate_E_S(psi, args.chi)
-
-        s += args.s_constant
 
         if args.use_smatrix:
             np.savetxt('s_matrix.txt', s, fmt='%0.5f')
@@ -463,7 +288,7 @@ def main():
             # save ematrix_on
             config['ematrix_on'] = True
             config["ematrix_filename"] = "e_matrix.txt"
-    elif args.k is None:
+    elif args.k == 0:
             config['plaid_on'] = False
             config['bead_type_files'] = None
             config["nspecies"] = 0
@@ -519,7 +344,7 @@ def main():
         json.dump(config, f, indent = 2)
 
 #### test functions ####
-class tester():
+class Tester():
     def test():
         args = getArgs()
         args.k = 8
@@ -554,7 +379,8 @@ class tester():
         psi[:, 6] = np.logical_and(x[:, 3], x[:, 5]) # D and F
         psi[:, 7] = np.logical_xor(x[:, 0], x[:, 5]) # either A or F
         psi[:, 8] = x[:, 6] # G
-        psi[:, 9] = np.logical_and(np.logical_and(x[:, 6], x[:, 7]), np.logical_not(x[:, 4])) # G and H and not E
+        psi[:, 9] = np.logical_and(np.logical_and(x[:, 6], x[:, 7]),
+                                    np.logical_not(x[:, 4])) # G and H and not E
         psi[:, 10] = x[:, 7] # H
         psi[:, 11] = x[:, 8] # I
         psi[:, 12] = x[:, 9] # J
@@ -590,7 +416,8 @@ class tester():
 
         for i in range(args.m):
             print(x[i])
-            result = polynomial_kernel(x[i].reshape(-1, 1), x[i].reshape(-1, 1), degree=1, coef0=0)
+            result = polynomial_kernel(x[i].reshape(-1, 1), x[i].reshape(-1, 1),
+                                        degree=1, coef0=0)
             print('\t', result)
             result = np.outer(x[i], x[i])
             print('\t', result)
@@ -606,5 +433,5 @@ class tester():
 
 if __name__ == '__main__':
     main()
-    # tester.test_nonlinear_chi()
-    # tester.test_polynomial_chi()
+    # Tester.test_nonlinear_chi()
+    # Tester.test_polynomial_chi()

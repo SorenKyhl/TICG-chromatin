@@ -288,6 +288,7 @@ void Sim::makeOutputFiles() {
 	energy_out_filename = "./" + data_out_filename + "/energy.traj";
 	obs_out_filename = "./" + data_out_filename + "/observables.traj";
 	diag_obs_out_filename = "./" + data_out_filename + "/diag_observables.traj";
+  constant_obs_out_filename = "./" + data_out_filename + "/constant_observable.traj";
 	density_out_filename = "./" + data_out_filename + "/density.traj";
 	extra_out_filename = "./" + data_out_filename + "/extra.traj";
 
@@ -297,6 +298,7 @@ void Sim::makeOutputFiles() {
 	energy_out = fopen((energy_out_filename).c_str(), "w");
 	obs_out = fopen((obs_out_filename).c_str(), "w");
 	diag_obs_out = fopen((diag_obs_out_filename).c_str(), "w");
+  constant_obs_out = fopen((constant_obs_out_filename).c_str(), "w");
 	density_out = fopen((density_out_filename).c_str(), "w");
 	extra_out = fopen((extra_out_filename).c_str(), "w");
 
@@ -508,9 +510,9 @@ void Sim::loadBeadTypes() {
 		int nlines = countLines(bead_type_file);
 		if (nlines != nbeads)
 		{
-			throw std::runtime_error(bead_type_file + 
-					" (length : " + std::to_string(nlines) + 
-					") is not the right size for a simulation with " + 
+			throw std::runtime_error(bead_type_file +
+					" (length : " + std::to_string(nlines) +
+					") is not the right size for a simulation with " +
 					std::to_string(nbeads) + " particles.");
 		}
 
@@ -656,7 +658,7 @@ void Sim::MC() {
 			//std::cout << nonbonded << std::endl;
 		}
 		//t_pivot.~Timer();
-		
+
 		looping:
 		Timer t_translation("translating", prof_timer_on);
 		for(int j=0; j<n_trans; j++)
@@ -670,7 +672,7 @@ void Sim::MC() {
 		if (gridmove_on) MCmove_grid();
 		//nonbonded = getNonBondedEnergy(grid.active_cells);
 		//std::cout << nonbonded << std::endl;
-	
+
 		Timer t_crankshaft("Cranking", prof_timer_on);
 		for(int j=0; j<n_crank; j++) {
 			MCmove_crankshaft();
@@ -711,7 +713,7 @@ void Sim::MC() {
 			}
 		}
 
-		if (sweep%dump_stats_frequency == 0) 
+		if (sweep%dump_stats_frequency == 0)
 		{
 			dumpEnergy(sweep);
 			if (production)

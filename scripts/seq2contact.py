@@ -30,3 +30,4 @@ from sequences_to_contact_maps.utils.utils import (LETTERS, SCC,
                                                    DiagonalPreprocessing,
                                                    calc_dist_strat_corr, crop,
                                                    pearson_round)
+from sequences_to_contact_maps.utils.xyz_utils import xyz_load

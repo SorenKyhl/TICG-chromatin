@@ -18,7 +18,7 @@ def check_dataset(dataset):
             id = int(file[6:])
             file_dir = osp.join(dir, file)
             try:
-                x, psi, chi, e, s, y, ydiag = load_all(file_dir)
+                x, psi, chi, chi_diag, e, s, y, ydiag = load_all(file_dir)
 
                 m, k = psi.shape
                 seq = np.zeros((m, k))
@@ -319,7 +319,49 @@ def time_comparison():
     plt.savefig(osp.join(dir, 'time.png'))
     plt.close()
 
+def construct_sc_xyz():
+    dir = '/home/erschultz/dataset_test2/samples'
+    xyz_all = None
+    for f in os.listdir(dir):
+        if f.startswith('sample'):
+            i = int(f[6:])
+            print(f, i)
+            xyz_file = osp.join(dir, f, 'data_out/output.xyz')
+            xyz = xyz_load(xyz_file, multiple_timesteps = True, save = True, N_min = 1,
+                            down_sampling = 10)
+            N, m, _ = xyz.shape
+            xyz = np.concatenate((xyz, np.ones((N, m, 1)) * i), axis = 2)
 
+            if xyz_all is None:
+                xyz_all = xyz
+            else:
+                xyz_all = np.concatenate((xyz_all, xyz), axis = 0)
+
+    print(xyz_all.shape)
+    np.save(osp.join(dir, 'combined2/xyz.npy'), xyz_all)
+
+def main():
+    x = np.logspace(0, 20)
+    # plt.plot(x)
+    # plt.show()
+
+    x = np.array([45.03264, 58.67288, 64.40598, 66.05575, 65.71107, 68.21465,
+                    69.71432, 70.10060, 71.20050, 73.84091, 69.97320, 73.76658,
+                    73.03509, 75.04872, 74.75528, 81.07985, 79.50736, 94.23064,
+                    56.93894, 66.63306])
+    # plt.plot(x)
+    # plt.show()
+
+    max = 20
+    n_bins = 20
+    for B in [0.01, 0.02, 0.05, 0.1]:
+        for max in [10]:
+            A = max / np.log(B * (n_bins - 1) + 1)
+            x = A * np.log(B * np.arange(n_bins) + 1)
+            plt.plot(x, label = f'{B},{max}')
+
+    plt.legend()
+    plt.show()
 
 
 
@@ -329,5 +371,7 @@ if __name__ == '__main__':
     # scc_y_vs_y_rank1()
     # test_robust_PCA()
     # check_dataset('dataset_05_12_22')
-    time_comparison()
+    # time_comparison()
+    # construct_sc_xyz()
+    main()
     # makeDirsForMaxEnt("dataset_04_27_22")

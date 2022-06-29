@@ -1,37 +1,22 @@
 #! /bin/bash
-k=3
-m=1024
-dataFolder="/home/erschultz/dataset_test2"
-scratchDir='/home/erschultz/scratch'
-useE='false'
-useS='false'
-startSample=1
-relabel='none'
-diag='false'
-nSweeps=500000
-pSwitch=0.05
-lmbda='none'
-maxDiagChi=5
-chiSeed='none'
-chi='none'
-minChi=-2
-maxChi=1
-fillDiag='none'
-overwrite=1
-dumpFrequency=10000
-TICGSeed='none'
-npySeed='none' # for get_seq
-method='random'
-exclusive='false'
-e='none'
-s='none'
-chiConstant=0
-chiDiagConstant=0
-sConstant=0
-
-source activate python3.8_pytorch1.8.1
 
 source ~/TICG-chromatin/bin/random/random_fns.sh
+
+param_setup
+m=512
+dataFolder="/home/erschultz/dataset_test_diag512"
+scratchDir='/home/erschultz/scratch'
+relabel='none'
+lmbda=0.8
+chiSeed='31'
+seqSeed='31'
+chiMethod='random'
+minChi=-0.4
+maxChi=0.4
+fillDiag='none'
+overwrite=1
+
+source activate python3.9_pytorch1.9
 
 cd ~/TICG-chromatin
 
@@ -53,22 +38,28 @@ run()  {
 # make
 # mv TICG-engine ..
 
-k=4
-method='random'
-chi='polynomial'
+k=0
 nSweeps=1000000
-dumpFrequency=1000
+dumpFrequency=10000
 diag='true'
-maxDiagChi=10
-useE='true'
-m=512
-for i in $( seq 1 3 )
+maxDiagChi=2
+chiDiagMethod='log'
+chiDiagSlope=10
+for i in $( seq 1 100 )
 do
-	echo "i=${i}, m=${m}"
+	echo "i=${i}, maxDiagChi=${maxDiagChi}, chiDiagSlope=${chiDiagSlope}"
 	run &
-	if [ $( expr $i % 3 ) -eq 0 ]
+
+	if [ $( expr $i % 10 ) -eq 0 ]
 	then
-		m=$(( $m * 2 ))
+		maxDiagChi=2
+		chiDiagSlope=$(( $chiDiagSlope * 2 ))
+	fi
+	maxDiagChi=$(( $maxDiagChi + 2 ))
+
+	if [ $( expr $i % 15 ) -eq 0 ]
+	then
+		wait
 	fi
 done
 

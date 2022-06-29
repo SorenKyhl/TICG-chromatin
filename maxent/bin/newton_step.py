@@ -9,18 +9,23 @@ import pandas as pd
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
-    parser.add_argument('--it', type=int, help='current iteration')
-    parser.add_argument('--gamma', type=float, help='damping coefficient')
-    parser.add_argument('--mode', type=str, help='{plaid, diag, both}')
+    parser.add_argument('--it', type=int,
+                        help='current iteration')
+    parser.add_argument('--gamma', type=float,
+                        help='damping coefficient')
+    parser.add_argument('--mode', type=str,
+                        help='{plaid, diag, both}')
+    parser.add_argument('--constant', action='store_true',
+                        help='True to use average contact frequency parameter')
     parser.add_argument('--goal_specified', type=str2bool,
-                            help='True to read from obj_goal.txt'
-                                'False to calculate goals from iteration 1')
+                        help='True to read from obj_goal.txt'
+                            'False to calculate goals from iteration 1')
     parser.add_argument('--trust_region', type=float,
-                            help='newton step trust region')
+                        help='newton step trust region')
     parser.add_argument('--min_diag_chi', type=str2float,
-                            help='min value of diag chi during newton step')
-    parser.add_argument('--method', type=str,
-                            help='method for newtons method')
+                        help='min value of diag chi during newton step')
+    parser.add_argument('--method', type=str, default='n',
+                        help='method for newtons method')
 
     args, _ = parser.parse_known_args()
 
@@ -31,7 +36,7 @@ def getArgs():
         args.gamma = float(sys.argv[2])               # damping coefficient
         args.mode = sys.argv[3]                       # plaid, diag, or both
         args.goal_specified = str2bool(sys.argv[4])   # if true, will read from obj_goal.txt and obj_goal_diag.txt.
-                                             # if false, will calculate goals from iteration1 observables
+                                                      # if false, will calculate goals from iteration1 observables
         args.trust_region = float(sys.argv[5])
         args.method = sys.argv[6]
 
@@ -206,6 +211,8 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method):
         step = Binv@difference
     elif method == "g":
         step = difference
+    else:
+        raise Exception(f'Unrecognized method: {method}')
 
     steplength = np.sqrt(step@step)
 
@@ -276,10 +283,17 @@ def main():
     print(f'Iteration Number {args.it}')
 
     if args.mode == "both":
-        parameter_files = ["chis.txt", "chis_diag.txt"]
-        obs_files = ["observables.traj", "diag_observables.traj"]
-        convergence_files = ["convergence.txt", "convergence_diag.txt"]
-        goal_files = ["obj_goal.txt", "obj_goal_diag.txt"]
+
+        if args.constant:
+            parameter_files = ["chis.txt", "chis_diag.txt", "chi_constant.txt"]
+            obs_files = ["observables.traj", "diag_observables.traj", "constant_observable.traj"]
+            convergence_files = ["convergence.txt", "convergence_diag.txt", "convergence_constant.txt"]
+            goal_files = ["obj_goal.txt", "obj_goal_diag.txt", "obj_goal_constant.txt"]
+        else:
+            parameter_files = ["chis.txt", "chis_diag.txt"]
+            obs_files = ["observables.traj", "diag_observables.traj"]
+            convergence_files = ["convergence.txt", "convergence_diag.txt"]
+            goal_files = ["obj_goal.txt", "obj_goal_diag.txt"]
         both_step(parameter_files, obs_files, convergence_files, goal_files,
                     args.gamma, args.it, args.goal_specified, args.trust_region,
                     args.min_diag_chi, args.method)
@@ -304,6 +318,15 @@ def main():
         convergence_file = "convergence.txt"
         goal_file = "obj_goal.txt"
         fn(parameter_file, obs_file, convergence_file, goal_file,
+                    args.gamma, args.it, args.goal_specified, args.trust_region,
+                    None, args.method)
+
+        if args.constant:
+            parameter_file = "chi_constant.txt"
+            obs_file = "constant_observable.traj"
+            convergence_file = "convergence_constant.txt"
+            goal_file = "obj_goal_constant.txt"
+            step(parameter_file, obs_file, convergence_file, goal_file,
                     args.gamma, args.it, args.goal_specified, args.trust_region,
                     None, args.method)
 
