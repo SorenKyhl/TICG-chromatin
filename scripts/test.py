@@ -295,15 +295,15 @@ def time_comparison():
     for c, method in zip(colors, sorted(times_dict.keys())):
         if 'diag' not in method:
             continue
-        arr = times_dict[method]
-        print(method)
+        arr = times_dict[method][:1, :]
+        print('method: ', method)
         print(arr, arr.shape)
         times = np.nanmean(arr, axis = 1)
         np.nan_to_num(times, copy = False, nan=-100)
         times_std = np.std(arr, axis = 1)
         np.nan_to_num(times_std, copy = False)
-        print(times)
-        print(times_std)
+        print('times', times)
+        print('times std', times_std)
         print()
 
         plt.errorbar(sizes, times, yerr = times_std, label = method,
