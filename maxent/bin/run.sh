@@ -183,6 +183,12 @@ then
 	touch track.log
 fi
 
+if [ $mode = 'none' ]
+then
+	num_iterations=0
+	goal_specified='false'
+fi
+
 # iteration 0
 it=0
 if [ $goal_specified = "true" ]

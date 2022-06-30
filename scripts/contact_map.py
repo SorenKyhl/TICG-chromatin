@@ -1,4 +1,5 @@
 import argparse
+import os
 import os.path as osp
 
 import matplotlib.pyplot as plt
@@ -13,23 +14,34 @@ def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     AC = ArgparserConverter()
 
-    parser.add_argument('--m', type=int, default=1024, help='number of particles (-1 to infer)')
-    parser.add_argument('--k', type=AC.str2int, help='number of bead labels')
-    parser.add_argument('--save_npy', action='store_true', help='true to save y as .npy')
-    parser.add_argument('--random_mode', action='store_true', help='true for random_mode, default is max_ent mode')
+    parser.add_argument('--m', type=int, default=1024,
+                        help='number of particles (-1 to infer)')
+    parser.add_argument('--k', type=AC.str2int,
+                        help='number of bead labels')
+    parser.add_argument('--save_npy', action='store_true',
+                        help='true to save y as .npy')
+    parser.add_argument('--random_mode', action='store_true',
+                        help='true for random_mode, default is max_ent mode')
 
     # random_mode
-    parser.add_argument('--sample_folder', type=str, default='', help='path to sample folder')
+    parser.add_argument('--sample_folder', type=str, default='',
+                        help='path to sample folder')
 
     # max_ent mode
-    parser.add_argument('--final_it', type=int, help='location of contact map')
-    parser.add_argument('--replicate_folder', help='path to max_ent replicate folder')
+    parser.add_argument('--replicate_folder',
+                        help='path to max_ent replicate folder')
 
     args = parser.parse_args()
     if args.random_mode:
         args.save_folder = args.sample_folder
     else:
-        args.final_folder = osp.join(args.replicate_folder, f"iteration{args.final_it}")
+        final_it = -1
+        for file in os.listdir(args.replicate_folder):
+            if file.startswith('iteration'):
+                it = int(file[9:])
+                if it > final_it:
+                    final_it = it
+        args.final_folder = osp.join(args.replicate_folder, f"iteration{final_it}")
         args.save_folder = args.replicate_folder
     return args
 
@@ -65,13 +77,16 @@ def main():
 
     if args.m < 5000:
         # takes a long time for large m and not really necessary
-        plot_matrix(y_diag, ofile = osp.join(args.save_folder, 'y_diag.png'), vmax = 'max')
+        plot_matrix(y_diag, ofile = osp.join(args.save_folder, 'y_diag.png'),
+                    vmax = 'max')
 
         if s is not None:
-            plot_matrix(s, ofile = osp.join(args.save_folder, 's.png'), title = 'S', vmax = 'max', vmin = 'min', cmap = 'blue-red')
+            plot_matrix(s, ofile = osp.join(args.save_folder, 's.png'), title = 'S',
+                        vmax = 'max', vmin = 'min', cmap = 'blue-red')
 
         if e is not None:
-            plot_matrix(e, ofile = osp.join(args.save_folder, 'e.png'), title = 'E', vmax = 'max', vmin = 'min', cmap = 'blue-red')
+            plot_matrix(e, ofile = osp.join(args.save_folder, 'e.png'), title = 'E',
+                        vmax = 'max', vmin = 'min', cmap = 'blue-red')
 
 
     if args.save_npy:

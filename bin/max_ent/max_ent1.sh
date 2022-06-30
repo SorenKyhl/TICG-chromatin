@@ -18,19 +18,21 @@ then
   numIterations=3
   finalSimProductionSweeps=10000
   productionSweeps=10000
-  equilibSweeps=20000
+  equilibSweeps=2000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
 i=1
-dataset='dataset_test'
-useE='true'
-seqMethod='GNN'
+dataset='dataset_test_diag512'
+useE='false'
+method='none'
+diagChiMethod='mlp'
 GNNModelID=159
-k=4
+MLPModelID=10
+k=0
 minDiagChi=0
-for mode in 'diag'
+for mode in 'none'
 do
   for sample in 1
    # 2 3 4

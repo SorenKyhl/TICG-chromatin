@@ -291,7 +291,7 @@ def time_comparison():
     cmap = matplotlib.cm.get_cmap('tab20')
     ind = np.arange(len(times_dict))
     colors = plt.cycler('color', cmap(ind))
-    sizes = np.array([512., 1024., 2048., 4096.])
+    sizes = np.array([512., 1024.]) # , 2048., 4096.
     for c, method in zip(colors, sorted(times_dict.keys())):
         if 'diag' not in method:
             continue
@@ -314,7 +314,7 @@ def time_comparison():
     plt.ylabel('Time (mins)')
     plt.xlabel('Simulation size')
     plt.ylim((0, None))
-    plt.xticks([512, 1024, 2048, 4096])
+    plt.xticks([512, 1024]) # , 2048, 4096
     plt.legend()
     plt.savefig(osp.join(dir, 'time.png'))
     plt.close()
@@ -371,7 +371,7 @@ if __name__ == '__main__':
     # scc_y_vs_y_rank1()
     # test_robust_PCA()
     # check_dataset('dataset_05_12_22')
-    # time_comparison()
+    time_comparison()
     # construct_sc_xyz()
-    main()
+    # main()
     # makeDirsForMaxEnt("dataset_04_27_22")

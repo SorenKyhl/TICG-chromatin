@@ -24,16 +24,16 @@ overwrite=1
 loadChi='false'
 project='false'
 goalSpecified='true'
-modelType='ContactGNNEnergy'
+GNNModelType='ContactGNNEnergy'
 m=-1
 k=-1
-diag='false'
+diagChiMethod='linear'
 diagBins=20
 diagPseudobeadsOn='true'
 
 # ground truth params
 useGroundTruthChi='false'
-useGroundTruthDiagChi='true'
+useGroundTruthDiagChi='false'
 useGroundTruthSeed='false'
 
 # newton's method params
@@ -78,8 +78,7 @@ max_ent_resume_inner(){
   cd $ofile
 
   # compare results
-  prodIt=$(($numIterationsCopy+1))
-  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --k $k --final_it $prodIt --replicate_folder $ofile --save_npy > contact.log
+  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --k $k --replicate_folder $ofile --save_npy > contact.log
   python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${ofile}/y.npy" --y_diag "$sampleFolder/y_diag.npy" --yhat_diag "${ofile}/y_diag.npy" >> contact.log
 
   echo ''
@@ -102,7 +101,7 @@ max_ent_inner () {
   # args:
   # 1 = scratchDir
   # 2 = replicate index
-  # 3 = seed for get_seq
+  # 3 = seed for get_params
   ofile="${sampleFolder}/${method_fmt}/k${k}/replicate${2}"
   echo $ofile
 
@@ -121,8 +120,8 @@ max_ent_inner () {
 
   cd $scratchDirResources
   # generate sequences
-  echo "starting get_seq"
-  python3 ~/TICG-chromatin/scripts/get_params.py --method $method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --gnn_model_path $GNNModelPath --seq_seed $3 --chi_method 'random' --min_chi=-1 --max_chi=1 --diag_chi_method 'linear' --diag_bins $diagBins --diag_pseudobeads_on $diagPseudobeadsOn > params.log
+  echo "starting get_params"
+  python3 ~/TICG-chromatin/scripts/get_params.py --method=$method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --gnn_model_path $GNNModelPath --mlp_model_path $MLPModelPath --seq_seed $3 --chi_method 'random' --min_chi=-1 --max_chi=1 --diag_chi_method $diagChiMethod --diag_bins $diagBins --diag_pseudobeads_on $diagPseudobeadsOn > params.log
 
   # get config
   echo "starting get_config"
@@ -146,17 +145,16 @@ max_ent_inner () {
   cd $ofile
 
   # compare results
-  prodIt=$(($numIterationsCopy+1))
-  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --k $k --final_it $prodIt --replicate_folder $ofile --save_npy > contact.log
+  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --k $k --replicate_folder $ofile --save_npy > contact.log
   python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${ofile}/y.npy" --y_diag "$sampleFolder/y_diag.npy" --yhat_diag "${ofile}/y_diag.npy" >> contact.log
 
   echo ''
 }
 
 format_method () {
-  method_fmt=$seqMethod
+  method_fmt=$method
 
-  if [ $method == 'GNN' ]
+  if [ $method = 'GNN' ]
   then
     method_fmt="${method_fmt}-${GNNModelID}"
   fi
@@ -192,10 +190,10 @@ format_method () {
   method_fmt="${method_fmt}-seed"
   fi
 
-  # diag
-  if [ $diag = 'true' ]
+  # diag mlp
+  if [ $diagChiMethod = 'mlp' ]
   then
-  method_fmt="${method_fmt}-diagOn"
+    method_fmt="${method_fmt}-diagMLP"
   fi
 
   echo $method_fmt
@@ -224,14 +222,14 @@ param_setup(){
     goalSpecifiedCopy='false'
   fi
 
-  if [ $mode = 'diag' ] || [ $mode = 'both' ]
+  if [ $mode = 'plaid' ]
   then
-    useGroundTruthDiagChi='false'
-    diag='true'
+    useGroundTruthDiagChi='true'
   fi
 
   dataFolder="${dir}/${dataset}"
-  GNNModelPath="${results}/${modelType}/${GNNModelID}"
+  GNNModelPath="${results}/${GNNModelType}/${GNNModelID}"
+  MLPModelPath="${results}/MLP/${MLPModelID}"
   sampleFolder="${dataFolder}/samples/sample${sample}"
 
   seed=$RANDOM

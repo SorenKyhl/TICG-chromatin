@@ -154,6 +154,11 @@ def main():
         elif osp.exists('e.npy'):
             e = np.load('e.npy')
             args.m, _ = e.shape
+        elif sample_config is not None:
+            args.m = sample_config['nbeads']
+        else:
+            raise Exception('Could not infer m')
+
         print(f'inferred m = {args.m}')
 
     # infer k
@@ -178,6 +183,7 @@ def main():
     # load chi
     chi_file = 'chis.npy'
     if args.use_ground_truth_chi:
+        assert args.sample_folder is not None
         args.chi = np.load(osp.join(args.sample_folder, 'chis.npy'))
         _, k = args.chi.shape
         np.save(chi_file, args.chi)
@@ -204,7 +210,7 @@ def main():
             np.save(diag_chis_file, diag_chis)
     elif osp.exists(diag_chis_file):
         diag_chis = np.load(diag_chis_file)
-        config["diag_chis"] = list(diag_chis)
+        config["diag_chis"] = list(diag_chis) # ndarray not json serializable
         config["diagonal_on"] = True
 
         if args.max_ent:

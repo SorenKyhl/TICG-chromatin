@@ -795,7 +795,8 @@ class GetPlaidChi():
             return False
 
 class GetDiagChi():
-    def __init__(self, unknown_args):
+    def __init__(self, args, unknown_args):
+        self.sample_folder = args.sample_folder
         self._get_args(unknown_args)
         self.set_up_diag_chi()
 
@@ -815,6 +816,8 @@ class GetDiagChi():
                             help='maximum diag chi value for diag_chi_method')
         parser.add_argument('--diag_chi_constant', type=AC.str2float, default=0,
                             help='constant to add to chi diag')
+        parser.add_argument('--mlp_model_path', type=str,
+                            help='path to MLP model')
 
         self.args, _ = parser.parse_known_args(unknown_args)
         print('\nDiag chi args:')
@@ -822,6 +825,7 @@ class GetDiagChi():
 
     def set_up_diag_chi(self):
         args = self.args
+        args.diag_chi_method = args.diag_chi_method.lower()
         if args.diag_chi is not None:
             diag_chis = np.array(args.diag_chi)
         elif args.diag_chi_method is None:
@@ -833,14 +837,77 @@ class GetDiagChi():
             args.diag_chi_slope /= 1000
             scale = args.max_diag_chi / np.log(args.diag_chi_slope * (args.diag_bins - 1) + 1)
             diag_chis = scale * np.log(args.diag_chi_slope * np.arange(args.diag_bins) + 1)
-        elif args.diag_chi_method == 'MLP':
-            pass
+        elif args.diag_chi_method == 'mlp':
+            diag_chis = self.get_diag_chi_mlp(args.mlp_model_path, self.sample_folder)
         else:
             raise Exception(f'Unrecognized chi diag method {args.diag_chi_method}')
 
         if diag_chis is not None:
             diag_chis += args.diag_chi_constant
+            print('diag_chis: ', diag_chis, diag_chis.shape)
             np.save('diag_chis.npy', diag_chis)
+
+    def get_diag_chi_mlp(self, model_path, sample_path):
+        print('\nget_diag_chi_mlp')
+
+        # extract sample info
+        sample = osp.split(sample_path)[1]
+        sample_id = int(sample[6:])
+        sample_path_split = osp.normpath(sample_path).split(os.sep)
+        sample_dataset = sample_path_split[-3]
+
+        print(sample, sample_id, sample_dataset)
+
+        # extract model info
+        model_path_split = osp.normpath(model_path).split(os.sep)
+        model_id = model_path_split[-1]
+        model_type = model_path_split[-2]
+        print(f'Model type: {model_type}')
+        assert model_type == 'MLP', f"Unrecognized model_type: {model_type}"
+
+        argparse_path = osp.join(model_path, 'argparse.txt')
+        with open(argparse_path, 'r') as f:
+            for line in f:
+                if line == '--data_folder\n':
+                    break
+            data_folder = f.readline().strip()
+            mlp_dataset = osp.split(data_folder)[1]
+
+        if mlp_dataset == sample_dataset:
+            hat_path = osp.join(model_path, f"{sample}/diag_chi_hat.txt")
+            if osp.exists(hat_path):
+                diag_chi = np.loadtxt(hat_path)
+                return diag_chi
+        else:
+            print(f'WARNING: dataset mismatch: {mlp_dataset} vs {sample_dataset}')
+
+        # set up argparse options
+        parser = get_base_parser()
+        sys.argv = [sys.argv[0]] # delete args from get_params, otherwise gnn opt will try and use them
+        opt = parser.parse_args(['@{}'.format(argparse_path)])
+        opt.id = int(model_id)
+        print(opt)
+        opt = finalize_opt(opt, parser, local = True, debug = True)
+        opt.data_folder = osp.join('/',*sample_path_split[:-2]) # use sample_dataset not mlp_dataset
+        opt.log_file = sys.stdout # change
+        print(opt)
+
+        # get model
+        model, _, _ = load_saved_model(opt, False)
+
+        # get dataset
+        dataset = get_dataset(opt, verbose = True, samples = [sample_id])
+        print(dataset)
+
+        # get prediction
+        for i, (x, y) in enumerate(dataset):
+            x = x.to(opt.device)
+            yhat = model(x)
+            yhat = yhat.cpu().detach().numpy()
+            diag_chi = yhat.reshape((-1)).astype(np.float64)
+
+        return diag_chi
+
 
 class GetEnergy():
     def __init__(self, args, unknown_args):
@@ -1006,7 +1073,7 @@ class GetEnergy():
 
         # set up argparse options
         parser = get_base_parser()
-        sys.argv = [sys.argv[0]] # delete args from get_seq, otherwise gnn opt will try and use them
+        sys.argv = [sys.argv[0]] # delete args from get_params, otherwise gnn opt will try and use them
         opt = parser.parse_args(['@{}'.format(argparse_path)])
         opt.id = int(model_id)
         print(opt)
@@ -1065,7 +1132,7 @@ def main():
     print(args)
     GetSeq(args, unknown)
     GetPlaidChi(args, unknown)
-    GetDiagChi(unknown)
+    GetDiagChi(args, unknown)
     GetEnergy(args, unknown)
 
 ### Tester class ###

@@ -80,6 +80,8 @@ def main():
     '''
     args = getArgs()
     print(args)
+    if args.mode == 'none':
+        return
 
     if args.contact_map.endswith('.npy'):
         y = np.load(args.contact_map)
