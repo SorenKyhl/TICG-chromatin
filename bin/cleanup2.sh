@@ -8,7 +8,7 @@
 
 cd ~/scratch-midway2
 
-rm -r dataset_04*
-rm -r dataset_05*
+rm -r dataset* &
+rm -r TICG* &
 
 wait

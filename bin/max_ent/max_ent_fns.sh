@@ -193,7 +193,7 @@ format_method () {
   # diag mlp
   if [ $diagChiMethod = 'mlp' ]
   then
-    method_fmt="${method_fmt}-diagMLP"
+    method_fmt="${method_fmt}-diagMLP-${MLPModelID}"
   fi
 
   echo $method_fmt

@@ -902,6 +902,7 @@ class GetDiagChi():
         # get prediction
         for i, (x, y) in enumerate(dataset):
             x = x.to(opt.device)
+            print('x', x, x.shape)
             yhat = model(x)
             yhat = yhat.cpu().detach().numpy()
             diag_chi = yhat.reshape((-1)).astype(np.float64)

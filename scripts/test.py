@@ -247,8 +247,8 @@ def is_scc_weighted_mean():
     print(avg)
 
 def time_comparison():
-    dir = '/project2/depablo/erschultz/dataset_05_18_22/samples'
-    # dir = '/home/erschultz/sequences_to_contact_maps/dataset_05_18_22/samples'
+    # dir = '/project2/depablo/erschultz/dataset_05_18_22/samples'
+    dir = '/home/erschultz/sequences_to_contact_maps/dataset_05_18_22/samples'
 
     times_dict = defaultdict(lambda: np.full([4, 3], np.nan))
     # dictionary with keys = method : vals = array of times with rows = sizes, cols = replicate samples
@@ -293,9 +293,9 @@ def time_comparison():
     colors = plt.cycler('color', cmap(ind))
     sizes = np.array([512., 1024.]) # , 2048., 4096.
     for c, method in zip(colors, sorted(times_dict.keys())):
-        if 'diag' not in method:
+        if method == 'PCA-diagOn_k8' or method == 'Ground Truth-E-diagOn':
             continue
-        arr = times_dict[method][:1, :]
+        arr = times_dict[method][:2, :]
         print('method: ', method)
         print(arr, arr.shape)
         times = np.nanmean(arr, axis = 1)

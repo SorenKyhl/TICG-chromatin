@@ -138,9 +138,8 @@ def loadData(args):
                                     print(f'\ty not found for {replicate_folder}')
                             replicate_data['rmse-y'].append(rmse_y)
 
-                            time = None
                             convergence_file = osp.join(replicate_folder, 'convergence_diag.txt')
-                            converged_it = None
+                            converged_it = 0
                             if osp.exists(convergence_file):
                                 with open(convergence_file, 'r') as f:
                                     for i, line in enumerate(f):
@@ -151,22 +150,23 @@ def loadData(args):
                                             break
 
                             bash_file = osp.join(replicate_folder, 'bash.log')
-                            if osp.exists(bash_file) and converged_it is not None:
+                            if osp.exists(bash_file):
                                 with open(bash_file, 'r') as f:
-                                    times = np.zeros((converged_it+1))
+                                    times = []
                                     for line in f:
                                         if 'finished iteration' in line:
                                             it = int(line.split(' ')[2].replace(':', ''))
-                                            if it <= converged_it:
-                                                left = line.find('(')
-                                                right = line.find(')')
-                                                t = int(line[left+1:right].split(' ')[0])
-                                                times[it] = t
+                                            left = line.find('(')
+                                            right = line.find(')')
+                                            t = int(line[left+1:right].split(' ')[0])
+                                            times.append(t)
 
-                                time = np.sum(times)
-                                time /= 60 # to minutes
-                                replicate_data['final_time'].append(t / 60)
-                            replicate_data['time'].append(time)
+                            converge_time = np.sum(times[:converged_it])
+                            converge_time /= 60 # to minutes
+                            t /= 60
+                            replicate_data['final_time'].append(t)
+                            replicate_data['converged_time'].append(converge_time)
+                            replicate_data['total_time'].append(converge_time + t)
                             replicate_data['converged_it'].append(converged_it)
 
                         # append replicate array to dictionary
@@ -176,8 +176,9 @@ def loadData(args):
                             data[k][method]['avg_dist_pearson'].append(replicate_data['avg_dist_pearson'])
                             data[k][method]['rmse-e'].append(replicate_data['rmse-e'])
                             data[k][method]['rmse-y'].append(replicate_data['rmse-y'])
-                            data[k][method]['time'].append(replicate_data['time'])
+                            data[k][method]['converged_time'].append(replicate_data['converged_time'])
                             data[k][method]['final_time'].append(replicate_data['final_time'])
+                            data[k][method]['total_time'].append(replicate_data['total_time'])
                             data[k][method]['converged_it'].append(replicate_data['converged_it'])
     return data
 
@@ -200,7 +201,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w',
         # set up first rows of table
         o.write("\\begin{center}\n")
         if small:
-            metrics = ['scc', 'rmse-e', 'rmse-y', 'time']
+            metrics = ['scc', 'rmse-e', 'rmse-y', 'total_time']
             o.write("\\begin{tabular}{|c|c|c|c|c|c|}\n")
             o.write("\\hline\n")
             o.write("\\multicolumn{6}{|c|}{" + header + "} \\\ \n")
@@ -208,18 +209,18 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w',
                 o.write("\\hline\n")
                 o.write("\\multicolumn{6}{|c|}{sample " + f'{sample_id}' + "} \\\ \n")
             o.write("\\hline\n")
-            o.write("Method & $\\ell$ & SCC & RMSE-E & RMSE-Y & TIME \\\ \n")
+            o.write("Method & $\\ell$ & SCC & RMSE-E & RMSE-Y & Total Time \\\ \n")
         else:
             metrics = ['overall_pearson', 'avg_dist_pearson', 'scc', 'rmse-e', 'rmse-y',
-                        'converged_it', 'final_time', 'time']
-            o.write("\\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}\n")
+                        'converged_it', 'converged_time', 'final_time', 'total_time']
+            o.write("\\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|}\n")
             o.write("\\hline\n")
-            o.write("\\multicolumn{10}{|c|}{" + header + "} \\\ \n")
+            o.write("\\multicolumn{11}{|c|}{" + header + "} \\\ \n")
             if sample_id is not None:
                 o.write("\\hline\n")
-                o.write("\\multicolumn{10}{|c|}{sample " + f'{sample_id}' + "} \\\ \n")
+                o.write("\\multicolumn{11}{|c|}{sample " + f'{sample_id}' + "} \\\ \n")
             o.write("\\hline\n")
-            o.write("Method & k & Pearson & Avg Dist Pearson & SCC & RMSE-E & RMSE-Y & Converged & Final Time & Time\\\ \n")
+            o.write("Method & k & Pearson & Avg Dist Pearson & SCC & RMSE-E & RMSE-Y & Converged & Converged Time & Final Time & Total Time\\\ \n")
         o.write("\\hline\\hline\n")
 
         # get reference data
