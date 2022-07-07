@@ -29,6 +29,12 @@ public:
 	static bool density_cap_on;
 	static bool compressibility_on;
 	static bool diag_pseudobeads_on;
+	
+	static bool dense_diagonal_on;
+	static int n_small_bins;
+	static int n_big_bins;
+	static int small_binsize;
+	static int big_binsize;
 
 	void print();
 	void reset();
@@ -42,6 +48,6 @@ public:
 	double getEmatrixEnergy(const std::vector<std::vector<double>> &Ematrix);
 
 	double bonds_to_beads(int bonds);
-
+	int binDiagonal(int i, int j);
 
 };

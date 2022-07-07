@@ -171,9 +171,6 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method):
         print('step: ', step)
         print('lam: ', lam)
 
-    plt.plot(-1*difference)
-    plt.savefig("-1*difference.png")
-
     new_chis = current_chis - step
     print(f"new chi values: {new_chis}\n")
 

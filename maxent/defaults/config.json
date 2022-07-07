@@ -1,10 +1,11 @@
 {
+	"dense_diagonal_on": true,
 	"beadvol": 520,
 	"parallel": false,
 	"ematrix_on": false,
 	"ematrix_filename": "off",
     "diag_pseudobeads_on": true,
-    "density_cap_on": false,
+    "density_cap_on": true,
     "phi_solvent_max": 0.5,
     "phi_chromatin": 0.06966,
     "compressibility_on": false,

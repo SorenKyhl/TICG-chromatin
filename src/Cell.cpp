@@ -12,6 +12,11 @@ double Cell::kappa;
 bool Cell::density_cap_on;
 bool Cell::compressibility_on;
 bool Cell::diag_pseudobeads_on;
+bool Cell::dense_diagonal_on;
+int Cell::n_small_bins;
+int Cell::n_big_bins;
+int Cell::small_binsize;
+int Cell::big_binsize;
 
 void Cell::print() {
 	std::cout << r << "     N: " << contains.size() << std::endl;
@@ -132,6 +137,33 @@ double Cell::getEmatrixEnergy(const std::vector<std::vector<double>> &Ematrix)
 	return U;
 }
 
+int Cell::binDiagonal(int i, int j)
+{
+	int s = std::abs(i - j);
+	int bin_index = -1;
+	int cutoff = n_small_bins * small_binsize;
+
+	if (dense_diagonal_on)
+	{
+		// diagonal chis are binned in a dense set (small bins) from s=0 to s=cutoff,
+		// then a sparse set (large bins) from s=cutoff to s=nbeads
+		if ( s > cutoff )
+		{
+			bin_index = n_small_bins + std::floor( (s-cutoff)/big_binsize );
+		}
+		else
+		{
+			bin_index = std::floor( s/small_binsize );
+		}
+	}
+	else
+	{
+		// diagonal chis are linearly spaced from s=0 to s=nbeads
+		bin_index = std::floor( s/diag_binsize );
+	}
+	return bin_index;
+}
+
 double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
 	for (int i=0; i<diag_nbins; i++)
 	{
@@ -162,7 +194,8 @@ double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
 	{
 		for(int j=i; j<imax; j++)
 		{
-			d_index  = std::floor( std::abs(indices[i] - indices[j]) / diag_binsize);
+			//d_index  = std::floor( std::abs(indices[i] - indices[j]) / diag_binsize);
+			d_index  = binDiagonal(indices[i], indices[j]);
 			diag_phis[d_index] += 1; // diag phis is just a count, multiply by volumes later
 		}
 	}

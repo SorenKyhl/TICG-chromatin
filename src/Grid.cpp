@@ -1,6 +1,7 @@
 #include "Grid.h"
 
 bool Grid::parallel;
+bool Grid::cell_volumes;
 
 void Grid::generate() {
 	
@@ -67,6 +68,7 @@ void Grid::printActiveCells() {
 
 void Grid::meshBeads(std::vector<Bead> &beads) {
 	// Inserts all beads into their corresponding grid cells
+	// and recomputes cell volumes 
 	for(int i=0; i<cells.size(); i++) {
 		for(int j=0; j<cells[i].size(); j++) {
 			for(int k=0; k<cells[i][j].size(); k++) {
@@ -84,7 +86,51 @@ void Grid::meshBeads(std::vector<Bead> &beads) {
 
 		cells[i][j][k].moveIn(&bead);
 	}
+
+	if(cell_volumes) getCellVolumes();
 };
+
+
+void Grid::getCellVolumes() {
+
+	//float total_vol = 0;
+	for(Cell* cell : active_cells) {
+		Eigen::RowVector3d s{delta, delta, delta}; // cell side lengths
+
+		for(int alpha=0; alpha<=2; alpha++) {
+			float left_edge = cell->r(alpha);
+			float right_edge = cell->r(alpha) + delta;
+
+			// hanging off left side
+			if( left_edge < 0 && right_edge > 0 )  {
+				s(alpha) = right_edge;
+			}
+
+			// hanging off right side
+			if( left_edge < side_length && right_edge > side_length ) {
+				s(alpha) = side_length - left_edge;
+			}
+
+			/*
+			// all the way off left
+			if ( left_edge < 0 && right_edge < 0 )   {
+				s(alpha) = 0;
+			}
+
+			// all the way off left
+			if ( left_edge > side_length && right_edge > side_length )   {
+				s(alpha) = 0;
+			}
+			*/
+		}
+
+		cell->vol = s(0)*s(1)*s(2);
+		//total_vol += s(0)*s(1)*s(2);
+	}
+	//std::cout << "total vol " << total_vol << std::endl;
+	//std::cout << "side length cubed" << side_length*side_length*side_length << std::endl;
+	//assert(total_vol - side_length*side_length*side_length > 1e-11);
+}
 
 Cell* Grid::getCell(const Bead& bead) {
 	// Returns a pointer to the cell in which a bead is located

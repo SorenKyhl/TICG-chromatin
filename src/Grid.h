@@ -23,6 +23,7 @@ public:
 	int boundary_radius;          // radius of boundary in units of grid cells
 	Eigen::RowVector3d sphere_center; // center of spherical boundary
 	static bool parallel;
+	static bool cell_volumes;
 
 	// origin is the bottom-left-most grid cell for cubic simulations
 	// With grid moves on, it will diffuse with periodic boundaries
@@ -33,6 +34,7 @@ public:
 	void setActiveCells();
 	void printActiveCells();
 	void meshBeads(std::vector<Bead> &beads);
+	void getCellVolumes();
 	Cell* getCell(const Bead& bead);
 	Cell* getCell(const Eigen::RowVector3d &r);
 	bool checkCellConsistency(int nbeads);

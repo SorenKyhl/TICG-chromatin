@@ -10,6 +10,7 @@
 
 #include "Bead.h"
 #include "DSS_Bond.h"
+#include "Harmonic_Bond.h"
 #include "Cell.h"
 #include "Grid.h"
 #include "prof_timer.cpp"
@@ -31,6 +32,7 @@ public:
 	double total_volume;
 	double grid_size;
 	double bond_length;
+	std::string bond_type;
 
 	// output files
 	FILE *xyz_out;

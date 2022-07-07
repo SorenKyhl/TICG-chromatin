@@ -140,6 +140,7 @@ run_simulation () {
 	mv data_out equilib_out
 
 	# set up production run
+	python3 $proj_bin/jsed.py $configFileName load_configuration true b
 	python3 $proj_bin/jsed.py $configFileName load_configuration_filename $saveFileName s
 	python3 $proj_bin/jsed.py $configFileName nSweeps $production_sweeps i
 	python3 $proj_bin/jsed.py $configFileName seed $(get_rng) i
@@ -186,8 +187,8 @@ it=0
 if [ $goal_specified -eq 1 ]
 then
 	# if goal is specified, just move in goal files and do not simulate
-	mv resources/obj_goal.txt .
-	mv resources/obj_goal_diag.txt .
+	cp resources/obj_goal.txt .
+	cp resources/obj_goal_diag.txt .
 else
 	# if goal is not specified, simulate iteration 0 and calculate the goals from that simulation
 	run_simulation
@@ -214,4 +215,5 @@ python3 $proj_bin/jsed.py "resources/${configFileName}" dump_frequency 50000 i
 production_sweeps=500000
 run_simulation
 python3 $proj_bin/contactmap.py $it
+(cd iteration$it && python3 $proj_bin/analysis.py)
 

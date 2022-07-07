@@ -22,8 +22,8 @@ void Sim::run() {
 	makeOutputFiles();      // open files
 	initialize();           // set particle positions and construct bonds
 	grid.generate();        // creates the grid locations
-	grid.meshBeads(beads);  // populates the grid locations with beads;
 	grid.setActiveCells();  // populates the active cell locations
+	grid.meshBeads(beads);  // populates the grid locations with beads;
 	setupContacts();        // construct contact map
 	MC();                   // MC simulation
 	assert (grid.checkCellConsistency(nbeads));
@@ -211,9 +211,6 @@ void Sim::readInput() {
 		}
 
 		Cell::diag_nbins = diag_chis.size();
-		std::cout << "number of bins: " << Cell::diag_nbins << std::endl;
-		Cell::diag_binsize = nbeads / diag_chis.size();
-		std::cout << "binsize " << Cell::diag_binsize << std::endl;
 	}
 
 	assert(config.contains("gridmove_on")); gridmove_on = config["gridmove_on"];
@@ -258,6 +255,10 @@ void Sim::readInput() {
 	assert(config.contains("diag_pseudobeads_on")); Cell::diag_pseudobeads_on = config["diag_pseudobeads_on"];
 	assert(config.contains("parallel")); Grid::parallel = config["parallel"];
 	assert(config.contains("beadvol")); Cell::beadvol  = config["beadvol"];
+	assert(config.contains("dense_diagonal_on")); Cell::dense_diagonal_on  = config["dense_diagonal_on"];
+	assert(config.contains("cell_volumes")); Grid::cell_volumes = config["cell_volumes"];
+	assert(config.contains("bond_type")); bond_type = config["bond_type"];
+	assert(config.contains("bond_length")); bond_length = config["bond_length"];
 
 	if (Grid::parallel)
 	{
@@ -340,7 +341,6 @@ void Sim::initialize() {
 		loadConfiguration();
 	}
 	else {
-		bond_length = 16.5; // nm
 		initRandomCoil(bond_length);
 	}
 
@@ -407,6 +407,31 @@ void Sim::calculateParameters() {
 	n_pivot = pivot_on ? decay_length/10: 0;
 	n_rot = rotate_on ? nbeads : 0;
 	nSteps = n_trans + n_crank + n_pivot + n_rot;
+
+
+	if (Cell::dense_diagonal_on)
+	{
+		float loading = 0.5;
+		float cutoff = 0.0625;
+		int dividing_line = nbeads*cutoff;
+
+		Cell::n_small_bins = int(loading * Cell::diag_nbins);
+		Cell::n_big_bins = Cell::diag_nbins - Cell::n_small_bins;
+		Cell::small_binsize = int( dividing_line / Cell::n_small_bins );
+		Cell::big_binsize = int ((nbeads - dividing_line) / Cell::n_big_bins);
+
+		std::cout << "number of small bins, of size: " << Cell::n_small_bins << ", " << Cell::small_binsize << std::endl;
+		std::cout << "number of big bins, of size: " << Cell::n_big_bins << ", " << Cell::big_binsize << std::endl;
+		assert(Cell::n_big_bins + Cell::n_small_bins == Cell::diag_nbins);
+		assert(Cell::small_binsize * Cell::n_small_bins + Cell::big_binsize * Cell::n_big_bins == nbeads);
+
+	}
+	else
+	{
+		std::cout << "number of bins: " << Cell::diag_nbins << std::endl;
+		Cell::diag_binsize = nbeads / diag_chis.size();
+		std::cout << "binsize " << Cell::diag_binsize << std::endl;
+	}
 }
 
 void Sim::loadConfiguration() {
@@ -537,7 +562,16 @@ void Sim::constructBonds() {
 	bonds.resize(nbeads-1); // use default constructor
 	for(int i=0; i<nbeads-1; i++)
 	{
-		bonds[i] = new DSS_Bond{&beads[i], &beads[i+1]};
+		if (bond_type == "DSS")
+		{
+			bonds[i] = new DSS_Bond{&beads[i], &beads[i+1]};
+		}
+		if(bond_type == "gaussian")
+		{
+			// gaussian coil spring constant is 3/(2b^2)
+			double k = 3 / (2*bond_length*bond_length);
+			bonds[i] = new Harmonic_Bond{&beads[i], &beads[i+1], k, 0};
+		}
 	}
 }
 

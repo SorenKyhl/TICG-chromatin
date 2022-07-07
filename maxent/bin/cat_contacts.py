@@ -1,5 +1,6 @@
 import numpy as np
 import sys
+import os
 
 print(sys.argv)
 
@@ -12,6 +13,7 @@ output = np.zeros((rows,cols))
 
 for file in files:
     output += np.loadtxt(file)
+    os.remove(file)
 
 np.savetxt(output_file, output, fmt="%d", delimiter=" ")
 
