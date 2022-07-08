@@ -13,26 +13,47 @@ source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dir="/home/eric/sequences_to_contact_maps"
-  scratchDir='/home/eric/scratch'
-  numIterations=80
-  # finalSimProductionSweeps=2000
-  # equilibSweeps=1000
-  # productionSweeps=5000
-  source activate python3.9_pytorch1.11
+  dir="/home/erschultz/sequences_to_contact_maps"
+  scratchDir='/home/erschultz/scratch'
+  numIterations=2
+  finalSimProductionSweeps=2000
+  equilibSweeps=1000
+  productionSweeps=2000
+  source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
 i=5000
 dataset='dataset_05_18_22'
 useE='true'
-method='ground_truth'
+m=2048
+
+method='GNN'
+GNNModelID=150
+diagChiMethod='linear'
 mode='diag'
-for sample in 10
+for sample in 7 8 9
 do
-  max_ent_resume 62
+  max_ent
 done
 
+# method='GNN'
+# GNNModelID=150
+# diagChiMethod='mlp'
+# MLPModelID=3
+# mode='none'
+# for sample in 7 8 9
+# do
+#   max_ent
+# done
+
+method='ground_truth'
+mode='none'
+useGroundTruthDiagChi='true'
+for sample in 7 8 9
+do
+  max_ent
+done
 
 wait
 

@@ -13,7 +13,7 @@ source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dir="/home/erschultz"
+  dir="/home/erschultz/sequences_to_contact_maps"
   scratchDir='/home/erschultz/scratch'
   numIterations=1
   finalSimProductionSweeps=5000
@@ -24,16 +24,20 @@ fi
 
 STARTTIME=$(date +%s)
 i=4000
-numIterations=50
 dataset='dataset_05_18_22'
-useE='true'
-method='ground_truth'
-mode='diag'
+useE='false'
+method='PCA-normalize'
+diagChiMethod='linear'
+mode='both'
+m=2048
+
 for sample in 7 8 9
 do
-  max_ent
+  for k in 2 4 6
+  do
+    max_ent
+  done
 done
-
 
 wait
 
