@@ -101,6 +101,7 @@ fi
 run_simulation () {
 	STARTTIME=$(date +%s)
 	# resources must be in working directory
+	cd $scratchDir
 	itDir="iteration$it"
 	if [ -d $itDir ]
 	then
@@ -152,11 +153,10 @@ run_simulation () {
 	# delete files copied from resources to save space
 	rm *.txt *.npy
 
-	cd $scratchDir
-
 	ENDTIME=$(date +%s)
 	echo "finished iteration ${it}: $(( $(( $ENDTIME - $STARTTIME )) / 60 )) minutes ($(( $ENDTIME - $STARTTIME )) seconds)"
 
+	cd $scratchDir
 }
 
 # directory checks
@@ -218,8 +218,10 @@ then
 		python3 $proj_bin/newton_step.py --it $it --gamma $gamma --mode $mode --goal_specified $goal_specified --trust_region $trust_region --min_diag_chi $minDiagChi >> track.log
 
 		# convert to tarball
-		tar -czf "iteration${it}/production_out.tar.gz" "iteration${it}/production_out"
-		rm -r "iteration${it}/production_out"
+		cd "iteration${it}"
+		tar -czf production_out.tar.gz production_out
+		rm -r production_out
+		cd $scratchDir
 
 		# update plots
 		python3 $proj_bin/plot_convergence.py --mode $mode

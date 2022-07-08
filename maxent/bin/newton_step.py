@@ -90,7 +90,7 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it,
     else:
         # get goal observables from zeroth iteration
         print("READING FROM OBS")
-        df = pd.read_csv(osp.join("iteration{}" .format(0), "production_out", obs_file), delimiter="\t", header=None)
+        df = pd.read_csv(osp.join(f"iteration{0}", "production_out", obs_file), delimiter="\t", header=None)
         df = df.dropna(axis=1)
         df = df.drop(df.columns[0] ,axis=1)
         obj_goal = df.mean().values
@@ -106,7 +106,7 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it,
     print("current chi values: ", current_chis)
 
     # get current observable values
-    df = pd.read_csv(osp.join("iteration{}".format(it), "production_out", obs_file), delimiter="\t", header=None)
+    df = pd.read_csv(osp.join(f"iteration{it}", "production_out", obs_file), delimiter="\t", header=None)
     df = df.dropna(axis=1)
     df = df.drop(df.columns[0] ,axis=1)
     lam = df.mean().values

@@ -4,7 +4,7 @@ module unload gcc # not sure if this is necessary
 module load gcc/10.2.0
 
 # directories
-resources=~/TICG-chromatin/maxent/resources
+resources=~/TICG-chromatin/utils
 results=~/sequences_to_contact_maps/results
 dir='/project2/depablo/erschultz'
 scratchDir='/scratch/midway2/erschultz'
@@ -113,8 +113,10 @@ max_ent_inner () {
 
   cd $resources
   init_config="input${m}.xyz"
+  echo $init_config
   if [ -f $init_config ]
   then
+    echo 'here'
     cp $init_config $scratchDirResources
   else
     init_config='none'
@@ -128,7 +130,7 @@ max_ent_inner () {
 
   # get config
   echo "starting get_config"
-  python3 ~/TICG-chromatin/scripts/get_config.py --m $m --max_ent --default_config "${resources}/default_config.json" --use_ematrix $useE --use_smatrix $useS --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_diag_chi $useGroundTruthDiagChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $TICGSeed --sample_folder $sampleFolder --load_configuration_filename $init_config > config.log
+  python3 ~/TICG-chromatin/scripts/get_config.py --m $m --max_ent --default_config "${resources}/default_config_maxent.json" --use_ematrix $useE --use_smatrix $useS --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_diag_chi $useGroundTruthDiagChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $TICGSeed --sample_folder $sampleFolder --load_configuration_filename $init_config > config.log
 
 
   # generate goals
