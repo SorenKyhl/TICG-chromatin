@@ -142,11 +142,11 @@ run_simulation () {
 
 	# production
 	python3 $proj_bin/jsed.py $configFileName nSweeps $production_sweeps i
-	# if [ $num_iterations -gt 0 ]
-	# then
-	# 	# don't change seed if num_iterations==0 (allows for reproducibility)
-	# 	python3 $proj_bin/jsed.py $configFileName seed $RANDOM i
-	# fi
+	if [ $num_iterations -gt 0 ]
+	then
+		# don't change seed if num_iterations==0 (allows for easier reproducibility tests)
+		python3 $proj_bin/jsed.py $configFileName seed $RANDOM i
+	fi
 	~/TICG-chromatin/TICG-engine > production.log
 	mv data_out production_out
 

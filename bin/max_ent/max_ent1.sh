@@ -22,11 +22,6 @@ then
   source activate python3.9_pytorch1.9
 fi
 
-numIterations=2
-finalSimProductionSweeps=5000
-productionSweeps=5000
-equilibSweeps=2000
-
 STARTTIME=$(date +%s)
 i=1
 dataset='dataset_05_18_22'
@@ -34,15 +29,11 @@ useE='false'
 method='PCA-normalize'
 diagChiMethod='linear'
 mode='both'
-seqSeed=12
-chiSeed=12
-TICGSeed=12
 m=512
 
 for sample in 1 2 3
 do
-  for k in 6
-   # 2 4
+  for k in 2 4 6
   do
     max_ent
   done
