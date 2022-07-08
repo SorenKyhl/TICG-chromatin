@@ -162,10 +162,14 @@ def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, 
 
     df_total = pd.DataFrame()
     for f in obs_files:
-        df = pd.read_csv(osp.join(it_root, f), delimiter="\t", header=None)
-        df = df.dropna(axis=1)
-        df = df.drop(df.columns[0] ,axis=1)
-        df_total= pd.concat((df_total, df), axis=1)
+        try:
+            df = pd.read_csv(osp.join(it_root, f), delimiter="\t", header=None)
+            df = df.dropna(axis=1)
+            df = df.drop(df.columns[0] ,axis=1)
+            df_total = pd.concat((df_total, df), axis=1)
+        except:
+            print('Error with ', osp.join(it_root, f))
+            raise
 
     lam = df_total.mean().values
     B = df_total.cov().values

@@ -4,7 +4,7 @@ source ~/TICG-chromatin/bin/random/random_fns.sh
 
 param_setup
 m=512
-dataFolder="/home/erschultz/dataset_test_diag512"
+dataFolder="/home/erschultz/dataset_test_diag"
 scratchDir='/home/erschultz/scratch'
 relabel='none'
 lmbda=0.8
@@ -39,29 +39,22 @@ run()  {
 # mv TICG-engine ..
 
 k=0
-nSweeps=1000000
-dumpFrequency=10000
+nSweeps=500000
+dumpFrequency=20000
 diag='true'
-maxDiagChi=2
-chiDiagMethod='log'
-chiDiagSlope=10
-for i in $( seq 1 100 )
-do
-	echo "i=${i}, maxDiagChi=${maxDiagChi}, chiDiagSlope=${chiDiagSlope}"
-	run &
+diagBins=40
+maxDiagChi=10
+chiDiagMethod='linear'
+m=2048
+i=140
+run &
 
-	if [ $( expr $i % 10 ) -eq 0 ]
-	then
-		maxDiagChi=2
-		chiDiagSlope=$(( $chiDiagSlope * 2 ))
-	fi
-	maxDiagChi=$(( $maxDiagChi + 2 ))
-
-	if [ $( expr $i % 15 ) -eq 0 ]
-	then
-		wait
-	fi
-done
+i=141
+m=1024
+diagBins=20
+maxDiagChi=5
+chiDiagMethod='linear'
+run &
 
 
 wait

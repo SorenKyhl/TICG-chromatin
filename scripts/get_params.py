@@ -690,7 +690,7 @@ class GetPlaidChi():
                             help='fill off diag of chi with given value (None to skip)')
         parser.add_argument('--ensure_distinguishable', action='store_true',
                             help='true to ensure that corresponding psi is distinguishable')
-        parser.add_argument('--chi_seed', type=AC.str2int, 
+        parser.add_argument('--chi_seed', type=AC.str2int,
                             help='seed for generating chi (None for random)')
         parser.add_argument('--chi_constant', type=AC.str2float, default=0,
                             help='constant to add to chi')
@@ -920,6 +920,9 @@ class GetEnergy():
         self.sample_folder = args.sample_folder
         self.plot = args.plot
         self._get_args(unknown_args)
+
+        if self.args.method is None:
+            return
 
         if not self.args.use_ematrix and not self.args.use_smatrix:
             # should have been handled by GetSeq already

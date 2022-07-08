@@ -25,6 +25,7 @@ param_setup() {
 
 	chiDiagConstant=0
 	chiDiagSlope=1
+	diagBins=20
 
 	TICGSeed='none'
 }
@@ -65,7 +66,7 @@ check_dir() {
 
 random_inner() {
 	# generate sequences
-	python3 ~/TICG-chromatin/scripts/get_params.py --seq_method $seqMethod --exclusive $exclusive --m $m --p_switch $pSwitch --lmbda $lmbda --k $k --save_npy --seq_seed $seqSeed --chi=$chi --chi_method $chiMethod --chi_seed $chiSeed --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable --diag_chi_method $chiDiagMethod --diag_chi_slope $chiDiagSlope --max_diag_chi $maxDiagChi --chi_constant=$chiConstant --chi_multiplier=$chiMultiplier --diag_chi_constant=$chiDiagConstant > params.log
+	python3 ~/TICG-chromatin/scripts/get_params.py --seq_method $seqMethod --exclusive $exclusive --m $m --p_switch $pSwitch --lmbda $lmbda --k $k --save_npy --seq_seed $seqSeed --chi=$chi --chi_method $chiMethod --chi_seed $chiSeed --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable --diag_chi_method $chiDiagMethod --diag_chi_slope $chiDiagSlope --max_diag_chi $maxDiagChi --diag_bins $diagBins  --chi_constant=$chiConstant --chi_multiplier=$chiMultiplier --diag_chi_constant=$chiDiagConstant > params.log
 
 	# set up config.json
 	python3 ~/TICG-chromatin/scripts/get_config.py --m $m --n_sweeps $nSweeps --dump_frequency $dumpFrequency --TICG_seed $TICGSeed --use_ematrix $useE --use_smatrix $useS --load_configuration_filename $init_config --relabel $relabel --e $e --s $s  > config.log

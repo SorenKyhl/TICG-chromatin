@@ -37,6 +37,7 @@ public:
 	FILE *energy_out;
 	FILE *obs_out;
 	FILE *diag_obs_out;
+	FILE *constant_obs_out;
 	FILE *density_out;
 	FILE *extra_out;
 	std::string data_out_filename;
@@ -44,6 +45,7 @@ public:
 	std::string energy_out_filename;
 	std::string obs_out_filename;
 	std::string diag_obs_out_filename;
+	std::string constant_obs_out_filename;
 	std::string density_out_filename;
 	std::string contact_map_filename;
 	std::string extra_out_filename;
