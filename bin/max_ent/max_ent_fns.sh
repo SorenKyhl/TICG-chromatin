@@ -27,6 +27,9 @@ goalSpecified='true'
 GNNModelType='ContactGNNEnergy'
 m=-1
 k=-1
+seqSeed='none'
+chiSeed='none'
+TICGSeed='none'
 diagChiMethod='linear'
 diagBins=20
 diagPseudobeadsOn='true'
@@ -92,7 +95,7 @@ max_ent() {
     scratchDirI="${scratchDir}/TICG_maxent${i}"
     mkdir -p $scratchDirI
     cd $scratchDirI
-    max_ent_inner $scratchDirI $j $seed > bash.log &
+    max_ent_inner $scratchDirI $j > bash.log &
     i=$(( $i + 1 ))
   done
 }
@@ -101,7 +104,6 @@ max_ent_inner () {
   # args:
   # 1 = scratchDir
   # 2 = replicate index
-  # 3 = seed for get_params
   ofile="${sampleFolder}/${method_fmt}/k${k}/replicate${2}"
   echo $ofile
 
@@ -122,11 +124,11 @@ max_ent_inner () {
   # generate sequences
   echo "starting get_params"
   echo $method_fmt
-  python3 ~/TICG-chromatin/scripts/get_params.py --method=$method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --gnn_model_path $GNNModelPath --mlp_model_path $MLPModelPath --seq_seed $3 --chi_method 'random' --min_chi=-1 --max_chi=1 --diag_chi_method $diagChiMethod --diag_bins $diagBins --diag_pseudobeads_on $diagPseudobeadsOn > params.log
+  python3 ~/TICG-chromatin/scripts/get_params.py --method=$method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --gnn_model_path $GNNModelPath --mlp_model_path $MLPModelPath --seq_seed $seqSeed --chi_method 'random' --min_chi=-1 --max_chi=1 --chi_seed $chiSeed --diag_chi_method $diagChiMethod --diag_bins $diagBins --diag_pseudobeads_on $diagPseudobeadsOn > params.log
 
   # get config
   echo "starting get_config"
-  python3 ~/TICG-chromatin/scripts/get_config.py --m $m --max_ent --default_config "${resources}/default_config.json" --use_ematrix $useE --use_smatrix $useS --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_diag_chi $useGroundTruthDiagChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $RANDOM --sample_folder $sampleFolder --load_configuration_filename $init_config > config.log
+  python3 ~/TICG-chromatin/scripts/get_config.py --m $m --max_ent --default_config "${resources}/default_config.json" --use_ematrix $useE --use_smatrix $useS --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_diag_chi $useGroundTruthDiagChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $TICGSeed --sample_folder $sampleFolder --load_configuration_filename $init_config > config.log
 
 
   # generate goals
@@ -241,6 +243,4 @@ param_setup(){
   GNNModelPath="${results}/${GNNModelType}/${GNNModelID}"
   MLPModelPath="${results}/MLP/${MLPModelID}"
   sampleFolder="${dataFolder}/samples/sample${sample}"
-
-  seed=$RANDOM
 }

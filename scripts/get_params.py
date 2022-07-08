@@ -67,7 +67,7 @@ class GetSeq():
         parser.add_argument('--method', type=AC.str2None, default='k_means',
                             help='method for assigning particle types')
         parser.add_argument('--seq_seed', type=AC.str2int,
-                            help='random seed for numpy')
+                            help='random seed for numpy (None for random)')
         parser.add_argument('--exclusive', type=AC.str2bool, default=False,
                             help='True to use mutually exusive label (for random method)')
         parser.add_argument('--epigenetic_data_folder', type=str,
@@ -690,8 +690,8 @@ class GetPlaidChi():
                             help='fill off diag of chi with given value (None to skip)')
         parser.add_argument('--ensure_distinguishable', action='store_true',
                             help='true to ensure that corresponding psi is distinguishable')
-        parser.add_argument('--chi_seed', type=AC.str2int, default=None,
-                            help='seed for generating chi')
+        parser.add_argument('--chi_seed', type=AC.str2int, 
+                            help='seed for generating chi (None for random)')
         parser.add_argument('--chi_constant', type=AC.str2float, default=0,
                             help='constant to add to chi')
         parser.add_argument('--chi_multiplier', type=AC.str2float, default=1,
@@ -829,7 +829,7 @@ class GetDiagChi():
         args = self.args
         if args.diag_chi_method is not None:
             args.diag_chi_method = args.diag_chi_method.lower()
-            
+
         if args.diag_chi is not None:
             diag_chis = np.array(args.diag_chi)
         elif args.diag_chi_method is None:

@@ -340,7 +340,7 @@ def construct_sc_xyz():
     print(xyz_all.shape)
     np.save(osp.join(dir, 'combined2/xyz.npy'), xyz_all)
 
-def main():
+def test_log_diag_param():
     x = np.logspace(0, 20)
     # plt.plot(x)
     # plt.show()
@@ -363,6 +363,11 @@ def main():
     plt.legend()
     plt.show()
 
+def main():
+    dir = '/home/erschultz/scratch/TICG_maxent1/iteration35/production_out/iteration35/production_out'
+    y = np.loadtxt(osp.join(dir, 'contacts.txt'))
+    plot_matrix(y, ofile = osp.join(dir, 'y.png'), vmax = 'mean')
+
 
 
 
@@ -371,7 +376,7 @@ if __name__ == '__main__':
     # scc_y_vs_y_rank1()
     # test_robust_PCA()
     # check_dataset('dataset_05_12_22')
-    time_comparison()
+    # time_comparison()
     # construct_sc_xyz()
-    # main()
+    main()
     # makeDirsForMaxEnt("dataset_04_27_22")

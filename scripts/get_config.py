@@ -33,7 +33,7 @@ def getArgs():
     parser.add_argument('--n_sweeps', type=int,
                         help='set to change nSweeps')
     parser.add_argument('--TICG_seed', type=AC.str2int,
-                        help='set to change random seed for simulation')
+                        help='set to change random seed for simulation (None for random)')
     parser.add_argument('--use_ground_truth_TICG_seed', type=AC.str2bool,
                         help='True to copy seed from config file in sample_folder')
     parser.add_argument('--use_ematrix', type=AC.str2bool, default=False,
