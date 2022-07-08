@@ -10,10 +10,10 @@ dir='/project2/depablo/erschultz'
 scratchDir='/scratch/midway2/erschultz'
 
 # sweep params
-productionSweeps=100000
+productionSweeps=300000
 finalSimProductionSweeps=1000000
-equilibSweeps=20000
-numIterations=70 # iteration 1 + numIterations is production run to get contact map
+equilibSweeps=50000
+numIterations=40 # iteration 1 + numIterations is production run to get contact map
 
 # energy params
 useE='false'
@@ -38,7 +38,7 @@ useGroundTruthSeed='false'
 
 # newton's method params
 mode="plaid"
-trust_region=1000
+trust_region=50
 gamma=1
 minDiagChi='none'
 
@@ -121,6 +121,7 @@ max_ent_inner () {
   cd $scratchDirResources
   # generate sequences
   echo "starting get_params"
+  echo $method_fmt
   python3 ~/TICG-chromatin/scripts/get_params.py --method=$method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --gnn_model_path $GNNModelPath --mlp_model_path $MLPModelPath --seq_seed $3 --chi_method 'random' --min_chi=-1 --max_chi=1 --diag_chi_method $diagChiMethod --diag_bins $diagBins --diag_pseudobeads_on $diagPseudobeadsOn > params.log
 
   # get config
@@ -137,7 +138,6 @@ max_ent_inner () {
     echo "goal_specified is false"
   fi
 
-  echo $method_fmt
   # apply max ent with newton's method
   ~/TICG-chromatin/maxent/bin/run.sh $ofile $gamma $trust_region $minDiagChi $mode $productionSweeps $equilibSweeps $goalSpecifiedCopy 1 $numIterationsCopy $overwrite $1 $finalSimProductionSweeps
 
@@ -172,6 +172,11 @@ format_method () {
   if [ $useGroundTruthChi = 'true' ]
   then
     method_fmt="${method_fmt}-chi"
+  fi
+
+  if [ $useGroundTruthDiagChi = 'true' ]
+  then
+    method_fmt="${method_fmt}-diag_chi"
   fi
 
   if [ $useS = 'true' ]

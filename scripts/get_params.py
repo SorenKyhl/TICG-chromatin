@@ -7,6 +7,7 @@ import sys
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
 from knightRuiz import knightRuiz
 from seq2contact import (LETTERS, ArgparserConverter, DiagonalPreprocessing,
                          InteractionConverter, R_pca, clean_directories, crop,
@@ -59,7 +60,7 @@ class GetSeq():
 
         self.set_up_seq()
 
-    def _get_args(self, unknown):
+    def _get_args(self, unknown_args):
         AC = ArgparserConverter()
         chip_seq_data_local = '../../sequences_to_contact_maps/chip_seq_data'
         parser = argparse.ArgumentParser(description='Seq parser')
@@ -90,7 +91,8 @@ class GetSeq():
                                 "find average frequency at lower resolution")
                             # TODO rename and document better
 
-        args, _ = parser.parse_known_args()
+        args, _ = parser.parse_known_args(unknown_args)
+        print(args)
         self._process_method(args)
 
         args.labels = None
@@ -986,7 +988,7 @@ class GetEnergy():
             s = load_final_max_ent_S(args.k, replicate_path, max_it_path = None)
             e = s_to_E(s)
         elif args.method.startswith('ground_truth'):
-            e, s = load_E_S(self.sample_folder, psi)
+            e, s = load_E_S(self.sample_folder)
         elif args.method.startswith('gnn'):
             if args.use_smatrix:
                 s = self.get_energy_gnn(args.gnn_model_path, self.sample_folder)
@@ -1085,6 +1087,8 @@ class GetEnergy():
         opt.output_mode = None # don't need output, since only predicting
         opt.root_name = f'GNN{opt.id}-{sample}' # need this to be unique
         opt.log_file = sys.stdout # change
+        opt.cuda = False # force to use cpu
+        opt.device = torch.device('cpu')
         print(opt)
 
         # get model

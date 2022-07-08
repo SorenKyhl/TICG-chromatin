@@ -21,17 +21,21 @@ def getArgs():
                         help='True to include average contact frequency')
     parser.add_argument('--diag_bins', type=int,
                         help='number of diagonal bins')
+    parser.add_argument('--v_bead', type=int, default=520,
+                        help='volume of bead')
+    parser.add_argument('--grid_size', type=float, default=28.7,
+                        help='side length of grid cell')
 
     args = parser.parse_args()
     return args
 
-def get_diag_goal(y, bins):
+def get_diag_goal(y, args):
+    '''Input y should have max 1.'''
     m, _ = y.shape
-    y_max = np.max(y)
-    binsize = m / bins
+    binsize = m / args.diag_bins
 
-    measure = []
-    for b in range(bins):
+    obj_goal_diag = []
+    for b in range(args.diag_bins):
         mask = np.zeros_like(y) # use mask to compute weighted average
         for i in range(m):
             for j in range(m):
@@ -40,19 +44,20 @@ def get_diag_goal(y, bins):
                     mask[j,i] = 1
                     if i == j:
                         mask[i,j] = 2
-        measure.append(np.sum((mask*y).flatten()))
+        obj_goal_diag.append(np.sum((mask*y).flatten()))
 
-    measure = np.array(measure / y_max)
-    return measure
+    obj_goal_diag = np.array(obj_goal_diag)
+    obj_goal_diag *= (args.v_bead / args.grid_size**3)
+    return obj_goal_diag
 
-def get_plaid_goal(y, args):
+def get_plaid_goal(y, args, x = None):
+    '''Input y should have max 1.'''
     obj_goal = []
-    y_max = np.max(y)
     if args.verbose:
-        print('y_max: ', y_max)
         print(y, y.shape, y.dtype, '\n')
 
-    x = np.load('x.npy')
+    if x is None:
+        x = np.load('x.npy')
     _, k = x.shape
     for i in range(k):
         seqi = x[:,i]
@@ -69,7 +74,8 @@ def get_plaid_goal(y, args):
             obj_goal.append(result)
 
     obj_goal = np.array(obj_goal)
-    obj_goal /= y_max # convert from freq to prob
+    obj_goal *= (args.v_bead / args.grid_size**3)
+
     return obj_goal
 
 def main():
@@ -90,6 +96,7 @@ def main():
     else:
         raise Exception(f"contact map format not recognized: {args.contact_map}")
     y = y.astype(float) # ensure float
+    y /= np.max(y)
 
     file = "seq0.txt"
     if osp.exists(file):
@@ -99,13 +106,13 @@ def main():
 
     if args.mode == 'both':
         plaid_goal = get_plaid_goal(y, args)
-        diag_goal = get_diag_goal(y, args.diag_bins)
+        diag_goal = get_diag_goal(y, args)
     elif args.mode == 'plaid':
         plaid_goal = get_plaid_goal(y, args)
         diag_goal = np.zeros(20)
     elif args.mode == 'diag':
         plaid_goal = np.zeros(1) # shouldn't matter what goes here
-        diag_goal = get_diag_goal(y, args.diag_bins)
+        diag_goal = get_diag_goal(y, args)
 
     constant_goal = None
     if args.constant:
@@ -128,46 +135,34 @@ def main():
         wr.writerow(diag_goal)
 
 def test_plaid():
-    sample_path='/home/erschultz/dataset_test/samples/sample1'
-    offset = 0
+    args = getArgs()
+    sample_path='/home/erschultz/sequences_to_contact_maps/dataset_05_18_22/samples/sample3'
     y = np.load(osp.join(sample_path, 'y.npy'))
-    m = len(y)
-    y_max = np.max(y)
-    print('y_max: ', y_max)
     y = y.astype(float)
-
-    print(y, y.shape, y.dtype, '\n')
+    y /= np.max(y)
+    print(y.shape, y.dtype, '\n')
 
     x = np.load(osp.join(sample_path, 'x.npy'))
-    x = x[:m, :]
     x = x.astype(float)
     _, k = x.shape
-    print(x, x.shape, x.dtype, '\n')
+    print(x.shape, x.dtype, '\n')
 
-    # sorens method
-    obj_goal = []
-    for i in range(k):
-        # seqi = x[:, i]
-        seqi = np.loadtxt(osp.join(sample_path, f"seq{i}.txt"))[:m]
-        for j in range(k):
-            if j < i:
-                # don't double count
-                continue
-            seqj = np.loadtxt(osp.join(sample_path, f"seq{i}.txt"))[:m]
-            # result = seqi @ y @ seqj
-            outer = np.outer(seqi, seqj)
-            result = np.sum(outer * y)
+    obj_goal = get_plaid_goal(y, args, x)
+    print(obj_goal)
 
-            result /= y_max # convert to probability
-            obj_goal.append(result)
-    print(np.round(obj_goal, 7))
 
 def test_diag():
     args = getArgs()
+    args.diag_bins = 10
     dir = '/home/erschultz/dataset_test/samples/sample1'
     y = np.load(osp.join(dir, 'y.npy'))
-    goal = get_diag_goal(y, 10)
-    print(goal)
+    y = y.astype(float)
+    y /= np.max(y)
+
+    # goal = get_diag_goal(y, args)
+    # print(goal)
+    # goal = get_goal_diag_soren(y, 10)
+    # print(goal)
 
 def test_constant():
     args = getArgs()
@@ -178,4 +173,5 @@ def test_constant():
 if __name__ == '__main__':
     main()
     # test_constant()
-    # test2()
+    # test_plaid()
+    # test_diag()

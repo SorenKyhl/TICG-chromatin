@@ -133,7 +133,9 @@ run_simulation () {
 		python3 $proj_bin/jsed.py $configFileName nSweeps $equilib_sweeps i
 		~/TICG-chromatin/TICG-engine > equilib.log
 		$proj_bin/fork_last_snapshot.sh $saveFileName
-		mv data_out equilib_out
+		tar -czvf equilib_out.tar.gz data_out
+		rm -r data_out
+
 		python3 $proj_bin/jsed.py $configFileName load_configuration_filename $saveFileName s
 	fi
 
@@ -145,8 +147,11 @@ run_simulation () {
 		python3 $proj_bin/jsed.py $configFileName seed $RANDOM i
 	fi
 	~/TICG-chromatin/TICG-engine > production.log
-
 	mv data_out production_out
+
+	# delete files copied from resources to save space
+	rm *.txt *.npy
+
 	cd $scratchDir
 
 	ENDTIME=$(date +%s)
@@ -211,6 +216,10 @@ then
 		run_simulation
 		# update chis via newton's method
 		python3 $proj_bin/newton_step.py --it $it --gamma $gamma --mode $mode --goal_specified $goal_specified --trust_region $trust_region --min_diag_chi $minDiagChi >> track.log
+
+		# convert to tarball
+		tar -czvf "iteration${it}/production_out.tar.gz" "iteration${it}/production_out"
+		rm -r production_out
 
 		# update plots
 		python3 $proj_bin/plot_convergence.py --mode $mode

@@ -9,9 +9,7 @@
 # necessary to ensure log files are in right place
 cd ~/TICG-chromatin
 
-for i in 1 
-# 12 - obscure error due to size of array
-# GNN doesnt work for sample 13 or larger in 5_18 - insufficent RAM
+for i in 1 2
 do
   echo $i
   sbatch ~/TICG-chromatin/bin/max_ent/max_ent${i}.sh

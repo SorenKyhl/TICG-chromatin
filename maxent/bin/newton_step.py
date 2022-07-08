@@ -61,7 +61,6 @@ def str2float(v):
     else:
         raise argparse.ArgumentTypeError('String value expected.')
 
-
 def str2bool(v):
     """
     Helper function for argparser, converts str to boolean for various string inputs.
@@ -113,10 +112,6 @@ def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it,
     lam = df.mean().values
     B = df.cov().values
 
-    # vbead = 520
-    # vcell = 28.7**3
-    # B /= vcell/vbead
-
     new_chis, howfar = newton(lam, obj_goal, B,  gamma, current_chis, trust_region, method)
 
     if min_val is not None:
@@ -163,7 +158,7 @@ def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, 
     print("current chi values: ", current_chis)
 
     # get current observable values
-    it_root = osp.join("iteration{}".format(it), "production_out")
+    it_root = osp.join(f"iteration{it}", "production_out")
 
     df_total = pd.DataFrame()
     for f in obs_files:
@@ -172,15 +167,8 @@ def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, 
         df = df.drop(df.columns[0] ,axis=1)
         df_total= pd.concat((df_total, df), axis=1)
 
-    #df_total /= np.max(obj_goal)
-    #obj_goal /= np.max(obj_goal)
-
     lam = df_total.mean().values
     B = df_total.cov().values
-
-    # vbead = 520
-    # vcell = 28.7**3
-    # B /= vcell/vbead
 
     print("obj goal: ", obj_goal)
     print("lam: ", lam)
