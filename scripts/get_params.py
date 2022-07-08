@@ -827,7 +827,9 @@ class GetDiagChi():
 
     def set_up_diag_chi(self):
         args = self.args
-        args.diag_chi_method = args.diag_chi_method.lower()
+        if args.diag_chi_method is not None:
+            args.diag_chi_method = args.diag_chi_method.lower()
+            
         if args.diag_chi is not None:
             diag_chis = np.array(args.diag_chi)
         elif args.diag_chi_method is None:

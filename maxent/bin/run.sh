@@ -133,7 +133,7 @@ run_simulation () {
 		python3 $proj_bin/jsed.py $configFileName nSweeps $equilib_sweeps i
 		~/TICG-chromatin/TICG-engine > equilib.log
 		$proj_bin/fork_last_snapshot.sh $saveFileName
-		tar -czvf equilib_out.tar.gz data_out
+		tar -czf equilib_out.tar.gz data_out
 		rm -r data_out
 
 		python3 $proj_bin/jsed.py $configFileName load_configuration_filename $saveFileName s
@@ -218,8 +218,8 @@ then
 		python3 $proj_bin/newton_step.py --it $it --gamma $gamma --mode $mode --goal_specified $goal_specified --trust_region $trust_region --min_diag_chi $minDiagChi >> track.log
 
 		# convert to tarball
-		tar -czvf "iteration${it}/production_out.tar.gz" "iteration${it}/production_out"
-		rm -r production_out
+		tar -czf "iteration${it}/production_out.tar.gz" "iteration${it}/production_out"
+		rm -r "iteration${it}/production_out"
 
 		# update plots
 		python3 $proj_bin/plot_convergence.py --mode $mode

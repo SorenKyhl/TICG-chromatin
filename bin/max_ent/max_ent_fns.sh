@@ -232,6 +232,11 @@ param_setup(){
     useGroundTruthDiagChi='true'
   fi
 
+  if [ $useGroundTruthDiagChi = 'true' ]
+  then
+    diagChiMethod='none'
+  fi
+
   dataFolder="${dir}/${dataset}"
   GNNModelPath="${results}/${GNNModelType}/${GNNModelID}"
   MLPModelPath="${results}/MLP/${MLPModelID}"

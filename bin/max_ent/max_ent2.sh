@@ -15,38 +15,29 @@ if [ $local = 'true' ]
 then
   dir="/home/erschultz/sequences_to_contact_maps"
   scratchDir='/home/erschultz/scratch'
-  # numIterations=3
-  # finalSimProductionSweeps=1000
-  # equilibSweeps=1000
-  # productionSweeps=1000
+  numIterations=3
+  finalSimProductionSweeps=1000
+  equilibSweeps=1000
+  productionSweeps=1000
   source activate python3.9_pytorch1.9
 fi
-
-numIterations=3
-finalSimProductionSweeps=5000
-productionSweeps=5000
-equilibSweeps=2000
 
 STARTTIME=$(date +%s)
 i=1000
 dataset='dataset_05_18_22'
-useE='true'
-method='GNN'
-GNNModelID=150
+useE='false'
+method='PCA-normalize'
 diagChiMethod='linear'
-mode='diag'
+mode='both'
+m=1024
 
-m=512
-for sample in 1 2 3
+for sample in 4 5 6
 do
-  max_ent
+  for k in 2 4 6
+  do
+    max_ent
+  done
 done
-
-# m=1024
-# for sample in 4 5 6
-# do
-#   max_ent
-# done
 
 wait
 

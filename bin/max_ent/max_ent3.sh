@@ -8,7 +8,7 @@
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=erschultz@uchicago.edu
 
-local='true'
+local='false'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
@@ -25,19 +25,37 @@ fi
 STARTTIME=$(date +%s)
 i=2000
 dataset='dataset_05_18_22'
-useE='false'
-method='PCA'
-diagChiMethod='mlp'
-MLPModelID=10
-k=2
-mode='both'
-
+useE='true'
 m=512
+
+method='GNN'
+GNNModelID=150
+diagChiMethod='linear'
+mode='diag'
 for sample in 1 2 3
 do
   max_ent
 done
 
+method='GNN'
+GNNModelID=150
+diagChiMethod='mlp'
+MLPModelID=10
+mode='none'
+for sample in 1 2 3
+do
+  max_ent
+done
+
+method='ground_truth'
+mode='none'
+useGroundTruthDiagChi='true'
+for sample in 1 2 3
+do
+  max_ent
+done
+
+wait
 
 ENDTIME=$(date +%s)
 echo "total time:$(( $(( $ENDTIME - $STARTTIME )) / 60 )) minutes"

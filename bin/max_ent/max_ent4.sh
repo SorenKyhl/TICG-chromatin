@@ -26,27 +26,35 @@ STARTTIME=$(date +%s)
 i=3000
 dataset='dataset_05_18_22'
 useE='true'
-mode='diag'
+m=1024
+
 method='GNN'
-modelID=150
-for sample in 1 2 3
+GNNModelID=150
+diagChiMethod='linear'
+mode='diag'
+for sample in 4 5 6
 do
   max_ent
 done
 
-method='PCA-normalize'
-mode='both'
-useE='false'
-modelID='none'
-for sample in 1 2 3
+method='GNN'
+GNNModelID=150
+diagChiMethod='mlp'
+MLPModelID=3
+mode='none'
+for sample in 4 5 6
 do
-  for k in 2 4 6 8
-  do
-    max_ent
-  done
+  max_ent
+done
+
+method='ground_truth'
+mode='none'
+useGroundTruthDiagChi='true'
+for sample in 4 5 6
+do
+  max_ent
 done
 
 wait
-
 ENDTIME=$(date +%s)
 echo "total time:$(( $(( $ENDTIME - $STARTTIME )) / 60 )) minutes"
