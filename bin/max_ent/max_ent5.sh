@@ -30,6 +30,8 @@ method='PCA-normalize'
 diagChiMethod='linear'
 mode='both'
 m=2048
+productionSweeps=500000
+replicate=2
 
 for sample in 7 8 9
 do

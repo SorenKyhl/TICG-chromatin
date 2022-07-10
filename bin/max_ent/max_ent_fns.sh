@@ -21,6 +21,7 @@ useS='false'
 
 # general params
 overwrite=1
+replicate=1
 loadChi='false'
 project='false'
 goalSpecified='true'
@@ -30,6 +31,8 @@ k=-1
 seqSeed='none'
 chiSeed='none'
 TICGSeed='none'
+
+# diag params
 diagChiMethod='linear'
 diagBins=20
 diagPseudobeadsOn='true'
@@ -55,12 +58,12 @@ max_ent_resume(){
   # 1 = start iteration
   param_setup
   format_method
-  for j in 1
+  for rep in 1
   do
     scratchDirI="${scratchDir}/TICG_maxent${i}"
     mkdir -p $scratchDirI
     cd $scratchDirI
-    max_ent_resume_inner $scratchDirI $j $1 >> bash.log &
+    max_ent_resume_inner $scratchDirI $rep $1 >> bash.log &
     i=$(( $i + 1 ))
   done
 }
@@ -90,14 +93,12 @@ max_ent_resume_inner(){
 max_ent() {
   param_setup
   format_method
-  for j in 1
-  do
-    scratchDirI="${scratchDir}/TICG_maxent${i}"
-    mkdir -p $scratchDirI
-    cd $scratchDirI
-    max_ent_inner $scratchDirI $j > bash.log &
-    i=$(( $i + 1 ))
-  done
+
+  scratchDirI="${scratchDir}/TICG_maxent${i}"
+  mkdir -p $scratchDirI
+  cd $scratchDirI
+  max_ent_inner $scratchDirI $replicate > bash.log &
+  i=$(( $i + 1 ))
 }
 
 max_ent_inner () {

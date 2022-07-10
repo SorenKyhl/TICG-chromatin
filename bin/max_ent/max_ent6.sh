@@ -32,7 +32,8 @@ method='GNN'
 GNNModelID=150
 diagChiMethod='linear'
 mode='diag'
-for sample in 7 8 9
+for sample in 7 8
+ # 9
 do
   max_ent
 done
@@ -47,13 +48,13 @@ done
 #   max_ent
 # done
 
-method='ground_truth'
-mode='none'
-useGroundTruthDiagChi='true'
-for sample in 7 8 9
-do
-  max_ent
-done
+# method='ground_truth'
+# mode='none'
+# useGroundTruthDiagChi='true'
+# for sample in 7 8 9
+# do
+#   max_ent
+# done
 
 wait
 

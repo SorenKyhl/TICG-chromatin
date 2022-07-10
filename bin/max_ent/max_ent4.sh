@@ -28,14 +28,14 @@ dataset='dataset_05_18_22'
 useE='true'
 m=1024
 
-method='GNN'
-GNNModelID=150
-diagChiMethod='linear'
-mode='diag'
-for sample in 4 5 6
-do
-  max_ent
-done
+# method='GNN'
+# GNNModelID=150
+# diagChiMethod='linear'
+# mode='diag'
+# for sample in 4 5 6
+# do
+#   max_ent
+# done
 
 method='GNN'
 GNNModelID=150
@@ -47,13 +47,13 @@ do
   max_ent
 done
 
-method='ground_truth'
-mode='none'
-useGroundTruthDiagChi='true'
-for sample in 4 5 6
-do
-  max_ent
-done
+# method='ground_truth'
+# mode='none'
+# useGroundTruthDiagChi='true'
+# for sample in 4 5 6
+# do
+#   max_ent
+# done
 
 wait
 
