@@ -8,7 +8,8 @@
 # necessary to ensure log files are in right place
 cd ~/TICG-chromatin
 
-for i in 1 2 7 8 9
+for i in 7 8 10
+# 1 2 9
  # 3 4 - done
  # 5 - rerunning with more sweeps per iteration
  # 6 - GNN didn't work idk why - rerunning

@@ -36,6 +36,7 @@ TICGSeed='none'
 diagChiMethod='linear'
 diagBins=20
 diagPseudobeadsOn='true'
+maxDiagChi=0
 
 # ground truth params
 useGroundTruthChi='false'
@@ -127,7 +128,7 @@ max_ent_inner () {
   # generate sequences
   echo "starting get_params"
   echo $method_fmt
-  python3 ~/TICG-chromatin/scripts/get_params.py --method=$method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --gnn_model_path $GNNModelPath --mlp_model_path $MLPModelPath --seq_seed $seqSeed --chi_method 'random' --min_chi=-1 --max_chi=1 --chi_seed $chiSeed --diag_chi_method $diagChiMethod --diag_bins $diagBins --diag_pseudobeads_on $diagPseudobeadsOn > params.log
+  python3 ~/TICG-chromatin/scripts/get_params.py --method=$method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --gnn_model_path $GNNModelPath --mlp_model_path $MLPModelPath --seq_seed $seqSeed --chi_method 'random' --min_chi=-1 --max_chi=1 --chi_seed $chiSeed --diag_chi_method $diagChiMethod --diag_bins $diagBins --diag_pseudobeads_on $diagPseudobeadsOn --max_diag_chi $maxDiagChi > params.log
 
   # get config
   echo "starting get_config"

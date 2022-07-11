@@ -41,5 +41,7 @@ do
   done
 done
 
+wait
+
 ENDTIME=$(date +%s)
 echo "total time:$(( $(( $ENDTIME - $STARTTIME )) / 60 )) minutes"

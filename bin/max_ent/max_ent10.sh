@@ -25,6 +25,22 @@ fi
 STARTTIME=$(date +%s)
 i=9000
 
+dataset='dataset_09_21_21'
+useE='false'
+method='PCA-normalize'
+diagChiMethod='linear'
+mode='both'
+maxDiagChi=10
+m=1024
+
+for sample in 1
+do
+  for k in 2 4 6
+  do
+    max_ent
+  done
+done
+
 
 wait
 
