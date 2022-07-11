@@ -8,14 +8,14 @@
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=erschultz@uchicago.edu
 
-local='false'
+local='true'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
   dir="/home/erschultz/sequences_to_contact_maps"
   scratchDir='/home/erschultz/scratch'
-  numIterations=40
+  # numIterations=2
   # finalSimProductionSweeps=1000
   # equilibSweeps=1000
   # productionSweeps=1000
@@ -25,14 +25,20 @@ fi
 STARTTIME=$(date +%s)
 i=14000
 dataset='dataset_05_18_22'
-useE='true'
-method='ground_truth'
-mode='plaid'
-for sample in 7 8 9
-do
-  max_ent
-done
+useE='false'
+method='PCA-normalize'
+diagChiMethod='linear'
+mode='both'
+m=512
+replicate=3
 
+for sample in 1
+do
+  for k in 8
+  do
+    max_ent
+  done
+done
 
 wait
 

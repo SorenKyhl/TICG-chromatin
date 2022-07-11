@@ -30,6 +30,7 @@ method='PCA-normalize'
 diagChiMethod='linear'
 mode='both'
 m=1024
+replicate=3
 
 for sample in 4 5 6
 do

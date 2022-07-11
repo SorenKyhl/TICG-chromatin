@@ -49,6 +49,6 @@
   "bead_type_files": null,
   "nspecies": 0,
   "nbeads": 512,
-  "seed": 12,
+  "seed": 514,
   "load_configuration_filename": "input512.xyz"
 }

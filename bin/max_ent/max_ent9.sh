@@ -24,12 +24,19 @@ fi
 STARTTIME=$(date +%s)
 i=8000
 dataset='dataset_05_18_22'
+useE='false'
 method='PCA-normalize'
+diagChiMethod='mlp'
+MLPModelID=3
 mode='both'
-k=8
-for sample in 15
+m=1024
+
+for sample in 4 5 6
 do
-  max_ent_resume 44
+  for k in 2 4 6
+  do
+    max_ent
+  done
 done
 
 wait

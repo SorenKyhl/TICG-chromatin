@@ -814,7 +814,7 @@ class GetDiagChi():
                                 '(None for no diag_chi)')
         parser.add_argument('--diag_chi_slope', type=float, default=1.,
                             help='slope (in thousandths) for diag_chi_method = log')
-        parser.add_argument('--max_diag_chi', type=float, default=10,
+        parser.add_argument('--max_diag_chi', type=float, default=0,
                             help='maximum diag chi value for diag_chi_method')
         parser.add_argument('--diag_chi_constant', type=AC.str2float, default=0,
                             help='constant to add to chi diag')
