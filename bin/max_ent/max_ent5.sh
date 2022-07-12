@@ -33,13 +33,28 @@ m=2048
 productionSweeps=500000
 replicate=2
 
-for sample in 7 8 9
-do
-  for k in 2 4 6
-  do
-    max_ent
-  done
-done
+i=4002
+sample=7
+k=6
+max_ent_resume 27
+
+i=4006
+sample=9
+k=2
+max_ent_resume 26
+
+
+i=4007
+sample=9
+k=4
+max_ent_resume 29
+
+
+i=4008
+sample=9
+k=6
+max_ent_resume 31
+
 
 wait
 

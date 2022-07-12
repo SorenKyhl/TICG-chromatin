@@ -39,21 +39,14 @@ run()  {
 # mv TICG-engine ..
 
 k=0
-nSweeps=500000
-dumpFrequency=20000
+nSweeps=10000
+dumpFrequency=100
 diag='true'
-diagBins=40
+diagBins=32
 maxDiagChi=10
 chiDiagMethod='linear'
-m=2048
-i=140
-run &
-
-i=141
-m=1024
-diagBins=20
-maxDiagChi=5
-chiDiagMethod='linear'
+m=20000
+i=150
 run &
 
 

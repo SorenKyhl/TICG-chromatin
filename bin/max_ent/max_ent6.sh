@@ -35,7 +35,7 @@ mode='diag'
 for sample in 7 8
  # 9
 do
-  max_ent
+  max_ent_resume 39
 done
 
 # method='GNN'

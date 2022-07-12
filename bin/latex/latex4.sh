@@ -20,11 +20,11 @@ fi
 dataset='dataset_05_18_22'
 dataFolder="${dataDir}/${dataset}"
 
-for sample in 5
+for sample in 1
  # 7 8 9 10 11 12 13 14 15 16 17 18
  # 19
 do
-  python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample &
+  python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample --replicate 1 &
 done
 
 wait

@@ -374,37 +374,43 @@ def main():
             for file in os.listdir(sample):
                 if file.startswith('GNN-') or file.startswith('PCA-'):
                     method = osp.join(sample, file)
-                    if 'MLP' in method:
+                    if 'MLP' in method and 'GNN' in method:
                         continue
                     for file in os.listdir(method):
                         if file.startswith('k'):
-                            replicate = osp.join(method, file, 'replicate1')
-                            label = f'{id}_{osp.split(method)[1]}_{file}'
+                            k = file[1:]
+                            k_folder = osp.join(method, file)
+                            for file in os.listdir(k_folder):
+                                rep = file[-1]
+                                if file[-1] == '2':
+                                    continue
+                                replicate = osp.join(k_folder, file)
+                                label = f'{id}_{osp.split(method)[1]}_k{k}_r{rep}'
 
-                            chis_diag_file = osp.join(replicate, 'chis_diag.txt')
-                            if osp.exists(chis_diag_file):
-                                params = np.loadtxt(chis_diag_file)
+                                chis_diag_file = osp.join(replicate, 'chis_diag.txt')
+                                if osp.exists(chis_diag_file):
+                                    params = np.loadtxt(chis_diag_file)
 
-                            chis_file = osp.join(replicate, 'chis.txt')
-                            if osp.exists(chis_file):
-                                chis = np.loadtxt(chis_file)
-                                params = np.concatenate((params, chis), axis = 1)
+                                chis_file = osp.join(replicate, 'chis.txt')
+                                if osp.exists(chis_file):
+                                    chis = np.loadtxt(chis_file)
+                                    params = np.concatenate((params, chis), axis = 1)
 
-                            vals = []
-                            for i in range(2, len(params)):
-                                diff = params[i] - params[i-1]
-                                vals.append(np.linalg.norm(diff, ord = 2))
-                            results_1[label] = vals
+                                vals = []
+                                for i in range(2, len(params)):
+                                    diff = params[i] - params[i-1]
+                                    vals.append(np.linalg.norm(diff, ord = 2))
+                                results_1[label] = vals
 
 
-                            conv_file = osp.join(replicate, 'convergence_diag.txt')
-                            conv = np.loadtxt(conv_file)
+                                conv_file = osp.join(replicate, 'convergence_diag.txt')
+                                conv = np.loadtxt(conv_file)
 
-                            vals = []
-                            for i in range(1, len(conv)):
-                                diff = conv[i] - conv[i-1]
-                                vals.append(np.abs(diff))
-                            results_2[label] = vals
+                                vals = []
+                                for i in range(1, len(conv)):
+                                    diff = conv[i] - conv[i-1]
+                                    vals.append(np.abs(diff))
+                                results_2[label] = vals
 
 
     cmap = matplotlib.cm.get_cmap('tab10')
@@ -418,6 +424,7 @@ def main():
 
         plt.plot(vals, label = label, ls = ls_arr[k // 2], color = cmap(id % cmap.N))
 
+    plt.axhline(4, c = 'k')
     plt.yscale('log')
     plt.legend()
     plt.show()
@@ -434,6 +441,7 @@ def main():
 
         plt.plot(vals, label = label, ls = ls_arr[k // 2], color = cmap(id % cmap.N))
 
+    plt.axhline(1e-2, c = 'k')
     plt.yscale('log')
     plt.legend(loc = 'upper right')
     plt.show()

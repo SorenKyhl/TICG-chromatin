@@ -31,6 +31,8 @@ def getArgs(data_folder = None, sample = None, samples = None):
                             help='list of sample ids separated by -')
     parser.add_argument('--sample_folder', type=str,
                         help='location of input data')
+    parser.add_argument('--replicate', type=AC.str2int,
+                        help='which replicate to consider (None for all)')
     parser.add_argument('--experimental', action='store_true',
                         help="True for experimental data mode - ground truth won't be present")
 
@@ -94,6 +96,9 @@ def loadData(args):
                             k = 0
                         replicate_data = defaultdict(list)
                         for replicate in os.listdir(k_folder):
+                            if args.replicate is not None and int(replicate[-1]) != args.replicate:
+                                continue
+                            print(replicate)
                             replicate_folder = osp.join(k_folder, replicate)
                             json_file = osp.join(replicate_folder, 'distance_pearson.json')
                             if osp.exists(json_file):
@@ -141,13 +146,12 @@ def loadData(args):
                             convergence_file = osp.join(replicate_folder, 'convergence_diag.txt')
                             converged_it = 0
                             if osp.exists(convergence_file):
-                                with open(convergence_file, 'r') as f:
-                                    for i, line in enumerate(f):
-                                        val = float(line.strip())
-                                        if val < 0.05:
-                                            # convergence cutoff of 0.05 * initial loss
-                                            converged_it = i
-                                            break
+                                conv = np.loadtxt(convergence_file)
+                                for i in range(1, len(conv)):
+                                    diff = conv[i] - conv[i-1]
+                                    if np.abs(diff) < 1e-2:
+                                        converged_it = i
+                                        break
 
                             bash_file = osp.join(replicate_folder, 'bash.log')
                             if osp.exists(bash_file):
@@ -211,38 +215,28 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w',
             o.write("\\hline\n")
             o.write("Method & $\\ell$ & SCC & RMSE-E & RMSE-Y & Total Time \\\ \n")
         else:
-            metrics = ['overall_pearson', 'avg_dist_pearson', 'scc', 'rmse-e', 'rmse-y',
+            metrics = ['avg_dist_pearson', 'scc', 'rmse-e', 'rmse-y',
                         'converged_it', 'converged_time', 'final_time', 'total_time']
-            o.write("\\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|}\n")
+            o.write("\\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}\n")
             o.write("\\hline\n")
-            o.write("\\multicolumn{11}{|c|}{" + header + "} \\\ \n")
+            o.write("\\multicolumn{10}{|c|}{" + header + "} \\\ \n")
             if sample_id is not None:
                 o.write("\\hline\n")
-                o.write("\\multicolumn{11}{|c|}{sample " + f'{sample_id}' + "} \\\ \n")
+                o.write("\\multicolumn{10}{|c|}{sample " + f'{sample_id}' + "} \\\ \n")
             o.write("\\hline\n")
-            o.write("Method & k & Pearson & Avg Dist Pearson & SCC & RMSE-E & RMSE-Y & Converged & Converged Time & Final Time & Total Time\\\ \n")
+            o.write("Method & k & Avg Pearson & SCC & RMSE-E & RMSE-Y & Converged & Converged Time & Final Time & Total Time\\\ \n")
         o.write("\\hline\\hline\n")
 
         # get reference data
         ground_truth_ref = None
         if not experimental:
-            if 0 in data.keys() and 'ground_truth-S' in data[0]:
-                ground_truth_ref = data[0]['ground_truth-S']
-                print('ground truth found')
-            elif 0 in data.keys() and 'ground_truth-E' in data[0]:
-                ground_truth_ref = data[0]['ground_truth-E']
+            if 0 in data.keys() and 'ground_truth-diag_chi-E' in data[0]:
+                ground_truth_ref = data[0]['ground_truth-diag_chi-E']
                 print('ground truth found')
             else:
-                # look for ground_truth-psi-chi
+                print('ground truth missing')
                 for key in data.keys():
-                    if 'ground_truth-psi-chi' in data[key]:
-                        ground_truth_ref = data[key]['ground_truth-psi-chi']
-                        print('ground truth found')
-                        break
-                else:
-                    print('ground truth missing')
-                    for key in data.keys():
-                        print(f'key 1: {key}, key 2: {data[key].keys()}')
+                    print(f'key 1: {key}, key 2: {data[key].keys()}')
 
         GNN_ref = None
         if 0 in data.keys():
@@ -274,7 +268,7 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w',
                     sample_results = nested_list_to_array(data[k][key][metric])
 
                     if sample_id is not None:
-                        assert sample_results.shape[0] == 1, f"label {label}, metric {metric}, k {k_label}, results {data[k][key][metric]}"
+                        assert sample_results.shape[0] == 1, f"label {label}, metric {metric}, k {k_label}, results {data[k][key][metric]}, {sample_results}"
                         result = sample_results.reshape(-1)
                         if GNN_ref is not None:
                             ref_result = nested_list_to_array(GNN_ref[metric]).reshape(-1)
@@ -332,13 +326,18 @@ def main(data_folder=None, sample=None):
     fname = 'max_ent_table.txt'
     dataset = osp.split(args.data_folder)[1]
 
+    if args.replicate is None:
+        label = dataset
+    else:
+        label = dataset + f' replicate {args.replicate}'
+
     if args.samples is not None:
         data = loadData(args)
         ofile = osp.join(args.data_folder, fname)
 
-        makeLatexTable(data, ofile, dataset, small = True, mode = 'w',
+        makeLatexTable(data, ofile, label, small = True, mode = 'w',
                         experimental = args.experimental)
-        makeLatexTable(data, ofile, dataset, small = False, mode = 'a',
+        makeLatexTable(data, ofile, label, small = False, mode = 'a',
                         experimental = args.experimental)
 
     if args.sample is not None:
@@ -346,10 +345,10 @@ def main(data_folder=None, sample=None):
         data = loadData(args)
         ofile = osp.join(args.sample_folder, fname)
 
-        makeLatexTable(data, ofile, dataset, small = True, mode = 'w',
+        makeLatexTable(data, ofile, label, small = True, mode = 'w',
                         sample_id = args.sample, experimental = args.experimental)
 
-        makeLatexTable(data, ofile, dataset, small = False, mode = 'a',
+        makeLatexTable(data, ofile, label, small = False, mode = 'a',
                         sample_id = args.sample, experimental = args.experimental)
 
 if __name__ == '__main__':
