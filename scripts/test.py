@@ -257,7 +257,7 @@ def time_comparison():
         for col in range(3):
             print(it)
             sample_dir = osp.join(dir, f'sample{it}')
-            max_ent_file = osp.join(sample_dir, 'max_ent_table.txt')
+            max_ent_file = osp.join(sample_dir, 'max_ent_table_1.txt')
             it += 1
             if not osp.exists(max_ent_file):
                 continue
@@ -271,6 +271,8 @@ def time_comparison():
                 while not line.startswith('\end'):
                     if line.startswith('\hline'):
                         line = f.readline()
+                        continue
+
                     line_list = line.split(' & ')
                     try:
                         k = line_list[1]
@@ -284,16 +286,14 @@ def time_comparison():
                         print(line)
                         raise
                     times_dict[label][row,col] = time
-                    f.readline()
                     line = f.readline()
 
 
     cmap = matplotlib.cm.get_cmap('tab20')
-    ind = np.arange(len(times_dict))
-    colors = plt.cycler('color', cmap(ind))
     sizes = np.array([512., 1024.]) # , 2048., 4096.
-    for c, method in zip(colors, sorted(times_dict.keys())):
-        if method == 'PCA-diagOn_k8' or method == 'Ground Truth-E-diagOn':
+    ind = 0
+    for method in sorted(times_dict.keys()):
+        if method in {'GNN-150-E'} or method.startswith('Ground'):
             continue
         arr = times_dict[method][:2, :]
         print('method: ', method)
@@ -307,15 +307,16 @@ def time_comparison():
         print()
 
         plt.errorbar(sizes, times, yerr = times_std, label = method,
-                    color = c['color'], fmt = "o")
+                    color = cmap(ind % cmap.N), fmt = "o")
         sizes += 20
+        ind += 1
 
 
     plt.ylabel('Time (mins)')
     plt.xlabel('Simulation size')
     plt.ylim((0, None))
     plt.xticks([512, 1024]) # , 2048, 4096
-    plt.legend()
+    plt.legend(loc='upper left')
     plt.savefig(osp.join(dir, 'time.png'))
     plt.close()
 
@@ -455,7 +456,7 @@ if __name__ == '__main__':
     # scc_y_vs_y_rank1()
     # test_robust_PCA()
     # check_dataset('dataset_05_12_22')
-    # time_comparison()
+    time_comparison()
     # construct_sc_xyz()
-    main()
+    # main()
     # makeDirsForMaxEnt("dataset_04_27_22")
