@@ -59,14 +59,11 @@ max_ent_resume(){
   # 1 = start iteration
   param_setup
   format_method
-  for rep in 1
-  do
-    scratchDirI="${scratchDir}/TICG_maxent${i}"
-    mkdir -p $scratchDirI
-    cd $scratchDirI
-    max_ent_resume_inner $scratchDirI $rep $1 >> bash.log &
-    i=$(( $i + 1 ))
-  done
+  scratchDirI="${scratchDir}/TICG_maxent${i}"
+  mkdir -p $scratchDirI
+  cd $scratchDirI
+  max_ent_resume_inner $scratchDirI $replicate $1 >> bash.log &
+  i=$(( $i + 1 ))
 }
 
 max_ent_resume_inner(){
@@ -79,7 +76,7 @@ max_ent_resume_inner(){
   echo $method_fmt
 
   # apply max ent with newton's method
-  ~/TICG-chromatin/maxent/bin/run.sh $ofile $gamma $trust_region $mode $productionSweeps $equilibSweeps $goalSpecified $3 $numIterationsCopy $overwrite $1 $finalSimProductionSweeps
+  ~/TICG-chromatin/maxent/bin/run.sh $ofile $gamma $trust_region $minDiagChi $mode $productionSweeps $equilibSweeps $goalSpecified $3 $numIterationsCopy $overwrite $1 $finalSimProductionSweeps
 
   # run.sh moves all data to $ofile upon completion
   cd $ofile
