@@ -144,14 +144,17 @@ def loadData(args):
                             replicate_data['rmse-y'].append(rmse_y)
 
                             convergence_file = osp.join(replicate_folder, 'convergence_diag.txt')
-                            converged_it = 0
                             if osp.exists(convergence_file):
+                                converged_it = None
                                 conv = np.loadtxt(convergence_file)
                                 for i in range(1, len(conv)):
                                     diff = conv[i] - conv[i-1]
-                                    if np.abs(diff) < 1e-2:
+                                    if np.abs(diff) < 1e-2 and conv[i] < conv[0]:
                                         converged_it = i
                                         break
+                            else:
+                                converged_it = 0
+                                # and therefore convergence time is 0
 
                             bash_file = osp.join(replicate_folder, 'bash.log')
                             if osp.exists(bash_file):
@@ -165,12 +168,18 @@ def loadData(args):
                                             t = int(line[left+1:right].split(' ')[0])
                                             times.append(t)
 
-                            converge_time = np.sum(times[:converged_it])
-                            converge_time /= 60 # to minutes
+                            if converged_it is None:
+                                converge_time = None
+                            else:
+                                converge_time = np.sum(times[:converged_it])
+                                converge_time /= 60 # to minutes
                             t /= 60
                             replicate_data['final_time'].append(t)
                             replicate_data['converged_time'].append(converge_time)
-                            replicate_data['total_time'].append(converge_time + t)
+                            if converge_time is None:
+                                replicate_data['total_time'].append(t)
+                            else:
+                                replicate_data['total_time'].append(converge_time + t)
                             replicate_data['converged_it'].append(converged_it)
 
                         # append replicate array to dictionary
@@ -287,12 +296,17 @@ def makeLatexTable(data, ofile, header = '', small = False, mode = 'w',
                             print('sample results', sample_results)
                             raise
 
-                    result_mean = np.round(np.nanmean(result), 3)
+                    if 'time' in metric:
+                        roundoff = 1
+                    else:
+                        roundoff = 3
+
+                    result_mean = np.round(np.nanmean(result), roundoff)
                     if len(result) > 1:
-                        result_std = np.round(np.nanstd(result), 3)
+                        result_std = np.round(np.nanstd(result), roundoff)
                         text += f" & {result_mean} $\pm$ {result_std}"
                         if significant:
-                            text += f' *{np.round(pval, 3)}'
+                            text += f' *{np.round(pval, roundoff)}'
                     else:
                         text += f" & {result_mean}"
 
@@ -323,7 +337,10 @@ def main(data_folder=None, sample=None):
     args = getArgs(data_folder = data_folder, sample = sample)
     print('-'*100, '\n', args)
 
-    fname = 'max_ent_table.txt'
+    if args.replicate is None:
+        fname = 'max_ent_table.txt'
+    else:
+        fname = f'max_ent_table_{args.replicate}.txt'
     dataset = osp.split(args.data_folder)[1]
 
     if args.replicate is None:
