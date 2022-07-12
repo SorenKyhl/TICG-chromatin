@@ -7,7 +7,7 @@
 #SBATCH --mem=0
 #SBATCH --qos=depablo-debug
 
-local='true'
+local='false'
 if [ $local = 'true' ]
 then
   dataDir='/home/erschultz/sequences_to_contact_maps'
