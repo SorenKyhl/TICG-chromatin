@@ -249,15 +249,17 @@ def is_scc_weighted_mean():
 def time_comparison():
     # dir = '/project2/depablo/erschultz/dataset_05_18_22/samples'
     dir = '/home/erschultz/sequences_to_contact_maps/dataset_05_18_22/samples'
+    samples_per_size = 3
+    num_sizes = 3
 
-    times_dict = defaultdict(lambda: np.full([4, 3], np.nan))
+    times_dict = defaultdict(lambda: np.full([num_sizes, samples_per_size], np.nan))
     # dictionary with keys = method : vals = array of times with rows = sizes, cols = replicate samples
     it = 1
-    for row in range(4):
-        for col in range(3):
+    for row in range(num_sizes):
+        for col in range(samples_per_size):
             print(it)
             sample_dir = osp.join(dir, f'sample{it}')
-            max_ent_file = osp.join(sample_dir, 'max_ent_table_1.txt')
+            max_ent_file = osp.join(sample_dir, 'max_ent_table_2.txt')
             it += 1
             if not osp.exists(max_ent_file):
                 continue
@@ -298,35 +300,151 @@ def time_comparison():
 
 
     cmap = matplotlib.cm.get_cmap('tab20')
-    sizes = np.array([512., 1024., 2048.]) # , 2048., 4096.
+    fig, ax = plt.subplots()
+    ax2 = ax.twinx()
+    sizes = np.array([512., 1024., 2048., 4096.])[:num_sizes]
+    sizes_shift = np.copy(sizes)
     ind = 0
     for method in sorted(times_dict.keys()):
         if method in {'GNN-'}:
             continue
-        arr = times_dict[method][:3, :] # TODO - hard coded
+        arr = times_dict[method][:num_sizes, :]
         print('method: ', method)
         print(arr, arr.shape)
         times = np.nanmean(arr, axis = 1)
-        np.nan_to_num(times, copy = False, nan=-100)
-        times_std = np.std(arr, axis = 1)
-        np.nan_to_num(times_std, copy = False)
+        prcnt_converged = np.count_nonzero(~np.isnan(arr), axis = 1) / arr.shape[1]
+        prcnt_converged[prcnt_converged == 0] = np.nan
+        times_std = np.nanstd(arr, axis = 1)
         print('times', times)
+        print('prcnt_converged', prcnt_converged)
         print('times std', times_std)
         print()
 
-        plt.errorbar(sizes, times, yerr = times_std, label = method,
+        ax2.plot(sizes_shift, prcnt_converged, ls = '--', color = cmap(ind % cmap.N))
+        ax.errorbar(sizes_shift, times, yerr = times_std, label = method,
                     color = cmap(ind % cmap.N), fmt = "o")
-        sizes += 20
+        sizes_shift += 20
         ind += 1
 
 
-    plt.ylabel('Total Time (mins)', fontsize=16)
-    plt.xlabel('Simulation size', fontsize=16)
-    plt.ylim((0, None))
-    plt.xticks([512, 1024, 2048]) # , 2048, 4096
-    plt.legend(loc='upper left')
+    ax.set_ylabel('Total Time (mins)', fontsize=16)
+    ax2.set_ylabel(f'Percent Converged (of {arr.shape[1]})', fontsize=16)
+    ax.set_xlabel('Simulation size', fontsize=16)
+    ax.set_ylim((0, None))
+    ax.set_xticks(sizes) # , 2048, 4096
+    ax.legend(loc='upper left')
+    plt.tight_layout()
     plt.savefig(osp.join(dir, 'time.png'))
     plt.close()
+
+def time_comparison_merge_PCA():
+    # dir = '/project2/depablo/erschultz/dataset_05_18_22/samples'
+    dir = '/home/erschultz/sequences_to_contact_maps/dataset_05_18_22/samples'
+    samples_per_size = 3
+    num_sizes = 3
+
+    times_dict = defaultdict()
+    # dictionary with keys = method : vals = array of times with rows = sizes, cols = replicate samples
+    it = 1
+    for row in range(num_sizes):
+        PCA_col = 0
+        PCA_diag_col = 0
+        for col in range(samples_per_size):
+            print(it)
+            sample_dir = osp.join(dir, f'sample{it}')
+            max_ent_file = osp.join(sample_dir, 'max_ent_table_2.txt')
+
+            if not osp.exists(max_ent_file):
+                continue
+
+            with open(osp.join(max_ent_file, ), 'r') as f:
+                line = f.readline()
+                while not line.startswith('Method'):
+                    line = f.readline()
+                line = f.readline()
+
+                while not line.startswith('\end'):
+                    if line.startswith('\hline'):
+                        line = f.readline()
+                        continue
+
+                    line_list = line.split(' & ')
+                    try:
+                        if line_list[1] != '':
+                            k = line_list[1]
+                        method = line_list[0].replace('-normalize', '')
+                        if 'diagMLP' in method:
+                            method = '-'.join(method.split('-')[:-1])
+                        if method == 'Ground Truth-diag_chi-E':
+                            method = 'Ground Truth'
+                        if 'GNN' in method:
+                            method = 'GNN-' + '-'.join(method.split('-')[3:])
+                        label = f'{method}'
+                        print(label)
+                        time = float(line_list[-1].split(' ')[0])
+                    except:
+                        print(line)
+                        raise
+                    if label not in times_dict:
+                        if 'PCA' in label:
+                            times_dict[label] =  np.full([num_sizes, samples_per_size*3], np.nan)
+
+                        else:
+                            times_dict[label] =  np.full([num_sizes, samples_per_size], np.nan)
+
+                    if 'PCA-diagMLP' in label:
+                        print(it, k, PCA_diag_col)
+                        times_dict[label][row, PCA_diag_col] = time
+                        PCA_diag_col += 1
+                    elif 'PCA' in label:
+                        print(it, k, PCA_col)
+                        times_dict[label][row, PCA_col] = time
+                        PCA_col += 1
+                    else:
+                        times_dict[label][row,col] = time
+                    line = f.readline()
+
+            it += 1
+
+
+    cmap = matplotlib.cm.get_cmap('tab20')
+    fig, ax = plt.subplots()
+    ax2 = ax.twinx()
+    sizes = np.array([512., 1024., 2048., 4096.])[:num_sizes]
+    sizes_shift = np.copy(sizes)
+    ind = 0
+    for method in sorted(times_dict.keys()):
+        if method in {'GNN-'}:
+            continue
+        arr = times_dict[method][:num_sizes, :]
+        print('method: ', method)
+        print(arr, arr.shape)
+        times = np.nanmean(arr, axis = 1)
+        prcnt_converged = np.count_nonzero(~np.isnan(arr), axis = 1) / arr.shape[1]
+        prcnt_converged[prcnt_converged == 0] = np.nan
+        times_std = np.nanstd(arr, axis = 1)
+        print('times', times)
+        print('prcnt_converged', prcnt_converged)
+        print('times std', times_std)
+        print()
+
+        ax2.plot(sizes_shift, prcnt_converged, ls = '--', color = cmap(ind % cmap.N))
+        ax.errorbar(sizes_shift, times, yerr = times_std, label = method,
+                    color = cmap(ind % cmap.N), fmt = "o")
+        sizes_shift += 20
+        ind += 1
+
+
+    ax.set_ylabel('Total Time (mins)', fontsize=16)
+    ax2.set_ylabel(f'Percent Converged (of {arr.shape[1]})', fontsize=16)
+    ax.set_xlabel('Simulation size', fontsize=16)
+    ax.set_ylim((0, None))
+    ax.set_xticks(sizes) # , 2048, 4096
+    ax.legend(loc='upper left')
+    plt.tight_layout()
+    plt.savefig(osp.join(dir, 'time_merge.png'))
+    plt.close()
+
 
 def construct_sc_xyz():
     dir = '/home/erschultz/dataset_test2/samples'
@@ -482,6 +600,7 @@ if __name__ == '__main__':
     # test_robust_PCA()
     # check_dataset('dataset_05_12_22')
     time_comparison()
+    time_comparison_merge_PCA()
     # construct_sc_xyz()
     # main()
     # makeDirsForMaxEnt("dataset_04_27_22")
