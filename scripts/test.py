@@ -275,12 +275,20 @@ def time_comparison():
 
                     line_list = line.split(' & ')
                     try:
-                        k = line_list[1]
+                        if line_list[1] != '':
+                            k = line_list[1]
                         method = line_list[0].replace('-normalize', '')
+                        if 'diagMLP' in method:
+                            method = '-'.join(method.split('-')[:-1])
+                        if method == 'Ground Truth-diag_chi-E':
+                            method = 'Ground Truth'
+                        if 'GNN' in method:
+                            method = 'GNN-' + '-'.join(method.split('-')[3:])
                         if k.isdigit():
                             label = f'{method}_k{k}'
                         else:
                             label = f'{method}'
+                        print(label)
                         time = float(line_list[-1].split(' ')[0])
                     except:
                         print(line)
@@ -290,12 +298,12 @@ def time_comparison():
 
 
     cmap = matplotlib.cm.get_cmap('tab20')
-    sizes = np.array([512., 1024.]) # , 2048., 4096.
+    sizes = np.array([512., 1024., 2048.]) # , 2048., 4096.
     ind = 0
     for method in sorted(times_dict.keys()):
-        if method in {'GNN-150-E'} or method.startswith('Ground'):
+        if method in {'GNN-'}:
             continue
-        arr = times_dict[method][:2, :]
+        arr = times_dict[method][:3, :] # TODO - hard coded
         print('method: ', method)
         print(arr, arr.shape)
         times = np.nanmean(arr, axis = 1)
@@ -312,10 +320,10 @@ def time_comparison():
         ind += 1
 
 
-    plt.ylabel('Time (mins)')
-    plt.xlabel('Simulation size')
+    plt.ylabel('Total Time (mins)', fontsize=16)
+    plt.xlabel('Simulation size', fontsize=16)
     plt.ylim((0, None))
-    plt.xticks([512, 1024]) # , 2048, 4096
+    plt.xticks([512, 1024, 2048]) # , 2048, 4096
     plt.legend(loc='upper left')
     plt.savefig(osp.join(dir, 'time.png'))
     plt.close()
@@ -396,6 +404,8 @@ def main():
                                 if osp.exists(chis_file):
                                     chis = np.loadtxt(chis_file)
                                     params = np.concatenate((params, chis), axis = 1)
+                                else:
+                                    continue
 
                                 vals = []
                                 for i in range(2, len(params)):
@@ -405,7 +415,10 @@ def main():
 
 
                                 conv_file = osp.join(replicate, 'convergence_diag.txt')
-                                conv = np.loadtxt(conv_file)
+                                if osp.exists(conv_file):
+                                    conv = np.loadtxt(conv_file)
+                                else:
+                                    continue
 
                                 vals = []
                                 for i in range(1, len(conv)):
@@ -419,16 +432,20 @@ def main():
     for label, vals in results_1.items():
         print(label)
         id = int(label.split('_')[0])
-        if id < 4:
+        if id < 7:
             continue
-        k = int(label[-1])
+        k = int(label[-4])
 
         plt.plot(vals, label = label, ls = ls_arr[k // 2], color = cmap(id % cmap.N))
 
-    plt.axhline(4, c = 'k')
+    plt.axhline(5, c = 'k')
     plt.yscale('log')
+    plt.xlabel('Iteration', fontsize=16)
+    plt.ylabel(r'$||x_t - x_{t-1}||_2$', fontsize=16)
     plt.legend()
-    plt.show()
+    plt.title(r'$||x_t - x_{t-1}||_2 < 5$')
+    plt.savefig(osp.join(dir, 'param_convergence.png'))
+    plt.close()
 
 
     cmap = matplotlib.cm.get_cmap('tab10')
@@ -436,17 +453,25 @@ def main():
     for label, vals in results_2.items():
         print(label)
         id = int(label.split('_')[0])
-        if id < 4:
+        if id < 7:
             continue
-        k = int(label[-1])
+        k = int(label[-4])
 
         plt.plot(vals, label = label, ls = ls_arr[k // 2], color = cmap(id % cmap.N))
 
     plt.axhline(1e-2, c = 'k')
     plt.yscale('log')
+    plt.xlabel('Iteration', fontsize=16)
+    plt.ylabel(r'$|f(x_t) - f(x_{t-1})|$', fontsize=16)
     plt.legend(loc = 'upper right')
-    plt.show()
+    plt.title(r'$|f(x_t) - f(x_{t-1})| < 10^{-2}$')
+    plt.savefig(osp.join(dir, 'loss_convergence.png'))
+    plt.close()
 
+def main2():
+    dir = '/home/erschultz/sequences_to_contact_maps/dataset_05_18_22/samples/sample1/PCA-normalize/k2/replicate1/iteration40/production_out'
+    y = np.loadtxt(osp.join(dir, 'contacts.txt'))
+    plot_matrix(y, osp.join(dir, 'y.png'), vmax = 'mean')
 
 
 

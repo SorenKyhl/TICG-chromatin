@@ -177,7 +177,7 @@ def loadData(args):
                             replicate_data['final_time'].append(t)
                             replicate_data['converged_time'].append(converge_time)
                             if converge_time is None:
-                                replicate_data['total_time'].append(t)
+                                replicate_data['total_time'].append(None)
                             else:
                                 replicate_data['total_time'].append(converge_time + t)
                             replicate_data['converged_it'].append(converged_it)
