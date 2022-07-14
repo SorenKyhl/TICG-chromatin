@@ -1,6 +1,5 @@
 #! /bin/bash
 source activate python3.9_pytorch1.9_cuda10.2
-module unload gcc # not sure if this is necessary
 module load gcc/10.2.0
 
 # directories
@@ -13,7 +12,7 @@ scratchDir='/scratch/midway2/erschultz'
 productionSweeps=300000
 finalSimProductionSweeps=1000000
 equilibSweeps=50000
-numIterations=40 # iteration 1 + numIterations is production run to get contact map
+numIterations=30 # iteration 1 + numIterations is production run to get contact map
 
 # energy params
 useE='false'
@@ -31,11 +30,12 @@ k=-1
 seqSeed='none'
 chiSeed='none'
 TICGSeed='none'
+bondType='gaussian'
 
 # diag params
 diagChiMethod='linear'
-diagBins=20
-diagPseudobeadsOn='true'
+diagBins=32
+dense='false'
 maxDiagChi=0
 
 # ground truth params
@@ -115,7 +115,6 @@ max_ent_inner () {
   echo $init_config
   if [ -f $init_config ]
   then
-    echo 'here'
     cp $init_config $scratchDirResources
   else
     init_config='none'
@@ -125,11 +124,11 @@ max_ent_inner () {
   # generate sequences
   echo "starting get_params"
   echo $method_fmt
-  python3 ~/TICG-chromatin/scripts/get_params.py --method=$method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --gnn_model_path $GNNModelPath --mlp_model_path $MLPModelPath --seq_seed $seqSeed --chi_method 'random' --min_chi=-1 --max_chi=1 --chi_seed $chiSeed --diag_chi_method $diagChiMethod --diag_bins $diagBins --diag_pseudobeads_on $diagPseudobeadsOn --max_diag_chi $maxDiagChi > params.log
+  python3 ~/TICG-chromatin/scripts/get_params.py --method=$method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --gnn_model_path $GNNModelPath --mlp_model_path $MLPModelPath --seq_seed $seqSeed --chi_method 'random' --min_chi=-1 --max_chi=1 --chi_seed $chiSeed --diag_chi_method $diagChiMethod --diag_bins $diagBins --max_diag_chi $maxDiagChi > params.log
 
   # get config
   echo "starting get_config"
-  python3 ~/TICG-chromatin/scripts/get_config.py --m $m --max_ent --default_config "${resources}/default_config_maxent.json" --use_ematrix $useE --use_smatrix $useS --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_diag_chi $useGroundTruthDiagChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $TICGSeed --sample_folder $sampleFolder --load_configuration_filename $init_config > config.log
+  python3 ~/TICG-chromatin/scripts/get_config.py --m $m --max_ent --mode $mode --bond_type $bondType --dense_diagonal_on $dense --default_config "${resources}/default_config_maxent.json" --use_ematrix $useE --use_smatrix $useS --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_diag_chi $useGroundTruthDiagChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $TICGSeed --sample_folder $sampleFolder --load_configuration_filename $init_config > config.log
 
 
   # generate goals

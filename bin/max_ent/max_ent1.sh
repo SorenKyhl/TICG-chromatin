@@ -8,17 +8,17 @@
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=erschultz@uchicago.edu
 
-local='false'
+local='true'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
   dir="/home/erschultz/sequences_to_contact_maps"
   scratchDir='/home/erschultz/scratch'
-  numIterations=2
-  finalSimProductionSweeps=5000
-  productionSweeps=5000
-  equilibSweeps=2000
+  numIterations=1
+  finalSimProductionSweeps=100
+  productionSweeps=2
+  equilibSweeps=100
   source activate python3.9_pytorch1.9
 fi
 
@@ -28,13 +28,17 @@ dataset='dataset_05_18_22'
 useE='false'
 method='PCA-normalize'
 diagChiMethod='linear'
-mode='both'
+mode='diag'
+dense='true'
+bondtype='gaussian'
 m=512
-replicate=3
+replicate=1
+diagBins=10
 
-for sample in 1 2 3
+for sample in 1
+# 2 3
 do
-  for k in 2 4 6
+  for k in 7
   do
     max_ent
   done
