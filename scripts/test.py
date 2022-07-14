@@ -39,14 +39,18 @@ def check_dataset(dataset):
     print(ids, len(ids))
 
 def makeDirsForMaxEnt(dataset):
+    '''
+    Create empty directories with appropriate max ent file stucture.
+    Helpful for before downloading data from cluster.
+    '''
     for sample in [1]:
         dir = '/home/erschultz/sequences_to_contact_maps'
         sample_folder = osp.join(dir, dataset, 'samples', f'sample{sample}')
         assert osp.exists(sample_folder)
 
-        for method in ['PCA', 'PCA-normalize']:
+        for method in ['PCA-normalize']:
             os.mkdir(osp.join(sample_folder, method), mode = 0o755)
-            for k in [2, 4, 6, 8]:
+            for k in [2, 4, 6]:
                 os.mkdir(osp.join(sample_folder, method, f'k{k}'), mode = 0o755)
                 for replicate in [1]:
                     os.mkdir(osp.join(sample_folder, method, f'k{k}', f'replicate{replicate}'), mode = 0o755)
@@ -153,98 +157,6 @@ def test_robust_PCA():
         plotContactMap(S, ofile = osp.join(dir, 'RPCA_S_diag.png'), vmin='min', vmax = np.max(S), cmap='blue-red')
         plotContactMap(y_diag, ofile = osp.join(dir, 'y_diag.png'), vmax = 'max')
         plot_top_PCs(L, verbose = True)
-
-def scc_y_vs_y_rank1():
-    dir = '/home/eric/sequences_to_contact_maps/dataset_01_16_22/samples/sample40'
-    y = np.load(osp.join(dir, 'y.npy'))
-    ycopy = y.copy()
-    y_diag = np.load(osp.join(dir, 'y_diag.npy'))
-
-    pca = PCA(n_components = 1)
-    y_transform = pca.fit_transform(y)
-    yhat = pca.inverse_transform(y_transform)
-    y_transform = pca.fit_transform(y_diag)
-    yhat_diag = pca.inverse_transform(y_transform)
-    plotContactMap(yhat, ofile = osp.join(dir, 'yhat_rank1.png'), vmax = 'max')
-    plotContactMap(yhat_diag, ofile = osp.join(dir, 'yhat_diag_rank1.png'), vmax = 'max')
-
-    pca = PCA(n_components = 10)
-    pca.fit(ycopy)
-    plot_top_PCs(ycopy, 'name', dir)
-
-
-    m, _ = y.shape
-    triu_ind = np.triu_indices(m)
-
-    overall_corr, _ = pearsonr(y[triu_ind], yhat[triu_ind])
-    print('overall', overall_corr)
-    scc_A, _ = pearsonr(y_diag[triu_ind], yhat_diag[triu_ind])
-    print('scc_A', scc_A)
-
-
-    corr_arr = np.zeros(m-2)
-    corr_arr[0] = np.NaN
-    scc_B = 0
-    denom = np.sum([len(np.diagonal(y, offset = d)) for d in list(range(1, m-2))])
-    weights = 0
-    for d in range(1, m-2):
-        # n-1, n, and 0 are NaN always, so skip
-        y_diag = np.diagonal(y, offset = d)
-        yhat_diag = np.diagonal(yhat, offset = d)
-        corr, _ = pearsonr(y_diag, yhat_diag)
-        corr_arr[d] = corr
-        weight = len(y_diag) / denom
-        weights += weight
-        scc_B += weight * corr
-    print(corr_arr)
-    print('scc_B', scc_B)
-
-    avg = np.nanmean(corr_arr)
-    print('avg', avg)
-
-    plt.plot(np.arange(m-2), corr_arr, color = 'black')
-    plt.ylim(-0.5, 1)
-    plt.xlabel('Distance', fontsize = 16)
-    plt.ylabel('Pearson Correlation Coefficient', fontsize = 16)
-
-    plt.tight_layout()
-    plt.savefig(osp.join(dir, 'distance_pearson_y_vs_y_rank_1.png'))
-    plt.close()
-
-def is_scc_weighted_mean():
-    dir = '/home/eric/sequences_to_contact_maps/dataset_01_15_22/samples/sample40'
-    replicate = '/home/eric/sequences_to_contact_maps/dataset_01_15_22/samples/sample40/PCA/k4/replicate1/iteration101'
-    y = np.load(osp.join(dir, 'y.npy'))
-    y_diag = np.load(osp.join(dir, 'y_diag.npy'))
-    yhat = np.load(osp.joiPCAn(replicate, 'y.npy'))
-    yhat_diag = np.load(osp.join(replicate, 'y_diag.npy'))
-
-    m, _ = y.shape
-    triu_ind = np.triu_indices(m)
-
-    overall_corr, _ = pearsonr(y[triu_ind], yhat[triu_ind])
-    print(overall_corr)
-    scc_A, _ = pearsonr(y_diag[triu_ind], yhat_diag[triu_ind])
-    print(scc_A)
-
-
-    corr_arr = np.zeros(m-2)
-    corr_arr[0] = np.NaN
-    scc_B = 0
-    denom = np.sum([d for d in list(range(1, m-2))])
-    for d in range(1, m-2):
-        # n-1, n, and 0 are NaN always, so skip
-        y_diag = np.diagonal(y, offset = d)
-        yhat_diag = np.diagonal(yhat, offset = d)
-        corr, _ = pearsonr(y_diag, yhat_diag)
-        corr_arr[d] = corr
-        weight = d / denom
-        scc_B += weight * corr
-    print(corr_arr)
-    print(scc_B)
-
-    avg = np.nanmean(corr_arr)
-    print(avg)
 
 def time_comparison():
     # dir = '/project2/depablo/erschultz/dataset_05_18_22/samples'
@@ -445,7 +357,6 @@ def time_comparison_merge_PCA():
     plt.savefig(osp.join(dir, 'time_merge.png'))
     plt.close()
 
-
 def construct_sc_xyz():
     dir = '/home/erschultz/dataset_test2/samples'
     xyz_all = None
@@ -586,21 +497,189 @@ def main():
     plt.savefig(osp.join(dir, 'loss_convergence.png'))
     plt.close()
 
-def main2():
-    dir = '/home/erschultz/sequences_to_contact_maps/dataset_05_18_22/samples/sample1/PCA-normalize/k2/replicate1/iteration40/production_out'
-    y = np.loadtxt(osp.join(dir, 'contacts.txt'))
-    plot_matrix(y, osp.join(dir, 'y.png'), vmax = 'mean')
+def observables_check():
+    dir = '/home/erschultz/sequences_to_contact_maps/dataset_05_18_22/samples/sample1/PCA-normalize/k7/replicate1/iteration1'
+    y = np.loadtxt(osp.join(dir, 'production_out/contacts.txt'))
+    y = y.astype(float) # ensure float
+    y /= np.max(y)
+    # plot_matrix(y, osp.join(dir, 'y.png'), vmax = 'mean')
+
+    # x = np.load(osp.join(osp.split(dir)[0], 'resources/x.npy'))
+
+    traj = np.loadtxt(osp.join(dir, 'production_out/diag_observables.traj'))[:, 1:]
+    print(np.mean(traj, axis = 0).astype(np.int32))
+
+    m, _ = y.shape
+    bins = 8
+    binsize = m / bins
+
+    obj_goal_diag = []
+    for b in range(bins):
+        mask = np.zeros_like(y) # use mask to compute weighted average
+        for i in range(m):
+            for j in range(m):
+                if int((i-j)/binsize) == b:
+                    mask[i,j] = 1
+                    mask[j,i] = 1
+                    if i == j:
+                        mask[i,j] = 2
+        obj_goal_diag.append(np.sum((mask*y).flatten()))
+
+    obj_goal_diag = np.array(obj_goal_diag)
+    # obj_goal_diag *= (520 / 28.7**3)
+    print(obj_goal_diag.astype(np.int32))
+
+    obj_goal_diag = get_goal_diag(y, bins, adj = False)
+    print(obj_goal_diag.astype(np.int32))
+    #
+    # obj_goal = []
+    # _, k = x.shape
+    # for i in range(k):
+    #     seqi = x[:,i]
+    #     for j in range(k):
+    #         if j < i:
+    #             # don't double count
+    #             continue
+    #         seqj = x[:,j]
+    #         result = seqi @ y @ seqj
+    #         obj_goal.append(result)
+    #
+    # obj_goal = np.array(obj_goal)
+    # obj_goal *= (520 /28.7**3)
+    # print(obj_goal)
+    #
+    # obj_goal = get_goal_plaid(y, x.T, k)
+    # print(obj_goal)
+
+def get_goal_diag(hic, ndiag_bins, getcorrect=False, adj=True, dense_diagonal_on=False):
+    diag_mask, correction = mask_diagonal(hic, ndiag_bins, dense_diagonal_on)
+
+    if adj:
+        vbead = 520
+        vcell = 28.7**3
+        diag_mask *= vbead/vcell
+
+    if getcorrect:
+        return diag_mask, correction
+    else:
+        return diag_mask
+
+def mask_diagonal(contact, ndiag_bins=16, dense_diagonal_on=False):
+    """Returns weighted averages of contact map"""
+    rows, cols = contact.shape
+    binsize = int(rows/ndiag_bins)
+
+    assert(rows==cols), "contact map must be square"
+    nbeads = rows
+    measure = []
+    correction = []
+
+    for b in range(ndiag_bins):
+        mask = make_mask(nbeads, b, ndiag_bins, dense_diagonal_on)
+        #measure.append(np.mean((mask*contact).flatten()))
+        #correction.append(np.sum(mask)/nbeads**2)
+        measure.append(np.sum((mask*contact).flatten()))
+        correction.append(np.sum(mask))
+
+    measure = np.array(measure)
+    correction = np.array(correction)
+    return measure, correction
+
+def make_mask(size, b, ndiag_bins, dense_diagonal_on):
+    """ makes a mask with 1's in subdiagonals inside
+
+    actually faster than numpy version when jitted
+    """
+
+    rows, cols = size, size
+    mask = np.zeros((rows, cols))
+    for r in range(rows):
+        for c in range(cols):
+            #if int((r-c)/binsize) == b:
+            bin_index = binDiagonal(r, c, ndiag_bins, rows, dense_diagonal_on)
+            if bin_index == b:
+                mask[r,c] = 1
+                mask[c,r] = 1
+                if r==c:
+                    mask[r,r] = 2
+    return mask
+
+def binDiagonal(i, j, ndiag_bins, nbeads, dense_diagonal_on):
+    s = abs(i-j)
+
+    if dense_diagonal_on:
+        loading = 0.50
+        cutoff = 0.0625
+        dividing_line = nbeads*cutoff
 
 
+        n_small_bins = int(loading*ndiag_bins)
+        n_big_bins = ndiag_bins-n_small_bins
+        small_binsize = int(dividing_line/(n_small_bins))
+        big_binsize = int((nbeads-dividing_line)/n_big_bins)
+
+        if s > dividing_line:
+            bin_index = n_small_bins + np.floor( (s - dividing_line) / big_binsize)
+        else:
+            bin_index =  np.floor( s / small_binsize)
+    else:
+        binsize = nbeads/ndiag_bins
+        bin_index = np.floor( s / binsize )
+
+    return bin_index
+
+def get_goal_plaid(hic, seqs, k, flat=True, norm=False, adj=True):
+    """
+    k is the number of sequences (not pcs)
+    flat: return vector. else return matrix of chis.
+    """
+    goal_exp = np.zeros((k,k))
+    for i, seqi in enumerate(seqs):
+        for j, seqj in enumerate(seqs):
+            #goal_exp[i,j] = np.mean((np.outer(seqi,seqj)*hic).flatten())
+            goal_exp[i,j] = np.sum((np.outer(seqi,seqj)*hic).flatten())
+
+            if adj:
+                vbead = 520
+                vcell = 28.7**3
+                goal_exp[i,j] *= vbead/vcell
+
+            if norm == "abs":
+                #goal_exp[i,j] /= np.sum(np.outer(np.abs(seqi), np.abs(seqj)))/np.shape(hic)[0]**2
+                goal_exp[i,j] /= np.sum(np.outer(np.abs(seqi), np.abs(seqj)))
+
+            if norm == "n2":
+                goal_exp[i,j] /= np.shape(hic)[0]**2
+
+            if norm == "n":
+                goal_exp[i,j] /= np.shape(hic)[0]
+
+            if norm == "nlogn":
+                n = np.shape(hic)[0]
+                goal_exp[i,j] /= n * np.log10(n)
+
+            if norm == "n1.5":
+                goal_exp[i,j] /= np.shape(hic)[0]**1.5
+
+
+            if norm == "nsqrt":
+                n = np.shape(hic)[0]
+                f = np.sum(np.outer(np.abs(seqi), np.abs(seqj)))
+                goal_exp[i,j] /= f / np.sqrt(n)
+
+    if flat:
+        ind = np.triu_indices(k)
+        goal_exp = goal_exp[ind]
+
+    return goal_exp
 
 
 if __name__ == '__main__':
-    # is_scc_weighted_mean()
-    # scc_y_vs_y_rank1()
     # test_robust_PCA()
     # check_dataset('dataset_05_12_22')
-    time_comparison()
-    time_comparison_merge_PCA()
+    # time_comparison()
+    # time_comparison_merge_PCA()
     # construct_sc_xyz()
     # main()
-    # makeDirsForMaxEnt("dataset_04_27_22")
+    # makeDirsForMaxEnt("dataset_09_21_21")
+    observables_check()

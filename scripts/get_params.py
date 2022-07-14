@@ -53,9 +53,11 @@ class GetSeq():
         self.sample = args.sample
         self.plot = args.plot
         self._get_args(unknown_args)
+        if self.args.method is None:
+            return
 
         if self.args.use_ematrix or self.args.use_smatrix:
-            # GetEnergy will handle thsi
+            # GetEnergy will handle this
             return
 
         self.set_up_seq()
@@ -64,7 +66,7 @@ class GetSeq():
         AC = ArgparserConverter()
         chip_seq_data_local = '../../sequences_to_contact_maps/chip_seq_data'
         parser = argparse.ArgumentParser(description='Seq parser')
-        parser.add_argument('--method', type=AC.str2None, default='k_means',
+        parser.add_argument('--method', type=AC.str2None,
                             help='method for assigning particle types')
         parser.add_argument('--seq_seed', type=AC.str2int,
                             help='random seed for numpy (None for random)')
@@ -104,6 +106,9 @@ class GetSeq():
         print(self.args)
 
     def _check_args(self, args):
+        if args.method is None:
+            return
+
         if args.binarize:
             if args.method in {'k_means', 'chromhmm'}:
                 print(f"{args.method} is binarized by default")
@@ -248,7 +253,7 @@ class GetSeq():
 
     def get_block_seq(self, method):
         '''
-        Method should be formatted likc "block-A100-B100"
+        Method should be formatted like "block-A100-B100"
         '''
         seq = np.zeros((self.m, self.k))
         method_split = re.split(r'[-+]', method)
@@ -714,7 +719,7 @@ class GetPlaidChi():
         if args.chi is not None:
             chi = np.triu(args.chi) # zero lower triangle
             rows, cols = chi.shape
-            assert args.k == rows, f'number of particle types {args.k} does not match shape of chi {rows}'
+            assert self.k == rows, f'number of particle types {self.k} does not match shape of chi {rows}'
             assert rows == cols, f"chi not square: {chi}"
             conv = InteractionConverter(self.k, chi)
             if not GetPlaidChi.unique_rows(conv.getS()):

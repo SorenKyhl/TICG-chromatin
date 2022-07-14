@@ -2,6 +2,7 @@ import argparse
 import csv
 import json
 import os.path as osp
+import sys
 
 import numpy as np
 from seq2contact import (LETTERS, ArgparserConverter, calculate_E_S,
@@ -18,14 +19,12 @@ def getArgs():
     parser.add_argument('--ofile', type=str, default='config.json',
                             help='path to output config file')
 
-    # config param arguments
-    parser.add_argument('--m', type=int, default=1024,
+    # config params
+    parser.add_argument('--m', type=int, default=-1,
                         help='number of particles (-1 to infer)')
     parser.add_argument('--load_configuration_filename', type=AC.str2None,
                         default='input1024.xyz',
                         help='file name of initial config (None to not load)')
-    # parser.add_argument('--goal_specified', type=AC.str2bool, default=False,
-    #                     help='True will save two lines to chis.txt')
     parser.add_argument('--dump_frequency', type=int,
                         help='set to change dump frequency')
     parser.add_argument('--dump_stats_frequency', type=int,
@@ -36,27 +35,44 @@ def getArgs():
                         help='set to change random seed for simulation (None for random)')
     parser.add_argument('--use_ground_truth_TICG_seed', type=AC.str2bool,
                         help='True to copy seed from config file in sample_folder')
+    parser.add_argument('--sample_folder', type=str,
+                        help='location of sample for ground truth chi')
+    parser.add_argument('--relabel', type=AC.str2None,
+                        help='specify mark combinations to be relabeled'
+                            '(e.g. AB-C will relabel AB mark pairs as mark C)')
+    parser.add_argument('--bond_type', type=str, default='gaussian',
+                        help='type of bonded interaction')
+
+    # chi config params
+    parser.add_argument('--use_ground_truth_chi', type=AC.str2bool, default=False,
+                        help='True to use ground truth chi and diag chi')
+
+    # constant chi config params
+    parser.add_argument('--constant_chi', type=float, default=0,
+                        help='constant chi parameter between all beads')
+
+    # energy config params
     parser.add_argument('--use_ematrix', type=AC.str2bool, default=False,
                         help='True to use e_matrix')
     parser.add_argument('--use_smatrix', type=AC.str2bool, default=False,
                         help='True to use s_matrix')
-    parser.add_argument('--sample_folder', type=str,
-                        help='location of sample for ground truth chi')
-    parser.add_argument('--relabel', type=AC.str2None,
-                        help='specify mark combinations to be relabled'
-                            '(e.g. AB-C will relabel AB mark pairs as mark C)')
-    parser.add_argument('--diag_pseudobeads_on', type=AC.str2bool, default=True)
-    parser.add_argument('--use_ground_truth_chi', type=AC.str2bool, default=False,
-                        help='True to use ground truth chi and diag chi')
-    parser.add_argument('--use_ground_truth_diag_chi', type=AC.str2bool, default=False,
-                        help='True to use ground truth diag chi')
-    parser.add_argument('--max_ent', action="store_true",
-                        help='true to save chi to wd in format needed for max ent')
     parser.add_argument('--e', type=AC.str2None,
                         help='path to e_matrix to use (.npy or .txt)')
     parser.add_argument('--s', type=AC.str2None,
                         help='path to s_matrix to use (.npy or .txt)')
 
+    # diagonal config params
+    parser.add_argument('--diag_pseudobeads_on', type=AC.str2bool, default=True)
+    parser.add_argument('--dense_diagonal_on', type=AC.str2bool, default=False)
+    parser.add_argument('--use_ground_truth_diag_chi', type=AC.str2bool, default=False,
+                        help='True to use ground truth diag chi')
+
+
+    # max_ent options
+    parser.add_argument('--max_ent', action="store_true",
+                        help='true to save chi to wd in format needed for max ent')
+    parser.add_argument('--mode', type=str,
+                        help='mode for max_ent')
 
 
     args = parser.parse_args()
@@ -313,6 +329,9 @@ def main():
                 val = args.chi[row, col]
                 config[key] = val
 
+    # save bond type
+    config['bond_type'] = args.bond_type
+
     # save nbeads
     config['nbeads'] = args.m
 
@@ -322,6 +341,9 @@ def main():
 
     # save diag_pseudobeads_on
     config['diag_pseudobeads_on'] = args.diag_pseudobeads_on
+
+    # save dense_diagonal_on
+    config['dense_diagonal_on'] = args.dense_diagonal_on
 
     # save dump frequency
     if args.dump_frequency is not None:
@@ -344,6 +366,16 @@ def main():
         config["load_configuration_filename"] = 'none'
     else:
         config["load_configuration_filename"] = args.load_configuration_filename
+
+    config['constant_chi'] = args.constant_chi
+    if args.constant_chi > 0:
+        config['constant_chi_on'] = True
+    if args.max_ent and args.mode == 'all':
+        config['constant_chi_on'] = True # turn on even if value = 0
+        with open('chi_constant.txt', 'w', newline='') as f:
+            wr = csv.writer(f, delimiter = '\t')
+            wr.writerow([args.constant_chi])
+            wr.writerow([args.constant_chi])
 
 
     with open(args.ofile, 'w') as f:

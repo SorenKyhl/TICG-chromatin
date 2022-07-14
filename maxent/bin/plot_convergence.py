@@ -11,30 +11,30 @@ LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
-    parser.add_argument('--mode', type=str, help='{plaid, diag, both}')
+    parser.add_argument('--mode', type=str, help='{plaid, diag, both, all}')
 
     args = parser.parse_args()
     return args
 
 def main():
     args = getArgs()
-    assert args.mode in {'plaid', 'diag', 'both'}
+    assert args.mode in {'plaid', 'diag', 'both', 'all'}
 
     # convergence plot
     convergence = np.loadtxt('convergence.txt')
     plt.plot(convergence)
-    plt.xlabel('Iteration')
+    plt.xlabel('Iteration', fontsize=16)
     plt.savefig("pconvergence.png")
     plt.close()
 
     if osp.exists('convergence_diag.txt'):
         convergence = np.loadtxt('convergence_diag.txt')
         plt.plot(convergence)
-        plt.xlabel('Iteration')
+        plt.xlabel('Iteration', fontsize=16)
         plt.savefig("pconvergence_diag.png")
         plt.close()
 
-    if args.mode in {'plaid', 'both'}:
+    if args.mode in {'plaid', 'both', 'all'}:
         # chis plot
         chis = np.loadtxt('chis.txt')
         if chis.ndim < 2:
@@ -59,7 +59,7 @@ def main():
         plt.savefig("pchis.png")
         plt.close()
 
-    if args.mode in {'diag', 'both'}:
+    if args.mode in {'diag', 'both', 'all'}:
         # diag chis plot
         diag_chis = np.loadtxt('chis_diag.txt')
         _, k = diag_chis.shape
@@ -69,11 +69,21 @@ def main():
 
         for i, c in enumerate(colors):
             plt.plot(diag_chis[:, i], label = i, color = c['color'])
-        plt.xlabel("Iteration")
-        plt.ylabel("chi_diagonal value")
+        plt.xlabel("Iteration", fontsize=16)
+        plt.ylabel("chi_diagonal value", fontsize=16)
         plt.legend(loc=(1.04,0))
         plt.tight_layout()
         plt.savefig("pchis_diag.png")
+        plt.close()
+
+    if args.mode == 'all':
+        # constant chi plot
+        constant_chi = np.loadtxt('chi_constant.txt')
+        plt.plot(constant_chi)
+        plt.xlabel("Iteration", fontsize=16)
+        plt.ylabel("chi_constant value", fontsize=16)
+        plt.tight_layout()
+        plt.savefig("pchi_constant.png")
         plt.close()
 
 

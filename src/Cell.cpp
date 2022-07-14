@@ -1,10 +1,11 @@
 #include "Cell.h"
+#include "cmath"
 
 //TOOD: phase out
 double Cell::beadvol;
 int Cell::ntypes;
 int Cell::diag_nbins;
-double Cell::diag_binsize;
+int Cell::diag_binsize;
 bool Cell::diagonal_linear;
 double Cell::phi_solvent_max;
 double Cell::phi_chromatin;
@@ -12,6 +13,11 @@ double Cell::kappa;
 bool Cell::density_cap_on;
 bool Cell::compressibility_on;
 bool Cell::diag_pseudobeads_on;
+bool Cell::dense_diagonal_on;
+int Cell::n_small_bins;
+int Cell::n_big_bins;
+int Cell::small_binsize;
+int Cell::big_binsize;
 
 void Cell::print() {
 	std::cout << r << "     N: " << contains.size() << std::endl;
@@ -36,10 +42,11 @@ void Cell::moveIn(Bead* bead) {
 	{
 		typenums[i] += bead->d[i];
 	}
+
 };
 
 void Cell::moveOut(Bead* bead) {
-	// updates local number of each type of bead, but does not recalculate phis 
+	// updates local number of each type of bead, but does not recalculate phis
 	// TODO update populations of distance ids
 	contains.erase(bead);
 	for(int i=0; i<ntypes; i++)
@@ -51,7 +58,7 @@ void Cell::moveOut(Bead* bead) {
 double Cell::getDensityCapEnergy() {
 	// Density in each cell is capped at phi_solvent_max
 	// otherwise, incur a large energy penalty
-	
+
 	float phi_beads = contains.size()*beadvol/vol;
 	float phi_solvent = 1 - contains.size()*beadvol/vol;
 
@@ -85,6 +92,13 @@ double Cell::getEnergy(const Eigen::MatrixXd &chis) {
 			U += chis(i,j)*phis[i]*phis[j]*vol/beadvol;
 		}
 	}
+	return U;
+};
+
+double Cell::getConstantEnergy(const double constant_chi) {
+	// constant nonbonded interaction between all pairs of beads
+	double U = constant_chi*pow(contains.size(), 2)*beadvol/vol;
+
 	return U;
 };
 
@@ -132,6 +146,33 @@ double Cell::getEmatrixEnergy(const std::vector<std::vector<double>> &Ematrix)
 	return U;
 }
 
+int Cell::binDiagonal(int i, int j)
+{
+	int s = std::abs(i - j);
+	int bin_index = -1;
+	int cutoff = n_small_bins * small_binsize;
+
+	if (dense_diagonal_on)
+	{
+		// diagonal chis are binned in a dense set (small bins) from s=0 to s=cutoff,
+		// then a sparse set (large bins) from s=cutoff to s=nbeads
+		if ( s > cutoff )
+		{
+			bin_index = n_small_bins + std::floor( (s-cutoff)/big_binsize );
+		}
+		else
+		{
+			bin_index = std::floor( s/small_binsize );
+		}
+	}
+	else
+	{
+		// diagonal chis are linearly spaced from s=0 to s=nbeads
+		bin_index = std::floor( s/diag_binsize );
+	}
+	return bin_index;
+}
+
 double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
 	for (int i=0; i<diag_nbins; i++)
 	{
@@ -162,7 +203,8 @@ double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
 	{
 		for(int j=i; j<imax; j++)
 		{
-			d_index  = std::floor( std::abs(indices[i] - indices[j]) / diag_binsize);
+			//d_index  = std::floor( std::abs(indices[i] - indices[j]) / diag_binsize);
+			d_index  = binDiagonal(indices[i], indices[j]);
 			diag_phis[d_index] += 1; // diag phis is just a count, multiply by volumes later
 		}
 	}
@@ -177,26 +219,6 @@ double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
 			//Udiag += diag_chis[i]* npseudobeads*npseudobeads;// * beadvol/vol;
 			Udiag += diag_chis[i]* diag_phis[i]*diag_phis[i] * vol/beadvol;
 		}
-
-		/*
-		double Udiag2 = 0;
-		for (int i=0; i<diag_nbins; i++)
-		{
-			//diag_phis[i] *= beadvol/vol; // convert to actual volume fraction
-
-			if (diagonal_linear) {
-				Udiag2 += diag_chis[i]*diag_phis[i];
-			}
-			else {
-				Udiag2 += diag_chis[i]* diag_phis[i]*diag_phis[i];
-			}
-		}
-		//Udiag2 *= vol/beadvol;
-		
-		for (int i=0; i<diag_nbins; i++) std::cout << diag_phis[i];
-		std::cout << std::endl;
-		std::cout << Udiag << " " << Udiag2 << std::endl;
-		*/
 
 		return Udiag;
 	}
@@ -217,7 +239,7 @@ double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
 		// multiply by vol/beadvol to calculate mean-field energy
 		// needs to be different for linear case?
 		//if(!diagonal_linear) { Udiag *= vol/beadvol;}
-		return Udiag*vol/beadvol; 
+		return Udiag*vol/beadvol;
 	}
 
 };
@@ -238,7 +260,7 @@ double Cell::bonds_to_beads(int bonds)
 }
 
 double Cell::getBoundaryEnergy(const double boundary_chi, const double delta) {
-	// TODO: this is broken if the grid is moving; 
+	// TODO: this is broken if the grid is moving;
 	// need to check relative to origin
 	double Uboundary = 0;
 	for (const auto& bead : contains)
@@ -250,4 +272,3 @@ double Cell::getBoundaryEnergy(const double boundary_chi, const double delta) {
 	}
 	return Uboundary;
 };
-

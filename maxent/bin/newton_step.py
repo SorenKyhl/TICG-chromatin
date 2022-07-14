@@ -14,9 +14,7 @@ def getArgs():
     parser.add_argument('--gamma', type=float,
                         help='damping coefficient')
     parser.add_argument('--mode', type=str,
-                        help='{plaid, diag, both}')
-    parser.add_argument('--constant', action='store_true',
-                        help='True to use average contact frequency parameter')
+                        help='{plaid, diag, both, all}')
     parser.add_argument('--goal_specified', type=str2bool,
                         help='True to read from obj_goal.txt'
                             'False to calculate goals from iteration 1')
@@ -34,7 +32,7 @@ def getArgs():
         # assume all are None
         args.it = int(sys.argv[1])                    # iteration number
         args.gamma = float(sys.argv[2])               # damping coefficient
-        args.mode = sys.argv[3]                       # plaid, diag, or both
+        args.mode = sys.argv[3]                       # plaid, diag, both, or all
         args.goal_specified = str2bool(sys.argv[4])   # if true, will read from obj_goal.txt and obj_goal_diag.txt.
                                                       # if false, will calculate goals from iteration1 observables
         args.trust_region = float(sys.argv[5])
@@ -78,54 +76,7 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
-def step(parameter_file, obs_file, convergence_file, goal_file, gamma, it,
-        goal_specified, trust_region, min_val, method):
-
-    # get goals
-    if goal_specified:
-        print("READING FROM OBJ_GOAL")
-        with open(goal_file, "r") as f_obj_goal:
-            obj_goal = f_obj_goal.readline().split()
-            obj_goal = np.array([float(x) for x in obj_goal])
-    else:
-        # get goal observables from zeroth iteration
-        print("READING FROM OBS")
-        df = pd.read_csv(osp.join(f"iteration{0}", "production_out", obs_file), delimiter="\t", header=None)
-        df = df.dropna(axis=1)
-        df = df.drop(df.columns[0] ,axis=1)
-        obj_goal = df.mean().values
-
-    print("obj goal: ", obj_goal)
-
-    # read in current chis
-    with open(parameter_file, "r") as f_chis:
-        lines = f_chis.readlines()
-        current_chis = lines[it].split()
-        current_chis = [float(x) for x in current_chis]
-        current_chis = np.array(current_chis)
-    print("current chi values: ", current_chis)
-
-    # get current observable values
-    df = pd.read_csv(osp.join(f"iteration{it}", "production_out", obs_file), delimiter="\t", header=None)
-    df = df.dropna(axis=1)
-    df = df.drop(df.columns[0] ,axis=1)
-    lam = df.mean().values
-    B = df.cov().values
-
-    new_chis, howfar = newton(lam, obj_goal, B,  gamma, current_chis, trust_region, method)
-
-    if min_val is not None:
-        new_chis[new_chis < min_val] = min_val
-
-    f_chis = open(parameter_file, "a")
-    np.savetxt(f_chis, new_chis, newline=" ", fmt="%.5f")
-    f_chis.write("\n")
-    f_chis.close()
-
-    with open(convergence_file, "a") as f:
-        f.write(str(howfar) + '\n')
-
-def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, it,
+def step(parameter_files, obs_files, convergence_file, goal_files, gamma, it,
         goal_specified, trust_region, min_val, method):
 
     # get goals
@@ -145,7 +96,7 @@ def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, 
     #print("obj goal: ", obj_goal)
 
     # read in current chis
-    nchis = [None, None]
+    nchis = [None]*len(parameter_files)
     current_chis = []
     for i, f in enumerate(parameter_files):
         with open(f, "r") as f_chis:
@@ -163,6 +114,7 @@ def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, 
     df_total = pd.DataFrame()
     for f in obs_files:
         try:
+            # arr = np.loadtxt(f)[:, 1:]
             df = pd.read_csv(osp.join(it_root, f), delimiter="\t", header=None)
             df = df.dropna(axis=1)
             df = df.drop(df.columns[0] ,axis=1)
@@ -175,7 +127,6 @@ def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, 
     B = df_total.cov().values
 
     print("obj goal: ", obj_goal)
-    print("lam: ", lam)
 
     new_chis, howfar = newton(lam, obj_goal, B, gamma, current_chis, trust_region, method)
 
@@ -192,9 +143,8 @@ def both_step(parameter_files, obs_files, convergence_files, goal_files, gamma, 
 
         index += nchis[i]
 
-    for f in convergence_files:
-        with open(f, "a") as f:
-            f.write(str(howfar) + '\n')
+    with open(convergence_file, "a") as f:
+        f.write(str(howfar) + '\n')
 
 def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method):
     difference = obj_goal - lam
@@ -209,15 +159,16 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method):
     steplength = np.sqrt(step@step)
 
     print("========= step before gamma: ", steplength)
-    print('step: ', step)
     print('lam: ', lam)
     print('difference: ', difference)
-    print('B: ', B)
-
-    step *= gamma
-    steplength = np.sqrt(step@step)
-    print("========= step after gamma: ", steplength)
     print('step: ', step)
+    # print('B: ', B)
+
+    if gamma != 1:
+        step *= gamma
+        steplength = np.sqrt(step@step)
+        print("========= step after gamma: ", steplength)
+        print('step: ', step)
 
     if steplength > trust_region:
         step /= steplength
@@ -229,9 +180,6 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method):
         print('step: ', step)
         print('lam: ', lam)
 
-    plt.plot(-1*difference)
-    plt.savefig("-1*difference.png")
-
     new_chis = current_chis - step
     print(f"new chi values: {new_chis}\n")
 
@@ -239,8 +187,7 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method):
 
     return new_chis, howfar
 
-def copy_chis(parameter_file, obs_file, convergence_file, goal_file, gamma, it,
-        goal_specified = None, trust_region = None, min_val = None, method = None):
+def copy_chis(parameter_file, it):
     ''' for parameters that are not optimized, just copy chis to next iteration'''
     # load current chi parameters
     if osp.exists(parameter_file):
@@ -260,9 +207,6 @@ def copy_chis(parameter_file, obs_file, convergence_file, goal_file, gamma, it,
         pass
         # assume that this is ok
 
-    with open(convergence_file, "a") as f:
-        f.write(str(0) + '\n')
-
 def main():
     '''
     Calculates one step of the TICG-MaxEnt optimization routine.
@@ -274,53 +218,28 @@ def main():
 
     print(f'Iteration Number {args.it}')
 
-    if args.mode == "both":
+    if args.mode == 'all':
+        parameter_files = ["chis.txt", "chis_diag.txt", "chi_constant.txt"]
+        obs_files = ["observables.traj", "diag_observables.traj", "constant_observable.traj"]
+        goal_files = ["obj_goal.txt", "obj_goal_diag.txt", "obj_goal_constant.txt"]
+    elif args.mode == "both":
+        parameter_files = ["chis.txt", "chis_diag.txt"]
+        obs_files = ["observables.traj", "diag_observables.traj"]
+        goal_files = ["obj_goal.txt", "obj_goal_diag.txt"]
+    elif args.mode == "diag":
+        parameter_files = ["chis_diag.txt"]
+        obs_files = ["diag_observables.traj"]
+        goal_files = ["obj_goal_diag.txt"]
+        copy_chis("chis.txt", args.it)
+    elif args.mode == "plaid":
+        parameter_files = ["chis.txt"]
+        obs_files = ["observables.traj"]
+        goal_files = ["obj_goal.txt"]
+        copy_chis("chis_diag.txt", args.it)
 
-        if args.constant:
-            parameter_files = ["chis.txt", "chis_diag.txt", "chi_constant.txt"]
-            obs_files = ["observables.traj", "diag_observables.traj", "constant_observable.traj"]
-            convergence_files = ["convergence.txt", "convergence_diag.txt", "convergence_constant.txt"]
-            goal_files = ["obj_goal.txt", "obj_goal_diag.txt", "obj_goal_constant.txt"]
-        else:
-            parameter_files = ["chis.txt", "chis_diag.txt"]
-            obs_files = ["observables.traj", "diag_observables.traj"]
-            convergence_files = ["convergence.txt", "convergence_diag.txt"]
-            goal_files = ["obj_goal.txt", "obj_goal_diag.txt"]
-        both_step(parameter_files, obs_files, convergence_files, goal_files,
-                    args.gamma, args.it, args.goal_specified, args.trust_region,
-                    args.min_diag_chi, args.method)
-    else:
-        if args.mode == "diag":
-            diag_fn = step
-            fn = copy_chis
-        elif args.mode == "plaid":
-            diag_fn = copy_chis
-            fn = step
-
-        parameter_file = "chis_diag.txt"
-        obs_file = "diag_observables.traj"
-        convergence_file = "convergence_diag.txt"
-        goal_file = "obj_goal_diag.txt"
-        diag_fn(parameter_file, obs_file, convergence_file, goal_file,
-                    args.gamma, args.it, args.goal_specified, args.trust_region,
-                    args.min_diag_chi, args.method)
-
-        parameter_file = "chis.txt"
-        obs_file = "observables.traj"
-        convergence_file = "convergence.txt"
-        goal_file = "obj_goal.txt"
-        fn(parameter_file, obs_file, convergence_file, goal_file,
-                    args.gamma, args.it, args.goal_specified, args.trust_region,
-                    None, args.method)
-
-        if args.constant:
-            parameter_file = "chi_constant.txt"
-            obs_file = "constant_observable.traj"
-            convergence_file = "convergence_constant.txt"
-            goal_file = "obj_goal_constant.txt"
-            step(parameter_file, obs_file, convergence_file, goal_file,
-                    args.gamma, args.it, args.goal_specified, args.trust_region,
-                    None, args.method)
+    step(parameter_files, obs_files, 'convergence.txt', goal_files,
+                args.gamma, args.it, args.goal_specified, args.trust_region,
+                args.min_diag_chi, args.method)
 
 if __name__ == '__main__':
     main()

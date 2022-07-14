@@ -17,8 +17,6 @@ def getArgs():
                         help='true for verbose mode')
     parser.add_argument('--mode', type=str,
                         help='{"plaid", "diag", "both"}')
-    parser.add_argument('--constant', action='store_true',
-                        help='True to include average contact frequency')
     parser.add_argument('--diag_bins', type=int,
                         help='number of diagonal bins')
     parser.add_argument('--v_bead', type=int, default=520,
@@ -104,49 +102,56 @@ def main():
         m = len(seqi)
         y = y[:m, :m] # crop to m
 
+    constant_goal = None
+    plaid_goal = None
+    diag_goal = None
     if args.mode == 'both':
         plaid_goal = get_plaid_goal(y, args)
         diag_goal = get_diag_goal(y, args)
     elif args.mode == 'plaid':
         plaid_goal = get_plaid_goal(y, args)
-        diag_goal = np.zeros(20)
     elif args.mode == 'diag':
-        plaid_goal = np.zeros(1) # shouldn't matter what goes here
         diag_goal = get_diag_goal(y, args)
-
-    constant_goal = None
-    if args.constant:
+    elif args.mode == 'all':
+        plaid_goal = get_plaid_goal(y, args)
+        diag_goal = get_diag_goal(y, args)
         constant_goal = np.sum(y)/np.max(y)
-        with open('obj_goal_constant.txt', 'w', newline='') as f:
-            wr = csv.writer(f, delimiter = '\t')
-            wr.writerow(constant_goal)
+        constant_goal *= (args.v_bead / args.grid_size**3)
+        with open('obj_goal_constant.txt', 'w') as f:
+            f.write(f'{constant_goal}')
 
     if args.verbose:
         print('plaid_goal: ', plaid_goal)
         print('diag_goal: ', diag_goal)
         print('constant_goal: ', constant_goal)
 
-    with open('obj_goal.txt', 'w', newline='') as f:
-        wr = csv.writer(f, delimiter = '\t')
-        wr.writerow(plaid_goal)
+    if plaid_goal is not None:
+        with open('obj_goal.txt', 'w', newline='') as f:
+            wr = csv.writer(f, delimiter = '\t')
+            wr.writerow(plaid_goal)
 
-    with open('obj_goal_diag.txt', 'w', newline='') as f:
-        wr = csv.writer(f, delimiter = '\t')
-        wr.writerow(diag_goal)
+    if diag_goal is not None:
+        with open('obj_goal_diag.txt', 'w', newline='') as f:
+            wr = csv.writer(f, delimiter = '\t')
+            wr.writerow(diag_goal)
 
 def test_plaid():
     args = getArgs()
-    sample_path='/home/erschultz/sequences_to_contact_maps/dataset_05_18_22/samples/sample3'
-    y = np.load(osp.join(sample_path, 'y.npy'))
+    dir = '/home/erschultz/dataset_test/samples/sample1'
+    y = np.load(osp.join(dir, 'y.npy'))
     y = y.astype(float)
     y /= np.max(y)
-    print(y.shape, y.dtype, '\n')
+    # print(y.shape, y.dtype, '\n')
 
-    x = np.load(osp.join(sample_path, 'x.npy'))
+    x = np.load(osp.join(dir, 'x.npy'))
     x = x.astype(float)
-    _, k = x.shape
-    print(x.shape, x.dtype, '\n')
+    m, k = x.shape
+    # print(x.shape, x.dtype, '\n')
 
+    # obj_goal = get_plaid_goal(y, args, x)
+    # print(obj_goal)
+
+    x = np.ones(m).reshape(-1, 1)
     obj_goal = get_plaid_goal(y, args, x)
     print(obj_goal)
 
@@ -168,7 +173,9 @@ def test_constant():
     args = getArgs()
     dir = '/home/erschultz/dataset_test/samples/sample1'
     y = np.load(osp.join(dir, 'y.npy'))
-    print(np.sum(y)/np.max(y))
+    y = y.astype(float)
+    y /= np.max(y)
+    print(np.sum(y))
 
 if __name__ == '__main__':
     main()

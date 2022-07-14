@@ -17,6 +17,7 @@
 		# plaid: optimize only plaid chis, with fixed diagonal chis
 		# diag: optimize only diagonal chis, with fixed plaid chis
 		# both: optimize both plaid and diagonal chis
+		# all: optimize plaid, constant, and diagonal chis
 #
 # production_sweeps: number of production sweeps
 #
@@ -113,17 +114,7 @@ run_simulation () {
 	if [ $num_iterations -gt 0 ]
 	then
 		# no need to update if num_iterations==0
-		if [ $mode == "plaid" ];
-		then
-			python3 $proj_bin/update_chis.py --it $it
-		elif [ $mode == "diag" ];
-		then
-			python3 $proj_bin/update_diag.py --it $it
-		elif [ $mode == "both" ];
-		then
-			python3 $proj_bin/update_chis.py --it $it
-			python3 $proj_bin/update_diag.py --it $it
-		fi
+		python3 $proj_bin/update_params.py --it $it --mode $mode
 	fi
 	cd "iteration${it}"
 
@@ -182,8 +173,7 @@ fi
 mkdir -p $outputDir
 if [ $start_iteration -le 1 ]
 then
-	mv resources/chis* .
-	mv resources/*.png .
+	mv resources/chi* .
 	mv resources/*.log .
 	touch track.log
 fi
@@ -199,8 +189,7 @@ it=0
 if [ $goal_specified = "true" ]
 then
 	# if goal is specified, just move in goal files and do not simulate
-	mv resources/obj_goal.txt .
-	mv resources/obj_goal_diag.txt .
+	mv resources/obj_goal* .
 elif [ $num_iterations -gt 0 ]
 then
 	# if goal is not specified, simulate iteration 0 and calculate the goals from that simulation

@@ -10,6 +10,7 @@
 
 #include "Bead.h"
 #include "DSS_Bond.h"
+#include "Harmonic_Bond.h"
 #include "Cell.h"
 #include "Grid.h"
 #include "prof_timer.cpp"
@@ -26,11 +27,13 @@ public:
 	Eigen::MatrixXd chis;
 	std::vector<double> diag_chis;
 	double boundary_chi;
+	double constant_chi;
 	int nspecies; // number of different epigenetic marks
 	int nbeads;
 	double total_volume;
 	double grid_size;
 	double bond_length;
+	std::string bond_type;
 
 	// output files
 	FILE *xyz_out;
@@ -94,6 +97,7 @@ public:
 	bool gridmove_on;
 	bool diagonal_on;
 	bool boundary_attract_on;
+	bool constant_chi_on;
 	bool plaid_on;
 	bool cellcount_on = true;
 

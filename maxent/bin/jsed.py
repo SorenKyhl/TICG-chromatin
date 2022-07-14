@@ -5,8 +5,7 @@ import sys
 json sed program for quickly editing json files
 usage: python3 jsed.py filename key val type
 type is the data type of the value, necessary for distinguishing between
-the string "true" and the boolean true, and
-the string "0.1" and the float 0.1
+the string "true" and the boolean true, or the string "0.1" and the float 0.1
 '''
 
 try:

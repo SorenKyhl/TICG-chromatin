@@ -1,9 +1,10 @@
 #include "Grid.h"
+#include "cmath"
 
 bool Grid::parallel;
 
 void Grid::generate() {
-	
+
 	origin = {-delta/2.0,-delta/2.0,-delta/2.0};
 
 	// need L+1 grid cells per direction to fully enclose simulation boundary
@@ -135,9 +136,19 @@ double Grid::energy(const std::unordered_set<Cell*>& flagged_cells, const Eigen:
 	return U;
 };
 
+double Grid::constantEnergy(const std::unordered_set<Cell*>& flagged_cells, const double constant_chi) {
+	// nonbonded volume interactions
+	double U = 0;
+	for(Cell* cell : flagged_cells)
+	{
+		U += cell->getConstantEnergy(constant_chi);
+	}
+	return U;
+};
+
 double Grid::diagEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<double> diag_chis) {
 	// nonbonded volume interactions
-	double U = 0; 
+	double U = 0;
 
 	if (parallel)
 	{
@@ -168,7 +179,6 @@ double Grid::boundaryEnergy(const std::unordered_set<Cell*>& flagged_cells, cons
 	}
 	return U;
 };
-
 
 double Grid::SmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Smatrix, const Eigen::MatrixXd &chis) {
 	// nonbonded volume interactions
@@ -205,27 +215,26 @@ double Grid::get_ij_Contacts(int i, int j)
 	return obs;
 };
 
+double Grid::getContacts()
+{
+	// calculates total number of contacts
+	double obs  = 0;
+	for(Cell* cell : active_cells)
+	{
+		obs += pow(cell->contains.size(), 2) * cell->beadvol / cell->vol;
+	}
+
+	return obs;
+};
+
 void Grid::getDiagObs(std::vector<double> &diag_obs) {
 	for (Cell* cell : active_cells)
 	{
 		for(int i=0; i<diag_obs.size(); i++)
 		{
-			if (Cell::diagonal_linear) {
-				//diag_obs[i] += cell->diag_phis[i];
-				diag_obs[i] += cell->diag_phis[i] * cell->diag_phis[i] * cell->vol / cell->beadvol ;
-			}
-			else {
-				diag_obs[i] += cell->diag_phis[i] * cell->diag_phis[i] * cell->vol / cell->beadvol ;
-			}
+			diag_obs[i] += cell->diag_phis[i] * cell->diag_phis[i] * cell->vol / cell->beadvol;
 		}
 	}
-
-	/*
-	for (int i=0; i<diag_obs.size(); i++)
-	{
-		diag_obs[i] /= active_cells.size();
-	}
-	*/
 };
 
 

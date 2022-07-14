@@ -38,12 +38,14 @@ public:
 	bool checkCellConsistency(int nbeads);
 	double densityCapEnergy(const std::unordered_set<Cell*>& flagged_cells);
 	double energy(const std::unordered_set<Cell*>& flagged_cells, const Eigen::MatrixXd &chis);
+	double constantEnergy(const std::unordered_set<Cell*>& flagged_cells, const double constant_chi);
 	double diagEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<double> diag_chis);
 	double boundaryEnergy(const std::unordered_set<Cell*>& flagged_cells, const double boundary_chi);
 	// double boundaryEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Smatrix);
 	double SmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Smatrix, const Eigen::MatrixXd &chis);
 	double EmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Ematrix, const Eigen::MatrixXd &chis);
-	double get_ij_Contacts(int i, int j) ;
+	double get_ij_Contacts(int i, int j);
+	double getContacts();
 	void getDiagObs(std::vector<double> &diag_obs);
 	double cellCount();
 	double getChromatinVolfrac();
