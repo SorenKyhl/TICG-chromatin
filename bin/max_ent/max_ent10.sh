@@ -8,7 +8,7 @@
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=erschultz@uchicago.edu
 
-local='true'
+local='false'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
@@ -29,7 +29,7 @@ dataset='dataset_09_21_21'
 useE='false'
 method='PCA-normalize'
 diagChiMethod='linear'
-maxDiagChi=10
+maxDiagChi=20
 m=1024
 sample=1
 
@@ -56,6 +56,13 @@ done
 
 mode='all'
 replicate=4
+for k in 4 6
+do
+  max_ent
+done
+
+minDiagChi=0
+replicate=5
 for k in 4 6
 do
   max_ent

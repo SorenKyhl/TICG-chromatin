@@ -15,7 +15,7 @@ if [ $local = 'true' ]
 then
   dir="/home/erschultz/sequences_to_contact_maps"
   scratchDir='/home/erschultz/scratch'
-  numIterations=3
+  numIterations=2
   finalSimProductionSweeps=1000
   equilibSweeps=1000
   productionSweeps=1000
@@ -28,17 +28,32 @@ dataset='dataset_05_18_22'
 useE='false'
 method='PCA-normalize'
 diagChiMethod='linear'
-mode='both'
+MLPModelID=3
 m=1024
-replicate=3
 
-for sample in 4 5 6
-do
-  for k in 2 4 6
-  do
-    max_ent
-  done
-done
+sample=4
+k=5
+
+mode='both'
+bondType='DSS'
+max_ent
+
+bondType='gaussian'
+replicate=2
+max_ent
+
+dense='true'
+replicate=3
+max_ent
+
+mode='all'
+replicate=4
+max_ent
+
+minDiagChi=0
+replicate=5
+max_ent
+
 
 wait
 

@@ -848,6 +848,7 @@ class GetDiagChi():
             diag_chis = scale * np.log(args.diag_chi_slope * np.arange(args.diag_bins) + 1)
         elif args.diag_chi_method == 'mlp':
             diag_chis = self.get_diag_chi_mlp(args.mlp_model_path, self.sample_folder)
+            assert len(diag_chis) == args.diag_bins, f"Shape mismatch: {len(diag_chis)} vs {args.diag_bins}"
         else:
             raise Exception(f'Unrecognized chi diag method {args.diag_chi_method}')
 

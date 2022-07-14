@@ -28,21 +28,21 @@ def main():
         config = json.load(f)
 
     if args.mode in {'diag', 'both', 'all'}:
+        # update diag params
         allchis = np.loadtxt('chis_diag.txt')
 
         # get last row of 'chis_diag.txt'
-        lastchis = list(allchis[int(args.it)])
+        current_chis = list(allchis[int(args.it)])
 
-        config['diag_chis'] = lastchis
+        config['diag_chis'] = current_chis
 
 
     if args.mode in {'plaid', 'both', 'all'}:
-        # read in current chis
-        with open('chis.txt', "r") as f_chis:
-            lines = f_chis.readlines()
-            current_chis = lines[args.it].split()
-            current_chis = [float(x) for x in current_chis]
+        # update plaid params
+        allchis = np.loadtxt('chis.txt')
+        current_chis = allchis[args.it]
         # print("current chi values: ", current_chis)
+
 
         k = sympy.Symbol('k')
         result = sympy.solvers.solve(k*(k-1)/2 + k - len(current_chis))
@@ -66,7 +66,7 @@ def main():
 
     if args.mode == 'all':
         allchis = np.loadtxt('chi_constant.txt')
-        print(allchis.shape)
+        config['constant_chi'] = allchis[args.it]
 
 
     with open(config_file, "w") as f:
