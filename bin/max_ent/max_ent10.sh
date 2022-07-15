@@ -32,13 +32,14 @@ diagChiMethod='linear'
 maxDiagChi=20
 m=1024
 sample=1
+trust_region=10
 
 mode='both'
-bondType='DSS'
-for k in 4 6
-do
-  max_ent
-done
+# bondType='DSS'
+# for k in 4 6
+# do
+#   max_ent
+# done
 
 bondType='gaussian'
 replicate=2
@@ -54,19 +55,19 @@ do
   max_ent
 done
 
-mode='all'
+denseCutoff=0.125
 replicate=4
 for k in 4 6
 do
   max_ent
 done
-
-minDiagChi=0
-replicate=5
-for k in 4 6
-do
-  max_ent
-done
+#
+# minDiagChi=0
+# replicate=5
+# for k in 4 6
+# do
+#   max_ent
+# done
 
 wait
 

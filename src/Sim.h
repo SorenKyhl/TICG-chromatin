@@ -34,6 +34,7 @@ public:
 	double grid_size;
 	double bond_length;
 	std::string bond_type;
+	float dense_diagonal_cutoff;
 
 	// output files
 	FILE *xyz_out;

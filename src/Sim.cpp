@@ -257,8 +257,10 @@ void Sim::readInput() {
 	assert(config.contains("parallel")); Grid::parallel = config["parallel"];
 	assert(config.contains("beadvol")); Cell::beadvol  = config["beadvol"];
   assert(config.contains("dense_diagonal_on")); Cell::dense_diagonal_on  = config["dense_diagonal_on"];
+  assert(config.contains("dense_diagonal_cutoff")); dense_diagonal_cutoff = config["dense_diagonal_cutoff"];
 	assert(config.contains("bond_type")); bond_type = config["bond_type"];
 	assert(config.contains("bond_length")); bond_length = config["bond_length"];
+
 
 	if (Grid::parallel)
 	{
@@ -412,9 +414,9 @@ void Sim::calculateParameters() {
 
 	if (Cell::dense_diagonal_on)
 	{
-		float loading = 0.5;
-		float cutoff = 0.0625;
-		int dividing_line = nbeads*cutoff;
+		float loading = 0.5; // number of bins left of dividing_line
+    assert(floorf(nbeads * dense_diagonal_cutoff) == nbeads * dense_diagonal_cutoff);
+		int dividing_line = nbeads*dense_diagonal_cutoff;
 
 		Cell::n_small_bins = int(loading * Cell::diag_nbins);
 		Cell::n_big_bins = Cell::diag_nbins - Cell::n_small_bins;

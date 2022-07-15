@@ -35,24 +35,25 @@ sample=4
 k=5
 
 mode='both'
-bondType='DSS'
-max_ent
+# bondType='DSS'
+# max_ent
 
 bondType='gaussian'
-replicate=2
-max_ent
+# replicate=2
+# max_ent
 
+trust_region=10
 dense='true'
 replicate=3
 max_ent
 
-mode='all'
+denseCutoff=0.125
 replicate=4
 max_ent
 
-minDiagChi=0
-replicate=5
-max_ent
+# minDiagChi=0
+# replicate=5
+# max_ent
 
 
 wait

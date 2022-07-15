@@ -63,7 +63,10 @@ def getArgs():
 
     # diagonal config params
     parser.add_argument('--diag_pseudobeads_on', type=AC.str2bool, default=True)
-    parser.add_argument('--dense_diagonal_on', type=AC.str2bool, default=False)
+    parser.add_argument('--dense_diagonal_on', type=AC.str2bool, default=False,
+                        help='True to place 1/2 of beads left of cutoff')
+    parser.add_argument('--dense_diagonal_cutoff', type=float, default=1/16,
+                        help='cutoff = nbeads * dense_diag_cutoff')
     parser.add_argument('--use_ground_truth_diag_chi', type=AC.str2bool, default=False,
                         help='True to use ground truth diag chi')
 
@@ -342,8 +345,9 @@ def main():
     # save diag_pseudobeads_on
     config['diag_pseudobeads_on'] = args.diag_pseudobeads_on
 
-    # save dense_diagonal_on
+    # save dense_diagonal
     config['dense_diagonal_on'] = args.dense_diagonal_on
+    config['dense_diagonal_cutoff'] = args.dense_diagonal_cutoff
 
     # save dump frequency
     if args.dump_frequency is not None:

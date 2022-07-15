@@ -44,24 +44,19 @@ dumpFrequency=100
 TICGSeed=10
 diag='true'
 diagBins=32
+m=512
 maxDiagChi=10
 chiDiagMethod='linear'
-m=512
 
 i=5
-constantChi=0
-run &
-
-i=6
 constantChi=2
 run &
 
-i=7
+i=6
+chiDiagConstant=2
 constantChi=0
-k=1
-chi=2
-seqMethod='block-A512'
 run &
+
 
 
 wait
