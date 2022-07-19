@@ -74,19 +74,29 @@ void Sim::updateContactsGrid() {
 		int id1, id2;
 		std::vector<std::vector<bool>> visited(rows, std::vector<bool>(cols, false));
 
-
 		for(Cell* cell : grid.active_cells)
 		{
 			for(Bead* bead1 : cell->contains)
 			{
 				for(Bead* bead2 : cell->contains)
 				{
+					bool ignore = false;
 					id1 = bead1->id/contact_resolution;
 					id2 = bead2->id/contact_resolution;
 
+					if (contact_bead_skipping)
+					{
+						if (bead1->id % contact_resolution != 0 || bead2->id % contact_resolution != 0)
+						{
+							ignore = true;
+						}
+					}
+
 					if (visited[id1][id2] == false)
 					{
-						contact_map[id1][id2] += 1;
+						if (!ignore) {
+							contact_map[id1][id2] += 1;
+						}
 
 						if (visit_tracking) visited[id1][id2] = true;
 					}
@@ -259,6 +269,8 @@ void Sim::readInput() {
 	assert(config.contains("cell_volumes")); Grid::cell_volumes = config["cell_volumes"];
 	assert(config.contains("bond_type")); bond_type = config["bond_type"];
 	assert(config.contains("bond_length")); bond_length = config["bond_length"];
+	assert(config.contains("contact_bead_skipping")); contact_bead_skipping = config["contact_bead_skipping"];
+	assert(config.contains("boundary_type")); boundary_type = config["boundary_type"];
 
 	if (Grid::parallel)
 	{
@@ -323,7 +335,7 @@ bool Sim::outside_boundary(Eigen::RowVector3d r) {
 	}
 	else if (grid.spherical_boundary)
 	{
-		is_out = r.norm() > grid.boundary_radius*grid.delta;
+		is_out = (r - grid.sphere_center).norm() > grid.radius;
 	}
 
 	return is_out;
@@ -370,18 +382,44 @@ void Sim::volParameters() {
 void Sim::volParameters_new() {
 	double vol_beads = nbeads*Cell::beadvol;
 	double vol  = vol_beads/Cell::phi_chromatin;
-	grid.side_length = std::pow(vol, 1.0/3.0);
 
-	grid.L= std::ceil(grid.side_length / grid.delta); // number of grid cells per side // ROUNDED, won't exactly equal a desired volume frac
+	if (boundary_type == "cube") {
+		grid.cubic_boundary = true;
+	}
 
-	std::cout << "grid.side_length is: " << grid.side_length << std::endl;
-	std::cout << "grid.L is: " << grid.L << std::endl;
-	//total_volume = pow(grid.L*grid.delta/1000.0, 3); // micrometers^3 ONLY TRUE FOR CUBIC SIMULATIONS
-	total_volume = pow(grid.side_length/1000.0, 3.0);
-	std::cout << "simulation volume is: " << total_volume << " um^3" << std::endl;
-	std::cout << "volume fraction is: " << nbeads*Cell::beadvol/(total_volume*1000*1000*1000) << std::endl;
+	if (boundary_type == "sphere") {
+		grid.spherical_boundary = true;
+	}
 
-	grid.radius = std::pow(3*vol/(4*M_PI), 1.0/3.0); // radius of simulation volume
+	if (grid.cubic_boundary)
+	{
+		std::cout << "cubic boundary" << std::endl;
+		grid.side_length = std::pow(vol, 1.0/3.0);
+
+		grid.L= std::ceil(grid.side_length / grid.delta); // number of grid cells per side // ROUNDED, won't exactly equal a desired volume frac
+
+		std::cout << "grid.side_length is: " << grid.side_length << std::endl;
+		std::cout << "grid.L is: " << grid.L << std::endl;
+		total_volume = pow(grid.side_length/1000.0, 3.0); // [um^3]
+		std::cout << "simulation volume is: " << total_volume << " um^3" << std::endl;
+		std::cout << "volume fraction is: " << nbeads*Cell::beadvol/(total_volume*1000*1000*1000) << std::endl;
+	}
+
+
+	if (grid.spherical_boundary)
+	{
+		std::cout << "spherical boundary" << std::endl;
+		//float total_volume = 3*vol/(4*M_PI);
+		total_volume = vol;
+		grid.radius = std::pow(3*vol/(4*M_PI), 1.0/3.0); // [nm] radius of simulation volume
+		grid.L = std::ceil(2*grid.radius / grid.delta);
+		grid.sphere_center = {grid.radius, grid.radius, grid.radius};
+
+		std::cout << "grid.radius is " << grid.radius << std::endl;
+		std::cout << "grid.L is: " << grid.L << std::endl;
+		std::cout << "simulation volume is: " << total_volume/1000/1000/1000 << " um^3" << std::endl;
+	}
+
 }
 
 void Sim::calculateParameters() {
@@ -393,7 +431,7 @@ void Sim::calculateParameters() {
 	//volParameters();
 	volParameters_new();
 
-	grid.boundary_radius = std::round(grid.radius); // radius in units of grid cells
+	//grid.boundary_radius = std::round(grid.radius); // radius in units of grid cells
 	// sphere center needs to be centered on a multiple of grid delta
 	//grid.sphere_center = {grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta};
 
@@ -409,28 +447,30 @@ void Sim::calculateParameters() {
 	nSteps = n_trans + n_crank + n_pivot + n_rot;
 
 
-	if (Cell::dense_diagonal_on)
-	{
-		float loading = 0.5;
-		float cutoff = 0.0625;
-		int dividing_line = nbeads*cutoff;
+	if (diagonal_on) {
+		if (Cell::dense_diagonal_on)
+		{
+			float loading = 0.5;
+			float cutoff = 0.0625;
+			int dividing_line = nbeads*cutoff;
 
-		Cell::n_small_bins = int(loading * Cell::diag_nbins);
-		Cell::n_big_bins = Cell::diag_nbins - Cell::n_small_bins;
-		Cell::small_binsize = int( dividing_line / Cell::n_small_bins );
-		Cell::big_binsize = int ((nbeads - dividing_line) / Cell::n_big_bins);
+			Cell::n_small_bins = int(loading * Cell::diag_nbins);
+			Cell::n_big_bins = Cell::diag_nbins - Cell::n_small_bins;
+			Cell::small_binsize = int( dividing_line / Cell::n_small_bins );
+			Cell::big_binsize = int ((nbeads - dividing_line) / Cell::n_big_bins);
 
-		std::cout << "number of small bins, of size: " << Cell::n_small_bins << ", " << Cell::small_binsize << std::endl;
-		std::cout << "number of big bins, of size: " << Cell::n_big_bins << ", " << Cell::big_binsize << std::endl;
-		assert(Cell::n_big_bins + Cell::n_small_bins == Cell::diag_nbins);
-		assert(Cell::small_binsize * Cell::n_small_bins + Cell::big_binsize * Cell::n_big_bins == nbeads);
+			std::cout << "number of small bins, of size: " << Cell::n_small_bins << ", " << Cell::small_binsize << std::endl;
+			std::cout << "number of big bins, of size: " << Cell::n_big_bins << ", " << Cell::big_binsize << std::endl;
+			assert(Cell::n_big_bins + Cell::n_small_bins == Cell::diag_nbins);
+			assert(Cell::small_binsize * Cell::n_small_bins + Cell::big_binsize * Cell::n_big_bins == nbeads);
 
-	}
-	else
-	{
-		std::cout << "number of bins: " << Cell::diag_nbins << std::endl;
-		Cell::diag_binsize = nbeads / diag_chis.size();
-		std::cout << "binsize " << Cell::diag_binsize << std::endl;
+		}
+		else
+		{
+			std::cout << "number of bins: " << Cell::diag_nbins << std::endl;
+			Cell::diag_binsize = nbeads / diag_chis.size();
+			std::cout << "binsize " << Cell::diag_binsize << std::endl;
+		}
 	}
 }
 
@@ -494,7 +534,7 @@ void Sim::initRandomCoil(double bondlength) {
 	}
 	else if (grid.spherical_boundary)
 	{
-		center = 0;
+		center = grid.sphere_center[0];
 	}
 
 	beads[0].r = {center, center, center}; // start in middlle of the box
@@ -1269,6 +1309,7 @@ void Sim::MCmove_grid() {
 		{
 			//std::cout << "passed grid move" << std::endl;
 			flag = false;
+			grid.setActiveCells();
 		}
 		else
 		{

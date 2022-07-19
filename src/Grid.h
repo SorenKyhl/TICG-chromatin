@@ -15,8 +15,6 @@ public:
 	std::unordered_set<Cell*> active_cells;       // cells marked as active (within simulation region)
 
 	double delta;              // grid cell size (length)
-	bool cubic_boundary = true;
-	bool spherical_boundary = false;
 	int L;                        // size of cubic boundary in units of grid cells (ceil side_length/delta)
 	double side_length;           // size of cubic boundary in units of nm
 	double radius;                // radius of simulation volume in [nanometers]
@@ -24,6 +22,8 @@ public:
 	Eigen::RowVector3d sphere_center; // center of spherical boundary
 	static bool parallel;
 	static bool cell_volumes;
+	bool cubic_boundary;
+	bool spherical_boundary;
 
 	// origin is the bottom-left-most grid cell for cubic simulations
 	// With grid moves on, it will diffuse with periodic boundaries
