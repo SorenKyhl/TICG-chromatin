@@ -5,7 +5,7 @@ source ~/TICG-chromatin/bin/random/random_fns.sh
 param_setup
 k=4
 m=1024
-dataFolder="/home/erschultz/dataset_test2"
+dataFolder="/home/erschultz/dataset_test_diag"
 scratchDir='/home/erschultz/scratch'
 startSample=1
 relabel='none'
@@ -44,32 +44,23 @@ run()  {
 # make
 # mv TICG-engine ..
 
-nSweeps=1000000
-diag='true'
-maxDiagChi=2
-chiMultiplier=1
-for i in $( seq 1 16 )
-do
-	echo "i=${i}, maxDiagChi=${maxDiagChi}, chiMultiplier=${chiMultiplier}"
-	run &
-	if [ $i -lt 5 ]
-	then
-		maxDiagChi=$(( $maxDiagChi + 3 ))
-	elif [ $i -gt 3 ] && [ $i -lt 9 ]
-	then
-	 chiMultiplier=$(($chiMultiplier * 2 ))
- elif [ $i -gt 7 ] && [ $i -lt 13 ]
-	then
-		maxDiagChi=$(( $maxDiagChi - 3 ))
-	elif [ $i -gt 12 ]
-	then
-		chiMultiplier=$(($chiMultiplier / 2 ))
-	fi
+k=0
+nSweeps=2000000
+dumpFrequency=100
+TICGSeed=10
+chiDiagMethod='linear'
 
-	# if [ $( expr $i % 10 ) -eq 0 ]
-	# then
-	# 	wait
-	# fi
-done
+
+i=164
+m=8192
+maxDiagChi=40
+diagBins=128
+run &
+
+# i=164
+# m=8192
+# parallel='true'
+# numThreads=6
+# run
 
 wait

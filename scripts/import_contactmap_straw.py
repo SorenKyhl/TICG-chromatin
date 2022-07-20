@@ -2,10 +2,10 @@ import multiprocessing
 import os
 import os.path as osp
 
+import hicstraw
 import numpy as np
 import pandas as pd
-import straw
-from seq2contact import DiagonalPreprocessing, import, plot_matrix
+from seq2contact import DiagonalPreprocessing, plot_matrix
 
 
 def download_contactmap_straw(filename, chrom, start, end, resolution):
@@ -17,7 +17,7 @@ def download_contactmap_straw(filename, chrom, start, end, resolution):
     raw_data = straw.straw("KR", filename, "2:0:129999999", "2:0:129999999", "BP", 100000)
     '''
     basepairs = ":".join((str(chrom), str(start), str(end)))
-    raw_data = straw.straw("NONE", filename, basepairs, basepairs, "BP", resolution)
+    raw_data = hicstraw.straw("NONE", filename, basepairs, basepairs, "BP", resolution)
     raw_data = np.array(raw_data)
     # raw data is a map between locus pairs and reads -- need to pivot into a matrix.
     df = pd.DataFrame(raw_data.transpose(), columns=['locus1 [bp]', 'locus2 [bp]', 'reads'])
@@ -48,25 +48,15 @@ def import_contactmap_straw(sample_folder, filename, chrom=2, start=22000000, en
         f.write(f'{filename}\nchrom={chrom}\nstart={start}\nend={end}\nresolution={resolution}\nbeads={m}')
 
     np.save(osp.join(sample_folder, 'y.npy'), hic)
-    plot_matrix(hic, ofile = osp.join(sample_folder, 'y.png'), vmax = 'mean')
-    plot_matrix(hic, ofile = osp.join(sample_folder, 'y_max.png'), vmax = 'max')
-    np.savetxt(osp.join(sample_folder, 'y.txt'), hic)
-
-    meanDist = DiagonalPreprocessing.genomic_distance_statistics(hic)
-    y_diag = DiagonalPreprocessing.process(hic, meanDist)
-    plot_matrix(y_diag, ofile = osp.join(sample_folder, 'y_diag.png'), vmax = 'max')
-    np.save(osp.join(sample_folder, 'y_diag.npy'), y_diag)
 
 def main():
-    dir = 'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps'
-    # dir ='/home/eric/sequences_to_contact_maps'
-    # dir = '/project2/depablo/erschultz'
+    dir = '/home/erschultz/sequences_to_contact_maps'
     dataset='dataset_09_21_21'
-    dataFolder = osp.join(dir, dataset)
-    if not osp.exists(dataFolder):
-        os.mkdir(dataFolder, mode = 0o755)
-    if not osp.exists(osp.join(dataFolder, 'samples')):
-        os.mkdir(osp.join(dataFolder, 'samples'), mode = 0o755)
+    data_folder = osp.join(dir, dataset)
+    if not osp.exists(data_folder):
+        os.mkdir(data_folder, mode = 0o755)
+    if not osp.exists(osp.join(data_folder, 'samples')):
+        os.mkdir(osp.join(data_folder, 'samples'), mode = 0o755)
 
     i = 2
     start_end_resolution = [(22000000, 42000000, 5000), (100000000, 110000000, 5000), (120000000, 125000000, 5000),
@@ -79,7 +69,7 @@ def main():
         for chromosome in [2, 7]:
             m = (end - start) / resolution
             print(i)
-            sampleFolder = osp.join(dataFolder, 'samples', f'sample{i}')
+            sampleFolder = osp.join(data_folder, 'samples', f'sample{i}')
             mapping.append((sampleFolder, "https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic", chromosome, start, end, resolution))
             i += 1
 
@@ -87,25 +77,42 @@ def main():
         p.starmap(import_contactmap_straw, mapping)
 
 def main2():
-    dir = 'C:/Users/Eric/OneDrive/Documents/Research/Coding/sequences_to_contact_maps'
-    # dir ='/home/eric/sequences_to_contact_maps'
-    # dir = '/project2/depablo/erschultz'
-    dataset='dataset_09_21_21'
-    dataFolder = osp.join(dir, dataset)
-    if not osp.exists(dataFolder):
-        os.mkdir(dataFolder, mode = 0o755)
-    if not osp.exists(osp.join(dataFolder, 'samples')):
-        os.mkdir(osp.join(dataFolder, 'samples'), mode = 0o755)
+    dir = '/home/erschultz/sequences_to_contact_maps'
+    dir = '/project2/depablo/erschultz'
+    dataset='dataset_07_20_22'
+    data_folder = osp.join(dir, dataset)
+    if not osp.exists(data_folder):
+        os.mkdir(data_folder, mode = 0o755)
+    if not osp.exists(osp.join(data_folder, 'samples')):
+        os.mkdir(osp.join(data_folder, 'samples'), mode = 0o755)
 
-    i = 5
-    chromosome=7
-    start=100000000
-    end=110000000
+    i = 1
+    chromosome='4'
+    start_mb=60
     resolution=5000
-    m = (end - start) / resolution
-    print(m)
-    sampleFolder = osp.join(dataFolder, 'samples', f'sample{i}')
-    import_contactmap_straw(sampleFolder, "https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic", chromosome, start, end, resolution)
+    filename="https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic"
+    filename='https://www.encodeproject.org/files/ENCFF718AWL/@@download/ENCFF718AWL.hic'
+    hic = hicstraw.HiCFile(filename)
+    chr_mat = hic.getMatrixZoomData(chromosome, chromosome, "observed", "KR", "BP", resolution)
+    for chrom in hic.getChromosomes():
+        print(chrom.name, chrom.length)
+    for i, end_mb in enumerate([65, 70, 80, 90, 110, 130, 150, 190]):
+        start = start_mb * 10**6
+        end = end_mb * 10**6
+        m = (end - start) / resolution
+        print(i+1, start, end, m)
+
+        y = chr_mat.getRecordsAsMatrix(start, end, start, end)
+        m, _ = y.shape
+
+        sample_folder = osp.join(data_folder, 'samples', f'sample{i+1}')
+        if not osp.exists(sample_folder):
+            os.mkdir(sample_folder, mode = 0o755)
+
+        with open(osp.join(sample_folder, 'import.log'), 'w') as f:
+            f.write(f'{filename}\nchrom={chromosome}\nstart={start}\nend={end}\nresolution={resolution}\nbeads={m}')
+
+        np.save(osp.join(sample_folder, 'y.npy'), y)
 
 
 if __name__ == '__main__':

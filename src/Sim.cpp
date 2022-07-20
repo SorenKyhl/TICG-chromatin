@@ -412,29 +412,32 @@ void Sim::calculateParameters() {
 	n_rot = rotate_on ? nbeads : 0;
 	nSteps = n_trans + n_crank + n_pivot + n_rot;
 
-	if (Cell::dense_diagonal_on)
-	{
-		float loading = 0.5; // number of bins left of dividing_line
-    assert(floorf(nbeads * dense_diagonal_cutoff) == nbeads * dense_diagonal_cutoff);
-		int dividing_line = nbeads*dense_diagonal_cutoff;
+  if (diagonal_on)
+  {
+  	if (Cell::dense_diagonal_on)
+  	{
+  		float loading = 0.5; // number of bins left of dividing_line
+      assert(floorf(nbeads * dense_diagonal_cutoff) == nbeads * dense_diagonal_cutoff);
+  		int dividing_line = nbeads*dense_diagonal_cutoff;
 
-		Cell::n_small_bins = int(loading * Cell::diag_nbins);
-		Cell::n_big_bins = Cell::diag_nbins - Cell::n_small_bins;
-		Cell::small_binsize = int( dividing_line / Cell::n_small_bins );
-		Cell::big_binsize = int ((nbeads - dividing_line) / Cell::n_big_bins);
+  		Cell::n_small_bins = int(loading * Cell::diag_nbins);
+  		Cell::n_big_bins = Cell::diag_nbins - Cell::n_small_bins;
+  		Cell::small_binsize = int( dividing_line / Cell::n_small_bins );
+  		Cell::big_binsize = int ((nbeads - dividing_line) / Cell::n_big_bins);
 
-		std::cout << "number of small bins: " << Cell::n_small_bins << ", of size: " << Cell::small_binsize << std::endl;
-		std::cout << "number of big bins: " << Cell::n_big_bins << ", of size: " << Cell::big_binsize << std::endl;
-		assert(Cell::n_big_bins + Cell::n_small_bins == Cell::diag_nbins);
-		assert(Cell::small_binsize * Cell::n_small_bins + Cell::big_binsize * Cell::n_big_bins == nbeads);
-	}
-	else
-	{
-		std::cout << "number of bins: " << Cell::diag_nbins << std::endl;
-		Cell::diag_binsize = nbeads / diag_chis.size();
-		std::cout << "binsize " << Cell::diag_binsize << std::endl;
-    assert(nbeads % Cell::diag_binsize == 0);
-	}
+  		std::cout << "number of small bins: " << Cell::n_small_bins << ", of size: " << Cell::small_binsize << std::endl;
+  		std::cout << "number of big bins: " << Cell::n_big_bins << ", of size: " << Cell::big_binsize << std::endl;
+  		assert(Cell::n_big_bins + Cell::n_small_bins == Cell::diag_nbins);
+  		assert(Cell::small_binsize * Cell::n_small_bins + Cell::big_binsize * Cell::n_big_bins == nbeads);
+  	}
+  	else
+  	{
+  		std::cout << "number of bins: " << Cell::diag_nbins << std::endl;
+  		Cell::diag_binsize = nbeads / diag_chis.size();
+  		std::cout << "binsize " << Cell::diag_binsize << std::endl;
+      assert(nbeads % Cell::diag_binsize == 0);
+  	}
+  }
 }
 
 void Sim::loadConfiguration() {

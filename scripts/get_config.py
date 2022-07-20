@@ -40,8 +40,12 @@ def getArgs():
     parser.add_argument('--relabel', type=AC.str2None,
                         help='specify mark combinations to be relabeled'
                             '(e.g. AB-C will relabel AB mark pairs as mark C)')
-    parser.add_argument('--bond_type', type=str, default='gaussian',
+    parser.add_argument('--bond_type', type=AC.str2None, default='gaussian',
                         help='type of bonded interaction')
+    parser.add_argument('--parallel', type=AC.str2bool, default=False,
+                        help='True to run simulation in parallel')
+    parser.add_argument('--num_threads', type=int, default=2,
+                        help='Number of threads if parallel is True')
 
     # chi config params
     parser.add_argument('--use_ground_truth_chi', type=AC.str2bool, default=False,
@@ -240,6 +244,13 @@ def main():
     else:
         config["diagonal_on"] = False
 
+    # save diag_pseudobeads_on
+    config['diag_pseudobeads_on'] = args.diag_pseudobeads_on
+
+    # save dense_diagonal
+    config['dense_diagonal_on'] = args.dense_diagonal_on
+    config['dense_diagonal_cutoff'] = args.dense_diagonal_cutoff
+
     # set up psi
     if osp.exists('psi.npy'):
         psi = np.load('psi.npy')
@@ -332,8 +343,20 @@ def main():
                 val = args.chi[row, col]
                 config[key] = val
 
+    if not config['plaid_on'] and not config["diagonal_on"]:
+        config['nonbonded_on'] = False
+
     # save bond type
-    config['bond_type'] = args.bond_type
+    if args.bond_type is None:
+        config['bond_type'] = 'none'
+        config['bonded_on'] = False
+        config["displacement_on"] = True
+        config["translation_on"] = False
+        config["crankshaft_on"] = False
+        config["pivot_on"] = False
+        config["rotate_on"] = False
+    else:
+        config['bond_type'] = args.bond_type
 
     # save nbeads
     config['nbeads'] = args.m
@@ -341,13 +364,6 @@ def main():
     # save nSweeps
     if args.n_sweeps is not None:
         config['nSweeps'] = args.n_sweeps
-
-    # save diag_pseudobeads_on
-    config['diag_pseudobeads_on'] = args.diag_pseudobeads_on
-
-    # save dense_diagonal
-    config['dense_diagonal_on'] = args.dense_diagonal_on
-    config['dense_diagonal_cutoff'] = args.dense_diagonal_cutoff
 
     # save dump frequency
     if args.dump_frequency is not None:
@@ -380,6 +396,10 @@ def main():
             wr = csv.writer(f, delimiter = '\t')
             wr.writerow([args.constant_chi])
             wr.writerow([args.constant_chi])
+
+    # save paralle
+    config['parallel'] = args.parallel
+    config['num_threads'] = args.num_threads
 
 
     with open(args.ofile, 'w') as f:
