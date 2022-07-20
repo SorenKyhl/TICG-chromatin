@@ -6,6 +6,8 @@
 #SBATCH --ntasks=1
 #SBATCH --mem-per-cpu=4000
 
+module load curl
+
 # activate python
 source activate python3.9_pytorch1.9_cuda10.2
 

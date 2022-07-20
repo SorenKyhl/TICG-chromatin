@@ -139,10 +139,10 @@ def main3():
         m = (end - start) / resolution
         print(i+1, start, end, m)
         sample_folder = osp.join(data_folder, 'samples', f'sample{i+1}')
-        mapping.append((sample_folder, filename, chromosome, start, end, resolution))
+        import_contactmap_straw(sample_folder, filename, chromosome, start, end, resolution)
 
-    with multiprocessing.Pool(10) as p:
-        p.starmap(import_contactmap_straw, mapping)
+    # with multiprocessing.Pool(10) as p:
+    #     p.starmap(import_contactmap_straw, mapping)
 
 
 if __name__ == '__main__':
