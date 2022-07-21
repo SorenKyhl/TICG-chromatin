@@ -17,28 +17,27 @@ def download_contactmap_straw(filename, chrom, start, end, resolution):
     raw_data = straw.straw("KR", filename, "2:0:129999999", "2:0:129999999", "BP", 100000)
     '''
     basepairs = f"{chrom}:{start}:{end}"
-    raw_data = hicstraw.straw("observed", "NONE", filename, basepairs, basepairs, "BP", resolution)
-    raw_data = np.array(raw_data)
-    # raw data is a map between locus pairs and reads -- need to pivot into a matrix.
-    df = pd.DataFrame(raw_data.transpose(), columns=['locus1 [bp]', 'locus2 [bp]', 'reads'])
-    pivoted = df.pivot_table(values='reads', index='locus1 [bp]', columns='locus2 [bp]')
-    xticks = np.array(pivoted.columns) # in base pairs
-    filled = pivoted.fillna(0)
-    trans = filled.transpose()
-    hic = np.array(filled + trans)
-    print(hic)
-    # normalize so rows and columns sum to 1
-    for i, row in enumerate(hic):
-        # row normalization:
-        #hic[i] /= sum(row)
-        # diag normalization
-        hic[i] /= hic[i,i]
-        #hic[i] /= np.mean(hic.diagonal())
-    print(hic)
-    return hic, xticks
+    result = hicstraw.straw("observed", "NONE", filename, basepairs, basepairs, "BP", resolution)
+
+    m = int((end - start) / resolution)
+    hic = np.zeros((m+1, m+1))
+    for row in result:
+        i = int((row.binX - start) / resolution)
+        j = int((row.binY - start) / resolution)
+        try:
+            hic[i, j] = row.counts
+            hic[j, i] = row.counts
+        except Exception as e:
+            print(e)
+            print(row.binX, row.binY, row.counts, i, j)
+
+    hic /= np.max(hic)
+
+    return hic
+
 
 def import_contactmap_straw(sample_folder, filename, chrom=2, start=22000000, end=60575000, resolution=25000):
-    hic, _ = download_contactmap_straw("https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic", chrom, start, end, resolution)
+    hic = download_contactmap_straw("https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic", chrom, start, end, resolution)
     m, _ = hic.shape
 
     if not osp.exists(sample_folder):
@@ -47,7 +46,9 @@ def import_contactmap_straw(sample_folder, filename, chrom=2, start=22000000, en
     with open(osp.join(sample_folder, 'import.log'), 'w') as f:
         f.write(f'{filename}\nchrom={chrom}\nstart={start}\nend={end}\nresolution={resolution}\nbeads={m}')
 
+
     np.save(osp.join(sample_folder, 'y.npy'), hic)
+    print(f'{sample_folder} done')
 
 def main():
     dir = '/home/erschultz/sequences_to_contact_maps'
@@ -133,17 +134,17 @@ def main3():
 
     # set up for multiprocessing
     mapping = []
-    for i, end_mb in enumerate([65, 70, 80, 90, 110, 130, 150, 190]):
+    for i, m in enumerate([512, 1024, 2048, 4096, 8192, 16384]):
         start = start_mb * 10**6
-        end = end_mb * 10**6
-        m = (end - start) / resolution
-        print(i+1, start, end, m)
+        end = start + (m-1) * resolution
+        print(f'i={i+1}', start, end, m)
         sample_folder = osp.join(data_folder, 'samples', f'sample{i+1}')
-        import_contactmap_straw(sample_folder, filename, chromosome, start, end, resolution)
+        mapping.append((sample_folder, filename, chromosome, start, end, resolution))
 
-    # with multiprocessing.Pool(10) as p:
-    #     p.starmap(import_contactmap_straw, mapping)
+
+    with multiprocessing.Pool(10) as p:
+        p.starmap(import_contactmap_straw, mapping)
 
 
 if __name__ == '__main__':
-    main2()
+    main3()

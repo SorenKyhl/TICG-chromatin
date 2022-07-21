@@ -21,10 +21,9 @@ from sequences_to_contact_maps.utils.load_utils import (load_all, load_E_S,
                                                         load_Y_diag)
 from sequences_to_contact_maps.utils.neural_net_utils import (get_dataset,
                                                               load_saved_model)
-from sequences_to_contact_maps.utils.plotting_utils import (plot_matrix,
-                                                            plot_seq_binary,
-                                                            plot_seq_exclusive,
-                                                            plot_top_PCs)
+from sequences_to_contact_maps.utils.plotting_utils import (
+    plot_diag_chi, plot_matrix, plot_mean_vs_genomic_distance, plot_seq_binary,
+    plot_seq_exclusive, plot_top_PCs)
 from sequences_to_contact_maps.utils.R_pca import R_pca
 from sequences_to_contact_maps.utils.utils import (LETTERS, SCC,
                                                    DiagonalPreprocessing,
