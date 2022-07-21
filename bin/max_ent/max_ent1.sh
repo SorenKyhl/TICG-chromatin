@@ -15,33 +15,41 @@ if [ $local = 'true' ]
 then
   dir="/home/erschultz/sequences_to_contact_maps"
   scratchDir='/home/erschultz/scratch'
-  numIterations=1
-  finalSimProductionSweeps=100
-  productionSweeps=2
-  equilibSweeps=100
+  numIterations=30
+  finalSimProductionSweeps=1000000
+  productionSweeps=500000
+  equilibSweeps=50000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
 i=1
-dataset='dataset_05_18_22'
+dataset='dataset_07_20_22'
 useE='false'
-method='PCA-normalize'
+method='none'
 diagChiMethod='linear'
 mode='diag'
 dense='true'
 bondtype='gaussian'
-m=512
+m=-1
 replicate=1
-diagBins=10
 
-for sample in 1
-# 2 3
+diagBins=32
+denseCutoff=0.25
+denseLoading=0.5
+
+k=0
+for sample in 1 2 3 4 5 6
 do
-  for k in 7
-  do
-    max_ent
-  done
+  echo $sample $diagBins $denseCutoff
+  max_ent
+  denseCutoff=0.125
+  diagBins=$(( $diagBins * 2 ))
+  if [ $diagBins -gt 256 ]
+  then
+    denseCutoff=0.0625
+    diagBins=256
+  fi
 done
 
 wait

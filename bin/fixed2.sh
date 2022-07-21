@@ -5,7 +5,7 @@ source ~/TICG-chromatin/bin/random/random_fns.sh
 param_setup
 k=4
 m=1024
-dataFolder="/home/erschultz/dataset_test_diag"
+dataFolder="/home/erschultz/dataset_test"
 scratchDir='/home/erschultz/scratch'
 startSample=1
 relabel='none'
@@ -45,16 +45,18 @@ run()  {
 # mv TICG-engine ..
 
 k=0
-nSweeps=2000000
-dumpFrequency=100
+nSweeps=1000000
+dumpFrequency=100000
 TICGSeed=10
-chiDiagMethod='linear'
+chiDiagMethod='log'
+chiDiagSlope=2000
+dense='false'
 
 
-i=164
-m=8192
-maxDiagChi=40
-diagBins=128
+i=10
+m=512
+maxDiagChi=20
+diagBins=32
 run &
 
 # i=164

@@ -38,6 +38,7 @@ diagBins=32
 maxDiagChi=0
 dense='false'
 denseCutoff=0.0625
+denseLoading=0.5
 
 # ground truth params
 useGroundTruthChi='false'
@@ -129,14 +130,14 @@ max_ent_inner () {
 
   # get config
   echo "starting get_config"
-  python3 ~/TICG-chromatin/scripts/get_config.py --m $m --max_ent --mode $mode --bond_type $bondType --dense_diagonal_on $dense --dense_diagonal_cutoff $denseCutoff --default_config "${resources}/default_config_maxent.json" --use_ematrix $useE --use_smatrix $useS --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_diag_chi $useGroundTruthDiagChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $TICGSeed --sample_folder $sampleFolder --load_configuration_filename $init_config > config.log
+  python3 ~/TICG-chromatin/scripts/get_config.py --m $m --max_ent --mode $mode --bond_type $bondType --dense_diagonal_on $dense --dense_diagonal_cutoff $denseCutoff --dense_diagonal_loading $denseLoading --default_config "${resources}/default_config_maxent.json" --use_ematrix $useE --use_smatrix $useS --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_diag_chi $useGroundTruthDiagChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $TICGSeed --sample_folder $sampleFolder --load_configuration_filename $init_config > config.log
 
 
   # generate goals
   if [ $goalSpecifiedCopy = 'true' ]
   then
     echo "starting goal_specified"
-    python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --contact_map "${sampleFolder}/y.npy" --mode $mode --diag_bins $diagBins > goal.log
+    python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --contact_map "${sampleFolder}/y.npy" --mode $mode --diag_bins $diagBins --dense_diagonal_on $dense --dense_diagonal_cutoff $denseCutoff --dense_diagonal_loading $denseLoading > goal.log
   else
     echo "goal_specified is false"
   fi
