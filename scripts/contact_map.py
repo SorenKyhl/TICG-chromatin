@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import os.path as osp
 
@@ -7,14 +8,15 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from seq2contact import (ArgparserConverter, DiagonalPreprocessing, crop,
-                         load_E_S, load_final_max_ent_S, plot_matrix, s_to_E)
+                         load_E_S, load_final_max_ent_S, plot_diag_chi,
+                         plot_matrix, plot_mean_vs_genomic_distance, s_to_E)
 
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     AC = ArgparserConverter()
 
-    parser.add_argument('--m', type=int, default=1024,
+    parser.add_argument('--m', type=int, default=-1,
                         help='number of particles (-1 to infer)')
     parser.add_argument('--k', type=AC.str2int,
                         help='number of bead labels')
@@ -43,6 +45,9 @@ def getArgs():
                     final_it = it
         args.final_folder = osp.join(args.replicate_folder, f"iteration{final_it}")
         args.save_folder = args.replicate_folder
+
+        path_split = args.replicate_folder.split(osp.sep)
+        args.sample_folder = osp.join('/', *path_split[:path_split.index('samples')+2])
     return args
 
 def main():
@@ -88,12 +93,66 @@ def main():
             plot_matrix(e, ofile = osp.join(args.save_folder, 'e.png'), title = 'E',
                         vmax = 'max', vmin = 'min', cmap = 'blue-red')
 
-
     if args.save_npy:
         np.save(osp.join(args.save_folder, 'y.npy'), y.astype(np.int16))
         np.save(osp.join(args.save_folder, 'y_diag.npy'), y_diag)
         if s is not None:
             np.save(osp.join(args.save_folder, 's.npy'), s)
+
+    # diag chi
+    if args.random_mode:
+        file = osp.join(args.sample_folder, 'diag_chis.npy')
+        if osp.exists(file):
+            diag_chi = np.load(file)
+            with open(osp.join(args.sample_folder, 'config.json'), 'r') as f:
+                config = json.load(f)
+            file = osp.join(args.sample_folder, 'diag_chis_continuous.npy')
+            if osp.exists(file):
+                diag_chis_continuous = np.load(file)
+            else:
+                diag_chis_continuous = None
+            plot_diag_chi(diag_chi, args.m, args.save_folder, config['dense_diagonal_on'],
+                            config['dense_diagonal_cutoff'],
+                            config['dense_diagonal_loading'],
+                            diag_chis_continuous)
+    else:
+        file = osp.join(args.replicate_folder, 'chis_diag.txt')
+        if osp.exists(file):
+            diag_chi = np.loadtxt(file)
+            diag_chi_gt = np.load(osp.join(args.sample_folder, 'diag_chis_continuous.npy'))
+            with open(osp.join(args.replicate_folder, 'resources/config.json'), 'r') as f:
+                config = json.load(f)
+            plot_diag_chi(diag_chi[-1], args.m, args.save_folder, config['dense_diagonal_on'],
+                            config['dense_diagonal_cutoff'],
+                            config['dense_diagonal_loading'], diag_chi_gt)
+        else:
+            diag_chi = None
+
+    # meanDist
+    if args.random_mode:
+        plot_mean_vs_genomic_distance(y, args.save_folder, diag_chi, 'meanDist.png',
+                                    config['dense_diagonal_on'],
+                                    config['dense_diagonal_cutoff'],
+                                    config['dense_diagonal_loading'])
+    else:
+        meanDist_max_ent = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+        print(meanDist_max_ent)
+        y_gt = np.load(osp.join(args.sample_folder, 'y.npy'))
+        meanDist_gt = DiagonalPreprocessing.genomic_distance_statistics(y_gt, 'prob')
+        print(meanDist_gt)
+
+        fig, ax = plt.subplots()
+        ax.plot(meanDist_max_ent, label = 'max ent')
+        ax.plot(meanDist_gt, label = 'gt')
+        ax.set_yscale('log')
+        # ax.set_xscale('log')
+
+        ax.set_ylabel('Contact Probability', fontsize = 16)
+        ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(osp.join(args.save_folder, 'meanDist.png'))
+        plt.close()
 
 if __name__ == '__main__':
     main()

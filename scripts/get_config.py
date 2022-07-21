@@ -71,6 +71,8 @@ def getArgs():
                         help='True to place 1/2 of beads left of cutoff')
     parser.add_argument('--dense_diagonal_cutoff', type=float, default=1/16,
                         help='cutoff = nbeads * dense_diag_cutoff')
+    parser.add_argument('--dense_diagonal_loading', type=float, default=0.5,
+                        help='proportion of beads to place left of cutoff')
     parser.add_argument('--use_ground_truth_diag_chi', type=AC.str2bool, default=False,
                         help='True to use ground truth diag chi')
 
@@ -179,10 +181,15 @@ def main():
             args.m, _ = e.shape
         elif sample_config is not None:
             args.m = sample_config['nbeads']
-        else:
-            raise Exception('Could not infer m')
+        elif args.sample_folder is not None:
+            y_file = osp.join(args.sample_folder, 'y.npy')
+            if osp.exists(y_file):
+                args.m = len(np.load(y_file))
 
-        print(f'inferred m = {args.m}')
+        if args.m == -1:
+            raise Exception('Could not infer m')
+        else:
+            print(f'inferred m = {args.m}')
 
     # infer k
     if osp.exists('psi.npy'):
@@ -250,6 +257,7 @@ def main():
     # save dense_diagonal
     config['dense_diagonal_on'] = args.dense_diagonal_on
     config['dense_diagonal_cutoff'] = args.dense_diagonal_cutoff
+    config['dense_diagonal_loading'] = args.dense_diagonal_loading
 
     # set up psi
     if osp.exists('psi.npy'):

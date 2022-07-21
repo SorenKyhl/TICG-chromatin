@@ -1,4 +1,5 @@
 import argparse
+import math
 import os
 import os.path as osp
 import re
@@ -804,6 +805,7 @@ class GetPlaidChi():
 class GetDiagChi():
     def __init__(self, args, unknown_args):
         self.sample_folder = args.sample_folder
+        self.m = args.m
         self._get_args(unknown_args)
         self.set_up_diag_chi()
 
@@ -819,6 +821,12 @@ class GetDiagChi():
                                 '(None for no diag_chi)')
         parser.add_argument('--diag_chi_slope', type=float, default=1.,
                             help='slope (in thousandths) for diag_chi_method = log')
+        parser.add_argument('--dense_diagonal_on', type=AC.str2bool, default=False,
+                            help='True to place 1/2 of beads left of cutoff')
+        parser.add_argument('--dense_diagonal_cutoff', type=float, default=1/16,
+                            help='cutoff = nbeads * dense_diag_cutoff')
+        parser.add_argument('--dense_diagonal_loading', type=float, default=0.5,
+                            help='proportion of beads to place left of cutoff')
         parser.add_argument('--max_diag_chi', type=float, default=0,
                             help='maximum diag chi value for diag_chi_method')
         parser.add_argument('--diag_chi_constant', type=AC.str2float, default=0,
@@ -835,6 +843,8 @@ class GetDiagChi():
         if args.diag_chi_method is not None:
             args.diag_chi_method = args.diag_chi_method.lower()
 
+        diag_chis_continuous = None
+
         if args.diag_chi is not None:
             diag_chis = np.array(args.diag_chi)
         elif args.diag_chi_method is None:
@@ -844,18 +854,62 @@ class GetDiagChi():
             diag_chis = np.linspace(0, args.max_diag_chi, args.diag_bins)
         elif args.diag_chi_method == 'log':
             args.diag_chi_slope /= 1000
-            scale = args.max_diag_chi / np.log(args.diag_chi_slope * (args.diag_bins - 1) + 1)
-            diag_chis = scale * np.log(args.diag_chi_slope * np.arange(args.diag_bins) + 1)
+            scale = args.max_diag_chi / np.log(args.diag_chi_slope * (self.m - 1) + 1)
+            diag_chis_continuous = scale * np.log(args.diag_chi_slope * np.arange(self.m) + 1)
+
+            diag_chis = self.coarse_grain_diag_chi(diag_chis_continuous)
+
         elif args.diag_chi_method == 'mlp':
             diag_chis = self.get_diag_chi_mlp(args.mlp_model_path, self.sample_folder)
             assert len(diag_chis) == args.diag_bins, f"Shape mismatch: {len(diag_chis)} vs {args.diag_bins}"
         else:
             raise Exception(f'Unrecognized chi diag method {args.diag_chi_method}')
 
+        if diag_chis_continuous is not None:
+            print('diag_chis_continuous: ', diag_chis_continuous, diag_chis_continuous.shape)
+            np.save('diag_chis_continuous.npy', diag_chis_continuous)
+
         if diag_chis is not None:
             diag_chis += args.diag_chi_constant
             print('diag_chis: ', diag_chis, diag_chis.shape)
             np.save('diag_chis.npy', diag_chis)
+
+
+    def coarse_grain_diag_chi(self, diag_chis_continuous):
+        args = self.args
+        if args.dense_diagonal_on:
+            dividing_line = self.m * args.dense_diagonal_cutoff
+
+            n_small_bins = int(args.dense_diagonal_loading * args.diag_bins)
+            n_big_bins = args.diag_bins - n_small_bins
+            small_binsize = int(dividing_line / (n_small_bins))
+            big_binsize = int((self.m - dividing_line) / n_big_bins)
+        else:
+            binsize = self.m / args.diag_bins
+
+        i = 0
+        diag_chis = np.zeros(args.diag_bins)
+        curr_bin_vals = []
+        prev_bin = 0
+        for d, val in enumerate(diag_chis_continuous):
+            if args.dense_diagonal_on:
+                if d > dividing_line:
+                    bin = n_small_bins + math.floor( (d - dividing_line) / big_binsize)
+                else:
+                    bin =  math.floor( d / small_binsize)
+            else:
+                bin = int(d / binsize)
+            curr_bin = bin
+            if curr_bin != prev_bin:
+                prev_bin = curr_bin
+                diag_chis[i] = np.mean(curr_bin_vals)
+                curr_bin_vals = []
+                i += 1
+            curr_bin_vals.append(val)
+        diag_chis[i] = np.mean(curr_bin_vals)
+
+        return diag_chis
+
 
     def get_diag_chi_mlp(self, model_path, sample_path):
         print('\nget_diag_chi_mlp')

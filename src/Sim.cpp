@@ -258,6 +258,8 @@ void Sim::readInput() {
 	assert(config.contains("beadvol")); Cell::beadvol  = config["beadvol"];
   assert(config.contains("dense_diagonal_on")); Cell::dense_diagonal_on  = config["dense_diagonal_on"];
   assert(config.contains("dense_diagonal_cutoff")); dense_diagonal_cutoff = config["dense_diagonal_cutoff"];
+  assert(config.contains("dense_diagonal_loading")); dense_diagonal_loading = config["dense_diagonal_loading"];
+
 	assert(config.contains("bond_type")); bond_type = config["bond_type"];
 	assert(config.contains("bond_length")); bond_length = config["bond_length"];
 
@@ -416,11 +418,10 @@ void Sim::calculateParameters() {
   {
   	if (Cell::dense_diagonal_on)
   	{
-  		float loading = 0.5; // number of bins left of dividing_line
       assert(floorf(nbeads * dense_diagonal_cutoff) == nbeads * dense_diagonal_cutoff);
   		int dividing_line = nbeads*dense_diagonal_cutoff;
 
-  		Cell::n_small_bins = int(loading * Cell::diag_nbins);
+  		Cell::n_small_bins = int(dense_diagonal_loading * Cell::diag_nbins);
   		Cell::n_big_bins = Cell::diag_nbins - Cell::n_small_bins;
   		Cell::small_binsize = int( dividing_line / Cell::n_small_bins );
   		Cell::big_binsize = int ((nbeads - dividing_line) / Cell::n_big_bins);

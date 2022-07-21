@@ -35,6 +35,7 @@ public:
 	double bond_length;
 	std::string bond_type;
 	float dense_diagonal_cutoff;
+	float dense_diagonal_loading;
 
 	// output files
 	FILE *xyz_out;
