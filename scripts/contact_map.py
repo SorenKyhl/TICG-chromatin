@@ -119,7 +119,11 @@ def main():
         file = osp.join(args.replicate_folder, 'chis_diag.txt')
         if osp.exists(file):
             diag_chi = np.loadtxt(file)
-            diag_chi_gt = np.load(osp.join(args.sample_folder, 'diag_chis_continuous.npy'))
+            file = osp.join(args.sample_folder, 'diag_chis_continuous.npy')
+            if osp.exists(file):
+                diag_chi_gt = np.load(file)
+            else:
+                diag_chi_gt = None
             with open(osp.join(args.replicate_folder, 'resources/config.json'), 'r') as f:
                 config = json.load(f)
             plot_diag_chi(diag_chi[-1], args.m, args.save_folder, config['dense_diagonal_on'],
