@@ -498,16 +498,17 @@ def convergence_check():
     plt.close()
 
 def main():
-    y = np.loadtxt('/home/erschultz/renorm/1024/chis_diag.txt')[1]
-    plt.plot(y)
-    plt.xlabel('d')
-    plt.ylabel('p')
+    x = np.linspace(0, 5, 1000)
+    y = 0.5 * (1 + np.tanh(3.22*(1.78 - x)))
+    plt.plot(x, y, label=2016)
+    x = np.linspace(0, 1.76, 1000)
+    y = 0.5 * (1 + np.tanh(3.72*(1.76 - x)))
+    plt.plot(x, y, label = 2019, color = 'k')
+    x = np.linspace(1.76, 5, 1000)
+    y = 0.5 * (1.76 / x)**4
+    plt.plot(x, y, color = 'k')
+    plt.legend()
     plt.show()
-
-    # p_sim =
-    # p_exp = np.loadtxt('/home/erschultz/renorm/1024/obj_goal_diag.txt')
-
-
 
 if __name__ == '__main__':
     # test_robust_PCA()

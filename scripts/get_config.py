@@ -167,6 +167,12 @@ def main():
             with open(sample_config_file, 'rb') as f:
                 sample_config = json.load(f)
 
+        # copy over ground truth y
+        y_gt_file = osp.join(args.sample_folder, 'y.npy')
+        if osp.exists(y_gt_file):
+            y_gt = np.load(y_gt_file)
+            np.save('y_gt.npy', y_gt)
+
 
     with open(args.default_config, 'rb') as f:
         config = json.load(f)
@@ -412,6 +418,7 @@ def main():
 
     with open(args.ofile, 'w') as f:
         json.dump(config, f, indent = 2)
+
 
 #### test functions ####
 class Tester():

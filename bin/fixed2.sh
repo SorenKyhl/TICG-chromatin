@@ -45,18 +45,19 @@ run()  {
 # mv TICG-engine ..
 
 k=0
-nSweeps=1000000
+nSweeps=1000
 dumpFrequency=100000
 TICGSeed=10
-chiDiagMethod='log'
+chiDiagMethod='linear'
 chiDiagSlope=2000
-dense='false'
+dense='true'
+denseCutoff=0.125
 
 
-i=10
+i=12
 m=512
 maxDiagChi=20
-diagBins=32
+diagBins=16
 run &
 
 # i=164

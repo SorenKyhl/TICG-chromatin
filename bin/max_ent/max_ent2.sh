@@ -15,7 +15,7 @@ if [ $local = 'true' ]
 then
   dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
-  numIterations=15
+  numIterations=10
   finalSimProductionSweeps=1000000
   productionSweeps=300000
   equilibSweeps=50000
@@ -30,20 +30,20 @@ method='none'
 diagChiMethod='linear'
 m=1024
 mode='diag'
-diagBins=32
+diagBins=16
 k=0
-maxDiagChi=15
-
+maxDiagChi=10
 dense='true'
+denseCutoff=0.125
+
 sample=8
 max_ent
-#
-dense='false'
+
 sample=9
 max_ent
 
 m=512
-sample=10
+sample=11
 max_ent
 
 wait

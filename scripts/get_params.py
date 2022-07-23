@@ -851,14 +851,13 @@ class GetDiagChi():
             # no diag_chis
             diag_chis = None
         elif args.diag_chi_method == 'linear':
-            diag_chis = np.linspace(0, args.max_diag_chi, args.diag_bins)
+            diag_chis_continuous = np.linspace(0, args.max_diag_chi, self.m)
+            diag_chis = self.coarse_grain_diag_chi(diag_chis_continuous)
         elif args.diag_chi_method == 'log':
             args.diag_chi_slope /= 1000
             scale = args.max_diag_chi / np.log(args.diag_chi_slope * (self.m - 1) + 1)
             diag_chis_continuous = scale * np.log(args.diag_chi_slope * np.arange(self.m) + 1)
-
             diag_chis = self.coarse_grain_diag_chi(diag_chis_continuous)
-
         elif args.diag_chi_method == 'mlp':
             diag_chis = self.get_diag_chi_mlp(args.mlp_model_path, self.sample_folder)
             assert len(diag_chis) == args.diag_bins, f"Shape mismatch: {len(diag_chis)} vs {args.diag_bins}"
