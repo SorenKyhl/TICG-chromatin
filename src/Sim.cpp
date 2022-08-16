@@ -439,6 +439,11 @@ void Sim::calculateParameters() {
 	exp_decay_crank = nbeads/decay_length;
 	exp_decay_pivot = nbeads/decay_length;
 
+	if(bond_type == "gaussian" && rotate_on)
+	{
+		throw std::runtime_error("bead type is gaussian, set rotate_on = false");
+	}
+
 	n_disp = displacement_on ? nbeads : 0;
 	n_trans = translation_on ? decay_length : 0;
 	n_crank = crankshaft_on ? decay_length : 0;
@@ -916,24 +921,16 @@ void Sim::MCmove_translate() {
 	// execute move
 	try
 	{
-		//Timer t_bounds("bounds", print_trans);
-		// reject immediately if moved out of simulation box, no cleanup necessary
+		//Timer t_flag("Flag cells", print_trans);
+		// flag appropriate cells for energy calculation and find beads that swapped cells
 		for(int i=first; i<=last; i++)
 		{
 			new_loc = beads[i].r + displacement;
 			if (outside_boundary(new_loc)) {
 				throw "exited simulation box";
 			}
-		}
-		//t_bounds.~Timer();
 
-		//Timer t_flag("Flag cells", print_trans);
-		// flag appropriate cells for energy calculation and find beads that swapped cells
-		for(int i=first; i<=last; i++)
-		{
 			old_cell_tmp = grid.getCell(beads[i]);
-
-			new_loc = beads[i].r + displacement;
 			new_cell_tmp = grid.getCell(new_loc);
 
 			if (new_cell_tmp != old_cell_tmp)
