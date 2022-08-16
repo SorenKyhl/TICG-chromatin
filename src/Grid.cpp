@@ -39,6 +39,7 @@ void Grid::setActiveCells() {
 				}
 				else if (spherical_boundary)
 				{
+					std::cout << "spherical boundary!" << std::endl;
 					// only cells within sqrt(3)*delta of radius are active, at all times
 					Eigen::RowVector3d cell_corner;
 					cell_corner(0) = origin(0) + i*delta;

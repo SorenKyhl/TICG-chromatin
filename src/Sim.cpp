@@ -383,11 +383,11 @@ void Sim::volParameters_new() {
 	double vol_beads = nbeads*Cell::beadvol;
 	double vol  = vol_beads/Cell::phi_chromatin;
 
-	if (boundary_type == "cube") {
+	if (boundary_type == "cube" || boundary_type == "cubic") {
 		grid.cubic_boundary = true;
 	}
 
-	if (boundary_type == "sphere") {
+	if (boundary_type == "sphere" || boundary_type == "spherical") {
 		grid.spherical_boundary = true;
 	}
 
@@ -444,7 +444,7 @@ void Sim::calculateParameters() {
 	n_crank = crankshaft_on ? decay_length : 0;
 	n_pivot = pivot_on ? decay_length/10: 0;
 	n_rot = rotate_on ? nbeads : 0;
-	nSteps = n_trans + n_crank + n_pivot + n_rot;
+	nSteps = n_disp + n_trans + n_crank + n_pivot + n_rot;
 
 
 	if (diagonal_on) {
@@ -715,6 +715,11 @@ double Sim::randomExp(double mu, double decay) {
 }
 
 void Sim::MC() {
+
+	auto start = std::chrono::high_resolution_clock::now();
+	auto laststop = std::chrono::high_resolution_clock::now();
+	int beads_moved_last_sweep = 0;
+
 	std::cout << "Beginning Simulation" << std::endl;
 	for(int sweep = 1; sweep<nSweeps+1; sweep++)
 	{
@@ -769,7 +774,21 @@ void Sim::MC() {
 		//t_rotation.~Timer();
 
 		if (sweep%dump_frequency == 0) {
-			std::cout << "Sweep number " << sweep << std::endl;
+			auto stop = std::chrono::high_resolution_clock::now();
+			auto totaltime = std::chrono::duration_cast<std::chrono::seconds>(stop-start);
+			auto blocktime = std::chrono::duration_cast<std::chrono::seconds>(stop-laststop);
+			laststop = stop;
+
+			int beads_moved = nbeads_moved - beads_moved_last_sweep;
+			beads_moved_last_sweep = nbeads_moved;
+
+			std::cout << "------ Sweep number " << sweep << " ------\n";
+			std::cout << "elapsed: " << totaltime.count() << "sec \t|\t";
+			if(totaltime.count() > 0 && blocktime.count() > 0)
+				std::cout <<  sweep/totaltime.count() << " sweep/sec \t|\t lastblock: " << dump_frequency/blocktime.count() << " s/s\n";
+			std::cout << "Beads Moved " << nbeads_moved << " beads \t|\t ";
+			if (blocktime.count() > 0)
+				std::cout << "Rate: " << beads_moved/blocktime.count() << " beads/s \n";
 			dumpData();
 			if (production) {dumpContacts(sweep);}
 
@@ -1161,8 +1180,7 @@ void Sim::MCmove_pivot(int sweep) {
 	// chose one end of the polymer and a pivot bead
 	int end = (nbeads-1)*std::round(rng->uniform()); //  either first bead or last bead
 
-	end = nbeads-1;
-
+	//end = nbeads-1;
 	// pick second bead according to single-sided exponential distribution away from end
 	int length;
 	do {
@@ -1245,14 +1263,12 @@ void Sim::MCmove_pivot(int sweep) {
 
 		if (rng->uniform() < exp(Uold-Unew))
 		{
-			//std::cout << "Accepted"<< std::endl;
 			acc += 1;
 			acc_pivot += 1;
 			nbeads_moved += (last-first);
 		}
 		else
 		{
-			//std::cout << "Rejected" << std::endl;
 			throw "rejected";
 		}
 	}
@@ -1309,7 +1325,7 @@ void Sim::MCmove_grid() {
 		{
 			//std::cout << "passed grid move" << std::endl;
 			flag = false;
-			grid.setActiveCells();
+			//grid.setActiveCells();
 		}
 		else
 		{
