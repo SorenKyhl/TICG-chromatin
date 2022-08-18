@@ -807,7 +807,7 @@ void Sim::MC() {
 				std::cout <<  sweep/totaltime.count() << " sweep/sec \n";
 			std::cout << "Beads Moved " << nbeads_moved << " beads \t|\t ";
 			if (blocktime.count() > 0)
-				std::cout << "Rate: " << beads_moved/blocktime.count() << " beads/s \n";
+				std::cout << "Rate (last block)" << beads_moved/blocktime.count() << " beads/s \n";
 			dumpData();
 			if (production) {dumpContacts(sweep);}
 
@@ -896,25 +896,18 @@ void Sim::MCmove_displace() {
 }
 
 void Sim::MCmove_translate() {
-	if (print_trans) std::cout << "==================NEW MOVE ====================" << std::endl;
-	Timer t_trans("Translate", print_trans);
+	//Timer t_trans("Translate", print_trans);
 	//Timer t_setup("setup", print_trans);
 
-	// select a first bead at random
+	// select last bead from two-sided exponential distribution around first
 	int first = floor(beads.size()*rng->uniform());
-
-	// choose second bead from two-sided exponential distribution around first
 	int last = -1;
 	while (last < 0 || last >= nbeads)
 	{
 		last = std::round(randomExp(first, exp_decay));            // does this obey detailed balance?
 	}
-
-	// swap first and last to ensure last > first
-	if (last < first) {std::swap(first, last);}
-
-	if (print_trans) std::cout << "number of beads is " << last - first << std::endl;
-
+	
+	if (last < first) {std::swap(first, last);} // swap first and last to ensure last > first
 	// generate displacement vector with magnitude step_trans
 	Eigen::RowVector3d displacement;
 	displacement = step_trans*unit_vec(displacement);
@@ -933,86 +926,75 @@ void Sim::MCmove_translate() {
 	//t_setup.~Timer();
 
 	// execute move
-	try
+	//Timer t_flag("Flag cells", print_trans);
+	// flag appropriate cells for energy calculation and find beads that swapped cells
+	for(int i=first; i<=last; i++)
 	{
-		//Timer t_flag("Flag cells", print_trans);
-		// flag appropriate cells for energy calculation and find beads that swapped cells
-		for(int i=first; i<=last; i++)
-		{
-			new_loc = beads[i].r + displacement;
-			if (outside_boundary(new_loc)) {
-				throw "exited simulation box";
-			}
-
-			old_cell_tmp = grid.getCell(beads[i]);
-			new_cell_tmp = grid.getCell(new_loc);
-
-			if (new_cell_tmp != old_cell_tmp)
-			{
-				bead_swaps[i] = std::make_pair(old_cell_tmp, new_cell_tmp);
-				flagged_cells.insert(new_cell_tmp);
-				flagged_cells.insert(old_cell_tmp);
-			}
+		new_loc = beads[i].r + displacement;
+		if (outside_boundary(new_loc)) {
+			return;
 		}
-		//t_flag.~Timer();
 
-		//Timer t_uold("Uold", print_trans);
-		//std::cout << "Beads: " << last-first << " Cells: " << flagged_cells.size() << std::endl;
-		double Uold = getTotalEnergy(first, last, flagged_cells);
-		//t_uold.~Timer();
+		old_cell_tmp = grid.getCell(beads[i]);
+		new_cell_tmp = grid.getCell(new_loc);
 
-		//Timer t_disp("Displacement", print_trans);
-		for(int i=first; i<=last; i++)
+		if (new_cell_tmp != old_cell_tmp)
 		{
-			beads[i].r += displacement;
-		}
-		//t_disp.~Timer();
-
-		//Timer t_swap("Bead Swaps", print_trans);
-		// update grid <bead index,   <old cell , new cell>>
-		//for(std::pair<int, std::pair<Cell*, Cell*>> &x : bead_swaps)
-		for(auto const &x : bead_swaps)
-		{
-			x.second.first->moveOut(&beads[x.first]);
-			x.second.second->moveIn(&beads[x.first]);
-		}
-		//t_swap.~Timer();
-
-		//Timer t_unew("Unew", print_trans);
-		double Unew = getTotalEnergy(first, last, flagged_cells);
-		//t_unew.~Timer();
-
-		if (rng->uniform() < exp(Uold-Unew))
-		{
-			acc += 1;
-			acc_trans += 1;
-			nbeads_moved += (last-first);
-		}
-		else
-		{
-			throw "rejected";
+			bead_swaps[i] = std::make_pair(old_cell_tmp, new_cell_tmp);
+			flagged_cells.insert(new_cell_tmp);
+			flagged_cells.insert(old_cell_tmp);
 		}
 	}
-	// REJECTION CASES -- restore old conditions
-	catch (const char* msg)
-	{
-		Timer t_rej("rejection", print_trans);
-		if(msg == "rejected")
-		{
-			// restore particle positions
-			for(int i=first; i<=last; i++)
-			{
-				beads[i].r -= displacement;
-			}
+	//t_flag.~Timer();
 
-			if (bead_swaps.size() > 0)
+	//Timer t_uold("Uold", print_trans);
+	//std::cout << "Beads: " << last-first << " Cells: " << flagged_cells.size() << std::endl;
+	double Uold = getTotalEnergy(first, last, flagged_cells);
+	//t_uold.~Timer();
+
+	//Timer t_disp("Displacement", print_trans);
+	for(int i=first; i<=last; i++)
+	{
+		beads[i].r += displacement;
+	}
+	//t_disp.~Timer();
+
+	//Timer t_swap("Bead Swaps", print_trans);
+	// update grid <bead index,   <old cell , new cell>>
+	//for(std::pair<int, std::pair<Cell*, Cell*>> &x : bead_swaps)
+	for(auto const &x : bead_swaps)
+	{
+		x.second.first->moveOut(&beads[x.first]);
+		x.second.second->moveIn(&beads[x.first]);
+	}
+	//t_swap.~Timer();
+
+	//Timer t_unew("Unew", print_trans);
+	double Unew = getTotalEnergy(first, last, flagged_cells);
+	//t_unew.~Timer();
+
+	if (rng->uniform() < exp(Uold-Unew))
+	{
+		// move accepted
+		acc += 1;
+		acc_trans += 1;
+		nbeads_moved += (last-first);
+	}
+	else
+	{
+		// move rejected
+		for(int i=first; i<=last; i++)
+		{
+			beads[i].r -= displacement; // restore particle positions
+		}
+
+		if (bead_swaps.size() > 0)
+		{
+			// restore old grid populations
+			for(auto const &x : bead_swaps)
 			{
-				//for(std::pair<int, std::pair<Cell*, Cell*>> &x : bead_swaps)
-				for(auto const &x : bead_swaps)
-				{
-					x.second.first->moveIn(&beads[x.first]);
-					x.second.second->moveOut(&beads[x.first]);
-				}
+				x.second.first->moveIn(&beads[x.first]);
+				x.second.second->moveOut(&beads[x.first]);
 			}
 		}
 	}
