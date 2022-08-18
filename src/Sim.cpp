@@ -25,6 +25,7 @@ void Sim::run() {
 	grid.setActiveCells();  // populates the active cell locations
 	grid.meshBeads(beads);  // populates the grid locations with beads;
 	setupContacts();        // construct contact map
+	assert (grid.checkCellConsistency(nbeads));
 	MC();                   // MC simulation
 	assert (grid.checkCellConsistency(nbeads));
 }
@@ -385,10 +386,12 @@ void Sim::volParameters_new() {
 
 	if (boundary_type == "cube" || boundary_type == "cubic") {
 		grid.cubic_boundary = true;
+		grid.spherical_boundary = false;
 	}
 
 	if (boundary_type == "sphere" || boundary_type == "spherical") {
 		grid.spherical_boundary = true;
+		grid.cubic_boundary = false;
 	}
 
 	if (grid.cubic_boundary)
@@ -418,6 +421,7 @@ void Sim::volParameters_new() {
 		std::cout << "grid.radius is " << grid.radius << std::endl;
 		std::cout << "grid.L is: " << grid.L << std::endl;
 		std::cout << "simulation volume is: " << total_volume/1000/1000/1000 << " um^3" << std::endl;
+		std::cout << "sphere_center is : " << grid.sphere_center[0] << " nm " << std::endl;
 	}
 
 }
@@ -535,11 +539,20 @@ void Sim::initRandomCoil(double bondlength) {
 	double center; // center of simulation box
 	if (grid.cubic_boundary)
 	{
+		std::cout << "------------ cubic centering" << std::endl;
 		center = grid.delta*grid.L/2;
 	}
 	else if (grid.spherical_boundary)
 	{
+		std::cout << "------------ sphere centering" << std::endl;
+		std::cout << "assigning center" << std::endl;
 		center = grid.sphere_center[0];
+		std::cout << " center is " << center << std::endl;
+		std::cout << " grid.sphere_center[0] " << grid.sphere_center[0] << std::endl;
+	}
+	else
+	{
+		std::cout << "------------ did not center" << std::endl;
 	}
 
 	beads[0].r = {center, center, center}; // start in middlle of the box
@@ -741,6 +754,14 @@ void Sim::MC() {
 		}
 		//t_pivot.~Timer();
 		
+		Timer t_crankshaft("Cranking", prof_timer_on);
+		for(int j=0; j<n_crank; j++) {
+			MCmove_crankshaft();
+			//nonbonded = getNonBondedEnergy(grid.active_cells);
+			//std::cout << nonbonded << std::endl;
+		}
+		//t_crankshaft.~Timer();
+		
 		looping:
 		Timer t_translation("translating", prof_timer_on);
 		for(int j=0; j<n_trans; j++)
@@ -755,13 +776,6 @@ void Sim::MC() {
 		//nonbonded = getNonBondedEnergy(grid.active_cells);
 		//std::cout << nonbonded << std::endl;
 	
-		Timer t_crankshaft("Cranking", prof_timer_on);
-		for(int j=0; j<n_crank; j++) {
-			MCmove_crankshaft();
-			//nonbonded = getNonBondedEnergy(grid.active_cells);
-			//std::cout << nonbonded << std::endl;
-		}
-		//t_crankshaft.~Timer();
 
 		Timer t_displace("displacing", prof_timer_on);
 		for(int j=0; j<n_disp; j++)
@@ -789,8 +803,8 @@ void Sim::MC() {
 
 			std::cout << "------ Sweep number " << sweep << " ------\n";
 			std::cout << "elapsed: " << totaltime.count() << "sec \t|\t";
-			if(totaltime.count() > 0 && blocktime.count() > 0)
-				std::cout <<  sweep/totaltime.count() << " sweep/sec \t|\t lastblock: " << dump_frequency/blocktime.count() << " s/s\n";
+			if(totaltime.count() > 0)
+				std::cout <<  sweep/totaltime.count() << " sweep/sec \n";
 			std::cout << "Beads Moved " << nbeads_moved << " beads \t|\t ";
 			if (blocktime.count() > 0)
 				std::cout << "Rate: " << beads_moved/blocktime.count() << " beads/s \n";

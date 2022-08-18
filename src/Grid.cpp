@@ -41,14 +41,16 @@ void Grid::setActiveCells() {
 				{
 					//std::cout << "spherical boundary!" << std::endl;
 					// only cells within sqrt(3)*delta of radius are active, at all times
+					// but: origin can move around, as much as a full grid cell.
+					// so actually need 2*sqrt(3) distance of buffer to include all possible grid cells
 					Eigen::RowVector3d cell_corner;
-					cell_corner(0) = origin(0) + i*delta;
-					cell_corner(1) = origin(1) + j*delta;
-					cell_corner(2) = origin(2) + k*delta;
+					cell_corner(0) = i*delta;
+					cell_corner(1) = j*delta;
+					cell_corner(2) = k*delta;
 
 					Eigen::RowVector3d difference = cell_corner - sphere_center;
 
-					if (difference.norm() < radius + sqrt(3)*delta)
+					if (difference.norm() < radius + 2*sqrt(3)*delta)
 					{
 						active_cells.insert(&cells[i][j][k]);
 					}
