@@ -93,7 +93,8 @@ then
 	mkdir $outputDir
 	#exit 1
 fi
-cp -r resources $outputDir
+
+cp -r resources/ $outputDir
 cd $outputDir
 
 if ! [[ -d resources ]]
@@ -119,7 +120,8 @@ run_simulation () {
 	STARTTIME=$(date +%s)
 	# resources must be in working directory
 	mkdir "iteration$it"
-	cp resources/* "iteration$it"
+	cp $(find resources/ ! -name "experimental_hic.npy") "iteration$it"
+	ln -s "resources/expermental_hic.npy" "iteration$it"
 	if [ $mode == "plaid" ];
 	then
 		python3 $proj_bin/update_chis.py --it $it --k $k
@@ -160,7 +162,7 @@ run_simulation () {
 	cd $outputDir
 
 	ENDTIME=$(date +%s)
-	echo "finished iteration ${it}: $(($ENDTIME - $STARTTIME)) seconds"
+	echo "finished simulating ${it}: $(($ENDTIME - $STARTTIME)) seconds"
 }
 
 run_parallel()
@@ -199,6 +201,7 @@ if [ $num_iterations -gt 0 ]
 then
 	for it in $(seq 1 $(($num_iterations)))
 	do
+		STARTTIME=$(date +%s)
 		run_simulation
 		# update chis via newton's method
 		python3 $proj_bin/newton_step.py $it $gamma $mode $goal_specified $trust_region $method >> track.log
@@ -206,6 +209,8 @@ then
 		python3 $proj_bin/plot_convergence.py --mode $mode --k $k
 		python3 $proj_bin/contactmap.py $it
 		(cd iteration$it && python3 $proj_bin/analysis.py)
+		ENDTIME=$(date +%s)
+		echo "finished iteration ${it}: $(($ENDTIME - $STARTTIME)) seconds"
 	done
 fi
 
