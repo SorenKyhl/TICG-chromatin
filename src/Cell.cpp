@@ -60,6 +60,7 @@ double Cell::getDensityCapEnergy() {
 	float phi_beads = contains.size()*beadvol/vol;
 	float phi_solvent = 1 - contains.size()*beadvol/vol;
 
+
 	double U = 0;
 	if (density_cap_on)
 	{

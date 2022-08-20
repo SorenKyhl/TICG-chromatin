@@ -1,6 +1,6 @@
 CC = g++
-FLAGS = -O3 -std=c++11 -fopenmp
-DEBUG_FLAGS = -g -std=c++11
+FLAGS = -O3 -std=c++17 -fopenmp -Wall
+DEBUG_FLAGS = -g -std=c++17
 INCLUDE = -I ../include
 MAIN = main.cpp
 EXE = TICG-engine

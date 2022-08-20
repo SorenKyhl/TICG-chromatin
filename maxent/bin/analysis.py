@@ -4,8 +4,6 @@ import matplotlib.pyplot as plt
 
 print("analysis")
 
-
-'''
 sim = ep.Sim("production_out")
 
 SCC = ep.get_SCC(sim.hic, sim.gthic)
@@ -36,7 +34,6 @@ plt.plot(RMSLE_vec, label="RMSLE")
 plt.xlabel("iteration")
 plt.ylabel("RMSE")
 plt.savefig("../RMSE.png")
-'''
 
 convergence = np.loadtxt("../convergence.txt")
 fig, axs = plt.subplots(3, figsize=(12,14))
@@ -50,7 +47,6 @@ axs[1].legend()
 axs[2].set_title("SCC")
 plt.savefig("../error.png")
 
-'''
 sim.plot_obs_vs_goal()
 plt.savefig("obs_vs_goal.png")
 
@@ -92,4 +88,3 @@ plt.savefig("obs.png")
 plt.figure()
 plt.plot(sim.config['diag_chis'], 'o')
 plt.savefig("diag_chis.png")
-'''

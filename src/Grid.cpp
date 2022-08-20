@@ -1,4 +1,6 @@
 #include "Grid.h"
+#include <numeric>
+#include <execution>
 
 bool Grid::parallel;
 bool Grid::cell_volumes;
@@ -199,10 +201,25 @@ double Grid::diagEnergy(const std::unordered_set<Cell*>& flagged_cells, const st
 	}
 	else
 	{
+		/*
+		U = std::accumulate(flagged_cells.begin(),
+							flagged_cells.end(),
+                            0,
+                            [diag_chis](int sum, Cell* el){ return sum + el->getDiagEnergy(diag_chis);} );
+							*/
+		/*
+		U = std::reduce(std::execution::par_unseq,
+							flagged_cells.begin(),
+							flagged_cells.end(),
+                            0,
+                            [diag_chis](int sum, Cell* el){ return sum + el->getDiagEnergy(diag_chis);} );
+							*/
 		for(Cell* cell : flagged_cells)
 		{
 			U += cell->getDiagEnergy(diag_chis);
+
 		}
+
 	}
 
 	return U;
