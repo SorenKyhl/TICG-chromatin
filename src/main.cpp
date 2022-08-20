@@ -1,14 +1,4 @@
-#include <iostream>
-#include <cmath>
-#include <vector>
-#include <fstream>
-#include <cassert>
-#include <unordered_set>
-#include <unordered_map>
 #include <chrono>
-#include <string>
-#include <sstream>
-#include <cstdlib>
 
 #include "Eigen/Dense"
 #include "random_mars.h"
@@ -29,13 +19,12 @@ int main(int argc, char* argv[])
 	Sim mySim;
 
 	if (argc == 1) {
-		mySim.data_out_filename = "data_out";
-		std::cout << "data out:" << mySim.data_out_filename << std::endl;
+		mySim = Sim();
 	}
 	else {
-		mySim.data_out_filename = argv[1];
-		std::cout << "data out:" << mySim.data_out_filename << std::endl;
+		mySim = Sim(argv[1]);
 	}
+
 	mySim.run();
 
 	auto stop = std::chrono::high_resolution_clock::now();

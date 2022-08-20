@@ -14,6 +14,16 @@ void read_json(const nlohmann::json& json, T& var, std::string varname) {
     std::cout << "loaded: " << std::to_string(var) << std::endl;
 }
 
+void Sim::Sim()
+{
+	data_out_filename = "data_out";
+}
+
+void Sim::Sim(std::string filename)
+{
+	data_out_filename = filename;
+}
+
 void Sim::run() {
 	readInput();            // load parameters from config.json
 	if (smatrix_on) { setupSmatrix(); }
