@@ -132,6 +132,8 @@ public:
 	std::string ematrix_filename;
 
 	// methods
+	Sim();
+	Sim(std::string);
 	void run();
 	void xyzToContact();
 	void setupContacts();
