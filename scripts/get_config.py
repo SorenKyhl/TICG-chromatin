@@ -14,9 +14,9 @@ def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     AC = ArgparserConverter()
 
-    parser.add_argument('--default_config', type=str, default='default_config.json',
+    parser.add_argument('--config_ifile', type=str, default='config.json',
                         help='path to default config file')
-    parser.add_argument('--ofile', type=str, default='config.json',
+    parser.add_argument('--config_ofile', type=str, default='config.json',
                             help='path to output config file')
 
     # config params
@@ -69,10 +69,6 @@ def getArgs():
     parser.add_argument('--diag_pseudobeads_on', type=AC.str2bool, default=True)
     parser.add_argument('--dense_diagonal_on', type=AC.str2bool, default=False,
                         help='True to place 1/2 of beads left of cutoff')
-    parser.add_argument('--dense_diagonal_cutoff', type=float, default=1/16,
-                        help='cutoff = nbeads * dense_diag_cutoff')
-    parser.add_argument('--dense_diagonal_loading', type=float, default=0.5,
-                        help='proportion of beads to place left of cutoff')
     parser.add_argument('--use_ground_truth_diag_chi', type=AC.str2bool, default=False,
                         help='True to use ground truth diag chi')
 
@@ -174,7 +170,7 @@ def main():
             np.save('y_gt.npy', y_gt)
 
 
-    with open(args.default_config, 'rb') as f:
+    with open(args.config_ifile, 'rb') as f:
         config = json.load(f)
 
     if args.m == -1:
@@ -243,13 +239,13 @@ def main():
         if config["diagonal_on"]:
             diag_chis = np.array(sample_config["diag_chis"])
             config["diag_chis"] = list(diag_chis)
+            with open(diag_chis_file) as f:
+                json.dump({'diag_chis':diag_chis}, f)
             np.save(diag_chis_file, diag_chis)
     elif osp.exists(diag_chis_file):
-        diag_chis = np.load(diag_chis_file)
-        config["diag_chis"] = list(diag_chis) # ndarray not json serializable
         config["diagonal_on"] = True
-
         if args.max_ent:
+            diag_chis = np.load(diag_chis_file)
             with open('chis_diag.txt', 'w', newline='') as f:
                 wr = csv.writer(f, delimiter = '\t')
                 wr.writerow(diag_chis)
@@ -262,8 +258,6 @@ def main():
 
     # save dense_diagonal
     config['dense_diagonal_on'] = args.dense_diagonal_on
-    config['dense_diagonal_cutoff'] = args.dense_diagonal_cutoff
-    config['dense_diagonal_loading'] = args.dense_diagonal_loading
 
     # set up psi
     if osp.exists('psi.npy'):
@@ -416,7 +410,7 @@ def main():
     config['num_threads'] = args.num_threads
 
 
-    with open(args.ofile, 'w') as f:
+    with open(args.config_ofile, 'w') as f:
         json.dump(config, f, indent = 2)
 
 

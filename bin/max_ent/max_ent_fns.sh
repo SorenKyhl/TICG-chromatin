@@ -13,6 +13,8 @@ productionSweeps=300000
 finalSimProductionSweeps=1000000
 equilibSweeps=50000
 numIterations=30 # iteration 1 + numIterations is production run to get contact map
+parallel='false'
+numThreads=2
 
 # energy params
 useE='false'
@@ -36,9 +38,15 @@ bondType='gaussian'
 diagChiMethod='linear'
 diagBins=32
 maxDiagChi=0
-dense='false'
-denseCutoff=0.0625
-denseLoading=0.5
+chiDiagSlope=1
+denseCutoff='none'
+denseLoading='none'
+smallBinSize=0
+bigBinSize=-1
+nSmallBins=0
+nBigBins=-1
+diagStart=3
+diagCutoff='none'
 
 # ground truth params
 useGroundTruthChi='false'
@@ -126,18 +134,17 @@ max_ent_inner () {
   # generate sequences
   echo "starting get_params"
   echo $method_fmt
-  python3 ~/TICG-chromatin/scripts/get_params.py --method=$method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --gnn_model_path $GNNModelPath --mlp_model_path $MLPModelPath --seq_seed $seqSeed --chi_method 'random' --min_chi=-1 --max_chi=1 --chi_seed $chiSeed --diag_chi_method $diagChiMethod --diag_bins $diagBins --max_diag_chi $maxDiagChi > params.log
+  python3 ~/TICG-chromatin/scripts/get_params.py --config_ifile "${resources}/default_config_maxent.json" --method=$method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --gnn_model_path $GNNModelPath --mlp_model_path $MLPModelPath --seq_seed $seqSeed --chi_method 'random' --min_chi=-1 --max_chi=1 --chi_seed $chiSeed --diag_chi_method $diagChiMethod --diag_bins $diagBins --max_diag_chi $maxDiagChi --dense_diagonal_on $dense --dense_diagonal_cutoff $denseCutoff --dense_diagonal_loading $denseLoading --small_binsize $smallBinSize --big_binsize $bigBinSize --n_small_bins $nSmallBins --n_big_bins $nBigBins --diag_start $diagStart --diag_cutoff $diagCutoff --diag_chi_slope $chiDiagSlope > params.log
 
-  # get config
   echo "starting get_config"
-  python3 ~/TICG-chromatin/scripts/get_config.py --m $m --max_ent --mode $mode --bond_type $bondType --dense_diagonal_on $dense --dense_diagonal_cutoff $denseCutoff --dense_diagonal_loading $denseLoading --default_config "${resources}/default_config_maxent.json" --use_ematrix $useE --use_smatrix $useS --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_diag_chi $useGroundTruthDiagChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $TICGSeed --sample_folder $sampleFolder --load_configuration_filename $init_config > config.log
+  python3 ~/TICG-chromatin/scripts/get_config.py --parallel $parallel --num_threads $numThreads --m $m --max_ent --mode $mode --bond_type $bondType --dense_diagonal_on $dense --use_ematrix $useE --use_smatrix $useS --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_diag_chi $useGroundTruthDiagChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $TICGSeed --sample_folder $sampleFolder --load_configuration_filename $init_config > config.log
 
 
   # generate goals
   if [ $goalSpecifiedCopy = 'true' ]
   then
     echo "starting goal_specified"
-    python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --m $m --contact_map "${sampleFolder}/y.npy" --mode $mode --diag_bins $diagBins --dense_diagonal_on $dense --dense_diagonal_cutoff $denseCutoff --dense_diagonal_loading $denseLoading > goal.log
+    python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --contact_map "${sampleFolder}/y.npy" --mode $mode > goal.log
   else
     echo "goal_specified is false"
   fi
@@ -229,11 +236,6 @@ param_setup(){
   then
     numIterationsCopy=0
     goalSpecifiedCopy='false'
-  fi
-
-  if [ $mode = 'plaid' ]
-  then
-    useGroundTruthDiagChi='true'
   fi
 
   if [ $useGroundTruthDiagChi = 'true' ]

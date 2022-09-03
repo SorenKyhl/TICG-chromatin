@@ -26,6 +26,12 @@ maxChi=${16}
 fillDiag=${17}
 chiSeed=${18}
 maxDiagChi=${19}
+dense=${20}
+diagBins=${21}
+smallBinSize=${22}
+bigBinSize=${23}
+nSmallBins=${24}
+nBigBins=${25}
 
 echo $@
 

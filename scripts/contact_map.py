@@ -1,5 +1,6 @@
 import argparse
 import json
+import math
 import os
 import os.path as osp
 
@@ -8,8 +9,9 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from seq2contact import (ArgparserConverter, DiagonalPreprocessing, crop,
-                         load_E_S, load_final_max_ent_S, plot_diag_chi,
-                         plot_matrix, plot_mean_vs_genomic_distance, s_to_E)
+                         get_diag_chi_step, load_E_S, load_final_max_ent_S,
+                         plot_diag_chi, plot_matrix, plot_mean_dist,
+                         plot_mean_vs_genomic_distance, s_to_E)
 
 
 def getArgs():
@@ -99,64 +101,68 @@ def main():
         if s is not None:
             np.save(osp.join(args.save_folder, 's.npy'), s)
 
+    # get config
+    if args.random_mode:
+        with open(osp.join(args.sample_folder, 'config.json'), 'r') as f:
+            config = json.load(f)
+    else:
+        # find last iteration
+        max_it = 1
+        for f in os.listdir(args.replicate_folder):
+            if f.startswith('iteration'):
+                it = int(f[9:])
+                if it > max_it:
+                    max_it = it
+        print(f'max_it = {max_it}')
+        with open(osp.join(args.replicate_folder, f'iteration{max_it}', 'config.json'), 'r') as f:
+            config = json.load(f)
+
     # diag chi
+    diag_chi = None
     if args.random_mode:
         file = osp.join(args.sample_folder, 'diag_chis.npy')
         if osp.exists(file):
             diag_chi = np.load(file)
-            with open(osp.join(args.sample_folder, 'config.json'), 'r') as f:
-                config = json.load(f)
             file = osp.join(args.sample_folder, 'diag_chis_continuous.npy')
             if osp.exists(file):
-                diag_chis_continuous = np.load(file)
+                diag_chi_ref = np.load(file)
             else:
-                diag_chis_continuous = None
-            plot_diag_chi(diag_chi, args.m, args.save_folder, config['dense_diagonal_on'],
-                            config['dense_diagonal_cutoff'],
-                            config['dense_diagonal_loading'],
-                            diag_chis_continuous)
+                diag_chi_ref = None
     else:
         file = osp.join(args.replicate_folder, 'chis_diag.txt')
         if osp.exists(file):
-            diag_chi = np.loadtxt(file)
-            file = osp.join(args.sample_folder, 'diag_chis_continuous.npy')
-            if osp.exists(file):
-                diag_chi_gt = np.load(file)
-            else:
-                diag_chi_gt = None
-            with open(osp.join(args.replicate_folder, 'resources/config.json'), 'r') as f:
-                config = json.load(f)
-            plot_diag_chi(diag_chi[-1], args.m, args.save_folder, config['dense_diagonal_on'],
-                            config['dense_diagonal_cutoff'],
-                            config['dense_diagonal_loading'], diag_chi_gt)
+            diag_chi = np.loadtxt(file)[-1]
+            diag_chi_ref = None
+
+    if diag_chi is not None:
+        if config['dense_diagonal_on']:
+            plot_diag_chi(config, args.save_folder,
+                            diag_chi_ref, 'continuous')
         else:
-            diag_chi = None
+            plot_diag_chi(config, args.save_folder,
+                            ref = diag_chi_ref, ref_label = 'continuous')
 
     # meanDist
+    diag_chi_step = get_diag_chi_step(config)
     if args.random_mode:
-        plot_mean_vs_genomic_distance(y, args.save_folder, diag_chi, 'meanDist.png',
-                                    config['dense_diagonal_on'],
-                                    config['dense_diagonal_cutoff'],
-                                    config['dense_diagonal_loading'])
+        plot_mean_vs_genomic_distance(y, args.save_folder, 'meanDist.png',
+                                        diag_chi_step)
+        plot_mean_vs_genomic_distance(y, args.save_folder, 'meanDist.png',
+                                        diag_chi_step, logx = True)
+
     else:
         meanDist_max_ent = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
-        print(meanDist_max_ent)
         y_gt = np.load(osp.join(args.sample_folder, 'y.npy'))
         meanDist_gt = DiagonalPreprocessing.genomic_distance_statistics(y_gt, 'prob')
-        print(meanDist_gt)
 
-        fig, ax = plt.subplots()
-        ax.plot(meanDist_max_ent, label = 'max ent')
-        ax.plot(meanDist_gt, label = 'gt')
-        ax.set_yscale('log')
-        # ax.set_xscale('log')
-
-        ax.set_ylabel('Contact Probability', fontsize = 16)
-        ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
-        plt.legend()
-        plt.tight_layout()
-        plt.savefig(osp.join(args.save_folder, 'meanDist.png'))
-        plt.close()
+        plot_mean_dist(meanDist_max_ent, args.save_folder, 'meanDist.png',
+                        diag_chi_step, False, meanDist_gt)
+        plot_mean_dist(meanDist_max_ent, args.save_folder, 'meanDist_norm.png',
+                        diag_chi_step, False, meanDist_gt, True)
+        plot_mean_dist(meanDist_max_ent, args.save_folder, 'meanDist_log.png',
+                        diag_chi_step, True, meanDist_gt)
+        plot_mean_dist(meanDist_max_ent, args.save_folder, 'meanDist_log_norm.png',
+                        diag_chi_step, True, meanDist_gt, True)
 
 if __name__ == '__main__':
     main()

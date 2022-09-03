@@ -142,11 +142,11 @@ public:
 	void updateContactsGrid();
 	void updateContactsDistance();
 	Eigen::MatrixXd unit_vec(Eigen::MatrixXd b);
-	void readInput();
+	nlohmann::json readInput();
 	void makeOutputFiles();
 	bool outside_boundary(Eigen::RowVector3d r);
 	void initialize();
-	void calculateParameters();
+	void calculateParameters(nlohmann::json config);
 	void volParameters();
 	void volParameters_new();
 	void loadConfiguration();

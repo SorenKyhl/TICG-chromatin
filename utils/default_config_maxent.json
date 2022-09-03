@@ -45,9 +45,6 @@
   "cell_volumes":  false,
   "compressibility_on": false,
   "diag_pseudobeads_on": true,
-  "dense_diagonal_on": false,
-  "dense_diagonal_cutoff": 0.0625,
-  "dense_diagonal_loading": 0.5,
   "parallel": false,
   "set_num_threads": true,
   "num_threads": 2

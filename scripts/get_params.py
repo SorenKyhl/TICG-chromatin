@@ -1,4 +1,5 @@
 import argparse
+import json
 import math
 import os
 import os.path as osp
@@ -33,6 +34,7 @@ def getArgs():
                         help='location of input data')
 
     # standard args
+
     parser.add_argument('--m', type=int, default=1024,
                         help='number of particles (will crop contact map) (-1 to infer)')
     parser.add_argument('--k', type=int, default=2,
@@ -40,9 +42,19 @@ def getArgs():
     parser.add_argument('--plot', action='store_true',
                         help='true to plot seq as .png')
 
+    # config args
+    parser.add_argument('--config_ifile', type=str, default='default_config.json',
+                        help='path to default config file')
+    parser.add_argument('--config_ofile', type=str, default='config.json',
+                            help='path to output config file')
+
+
     args, unknown = parser.parse_known_args()
     if args.sample_folder is None and args.data_folder is not None:
         args.sample_folder = osp.join(args.data_folder, 'samples', f'sample{args.sample}')
+
+    with open(args.config_ifile, 'rb') as f:
+        args.config = json.load(f)
 
     return args, unknown
 
@@ -181,6 +193,7 @@ class GetSeq():
             args.diag = True
         if 'constant' in modes:
             args.add_constant = True
+            self.k -= 1
 
     def get_random_seq(self, lmbda = None, f = None, p_switch = None,
                         seed = None, exclusive = False, scale_resolution = 1):
@@ -247,8 +260,6 @@ class GetSeq():
                         # equals 0
                         p00 = f*(lmbda-1) + 1
                         seq[i, j] = rng.choice([1,0], p = [1 - p00, p00])
-
-
 
         return seq
 
@@ -579,6 +590,11 @@ class GetSeq():
 
         elif args.method is None:
             return
+        elif args.method == 'pca-soren':
+            files = [osp.join(self.sample_folder, f'pcf{i}.txt') for i in range(1,6)]
+            seq = np.zeros((self.m, self.k))
+            for i, f in enumerate(files):
+                seq[:, i] = np.loadtxt(f)
         elif args.method.startswith('random'):
             seq = self.get_random_seq(args.lmbda, args.f, args.p_switch, args.seq_seed, args.exclusive,
                                         args.scale_resolution)
@@ -806,8 +822,12 @@ class GetDiagChi():
     def __init__(self, args, unknown_args):
         self.sample_folder = args.sample_folder
         self.m = args.m
+        self.config = args.config
         self._get_args(unknown_args)
         self.set_up_diag_chi()
+
+        self.config['diag_cutoff'] = self.args.diag_cutoff
+        self.config['diag_start'] = self.args.diag_start
 
     def _get_args(self, unknown_args):
         AC = ArgparserConverter()
@@ -823,18 +843,36 @@ class GetDiagChi():
                             help='slope (in thousandths) for diag_chi_method = log')
         parser.add_argument('--dense_diagonal_on', type=AC.str2bool, default=False,
                             help='True to place 1/2 of beads left of cutoff')
-        parser.add_argument('--dense_diagonal_cutoff', type=float, default=1/16,
+        parser.add_argument('--dense_diagonal_cutoff', type=AC.str2float, default=1/16,
                             help='cutoff = nbeads * dense_diag_cutoff')
-        parser.add_argument('--dense_diagonal_loading', type=float, default=0.5,
+        parser.add_argument('--dense_diagonal_loading', type=AC.str2float, default=0.5,
                             help='proportion of beads to place left of cutoff')
+        parser.add_argument('--small_binsize', type=int, default=0,
+                            help='specify small_binsize instead of using dense_diagonal_cutoff')
+        parser.add_argument('--big_binsize', type=int, default=-1,
+                            help='specify big_binsize instead of using dense_diagonal_cutoff')
+        parser.add_argument('--n_small_bins', type=int, default=0,
+                            help='specify n_small_bins instead of using dense_diagonal_loading')
+        parser.add_argument('--n_big_bins', type=int, default=-1,
+                            help='specify n_big_bins instead of using dense_diagonal_loading')
         parser.add_argument('--max_diag_chi', type=float, default=0,
                             help='maximum diag chi value for diag_chi_method')
         parser.add_argument('--diag_chi_constant', type=AC.str2float, default=0,
                             help='constant to add to chi diag')
         parser.add_argument('--mlp_model_path', type=str,
                             help='path to MLP model')
+        parser.add_argument('--m_continuous', type=AC.str2int,
+                            help='Use m larger than self.m to define diag chis then crop')
+        parser.add_argument('--diag_start', type=int, default=0,
+                            help='minimum d to use diag chi')
+        parser.add_argument('--diag_cutoff', type=AC.str2int,
+                            help='maximum d to use diag chi (None to ignore)')
 
         self.args, _ = parser.parse_known_args(unknown_args)
+        if self.args.m_continuous is None:
+            self.args.m_continuous = self.m
+        if self.args.diag_cutoff is None:
+            self.args.diag_cutoff = self.m
         print('\nDiag chi args:')
         print(self.args)
 
@@ -842,68 +880,109 @@ class GetDiagChi():
         args = self.args
         if args.diag_chi_method is not None:
             args.diag_chi_method = args.diag_chi_method.lower()
-
-        diag_chis_continuous = None
-
-        if args.diag_chi is not None:
-            diag_chis = np.array(args.diag_chi)
-        elif args.diag_chi_method is None:
-            # no diag_chis
-            diag_chis = None
-        elif args.diag_chi_method == 'linear':
-            diag_chis_continuous = np.linspace(0, args.max_diag_chi, self.m)
-            diag_chis = self.coarse_grain_diag_chi(diag_chis_continuous)
-        elif args.diag_chi_method == 'log':
+            d_arr = np.arange(args.m_continuous)
             args.diag_chi_slope /= 1000
-            scale = args.max_diag_chi / np.log(args.diag_chi_slope * (self.m - 1) + 1)
-            diag_chis_continuous = scale * np.log(args.diag_chi_slope * np.arange(self.m) + 1)
-            diag_chis = self.coarse_grain_diag_chi(diag_chis_continuous)
-        elif args.diag_chi_method == 'mlp':
-            diag_chis = self.get_diag_chi_mlp(args.mlp_model_path, self.sample_folder)
-            assert len(diag_chis) == args.diag_bins, f"Shape mismatch: {len(diag_chis)} vs {args.diag_bins}"
+            if args.diag_chi_method == 'linear':
+                diag_chis_continuous = np.linspace(0, args.max_diag_chi, args.m_continuous)
+            elif args.diag_chi_method == 'log':
+                scale = args.max_diag_chi / np.log(args.diag_chi_slope * (args.m_continuous - 1) + 1)
+                diag_chis_continuous = scale * np.log(args.diag_chi_slope * d_arr + 1)
+            elif args.diag_chi_method == 'logistic':
+                diag_chis_continuous = 2 * args.max_diag_chi / (1 + np.exp(-args.diag_chi_slope * d_arr)) - args.max_diag_chi
+            elif args.diag_chi_method == 'exp':
+                diag_chis_continuous = args.max_diag_chi - 1.889 * np.exp(-args.diag_chi_slope * d_arr)
+            elif args.diag_chi_method == 'mlp':
+                diag_chis = self.get_diag_chi_mlp(args.mlp_model_path, self.sample_folder)
+                assert len(diag_chis) == args.diag_bins, f"Shape mismatch: {len(diag_chis)} vs {args.diag_bins}"
+            else:
+                raise Exception(f'Unrecognized chi diag method {args.diag_chi_method}')
+
+            if diag_chis_continuous is not None:
+                diag_chis = self.coarse_grain_diag_chi(diag_chis_continuous)
+                np.save('diag_chis_continuous', diag_chis_continuous)
+
+        elif args.diag_chi is not None:
+            diag_chis_continuous = None
+            diag_chis = np.array(args.diag_chi)
         else:
-            raise Exception(f'Unrecognized chi diag method {args.diag_chi_method}')
+            return
 
-        if diag_chis_continuous is not None:
-            print('diag_chis_continuous: ', diag_chis_continuous, diag_chis_continuous.shape)
-            np.save('diag_chis_continuous.npy', diag_chis_continuous)
-
-        if diag_chis is not None:
-            diag_chis += args.diag_chi_constant
-            print('diag_chis: ', diag_chis, diag_chis.shape)
-            np.save('diag_chis.npy', diag_chis)
-
+        diag_chis += args.diag_chi_constant
+        print('diag_chis: ', diag_chis, diag_chis.shape)
+        np.save('diag_chis', diag_chis)
+        self.config["diag_chis"] = list(diag_chis) # ndarray not json serializable
 
     def coarse_grain_diag_chi(self, diag_chis_continuous):
         args = self.args
-        if args.dense_diagonal_on:
-            dividing_line = self.m * args.dense_diagonal_cutoff
+        m_eff = args.diag_cutoff - args.diag_start # number of beads with nonzero interaction
 
-            n_small_bins = int(args.dense_diagonal_loading * args.diag_bins)
-            n_big_bins = args.diag_bins - n_small_bins
-            small_binsize = int(dividing_line / (n_small_bins))
-            big_binsize = int((self.m - dividing_line) / n_big_bins)
+        # get bin sizes
+        if args.dense_diagonal_on:
+            if args.dense_diagonal_loading is not None:
+                n_small_bins = int(args.dense_diagonal_loading * args.diag_bins)
+                assert args.diag_bins > n_small_bins, f"{args.diag_bins} < {n_small_bins}"
+                n_big_bins = args.diag_bins - n_small_bins
+            else:
+                n_small_bins = args.n_small_bins
+                n_big_bins = args.n_big_bins
+
+            if args.dense_diagonal_cutoff is not None:
+                dividing_line = m_eff * args.dense_diagonal_cutoff
+                small_binsize = int(dividing_line / (n_small_bins))
+                big_binsize = int((m_eff- dividing_line) / n_big_bins)
+            else:
+                small_binsize = args.small_binsize
+                dividing_line = small_binsize * n_small_bins
+                big_binsize = args.big_binsize
+
+            if n_big_bins == -1:
+                remainder = m_eff - dividing_line
+                n_big_bins = math.floor(args.diag_bins - n_small_bins)
+                while remainder % n_big_bins != 0 and n_big_bins < remainder:
+                    n_big_bins += 1
+
+                big_binsize = remainder // n_big_bins
+                if n_small_bins + n_big_bins != args.diag_bins:
+                    print(f'args.diag_bins changed from {args.diag_bins} to {n_small_bins + n_big_bins}')
+                    args.diag_bins = n_small_bins + n_big_bins
+
+
+            assert n_small_bins * small_binsize + n_big_bins * big_binsize == m_eff, f'{n_small_bins}x{small_binsize} + {n_big_bins}x{big_binsize} != {m_eff}'
+            print(f'{n_small_bins}x{small_binsize} + {n_big_bins}x{big_binsize} = {m_eff}')
+
+            self.config['n_small_bins'] = n_small_bins
+            self.config['n_big_bins'] = n_big_bins
+            self.config['small_binsize'] = small_binsize
+            self.config['big_binsize'] = big_binsize
         else:
             binsize = self.m / args.diag_bins
+            self.config['n_small_bins'] = 0
+            self.config['n_big_bins'] = args.diag_bins
+            self.config['small_binsize'] = 0
+            self.config['big_binsize'] = binsize
 
+        # get diag chis
         i = 0
         diag_chis = np.zeros(args.diag_bins)
         curr_bin_vals = []
         prev_bin = 0
-        for d, val in enumerate(diag_chis_continuous):
+        for d, val in enumerate(diag_chis_continuous[args.diag_start:args.diag_cutoff]):
             if args.dense_diagonal_on:
                 if d > dividing_line:
-                    bin = n_small_bins + math.floor( (d - dividing_line) / big_binsize)
+                    bin = n_small_bins + math.floor((d - dividing_line) / big_binsize)
                 else:
-                    bin =  math.floor( d / small_binsize)
+                    bin =  math.floor(d / small_binsize)
             else:
                 bin = int(d / binsize)
+
             curr_bin = bin
             if curr_bin != prev_bin:
                 prev_bin = curr_bin
                 diag_chis[i] = np.mean(curr_bin_vals)
                 curr_bin_vals = []
                 i += 1
+                if i >= len(diag_chis):
+                    return diag_chis
             curr_bin_vals.append(val)
         diag_chis[i] = np.mean(curr_bin_vals)
 
@@ -971,7 +1050,6 @@ class GetDiagChi():
             diag_chi = yhat.reshape((-1)).astype(np.float64)
 
         return diag_chi
-
 
 class GetEnergy():
     def __init__(self, args, unknown_args):
@@ -1203,6 +1281,9 @@ def main():
     GetPlaidChi(args, unknown)
     GetDiagChi(args, unknown)
     GetEnergy(args, unknown)
+
+    with open(args.config_ofile, 'w') as f:
+        json.dump(args.config, f, indent = 2)
 
 ### Tester class ###
 class Tester():

@@ -1,5 +1,6 @@
 import argparse
 import csv
+import json
 import math
 import os.path as osp
 import sys
@@ -19,18 +20,10 @@ def getArgs():
                         help='true for verbose mode')
     parser.add_argument('--mode', type=str,
                         help='{"plaid", "diag", "both"}')
-    parser.add_argument('--diag_bins', type=int,
-                        help='number of diagonal bins')
     parser.add_argument('--v_bead', type=int, default=520,
                         help='volume of bead')
     parser.add_argument('--grid_size', type=float, default=28.7,
                         help='side length of grid cell')
-    parser.add_argument('--dense_diagonal_on', type=bool, default=False,
-                        help='True to use dense diagonal')
-    parser.add_argument('--dense_diagonal_cutoff', type=float, default=1/16,
-                        help='cutoff for dense diagonal')
-    parser.add_argument('--dense_diagonal_loading', type=float, default=0.5,
-                        help='loading for dense diagonal')
 
     args = parser.parse_args()
     return args
@@ -38,42 +31,42 @@ def getArgs():
 def get_diag_goal(y, args):
     '''Input y should have max 1.'''
     m, _ = y.shape
-    binsize = m / args.diag_bins
+    if args.diag_cutoff > m:
+        args.diag_cutoff = m
 
     obj_goal_diag = []
     for bin in range(args.diag_bins):
-        mask = get_mask(bin, m, args.diag_bins, args.dense_diagonal_on,
-                        args.dense_diagonal_cutoff, args.dense_diagonal_loading)
+        mask = get_mask(bin, m, args.diag_bins, args.dense, args.n_small_bins,
+                        args.small_binsize, args.big_binsize, args.diag_start,
+                        args.diag_cutoff)
         obj_goal_diag.append(np.sum((mask*y).flatten()))
 
     obj_goal_diag = np.array(obj_goal_diag)
     obj_goal_diag *= (args.v_bead / args.grid_size**3)
     return obj_goal_diag
 
-@njit
-def get_mask(bin, m, diag_bins, dense_diagonal_on, dense_diagonal_cutoff,
-                dense_diagonal_loading):
+# @njit
+def get_mask(bin, m, diag_bins, dense, n_small_bins,
+            small_binsize, big_binsize, diag_start, diag_cutoff):
     mask = np.zeros((m, m)) # use mask to compute weighted average
-    if dense_diagonal_on:
-        dividing_line = m * dense_diagonal_cutoff
-
-        n_small_bins = int(dense_diagonal_loading * diag_bins)
-        n_big_bins = diag_bins - n_small_bins
-        small_binsize = int(dividing_line / (n_small_bins))
-        big_binsize = int((m - dividing_line) / n_big_bins)
+    if dense:
+        dividing_line = n_small_bins * small_binsize
     else:
         binsize = m / diag_bins
 
     for i in range(m):
         for j in range(i+1):
             d = i-j # don't need abs
-            if dense_diagonal_on:
-                if d > dividing_line:
-                    curr_bin = n_small_bins + math.floor( (d - dividing_line) / big_binsize)
+            if d < diag_start or d > diag_cutoff:
+                continue
+            d_eff = d - diag_start
+            if dense:
+                if d_eff > dividing_line:
+                    curr_bin = n_small_bins + math.floor( (d_eff - dividing_line) / big_binsize)
                 else:
-                    curr_bin = math.floor( d / small_binsize)
+                    curr_bin =  math.floor( d_eff / small_binsize)
             else:
-                curr_bin = int(d/binsize)
+                curr_bin = int(d_eff/binsize)
             if curr_bin == bin:
                 mask[i,j] = 1
                 mask[j,i] = 1
@@ -87,12 +80,14 @@ def get_plaid_goal(y, args, x = None):
     obj_goal = []
     if args.verbose:
         print(y, y.shape, y.dtype, '\n')
+        if x is not None:
+            print(x, x.shape, x.dtype, '\n')
 
     if x is None:
         x = np.load('x.npy')
     _, k = x.shape
     for i in range(k):
-        seqi = x[:,i]
+        seqi = x[:, i]
         if args.verbose:
             print(f'\ni={i}', seqi)
         for j in range(k):
@@ -121,6 +116,22 @@ def main():
     print(args)
     if args.mode == 'none':
         return
+
+    with open('config.json', 'r') as f:
+        config = json.load(f)
+        if config['dense_diagonal_on']:
+            args.dense = True
+            args.n_small_bins = config['n_small_bins']
+            args.small_binsize = config['small_binsize']
+            args.big_binsize = config['big_binsize']
+        else:
+            args.dense = False
+            args.n_small_bins = None
+            args.small_binsize = None
+            args.big_binsize = None
+        args.diag_bins = len(config['diag_chis'])
+        args.diag_start = config['diag_start']
+        args.diag_cutoff = config['diag_cutoff']
 
     if args.contact_map.endswith('.npy'):
         y = np.load(args.contact_map)
@@ -197,9 +208,12 @@ class Tester():
 
     def test_diag():
         args = getArgs()
-        args.diag_bins = 64
-        args.dense_diagonal_on = True
-        args.dense_diagonal_loading=0.4
+        args.diag_bins = 32
+        args.n_small_bins = 16
+        args.small_binsize = 8
+        args.n_big_bins = 16
+        args.big_binsize = 24
+        args.dense = True
         dir = '/home/erschultz/sequences_to_contact_maps/dataset_07_20_22/samples/sample4'
         y = np.load(osp.join(dir, 'y.npy'))
         y = y.astype(float)

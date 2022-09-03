@@ -1,7 +1,5 @@
 #include "Sim.h"
 
-//TODO asasert the size of chipseq vector is the same as nbeads
-
 // assign variable to json key of the same name
 #define READ_JSON(json, var) read_json((json), (var), #var)
 template<class T>
@@ -15,10 +13,10 @@ void read_json(const nlohmann::json& json, T& var, std::string varname) {
 }
 
 void Sim::run() {
-	readInput();            // load parameters from config.json
+	nlohmann::json config = readInput();            // load parameters from config.json
 	if (smatrix_on) { setupSmatrix(); }
 	if (ematrix_on) { setupEmatrix(); }
-	calculateParameters();  // calculates derived parameters
+	calculateParameters(config);  // calculates derived parameters
 	makeOutputFiles();      // open files
 	initialize();           // set particle positions and construct bonds
 	grid.generate();        // creates the grid locations
@@ -29,18 +27,18 @@ void Sim::run() {
 	assert (grid.checkCellConsistency(nbeads));
 }
 
-void Sim::xyzToContact()
-{
-	readInput();
-	beads.resize(nbeads);
-	calculateParameters();
-	loadConfiguration();
-	grid.generate();
-	grid.meshBeads(beads);
-	grid.setActiveCells();
-	setupContacts();
-	dumpContacts(0);
-}
+// void Sim::xyzToContact()
+// {
+// 	readInput();
+// 	beads.resize(nbeads);
+// 	calculateParameters();
+// 	loadConfiguration();
+// 	grid.generate();
+// 	grid.meshBeads(beads);
+// 	grid.setActiveCells();
+// 	setupContacts();
+// 	dumpContacts(0);
+// }
 
 void Sim::setupContacts() {
 	std::cout << "setting up contacts" << std::endl;
@@ -131,7 +129,7 @@ Eigen::MatrixXd Sim::unit_vec(Eigen::MatrixXd b) {
 	return b;
 }
 
-void Sim::readInput() {
+nlohmann::json Sim::readInput() {
 	// reads simulation parameters from config.json file
 
 	std::cout << "reading input file ... " << std::endl;
@@ -217,17 +215,38 @@ void Sim::readInput() {
 	std::cout << "grid move is : " << gridmove_on << std::endl;
 	//assert(config.contains("production")); production = config["production"];
 	READ_JSON(config, production);
+
+  // MC move params
 	assert(config.contains("decay_length")); decay_length = config["decay_length"];
-	assert(config.contains("nSweeps")); nSweeps = config["nSweeps"];
-	assert(config.contains("dump_frequency")); dump_frequency = config["dump_frequency"];
-	assert(config.contains("dump_stats_frequency")); dump_stats_frequency = config["dump_stats_frequency"];
-	assert(config.contains("bonded_on")); bonded_on = config["bonded_on"];
-	assert(config.contains("nonbonded_on")); nonbonded_on = config["nonbonded_on"];
 	assert(config.contains("displacement_on")); displacement_on = config["displacement_on"];
 	assert(config.contains("translation_on")); translation_on = config["translation_on"];
 	assert(config.contains("crankshaft_on")); crankshaft_on = config["crankshaft_on"];
 	assert(config.contains("pivot_on")); pivot_on = config["pivot_on"];
 	assert(config.contains("rotate_on")); rotate_on = config["rotate_on"];
+
+  // energy/chi params
+  assert(config.contains("bonded_on")); bonded_on = config["bonded_on"];
+	assert(config.contains("nonbonded_on")); nonbonded_on = config["nonbonded_on"];
+  assert(config.contains("boundary_chi")); boundary_chi = config["boundary_chi"];
+  assert(config.contains("constant_chi_on")); constant_chi_on = config["constant_chi_on"];
+  assert(config.contains("constant_chi")); constant_chi = config["constant_chi"];
+	assert(config.contains("smatrix_filename")); smatrix_filename = config["smatrix_filename"];
+	assert(config.contains("smatrix_on")); smatrix_on = config["smatrix_on"];
+	assert(config.contains("ematrix_filename")); ematrix_filename = config["ematrix_filename"];
+	assert(config.contains("ematrix_on")); ematrix_on = config["ematrix_on"];
+  assert(config.contains("boundary_attract_on")); boundary_attract_on = config["boundary_attract_on"];
+
+  // bead/bond params
+  assert(config.contains("beadvol")); Cell::beadvol  = config["beadvol"];
+	assert(config.contains("bond_type")); bond_type = config["bond_type"];
+	assert(config.contains("bond_length")); bond_length = config["bond_length"];
+
+  // dump params
+  assert(config.contains("dump_frequency")); dump_frequency = config["dump_frequency"];
+  assert(config.contains("dump_stats_frequency")); dump_stats_frequency = config["dump_stats_frequency"];
+  assert(config.contains("dump_density")); dump_density = config["dump_density"];
+
+  assert(config.contains("nSweeps")); nSweeps = config["nSweeps"];
 	assert(config.contains("load_configuration")); load_configuration = config["load_configuration"];
 	assert(config.contains("load_configuration_filename")); load_configuration_filename = config["load_configuration_filename"];
 	assert(config.contains("prof_timer_on")); prof_timer_on = config["prof_timer_on"];
@@ -236,34 +255,23 @@ void Sim::readInput() {
 	assert(config.contains("contact_resolution")); contact_resolution = config["contact_resolution"];
 	assert(config.contains("grid_size")); grid_size = config["grid_size"];
 	assert(config.contains("track_contactmap")); track_contactmap = config["track_contactmap"];
-	assert(config.contains("diagonal_linear")); Cell::diagonal_linear = config["diagonal_linear"];
-	assert(config.contains("dump_density")); dump_density = config["dump_density"];
 	assert(config.contains("visit_tracking")); visit_tracking = config["visit_tracking"];
 	assert(config.contains("update_contacts_distance")); update_contacts_distance = config["update_contacts_distance"];
-	assert(config.contains("boundary_attract_on")); boundary_attract_on = config["boundary_attract_on"];
-	assert(config.contains("boundary_chi")); boundary_chi = config["boundary_chi"];
-  assert(config.contains("constant_chi_on")); constant_chi_on = config["constant_chi_on"];
-  assert(config.contains("constant_chi")); constant_chi = config["constant_chi"];
-	assert(config.contains("smatrix_filename")); smatrix_filename = config["smatrix_filename"];
-	assert(config.contains("smatrix_on")); smatrix_on = config["smatrix_on"];
-	assert(config.contains("ematrix_filename")); ematrix_filename = config["ematrix_filename"];
-	assert(config.contains("ematrix_on")); ematrix_on = config["ematrix_on"];
 	assert(config.contains("phi_solvent_max")); Cell::phi_solvent_max = config["phi_solvent_max"];
 	assert(config.contains("phi_chromatin")); Cell::phi_chromatin = config["phi_chromatin"];
-	assert(config.contains("kappa")); Cell::kappa = config["kappa"];
 	assert(config.contains("density_cap_on")); Cell::density_cap_on = config["density_cap_on"];
 	assert(config.contains("compressibility_on")); Cell::compressibility_on = config["compressibility_on"];
-	assert(config.contains("diag_pseudobeads_on")); Cell::diag_pseudobeads_on = config["diag_pseudobeads_on"];
-	assert(config.contains("parallel")); Grid::parallel = config["parallel"];
-	assert(config.contains("beadvol")); Cell::beadvol  = config["beadvol"];
-  assert(config.contains("dense_diagonal_on")); Cell::dense_diagonal_on  = config["dense_diagonal_on"];
-  assert(config.contains("dense_diagonal_cutoff")); dense_diagonal_cutoff = config["dense_diagonal_cutoff"];
-  assert(config.contains("dense_diagonal_loading")); dense_diagonal_loading = config["dense_diagonal_loading"];
+  assert(config.contains("kappa")); Cell::kappa = config["kappa"];
 
-	assert(config.contains("bond_type")); bond_type = config["bond_type"];
-	assert(config.contains("bond_length")); bond_length = config["bond_length"];
+  // diag params
+  assert(config.contains("diag_pseudobeads_on")); Cell::diag_pseudobeads_on = config["diag_pseudobeads_on"];
+  assert(config.contains("diagonal_linear")); Cell::diagonal_linear = config["diagonal_linear"];
+  assert(config.contains("dense_diagonal_on")); Cell::dense_diagonal_on = config["dense_diagonal_on"];
+  assert(config.contains("diag_cutoff")); Cell::diag_cutoff = config["diag_cutoff"];
+  assert(config.contains("diag_start")); Cell::diag_start = config["diag_start"];
 
-
+  // parallel config params
+  assert(config.contains("parallel")); Grid::parallel = config["parallel"];
 	if (Grid::parallel)
 	{
 		assert(config.contains("set_num_threads")); set_num_threads = config["set_num_threads"];
@@ -279,6 +287,8 @@ void Sim::readInput() {
 	rng = new RanMars(seed);
 
 	std::cout << "read successfully" << std::endl;
+
+  return config;
 }
 
 void Sim::makeOutputFiles() {
@@ -390,7 +400,7 @@ void Sim::volParameters_new() {
 	grid.radius = std::pow(3*vol/(4*M_PI), 1.0/3.0); // radius of simulation volume
 }
 
-void Sim::calculateParameters() {
+void Sim::calculateParameters(nlohmann::json config) {
 	grid.delta = grid_size;
 	std::cout << "grid size is : " << grid.delta << std::endl;
 	step_grid = grid.delta/10.0; // size of grid displacement MC moves
@@ -416,27 +426,48 @@ void Sim::calculateParameters() {
 
   if (diagonal_on)
   {
+    int ndiag_beads = Cell::diag_cutoff - Cell::diag_start; // only count beads that will have diagonal interactions
   	if (Cell::dense_diagonal_on)
   	{
-      assert(floorf(nbeads * dense_diagonal_cutoff) == nbeads * dense_diagonal_cutoff);
-  		int dividing_line = nbeads*dense_diagonal_cutoff;
+      if (config.contains("n_small_bins") && config.contains("n_big_bins"))
+      {
+        Cell::n_small_bins = config["n_small_bins"];
+        Cell::n_big_bins = config["n_big_bins"];
+        assert(Cell::n_small_bins + Cell::n_big_bins == Cell::diag_nbins);
+      }
+      else
+      {
+        assert(config.contains("dense_diagonal_loading")); dense_diagonal_loading = config["dense_diagonal_loading"];
 
-  		Cell::n_small_bins = int(dense_diagonal_loading * Cell::diag_nbins);
-  		Cell::n_big_bins = Cell::diag_nbins - Cell::n_small_bins;
-  		Cell::small_binsize = int( dividing_line / Cell::n_small_bins );
-  		Cell::big_binsize = int ((nbeads - dividing_line) / Cell::n_big_bins);
+        Cell::n_small_bins = int(dense_diagonal_loading * Cell::diag_nbins);
+        Cell::n_big_bins = Cell::diag_nbins - Cell::n_small_bins;
+      }
 
+      if (config.contains("small_binsize") && config.contains("big_binsize"))
+      {
+        Cell::small_binsize = config["small_binsize"];
+        Cell::big_binsize = config["big_binsize"];
+      }
+      else
+      {
+        assert(config.contains("dense_diagonal_cutoff")); dense_diagonal_cutoff = config["dense_diagonal_cutoff"];
+        assert(floorf(ndiag_beads * dense_diagonal_cutoff) == ndiag_beads * dense_diagonal_cutoff);
+        int dividing_line = ndiag_beads * dense_diagonal_cutoff;
+        Cell::small_binsize = int( dividing_line / Cell::n_small_bins );
+        Cell::big_binsize = int( (ndiag_beads - dividing_line) / Cell::n_big_bins );
+      }
   		std::cout << "number of small bins: " << Cell::n_small_bins << ", of size: " << Cell::small_binsize << std::endl;
   		std::cout << "number of big bins: " << Cell::n_big_bins << ", of size: " << Cell::big_binsize << std::endl;
+      std::cout << "number of diag beads: " << ndiag_beads << std::endl;
   		assert(Cell::n_big_bins + Cell::n_small_bins == Cell::diag_nbins);
-  		assert(Cell::small_binsize * Cell::n_small_bins + Cell::big_binsize * Cell::n_big_bins == nbeads);
+  		assert(Cell::small_binsize * Cell::n_small_bins + Cell::big_binsize * Cell::n_big_bins == ndiag_beads);
   	}
   	else
   	{
   		std::cout << "number of bins: " << Cell::diag_nbins << std::endl;
-  		Cell::diag_binsize = nbeads / diag_chis.size();
+  		Cell::diag_binsize = ndiag_beads / diag_chis.size();
   		std::cout << "binsize " << Cell::diag_binsize << std::endl;
-      assert(nbeads % Cell::diag_binsize == 0);
+      assert(ndiag_beads % Cell::diag_binsize == 0);
   	}
   }
 }

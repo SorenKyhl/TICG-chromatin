@@ -13,8 +13,10 @@ dataFolder='/home/erschultz/sequences_to_contact_maps/dataset_07_20_22'
 source activate python3.9_pytorch1.9
 
 
-for i in 1 2 3
+for i in 1 2 8
 do
-  replicateFolder="${dataFolder}/samples/sample${i}/none/k0/replicate1/"
-  python3 ~/TICG-chromatin/scripts/contact_map.py --replicate_folder $replicateFolder --save_npy
+  replicateFolder="${dataFolder}/samples/sample${i}/PCA-normalize/k3/replicate1/"
+  python3 ~/TICG-chromatin/scripts/contact_map.py --replicate_folder $replicateFolder --save_npy &
 done
+
+wait

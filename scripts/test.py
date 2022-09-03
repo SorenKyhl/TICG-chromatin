@@ -379,25 +379,18 @@ def construct_sc_xyz():
     np.save(osp.join(dir, 'combined2/xyz.npy'), xyz_all)
 
 def test_log_diag_param():
-    x = np.logspace(0, 20)
-    # plt.plot(x)
-    # plt.show()
-
-    x = np.array([45.03264, 58.67288, 64.40598, 66.05575, 65.71107, 68.21465,
-                    69.71432, 70.10060, 71.20050, 73.84091, 69.97320, 73.76658,
-                    73.03509, 75.04872, 74.75528, 81.07985, 79.50736, 94.23064,
-                    56.93894, 66.63306])
-    # plt.plot(x)
-    # plt.show()
-
     max = 20
-    n_bins = 20
-    for B in [0.01, 0.02, 0.05, 0.1]:
-        for max in [10]:
-            A = max / np.log(B * (n_bins - 1) + 1)
-            x = A * np.log(B * np.arange(n_bins) + 1)
-            plt.plot(x, label = f'{B},{max}')
+    m = 2000
+    d = np.arange(m).astype(np.float64)
+    for A in [1, 2]:
+        for B in [.1, .5, 1]:
+            for max in [0]:
+                # x = 2*max / (1 + np.exp(-B*d)) - max
+                x = max - A*np.power(d, -B)
+                plt.plot(x, label = f'A={A}, B={B}, {max}')
+                print(x[:10])
 
+    plt.xscale('log')
     plt.legend()
     plt.show()
 
@@ -497,7 +490,7 @@ def convergence_check():
     plt.savefig(osp.join(dir, 'loss_convergence.png'))
     plt.close()
 
-def main():
+def bin_zhang_contact_function_comparison():
     x = np.linspace(0, 5, 1000)
     y = 0.5 * (1 + np.tanh(3.22*(1.78 - x)))
     plt.plot(x, y, label=2016)
@@ -510,6 +503,31 @@ def main():
     plt.legend()
     plt.show()
 
+def main():
+    dir = '/home/erschultz/sequences_to_contact_maps/dataset_07_20_22/samples/sample2'
+    ifile1 = osp.join(dir, 'y.npy')
+    y_gt = np.load(ifile1)
+    dir2 = osp.join(dir, 'none/k0/replicate1')
+    ifile2 = osp.join(dir2, 'y.npy')
+    y = np.load(ifile2)
+
+    meanDist_max_ent = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+    meanDist_gt = DiagonalPreprocessing.genomic_distance_statistics(y_gt, 'prob')
+
+    fig, ax = plt.subplots()
+    ax2 = ax.twinx()
+    ax.plot(meanDist_max_ent, label = 'max ent')
+    ax.plot(meanDist_gt, label = 'gt')
+    ax.set_yscale('log')
+    ax.set_xscale('log')
+
+    ax.set_ylabel('Contact Probability', fontsize = 16)
+    ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
+    ax.legend()
+    plt.tight_layout()
+    plt.savefig(osp.join(dir2, 'meanDist_log.png'))
+    plt.close()
+
 if __name__ == '__main__':
     # test_robust_PCA()
     # check_dataset('dataset_05_12_22')
@@ -518,4 +536,5 @@ if __name__ == '__main__':
     # construct_sc_xyz()
     # convergence_check()
     main()
+    # test_log_diag_param()
     # makeDirsForMaxEnt("dataset_09_21_21")

@@ -22,13 +22,26 @@ class Sim:
         if osp.exists(config_file):
             with open(config_file) as f:
                 self.config = json.load(f)
+                # many of these are needed for get_diag_goal
                 self.k = self.config['nspecies']
-                self.v_bead = self.config["beadvol"]
                 self.m = self.config["nbeads"]
-                self.dense_diagonal_on = self.config["dense_diagonal_on"]
-                self.dense_diagonal_cutoff = self.config["dense_diagonal_cutoff"]
-                self.dense_diagonal_loading = self.config["dense_diagonal_loading"]
+                self.v_bead = self.config['beadvol']
                 self.grid_size = self.config["grid_size"]
+                self.diag_bins = len(self.config['diag_chis'])
+                self.diag_start = self.config['diag_start']
+                self.diag_cutoff = self.config['diag_cutoff']
+                if self.config['dense_diagonal_on']:
+                    self.dense = True
+                    self.n_small_bins = self.config['n_small_bins']
+                    self.small_binsize = self.config['small_binsize']
+                    self.big_binsize = self.config['big_binsize']
+                else:
+                    self.dense = False
+                    self.n_small_bins = None
+                    self.small_binsize = None
+                    self.big_binsize = None
+
+
         else:
             print(f"config.json missing at {config_file}")
 
@@ -57,6 +70,28 @@ class Sim:
             except:
                 print("load seqs failed")
 
+        gthic_path = osp.join(self.replicate_path, "resources/y_gt.npy")
+        if osp.exists(gthic_path):
+            self.gthic = np.load(gthic_path)
+        else:
+            print(f"{gthic_path} does not exist")
+
+
+        obj_goal_path = osp.join(self.replicate_path, "obj_goal.txt")
+        if osp.exists(obj_goal_path):
+            self.obj_goal = np.loadtxt(obj_goal_path)
+        else:
+            self.obj_goal = None
+            if self.obs is not None: # else fail quietly - goal not expected
+                print(f"{obj_goal_path} does not exist")
+
+        obj_goal_diag_path = osp.join(self.replicate_path, "obj_goal_diag.txt")
+        if osp.exists(obj_goal_diag_path):
+            self.obj_goal_diag = np.loadtxt(obj_goal_diag_path)
+        else:
+            self.obj_goal_diag = None
+            print(f"{obj_goal_diag_path} does not exist")
+
         plaid_observables_file = osp.join(self.path,"observables.traj")
         self.obs_full = None
         self.obs = None
@@ -78,43 +113,22 @@ class Sim:
             self.diag_obs = None
             print(f"{diag_observables_file} does not exist")
 
+        # stack goals/observables
         try:
-            if self.obs is None:
-                self.obs_tot = self.diag_obs
-            else:
-                self.obs_tot = np.hstack((self.obs, self.diag_obs))
-            self.extra = np.loadtxt(osp.join(self.path, "extra.traj"))
-        except Exception as e:
-            print(f"Could not stack observables: {e}")
-
-        gthic_path = osp.join(self.replicate_path, "resources/y_gt.npy")
-        if osp.exists(gthic_path):
-            self.gthic = np.load(gthic_path)
-        else:
-            print(f"{gthic_path} does not exist")
-
-
-        obj_goal_path = osp.join(self.replicate_path, "obj_goal.txt")
-        if osp.exists(obj_goal_path):
-            self.obj_goal = np.loadtxt(obj_goal_path)
-        else:
-            self.obj_goal = None
-            if self.obs is not None: # else fail quietly - goal not expected
-                print(f"{obj_goal_path} does not exist")
-
-        obj_goal_diag_path = osp.join(self.replicate_path, "obj_goal_diag.txt")
-        if osp.exists(obj_goal_diag_path):
-            self.obj_goal_diag = np.loadtxt(obj_goal_diag_path)
-        else:
-            print(f"{obj_goal_diag_path} does not exist")
-
-        try:
-            if self.obj_goal is None:
+            if self.obj_goal is None and self.obj_goal_diag is None:
+                self.obj_goal_tot = None
+                self.obs_tot = None
+            elif self.obj_goal is None:
                 self.obj_goal_tot = self.obj_goal_diag
+                self.obs_tot = self.diag_obs
+            elif self.obj_goal_diag is None:
+                self.obj_goal_tot = self.obj_goal
+                self.obs_tot = self.obs
             else:
                 self.obj_goal_tot = np.hstack((self.obj_goal, self.obj_goal_diag))
+                self.obs_tot = np.hstack((self.obs, self.diag_obs))
         except Exception as e:
-            print(f"Could not stack goals: {e}")
+            print(f"Could not stack goals/observables: {e}")
 
     def load_chis(self):
         if self.k == 0:
@@ -135,7 +149,7 @@ class Sim:
         for file in self.config["bead_type_files"]:
             seqs.append( np.loadtxt(self.path + "/" + file) )
         seqs = np.array(seqs)
-        return seqs
+        return seqs.T
 
     def plot_energy(self):
         fig, axs = plt.subplots(3,1, figsize=(12,10))
@@ -246,25 +260,26 @@ class Sim:
         # can only calculate consistency if the hic resolution is the same
         # as the observables resolution
         if (self.config['contact_resolution'] == 1):
-            if self.seqs is not None and np.shape(self.hic) != np.shape(self.seqs):
-                size, _ = np.shape(self.seqs[0])
-                hic = resize_contactmap(self.hic, size, size)
-            else:
-                hic = self.hic
+            hic = self.hic
+            plt.figure()
+            plt.plot(self.obs_tot, 'o', label="obs")
 
             diag = get_diag_goal(hic, self)
             if self.seqs is not None:
                 self.verbose = False
                 plaid = get_plaid_goal(hic, self, self.seqs)
-                goal = np.hstack((plaid, diag))
+                if len(self.obs_tot) > len(plaid):
+                    # heuristic check for if both obs are considered - TODO
+                    goal = np.hstack((plaid, diag))
+                    plt.axvline(len(plaid)-0.5)
+                else:
+                    goal = plaid
             else:
                 goal = diag
 
             diff = self.obs_tot - goal
             error = np.sqrt(diff@diff / (goal@goal))
 
-            plt.figure()
-            plt.plot(self.obs_tot, 'o', label="obs")
             plt.plot(goal, 'x', label="goal")
             plt.title("sim.obs vs Goals(sim.hic); Error: {%.3f}"%error)
             plt.legend()

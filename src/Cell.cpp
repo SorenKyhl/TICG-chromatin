@@ -18,6 +18,8 @@ int Cell::n_small_bins;
 int Cell::n_big_bins;
 int Cell::small_binsize;
 int Cell::big_binsize;
+int Cell::diag_cutoff;
+int Cell::diag_start;
 
 void Cell::print() {
 	std::cout << r << "     N: " << contains.size() << std::endl;
@@ -146,29 +148,28 @@ double Cell::getEmatrixEnergy(const std::vector<std::vector<double>> &Ematrix)
 	return U;
 }
 
-int Cell::binDiagonal(int i, int j)
+int Cell::binDiagonal(int d)
 {
-	int s = std::abs(i - j);
 	int bin_index = -1;
-	int cutoff = n_small_bins * small_binsize;
 
 	if (dense_diagonal_on)
 	{
-		// diagonal chis are binned in a dense set (small bins) from s=0 to s=cutoff,
-		// then a sparse set (large bins) from s=cutoff to s=nbeads
-		if ( s > cutoff )
+		int dense_cutoff = n_small_bins * small_binsize;
+		// diagonal chis are binned in a dense set (small bins) from d=0 to d=dense_cutoff,
+		// then a sparse set (large bins) from d=cutoff to d=diag_cutoff
+		if ( d > dense_cutoff )
 		{
-			bin_index = n_small_bins + std::floor( (s-cutoff)/big_binsize );
+			bin_index = n_small_bins + std::floor( (d - dense_cutoff) / big_binsize );
 		}
 		else
 		{
-			bin_index = std::floor( s/small_binsize );
+			bin_index = std::floor( d / small_binsize );
 		}
 	}
 	else
 	{
-		// diagonal chis are linearly spaced from s=0 to s=nbeads
-		bin_index = std::floor( s/diag_binsize );
+		// diagonal chis are linearly spaced from d=0 to d=nbeads
+		bin_index = std::floor( d / diag_binsize );
 	}
 	return bin_index;
 }
@@ -179,17 +180,6 @@ double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
 		diag_phis[i] = 0;
 	}
 
-	//int index;
-	//for (Bead* bead1 : contains)
-	//{
-		//for (Bead* bead2 : contains)
-		//{
-			//index = std::floor( std::abs(bead1->id - bead2->id) / diag_binsize);
-			//assert (index >= 0);
-			//assert (index <= diag_nbins);
-			//diag_phis[index] += 1; // diag phis is just a count, multiply by volumes later
-		//}
-	//}
 	int d_index; // genomic separation (index for diag_phis)
 	int imax = (int) contains.size();
 	std::vector<int> indices;
@@ -201,11 +191,15 @@ double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
 	// count pairwise contacts  -- include self-self interaction!!
 	for (int i=0; i<imax; i++)
 	{
-		for(int j=i; j<imax; j++)
+		for (int j=i; j<imax; j++)
 		{
-			//d_index  = std::floor( std::abs(indices[i] - indices[j]) / diag_binsize);
-			d_index  = binDiagonal(indices[i], indices[j]);
-			diag_phis[d_index] += 1; // diag phis is just a count, multiply by volumes later
+			int d = std::abs(indices[i] - indices[j]);
+			if ((d <= diag_cutoff) && (d >= diag_start))
+			{
+				d -= diag_start;
+				d_index = binDiagonal(d);
+				diag_phis[d_index] += 1; // diag phis is just a count, multiply by volumes later
+			}
 		}
 	}
 
@@ -215,12 +209,13 @@ double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
 		for (int i=0; i<diag_nbins; i++)
 		{
 			double npseudobeads = bonds_to_beads(diag_phis[i]);
+			// Udiag += diag_chis[i] * npseudobeads * npseudobeads;// * beadvol/vol;
+
 			diag_phis[i] = npseudobeads * beadvol/vol;
-			//Udiag += diag_chis[i]* npseudobeads*npseudobeads;// * beadvol/vol;
-			Udiag += diag_chis[i]* diag_phis[i]*diag_phis[i] * vol/beadvol;
+			Udiag += diag_chis[i] * diag_phis[i] * diag_phis[i];
 		}
 
-		return Udiag;
+		return Udiag * vol/beadvol;
 	}
 	else
 	{

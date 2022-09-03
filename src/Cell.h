@@ -34,6 +34,8 @@ public:
 	static int n_big_bins;
 	static int small_binsize;
 	static int big_binsize;
+	static int diag_cutoff;
+	static int diag_start;
 
 	void print();
 	void reset();
@@ -48,7 +50,7 @@ public:
 	double getEmatrixEnergy(const std::vector<std::vector<double>> &Ematrix);
 
 	double bonds_to_beads(int bonds);
-	int binDiagonal(int i, int j);
+	int binDiagonal(int d);
 
 
 };

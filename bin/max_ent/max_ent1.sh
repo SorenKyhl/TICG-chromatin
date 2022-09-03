@@ -15,41 +15,42 @@ if [ $local = 'true' ]
 then
   dir="/home/erschultz/sequences_to_contact_maps"
   scratchDir='/home/erschultz/scratch'
-  numIterations=30
+  numIterations=10
   finalSimProductionSweeps=1000000
-  productionSweeps=400000
+  productionSweeps=1000000
   equilibSweeps=50000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
 i=1
-dataset='dataset_07_20_22'
+dataset='dataset_soren'
 useE='false'
-method='none'
+method='PCA-soren'
 diagChiMethod='linear'
-mode='diag'
+chiDiagSlope=1
+mode='both'
 dense='true'
 bondtype='gaussian'
-m=512
+m=1024
 replicate=1
 maxDiagChi=10
+parallel='false'
+numThreads=1
 
 diagBins=32
-denseCutoff=0.125
-denseLoading=0.5
+nSmallBins=16
+smallBinSize=4
+diagStart=0
+diagCutoff=1024
 
-k=0
-for sample in 1
- # 2 3 4 5
+k=5
+sample=1
+for method in PCA-normalize PCA-soren
+ # 3 4 5
 do
-  echo $sample $m $denseCutoff
+  echo $sample $m
   max_ent
-  m=$(( $m * 2))
-  if [ $sample -ge 3 ]
-  then
-    denseCutoff=0.0625
-  fi
 done
 
 wait
