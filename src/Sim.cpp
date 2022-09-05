@@ -23,11 +23,10 @@ Sim::Sim(std::string filename)
 }
 
 void Sim::run() {
-  nlohmann::json config = readInput();            // load parameters from config.json
+	nlohmann::json config = readInput();            // load parameters from config.json
 	if (system(NULL)) std::cout << "system ready" << std::endl;
 		else exit (EXIT_FAILURE);
 
-	readInput();            // load parameters from config.json
 	if (smatrix_on) { setupSmatrix(); }
 	if (ematrix_on) { setupEmatrix(); }
 	calculateParameters(config);  // calculates derived parameters
