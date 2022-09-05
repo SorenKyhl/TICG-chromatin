@@ -12,8 +12,22 @@ void read_json(const nlohmann::json& json, T& var, std::string varname) {
     std::cout << "loaded: " << std::to_string(var) << std::endl;
 }
 
+Sim::Sim()
+{
+	data_out_filename = "data_out";
+}
+
+Sim::Sim(std::string filename)
+{
+	data_out_filename = filename;
+}
+
 void Sim::run() {
-	nlohmann::json config = readInput();            // load parameters from config.json
+  nlohmann::json config = readInput();            // load parameters from config.json
+	if (system(NULL)) std::cout << "system ready" << std::endl;
+		else exit (EXIT_FAILURE);
+
+	readInput();            // load parameters from config.json
 	if (smatrix_on) { setupSmatrix(); }
 	if (ematrix_on) { setupEmatrix(); }
 	calculateParameters(config);  // calculates derived parameters
@@ -23,6 +37,7 @@ void Sim::run() {
 	grid.setActiveCells();  // populates the active cell locations
 	grid.meshBeads(beads);  // populates the grid locations with beads;
 	setupContacts();        // construct contact map
+	assert (grid.checkCellConsistency(nbeads));
 	MC();                   // MC simulation
 	assert (grid.checkCellConsistency(nbeads));
 }
@@ -72,19 +87,29 @@ void Sim::updateContactsGrid() {
 		int id1, id2;
 		std::vector<std::vector<bool>> visited(rows, std::vector<bool>(cols, false));
 
-
 		for(Cell* cell : grid.active_cells)
 		{
 			for(Bead* bead1 : cell->contains)
 			{
 				for(Bead* bead2 : cell->contains)
 				{
+					bool ignore = false;
 					id1 = bead1->id/contact_resolution;
 					id2 = bead2->id/contact_resolution;
 
+					if (contact_bead_skipping)
+					{
+						if (bead1->id % contact_resolution != 0 || bead2->id % contact_resolution != 0)
+						{
+							ignore = true;
+						}
+					}
+
 					if (visited[id1][id2] == false)
 					{
-						contact_map[id1][id2] += 1;
+						if (!ignore) {
+							contact_map[id1][id2] += 1;
+						}
 
 						if (visit_tracking) visited[id1][id2] = true;
 					}
@@ -269,6 +294,13 @@ nlohmann::json Sim::readInput() {
   assert(config.contains("dense_diagonal_on")); Cell::dense_diagonal_on = config["dense_diagonal_on"];
   assert(config.contains("diag_cutoff")); Cell::diag_cutoff = config["diag_cutoff"];
   assert(config.contains("diag_start")); Cell::diag_start = config["diag_start"];
+  assert(config.contains("parallel")); Grid::parallel = config["parallel"];
+	assert(config.contains("beadvol")); Cell::beadvol  = config["beadvol"];
+	assert(config.contains("cell_volumes")); Grid::cell_volumes = config["cell_volumes"];
+	assert(config.contains("bond_type")); bond_type = config["bond_type"];
+	assert(config.contains("bond_length")); bond_length = config["bond_length"];
+	assert(config.contains("contact_bead_skipping")); contact_bead_skipping = config["contact_bead_skipping"];
+	assert(config.contains("boundary_type")); boundary_type = config["boundary_type"];
 
   // parallel config params
   assert(config.contains("parallel")); Grid::parallel = config["parallel"];
@@ -339,7 +371,7 @@ bool Sim::outside_boundary(Eigen::RowVector3d r) {
 	}
 	else if (grid.spherical_boundary)
 	{
-		is_out = r.norm() > grid.boundary_radius*grid.delta;
+		is_out = (r - grid.sphere_center).norm() > grid.radius;
 	}
 
 	return is_out;
@@ -386,18 +418,47 @@ void Sim::volParameters() {
 void Sim::volParameters_new() {
 	double vol_beads = nbeads*Cell::beadvol;
 	double vol  = vol_beads/Cell::phi_chromatin;
-	grid.side_length = std::pow(vol, 1.0/3.0);
 
-	grid.L= std::ceil(grid.side_length / grid.delta); // number of grid cells per side // ROUNDED, won't exactly equal a desired volume frac
+	if (boundary_type == "cube" || boundary_type == "cubic") {
+		grid.cubic_boundary = true;
+		grid.spherical_boundary = false;
+	}
 
-	std::cout << "grid.side_length is: " << grid.side_length << std::endl;
-	std::cout << "grid.L is: " << grid.L << std::endl;
-	//total_volume = pow(grid.L*grid.delta/1000.0, 3); // micrometers^3 ONLY TRUE FOR CUBIC SIMULATIONS
-	total_volume = pow(grid.side_length/1000.0, 3.0);
-	std::cout << "simulation volume is: " << total_volume << " um^3" << std::endl;
-	std::cout << "volume fraction is: " << nbeads*Cell::beadvol/(total_volume*1000*1000*1000) << std::endl;
+	if (boundary_type == "sphere" || boundary_type == "spherical") {
+		grid.spherical_boundary = true;
+		grid.cubic_boundary = false;
+	}
 
-	grid.radius = std::pow(3*vol/(4*M_PI), 1.0/3.0); // radius of simulation volume
+	if (grid.cubic_boundary)
+	{
+		std::cout << "cubic boundary" << std::endl;
+		grid.side_length = std::pow(vol, 1.0/3.0);
+
+		grid.L= std::ceil(grid.side_length / grid.delta); // number of grid cells per side // ROUNDED, won't exactly equal a desired volume frac
+
+		std::cout << "grid.side_length is: " << grid.side_length << std::endl;
+		std::cout << "grid.L is: " << grid.L << std::endl;
+		total_volume = pow(grid.side_length/1000.0, 3.0); // [um^3]
+		std::cout << "simulation volume is: " << total_volume << " um^3" << std::endl;
+		std::cout << "volume fraction is: " << nbeads*Cell::beadvol/(total_volume*1000*1000*1000) << std::endl;
+	}
+
+
+	if (grid.spherical_boundary)
+	{
+		std::cout << "spherical boundary" << std::endl;
+		//float total_volume = 3*vol/(4*M_PI);
+		total_volume = vol;
+		grid.radius = std::pow(3*vol/(4*M_PI), 1.0/3.0); // [nm] radius of simulation volume
+		grid.L = std::ceil(2*grid.radius / grid.delta);
+		grid.sphere_center = {grid.radius, grid.radius, grid.radius};
+
+		std::cout << "grid.radius is " << grid.radius << std::endl;
+		std::cout << "grid.L is: " << grid.L << std::endl;
+		std::cout << "simulation volume is: " << total_volume/1000/1000/1000 << " um^3" << std::endl;
+		std::cout << "sphere_center is : " << grid.sphere_center[0] << " nm " << std::endl;
+	}
+
 }
 
 void Sim::calculateParameters(nlohmann::json config) {
@@ -409,13 +470,18 @@ void Sim::calculateParameters(nlohmann::json config) {
 	//volParameters();
 	volParameters_new();
 
-	grid.boundary_radius = std::round(grid.radius); // radius in units of grid cells
+	//grid.boundary_radius = std::round(grid.radius); // radius in units of grid cells
 	// sphere center needs to be centered on a multiple of grid delta
 	//grid.sphere_center = {grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta};
 
 	exp_decay = nbeads/decay_length;             // size of exponential falloff for MCmove second bead choice
 	exp_decay_crank = nbeads/decay_length;
 	exp_decay_pivot = nbeads/decay_length;
+
+	if(bond_type == "gaussian" && rotate_on)
+	{
+		throw std::runtime_error("bead type is gaussian, set rotate_on = false");
+	}
 
 	n_disp = displacement_on ? nbeads : 0;
 	n_trans = translation_on ? decay_length : 0;
@@ -527,11 +593,20 @@ void Sim::initRandomCoil(double bondlength) {
 	double center; // center of simulation box
 	if (grid.cubic_boundary)
 	{
+		std::cout << "------------ cubic centering" << std::endl;
 		center = grid.delta*grid.L/2;
 	}
 	else if (grid.spherical_boundary)
 	{
-		center = 0;
+		std::cout << "------------ sphere centering" << std::endl;
+		std::cout << "assigning center" << std::endl;
+		center = grid.sphere_center[0];
+		std::cout << " center is " << center << std::endl;
+		std::cout << " grid.sphere_center[0] " << grid.sphere_center[0] << std::endl;
+	}
+	else
+	{
+		std::cout << "------------ did not center" << std::endl;
 	}
 
 	beads[0].r = {center, center, center}; // start in middlle of the box
@@ -716,6 +791,11 @@ double Sim::randomExp(double mu, double decay) {
 }
 
 void Sim::MC() {
+
+	auto start = std::chrono::high_resolution_clock::now();
+	auto laststop = std::chrono::high_resolution_clock::now();
+	int beads_moved_last_sweep = 0;
+
 	std::cout << "Beginning Simulation" << std::endl;
 	for(int sweep = 1; sweep<nSweeps+1; sweep++)
 	{
@@ -732,7 +812,14 @@ void Sim::MC() {
 		}
 		//t_pivot.~Timer();
 
-		looping:
+		Timer t_crankshaft("Cranking", prof_timer_on);
+		for(int j=0; j<n_crank; j++) {
+			MCmove_crankshaft();
+			//nonbonded = getNonBondedEnergy(grid.active_cells);
+			//std::cout << nonbonded << std::endl;
+		}
+		//t_crankshaft.~Timer();
+
 		Timer t_translation("translating", prof_timer_on);
 		for(int j=0; j<n_trans; j++)
 		{
@@ -745,14 +832,6 @@ void Sim::MC() {
 		if (gridmove_on) MCmove_grid();
 		//nonbonded = getNonBondedEnergy(grid.active_cells);
 		//std::cout << nonbonded << std::endl;
-
-		Timer t_crankshaft("Cranking", prof_timer_on);
-		for(int j=0; j<n_crank; j++) {
-			MCmove_crankshaft();
-			//nonbonded = getNonBondedEnergy(grid.active_cells);
-			//std::cout << nonbonded << std::endl;
-		}
-		//t_crankshaft.~Timer();
 
 		Timer t_displace("displacing", prof_timer_on);
 		for(int j=0; j<n_disp; j++)
@@ -770,7 +849,21 @@ void Sim::MC() {
 		//t_rotation.~Timer();
 
 		if (sweep%dump_frequency == 0) {
-			std::cout << "Sweep number " << sweep << std::endl;
+			auto stop = std::chrono::high_resolution_clock::now();
+			auto totaltime = std::chrono::duration_cast<std::chrono::seconds>(stop-start);
+			auto blocktime = std::chrono::duration_cast<std::chrono::seconds>(stop-laststop);
+			laststop = stop;
+
+			int beads_moved = nbeads_moved - beads_moved_last_sweep;
+			beads_moved_last_sweep = nbeads_moved;
+
+			std::cout << "------ Sweep number " << sweep << " ------\n";
+			std::cout << "elapsed: " << totaltime.count() << "sec \t|\t";
+			if(totaltime.count() > 0)
+				std::cout <<  sweep/totaltime.count() << " sweep/sec \n";
+			std::cout << "Beads Moved " << nbeads_moved << " beads \t|\t ";
+			if (blocktime.count() > 0)
+				std::cout << "Rate (last block)" << beads_moved/blocktime.count() << " beads/s \n";
 			dumpData();
 			if (production) {dumpContacts(sweep);}
 
@@ -859,25 +952,18 @@ void Sim::MCmove_displace() {
 }
 
 void Sim::MCmove_translate() {
-	if (print_trans) std::cout << "==================NEW MOVE ====================" << std::endl;
-	Timer t_trans("Translate", print_trans);
+	//Timer t_trans("Translate", print_trans);
 	//Timer t_setup("setup", print_trans);
 
-	// select a first bead at random
+	// select last bead from two-sided exponential distribution around first
 	int first = floor(beads.size()*rng->uniform());
-
-	// choose second bead from two-sided exponential distribution around first
 	int last = -1;
 	while (last < 0 || last >= nbeads)
 	{
 		last = std::round(randomExp(first, exp_decay));            // does this obey detailed balance?
 	}
 
-	// swap first and last to ensure last > first
-	if (last < first) {std::swap(first, last);}
-
-	if (print_trans) std::cout << "number of beads is " << last - first << std::endl;
-
+	if (last < first) {std::swap(first, last);} // swap first and last to ensure last > first
 	// generate displacement vector with magnitude step_trans
 	Eigen::RowVector3d displacement;
 	displacement = step_trans*unit_vec(displacement);
@@ -896,94 +982,75 @@ void Sim::MCmove_translate() {
 	//t_setup.~Timer();
 
 	// execute move
-	try
+	//Timer t_flag("Flag cells", print_trans);
+	// flag appropriate cells for energy calculation and find beads that swapped cells
+	for(int i=first; i<=last; i++)
 	{
-		//Timer t_bounds("bounds", print_trans);
-		// reject immediately if moved out of simulation box, no cleanup necessary
-		for(int i=first; i<=last; i++)
-		{
-			new_loc = beads[i].r + displacement;
-			if (outside_boundary(new_loc)) {
-				throw "exited simulation box";
-			}
+		new_loc = beads[i].r + displacement;
+		if (outside_boundary(new_loc)) {
+			return;
 		}
-		//t_bounds.~Timer();
 
-		//Timer t_flag("Flag cells", print_trans);
-		// flag appropriate cells for energy calculation and find beads that swapped cells
-		for(int i=first; i<=last; i++)
+		old_cell_tmp = grid.getCell(beads[i]);
+		new_cell_tmp = grid.getCell(new_loc);
+
+		if (new_cell_tmp != old_cell_tmp)
 		{
-			old_cell_tmp = grid.getCell(beads[i]);
-
-			new_loc = beads[i].r + displacement;
-			new_cell_tmp = grid.getCell(new_loc);
-
-			if (new_cell_tmp != old_cell_tmp)
-			{
-				bead_swaps[i] = std::make_pair(old_cell_tmp, new_cell_tmp);
-				flagged_cells.insert(new_cell_tmp);
-				flagged_cells.insert(old_cell_tmp);
-			}
-		}
-		//t_flag.~Timer();
-
-		//Timer t_uold("Uold", print_trans);
-		//std::cout << "Beads: " << last-first << " Cells: " << flagged_cells.size() << std::endl;
-		double Uold = getTotalEnergy(first, last, flagged_cells);
-		//t_uold.~Timer();
-
-		//Timer t_disp("Displacement", print_trans);
-		for(int i=first; i<=last; i++)
-		{
-			beads[i].r += displacement;
-		}
-		//t_disp.~Timer();
-
-		//Timer t_swap("Bead Swaps", print_trans);
-		// update grid <bead index,   <old cell , new cell>>
-		//for(std::pair<int, std::pair<Cell*, Cell*>> &x : bead_swaps)
-		for(auto const &x : bead_swaps)
-		{
-			x.second.first->moveOut(&beads[x.first]);
-			x.second.second->moveIn(&beads[x.first]);
-		}
-		//t_swap.~Timer();
-
-		//Timer t_unew("Unew", print_trans);
-		double Unew = getTotalEnergy(first, last, flagged_cells);
-		//t_unew.~Timer();
-
-		if (rng->uniform() < exp(Uold-Unew))
-		{
-			acc += 1;
-			acc_trans += 1;
-			nbeads_moved += (last-first);
-		}
-		else
-		{
-			throw "rejected";
+			bead_swaps[i] = std::make_pair(old_cell_tmp, new_cell_tmp);
+			flagged_cells.insert(new_cell_tmp);
+			flagged_cells.insert(old_cell_tmp);
 		}
 	}
-	// REJECTION CASES -- restore old conditions
-	catch (const char* msg)
-	{
-		Timer t_rej("rejection", print_trans);
-		if(msg == "rejected")
-		{
-			// restore particle positions
-			for(int i=first; i<=last; i++)
-			{
-				beads[i].r -= displacement;
-			}
+	//t_flag.~Timer();
 
-			if (bead_swaps.size() > 0)
+	//Timer t_uold("Uold", print_trans);
+	//std::cout << "Beads: " << last-first << " Cells: " << flagged_cells.size() << std::endl;
+	double Uold = getTotalEnergy(first, last, flagged_cells);
+	//t_uold.~Timer();
+
+	//Timer t_disp("Displacement", print_trans);
+	for(int i=first; i<=last; i++)
+	{
+		beads[i].r += displacement;
+	}
+	//t_disp.~Timer();
+
+	//Timer t_swap("Bead Swaps", print_trans);
+	// update grid <bead index,   <old cell , new cell>>
+	//for(std::pair<int, std::pair<Cell*, Cell*>> &x : bead_swaps)
+	for(auto const &x : bead_swaps)
+	{
+		x.second.first->moveOut(&beads[x.first]);
+		x.second.second->moveIn(&beads[x.first]);
+	}
+	//t_swap.~Timer();
+
+	//Timer t_unew("Unew", print_trans);
+	double Unew = getTotalEnergy(first, last, flagged_cells);
+	//t_unew.~Timer();
+
+	if (rng->uniform() < exp(Uold-Unew))
+	{
+		// move accepted
+		acc += 1;
+		acc_trans += 1;
+		nbeads_moved += (last-first);
+	}
+	else
+	{
+		// move rejected
+		for(int i=first; i<=last; i++)
+		{
+			beads[i].r -= displacement; // restore particle positions
+		}
+
+		if (bead_swaps.size() > 0)
+		{
+			// restore old grid populations
+			for(auto const &x : bead_swaps)
 			{
-				//for(std::pair<int, std::pair<Cell*, Cell*>> &x : bead_swaps)
-				for(auto const &x : bead_swaps)
-				{
-					x.second.first->moveIn(&beads[x.first]);
-					x.second.second->moveOut(&beads[x.first]);
-				}
+				x.second.first->moveIn(&beads[x.first]);
+				x.second.second->moveOut(&beads[x.first]);
 			}
 		}
 	}
@@ -1162,8 +1229,7 @@ void Sim::MCmove_pivot(int sweep) {
 	// chose one end of the polymer and a pivot bead
 	int end = (nbeads-1)*std::round(rng->uniform()); //  either first bead or last bead
 
-	end = nbeads-1;
-
+	//end = nbeads-1;
 	// pick second bead according to single-sided exponential distribution away from end
 	int length;
 	do {
@@ -1246,14 +1312,12 @@ void Sim::MCmove_pivot(int sweep) {
 
 		if (rng->uniform() < exp(Uold-Unew))
 		{
-			//std::cout << "Accepted"<< std::endl;
 			acc += 1;
 			acc_pivot += 1;
 			nbeads_moved += (last-first);
 		}
 		else
 		{
-			//std::cout << "Rejected" << std::endl;
 			throw "rejected";
 		}
 	}
@@ -1310,6 +1374,7 @@ void Sim::MCmove_grid() {
 		{
 			//std::cout << "passed grid move" << std::endl;
 			flag = false;
+			//grid.setActiveCells();
 		}
 		else
 		{

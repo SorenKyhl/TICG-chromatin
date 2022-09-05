@@ -36,6 +36,7 @@ public:
 	std::string bond_type;
 	float dense_diagonal_cutoff;
 	float dense_diagonal_loading;
+  std::string boundary_type;
 
 	// output files
 	FILE *xyz_out;
@@ -104,6 +105,8 @@ public:
 	bool cellcount_on = true;
 
 	bool track_contactmap;
+	bool contact_bead_skipping;
+
 	bool load_bead_types;
 	bool load_configuration;
 	std::string load_configuration_filename;
@@ -135,6 +138,8 @@ public:
 	std::string ematrix_filename;
 
 	// methods
+	Sim();
+	Sim(std::string);
 	void run();
 	void xyzToContact();
 	void setupContacts();

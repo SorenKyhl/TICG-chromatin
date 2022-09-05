@@ -15,14 +15,15 @@ public:
 	std::unordered_set<Cell*> active_cells;       // cells marked as active (within simulation region)
 
 	double delta;              // grid cell size (length)
-	bool cubic_boundary = true;
-	bool spherical_boundary = false;
 	int L;                        // size of cubic boundary in units of grid cells (ceil side_length/delta)
 	double side_length;           // size of cubic boundary in units of nm
 	double radius;                // radius of simulation volume in [nanometers]
 	int boundary_radius;          // radius of boundary in units of grid cells
 	Eigen::RowVector3d sphere_center; // center of spherical boundary
 	static bool parallel;
+	static bool cell_volumes;
+	bool cubic_boundary;
+	bool spherical_boundary;
 
 	// origin is the bottom-left-most grid cell for cubic simulations
 	// With grid moves on, it will diffuse with periodic boundaries
@@ -33,6 +34,7 @@ public:
 	void setActiveCells();
 	void printActiveCells();
 	void meshBeads(std::vector<Bead> &beads);
+	void getCellVolumes();
 	Cell* getCell(const Bead& bead);
 	Cell* getCell(const Eigen::RowVector3d &r);
 	bool checkCellConsistency(int nbeads);
