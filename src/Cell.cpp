@@ -197,7 +197,7 @@ double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
 			int d = std::abs(indices[i] - indices[j]);
 			if ((d <= diag_cutoff) && (d >= diag_start))
 			{
-				d -= diag_start; # TODO check that this works for non-zero diag_start
+				d -= diag_start; // TODO check that this works for non-zero diag_start
 				d_index = binDiagonal(d);
 				diag_phis[d_index] += 1; // diag phis is just a count, multiply by volumes later
 			}

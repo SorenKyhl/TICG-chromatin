@@ -1,7 +1,8 @@
+
+
 #include "Grid.h"
 #include "cmath"
 #include <numeric>
-#include <execution>
 
 bool Grid::parallel;
 bool Grid::cell_volumes;
@@ -204,7 +205,6 @@ double Grid::diagEnergy(const std::unordered_set<Cell*>& flagged_cells, const st
 	if (parallel)
 	{
 		std::vector<Cell*> flagged_cells_vec(flagged_cells.begin(), flagged_cells.end());
-		#pragma omp parallel for reduction(+:U)
 		for(Cell* cell : flagged_cells_vec)
 		{
 			U += cell->getDiagEnergy(diag_chis);
