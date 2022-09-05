@@ -5,6 +5,7 @@ import math
 import os.path as osp
 import sys
 import time
+from shutil import copyfile
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -132,6 +133,19 @@ def main():
         args.diag_bins = len(config['diag_chis'])
         args.diag_start = config['diag_start']
         args.diag_cutoff = config['diag_cutoff']
+
+    if not osp.exists(args.contact_map):
+        dir = osp.split(args.contact_map)[0]
+
+        obj_goal = osp.join(dir, 'obj_goal.txt')
+        assert osp.exists(obj_goal)
+        copyfile(obj_goal, 'obj_goal.txt')
+
+        obj_goal_diag = osp.join(dir, 'obj_goal_diag.txt')
+        assert osp.exists(obj_goal_diag)
+        copyfile(obj_goal_diag, 'obj_goal_diag.txt')
+
+        return
 
     if args.contact_map.endswith('.npy'):
         y = np.load(args.contact_map)

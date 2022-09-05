@@ -30,17 +30,25 @@ class Sim:
                 self.diag_bins = len(self.config['diag_chis'])
                 self.diag_start = self.config['diag_start']
                 self.diag_cutoff = self.config['diag_cutoff']
+
+                self.dense = False
+                self.n_small_bins = None
+                self.small_binsize = None
+                self.big_binsize = None
                 if self.config['dense_diagonal_on']:
                     self.dense = True
-                    self.n_small_bins = self.config['n_small_bins']
-                    self.small_binsize = self.config['small_binsize']
-                    self.big_binsize = self.config['big_binsize']
-                else:
-                    self.dense = False
-                    self.n_small_bins = None
-                    self.small_binsize = None
-                    self.big_binsize = None
-
+                    if 'n_small_bins' in self.config.keys():
+                        self.n_small_bins = self.config['n_small_bins']
+                        self.small_binsize = self.config['small_binsize']
+                        self.big_binsize = self.config['big_binsize']
+                    else:
+                        # compatibility with Soren
+                        self.n_small_bins = int(self.config['dense_diagonal_loading'] * self.diag_bins)
+                        n_big_bins = self.diag_bins - self.n_small_bins
+                        m_eff = self.diag_cutoff - self.diag_start # number of beads with nonzero interaction
+                        dividing_line = m_eff * self.config['dense_diagonal_cutoff']
+                        self.small_binsize = int(dividing_line / (self.n_small_bins))
+                        self.big_binsize = int((m_eff- dividing_line) / n_big_bins)
 
         else:
             print(f"config.json missing at {config_file}")
@@ -74,6 +82,7 @@ class Sim:
         if osp.exists(gthic_path):
             self.gthic = np.load(gthic_path)
         else:
+            self.gthic = None
             print(f"{gthic_path} does not exist")
 
 
@@ -423,69 +432,69 @@ def main():
     print("analysis")
     sim = Sim("production_out")
 
-    SCC = ep.get_SCC(sim.hic, sim.gthic)
-    RMSE = ep.get_RMSE(sim.hic, sim.gthic)
-    RMSLE = ep.get_RMSLE(sim.hic, sim.gthic)
-
-    with open("../SCC.txt", "a") as f:
-        f.write(str(SCC) + "\n")
-
-    with open("../RMSE.txt", "a") as f:
-        f.write(str(RMSE) + "\n")
-
-    with open("../RMSLE.txt", "a") as f:
-        f.write(str(RMSLE) + "\n")
-
-    plt.figure()
-    SCC_vec = np.loadtxt("../SCC.txt")
-    plt.plot(SCC_vec)
-    plt.xlabel("iteration")
-    plt.ylabel("SCC")
-    plt.savefig("../SCC.png")
-
-    plt.figure()
-    RMSE_vec = np.loadtxt("../RMSE.txt")
-    RMSLE_vec = np.loadtxt("../RMSLE.txt")
-    plt.plot(RMSE_vec, label="RMSE")
-    plt.plot(RMSLE_vec, label="RMSLE")
-    plt.xlabel("iteration")
-    plt.ylabel("RMSE")
-    plt.savefig("../RMSE.png")
-
-    convergence = np.loadtxt("../convergence.txt")
-    fig, axs = plt.subplots(3, figsize=(12,14))
-    axs[0].plot(convergence)
-    axs[0].set_title("Loss")
-    #axs[1].plot(RMSE_vec, label="RMSE")
-    #axs[1].plot(RMSLE_vec, label="RMSLE")
-    axs[1].set_title("RMSE/RMSLE")
-    axs[1].legend()
-    #axs[2].plot(SCC_vec)
-    axs[2].set_title("SCC")
-    plt.savefig("../error.png")
-
-    sim.plot_oe()
-    plt.savefig("oe.png")
-    sim.plot_tri()
-    plt.savefig("tri.png")
+    # SCC = ep.get_SCC(sim.hic, sim.gthic)
+    # RMSE = ep.get_RMSE(sim.hic, sim.gthic)
+    # RMSLE = ep.get_RMSLE(sim.hic, sim.gthic)
+    #
+    # with open("../SCC.txt", "a") as f:
+    #     f.write(str(SCC) + "\n")
+    #
+    # with open("../RMSE.txt", "a") as f:
+    #     f.write(str(RMSE) + "\n")
+    #
+    # with open("../RMSLE.txt", "a") as f:
+    #     f.write(str(RMSLE) + "\n")
+    #
+    # plt.figure()
+    # SCC_vec = np.loadtxt("../SCC.txt")
+    # plt.plot(SCC_vec)
+    # plt.xlabel("iteration")
+    # plt.ylabel("SCC")
+    # plt.savefig("../SCC.png")
+    #
+    # plt.figure()
+    # RMSE_vec = np.loadtxt("../RMSE.txt")
+    # RMSLE_vec = np.loadtxt("../RMSLE.txt")
+    # plt.plot(RMSE_vec, label="RMSE")
+    # plt.plot(RMSLE_vec, label="RMSLE")
+    # plt.xlabel("iteration")
+    # plt.ylabel("RMSE")
+    # plt.savefig("../RMSE.png")
+    #
+    # convergence = np.loadtxt("../convergence.txt")
+    # fig, axs = plt.subplots(3, figsize=(12,14))
+    # axs[0].plot(convergence)
+    # axs[0].set_title("Loss")
+    # #axs[1].plot(RMSE_vec, label="RMSE")
+    # #axs[1].plot(RMSLE_vec, label="RMSLE")
+    # axs[1].set_title("RMSE/RMSLE")
+    # axs[1].legend()
+    # #axs[2].plot(SCC_vec)
+    # axs[2].set_title("SCC")
+    # plt.savefig("../error.png")
+    #
+    # sim.plot_oe()
+    # plt.savefig("oe.png")
+    # sim.plot_tri()
+    # plt.savefig("tri.png")
 
     # plt.figure()
     # ep.plot_tri(sim.hic, sim.gthic, oe=True)
     # plt.savefig("tri_oe.png")
 
-    sim.plot_tri(vmaxp=np.mean(sim.hic)/2)
-    plt.savefig("tri_dark.png")
+    if sim.gthic is not None:
+        sim.plot_tri(vmaxp=np.mean(sim.hic)/2)
+        plt.savefig("tri_dark.png")
 
-    sim.plot_diff()
-    plt.savefig("diff.png")
+        sim.plot_diff()
+        plt.savefig("diff.png")
+
+        sim.plot_scatter()
+        plt.savefig("scatter.png")
 
     # plt.figure()
     # sim.plot_diagonal()
     # plt.savefig("diagonal.png")
-
-
-    sim.plot_scatter()
-    plt.savefig("scatter.png")
 
     sim.plot_energy()
     plt.savefig("energy.png")

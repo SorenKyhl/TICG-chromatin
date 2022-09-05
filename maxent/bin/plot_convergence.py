@@ -12,6 +12,7 @@ LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
     parser.add_argument('--mode', type=str, help='{plaid, diag, both, all}')
+    parser.add_argument('--k', type=int, help='deprecated')
 
     args = parser.parse_args()
     return args
