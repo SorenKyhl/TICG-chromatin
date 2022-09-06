@@ -153,6 +153,7 @@ public:
 	void makeDataAndLogFiles();
 	void makeOutputFiles();
 	bool outside_boundary(Eigen::RowVector3d r);
+	bool allBeadsInBoundary();
 	void initialize();
 	void calculateParameters(nlohmann::json config);
 	void volParameters();

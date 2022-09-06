@@ -394,6 +394,18 @@ bool Sim::outside_boundary(Eigen::RowVector3d r) {
 	return is_out;
 }
 
+bool Sim::allBeadsInBoundary()
+{
+	for(const Bead& b: beads)
+	{
+		if (outside_boundary(b.r))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
 void Sim::initialize() {
 	std::cout << "Initializing simulation objects ... " << std::endl;
 	Timer t_init("Initializing");
@@ -408,6 +420,7 @@ void Sim::initialize() {
 	else {
 		initRandomCoil(bond_length);
 	}
+	assert(allBeadsInBoundary());
 
 	// set up bead types
 	if (load_bead_types) { loadBeadTypes(); }
@@ -418,7 +431,10 @@ void Sim::initialize() {
 	// output initial xyz configuration
 	dumpData();
 	std::cout << "Objects created" << std::endl;
+
 }
+
+
 
 void Sim::volParameters() {
 	double Vbar = 7765.77;  // nm^3/bead: reduced number volume per spakowitz: V/N
