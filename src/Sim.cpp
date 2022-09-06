@@ -1,4 +1,5 @@
 #include "Sim.h"
+#include <cstdio>
 
 // assign variable to json key of the same name
 #define READ_JSON(json, var) read_json((json), (var), #var)
@@ -15,12 +16,19 @@ void read_json(const nlohmann::json& json, T& var, std::string varname) {
 Sim::Sim()
 {
 	data_out_filename = "data_out";
+	redirect_stdout = false;
+	makeDataAndLogFiles();
 }
+
 
 Sim::Sim(std::string filename)
 {
 	data_out_filename = filename;
+	log_filename = data_out_filename + "/log.log";
+	redirect_stdout = true;
+	makeDataAndLogFiles();
 }
+
 
 void Sim::run() {
 	nlohmann::json config = readInput();            // load parameters from config.json
@@ -322,13 +330,23 @@ nlohmann::json Sim::readInput() {
   return config;
 }
 
-void Sim::makeOutputFiles() {
-	std::cout << "making output files ... ";
 
+void Sim::makeDataAndLogFiles()
+{
 	// make and populate data output directory
 	std::string command = "mkdir " + data_out_filename;
 	const int dir_err = system(command.c_str());
 	if (dir_err == -1) {std::cout << "error making data_out directory" << std::endl;}
+
+	if (redirect_stdout)
+	{
+		std::freopen(log_filename.c_str(), "w", stdout);
+	}
+
+}
+
+void Sim::makeOutputFiles() {
+	std::cout << "making output files ... ";
 
 	xyz_out_filename = "./" + data_out_filename + "/output.xyz";
 	energy_out_filename = "./" + data_out_filename + "/energy.traj";
@@ -351,7 +369,7 @@ void Sim::makeOutputFiles() {
 	std::cout << "created successfully" << std::endl;
 
 
-	command = "cp config.json " + data_out_filename;
+	std::string command = "cp config.json " + data_out_filename;
 	const int result = system(command.c_str());
 
 	for (const std::string file : bead_type_files)
