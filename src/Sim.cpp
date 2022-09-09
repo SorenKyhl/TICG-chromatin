@@ -32,8 +32,7 @@ Sim::Sim(std::string filename)
 
 void Sim::run() {
 	nlohmann::json config = readInput();            // load parameters from config.json
-	if (system(NULL)) std::cout << "system ready" << std::endl;
-		else exit (EXIT_FAILURE);
+	if (!system(NULL)) exit (EXIT_FAILURE);
 
 	if (smatrix_on) { setupSmatrix(); }
 	if (ematrix_on) { setupEmatrix(); }
@@ -164,7 +163,7 @@ Eigen::MatrixXd Sim::unit_vec(Eigen::MatrixXd b) {
 nlohmann::json Sim::readInput() {
 	// reads simulation parameters from config.json file
 
-	std::cout << "reading input file ... " << std::endl;
+	std::cout << "reading input config.json file ... " << std::endl;
 
 	std::ifstream i("config.json");
 	if ( !i.good() )
@@ -196,26 +195,31 @@ nlohmann::json Sim::readInput() {
 						+ std::to_string(bead_type_files.size())
 						+ " must equal number of species: " + std::to_string(nspecies));
 			}
+
 			Cell::ntypes = nspecies;
+			int chirows = config["chis"].size();
+			int chicols = config["chis"][0].size();
+
+			if (chirows != chicols || chirows != nspecies)
+			{
+				throw std::logic_error("Size of chi matrix : ("
+						+ std::to_string(chirows) + ", " + std::to_string(chicols)
+						+ ") must be an (n x n) matrix of size nspecies: " + std::to_string(nspecies));
+			}
 
 			// set up chi matrix
 			chis = Eigen::MatrixXd::Zero(nspecies, nspecies);
-			char first = 'A' + 1;
-			for (int i=0; i<nspecies; i++)
+			assert(config.contains("chis"));
+			for(int i=0; i<nspecies; i++)
 			{
-				// should be included even if load_chipseq is false... fix later
-				for (int j=i; j<nspecies; j++)
+				for(int j=0; j<nspecies; j++)
 				{
-					char first = 'A' + i;
-					char second = 'A' + j;
-					std::string chistring = "chi";
-					chistring += first;
-					chistring += second;
-					assert(config.contains(chistring));
-					chis(i,j) = config[chistring];         //  i must be less than j
-					std::cout << chistring << " " << chis(i,j) << std::endl;
+					chis(i,j) = config["chis"][i][j];
 				}
 			}
+
+			std::cout << "chis are: " << std::endl;
+			std::cout << chis << std::endl;
 		}
 		else
 		{
@@ -242,11 +246,9 @@ nlohmann::json Sim::readInput() {
 		Cell::diag_nbins = diag_chis.size();
 	}
 
+	assert(config.contains("production")); production = config["production"];
 	assert(config.contains("gridmove_on")); gridmove_on = config["gridmove_on"];
-	//
 	std::cout << "grid move is : " << gridmove_on << std::endl;
-	//assert(config.contains("production")); production = config["production"];
-	READ_JSON(config, production);
 
   // MC move params
 	assert(config.contains("decay_length")); decay_length = config["decay_length"];
@@ -325,7 +327,7 @@ nlohmann::json Sim::readInput() {
 	int seed = config["seed"];
 	rng = new RanMars(seed);
 
-	std::cout << "read successfully" << std::endl;
+	std::cout << "config_file read successfully" << std::endl;
 
   return config;
 }
