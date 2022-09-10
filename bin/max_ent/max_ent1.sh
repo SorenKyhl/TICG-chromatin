@@ -17,7 +17,7 @@ then
   scratchDir='/home/erschultz/scratch'
   numIterations=10
   finalSimProductionSweeps=1000000
-  productionSweeps=1000000
+  productionSweeps=800000
   equilibSweeps=50000
   source activate python3.9_pytorch1.9
 fi
@@ -26,7 +26,7 @@ STARTTIME=$(date +%s)
 i=1
 dataset='dataset_soren'
 useE='false'
-method='PCA-soren'
+method='PCA'
 diagChiMethod='linear'
 chiDiagSlope=1
 mode='both'
@@ -43,10 +43,11 @@ nSmallBins=16
 smallBinSize=4
 diagStart=0
 diagCutoff=1024
+bondLength=28
 
-k=5
+k=4
 sample=1
-for method in PCA-normalize PCA-soren
+for method in PCA-soren
  # 3 4 5
 do
   echo $sample $m

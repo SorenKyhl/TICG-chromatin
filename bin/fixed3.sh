@@ -5,7 +5,7 @@ source ~/TICG-chromatin/bin/random/random_fns.sh
 param_setup
 k=0
 m=1024
-dataFolder="/home/erschultz/dataset_test_diag1024_linear"
+dataFolder="/home/erschultz/dataset_test_log"
 scratchDir='/home/erschultz/scratch'
 startSample=1
 relabel='none'
@@ -46,24 +46,41 @@ run()  {
 nSweeps=10000
 dumpFrequency=5000
 TICGSeed=10
-chiDiagMethod='linear'
+chiDiagMethod='log'
 dense='true'
 diagBins=32
-maxDiagChi=20
 nSmallBins=16
 smallBinSize=4
 nBigBins=-1
 bigBinSize=-1
-diagStart=0
 diagCutoff='none'
-chiDiagConstant=0
-bondLength=28
+phiChromatin=0.06
+diagStart=0
 
-i=9
-for diagBins in 17 32 64 128
+i=0
+jobs=0
+for chiDiagSlope in 10 40 80 125 250 500 1000
 do
-	i=$(( $i + 1 ))
-	echo $i
-	run &
+	for chiDiagConstant in -20 -15 -10 -5 0 5 10 15
+	do
+		for chiDiagScale in 5 10 12 14 16 18 20 25
+		do
+		  for bondLength in 15 20 26 28 30 35 40 45
+		  do
+		  	i=$(( $i + 1 ))
+		  	echo $i 'chiDiagSlope' $chiDiagSlope 'constant' $chiDiagConstant 'scale' $chiDiagScale 'bond_length' $bondLength
+		  	run &
+
+				jobs=$(( $jobs + 1 ))
+				if [ $jobs -gt 18 ]
+				then
+					echo 'Waiting'
+					wait
+					jobs=0
+				fi
+		  done
+		done
+	done
 done
+
 wait

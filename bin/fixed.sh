@@ -3,14 +3,14 @@
 source ~/TICG-chromatin/bin/random/random_fns.sh
 
 param_setup
-m=512
-dataFolder="/home/erschultz/dataset_test_diag1024"
+m=1024
+dataFolder="/home/erschultz/sequences_to_contact_maps/single_cell_nagano_imputed"
 scratchDir='/home/erschultz/scratch'
 relabel='none'
 lmbda=0.8
 chiSeed='31'
 seqSeed='31'
-chiMethod='random'
+chiMethod='zero'
 minChi=-0.4
 maxChi=0.4
 fillDiag='none'
@@ -39,37 +39,23 @@ run()  {
 # mv TICG-engine ..
 
 k=0
-nSweeps=2000000
-dumpFrequency=100000
+nSweeps=20000
+dumpFrequency=10000
 TICGSeed=10
 diag='true'
+dense='true'
 diagBins=32
+maxDiagChi=10
+nSmallBins=16
+smallBinSize=4
+bigBinSize=-1
+nBigBins=-1
+diagStart=0
+diagCutoff='none'
+bondLength=28
 
-chiDiagMethod='log'
-
-m=512
-
-m=1024
-diagBins=16
-i=101
-chiDiagSlope=5120
-maxDiagChi=2
-for i in $( seq 101 120 )
-do
-	echo $i $maxDiagChi $chiDiagSlope
-	run &
-
-
-	maxDiagChi=$(( $maxDiagChi + 2 ))
-	if ! (( $i % 10 ))
-	then
-		echo "wait"
-		wait
-		chiDiagSlope=$(( $chiDiagSlope * 2 ))
-		maxDiagChi=2
-	fi
-	i=$(( $i + 1 ))
-
-done
+chiDiagMethod='/home/erschultz/sequences_to_contact_maps/single_cell_nagano_imputed/samples/sample443/none/k0/replicate1/log_fit.txt'
+i=4434
+run &
 
 wait

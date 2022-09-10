@@ -25,7 +25,7 @@ overwrite=1
 replicate=1
 loadChi='false'
 project='false'
-goalSpecified='true'
+goalSpecified=1
 GNNModelType='ContactGNNEnergy'
 m=-1
 k=-1
@@ -33,12 +33,18 @@ seqSeed='none'
 chiSeed='none'
 TICGSeed='none'
 bondType='gaussian'
+chiMethod='random'
+phiChromatin=0.06
+boundaryType='spherical'
+# randomizeSeed=1
+bondLength=16.5
 
 # diag params
 diagChiMethod='linear'
 diagBins=32
 maxDiagChi=0
 chiDiagSlope=1
+chiDiagScale='none'
 denseCutoff='none'
 denseLoading='none'
 smallBinSize=0
@@ -56,8 +62,7 @@ useGroundTruthSeed='false'
 # newton's method params
 mode="plaid"
 trust_region=50
-gamma=1
-minDiagChi='none'
+gamma=1.
 
 # experimental data
 chipSeqFolder="/home/erschultz/sequences_to_contact_maps/chip_seq_data"
@@ -81,19 +86,19 @@ max_ent_resume_inner(){
   # 1 = scratchDir
   # 2 = replicate index
   # 3 = start iteration
-  ofile="${sampleFolder}/${method_fmt}/k${k}/replicate${2}"
-  echo $ofile
+  odir="${sampleFolder}/${method_fmt}/k${k}/replicate${2}"
+  echo $odir
   echo $method_fmt
 
   # apply max ent with newton's method
-  ~/TICG-chromatin/maxent/bin/run.sh $ofile $gamma $trust_region $minDiagChi $mode $productionSweeps $equilibSweeps $goalSpecified $3 $numIterationsCopy $overwrite $1 $finalSimProductionSweeps
+  ~/TICG-chromatin/maxent/bin/run.sh -o $odir -d $1 -g $gamma -t $trust_region -c $mode -s $productionSweeps -e $equilibSweeps -z $goalSpecifiedCopy -q $3 -n $numIterationsCopy -w $overwrite -f $finalSimProductionSweeps
 
-  # run.sh moves all data to $ofile upon completion
-  cd $ofile
+  # run.sh moves all data to $odir upon completion
+  cd $odir
 
   # compare results
-  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --k $k --replicate_folder $ofile --save_npy > contact.log
-  python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${ofile}/y.npy" --y_diag "$sampleFolder/y_diag.npy" --yhat_diag "${ofile}/y_diag.npy" >> contact.log
+  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --k $k --replicate_folder $odir --save_npy > contact.log
+  python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${odir}/y.npy" --y_diag "$sampleFolder/y_diag.npy" --yhat_diag "${odir}/y_diag.npy" >> contact.log
 
   echo ''
 }
@@ -113,8 +118,8 @@ max_ent_inner () {
   # args:
   # 1 = scratchDir
   # 2 = replicate index
-  ofile="${sampleFolder}/${method_fmt}/k${k}/replicate${2}"
-  echo $ofile
+  odir="${sampleFolder}/${method_fmt}/k${k}/replicate${2}"
+  echo $odir
 
   # move to scratch
   scratchDirResources="${1}/resources"
@@ -134,30 +139,30 @@ max_ent_inner () {
   # generate sequences
   echo "starting get_params"
   echo $method_fmt
-  python3 ~/TICG-chromatin/scripts/get_params.py --config_ifile "${resources}/default_config_maxent.json" --method=$method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --gnn_model_path $GNNModelPath --mlp_model_path $MLPModelPath --seq_seed $seqSeed --chi_method 'random' --min_chi=-1 --max_chi=1 --chi_seed $chiSeed --diag_chi_method $diagChiMethod --diag_bins $diagBins --max_diag_chi $maxDiagChi --dense_diagonal_on $dense --dense_diagonal_cutoff $denseCutoff --dense_diagonal_loading $denseLoading --small_binsize $smallBinSize --big_binsize $bigBinSize --n_small_bins $nSmallBins --n_big_bins $nBigBins --diag_start $diagStart --diag_cutoff $diagCutoff --diag_chi_slope $chiDiagSlope > params.log
+  python3 ~/TICG-chromatin/scripts/get_params.py --config_ifile "${resources}/default_config_maxent.json" --method=$method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --gnn_model_path $GNNModelPath --mlp_model_path $MLPModelPath --seq_seed $seqSeed --chi_method $chiMethod --min_chi=-1 --max_chi=1 --chi_seed $chiSeed --diag_chi_method $diagChiMethod --diag_bins $diagBins --max_diag_chi $maxDiagChi --dense_diagonal_on $dense --dense_diagonal_cutoff $denseCutoff --dense_diagonal_loading $denseLoading --small_binsize $smallBinSize --big_binsize $bigBinSize --n_small_bins $nSmallBins --n_big_bins $nBigBins --diag_start $diagStart --diag_cutoff $diagCutoff --diag_chi_slope $chiDiagSlope --diag_chi_scale $chiDiagScale > params.log
 
   echo "starting get_config"
-  python3 ~/TICG-chromatin/scripts/get_config.py --parallel $parallel --num_threads $numThreads --m $m --max_ent --mode $mode --bond_type $bondType --dense_diagonal_on $dense --use_ematrix $useE --use_smatrix $useS --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_diag_chi $useGroundTruthDiagChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $TICGSeed --sample_folder $sampleFolder --load_configuration_filename $init_config > config.log
+  python3 ~/TICG-chromatin/scripts/get_config.py --parallel $parallel --num_threads $numThreads --m $m --max_ent --mode $mode --bond_type $bondType --bond_length $bondLength --dense_diagonal_on $dense --use_ematrix $useE --use_smatrix $useS --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_diag_chi $useGroundTruthDiagChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $TICGSeed --sample_folder $sampleFolder --load_configuration_filename $init_config --phi_chromatin $phiChromatin --boundary_type $boundaryType > config.log
 
 
   # generate goals
-  if [ $goalSpecifiedCopy = 'true' ]
+  if [ $goalSpecifiedCopy -eq 1 ]
   then
     echo "starting goal_specified"
-    python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --contact_map "${sampleFolder}/y.npy" --mode $mode > goal.log
+    python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --contact_map "${sampleFolder}/y.npy" --mode $mode --verbose > goal.log
   else
     echo "goal_specified is false"
   fi
 
   # apply max ent with newton's method
-  ~/TICG-chromatin/maxent/bin/run.sh $ofile $gamma $trust_region $minDiagChi $mode $productionSweeps $equilibSweeps $goalSpecifiedCopy 1 $numIterationsCopy $overwrite $1 $finalSimProductionSweeps
+  ~/TICG-chromatin/maxent/bin/run.sh -o $odir -d $1 -g $gamma -t $trust_region -c $mode -s $productionSweeps -e $equilibSweeps -z $goalSpecifiedCopy -n $numIterationsCopy -w $overwrite -f $finalSimProductionSweeps
 
-  # run.sh moves all data to $ofile upon completion
-  cd $ofile
+  # run.sh moves all data to $odir upon completion
+  cd $odir
 
   # compare results
-  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --k $k --replicate_folder $ofile --save_npy > contact.log
-  python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${ofile}/y.npy" --y_diag "$sampleFolder/y_diag.npy" --yhat_diag "${ofile}/y_diag.npy" >> contact.log
+  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --k $k --replicate_folder $odir --save_npy > contact.log
+  python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${odir}/y.npy" --y_diag "$sampleFolder/y_diag.npy" --yhat_diag "${odir}/y_diag.npy" >> contact.log
 
   echo ''
 }
@@ -224,7 +229,7 @@ param_setup(){
     if ! [ $mode = 'diag' ]
     then
       numIterationsCopy=0
-      goalSpecifiedCopy='false'
+      goalSpecifiedCopy=0
     fi
     if ! [ $loadChi = 'true' ]
     then
@@ -235,7 +240,7 @@ param_setup(){
   if [ $useGroundTruthChi == 'true' ] && ! [ $mode = 'plaid' ]
   then
     numIterationsCopy=0
-    goalSpecifiedCopy='false'
+    goalSpecifiedCopy=0
   fi
 
   if [ $useGroundTruthDiagChi = 'true' ]
