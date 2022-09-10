@@ -1,4 +1,4 @@
-CC = g++
+CC = clang++
 FLAGS = -O3 -std=c++17 -fopenmp
 DEBUG_FLAGS = -g -std=c++17
 INCLUDE = -I ../include

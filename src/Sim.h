@@ -39,6 +39,7 @@ public:
   std::string boundary_type;
 
 	// output files
+	bool redirect_stdout = false;
 	FILE *xyz_out;
 	FILE *energy_out;
 	FILE *obs_out;
@@ -47,6 +48,7 @@ public:
 	FILE *density_out;
 	FILE *extra_out;
 	std::string data_out_filename;
+	std::string log_filename;
 	std::string xyz_out_filename;
 	std::string energy_out_filename;
 	std::string obs_out_filename;
@@ -148,8 +150,10 @@ public:
 	void updateContactsDistance();
 	Eigen::MatrixXd unit_vec(Eigen::MatrixXd b);
 	nlohmann::json readInput();
+	void makeDataAndLogFiles();
 	void makeOutputFiles();
 	bool outside_boundary(Eigen::RowVector3d r);
+	bool allBeadsInBoundary();
 	void initialize();
 	void calculateParameters(nlohmann::json config);
 	void volParameters();

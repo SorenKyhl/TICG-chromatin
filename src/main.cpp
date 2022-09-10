@@ -16,20 +16,21 @@ int main(int argc, char* argv[])
 {
 	auto start = std::chrono::high_resolution_clock::now();
 
-	Sim mySim;
+	Sim* mySim;
 
 	if (argc == 1) {
-		mySim = Sim();
+		mySim = new Sim();
 	}
 	else {
-		mySim = Sim(argv[1]);
+		mySim = new Sim(argv[1]);
 	}
 
-	mySim.run();
+	mySim->run();
 
 	auto stop = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::seconds>(stop-start);
 	std::cout << "Took " << duration.count() << "seconds "<< std::endl;
-	std::cout << "Moved " << mySim.nbeads_moved << " beads " << std::endl;
+	std::cout << "Moved " << mySim->nbeads_moved << " beads " << std::endl;
+	delete mySim;
 	return 0;
 }
