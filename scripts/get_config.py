@@ -6,7 +6,7 @@ import sys
 
 import numpy as np
 from seq2contact import (LETTERS, ArgparserConverter, calculate_E_S,
-                         calculate_S, s_to_E)
+                         calculate_S, crop, s_to_E)
 from sklearn.metrics.pairwise import polynomial_kernel
 
 
@@ -46,6 +46,12 @@ def getArgs():
                         help='True to run simulation in parallel')
     parser.add_argument('--num_threads', type=int, default=2,
                         help='Number of threads if parallel is True')
+    parser.add_argument('--phi_chromatin', type=float, default=0.06,
+                        help='chromatin volume fraction')
+    parser.add_argument('--bond_length', type=float, default=16.5,
+                        help='bond length')
+    parser.add_argument('--boundary_type', type=str, default='spherical',
+                        help='simulation boundary type {cubic, spherical}')
 
     # chi config params
     parser.add_argument('--use_ground_truth_chi', type=AC.str2bool, default=False,
@@ -146,7 +152,7 @@ def relabel_x_to_psi(x, relabel_str):
 
     return psi
 
-def writeSeq(seq, format='%.3e'):
+def writeSeq(seq, format='%.8e'):
     m, k = seq.shape
     for j in range(k):
         np.savetxt(f'seq{j}.txt', seq[:, j], fmt = format)
@@ -154,24 +160,6 @@ def writeSeq(seq, format='%.3e'):
 def main():
     args = getArgs()
     print(args)
-
-    sample_config = None # ground truth config file
-    # used to copy TICG seed and diag chis
-    if args.sample_folder is not None:
-        sample_config_file = osp.join(args.sample_folder, 'config.json')
-        if osp.exists(sample_config_file):
-            with open(sample_config_file, 'rb') as f:
-                sample_config = json.load(f)
-
-        # copy over ground truth y
-        y_gt_file = osp.join(args.sample_folder, 'y.npy')
-        if osp.exists(y_gt_file):
-            y_gt = np.load(y_gt_file)
-            np.save('y_gt.npy', y_gt)
-
-
-    with open(args.config_ifile, 'rb') as f:
-        config = json.load(f)
 
     if args.m == -1:
         # need to infer m
@@ -203,6 +191,25 @@ def main():
     else:
         args.k = 0
     print(f'inferred k = {args.k}')
+
+    sample_config = None # ground truth config file
+    # used to copy TICG seed and diag chis
+    if args.sample_folder is not None:
+        sample_config_file = osp.join(args.sample_folder, 'config.json')
+        if osp.exists(sample_config_file):
+            with open(sample_config_file, 'rb') as f:
+                sample_config = json.load(f)
+
+        # copy over ground truth y
+        y_gt_file = osp.join(args.sample_folder, 'y.npy')
+        if osp.exists(y_gt_file):
+            y_gt = crop(np.load(y_gt_file), args.m)
+            print(f'y_gt.shape = {y_gt.shape}')
+            np.save('y_gt.npy', y_gt)
+
+
+    with open(args.config_ifile, 'rb') as f:
+        config = json.load(f)
 
     if args.relabel is not None:
         x = np.load('x.npy')
@@ -365,6 +372,8 @@ def main():
         config["rotate_on"] = False
     else:
         config['bond_type'] = args.bond_type
+        if args.bond_type == 'gaussian':
+            config["rotate_on"] = False
 
     # save nbeads
     config['nbeads'] = args.m
@@ -372,6 +381,19 @@ def main():
     # save nSweeps
     if args.n_sweeps is not None:
         config['nSweeps'] = args.n_sweeps
+
+    # save phi_chromatin
+    config['phi_chromatin'] = args.phi_chromatin
+
+    # save bond_length
+    bond_length_file = 'bond_length.txt'
+    if osp.exists(bond_length_file):
+        args.bond_length = float(np.loadtxt(bond_length_file))
+        print('Bond_length:', args.bond_length)
+    config['bond_length'] = args.bond_length
+
+    # save boundary_type
+    config['boundary_type'] = args.boundary_type
 
     # save dump frequency
     if args.dump_frequency is not None:
@@ -405,7 +427,7 @@ def main():
             wr.writerow([args.constant_chi])
             wr.writerow([args.constant_chi])
 
-    # save paralle
+    # save parallel
     config['parallel'] = args.parallel
     config['num_threads'] = args.num_threads
 

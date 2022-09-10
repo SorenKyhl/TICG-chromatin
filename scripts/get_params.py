@@ -10,13 +10,13 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from knightRuiz import knightRuiz
 from seq2contact import (LETTERS, ArgparserConverter, DiagonalPreprocessing,
                          InteractionConverter, R_pca, clean_directories, crop,
-                         finalize_opt, get_base_parser, get_dataset, load_E_S,
-                         load_final_max_ent_S, load_saved_model, load_X_psi,
-                         load_Y, load_Y_diag, plot_matrix, plot_seq_binary,
-                         plot_seq_exclusive, project_S_to_psi_basis, s_to_E)
+                         finalize_opt, get_base_parser, get_dataset,
+                         knightRuiz, load_E_S, load_final_max_ent_S,
+                         load_saved_model, load_X_psi, load_Y, load_Y_diag,
+                         plot_matrix, plot_seq_binary, plot_seq_exclusive,
+                         project_S_to_psi_basis, s_to_E)
 from sklearn.cluster import KMeans
 from sklearn.decomposition import NMF, PCA, KernelPCA
 
@@ -52,6 +52,16 @@ def getArgs():
     args, unknown = parser.parse_known_args()
     if args.sample_folder is None and args.data_folder is not None:
         args.sample_folder = osp.join(args.data_folder, 'samples', f'sample{args.sample}')
+
+    if args.m == -1:
+        # infer m
+        x, _ = load_X_psi(args.sample_folder, throw_exception = False)
+        y, _ = load_Y(args.sample_folder, throw_exception = False)
+        if x is not None:
+            args.m, _ = x.shape
+        elif y is not None:
+            args.m, _ = y.shape
+        print(f'Inferrred m = {args.m}')
 
     with open(args.config_ifile, 'rb') as f:
         args.config = json.load(f)
@@ -579,19 +589,11 @@ class GetSeq():
         args = self.args
         if self.k == 0:
             return
-        if self.m == -1:
-            # infer m
-            x, _ = load_X_psi(self.sample_folder, throw_exception = False)
-            y, _ = load_Y(self.sample_folder, throw_exception = False)
-            if x is not None:
-                self.m, _ = x.shape
-            elif y is not None:
-                self.m, _ = y.shape
 
-        elif args.method is None:
+        if args.method is None:
             return
         elif args.method == 'pca-soren':
-            files = [osp.join(self.sample_folder, f'pcf{i}.txt') for i in range(1,6)]
+            files = [osp.join(self.sample_folder, f'pcf{i}.txt') for i in range(1,self.k)]
             seq = np.zeros((self.m, self.k))
             for i, f in enumerate(files):
                 seq[:, i] = np.loadtxt(f)
@@ -679,13 +681,16 @@ class GetSeq():
         if args.add_constant:
             seq = np.concatenate((seq, np.ones((m, 1))), axis = 1)
 
-        np.save('x.npy', seq)
+        np.save('x.npy', seq.astype(np.float64))
+        print(f"Seq[0,:20]: {seq[0,:20]}")
 
         if self.plot:
             if args.method in {'k_means', 'chromhmm'} or (args.method == 'nmf' and args.binarize):
                 plot_seq_exclusive(seq, labels=args.labels, X=args.X)
             elif args.binarize:
                 plot_seq_binary(seq)
+            else:
+                plot_seq_continuous(seq)
 
 class GetPlaidChi():
     def __init__(self, args, unknown_args):
@@ -743,6 +748,8 @@ class GetPlaidChi():
                 print('Warning: particles are not distinguishable')
         elif args.chi_method is None:
             chi = None
+        elif args.chi_method == 'zero':
+            chi = np.zeros((self.k, self.k))
         elif args.chi_method == 'random':
             chi = self.random_chi()
         elif args.chi_method.startswith('polynomial'):
@@ -841,6 +848,8 @@ class GetDiagChi():
                                 '(None for no diag_chi)')
         parser.add_argument('--diag_chi_slope', type=float, default=1.,
                             help='slope (in thousandths) for diag_chi_method = log')
+        parser.add_argument('--diag_chi_scale', type=AC.str2float,
+                            help='scale (in thousandths) for diag_chi_method = log')
         parser.add_argument('--dense_diagonal_on', type=AC.str2bool, default=False,
                             help='True to place 1/2 of beads left of cutoff')
         parser.add_argument('--dense_diagonal_cutoff', type=AC.str2float, default=1/16,
@@ -878,102 +887,124 @@ class GetDiagChi():
 
     def set_up_diag_chi(self):
         args = self.args
+        diag_chis_continuous = None
         if args.diag_chi_method is not None:
-            args.diag_chi_method = args.diag_chi_method.lower()
+            self.get_bin_sizes()
             d_arr = np.arange(args.m_continuous)
             args.diag_chi_slope /= 1000
-            if args.diag_chi_method == 'linear':
-                diag_chis_continuous = np.linspace(0, args.max_diag_chi, args.m_continuous)
-            elif args.diag_chi_method == 'log':
-                scale = args.max_diag_chi / np.log(args.diag_chi_slope * (args.m_continuous - 1) + 1)
-                diag_chis_continuous = scale * np.log(args.diag_chi_slope * d_arr + 1)
-            elif args.diag_chi_method == 'logistic':
-                diag_chis_continuous = 2 * args.max_diag_chi / (1 + np.exp(-args.diag_chi_slope * d_arr)) - args.max_diag_chi
-            elif args.diag_chi_method == 'exp':
-                diag_chis_continuous = args.max_diag_chi - 1.889 * np.exp(-args.diag_chi_slope * d_arr)
-            elif args.diag_chi_method == 'mlp':
-                diag_chis = self.get_diag_chi_mlp(args.mlp_model_path, self.sample_folder)
-                assert len(diag_chis) == args.diag_bins, f"Shape mismatch: {len(diag_chis)} vs {args.diag_bins}"
+
+
+            if osp.exists(args.diag_chi_method):
+                temp = np.loadtxt(args.diag_chi_method)
+                if len(temp.shape) == 2:
+                    # assume this is maxent diag chis and take last iteration
+                    temp = temp[-1]
+                if len(temp) == args.diag_bins:
+                    diag_chis = temp
+                elif len(temp) == args.m_continuous:
+                    diag_chis_continuous = temp
+                else:
+                    f'{len(diag_chis)} != {args.diag_bins} != {args.m_continuous}'
             else:
-                raise Exception(f'Unrecognized chi diag method {args.diag_chi_method}')
+                args.diag_chi_method = args.diag_chi_method.lower()
+                if args.diag_chi_method == 'zero':
+                    diag_chis = np.zeros(args.diag_bins)
+                elif args.diag_chi_method == 'linear':
+                    diag_chis_continuous = np.linspace(0, args.max_diag_chi, args.m_continuous)
+                elif args.diag_chi_method == 'log':
+                    if args.diag_chi_scale is None:
+                        args.diag_chi_scale = args.max_diag_chi / np.log(args.diag_chi_slope * (args.m_continuous - 1) + 1)
+                    diag_chis_continuous = args.diag_chi_scale * np.log(args.diag_chi_slope * d_arr + 1)
+                elif args.diag_chi_method == 'logistic':
+                    diag_chis_continuous = 2 * args.max_diag_chi / (1 + np.exp(-args.diag_chi_slope * d_arr)) - args.max_diag_chi
+                elif args.diag_chi_method == 'exp':
+                    diag_chis_continuous = args.max_diag_chi - 1.889 * np.exp(-args.diag_chi_slope * d_arr)
+                elif args.diag_chi_method == 'mlp':
+                    diag_chis_continuous, diag_chis = self.get_diag_chi_mlp(args.mlp_model_path, self.sample_folder)
+                else:
+                    raise Exception(f'Unrecognized chi diag method {args.diag_chi_method}')
 
             if diag_chis_continuous is not None:
+                print('diag_chis_continuous:', diag_chis_continuous, diag_chis_continuous.shape)
                 diag_chis = self.coarse_grain_diag_chi(diag_chis_continuous)
                 np.save('diag_chis_continuous', diag_chis_continuous)
-
         elif args.diag_chi is not None:
-            diag_chis_continuous = None
             diag_chis = np.array(args.diag_chi)
         else:
             return
 
         diag_chis += args.diag_chi_constant
+        assert len(diag_chis) == args.diag_bins, f"Shape mismatch: {len(diag_chis)} vs {args.diag_bins}"
         print('diag_chis: ', diag_chis, diag_chis.shape)
         np.save('diag_chis', diag_chis)
         self.config["diag_chis"] = list(diag_chis) # ndarray not json serializable
 
-    def coarse_grain_diag_chi(self, diag_chis_continuous):
+    def get_bin_sizes(self):
         args = self.args
-        m_eff = args.diag_cutoff - args.diag_start # number of beads with nonzero interaction
-
-        # get bin sizes
+        self.m_eff = args.diag_cutoff - args.diag_start # number of beads with nonzero interaction
+        print(f'm_eff = {self.m_eff}')
         if args.dense_diagonal_on:
             if args.dense_diagonal_loading is not None:
-                n_small_bins = int(args.dense_diagonal_loading * args.diag_bins)
-                assert args.diag_bins > n_small_bins, f"{args.diag_bins} < {n_small_bins}"
-                n_big_bins = args.diag_bins - n_small_bins
+                self.n_small_bins = int(args.dense_diagonal_loading * args.diag_bins)
+                assert args.diag_bins > self.n_small_bins, f"{args.diag_bins} < {self.n_small_bins}"
+                self.n_big_bins = args.diag_bins - self.n_small_bins
             else:
-                n_small_bins = args.n_small_bins
-                n_big_bins = args.n_big_bins
+                self.n_small_bins = args.n_small_bins
+                self.n_big_bins = args.n_big_bins
 
             if args.dense_diagonal_cutoff is not None:
-                dividing_line = m_eff * args.dense_diagonal_cutoff
-                small_binsize = int(dividing_line / (n_small_bins))
-                big_binsize = int((m_eff- dividing_line) / n_big_bins)
+                self.dividing_line = self.m_eff * args.dense_diagonal_cutoff
+                self.small_binsize = int(self.dividing_line / (self.n_small_bins))
+                self.big_binsize = int((self.m_eff - self.dividing_line) / self.n_big_bins)
             else:
-                small_binsize = args.small_binsize
-                dividing_line = small_binsize * n_small_bins
-                big_binsize = args.big_binsize
+                self.small_binsize = args.small_binsize
+                self.dividing_line = self.small_binsize * self.n_small_bins
+                self.big_binsize = args.big_binsize
 
-            if n_big_bins == -1:
-                remainder = m_eff - dividing_line
-                n_big_bins = math.floor(args.diag_bins - n_small_bins)
-                while remainder % n_big_bins != 0 and n_big_bins < remainder:
-                    n_big_bins += 1
+            if self.n_big_bins == -1:
+                remainder = self.m_eff - self.dividing_line
+                self.n_big_bins = math.floor(args.diag_bins - self.n_small_bins)
+                while remainder % self.n_big_bins != 0 and self.n_big_bins < remainder:
+                    self.n_big_bins += 1
 
-                big_binsize = remainder // n_big_bins
-                if n_small_bins + n_big_bins != args.diag_bins:
-                    print(f'args.diag_bins changed from {args.diag_bins} to {n_small_bins + n_big_bins}')
-                    args.diag_bins = n_small_bins + n_big_bins
+                self.big_binsize = remainder // self.n_big_bins
+                if self.n_small_bins + self.n_big_bins != args.diag_bins:
+                    print(f'args.diag_bins changed from {args.diag_bins} to {self.n_small_bins + self.n_big_bins}')
+                    args.diag_bins = self.n_small_bins + self.n_big_bins
 
+            result_string = f'{self.n_small_bins}x{self.small_binsize} + {self.n_big_bins}x{self.big_binsize} = {self.m_eff}'
+            assert self.n_small_bins * self.small_binsize + self.n_big_bins * self.big_binsize == self.m_eff, result_string
+            print(result_string)
 
-            assert n_small_bins * small_binsize + n_big_bins * big_binsize == m_eff, f'{n_small_bins}x{small_binsize} + {n_big_bins}x{big_binsize} != {m_eff}'
-            print(f'{n_small_bins}x{small_binsize} + {n_big_bins}x{big_binsize} = {m_eff}')
-
-            self.config['n_small_bins'] = n_small_bins
-            self.config['n_big_bins'] = n_big_bins
-            self.config['small_binsize'] = small_binsize
-            self.config['big_binsize'] = big_binsize
+            self.config['n_small_bins'] = self.n_small_bins
+            self.config['n_big_bins'] = self.n_big_bins
+            self.config['small_binsize'] = self.small_binsize
+            self.config['big_binsize'] = self.big_binsize
         else:
-            binsize = self.m / args.diag_bins
+            self.binsize = self.m_eff / args.diag_bins
+            print(f'binsize = {self.binsize}')
+            assert self.m_eff % args.diag_bins == 0
             self.config['n_small_bins'] = 0
             self.config['n_big_bins'] = args.diag_bins
             self.config['small_binsize'] = 0
-            self.config['big_binsize'] = binsize
+            self.config['big_binsize'] = self.binsize
+
+    def coarse_grain_diag_chi(self, diag_chis_continuous):
+        args = self.args
 
         # get diag chis
         i = 0
         diag_chis = np.zeros(args.diag_bins)
         curr_bin_vals = []
         prev_bin = 0
-        for d, val in enumerate(diag_chis_continuous[args.diag_start:args.diag_cutoff]):
+        for d, val in enumerate(diag_chis_continuous[:args.diag_cutoff]):
             if args.dense_diagonal_on:
-                if d > dividing_line:
-                    bin = n_small_bins + math.floor((d - dividing_line) / big_binsize)
+                if d > self.dividing_line:
+                    bin = self.n_small_bins + math.floor((d - self.dividing_line) / self.big_binsize)
                 else:
-                    bin =  math.floor(d / small_binsize)
+                    bin =  math.floor(d / self.small_binsize)
             else:
-                bin = int(d / binsize)
+                bin = int(d / self.binsize)
 
             curr_bin = bin
             if curr_bin != prev_bin:
@@ -987,7 +1018,6 @@ class GetDiagChi():
         diag_chis[i] = np.mean(curr_bin_vals)
 
         return diag_chis
-
 
     def get_diag_chi_mlp(self, model_path, sample_path):
         print('\nget_diag_chi_mlp')
@@ -1028,10 +1058,13 @@ class GetDiagChi():
         sys.argv = [sys.argv[0]] # delete args from get_params, otherwise gnn opt will try and use them
         opt = parser.parse_args(['@{}'.format(argparse_path)])
         opt.id = int(model_id)
+        output_mode = opt.output_mode
         print(opt)
         opt = finalize_opt(opt, parser, local = True, debug = True)
         opt.data_folder = osp.join('/',*sample_path_split[:-2]) # use sample_dataset not mlp_dataset
         opt.log_file = sys.stdout # change
+        opt.output_mode = None # None for prediction mode
+        opt.crop = (0, self.m)
         print(opt)
 
         # get model
@@ -1042,14 +1075,29 @@ class GetDiagChi():
         print(dataset)
 
         # get prediction
-        for i, (x, y) in enumerate(dataset):
+        for i, x in enumerate(dataset):
+            x = x[0]
             x = x.to(opt.device)
             print('x', x, x.shape)
             yhat = model(x)
             yhat = yhat.cpu().detach().numpy()
-            diag_chi = yhat.reshape((-1)).astype(np.float64)
+            yhat = yhat.reshape((-1)).astype(np.float64)
 
-        return diag_chi
+        if 'bond_length' in output_mode:
+            yhat = yhat[:-1]
+            bond_length = yhat[-1]
+            with open('bond_length.txt', 'w') as f:
+                f.write(str(bond_length))
+            print('MLP bond_length:', bond_length)
+
+        if output_mode.startswith('diag_chi_step'):
+            diag_chis_continuous = yhat
+            diag_chis = None
+        else:
+            diag_chis_continuous = None
+            diag_chis = yhat
+
+        return diag_chis_continuous, diag_chis
 
 class GetEnergy():
     def __init__(self, args, unknown_args):
@@ -1278,6 +1326,7 @@ def main():
     args, unknown = getArgs()
     print(args)
     GetSeq(args, unknown)
+    print(args)
     GetPlaidChi(args, unknown)
     GetDiagChi(args, unknown)
     GetEnergy(args, unknown)

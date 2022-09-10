@@ -108,6 +108,9 @@ def plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, dir):
 
 def main():
     args = getArgs()
+    if not osp.exists(args.y):
+        return
+
     y = crop(np.load(args.y), args.m)
     if args.y_diag is not None and osp.exists(args.y_diag):
         y_diag = crop(np.load(args.y_diag), args.m)

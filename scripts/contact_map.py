@@ -152,17 +152,18 @@ def main():
 
     else:
         meanDist_max_ent = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
-        y_gt = np.load(osp.join(args.sample_folder, 'y.npy'))
-        meanDist_gt = DiagonalPreprocessing.genomic_distance_statistics(y_gt, 'prob')
+        y_gt_file = osp.join(args.replicate_folder, 'resources', 'y_gt.npy')
+        if osp.exists(y_gt_file):
+            y_gt = np.load(y_gt_file)
+            meanDist_gt = DiagonalPreprocessing.genomic_distance_statistics(y_gt, 'prob')
+        else:
+            meanDist_gt = None
 
         plot_mean_dist(meanDist_max_ent, args.save_folder, 'meanDist.png',
                         diag_chi_step, False, meanDist_gt)
-        plot_mean_dist(meanDist_max_ent, args.save_folder, 'meanDist_norm.png',
-                        diag_chi_step, False, meanDist_gt, True)
         plot_mean_dist(meanDist_max_ent, args.save_folder, 'meanDist_log.png',
                         diag_chi_step, True, meanDist_gt)
-        plot_mean_dist(meanDist_max_ent, args.save_folder, 'meanDist_log_norm.png',
-                        diag_chi_step, True, meanDist_gt, True)
+
 
 if __name__ == '__main__':
     main()

@@ -81,7 +81,7 @@ def main2():
 def main():
     dir = '/home/erschultz/sequences_to_contact_maps'
     # dir = '/project2/depablo/erschultz'
-    dataset='dataset_09_01_22'
+    dataset='dataset_07_20_22'
     data_folder = osp.join(dir, dataset)
     if not osp.exists(data_folder):
         os.mkdir(data_folder, mode = 0o755)
@@ -89,21 +89,21 @@ def main():
         os.mkdir(osp.join(data_folder, 'samples'), mode = 0o755)
 
     start=60000000
-    resolution=50000
-    norm = 'None'
-    chromosome=10
+    resolution=5000
+    norm = 'KR'
+    chromosome=4
     filename="https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic"
     filename='https://www.encodeproject.org/files/ENCFF718AWL/@@download/ENCFF718AWL.hic' #GM12878
 
     # set up for multiprocessing
     mapping = []
-    for i, norm in enumerate(['NONE', 'KR']):
+    for i, m in enumerate([512, 1024, 2048, 4096]):
         # chromsizes = bioframe.fetch_chromsizes('hg38')
         # end = chromsizes[f'chr{chromosome}']
-        end = 111150000
-        m = (end - start) / resolution + 1
-        print(f'i={i+6}: m={m}')
-        sample_folder = osp.join(data_folder, 'samples', f'sample{i+6}')
+        end = start + resolution * (m-1)
+        # m = (end - start) / resolution + 1
+        print(f'i={i+11}: m={m}')
+        sample_folder = osp.join(data_folder, 'samples', f'sample{i+11}')
         mapping.append((sample_folder, filename, chromosome, start, end, resolution, norm))
 
     with multiprocessing.Pool(10) as p:

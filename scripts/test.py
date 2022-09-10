@@ -1,12 +1,17 @@
+import json
+import math
 import os
 import os.path as osp
 from collections import defaultdict
 
+import hicrep
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.optimize import curve_fit
 from seq2contact import *
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
 
 
 def check_dataset(dataset):
@@ -357,43 +362,6 @@ def time_comparison_merge_PCA():
     plt.savefig(osp.join(dir, 'time_merge.png'))
     plt.close()
 
-def construct_sc_xyz():
-    dir = '/home/erschultz/dataset_test2/samples'
-    xyz_all = None
-    for f in os.listdir(dir):
-        if f.startswith('sample'):
-            i = int(f[6:])
-            print(f, i)
-            xyz_file = osp.join(dir, f, 'data_out/output.xyz')
-            xyz = xyz_load(xyz_file, multiple_timesteps = True, save = True, N_min = 1,
-                            down_sampling = 10)
-            N, m, _ = xyz.shape
-            xyz = np.concatenate((xyz, np.ones((N, m, 1)) * i), axis = 2)
-
-            if xyz_all is None:
-                xyz_all = xyz
-            else:
-                xyz_all = np.concatenate((xyz_all, xyz), axis = 0)
-
-    print(xyz_all.shape)
-    np.save(osp.join(dir, 'combined2/xyz.npy'), xyz_all)
-
-def test_log_diag_param():
-    max = 20
-    m = 2000
-    d = np.arange(m).astype(np.float64)
-    for A in [1, 2]:
-        for B in [.1, .5, 1]:
-            for max in [0]:
-                # x = 2*max / (1 + np.exp(-B*d)) - max
-                x = max - A*np.power(d, -B)
-                plt.plot(x, label = f'A={A}, B={B}, {max}')
-                print(x[:10])
-
-    plt.xscale('log')
-    plt.legend()
-    plt.show()
-
 def convergence_check():
     dir = '/home/erschultz/sequences_to_contact_maps/dataset_05_18_22/samples'
     results_1 = {}
@@ -504,20 +472,42 @@ def bin_zhang_contact_function_comparison():
     plt.show()
 
 def main():
-    dir = '/home/erschultz/sequences_to_contact_maps/dataset_07_20_22/samples/sample2'
-    ifile1 = osp.join(dir, 'y.npy')
-    y_gt = np.load(ifile1)
-    dir2 = osp.join(dir, 'none/k0/replicate1')
-    ifile2 = osp.join(dir2, 'y.npy')
-    y = np.load(ifile2)
-
-    meanDist_max_ent = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
-    meanDist_gt = DiagonalPreprocessing.genomic_distance_statistics(y_gt, 'prob')
-
+    # quick function to plot sc p(s) curves
+    dir = '/home/erschultz/sequences_to_contact_maps/single_cell_nagano_2017'
+    data_dir = osp.join(dir, 'contact_diffusion_kNN8scc/iteration_1/sc_contacts')
     fig, ax = plt.subplots()
     ax2 = ax.twinx()
-    ax.plot(meanDist_max_ent, label = 'max ent')
-    ax.plot(meanDist_gt, label = 'gt')
+
+    with open(osp.join(dir, 'contact_diffusion_kNN8scc/iteration_0/sc_contacts/ifile_dict.json')) as f:
+        ifile_dict = json.load(f)
+
+    with open(osp.join(dir, 'samples/phase_dict.json'), 'r') as f:
+        phase_dict = json.load(f)
+
+    phase_count_dict = defaultdict(int) # how many times have we seen each phase
+    for file in os.listdir(data_dir):
+        if file.endswith('cool'):
+            ifile = osp.join(data_dir, file)
+            i = file.split('.')[0].split('_')[-1]
+
+            dir = ifile_dict[osp.split(file)[1].replace('.cool', '.mcool')]
+            phase = phase_dict[dir]
+            phase_count_dict[phase] += 1
+
+            if phase_count_dict[phase] < 2:
+                print(file)
+                y = load_contact_map(ifile, chrom=15, resolution=50000)
+
+                ofile = osp.join(data_dir, 'sc_contacts_time', f'y_sc_{i}_chrom15.png')
+                contacts = int(np.sum(y) / 2)
+                sparsity = np.round(np.count_nonzero(y) / len(y)**2 * 100, 2)
+                title = f'Sample {i}:\n# contacts: {contacts}, sparsity: {sparsity}%'
+                plot_matrix(y, ofile, title, vmax = 'mean')
+
+                meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+                print(meanDist)
+                ax.plot(meanDist, label = phase)
+
     ax.set_yscale('log')
     ax.set_xscale('log')
 
@@ -525,8 +515,122 @@ def main():
     ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
     ax.legend()
     plt.tight_layout()
-    plt.savefig(osp.join(dir2, 'meanDist_log.png'))
+    plt.savefig(osp.join(data_dir, 'sc_contacts_time', 'meanDist_log2.png'))
     plt.close()
+
+def main2():
+    # plot different p(s) curves
+    dir = '/home/erschultz/sequences_to_contact_maps/single_cell_nagano_imputed/samples'
+    fig, ax = plt.subplots()
+    ax2 = ax.twinx()
+
+    ifile = osp.join(dir, 'sample443/y.npy')
+    y_gt = np.load(ifile)
+    meanDist = DiagonalPreprocessing.genomic_distance_statistics(y_gt, 'prob')
+    ax.plot(meanDist, label = 'gt', color = 'k')
+
+    ifile = osp.join(dir, 'sample443/none/k0/replicate1/y.npy')
+    y_max_ent = np.load(ifile)
+    meanDist = DiagonalPreprocessing.genomic_distance_statistics(y_max_ent, 'prob')
+    ax.plot(meanDist, label = 'max_ent', color = 'blue')
+
+    ifile = osp.join(dir, 'sample4431/y.npy')
+    y = np.load(ifile)
+    meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+    ax.plot(meanDist, label = 'diag_zero')
+
+    ifile = osp.join(dir, 'sample4432/y.npy')
+    y = np.load(ifile)
+    meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+    ax.plot(meanDist, label = 'log_fit')
+
+    ifile = osp.join(dir, 'sample4433/y.npy')
+    y = np.load(ifile)
+    meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+    ax.plot(meanDist, label = 'log_fit_0')
+
+    ifile = osp.join(dir, 'sample4434/y.npy')
+    y = np.load(ifile)
+    meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+    ax.plot(meanDist, label = 'log_fit_neg')
+
+
+    ax.set_yscale('log')
+    ax.set_xscale('log')
+
+    ax.set_ylabel('Contact Probability', fontsize = 16)
+    ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
+    ax.legend()
+    plt.tight_layout()
+    plt.savefig(osp.join(dir, 'sample4434', 'meanDist_log.png'))
+    plt.close()
+
+def main3():
+    # try different modifications to diag chis learned by max ent
+    dir = '/home/erschultz/sequences_to_contact_maps/single_cell_nagano_imputed/samples/sample443/none/k0/replicate1'
+    ifile = osp.join(dir, 'chis_diag.txt')
+    diag_chis = np.loadtxt(ifile)[-1]
+    print(diag_chis)
+
+    ifile = osp.join(dir, 'iteration9/config.json')
+    with open(ifile, 'r') as f:
+        config = json.load(f)
+
+    diag_chi_step = get_diag_chi_step(config, diag_chis)
+    print(diag_chi_step[:12])
+
+
+    x = np.arange(0, len(diag_chi_step))
+    # # x_poly = PolynomialFeatures(2, interaction_only = True).fit_transform(x)
+    # # print(x_poly)
+    # reg = LinearRegression().fit(x[8:100], diag_chi_step[8:100].reshape(-1, 1))
+    # print('Regression:')
+    # print(reg.score(x, diag_chi_step.reshape(-1, 1)))
+    # print(f'coef: {reg.coef_}')
+    # print(f'intercept: {reg.intercept_}')
+    # new = reg.predict(x[8:100])
+    # print('Prediction:')
+    # print(new)
+
+    init = [1, 1, 0]
+    popt, pcov = curve_fit(log_curve, x[8:60], diag_chi_step[8:60], p0 = init, maxfev = 2000)
+    print('popt', popt)
+    new = log_curve(x[8:60], *popt)
+    new = log_curve(x, *popt)
+    print(new)
+
+
+    plt.plot(diag_chi_step, label = 'diag_chi')
+    plt.plot(new, label = 'prediction')
+    plt.xscale('log')
+    plt.legend()
+    plt.savefig(osp.join(dir, 'log_fit_log.png'))
+    plt.close()
+
+    plt.plot(diag_chi_step, label = 'diag_chi')
+    plt.plot(new, label = 'prediction')
+    plt.legend()
+    plt.savefig(osp.join(dir, 'log_fit.png'))
+    plt.close()
+
+
+
+    np.savetxt(osp.join(dir, 'log_fit.txt'), new)
+
+def log_curve(x, A, B, C):
+    print(A, B, C)
+    result = A * np.log(B * x + 1) + C
+    return result
+
+def test_log_curve():
+    x = np.arange(1024)
+
+
+    y = log_curve(x, 15, 10/1000, -15)
+
+    plt.plot(x, y)
+    plt.show()
+
 
 if __name__ == '__main__':
     # test_robust_PCA()
@@ -535,6 +639,6 @@ if __name__ == '__main__':
     # time_comparison_merge_PCA()
     # construct_sc_xyz()
     # convergence_check()
-    main()
-    # test_log_diag_param()
+    # main3()
+    test_log_curve()
     # makeDirsForMaxEnt("dataset_09_21_21")
