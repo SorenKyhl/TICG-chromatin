@@ -29,22 +29,28 @@ def getArgs():
     args = parser.parse_args()
     return args
 
-def get_diag_goal(y, args):
+def get_diag_goal(y, args, return_correction = False):
     '''Input y should have max 1.'''
     m, _ = y.shape
     if args.diag_cutoff > m:
         args.diag_cutoff = m
 
     obj_goal_diag = []
+    correction = []
     for bin in range(args.diag_bins):
         mask = get_mask(bin, m, args.diag_bins, args.dense, args.n_small_bins,
                         args.small_binsize, args.big_binsize, args.diag_start,
                         args.diag_cutoff)
         obj_goal_diag.append(np.sum((mask*y).flatten()))
+        correction.append(np.sum(mask))
 
     obj_goal_diag = np.array(obj_goal_diag)
     obj_goal_diag *= (args.v_bead / args.grid_size**3)
-    return obj_goal_diag
+
+    if return_correction:
+        return obj_goal_diag, correction
+    else:
+        return obj_goal_diag
 
 # @njit
 def get_mask(bin, m, diag_bins, dense, n_small_bins,
@@ -133,6 +139,7 @@ def main():
         args.diag_bins = len(config['diag_chis'])
         args.diag_start = config['diag_start']
         args.diag_cutoff = config['diag_cutoff']
+        args.m = config['nbeads']
 
     if not osp.exists(args.contact_map):
         dir = osp.split(args.contact_map)[0]
@@ -154,13 +161,10 @@ def main():
     else:
         raise Exception(f"contact map format not recognized: {args.contact_map}")
     y = y.astype(float) # ensure float
-    y /= np.max(y)
+    y /= np.mean(np.diagonal(y))
 
-    file = "seq0.txt"
-    if osp.exists(file):
-        seqi = np.loadtxt(file)
-        m = len(seqi)
-        y = y[:m, :m] # crop to m
+    y = y[:args.m, :args.m] # crop to m
+    print('shape: ', y.shape)
 
     constant_goal = None
     plaid_goal = None
@@ -168,10 +172,17 @@ def main():
     if args.mode == 'both':
         plaid_goal = get_plaid_goal(y, args)
         diag_goal = get_diag_goal(y, args)
+        if args.verbose:
+            print('plaid_goal: ', plaid_goal, plaid_goal.shape)
+            print('diag_goal: ', diag_goal, diag_goal.shape)
     elif args.mode == 'plaid':
         plaid_goal = get_plaid_goal(y, args)
+        if args.verbose:
+            print('plaid_goal: ', plaid_goal, plaid_goal.shape)
     elif args.mode == 'diag':
         diag_goal = get_diag_goal(y, args)
+        if args.verbose:
+            print('diag_goal: ', diag_goal, diag_goal.shape)
     elif args.mode == 'all':
         plaid_goal = get_plaid_goal(y, args)
         diag_goal = get_diag_goal(y, args)
@@ -179,11 +190,10 @@ def main():
         constant_goal *= (args.v_bead / args.grid_size**3)
         with open('obj_goal_constant.txt', 'w') as f:
             f.write(f'{constant_goal}')
-
-    if args.verbose:
-        print('plaid_goal: ', plaid_goal)
-        print('diag_goal: ', diag_goal)
-        print('constant_goal: ', constant_goal)
+        if args.verbose:
+            print('plaid_goal: ', plaid_goal, plaid_goal.shape)
+            print('diag_goal: ', diag_goal, diag_goal.shape)
+            print('constant_goal: ', constant_goal, constant_goal.shape)
 
     if plaid_goal is not None:
         with open('obj_goal.txt', 'w', newline='') as f:
@@ -196,7 +206,7 @@ def main():
             wr.writerow(diag_goal)
 
     tf = time.time()
-    print(tf - t0)
+    print('time: ', tf - t0)
 
 
 class Tester():

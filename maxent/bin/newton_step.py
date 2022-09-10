@@ -29,7 +29,7 @@ def getArgs():
 
     # for compatibility with Soren
     if args.it is None and args.mode is None:
-        # assume all are None
+        # assume the rest are None as well
         args.it = int(sys.argv[1])                    # iteration number
         args.gamma = float(sys.argv[2])               # damping coefficient
         args.mode = sys.argv[3]                       # plaid, diag, both, or all
@@ -93,7 +93,6 @@ def step(parameter_files, obs_files, convergence_file, goal_files, gamma, it,
             obs = pd.concat((obs, df), axis=1)
 
         obj_goal = obs.mean().values
-    #print("obj goal: ", obj_goal)
 
     # read in current chis
     nchis = [None]*len(parameter_files)

@@ -40,6 +40,9 @@ def main():
     if args.mode in {'plaid', 'both', 'all'}:
         # update plaid params
         allchis = np.loadtxt('chis.txt')
+        if len(allchis.shape) == 1:
+            # robust to k = 1
+            allchis = allchis.reshape(-1, 1)
         current_chis = allchis[args.it]
         # print("current chi values: ", current_chis)
 

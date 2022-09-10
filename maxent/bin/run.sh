@@ -1,77 +1,103 @@
 #!/bin/bash
-
-# TICG-MaxEnt optimization algorithm.
-#
-# This script will execute maximum entropy optimization of chi parameters for the TICG-chromatin model of genome architecture
-#
-# TODO: explain necessary file structure
-#
-# ----------- command-line arguments --------------
-# outputDir: directory where all simulations and results are output
-#
-# gamma: newton's method relaxation constant for plaid chi optimization. often needs to be << 1, otherwise overshoot.
-#
-# gamma_diag: newton's method relaxation constant for diagonal chi optimization. often needs to be << 1, otherwise overshoot.
-#
-# mode:
-		# plaid: optimize only plaid chis, with fixed diagonal chis
-		# diag: optimize only diagonal chis, with fixed plaid chis
-		# both: optimize both plaid and diagonal chis
-		# all: optimize plaid, constant, and diagonal chis
-#
-# production_sweeps: number of production sweeps
-#
-# equilib_sweeps: number of equilibration sweeps
-#
-# goal_specified:
-	#	if false, the user does not need to specify observables. instead, the user should specify the first two lines (zeroth and first)
-	#   in chis.txt. The first line (zeroth simulation) are the chi parameters for which the goal observables will be calculated.
-	#	the second line (first simulation) are the inital chi parameters to start the maximum entropy procdeure,
-	#	which will subsequently attempt to match the conditions observed in iteration 0. The same is true of chis_diag.txt
-	#
-	#	if true, the user must specifiy goal observables in the resources/obj_goal.txt and resources/obj_goal_diag.txt
-	#	maximum entropy optimization will begin with iteration 1, and iterate until an optimum is reached
-	#	initial values for chi paramters must be specified in chis.txt and chis_diag.txt.
-	#	NOTE: since this version does not require iteration0, the algorithm IGNORES THE FIRST LINE (corresponding to iteration 0) of chis.txt
-	#   Therefore, the first two lines of chis.txt should be identical, and the second line (corresponding to iteratino1)
-	#	defines the initial chi parameters for the simulation. The same is true of chis_diag.txt
-#
-# num_iterations: number of iterations of Newton's method
-	# set to 0 to only perform final production run
-#
-# overwrite: True to overwrite existing results in outputDir
-#
-# scratchDir: scratch directory for temporary file storage
-#
-# final_sim_production_sweeps: Number of sweeps in final production run (want this to be much larger than production_sweeps)
-#
-# ------------ results -----------
-# in outputDir:
-	#	iteration<i>
-	#		directories that contain simulation results from each iteration, including config file and other inputs
-	#
-	#	chis.txt, chis_diag.txt
-	#		space-separated list of chi parameters, each line corresponds to a new iteration. the first line is always iteration 0
-	#
-	#	pchis.png, pchi
-
-# command-line arguments
 today=$(date +'%m_%d_%y')
-outputDir=${1:-"/project2/depablo/erschultz/maxent_${today}"}
-gamma=${2:-1}
-trust_region=${3:-10}
-minDiagChi=${4:-"none"}
-mode=${5:-"plaid"}
-production_sweeps=${6:-50000}
-equilib_sweeps=${7:-10000}
-goal_specified=${8:-"false"}
-start_iteration=${9:-1}
-num_iterations=${10:-50}
-overwrite=${11:-0}
-scratchDir=${12:-'/scratch/midway2/erschultz/TICG_maxent'}
-final_sim_production_sweeps=${13:-1000000}
+
+# default args
+outputDir="/project2/depablo/erschultz/maxent_${today}" # o
+scratchDir='/scratch/midway2/erschultz/TICG_maxent' # d
+mode="both" # c
+gamma=1 # g
+trust_region=50 # t
+equilib_sweeps=10000 # e
+production_sweeps=50000 # s
+start_iteration=1
+num_iterations=100 #  n
+goal_specified=0 # z
+overwrite=0 # w
+method="n" # m
+parallel_cores=0 # p
+randomize_seed=0 # r
+final_sim_production_sweeps=1000000 # f
+
+show_help()
+{
+	echo "-h help"
+	echo "-o outputDir"
+	echo "-d scratchDir"
+	echo "-c [ both | plaid | diag ]"
+	echo "-g gamma"
+	echo "-t trust_region"
+	echo "-e equilib_sweeps"
+	echo "-s production_sweeps"
+	echo "-q start_iteration"
+	echo "-n num_iterations"
+	echo "-z goal_specified"
+	echo "-w overwrite"
+	echo "-m [ n | g ]"
+	echo "-p parallel_cores"
+	exit 1
+}
+
+while getopts "h:o:c:g:t:e:s:n:m:p:r:d:q:f:z:w:" opt; do
+	case $opt in
+		h) show_help ;;
+		o) outputDir=$OPTARG ;;
+		d) scratchDir=$OPTARG ;;
+		c) mode=$OPTARG ;;
+		g) gamma=$OPTARG ;;
+		t) trust_region=$OPTARG ;;
+		e) equilib_sweeps=$OPTARG ;;
+		s) production_sweeps=$OPTARG ;;
+		q) start_iteration=$OPTARG ;;
+		n) num_iterations=$OPTARG ;;
+		z) goal_specified=$OPTARG ;;
+		w) overwrite=$OPTARG ;;
+		m) method=$OPTARG ;;
+		p) parallel_cores=$OPTARG ;;
+		r) randomize_seed=$OPTARG ;;
+		f) final_sim_production_sweeps=$OPTARG
+	esac
+done
 
 echo $@
+echo "running maxent with:"
+echo "dir:"
+echo $outputDir
+echo "scratchDir:"
+echo $scratchDir
+echo "mode:"
+echo $mode
+echo "gamma:"
+echo $gamma
+echo "trust_region:"
+echo $trust_region
+echo "equilib_sweeps"
+echo $equilib_sweeps
+echo "production_sweeps"
+echo $production_sweeps
+echo "num_iterations"
+echo $num_iterations
+echo "goal_specified"
+echo $goal_specified
+echo "overwrite"
+echo $overwrite
+echo "method"
+echo $method
+echo "parallel"
+echo $parallel_cores
+echo "randomize_seed"
+echo $randomize_seed
+echo "final_sim_production_sweeps"
+echo $final_sim_production_sweeps
+
+get_rng ()
+{
+    if [[ $randomize_seed -eq 1 ]]
+    then
+        echo $RANDOM
+    else
+        echo 1
+    fi
+}
 
 # cd to scratch
 if ! [[ -d $scratchDir ]]
@@ -123,20 +149,21 @@ run_simulation () {
 		# equilibrate system
 		# no need to do so if num_iterations==0
 		python3 $proj_bin/jsed.py $configFileName nSweeps $equilib_sweeps i
+		python3 $proj_bin/jsed.py $configFileName seed $(get_rng) i
 		~/TICG-chromatin/TICG-engine > equilib.log
 		$proj_bin/fork_last_snapshot.sh $saveFileName
 		tar -czf equilib_out.tar.gz data_out
 		rm -r data_out
-
-		python3 $proj_bin/jsed.py $configFileName load_configuration_filename $saveFileName s
 	fi
 
 	# production
+	python3 $proj_bin/jsed.py $configFileName load_configuration true b
+	python3 $proj_bin/jsed.py $configFileName load_configuration_filename $saveFileName s
 	python3 $proj_bin/jsed.py $configFileName nSweeps $production_sweeps i
 	if [ $num_iterations -gt 0 ]
 	then
 		# don't change seed if num_iterations==0 (allows for easier reproducibility tests)
-		python3 $proj_bin/jsed.py $configFileName seed $RANDOM i
+		python3 $proj_bin/jsed.py $configFileName seed $(get_rng) i
 	fi
 	~/TICG-chromatin/TICG-engine > production.log
 	mv data_out production_out
@@ -186,7 +213,7 @@ fi
 
 # iteration 0
 it=0
-if [ $goal_specified = "true" ]
+if [ $goal_specified -eq 1 ]
 then
 	# if goal is specified, just move in goal files and do not simulate
 	mv resources/obj_goal* .
@@ -204,7 +231,7 @@ then
 	do
 		run_simulation
 		# update chis via newton's method
-		python3 $proj_bin/newton_step.py --it $it --gamma $gamma --mode $mode --goal_specified $goal_specified --trust_region $trust_region --min_diag_chi $minDiagChi >> track.log
+		python3 $proj_bin/newton_step.py --it $it --gamma $gamma --mode $mode --goal_specified $goal_specified --trust_region $trust_region >> track.log
 
 		# convert to tarball
 		cd "iteration${it}"

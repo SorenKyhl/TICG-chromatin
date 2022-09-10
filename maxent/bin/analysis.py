@@ -59,7 +59,7 @@ class Sim:
         hic_file = osp.join(self.path, 'contacts.txt')
         if osp.exists(hic_file):
             self.hic = np.loadtxt(hic_file)
-            self.hic /= np.max(self.hic.diagonal()) # TODO why only diagonal
+            self.hic /= np.mean(self.hic.diagonal()) # TODO why only diagonal
             self.d = get_diagonal(self.hic)
         else:
             print(f"{hic_file} does not exist")
@@ -85,22 +85,6 @@ class Sim:
             self.gthic = None
             print(f"{gthic_path} does not exist")
 
-
-        obj_goal_path = osp.join(self.replicate_path, "obj_goal.txt")
-        if osp.exists(obj_goal_path):
-            self.obj_goal = np.loadtxt(obj_goal_path)
-        else:
-            self.obj_goal = None
-            if self.obs is not None: # else fail quietly - goal not expected
-                print(f"{obj_goal_path} does not exist")
-
-        obj_goal_diag_path = osp.join(self.replicate_path, "obj_goal_diag.txt")
-        if osp.exists(obj_goal_diag_path):
-            self.obj_goal_diag = np.loadtxt(obj_goal_diag_path)
-        else:
-            self.obj_goal_diag = None
-            print(f"{obj_goal_diag_path} does not exist")
-
         plaid_observables_file = osp.join(self.path,"observables.traj")
         self.obs_full = None
         self.obs = None
@@ -121,6 +105,21 @@ class Sim:
             self.diag_obs_full = None
             self.diag_obs = None
             print(f"{diag_observables_file} does not exist")
+
+        obj_goal_path = osp.join(self.replicate_path, "obj_goal.txt")
+        if osp.exists(obj_goal_path):
+            self.obj_goal = np.loadtxt(obj_goal_path)
+        else:
+            self.obj_goal = None
+            if self.obs is not None: # else fail quietly - goal not expected
+                print(f"{obj_goal_path} does not exist")
+
+        obj_goal_diag_path = osp.join(self.replicate_path, "obj_goal_diag.txt")
+        if osp.exists(obj_goal_diag_path):
+            self.obj_goal_diag = np.loadtxt(obj_goal_diag_path)
+        else:
+            self.obj_goal_diag = None
+            print(f"{obj_goal_diag_path} does not exist")
 
         # stack goals/observables
         try:
@@ -274,6 +273,7 @@ class Sim:
             plt.plot(self.obs_tot, 'o', label="obs")
 
             diag = get_diag_goal(hic, self)
+            print(diag, diag.shape)
             if self.seqs is not None:
                 self.verbose = False
                 plaid = get_plaid_goal(hic, self, self.seqs)

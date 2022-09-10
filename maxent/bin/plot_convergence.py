@@ -23,7 +23,17 @@ def main():
 
     # convergence plot
     convergence = np.loadtxt('convergence.txt')
+    converged_it = None
+    for i in range(1, len(convergence)):
+        diff = conv[i] - conv[i-1]
+        if np.abs(diff) < 1e-2 and conv[i] < conv[0]:
+            converged_it = i
+            break
+
     plt.plot(convergence)
+    if converged_it is not None:
+        plt.axvline(converged_it, color = 'k', label = 'converged')
+        plt.legend()
     plt.xlabel('Iteration', fontsize=16)
     plt.savefig("pconvergence.png")
     plt.close()
