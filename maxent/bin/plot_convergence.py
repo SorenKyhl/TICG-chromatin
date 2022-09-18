@@ -19,16 +19,19 @@ def getArgs():
 
 def main():
     args = getArgs()
-    assert args.mode in {'plaid', 'diag', 'both', 'all'}
+    print(args)
+    assert args.mode in {'plaid', 'diag', 'both', 'all'}, 'invalid mode'
 
     # convergence plot
     convergence = np.loadtxt('convergence.txt')
+    print(convergence)
     converged_it = None
     for i in range(1, len(convergence)):
-        diff = conv[i] - conv[i-1]
-        if np.abs(diff) < 1e-2 and conv[i] < conv[0]:
+        diff = convergence[i] - convergence[i-1]
+        if np.abs(diff) < 1e-2 and convergence[i] < convergence[0]:
             converged_it = i
             break
+    print('converged_it:', converged_it)
 
     plt.plot(convergence)
     if converged_it is not None:
@@ -37,13 +40,6 @@ def main():
     plt.xlabel('Iteration', fontsize=16)
     plt.savefig("pconvergence.png")
     plt.close()
-
-    if osp.exists('convergence_diag.txt'):
-        convergence = np.loadtxt('convergence_diag.txt')
-        plt.plot(convergence)
-        plt.xlabel('Iteration', fontsize=16)
-        plt.savefig("pconvergence_diag.png")
-        plt.close()
 
     if args.mode in {'plaid', 'both', 'all'}:
         # chis plot

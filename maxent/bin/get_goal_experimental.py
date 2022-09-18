@@ -95,15 +95,15 @@ def get_plaid_goal(y, args, x = None):
     _, k = x.shape
     for i in range(k):
         seqi = x[:, i]
-        if args.verbose:
-            print(f'\ni={i}', seqi)
+        # if args.verbose:
+        #     print(f'\ni={i}', seqi)
         for j in range(k):
             if j < i:
                 # don't double count
                 continue
             seqj = x[:,j]
-            if args.verbose:
-                print(f'\tj={j}', seqj)
+            # if args.verbose:
+            #     print(f'\tj={j}', seqj)
             result = seqi @ y @ seqj
             obj_goal.append(result)
 

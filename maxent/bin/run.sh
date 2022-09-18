@@ -158,12 +158,13 @@ run_simulation () {
 
 	# production
 	python3 $proj_bin/jsed.py $configFileName load_configuration true b
-	python3 $proj_bin/jsed.py $configFileName load_configuration_filename $saveFileName s
 	python3 $proj_bin/jsed.py $configFileName nSweeps $production_sweeps i
 	if [ $num_iterations -gt 0 ]
 	then
-		# don't change seed if num_iterations==0 (allows for easier reproducibility tests)
+		# only change seed if num_iterations > 0 (allows for easier reproducibility tests)
 		python3 $proj_bin/jsed.py $configFileName seed $(get_rng) i
+		# equilib will only exist if num_iterations > 0
+		python3 $proj_bin/jsed.py $configFileName load_configuration_filename $saveFileName s
 	fi
 	~/TICG-chromatin/TICG-engine > production.log
 	mv data_out production_out
@@ -240,7 +241,7 @@ then
 		cd $scratchDir
 
 		# update plots
-		python3 $proj_bin/plot_convergence.py --mode $mode
+		python3 $proj_bin/plot_convergence.py --mode $mode > plot.log
 	done
 fi
 
@@ -250,7 +251,7 @@ python3 $proj_bin/jsed.py "resources/${configFileName}" dump_frequency 50000 i
 production_sweeps=$final_sim_production_sweeps
 run_simulation
 cd "iteration${it}"
-python3 $proj_bin/analysis.py
+python3 $proj_bin/analysis.py > analysis.log
 OVERALLENDTIME=$(date +%s)
 echo "finished entire simulation: $(( $(( $OVERALLENDTIME - $OVERALLSTARTTIME )) / 60 )) minutes ($(( $OVERALLENDTIME - $OVERALLSTARTTIME )) seconds)"
 

@@ -1,4 +1,4 @@
-CC = clang++
+CC = g++
 FLAGS = -O3 -std=c++17 -fopenmp
 DEBUG_FLAGS = -g -std=c++17
 INCLUDE = -I ../include
@@ -17,12 +17,12 @@ Sim.o: Sim.cpp Sim.h
 	$(CC) $(FLAGS) $(INCLUDE) -c $<
 
 $(EXE): $(MAIN) Grid.o Sim.o random_mars.o
-	$(CC) $(FLAGS) $(INCLUDE) -o $@ $^ 
+	$(CC) $(FLAGS) $(INCLUDE) -o $@ $^
 
 debug2: $(MAIN) Grid.o Sim.o random_mars.o
-	$(CC) $(DEBUG_FLAGS) $(INCLUDE) -o TICG-engine $^ 
+	$(CC) $(DEBUG_FLAGS) $(INCLUDE) -o TICG-engine $^
 
-debug: 
+debug:
 	g++ $(DEBUG_FLAGS) -I ../include -c Grid.cpp
 	g++ $(DEBUG_FLAGS) -I ../include -c Sim.cpp
 	g++ $(DEBUG_FLAGS) -c random_mars.cpp

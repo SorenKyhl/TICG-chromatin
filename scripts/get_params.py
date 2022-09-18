@@ -866,6 +866,10 @@ class GetDiagChi():
                             help='specify n_big_bins instead of using dense_diagonal_loading')
         parser.add_argument('--max_diag_chi', type=float, default=0,
                             help='maximum diag chi value for diag_chi_method')
+        parser.add_argument('--min_diag_chi', type=float, default=0,
+                            help='minimum diag chi value for diag_chi_method (currently only supported for logistic)')
+        parser.add_argument('--diag_chi_midpoint', type=float, default=0,
+                            help='midpoint for logistic diag chi')
         parser.add_argument('--diag_chi_constant', type=AC.str2float, default=0,
                             help='constant to add to chi diag')
         parser.add_argument('--mlp_model_path', type=str,
@@ -890,7 +894,7 @@ class GetDiagChi():
         diag_chis_continuous = None
         if args.diag_chi_method is not None:
             self.get_bin_sizes()
-            d_arr = np.arange(args.m_continuous)
+            self.d_arr = np.arange(args.m_continuous)
             args.diag_chi_slope /= 1000
 
 
@@ -910,15 +914,16 @@ class GetDiagChi():
                 if args.diag_chi_method == 'zero':
                     diag_chis = np.zeros(args.diag_bins)
                 elif args.diag_chi_method == 'linear':
-                    diag_chis_continuous = np.linspace(0, args.max_diag_chi, args.m_continuous)
+                    diag_chis_continuous = np.linspace(0, args.max_diag_chi, args.m_continuous) + args.diag_chi_constant
                 elif args.diag_chi_method == 'log':
                     if args.diag_chi_scale is None:
                         args.diag_chi_scale = args.max_diag_chi / np.log(args.diag_chi_slope * (args.m_continuous - 1) + 1)
-                    diag_chis_continuous = args.diag_chi_scale * np.log(args.diag_chi_slope * d_arr + 1)
+                    diag_chis_continuous = args.diag_chi_scale * np.log(args.diag_chi_slope * self.d_arr + 1)
+                    diag_chis_continuous += args.diag_chi_constant
                 elif args.diag_chi_method == 'logistic':
-                    diag_chis_continuous = 2 * args.max_diag_chi / (1 + np.exp(-args.diag_chi_slope * d_arr)) - args.max_diag_chi
+                    diag_chis_continuous = (args.max_diag_chi - args.min_diag_chi)/(1+np.exp(-1*args.diag_chi_slope * (self.d_arr + args.diag_chi_midpoint))) + args.min_diag_chi
                 elif args.diag_chi_method == 'exp':
-                    diag_chis_continuous = args.max_diag_chi - 1.889 * np.exp(-args.diag_chi_slope * d_arr)
+                    diag_chis_continuous = args.max_diag_chi - 1.889 * np.exp(-args.diag_chi_slope * self.d_arr) + args.diag_chi_constant
                 elif args.diag_chi_method == 'mlp':
                     diag_chis_continuous, diag_chis = self.get_diag_chi_mlp(args.mlp_model_path, self.sample_folder)
                 else:
@@ -933,7 +938,6 @@ class GetDiagChi():
         else:
             return
 
-        diag_chis += args.diag_chi_constant
         assert len(diag_chis) == args.diag_bins, f"Shape mismatch: {len(diag_chis)} vs {args.diag_bins}"
         print('diag_chis: ', diag_chis, diag_chis.shape)
         np.save('diag_chis', diag_chis)
@@ -1083,15 +1087,25 @@ class GetDiagChi():
             yhat = yhat.cpu().detach().numpy()
             yhat = yhat.reshape((-1)).astype(np.float64)
 
+        print(yhat)
+
         if 'bond_length' in output_mode:
-            yhat = yhat[:-1]
             bond_length = yhat[-1]
+            yhat = yhat[:-1]
             with open('bond_length.txt', 'w') as f:
                 f.write(str(bond_length))
             print('MLP bond_length:', bond_length)
 
         if output_mode.startswith('diag_chi_step'):
             diag_chis_continuous = yhat
+            diag_chis = None
+        elif output_mode.startswith('diag_param'):
+            print(yhat)
+            scale, slope, self.args.diag_chi_constant = yhat
+            print(scale, slope, self.args.diag_chi_constant)
+            diag_chis_continuous = scale * np.log(slope * self.d_arr + 1)
+            plt.plot(diag_chis_continuous)
+            plt.show()
             diag_chis = None
         else:
             diag_chis_continuous = None

@@ -5,7 +5,7 @@ source ~/TICG-chromatin/bin/random/random_fns.sh
 param_setup
 k=0
 m=1024
-dataFolder="/home/erschultz/dataset_test_log"
+dataFolder="/home/erschultz/dataset_test_log2"
 scratchDir='/home/erschultz/scratch'
 startSample=1
 relabel='none'
@@ -56,18 +56,17 @@ bigBinSize=-1
 diagCutoff='none'
 phiChromatin=0.06
 diagStart=0
+bondLength=28
 
 i=0
 jobs=0
-for chiDiagSlope in 10 40 80 125 250 500 1000
+for chiDiagSlope in 10 40 80 100 200 300 400 500 600 700 800 900 1000 1200 1400 1600
 do
-	for chiDiagConstant in -20 -15 -10 -5 0 5 10 15
+	for chiDiagConstant in -20 -18 -16 -14 -12 -10 -8 -6 -4 -2 0 2 4 6 8 10 12 14 16 18 20
 	do
-		for chiDiagScale in 5 10 12 14 16 18 20 25
+		for chiDiagScale in 2 4 6 8 10 12 14 16 18 20 22 24
 		do
-		  for bondLength in 15 20 26 28 30 35 40 45
-		  do
-		  	i=$(( $i + 1 ))
+	   		i=$(( $i + 1 ))
 		  	echo $i 'chiDiagSlope' $chiDiagSlope 'constant' $chiDiagConstant 'scale' $chiDiagScale 'bond_length' $bondLength
 		  	run &
 
@@ -79,7 +78,6 @@ do
 					jobs=0
 				fi
 		  done
-		done
 	done
 done
 

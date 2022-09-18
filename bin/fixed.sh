@@ -54,8 +54,16 @@ diagStart=0
 diagCutoff='none'
 bondLength=28
 
-chiDiagMethod='/home/erschultz/sequences_to_contact_maps/single_cell_nagano_imputed/samples/sample443/none/k0/replicate1/log_fit.txt'
-i=4434
+chiDiagMethod='/home/erschultz/sequences_to_contact_maps/single_cell_nagano_imputed/samples/sample244/none/k0/replicate1/chis_diag_edit.txt'
+i=244_edit
 run &
+
+# chiDiagMethod='/home/erschultz/sequences_to_contact_maps/single_cell_nagano_imputed/samples/sample443_edit/log_fit.txt'
+# i=443_log
+# run &
+#
+# chiDiagMethod='/home/erschultz/sequences_to_contact_maps/single_cell_nagano_imputed/samples/sample443_edit/logistic_fit.txt'
+# i=443_logistic
+# run &
 
 wait

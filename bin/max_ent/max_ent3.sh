@@ -15,10 +15,10 @@ if [ $local = 'true' ]
 then
   dir="/home/erschultz/sequences_to_contact_maps"
   scratchDir='/home/erschultz/scratch'
-  numIterations=1
-  finalSimProductionSweeps=1000
-  equilibSweeps=500
-  productionSweeps=600
+  numIterations=15
+  finalSimProductionSweeps=1000000
+  equilibSweeps=100000
+  productionSweeps=1000000
   source activate python3.9_pytorch1.9
 fi
 
@@ -26,10 +26,10 @@ STARTTIME=$(date +%s)
 i=2000
 dataset='single_cell_nagano_imputed'
 useE='false'
-method='PCA-normalize'
-diagChiMethod='linear'
+method='none'
+diagChiMethod='zero'
 chiDiagSlope=1
-mode='both'
+mode='diag'
 dense='true'
 bondtype='gaussian'
 bondLength=28
@@ -40,15 +40,17 @@ maxDiagChi=10
 diagBins=32
 nSmallBins=16
 smallBinSize=4
-diagStart=8
+diagStart=0
 diagCutoff=1024
 MLPModelID=13
 
-k=1
-for sample in 443
+for sample in 443 244 390 65 84
 do
-  echo $sample $m
-  max_ent
+	for k in 0
+	do
+	  echo $sample $m
+ 	  max_ent
+	done
 done
 
 wait

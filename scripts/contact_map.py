@@ -135,12 +135,11 @@ def main():
             diag_chi_ref = None
 
     if diag_chi is not None:
-        if config['dense_diagonal_on']:
-            plot_diag_chi(config, args.save_folder,
-                            diag_chi_ref, 'continuous')
-        else:
-            plot_diag_chi(config, args.save_folder,
-                            ref = diag_chi_ref, ref_label = 'continuous')
+        plot_diag_chi(config, args.save_folder,
+                        ref = diag_chi_ref, ref_label = 'continuous')
+        plot_diag_chi(config, args.save_folder,
+                        ref = diag_chi_ref, ref_label = 'continuous',
+                        logx = True)
 
     # meanDist
     diag_chi_step = get_diag_chi_step(config)
@@ -160,9 +159,9 @@ def main():
             meanDist_gt = None
 
         plot_mean_dist(meanDist_max_ent, args.save_folder, 'meanDist.png',
-                        diag_chi_step, False, meanDist_gt)
+                        diag_chi_step, False, meanDist_gt, 'reference', 'max ent')
         plot_mean_dist(meanDist_max_ent, args.save_folder, 'meanDist_log.png',
-                        diag_chi_step, True, meanDist_gt)
+                        diag_chi_step, True, meanDist_gt, 'reference', 'max ent')
 
 
 if __name__ == '__main__':

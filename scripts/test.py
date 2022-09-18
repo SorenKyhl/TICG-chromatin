@@ -518,41 +518,42 @@ def main():
     plt.savefig(osp.join(data_dir, 'sc_contacts_time', 'meanDist_log2.png'))
     plt.close()
 
-def main2():
+def main2(sample=244):
     # plot different p(s) curves
     dir = '/home/erschultz/sequences_to_contact_maps/single_cell_nagano_imputed/samples'
     fig, ax = plt.subplots()
     ax2 = ax.twinx()
 
-    ifile = osp.join(dir, 'sample443/y.npy')
+    ifile = osp.join(dir, f'sample{sample}/y.npy')
     y_gt = np.load(ifile)
     meanDist = DiagonalPreprocessing.genomic_distance_statistics(y_gt, 'prob')
-    ax.plot(meanDist, label = 'gt', color = 'k')
+    ax.plot(meanDist, label = 'Experiment' , color = 'k')
 
-    ifile = osp.join(dir, 'sample443/none/k0/replicate1/y.npy')
+    # ifile = osp.join(dir, f'sample{sample}/none-diagMLP-41/k0/replicate1/y.npy')
+    # y = np.load(ifile)
+    # meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+    # ax.plot(meanDist, label='MLP', color = 'green')
+
+    ifile = osp.join(dir, f'sample{sample}/none/k0/replicate1/y.npy')
     y_max_ent = np.load(ifile)
     meanDist = DiagonalPreprocessing.genomic_distance_statistics(y_max_ent, 'prob')
     ax.plot(meanDist, label = 'max_ent', color = 'blue')
 
-    ifile = osp.join(dir, 'sample4431/y.npy')
+    ifile = osp.join(dir, f'sample{sample}_edit/y.npy')
     y = np.load(ifile)
     meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
-    ax.plot(meanDist, label = 'diag_zero')
+    ax.plot(meanDist, label = 'max_ent_adjusted', color = 'lightblue')
 
-    ifile = osp.join(dir, 'sample4432/y.npy')
-    y = np.load(ifile)
-    meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
-    ax.plot(meanDist, label = 'log_fit')
 
-    ifile = osp.join(dir, 'sample4433/y.npy')
-    y = np.load(ifile)
-    meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
-    ax.plot(meanDist, label = 'log_fit_0')
-
-    ifile = osp.join(dir, 'sample4434/y.npy')
-    y = np.load(ifile)
-    meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
-    ax.plot(meanDist, label = 'log_fit_neg')
+    # ifile = osp.join(dir, f'sample443_log/y.npy')
+    # y = np.load(ifile)
+    # meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+    # ax.plot(meanDist, label = 'log_fit')
+    #
+    # ifile = osp.join(dir, f'sample443_logistic/y.npy')
+    # y = np.load(ifile)
+    # meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+    # ax.plot(meanDist, label = 'logistic_fit')
 
 
     ax.set_yscale('log')
@@ -562,64 +563,66 @@ def main2():
     ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
     ax.legend()
     plt.tight_layout()
-    plt.savefig(osp.join(dir, 'sample4434', 'meanDist_log.png'))
+    plt.savefig(osp.join(dir, f'sample{sample}_edit', 'meanDist_log.png'))
     plt.close()
 
-def main3():
+def modify_maxent_diag_chi(sample = 443):
     # try different modifications to diag chis learned by max ent
-    dir = '/home/erschultz/sequences_to_contact_maps/single_cell_nagano_imputed/samples/sample443/none/k0/replicate1'
-    ifile = osp.join(dir, 'chis_diag.txt')
-    diag_chis = np.loadtxt(ifile)[-1]
-    print(diag_chis)
+    # dir = f'/home/erschultz/sequences_to_contact_maps/single_cell_nagano_imputed/samples/sample{sample}/none/k0/replicate1'
+    # ifile = osp.join(dir, 'chis_diag.txt')
+    # diag_chis = np.loadtxt(ifile)[-1]
+    dir = '/home/erschultz/sequences_to_contact_maps/single_cell_nagano_imputed/samples/sample443_edit'
+    diag_chis = np.load(osp.join(dir, 'diag_chis.npy'))
 
-    ifile = osp.join(dir, 'iteration9/config.json')
+    ifile = osp.join(dir, 'config.json')
     with open(ifile, 'r') as f:
         config = json.load(f)
 
     diag_chi_step = get_diag_chi_step(config, diag_chis)
     print(diag_chi_step[:12])
 
-
     x = np.arange(0, len(diag_chi_step))
-    # # x_poly = PolynomialFeatures(2, interaction_only = True).fit_transform(x)
-    # # print(x_poly)
-    # reg = LinearRegression().fit(x[8:100], diag_chi_step[8:100].reshape(-1, 1))
-    # print('Regression:')
-    # print(reg.score(x, diag_chi_step.reshape(-1, 1)))
-    # print(f'coef: {reg.coef_}')
-    # print(f'intercept: {reg.intercept_}')
-    # new = reg.predict(x[8:100])
-    # print('Prediction:')
-    # print(new)
 
     init = [1, 1, 0]
     popt, pcov = curve_fit(log_curve, x[8:60], diag_chi_step[8:60], p0 = init, maxfev = 2000)
     print('popt', popt)
-    new = log_curve(x[8:60], *popt)
-    new = log_curve(x, *popt)
-    print(new)
+    log_fit = log_curve(x, *popt)
+    np.savetxt(osp.join(dir, 'log_fit.txt'), log_fit)
+
+
+
+    init = [1, 0, 1, 0]
+    popt, pcov = curve_fit(logistic_curve, x, diag_chi_step, p0 = init, maxfev = 2000)
+    print('popt', popt)
+    logistic_fit = logistic_curve(x, *popt)
+    np.savetxt(osp.join(dir, 'logistic_fit.txt'), logistic_fit)
 
 
     plt.plot(diag_chi_step, label = 'diag_chi')
-    plt.plot(new, label = 'prediction')
+    plt.plot(log_fit, label = 'log')
+    plt.plot(logistic_fit, label = 'logistic')
+    plt.legend()
+    plt.savefig(osp.join(dir, 'meanDist_fit.png'))
+    plt.close()
+
+    plt.plot(diag_chi_step, label = 'diag_chi')
+    plt.plot(log_fit, label = 'log')
+    plt.plot(logistic_fit, label = 'logistic')
     plt.xscale('log')
     plt.legend()
-    plt.savefig(osp.join(dir, 'log_fit_log.png'))
-    plt.close()
-
-    plt.plot(diag_chi_step, label = 'diag_chi')
-    plt.plot(new, label = 'prediction')
-    plt.legend()
-    plt.savefig(osp.join(dir, 'log_fit.png'))
+    plt.savefig(osp.join(dir, 'meanDist_fit_log.png'))
     plt.close()
 
 
 
-    np.savetxt(osp.join(dir, 'log_fit.txt'), new)
+
 
 def log_curve(x, A, B, C):
-    print(A, B, C)
     result = A * np.log(B * x + 1) + C
+    return result
+
+def logistic_curve(x, max, min, slope, midpoint):
+    result = (max - min)/ (1 + np.exp(-1*slope * (x + midpoint))) + min
     return result
 
 def test_log_curve():
@@ -634,11 +637,19 @@ def test_log_curve():
 
 if __name__ == '__main__':
     # test_robust_PCA()
-    # check_dataset('dataset_05_12_22')
+    # check_dataset('dataset_05_12_22')    # ifile = osp.join(dir, 'sample443_log/y.npy')
+    # y = np.load(ifile)
+    # meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+    # ax.plot(meanDist, label = 'log_fit')
+    # ifile = osp.join(dir, 'sample443_logistic/y.npy')
+    # y = np.load(ifile)
+    # meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+    # ax.plot(meanDist, label = 'logistic_fit')
     # time_comparison()
     # time_comparison_merge_PCA()
     # construct_sc_xyz()
     # convergence_check()
-    # main3()
-    test_log_curve()
+    main2()
+    # modify_maxent_diag_chi()
+    # test_log_curve()
     # makeDirsForMaxEnt("dataset_09_21_21")
