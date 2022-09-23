@@ -5,7 +5,7 @@ source ~/TICG-chromatin/bin/random/random_fns.sh
 param_setup
 k=0
 m=1024
-dataFolder="/home/erschultz/dataset_test_log2"
+dataFolder="/home/erschultz/dataset_test_logistic"
 scratchDir='/home/erschultz/scratch'
 startSample=1
 relabel='none'
@@ -46,7 +46,7 @@ run()  {
 nSweeps=10000
 dumpFrequency=5000
 TICGSeed=10
-chiDiagMethod='log'
+chiDiagMethod='logistic'
 dense='true'
 diagBins=32
 nSmallBins=16
@@ -60,25 +60,29 @@ bondLength=28
 
 i=0
 jobs=0
-for chiDiagSlope in 10 40 80 100 200 300 400 500 600 700 800 900 1000 1200 1400 1600
+waitCount=0
+for chiDiagSlope in 20 30 40 50 60 70 80 90 100 110 120 130 140 150
 do
-	for chiDiagConstant in -20 -18 -16 -14 -12 -10 -8 -6 -4 -2 0 2 4 6 8 10 12 14 16 18 20
+	for maxDiagChi in 23 26 29 32 35 38 41 44 47 50 53 56 59
 	do
-		for chiDiagScale in 2 4 6 8 10 12 14 16 18 20 22 24
+		for chiDiagMidpoint in 16 18 20 22 24 26 28 30 32 34 36 38
 		do
 	   		i=$(( $i + 1 ))
-		  	echo $i 'chiDiagSlope' $chiDiagSlope 'constant' $chiDiagConstant 'scale' $chiDiagScale 'bond_length' $bondLength
-		  	run &
+		  	echo $i 'chiDiagSlope' $chiDiagSlope 'maxDiagChi' $maxDiagChi 'chiDiagMidpoint' $chiDiagMidpoint
+		  	# run &
 
 				jobs=$(( $jobs + 1 ))
 				if [ $jobs -gt 18 ]
 				then
 					echo 'Waiting'
+					waitCount=$(( $waitCount + 1 ))
 					wait
 					jobs=0
 				fi
 		  done
 	done
 done
+
+echo $waitCount
 
 wait

@@ -38,6 +38,7 @@ def main():
         plt.axvline(converged_it, color = 'k', label = 'converged')
         plt.legend()
     plt.xlabel('Iteration', fontsize=16)
+    plt.ylabel('Loss', fontsize=16)
     plt.savefig("pconvergence.png")
     plt.close()
 
@@ -77,7 +78,7 @@ def main():
         for i, c in enumerate(colors):
             plt.plot(diag_chis[:, i], label = i, color = c['color'])
         plt.xlabel("Iteration", fontsize=16)
-        plt.ylabel("chi_diagonal value", fontsize=16)
+        plt.ylabel("Diagonal Parameter Value", fontsize=16)
         if k < 30:
             plt.legend(loc=(1.04,0))
         plt.tight_layout()

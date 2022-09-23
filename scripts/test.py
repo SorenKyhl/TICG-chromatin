@@ -8,9 +8,11 @@ import hicrep
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.ndimage import uniform_filter
 from scipy.optimize import curve_fit
 from seq2contact import *
 from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import PolynomialFeatures
 
 
@@ -485,6 +487,7 @@ def main():
         phase_dict = json.load(f)
 
     phase_count_dict = defaultdict(int) # how many times have we seen each phase
+    phase_meanDist_dict = defaultdict(lambda: np.zeros(1024)) # maps phase to meandist
     for file in os.listdir(data_dir):
         if file.endswith('cool'):
             ifile = osp.join(data_dir, file)
@@ -494,19 +497,29 @@ def main():
             phase = phase_dict[dir]
             phase_count_dict[phase] += 1
 
-            if phase_count_dict[phase] < 2:
-                print(file)
-                y = load_contact_map(ifile, chrom=15, resolution=50000)
+            print(file)
+            y = load_contact_map(ifile, chrom=10, resolution=50000)
 
-                ofile = osp.join(data_dir, 'sc_contacts_time', f'y_sc_{i}_chrom15.png')
-                contacts = int(np.sum(y) / 2)
-                sparsity = np.round(np.count_nonzero(y) / len(y)**2 * 100, 2)
-                title = f'Sample {i}:\n# contacts: {contacts}, sparsity: {sparsity}%'
-                plot_matrix(y, ofile, title, vmax = 'mean')
+            ofile = osp.join(data_dir, 'sc_contacts_time', f'y_sc_{i}_chrom10.png')
+            contacts = int(np.sum(y) / 2)
+            sparsity = np.round(np.count_nonzero(y) / len(y)**2 * 100, 2)
+            title = f'Sample {i}:\n# contacts: {contacts}, sparsity: {sparsity}%'
+            plot_matrix(y, ofile, title, vmax = 'mean')
 
-                meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
-                print(meanDist)
-                ax.plot(meanDist, label = phase)
+
+            meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+            meanDist[50:] = uniform_filter(meanDist[50:], 3, mode = 'constant')
+            phase_meanDist_dict[phase] += meanDist[:1024]
+
+    print(phase_count_dict)
+
+    for phase in ['S', 'G2', 'post-M', 'pre-M', 'S']:
+        meanDist = phase_meanDist_dict[phase]
+        ax.plot(meanDist, label = phase)
+    #
+    # y = np.load('/home/erschultz/sequences_to_contact_maps/single_cell_nagano_imputed/samples/sample390/none-diagMLP-66/k0/replicate1/y.npy')
+    # meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+    # ax.plot(meanDist, label = 'MLP-66', color = 'k')
 
     ax.set_yscale('log')
     ax.set_xscale('log')
@@ -514,64 +527,155 @@ def main():
     ax.set_ylabel('Contact Probability', fontsize = 16)
     ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
     ax.legend()
+    ax.set_ylim(10**-5, None)
     plt.tight_layout()
     plt.savefig(osp.join(data_dir, 'sc_contacts_time', 'meanDist_log2.png'))
     plt.close()
 
-def main2(sample=244):
+def main2(params = True):
     # plot different p(s) curves
-    dir = '/home/erschultz/sequences_to_contact_maps/single_cell_nagano_imputed/samples'
+    dataset = 'dataset_07_20_22'
+    dir = f'/home/erschultz/sequences_to_contact_maps/{dataset}/samples'
     fig, ax = plt.subplots()
-    ax2 = ax.twinx()
+    if params:
+        ax2 = ax.twinx()
 
-    ifile = osp.join(dir, f'sample{sample}/y.npy')
-    y_gt = np.load(ifile)
-    meanDist = DiagonalPreprocessing.genomic_distance_statistics(y_gt, 'prob')
-    ax.plot(meanDist, label = 'Experiment' , color = 'k')
+    for sample in [11, 12, 13, 14]:
+        s_dir = osp.join(dir, f'sample{sample}')
+        ifile = osp.join(s_dir, 'y.npy')
+        if osp.exists(ifile):
+            y = np.load(ifile)
+            meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+            ax.plot(meanDist, label = sample, color = 'k')
 
-    # ifile = osp.join(dir, f'sample{sample}/none-diagMLP-41/k0/replicate1/y.npy')
-    # y = np.load(ifile)
-    # meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
-    # ax.plot(meanDist, label='MLP', color = 'green')
+    for sample in [11, 12, 13, 14]:
+        s_dir = osp.join(dir, f'sample{sample}_log_max')
+        ifile = osp.join(s_dir, 'y.npy')
+        if osp.exists(ifile):
+            y = np.load(ifile)
+            meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+            ax.plot(meanDist, label = sample)
 
-    ifile = osp.join(dir, f'sample{sample}/none/k0/replicate1/y.npy')
-    y_max_ent = np.load(ifile)
-    meanDist = DiagonalPreprocessing.genomic_distance_statistics(y_max_ent, 'prob')
-    ax.plot(meanDist, label = 'max_ent', color = 'blue')
-
-    ifile = osp.join(dir, f'sample{sample}_edit/y.npy')
-    y = np.load(ifile)
-    meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
-    ax.plot(meanDist, label = 'max_ent_adjusted', color = 'lightblue')
-
-
-    # ifile = osp.join(dir, f'sample443_log/y.npy')
-    # y = np.load(ifile)
-    # meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
-    # ax.plot(meanDist, label = 'log_fit')
-    #
-    # ifile = osp.join(dir, f'sample443_logistic/y.npy')
-    # y = np.load(ifile)
-    # meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
-    # ax.plot(meanDist, label = 'logistic_fit')
+            if params:
+                with open(osp.join(s_dir, 'config.json')) as f:
+                    config = json.load(f)
+                diag_chis_step = get_diag_chi_step(config)
+                ax2.plot(diag_chis_step, ls = '--', label = 'Parameters')
 
 
     ax.set_yscale('log')
     ax.set_xscale('log')
-
     ax.set_ylabel('Contact Probability', fontsize = 16)
     ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
-    ax.legend()
+
+    if params:
+        ax.legend(loc='upper left')
+        ax2.set_xscale('log')
+        ax2.set_ylabel('Diagonal Parameter', fontsize = 16)
+        ax2.legend(loc='upper right')
+    else:
+        ax.legend(loc='upper right')
+    plt.tight_layout()
+    plt.savefig(osp.join(dir, 'meanDist_log.png'))
+    plt.close()
+
+def plot_modified_max_ent(sample, params = True):
+    # plot different p(s) curves
+    dataset = 'single_cell_nagano_imputed'
+    dir = f'/home/erschultz/sequences_to_contact_maps/{dataset}/samples'
+    fig, ax = plt.subplots()
+    if params:
+        ax2 = ax.twinx()
+
+    ifile = osp.join(dir, f'sample{sample}/y.npy')
+    y_gt = np.load(ifile)
+    meanDist_gt = DiagonalPreprocessing.genomic_distance_statistics(y_gt, 'prob', smoothen = False)[:1024]
+    meanDist_gt[50:] = uniform_filter(meanDist_gt[50:], 3, mode = 'constant')
+
+    ax.plot(meanDist_gt, label = 'SC Experiment (smoothed)' , color = 'k')
+
+    files = [f'sample{sample}/none/k0/replicate1', f'sample{sample}/none-diagMLP-66/k0/replicate1',
+            f'sample{sample}_edit', f'sample{sample}_edit2', f'sample{sample}_edit_zero',
+            f'sample{sample}_zero', f'sample{sample}_log', f'sample{sample}_logistic',
+            f'sample{sample}_log_max', f'sample{sample}_linear_max',
+            f'sample{sample}_log_2048']
+    colors = ['blue', 'green',
+            'lightblue', 'teal', 'darkslateblue',
+            'pink', 'orange', 'purple',
+            'yellow', 'brown',
+            'green']
+    labels = ['Max Ent', 'MLP-66',
+            'Max Ent Edit', 'Max Ent Edit 2', 'Max Ent Edit Zero',
+            'Zero', 'Log Fit', 'Logistic Fit',
+            'Log Max Fit', 'Linear Max Fit',
+            'Log Fit 2048']
+
+    for file, color, label in zip(files, colors, labels):
+        if label in {'Max Ent Edit Zero', 'Max Ent Edit', 'Linear Max Fit',
+                    'Log Max Fit', 'Max Ent Edit 2', 'Logistic Fit',
+                    'Log Fit', 'Log Fit 2048'}:
+            continue
+        ifile = osp.join(dir, file, 'y.npy')
+        if osp.exists(ifile):
+            y = np.load(ifile)
+            meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+            ax.plot(meanDist, label = label, color = color)
+            m = len(y)
+            mse = mean_squared_error(meanDist_gt[:m], meanDist)
+            print(f'{label} MSE:', mse)
+
+            if params:
+                # find config
+                config = None
+                config_file = osp.join(dir, file, 'config.json')
+                if osp.exists(config_file):
+                    with open(config_file) as f:
+                        config = json.load(f)
+                else:
+                    # look for last iteration
+                    max_it = -1
+                    for f in os.listdir(osp.join(dir, file)):
+                        if f.startswith('iteration'):
+                            it = int(f[9:])
+                            if it > max_it:
+                                max_it = it
+                    config_file = osp.join(dir, file, f'iteration{it}', 'config.json')
+                    if osp.exists(config_file):
+                        with open(config_file) as f:
+                            config = json.load(f)
+
+                diag_chis_step = get_diag_chi_step(config)
+                ax2.plot(diag_chis_step, ls = '--', label = 'Parameters', color = color)
+
+
+    ax.set_yscale('log')
+    ax.set_xscale('log')
+    ax.set_ylabel('Contact Probability', fontsize = 16)
+    ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
+
+    if params:
+        ax.set_ylim(None, 50)
+        ax.legend(loc='upper left')
+        ax2.set_ylabel('Diagonal Parameter', fontsize = 16)
+        ax2.legend(loc='upper right')
+    else:
+        ax.legend(loc='upper right')
     plt.tight_layout()
     plt.savefig(osp.join(dir, f'sample{sample}_edit', 'meanDist_log.png'))
     plt.close()
 
-def modify_maxent_diag_chi(sample = 443):
+def modify_maxent_diag_chi(sample):
     # try different modifications to diag chis learned by max ent
-    # dir = f'/home/erschultz/sequences_to_contact_maps/single_cell_nagano_imputed/samples/sample{sample}/none/k0/replicate1'
-    # ifile = osp.join(dir, 'chis_diag.txt')
-    # diag_chis = np.loadtxt(ifile)[-1]
-    dir = '/home/erschultz/sequences_to_contact_maps/single_cell_nagano_imputed/samples/sample443_edit'
+    dataset = 'single_cell_nagano_imputed'
+
+    # make version with intercept 0
+    dir = f'/home/erschultz/sequences_to_contact_maps/{dataset}/samples/sample{sample}/none/k0/replicate1'
+    diag_chis = np.loadtxt(osp.join(dir, 'chis_diag.txt'))[-1]
+    diag_chis -= np.min(diag_chis)
+    np.savetxt(osp.join(dir, 'chis_diag_edit_zero.txt'), diag_chis)
+
+
+    dir = f'/home/erschultz/sequences_to_contact_maps/{dataset}/samples/sample{sample}_edit'
     diag_chis = np.load(osp.join(dir, 'diag_chis.npy'))
 
     ifile = osp.join(dir, 'config.json')
@@ -579,77 +683,105 @@ def modify_maxent_diag_chi(sample = 443):
         config = json.load(f)
 
     diag_chi_step = get_diag_chi_step(config, diag_chis)
+    diag_chi_step -= np.min(diag_chi_step)
+    np.savetxt(osp.join(dir, 'diag_chi_edit.txt'), diag_chi_step)
     print(diag_chi_step[:12])
 
-    x = np.arange(0, len(diag_chi_step))
+    m = len(diag_chi_step)
+    x = np.arange(0, 2*m)
 
-    init = [1, 1, 0]
-    popt, pcov = curve_fit(log_curve, x[8:60], diag_chi_step[8:60], p0 = init, maxfev = 2000)
-    print('popt', popt)
-    log_fit = log_curve(x, *popt)
-    np.savetxt(osp.join(dir, 'log_fit.txt'), log_fit)
+    try:
+        init = [1, 1]
+        popt, pcov = curve_fit(log_curve, x[:64], diag_chi_step[:64], p0 = init, maxfev = 2000)
+        print('Log popt', popt)
+        log_fit = log_curve(x, *popt)
+        np.savetxt(osp.join(dir, 'log_fit.txt'), log_fit)
+    except RuntimeError as e:
+        log_fit = None
+        print('Log:', e)
 
+    try:
+        init = [1, 1]
+        popt, pcov = curve_fit(log_max_curve, x[:64], diag_chi_step[:64], p0 = init, maxfev = 2000)
+        print('Log_max popt', popt)
+        log_max_fit = log_max_curve(x, *popt)
+        np.savetxt(osp.join(dir, 'log_max_fit.txt'), log_max_fit)
+    except RuntimeError as e:
+        log_max_fit = None
+        print('Log_max:', e)
 
+    try:
+        init = [1, 1, 0]
+        popt, pcov = curve_fit(logistic_curve, x[:m], diag_chi_step, p0 = init, maxfev = 2000)
+        print('Logistic popt', popt)
+        logistic_fit = logistic_curve(x, *popt)
+        np.savetxt(osp.join(dir, 'logistic_fit.txt'), logistic_fit)
+    except RuntimeError as e:
+        logistic_fit = None
+        print('Logistic:', e)
 
-    init = [1, 0, 1, 0]
-    popt, pcov = curve_fit(logistic_curve, x, diag_chi_step, p0 = init, maxfev = 2000)
-    print('popt', popt)
-    logistic_fit = logistic_curve(x, *popt)
-    np.savetxt(osp.join(dir, 'logistic_fit.txt'), logistic_fit)
+    init = [1, 0]
+    popt, pcov = curve_fit(linear_max_curve, x[:m], diag_chi_step, p0 = init, maxfev = 2000)
+    print('Linear_max popt', popt)
+    linear_max_fit = linear_max_curve(x, *popt)
+    np.savetxt(osp.join(dir, 'linear_max_fit.txt'), linear_max_fit)
 
-
-    plt.plot(diag_chi_step, label = 'diag_chi')
-    plt.plot(log_fit, label = 'log')
-    plt.plot(logistic_fit, label = 'logistic')
+    plt.plot(diag_chi_step, label = 'Max Ent Edit2', color = 'teal')
+    plt.plot(log_fit, label = 'log', color = 'orange')
+    if log_max_fit is not None:
+        plt.plot(log_max_fit, label = 'log_max', color = 'yellow')
+    if logistic_fit is not None:
+        plt.plot(logistic_fit, label = 'logistic', color = 'purple')
+    plt.plot(linear_max_fit, label = 'linear_max', color = 'brown')
     plt.legend()
     plt.savefig(osp.join(dir, 'meanDist_fit.png'))
     plt.close()
 
-    plt.plot(diag_chi_step, label = 'diag_chi')
-    plt.plot(log_fit, label = 'log')
-    plt.plot(logistic_fit, label = 'logistic')
+    plt.plot(diag_chi_step, label = 'Max Ent Edit2', color = 'teal')
+    plt.plot(log_fit, label = 'log', color = 'orange')
+    if log_max_fit is not None:
+        plt.plot(log_max_fit, label = 'log_max', color = 'yellow')
+    if logistic_fit is not None:
+        plt.plot(logistic_fit, label = 'logistic', color = 'purple')
+    plt.plot(linear_max_fit, label = 'linear_max', color = 'brown')
     plt.xscale('log')
     plt.legend()
     plt.savefig(osp.join(dir, 'meanDist_fit_log.png'))
     plt.close()
 
-
-
-
-
-def log_curve(x, A, B, C):
-    result = A * np.log(B * x + 1) + C
+def linear_max_curve(x, A, B):
+    result = A*x + B
+    result[result < 0] = 0
     return result
 
-def logistic_curve(x, max, min, slope, midpoint):
-    result = (max - min)/ (1 + np.exp(-1*slope * (x + midpoint))) + min
+def log_curve(x, A, B):
+    result = A * np.log(B * x + 1)
     return result
 
-def test_log_curve():
-    x = np.arange(1024)
+def log_max_curve(x, A, B):
+    result = A * np.log(B * x)
+    result[result < 0] = 0
+    return result
+
+def logistic_curve(x, max, slope, midpoint):
+    result = (max) / (1 + np.exp(-1*slope * (x - midpoint)))
+    return result
 
 
-    y = log_curve(x, 15, 10/1000, -15)
-
-    plt.plot(x, y)
-    plt.show()
+def test_logarithmic_diagonal():
+    bounds = np.logspace(0, np.log2(1024), 32)
+    print(bounds)
 
 
 if __name__ == '__main__':
     # test_robust_PCA()
-    # check_dataset('dataset_05_12_22')    # ifile = osp.join(dir, 'sample443_log/y.npy')
-    # y = np.load(ifile)
-    # meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
-    # ax.plot(meanDist, label = 'log_fit')
-    # ifile = osp.join(dir, 'sample443_logistic/y.npy')
-    # y = np.load(ifile)
-    # meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
-    # ax.plot(meanDist, label = 'logistic_fit')
+    # check_dataset('dataset_05_12_22')
     # time_comparison()
     # time_comparison_merge_PCA()
     # construct_sc_xyz()
     # convergence_check()
-    main2()
-    # modify_maxent_diag_chi()
-    # test_log_curve()
+    main()
+    # plot_modified_max_ent(390)
+    # modify_maxent_diag_chi(244)
     # makeDirsForMaxEnt("dataset_09_21_21")
+    # test_logarithmic_diagonal()

@@ -157,7 +157,6 @@ run_simulation () {
 	fi
 
 	# production
-	python3 $proj_bin/jsed.py $configFileName load_configuration true b
 	python3 $proj_bin/jsed.py $configFileName nSweeps $production_sweeps i
 	if [ $num_iterations -gt 0 ]
 	then
@@ -165,6 +164,8 @@ run_simulation () {
 		python3 $proj_bin/jsed.py $configFileName seed $(get_rng) i
 		# equilib will only exist if num_iterations > 0
 		python3 $proj_bin/jsed.py $configFileName load_configuration_filename $saveFileName s
+		python3 $proj_bin/jsed.py $configFileName load_configuration true b
+
 	fi
 	~/TICG-chromatin/TICG-engine > production.log
 	mv data_out production_out

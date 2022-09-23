@@ -4,6 +4,7 @@ import math
 import os
 import os.path as osp
 
+import imageio.v2 as imageio
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -12,6 +13,7 @@ from seq2contact import (ArgparserConverter, DiagonalPreprocessing, crop,
                          get_diag_chi_step, load_E_S, load_final_max_ent_S,
                          plot_diag_chi, plot_matrix, plot_mean_dist,
                          plot_mean_vs_genomic_distance, s_to_E)
+from sklearn.metrics import mean_squared_error
 
 
 def getArgs():
@@ -46,6 +48,7 @@ def getArgs():
                 if it > final_it:
                     final_it = it
         args.final_folder = osp.join(args.replicate_folder, f"iteration{final_it}")
+        args.final_it = final_it
         args.save_folder = args.replicate_folder
 
         path_split = args.replicate_folder.split(osp.sep)
@@ -119,6 +122,7 @@ def main():
 
     # diag chi
     diag_chi = None
+    all_diag_chis = None
     if args.random_mode:
         file = osp.join(args.sample_folder, 'diag_chis.npy')
         if osp.exists(file):
@@ -131,7 +135,8 @@ def main():
     else:
         file = osp.join(args.replicate_folder, 'chis_diag.txt')
         if osp.exists(file):
-            diag_chi = np.loadtxt(file)[-1]
+            all_diag_chis = np.loadtxt(file)
+            diag_chi = all_diag_chis[-1]
             diag_chi_ref = None
 
     if diag_chi is not None:
@@ -140,6 +145,31 @@ def main():
         plot_diag_chi(config, args.save_folder,
                         ref = diag_chi_ref, ref_label = 'continuous',
                         logx = True)
+
+    if all_diag_chis is not None:
+        # plot gif of diag chis
+        files = []
+        ylim = (np.min(all_diag_chis), np.max(all_diag_chis))
+        for i in range(1, len(all_diag_chis)):
+            diag_chi_i = all_diag_chis[i]
+            file = f'{i}.png'
+            diag_chi_step = get_diag_chi_step(config, diag_chi_i)
+            plot_diag_chi(None, args.save_folder,
+                            logx = True, ofile = file,
+                            diag_chis_step = diag_chi_step, ylim = ylim,
+                            title = f'Iteration {i}')
+            files.append(osp.join(args.save_folder, file))
+
+        frames = []
+        for filename in files:
+            frames.append(imageio.imread(filename))
+
+        imageio.mimsave(osp.join(args.save_folder, 'pchis_diag_step.gif'), frames, format='GIF', fps=2)
+
+        # remove files
+        for filename in files:
+            os.remove(filename)
+
 
     # meanDist
     diag_chi_step = get_diag_chi_step(config)
@@ -155,13 +185,24 @@ def main():
         if osp.exists(y_gt_file):
             y_gt = np.load(y_gt_file)
             meanDist_gt = DiagonalPreprocessing.genomic_distance_statistics(y_gt, 'prob')
+            mse = mean_squared_error(meanDist_max_ent, meanDist_gt)
+            title = f'MSE: {np.round(mse, 9)}'
         else:
             meanDist_gt = None
+            title = None
 
+        if args.final_it == 1:
+            sim_label = 'MLP'
+            color = 'green'
+        else:
+            sim_label = 'Max Ent'
+            color = 'blue'
         plot_mean_dist(meanDist_max_ent, args.save_folder, 'meanDist.png',
-                        diag_chi_step, False, meanDist_gt, 'reference', 'max ent')
+                        diag_chi_step, False, meanDist_gt, 'Reference', sim_label,
+                        color, title)
         plot_mean_dist(meanDist_max_ent, args.save_folder, 'meanDist_log.png',
-                        diag_chi_step, True, meanDist_gt, 'reference', 'max ent')
+                        diag_chi_step, True, meanDist_gt, 'Reference', sim_label,
+                        color, title)
 
 
 if __name__ == '__main__':

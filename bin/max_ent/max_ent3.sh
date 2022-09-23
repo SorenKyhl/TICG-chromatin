@@ -27,9 +27,9 @@ i=2000
 dataset='single_cell_nagano_imputed'
 useE='false'
 method='none'
-diagChiMethod='zero'
+diagChiMethod='mlp'
 chiDiagSlope=1
-mode='diag'
+mode='none'
 dense='true'
 bondtype='gaussian'
 bondLength=28
@@ -42,11 +42,12 @@ nSmallBins=16
 smallBinSize=4
 diagStart=0
 diagCutoff=1024
-MLPModelID=13
+MLPModelID=41
 
-for sample in 443 244 390 65 84
+k=0
+for sample in 390
 do
-	for k in 0
+	for MLPModelID in 41 66
 	do
 	  echo $sample $m
  	  max_ent

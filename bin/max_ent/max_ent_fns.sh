@@ -126,14 +126,7 @@ max_ent_inner () {
   mkdir -p $scratchDirResources
 
   cd $resources
-  init_config="input${m}.xyz"
-  echo $init_config
-  if [ -f $init_config ]
-  then
-    cp $init_config $scratchDirResources
-  else
-    init_config='none'
-  fi
+  init_config='none'
 
   cd $scratchDirResources
   # generate sequences

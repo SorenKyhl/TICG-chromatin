@@ -23,7 +23,6 @@ def getArgs():
     parser.add_argument('--m', type=int, default=-1,
                         help='number of particles (-1 to infer)')
     parser.add_argument('--load_configuration_filename', type=AC.str2None,
-                        default='input1024.xyz',
                         help='file name of initial config (None to not load)')
     parser.add_argument('--dump_frequency', type=int,
                         help='set to change dump frequency')

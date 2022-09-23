@@ -31,6 +31,7 @@ param_setup() {
 	chiMultiplier=1
 
 	chiDiagConstant=0
+	chiDiagMidpoint=0
 	chiDiagSlope=1
 	chiDiagScale='none'
 	mContinuous='none'
@@ -80,7 +81,7 @@ check_dir() {
 
 random_inner() {
 	# generate sequences
-	python3 ~/TICG-chromatin/scripts/get_params.py --method $seqMethod --exclusive $exclusive --m $m --p_switch $pSwitch --lmbda $lmbda --k $k --save_npy --seq_seed $seqSeed --chi=$chi --chi_method $chiMethod --chi_seed $chiSeed --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable --diag_chi_method $chiDiagMethod --diag_chi_slope $chiDiagSlope --diag_chi_scale $chiDiagScale --max_diag_chi $maxDiagChi --diag_bins $diagBins --chi_constant=$chiConstant --chi_multiplier=$chiMultiplier --diag_chi_constant=$chiDiagConstant --dense_diagonal_on $dense --dense_diagonal_cutoff $denseCutoff --dense_diagonal_loading $denseLoading --m_continuous $mContinuous --small_binsize $smallBinSize --big_binsize $bigBinSize --n_small_bins $nSmallBins --n_big_bins $nBigBins --diag_start $diagStart --diag_cutoff $diagCutoff > params.log
+	python3 ~/TICG-chromatin/scripts/get_params.py --method $seqMethod --exclusive $exclusive --m $m --p_switch $pSwitch --lmbda $lmbda --k $k --save_npy --seq_seed $seqSeed --chi=$chi --chi_method $chiMethod --chi_seed $chiSeed --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable --diag_chi_method $chiDiagMethod --diag_chi_slope $chiDiagSlope --diag_chi_scale $chiDiagScale --max_diag_chi $maxDiagChi --diag_bins $diagBins --chi_constant=$chiConstant --chi_multiplier=$chiMultiplier --diag_chi_constant=$chiDiagConstant --diag_chi_midpoint=$chiDiagMidpoint --dense_diagonal_on $dense --dense_diagonal_cutoff $denseCutoff --dense_diagonal_loading $denseLoading --m_continuous $mContinuous --small_binsize $smallBinSize --big_binsize $bigBinSize --n_small_bins $nSmallBins --n_big_bins $nBigBins --diag_start $diagStart --diag_cutoff $diagCutoff > params.log
 
 	# set up config.json
 	python3 ~/TICG-chromatin/scripts/get_config.py --phi_chromatin $phiChromatin --bond_length $bondLength --m $m --n_sweeps $nSweeps --dump_frequency $dumpFrequency --TICG_seed $TICGSeed --constant_chi $constantChi --use_ematrix $useE --use_smatrix $useS --load_configuration_filename $init_config --relabel $relabel --e $e --s $s --bond_type $bondType --parallel $parallel --num_threads $numThreads --dense_diagonal_on $dense > config.log
