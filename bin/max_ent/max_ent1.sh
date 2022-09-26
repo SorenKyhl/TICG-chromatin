@@ -15,29 +15,27 @@ if [ $local = 'true' ]
 then
   dir="/home/erschultz/sequences_to_contact_maps"
   scratchDir='/home/erschultz/scratch'
-  numIterations=10
-  finalSimProductionSweeps=1000000
-  productionSweeps=800000
-  equilibSweeps=50000
+  numIterations=0
+  finalSimProductionSweeps=100000
+  productionSweeps=80000
+  equilibSweeps=5000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
 i=1
-dataset='dataset_soren'
-useE='false'
-method='PCA'
-diagChiMethod='linear'
-chiDiagSlope=1
-mode='both'
-dense='true'
-bondtype='gaussian'
+dataset='dataset_04_27_22'
+useE='true'
+method='GNN'
+GNNModelID=150
+diagChiMethod="${dir}/${dataset}/samples/sample1/PCA-soren/k4/replicate1/chis_diag.txt"
+diagChiMethod='none'
+useGroundTruthDiagChi='true'
+bondType='gaussian'
 m=1024
 replicate=1
-maxDiagChi=10
-parallel='false'
-numThreads=1
 
+dense='true'
 diagBins=32
 nSmallBins=16
 smallBinSize=4
@@ -45,9 +43,9 @@ diagStart=0
 diagCutoff=1024
 bondLength=28
 
-k=4
-sample=1
-for method in PCA-soren
+k=0
+sample=1_10
+for method in GNN
  # 3 4 5
 do
   echo $sample $m

@@ -14,7 +14,7 @@ finalSimProductionSweeps=1000000
 equilibSweeps=50000
 numIterations=30 # iteration 1 + numIterations is production run to get contact map
 parallel='false'
-numThreads=2
+numThreads=1
 
 # energy params
 useE='false'

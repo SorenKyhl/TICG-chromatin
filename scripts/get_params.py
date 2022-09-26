@@ -592,6 +592,13 @@ class GetSeq():
 
         if args.method is None:
             return
+        elif osp.exists(args.method):
+            if args.method.endswith('.txt'):
+                seq = np.loadtxt(args.method)
+            elif args.method.endswith('.npy'):
+                seq = np.load(args.method)
+            else:
+                raise Exception(f'Unrecognized file format {args.chi_method}')
         elif args.method == 'pca-soren':
             files = [osp.join(self.sample_folder, f'pcf{i}.txt') for i in range(1,self.k)]
             seq = np.zeros((self.m, self.k))
@@ -748,6 +755,16 @@ class GetPlaidChi():
                 print('Warning: particles are not distinguishable')
         elif args.chi_method is None:
             chi = None
+        elif osp.exists(args.chi_method):
+            if args.chi_method.endswith('.txt'):
+                chi = np.loadtxt(args.chi_method)
+            elif args.chi_method.endswith('.npy'):
+                chi = np.load(args.chi_method)
+            else:
+                raise Exception(f'Unrecognized file format {args.chi_method}')
+            rows, cols = chi.shape
+            assert self.k == rows, f'number of particle types {self.k} does not match shape of chi {rows}'
+            assert rows == cols, f"chi not square: {chi}"
         elif args.chi_method == 'zero':
             chi = np.zeros((self.k, self.k))
         elif args.chi_method == 'random':
@@ -764,7 +781,6 @@ class GetPlaidChi():
             chi = self.random_chi()
         else:
             raise Exception(f"Unrecognized chi_method: {args.chi_method}")
-
 
         # save chi
         if chi is not None:
@@ -920,6 +936,8 @@ class GetDiagChi():
                     diag_chis = np.zeros(args.diag_bins)
                 elif args.diag_chi_method == 'linear':
                     diag_chis_continuous = np.linspace(0, args.max_diag_chi, args.m_continuous) + args.diag_chi_constant
+                elif args.diag_chi_method == 'logistic':
+                    diag_chis_continuous = (args.max_diag_chi - args.min_diag_chi)/(1 + np.exp(-1*args.diag_chi_slope * (self.d_arr - args.diag_chi_midpoint))) + args.min_diag_chi
                 elif args.diag_chi_method.startswith('log'):
                     if args.diag_chi_scale is None:
                         args.diag_chi_scale = args.max_diag_chi / np.log(args.diag_chi_slope * (args.m_continuous - 1) + 1)
@@ -927,8 +945,6 @@ class GetDiagChi():
                     diag_chis_continuous += args.diag_chi_constant
                     if args.diag_chi_method == 'logmax':
                         diag_chis_continuous[diag_chis_continuous < 0] = 0
-                elif args.diag_chi_method == 'logistic':
-                    diag_chis_continuous = (args.max_diag_chi - args.min_diag_chi)/(1 + np.exp(-1*args.diag_chi_slope * (self.d_arr - args.diag_chi_midpoint))) + args.min_diag_chi
                 elif args.diag_chi_method == 'exp':
                     diag_chis_continuous = args.max_diag_chi - 1.889 * np.exp(-args.diag_chi_slope * self.d_arr) + args.diag_chi_constant
                 elif args.diag_chi_method == 'mlp':
@@ -1255,7 +1271,7 @@ class GetEnergy():
 
         # extract sample info
         sample = osp.split(sample_path)[1]
-        sample_id = int(sample[6:])
+        sample_id = sample[6:]
         sample_path_split = osp.normpath(sample_path).split(os.sep)
         sample_dataset = sample_path_split[-3]
 
@@ -1306,7 +1322,7 @@ class GetEnergy():
 
         # get dataset
         dataset = get_dataset(opt, verbose = True, samples = [sample_id])
-        print(dataset)
+        print('Dataset: ', dataset)
 
         # get prediction
         for i, data in enumerate(dataset):

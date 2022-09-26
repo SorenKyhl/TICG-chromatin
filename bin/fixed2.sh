@@ -3,23 +3,19 @@
 source ~/TICG-chromatin/bin/random/random_fns.sh
 
 param_setup
-k=0
 m=1024
-dataFolder="/home/erschultz/dataset_test_diag1024_linear"
+dataFolder="/home/erschultz/sequences_to_contact_maps/dataset_04_27_22"
 scratchDir='/home/erschultz/scratch'
-startSample=1
 relabel='none'
-diag='false'
 lmbda=0.8
-maxDiagChi=5
 chiSeed='31'
 seqSeed='31'
-chiMethod='zero'
+chiMethod="${dataFolder}/samples/sample1/chis.npy"
+seqMethod="${dataFolder}/samples/sample1/psi.npy"
 minChi=-0.4
 maxChi=0.4
 fillDiag='none'
 overwrite=1
-dumpFrequency=10000
 
 source activate python3.8_pytorch1.8.1
 
@@ -43,27 +39,51 @@ run()  {
 # make
 # mv TICG-engine ..
 
-nSweeps=10000
-dumpFrequency=5000
+k=10
+nSweeps=1000000
+dumpFrequency=10000
 TICGSeed=10
-chiDiagMethod='linear'
 dense='true'
 diagBins=32
-maxDiagChi=20
+maxDiagChi=10
 nSmallBins=16
 smallBinSize=4
-nBigBins=-1
 bigBinSize=-1
+nBigBins=-1
 diagStart=0
 diagCutoff='none'
-chiDiagConstant=0
 bondLength=28
 
-i=9
-for diagBins in 17 32 64 128
-do
-	i=$(( $i + 1 ))
-	echo $i
-	run &
-done
+# chiDiagMethod="zero"
+# i=1_zero
+# run &
+
+chiDiagMethod="linear"
+i=1_10_long
+run &
+
+maxDiagChi=20
+i=1_20_long
+run &
+#
+# maxDiagChi=20
+# chiDiagMidpoint=30
+# chiDiagSlope=100
+# chiDiagMethod="logistic"
+# i=1_logistic20
+# run &
+#
+# maxDiagChi=30
+# i=1_logistic30
+# run &
+#
+maxDiagChi=10
+chiDiagMethod="log"
+i=1_log10_long
+run &
+
+maxDiagChi=20
+i=1_log20_long
+run &
+
 wait

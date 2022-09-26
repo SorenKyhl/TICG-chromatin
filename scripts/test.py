@@ -487,9 +487,10 @@ def main():
         phase_dict = json.load(f)
 
     phase_count_dict = defaultdict(int) # how many times have we seen each phase
-    phase_meanDist_dict = defaultdict(lambda: np.zeros(1024)) # maps phase to meandist
+    phase_meanDist_dict = defaultdict(list) # maps phase to meandist
     for file in os.listdir(data_dir):
         if file.endswith('cool'):
+            print(file)
             ifile = osp.join(data_dir, file)
             i = file.split('.')[0].split('_')[-1]
 
@@ -497,7 +498,6 @@ def main():
             phase = phase_dict[dir]
             phase_count_dict[phase] += 1
 
-            print(file)
             y = load_contact_map(ifile, chrom=10, resolution=50000)
 
             ofile = osp.join(data_dir, 'sc_contacts_time', f'y_sc_{i}_chrom10.png')
@@ -509,13 +509,19 @@ def main():
 
             meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
             meanDist[50:] = uniform_filter(meanDist[50:], 3, mode = 'constant')
-            phase_meanDist_dict[phase] += meanDist[:1024]
+            phase_meanDist_dict[phase].append(meanDist[:1024])
 
-    print(phase_count_dict)
-
-    for phase in ['S', 'G2', 'post-M', 'pre-M', 'S']:
-        meanDist = phase_meanDist_dict[phase]
-        ax.plot(meanDist, label = phase)
+    for phase in ['G1', 'S', 'G2', 'pre-M', 'post-M']:
+        print(f'{phase}: {phase_count_dict[phase]} samples')
+        if phase_count_dict[phase] > 0:
+            meanDist_list = phase_meanDist_dict[phase]
+            meanDist_arr = np.array(meanDist_list)
+            meanDist = np.mean(meanDist_arr, 0)
+            meanDist_stdev = np.std(meanDist_arr, 0, ddof=1)
+            x = np.arange(0, len(meanDist))
+            ax.plot(x, meanDist, label = f'{phase} (mean)')
+            ax.fill_between(x, meanDist - meanDist_stdev,
+                            meanDist + meanDist_stdev, alpha = 0.5)
     #
     # y = np.load('/home/erschultz/sequences_to_contact_maps/single_cell_nagano_imputed/samples/sample390/none-diagMLP-66/k0/replicate1/y.npy')
     # meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
@@ -772,15 +778,36 @@ def test_logarithmic_diagonal():
     bounds = np.logspace(0, np.log2(1024), 32)
     print(bounds)
 
+def compare_y_diag():
+    dir = '/home/erschultz/sequences_to_contact_maps/dataset_04_27_22/samples'
+
+    dir_10 = osp.join(dir, 'sample1_10')
+    y_10 = np.load(osp.join(dir_10, 'y_diag.npy'))
+
+    dir_20 = osp.join(dir, 'sample1_20')
+    y_20 = np.load(osp.join(dir_20, 'y_diag.npy'))
+
+    diff = y_10 - y_20
+    plot_matrix(diff, osp.join(dir_10, '10vs20.png'), '10vs20', vmin = 'min',
+                vmax = 'max', cmap = 'bluered')
+
+    dir_log10 = osp.join(dir, 'sample1_log10')
+    y_log10 = np.load(osp.join(dir_log10, 'y_diag.npy'))
+
+    diff = y_10 - y_log10
+    plot_matrix(diff, osp.join(dir_10, '10vslog10.png'), '10vslog10', vmin = 'min',
+                vmax = 'max', cmap = 'bluered')
+
 
 if __name__ == '__main__':
+    compare_y_diag()
     # test_robust_PCA()
     # check_dataset('dataset_05_12_22')
     # time_comparison()
     # time_comparison_merge_PCA()
     # construct_sc_xyz()
     # convergence_check()
-    main()
+    # main()
     # plot_modified_max_ent(390)
     # modify_maxent_diag_chi(244)
     # makeDirsForMaxEnt("dataset_09_21_21")

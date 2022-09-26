@@ -502,17 +502,20 @@ def main():
     sim.plot_obs(diag=True)
     plt.savefig("obs.png")
 
-    sim.plot_obs_vs_goal()
-    plt.savefig("obs_vs_goal.png")
 
     plt.figure()
     plt.plot(sim.config['diag_chis'], 'o')
     plt.savefig("diag_chis.png")
 
-    error = sim.plot_consistency()
-    plt.savefig("consistency.png")
-    if error > 0.01:
-        print("SIMULATION IS NOT CONSISTENT")
+    if sim.obs_tot is not None:
+        # obs tot is None if 0 max ent iterations
+        sim.plot_obs_vs_goal()
+        plt.savefig("obs_vs_goal.png")
+
+        error = sim.plot_consistency()
+        plt.savefig("consistency.png")
+        if error > 0.01:
+            print("SIMULATION IS NOT CONSISTENT")
 
 if __name__ == '__main__':
     main()

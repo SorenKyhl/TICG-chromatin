@@ -65,10 +65,6 @@ def getArgs():
                         help='True to use e_matrix')
     parser.add_argument('--use_smatrix', type=AC.str2bool, default=False,
                         help='True to use s_matrix')
-    parser.add_argument('--e', type=AC.str2None,
-                        help='path to e_matrix to use (.npy or .txt)')
-    parser.add_argument('--s', type=AC.str2None,
-                        help='path to s_matrix to use (.npy or .txt)')
 
     # diagonal config params
     parser.add_argument('--diag_pseudobeads_on', type=AC.str2bool, default=True)
@@ -243,10 +239,13 @@ def main():
         assert sample_config is not None, 'ground truth config missing'
         config["diagonal_on"] = sample_config["diagonal_on"]
         if config["diagonal_on"]:
+            config['n_small_bins'] = sample_config['n_small_bins']
+            config['n_big_bins'] = sample_config['n_big_bins']
+            config['small_binsize'] = sample_config['small_binsize']
+            config['big_binsize'] = sample_config['big_binsize']
+
             diag_chis = np.array(sample_config["diag_chis"])
             config["diag_chis"] = list(diag_chis)
-            with open(diag_chis_file) as f:
-                json.dump({'diag_chis':diag_chis}, f)
             np.save(diag_chis_file, diag_chis)
     elif osp.exists(diag_chis_file):
         config["diagonal_on"] = True
@@ -291,38 +290,38 @@ def main():
             np.save('e.npy', e)
             np.save('s.npy', s) # save s either way
 
-    if args.e is not None:
-        assert args.use_ematrix
-        if osp.exists(args.e):
-            if args.e.endswith('.npy'):
-                e = np.load(args.e)
-            elif args.e.endswith('.txt'):
-                e = np.loadtxt(args.e)
-            else:
-                raise Exception(f'unrecongined file format for {args.e}')
-        else:
-            raise Exception(f'e does not exist at {args.e}')
-        np.savetxt('e_matrix.txt', e, fmt='%0.5f')
-        np.save('e.npy', e)
-    elif args.s is not None:
-        assert args.use_smatrix or args.use_ematrix
-        if osp.exists(args.s):
-            if args.s.endswith('.npy'):
-                s = np.load(args.s)
-            elif args.s.endswith('.txt'):
-                s = np.loadtxt(args.s)
-            else:
-                raise Exception(f'unrecongined file format for {args.s}')
-        else:
-            raise Exception(f's does not exist at {args.s}')
-
-        np.save('s.npy', s)
-        if args.use_ematrix:
-            e = s_to_E(s)
-            np.savetxt('e_matrix.txt', e, fmt='%0.5f')
-            np.save('e.npy', e)
-        else:
-            np.savetxt('s_matrix.txt', s, fmt='%0.5f')
+    # if args.e is not None:
+    #     assert args.use_ematrix
+    #     if osp.exists(args.e):
+    #         if args.e.endswith('.npy'):
+    #             e = np.load(args.e)
+    #         elif args.e.endswith('.txt'):
+    #             e = np.loadtxt(args.e)
+    #         else:
+    #             raise Exception(f'unrecongined file format for {args.e}')
+    #     else:
+    #         raise Exception(f'e does not exist at {args.e}')
+    #     np.savetxt('e_matrix.txt', e, fmt='%0.5f')
+    #     np.save('e.npy', e)
+    # elif args.s is not None:
+    #     assert args.use_smatrix or args.use_ematrix
+    #     if osp.exists(args.s):
+    #         if args.s.endswith('.npy'):
+    #             s = np.load(args.s)
+    #         elif args.s.endswith('.txt'):
+    #             s = np.loadtxt(args.s)
+    #         else:
+    #             raise Exception(f'unrecongined file format for {args.s}')
+    #     else:
+    #         raise Exception(f's does not exist at {args.s}')
+    #
+    #     np.save('s.npy', s)
+    #     if args.use_ematrix:
+    #         e = s_to_E(s)
+    #         np.savetxt('e_matrix.txt', e, fmt='%0.5f')
+    #         np.save('e.npy', e)
+    #     else:
+    #         np.savetxt('s_matrix.txt', s, fmt='%0.5f')
 
     if args.use_ematrix or args.use_smatrix:
         config['bead_type_files'] = None
