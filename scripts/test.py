@@ -787,36 +787,48 @@ def test_logarithmic_diagonal():
     print(bounds)
 
 def compare_y_diag():
-    dir = '/home/erschultz/sequences_to_contact_maps/dataset_04_27_22/samples'
+    dir = '/home/erschultz/dataset_test'
 
-    dir_10 = osp.join(dir, 'sample1_10')
-    y_10 = np.load(osp.join(dir_10, 'y_diag.npy'))
+    dir = osp.join(dir, 'sample1')
+    y_diag = np.load(osp.join(dir, 'y_diag.npy'))
+    y_diag_log = np.log(y_diag)
 
-    dir_20 = osp.join(dir, 'sample1_20')
-    y_20 = np.load(osp.join(dir_20, 'y_diag.npy'))
+    dir = osp.join(dir, 'sample2')
+    y2_diag = np.load(osp.join(dir, 'y_diag.npy'))
+    y2_diag_log = np.log(y1000_diag)
 
-    diff = y_10 - y_20
-    plot_matrix(diff, osp.join(dir_10, '10vs20.png'), '10vs20', vmin = 'min',
+    diff = y_diag - y1000_diag
+    plot_matrix(diff, osp.join(dir, 'diagvs1000diag.png'), 'diag - 1000diag', vmin = 'min',
                 vmax = 'max', cmap = 'bluered')
 
-    dir_log10 = osp.join(dir, 'sample1_log10')
-    y_log10 = np.load(osp.join(dir_log10, 'y_diag.npy'))
+    # diff = y_diag - y5000_diag
+    # plot_matrix(diff, osp.join(dir, 'diagvs5000diag.png'), 'diag - 5000diag', vmin = 'min',
+    #             vmax = 'max', cmap = 'bluered')
+    #
+    # diff = y5000_diag - y1000_diag
+    # plot_matrix(diff, osp.join(dir, 'diag5000vs1000diag.png'), '5000diag - 1000diag', vmin = 'min',
+    #             vmax = 'max', cmap = 'bluered')
+    #
+    # diff = y_diag_log - y5000_diag_log
+    # plot_matrix(diff, osp.join(dir, 'diaglogvs5000diaglog.png'), 'diaglog - 5000diaglog', vmin = 'min',
+    #             vmax = 'max', cmap = 'bluered')
+    #
+    # diff = y5000_diag_log - y1000_diag_log
+    # plot_matrix(diff, osp.join(dir, 'diag5000logvs1000diaglog.png'), '5000diaglog - 1000diaglog', vmin = 'min',
+    #             vmax = 'max', cmap = 'bluered')
 
-    diff = y_10 - y_log10
-    plot_matrix(diff, osp.join(dir_10, '10vslog10.png'), '10vslog10', vmin = 'min',
-                vmax = 'max', cmap = 'bluered')
 
 
 if __name__ == '__main__':
-    compare_y_diag()
+    # compare_y_diag()
     # test_robust_PCA()
-    # check_dataset('dataset_05_12_22')
+    check_dataset('dataset_9_26_22')
     # time_comparison()
     # time_comparison_merge_PCA()
     # construct_sc_xyz()
     # convergence_check()
     # main()
     # plot_modified_max_ent(10)
-    modify_maxent_diag_chi(10)
+    # modify_maxent_diag_chi(10)
     # makeDirsForMaxEnt("dataset_09_21_21")
     # test_logarithmic_diagonal()

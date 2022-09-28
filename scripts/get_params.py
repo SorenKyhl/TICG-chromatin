@@ -990,11 +990,11 @@ class GetDiagChi():
 
             if self.n_big_bins == -1:
                 remainder = self.m_eff - self.dividing_line
-                print(remainder)
+                print('remainder', remainder)
                 self.n_big_bins = math.floor(args.diag_bins - self.n_small_bins)
-                print(self.n_big_bins)
+                print('n_big_bins', self.n_big_bins)
                 while remainder % self.n_big_bins != 0 and self.n_big_bins < remainder:
-                    print(remainder % self.n_big_bin)
+                    print(remainder % self.n_big_bins)
                     self.n_big_bins += 1
 
                 self.big_binsize = remainder // self.n_big_bins

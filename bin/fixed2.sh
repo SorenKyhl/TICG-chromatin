@@ -3,15 +3,16 @@
 source ~/TICG-chromatin/bin/random/random_fns.sh
 
 param_setup
-m=1024
-dataFolder="/home/erschultz/sequences_to_contact_maps/dataset_04_27_22"
+m=2048
+dataFolder="/home/erschultz/dataset_test"
 scratchDir='/home/erschultz/scratch'
 relabel='none'
 lmbda=0.8
 chiSeed='31'
 seqSeed='31'
-chiMethod="${dataFolder}/samples/sample1/chis.npy"
-seqMethod="${dataFolder}/samples/sample1/psi.npy"
+chiMethod="/home/erschultz/sequences_to_contact_maps/dataset_04_27_22/samples/sample1/chis.npy"
+seqMethod="random"
+# "/home/erschultz/sequences_to_contact_maps/dataset_04_27_22/samples/sample1/psi.npy"
 minChi=-0.4
 maxChi=0.4
 fillDiag='none'
@@ -40,8 +41,10 @@ run()  {
 # mv TICG-engine ..
 
 k=10
-nSweeps=1000000
-dumpFrequency=10000
+nSweeps=500000
+dumpFrequency=1000
+dumpStatsFrequency=200
+trackContactmap='true'
 TICGSeed=10
 dense='true'
 diagBins=32
@@ -54,36 +57,49 @@ diagStart=0
 diagCutoff='none'
 bondLength=28
 
-# chiDiagMethod="zero"
-# i=1_zero
-# run &
-
+# this tests if grid move is a problem, and if the TICG simulations have any systematic bias as a function of time
 chiDiagMethod="linear"
-i=1_10_long
-run &
-
-maxDiagChi=20
-i=1_20_long
-run &
-#
-# maxDiagChi=20
-# chiDiagMidpoint=30
-# chiDiagSlope=100
-# chiDiagMethod="logistic"
-# i=1_logistic20
+# i=1
 # run &
 #
-# maxDiagChi=30
-# i=1_logistic30
+# i=2
+# gridMoveOn='false'
+# run &
+
+# i=3
+# gridMoveOn='true'
+# updateContactsDistance='true'
 # run &
 #
-maxDiagChi=10
-chiDiagMethod="log"
-i=1_log10_long
+# i=4
+# gridMoveOn='false'
+# updateContactsDistance='true'
+# run &
+
+
+# this tests time comparison of various energy formalisms
+gridMoveOn='true'
+trackContactmap='false'
+chiDiagMethod="linear"
+
+# # baseline
+# i=5
+# run &
+#
+# # 2x bins
+# i=6
+# diagBins=64
+# run &
+
+# 4x bins
+i=7
+diagBins=128
 run &
 
-maxDiagChi=20
-i=1_log20_long
-run &
+# # e matrix
+# i=8
+# diagBins=32
+# useE='true'
+# run &
 
 wait

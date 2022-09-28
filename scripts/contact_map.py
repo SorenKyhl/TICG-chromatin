@@ -60,15 +60,26 @@ def main():
     print(args)
 
     if args.random_mode:
-        y_path = osp.join(args.sample_folder, 'data_out', 'contacts.txt')
+        y_path = osp.join(args.sample_folder, 'data_out')
     else:
-        y_path = osp.join(args.final_folder, "production_out", "contacts.txt")
+        y_path = osp.join(args.final_folder, "production_out")
 
-    if osp.exists(y_path):
-        y = crop(np.loadtxt(y_path), args.m)
+    y_file = osp.join(y_path, 'contacts.txt')
+    if osp.exists(y_file):
+        y = crop(np.loadtxt(y_file), args.m)
         args.m = len(y)
     else:
-        raise Exception(f"y path does not exist: {y_path}")
+        max_sweep = -1
+        # look for contacts{sweep}.txt
+        for file in os.listdir(y_path):
+            if file.startswith('contacts') and file.endswith('.txt'):
+                sweep = int(file[8:-4])
+                if sweep > max_sweep:
+                    max_sweep = sweep
+        if max_sweep > 0:
+            y = crop(np.loadtxt(osp.join(y_path, f'contacts{max_sweep}.txt')), args.m)
+        else:
+            raise Exception(f"y path does not exist: {y_path}")
 
     plot_matrix(y, ofile = osp.join(args.save_folder, 'y.png'), vmax = 'mean')
 

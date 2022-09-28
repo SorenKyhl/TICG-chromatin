@@ -51,6 +51,12 @@ def getArgs():
                         help='bond length')
     parser.add_argument('--boundary_type', type=str, default='spherical',
                         help='simulation boundary type {cubic, spherical}')
+    parser.add_argument('--track_contactmap', type=AC.str2bool, default=False,
+                        help='True to dump contact map every dump_frequency')
+    parser.add_argument('--gridmove_on', type=AC.str2bool, default=True,
+                        help='True to use grid MC move')
+    parser.add_argument('--update_contacts_distance', type=AC.str2bool, default=False,
+                        help='True to use distance instead of grid')
 
     # chi config params
     parser.add_argument('--use_ground_truth_chi', type=AC.str2bool, default=False,
@@ -398,6 +404,15 @@ def main():
         config['dump_frequency'] = args.dump_frequency
     if args.dump_stats_frequency is not None:
         config['dump_stats_frequency'] = args.dump_stats_frequency
+
+    # save track_contactmap
+    config['track_contactmap'] = args.track_contactmap
+
+    # save gridmove_on
+    config['gridmove_on'] = args.gridmove_on
+
+    # save update_contacts_distance
+    config['update_contacts_distance'] = args.update_contacts_distance
 
     # save seed
     if args.use_ground_truth_TICG_seed:
