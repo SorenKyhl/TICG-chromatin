@@ -49,18 +49,18 @@ void Sim::run() {
 	assert (grid.checkCellConsistency(nbeads));
 }
 
-// void Sim::xyzToContact()
-// {
-// 	readInput();
-// 	beads.resize(nbeads);
-// 	calculateParameters();
-// 	loadConfiguration();
-// 	grid.generate();
-// 	grid.meshBeads(beads);
-// 	grid.setActiveCells();
-// 	setupContacts();
-// 	dumpContacts(0);
-// }
+void Sim::xyzToContact()
+{
+	nlohmann::json config = readInput();
+ 	beads.resize(nbeads);
+ 	calculateParameters(config);
+ 	loadConfiguration();
+ 	grid.generate();
+ 	grid.meshBeads(beads);
+ 	grid.setActiveCells();
+ 	setupContacts();
+ 	dumpContacts(0);
+}
 
 void Sim::setupContacts() {
 	std::cout << "setting up contacts" << std::endl;

@@ -33,3 +33,6 @@ pybind:
 
 clean:
 	rm *.o
+
+get_contacts: Grid.o Sim.o random_mars.o
+	$(CC) $(FLAGS) $(INCLUDE) get_contacts.cpp -o $@ $^
