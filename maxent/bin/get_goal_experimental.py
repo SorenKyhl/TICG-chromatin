@@ -145,7 +145,7 @@ def main():
         dir = osp.split(args.contact_map)[0]
 
         obj_goal = osp.join(dir, 'obj_goal.txt')
-        assert osp.exists(obj_goal)
+        assert osp.exists(obj_goal), f"neither {args.contact_map} nor {osp.join(dir, 'obj_goal.txt')} exists"
         copyfile(obj_goal, 'obj_goal.txt')
 
         obj_goal_diag = osp.join(dir, 'obj_goal_diag.txt')

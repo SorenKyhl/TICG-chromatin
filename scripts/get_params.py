@@ -1322,10 +1322,11 @@ class GetEnergy():
 
         # get dataset
         dataset = get_dataset(opt, verbose = True, samples = [sample_id])
-        print('Dataset: ', dataset)
+        print('Dataset: ', dataset, len(dataset))
 
         # get prediction
         for i, data in enumerate(dataset):
+            print(i, data)
             data = data.to(opt.device)
             yhat = model(data)
             yhat = yhat.cpu().detach().numpy()

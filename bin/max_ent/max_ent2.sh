@@ -15,42 +15,41 @@ if [ $local = 'true' ]
 then
   dir="/home/erschultz/sequences_to_contact_maps"
   scratchDir='/home/erschultz/scratch'
-  numIterations=15
-  finalSimProductionSweeps=1000000
+  numIterations=10
+  finalSimProductionSweeps=800000
   productionSweeps=800000
-  equilibSweeps=100000
+  equilibSweeps=50000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
 i=1001
-dataset='dataset_07_20_22'
+dataset='dataset_09_21_21'
 useE='false'
 diagChiMethod='zero'
 chiMethod='none'
 mode='diag'
 dense='true'
 bondtype='gaussian'
-bondLength=22
-m=-1
+bondLength=34
 replicate=1
 parallel='false'
 numThreads=1
 trust_region=100
 
-diagBins=30
-nSmallBins=14
+diagBins=32
+nSmallBins=16
 smallBinSize=4
-diagStart=8
+diagStart=0
 diagCutoff='none'
 
 
 method='none'
-m=512
-for sample in 11 12 13
+m=1024
+for sample in 1
 # 14
 do
-  for k in 2
+  for k in 0
   do
     echo $sample $m
     max_ent

@@ -4,7 +4,7 @@ source ~/TICG-chromatin/bin/random/random_fns.sh
 
 param_setup
 m=1024
-dataset=single_cell_nagano_imputed
+dataset=dataset_07_20_22
 dataFolder="/home/erschultz/sequences_to_contact_maps/${dataset}"
 scratchDir='/home/erschultz/scratch'
 relabel='none'
@@ -49,18 +49,39 @@ bigBinSize=-1
 nBigBins=-1
 diagStart=0
 diagCutoff='none'
-bondLength=28
+bondLength=20
 
-sample=244
+sample=10
 m=1024
+
 # chiDiagMethod="${dataFolder}/samples/sample${sample}/none/k0/replicate1/chis_diag_edit_zero.txt"
-# i=244_edit_zero
+# i=10_edit_zero
 # run &
 #
 # chiDiagMethod="${dataFolder}/samples/sample${sample}/none/k0/replicate1/chis_diag_edit2.txt"
 # i=244_edit2
 # run &
-#
+# #
 # chiDiagMethod="${dataFolder}/samples/sample${sample}/none/k0/replicate1/chis_diag_edit.txt"
-# i=244_edit
+# i=10_edit
 # run &
+#
+chiDiagMethod="${dataFolder}/samples/sample${sample}_edit/log_max_fit.txt"
+i=10_logmax
+run &
+
+chiDiagMethod="${dataFolder}/samples/sample${sample}_edit/logistic_fit.txt"
+i=10_logistic
+run &
+
+chiDiagMethod="${dataFolder}/samples/sample${sample}_edit/logistic_fit_manual.txt"
+i=10_logistic_manual
+run &
+
+chiDiagMethod="${dataFolder}/samples/sample${sample}_edit/linear_max_fit.txt"
+i=10_linearmax
+run &
+
+chiDiagMethod="${dataFolder}/samples/sample${sample}_edit/log_fit.txt"
+i=10_log
+run &

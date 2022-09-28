@@ -24,27 +24,28 @@ fi
 
 STARTTIME=$(date +%s)
 i=1
-dataset='dataset_04_27_22'
+dataset='dataset_09_21_21'
 useE='true'
 method='GNN'
 GNNModelID=150
-diagChiMethod="${dir}/${dataset}/samples/sample1/PCA-soren/k4/replicate1/chis_diag.txt"
-diagChiMethod='none'
-useGroundTruthDiagChi='true'
 bondType='gaussian'
 m=1024
 replicate=1
 
+diagChiMethod="${dir}/${dataset}/samples/sample1/none/k0/replicate1/chis_diag.txt"
+# diagChiMethod='linear'
+useGroundTruthDiagChi='false'
+maxDiagChi=10
 dense='true'
 diagBins=32
 nSmallBins=16
 smallBinSize=4
 diagStart=0
 diagCutoff=1024
-bondLength=28
+bondLength=34
 
 k=0
-sample=1_10
+sample=1
 for method in GNN
  # 3 4 5
 do

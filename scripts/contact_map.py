@@ -9,10 +9,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from seq2contact import (ArgparserConverter, DiagonalPreprocessing, crop,
-                         get_diag_chi_step, load_E_S, load_final_max_ent_S,
-                         plot_diag_chi, plot_matrix, plot_mean_dist,
-                         plot_mean_vs_genomic_distance, s_to_E)
+from seq2contact import (ArgparserConverter, DiagonalPreprocessing,
+                         calculate_diag_chi_step, crop, load_E_S,
+                         load_final_max_ent_S, plot_diag_chi, plot_matrix,
+                         plot_mean_dist, plot_mean_vs_genomic_distance, s_to_E)
 from sklearn.metrics import mean_squared_error
 
 
@@ -153,7 +153,7 @@ def main():
         for i in range(1, len(all_diag_chis)):
             diag_chi_i = all_diag_chis[i]
             file = f'{i}.png'
-            diag_chi_step = get_diag_chi_step(config, diag_chi_i)
+            diag_chi_step = calculate_diag_chi_step(config, diag_chi_i)
             plot_diag_chi(None, args.save_folder,
                             logx = True, ofile = file,
                             diag_chis_step = diag_chi_step, ylim = ylim,
@@ -172,7 +172,7 @@ def main():
 
 
     # meanDist
-    diag_chi_step = get_diag_chi_step(config)
+    diag_chi_step = calculate_diag_chi_step(config)
     if args.random_mode:
         plot_mean_vs_genomic_distance(y, args.save_folder, 'meanDist.png',
                                         diag_chi_step)

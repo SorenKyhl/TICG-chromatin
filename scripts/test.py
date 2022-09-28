@@ -565,7 +565,7 @@ def main2(params = True):
             if params:
                 with open(osp.join(s_dir, 'config.json')) as f:
                     config = json.load(f)
-                diag_chis_step = get_diag_chi_step(config)
+                diag_chis_step = calculate_diag_chi_step(config)
                 ax2.plot(diag_chis_step, ls = '--', label = 'Parameters')
 
 
@@ -587,7 +587,7 @@ def main2(params = True):
 
 def plot_modified_max_ent(sample, params = True):
     # plot different p(s) curves
-    dataset = 'single_cell_nagano_imputed'
+    dataset = 'dataset_07_20_22'
     dir = f'/home/erschultz/sequences_to_contact_maps/{dataset}/samples'
     fig, ax = plt.subplots()
     if params:
@@ -596,30 +596,30 @@ def plot_modified_max_ent(sample, params = True):
     ifile = osp.join(dir, f'sample{sample}/y.npy')
     y_gt = np.load(ifile)
     meanDist_gt = DiagonalPreprocessing.genomic_distance_statistics(y_gt, 'prob', smoothen = False)[:1024]
-    meanDist_gt[50:] = uniform_filter(meanDist_gt[50:], 3, mode = 'constant')
+    # meanDist_gt[50:] = uniform_filter(meanDist_gt[50:], 3, mode = 'constant')
 
-    ax.plot(meanDist_gt, label = 'SC Experiment (smoothed)' , color = 'k')
+    ax.plot(meanDist_gt, label = 'Experiment' , color = 'k')
 
     files = [f'sample{sample}/none/k0/replicate1', f'sample{sample}/none-diagMLP-66/k0/replicate1',
             f'sample{sample}_edit', f'sample{sample}_edit2', f'sample{sample}_edit_zero',
             f'sample{sample}_zero', f'sample{sample}_log', f'sample{sample}_logistic',
             f'sample{sample}_log_max', f'sample{sample}_linear_max',
-            f'sample{sample}_log_2048']
+            f'sample{sample}_logistic_manual']
     colors = ['blue', 'green',
             'lightblue', 'teal', 'darkslateblue',
             'pink', 'orange', 'purple',
             'yellow', 'brown',
-            'green']
+            'darkgreen']
     labels = ['Max Ent', 'MLP-66',
             'Max Ent Edit', 'Max Ent Edit 2', 'Max Ent Edit Zero',
             'Zero', 'Log Fit', 'Logistic Fit',
             'Log Max Fit', 'Linear Max Fit',
-            'Log Fit 2048']
+            'Logistic Manual Fit']
 
     for file, color, label in zip(files, colors, labels):
-        if label in {'Max Ent Edit Zero', 'Max Ent Edit', 'Linear Max Fit',
-                    'Log Max Fit', 'Max Ent Edit 2', 'Logistic Fit',
-                    'Log Fit', 'Log Fit 2048'}:
+        if label in {'Logistic Manual Fit', 'Linear Max Fit',
+                    'Log Max Fit',
+                    'Log Fit',}:
             continue
         ifile = osp.join(dir, file, 'y.npy')
         if osp.exists(ifile):
@@ -650,7 +650,7 @@ def plot_modified_max_ent(sample, params = True):
                         with open(config_file) as f:
                             config = json.load(f)
 
-                diag_chis_step = get_diag_chi_step(config)
+                diag_chis_step = calculate_diag_chi_step(config)
                 ax2.plot(diag_chis_step, ls = '--', label = 'Parameters', color = color)
 
 
@@ -672,7 +672,7 @@ def plot_modified_max_ent(sample, params = True):
 
 def modify_maxent_diag_chi(sample):
     # try different modifications to diag chis learned by max ent
-    dataset = 'single_cell_nagano_imputed'
+    dataset = 'dataset_07_20_22'
 
     # make version with intercept 0
     dir = f'/home/erschultz/sequences_to_contact_maps/{dataset}/samples/sample{sample}/none/k0/replicate1'
@@ -688,7 +688,7 @@ def modify_maxent_diag_chi(sample):
     with open(ifile, 'r') as f:
         config = json.load(f)
 
-    diag_chi_step = get_diag_chi_step(config, diag_chis)
+    diag_chi_step = calculate_diag_chi_step(config, diag_chis)
     diag_chi_step -= np.min(diag_chi_step)
     np.savetxt(osp.join(dir, 'diag_chi_edit.txt'), diag_chi_step)
     print(diag_chi_step[:12])
@@ -726,6 +726,10 @@ def modify_maxent_diag_chi(sample):
         logistic_fit = None
         print('Logistic:', e)
 
+    logistic_manual = [np.mean(diag_chi_step[64:]), 0.04, 35]
+    logistic_fit_manual = logistic_curve(x, *logistic_manual)
+    np.savetxt(osp.join(dir, 'logistic_fit_manual.txt'), logistic_fit_manual)
+
     init = [1, 0]
     popt, pcov = curve_fit(linear_max_curve, x[:m], diag_chi_step, p0 = init, maxfev = 2000)
     print('Linear_max popt', popt)
@@ -738,6 +742,8 @@ def modify_maxent_diag_chi(sample):
         plt.plot(log_max_fit, label = 'log_max', color = 'yellow')
     if logistic_fit is not None:
         plt.plot(logistic_fit, label = 'logistic', color = 'purple')
+    if logistic_fit_manual is not None:
+        plt.plot(logistic_fit_manual, label = 'logistic_manual', color = 'maroon')
     plt.plot(linear_max_fit, label = 'linear_max', color = 'brown')
     plt.legend()
     plt.savefig(osp.join(dir, 'meanDist_fit.png'))
@@ -749,6 +755,8 @@ def modify_maxent_diag_chi(sample):
         plt.plot(log_max_fit, label = 'log_max', color = 'yellow')
     if logistic_fit is not None:
         plt.plot(logistic_fit, label = 'logistic', color = 'purple')
+    if logistic_fit_manual is not None:
+        plt.plot(logistic_fit_manual, label = 'logistic_manual', color = 'maroon')
     plt.plot(linear_max_fit, label = 'linear_max', color = 'brown')
     plt.xscale('log')
     plt.legend()
@@ -808,7 +816,7 @@ if __name__ == '__main__':
     # construct_sc_xyz()
     # convergence_check()
     # main()
-    # plot_modified_max_ent(390)
-    # modify_maxent_diag_chi(244)
+    # plot_modified_max_ent(10)
+    modify_maxent_diag_chi(10)
     # makeDirsForMaxEnt("dataset_09_21_21")
     # test_logarithmic_diagonal()

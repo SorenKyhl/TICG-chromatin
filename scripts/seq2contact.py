@@ -10,8 +10,8 @@ from sequences_to_contact_maps.utils.argparse_utils import (ArgparserConverter,
                                                             get_base_parser)
 from sequences_to_contact_maps.utils.clean_directories import clean_directories
 from sequences_to_contact_maps.utils.dataset_classes import make_dataset
-from sequences_to_contact_maps.utils.energy_utils import (calculate_E_S,
-                                                          calculate_S, s_to_E)
+from sequences_to_contact_maps.utils.energy_utils import (
+    calculate_diag_chi_step, calculate_E_S, calculate_S, s_to_E)
 from sequences_to_contact_maps.utils.InteractionConverter import \
     InteractionConverter
 from sequences_to_contact_maps.utils.knightRuiz import knightRuiz
@@ -32,6 +32,5 @@ from sequences_to_contact_maps.utils.similarity_measures import SCC
 from sequences_to_contact_maps.utils.utils import (LETTERS,
                                                    DiagonalPreprocessing,
                                                    calc_dist_strat_corr, crop,
-                                                   get_diag_chi_step,
                                                    pearson_round)
 from sequences_to_contact_maps.utils.xyz_utils import xyz_load

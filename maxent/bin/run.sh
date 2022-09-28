@@ -102,7 +102,7 @@ get_rng ()
 # cd to scratch
 if ! [[ -d $scratchDir ]]
 then
-	echo "scratchDir does not exist"
+	echo "scratchDir does not exist ${scratchDir}"
 	exit 1
 fi
 cd $scratchDir
