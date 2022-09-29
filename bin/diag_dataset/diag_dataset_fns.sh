@@ -24,7 +24,7 @@ overwrite=1
 useS='true'
 useD='true'
 
-nSweeps=50000
+nSweeps=500000
 dumpFrequency=100000
 TICGSeed=10
 chiDiagMethod='logistic'
@@ -38,6 +38,7 @@ diagCutoff='none'
 phiChromatin=0.06
 diagStart=0
 bondLength=20
+trackContactMap='true'
 
 
 run()  {
