@@ -26,7 +26,7 @@ do
 					maxChi=$range
 
 		   		i=$(( $i + 1 ))
-					if [ $i == 89 ]
+					if [ $i == 90 ]
 					then
 				  	echo $i 'chiDiagSlope' $chiDiagSlope 'maxDiagChi' $maxDiagChi 'chiDiagMidpoint' $chiDiagMidpoint 'minMaxChi' $minChi $maxChi
 				  	run &
