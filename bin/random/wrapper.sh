@@ -5,7 +5,7 @@
 # chi="0&0\\0&0"
 m=1024
 today=$(date +'%m_%d_%y')
-dataFolder="/project2/depablo/dataset_test"
+dataFolder="/project2/depablo/dataset_09_28_22"
 startSample=4
 relabel='none'
 startNode=0
