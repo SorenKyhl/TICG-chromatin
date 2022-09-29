@@ -43,7 +43,7 @@ k=10
 nSweeps=1000000
 dumpFrequency=10000
 dumpStatsFrequency=100
-trackContactmap='true'
+trackContactMap='true'
 TICGSeed=10
 dense='false'
 diagBins=32
@@ -78,7 +78,7 @@ chiDiagMethod="linear"
 
 # this tests time comparison of various energy formalisms
 gridMoveOn='true'
-trackContactmap='false'
+trackContactMap='false'
 chiDiagMethod="linear"
 updateContactsDistance='true'
 

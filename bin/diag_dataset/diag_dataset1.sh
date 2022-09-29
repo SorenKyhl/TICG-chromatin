@@ -16,9 +16,11 @@ jobs=0
 waitCount=0
 for chiDiagSlope in 2 4 6
 do
-	for maxDiagChi in 2 3 4 5 6 7 8 10 12 14
+	for maxDiagChi in 2
+	 # 3 4 5 6 7 8 10 12 14
 	do
-		for chiDiagMidpoint in 20 25 30 35 40 45 50
+		for chiDiagMidpoint in 20 25
+		 # 30 35 40 45 50
 		do
 			for range in 2 4 6
 				do

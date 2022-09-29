@@ -27,7 +27,7 @@ do
 
 		   		i=$(( $i + 1 ))
 			  	echo $i 'chiDiagSlope' $chiDiagSlope 'maxDiagChi' $maxDiagChi 'chiDiagMidpoint' $chiDiagMidpoint 'minMaxChi' $minChi $maxChi
-			  	run &
+			  	# run &
 
 					jobs=$(( $jobs + 1 ))
 					if [ $jobs -gt 19 ]

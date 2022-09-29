@@ -6,11 +6,11 @@ param_setup
 dataFolder="/project2/depablo/erschultz/dataset_9_26_22"
 scratchDir='/home/erschultz/scratch-midway2'
 
-# dataFolder="/home/erschultz/dataset_9_26_22"
-# scratchDir='/home/erschultz/scratch'
+dataFolder="/home/erschultz/dataset_9_30_22"
+scratchDir='/home/erschultz/scratch'
 
 k=4
-m=1024
+m=4096
 relabel='none'
 lmbda='none'
 pSwitch=0.05
@@ -24,8 +24,8 @@ overwrite=1
 useS='true'
 useD='true'
 
-nSweeps=500000
-dumpFrequency=100000
+nSweeps=50000
+dumpFrequency=10000
 TICGSeed=10
 chiDiagMethod='logistic'
 dense='false'

@@ -14,7 +14,7 @@ param_setup() {
 	overwrite=1
 	dumpFrequency=50000
 	dumpStatsFrequency=100
-	trackContactmap='false'
+	trackContactMap='false'
 	gridMoveOn='true'
 	updateContactsDistance='false'
 	eConstant=0
@@ -88,7 +88,7 @@ random_inner() {
 	python3 ~/TICG-chromatin/scripts/get_params.py --method $seqMethod --exclusive $exclusive --m $m --p_switch $pSwitch --lmbda $lmbda --k $k --save_npy --seq_seed $seqSeed --chi=$chi --chi_method $chiMethod --chi_seed $chiSeed --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable --diag_chi_method $chiDiagMethod --diag_chi_slope $chiDiagSlope --diag_chi_scale $chiDiagScale --max_diag_chi $maxDiagChi --diag_bins $diagBins --chi_constant=$chiConstant --chi_multiplier=$chiMultiplier --diag_chi_constant=$chiDiagConstant --diag_chi_midpoint=$chiDiagMidpoint --dense_diagonal_on $dense --dense_diagonal_cutoff $denseCutoff --dense_diagonal_loading $denseLoading --m_continuous $mContinuous --small_binsize $smallBinSize --big_binsize $bigBinSize --n_small_bins $nSmallBins --n_big_bins $nBigBins --diag_start $diagStart --diag_cutoff $diagCutoff --plot > params.log
 
 	# set up config.json
-	python3 ~/TICG-chromatin/scripts/get_config.py --phi_chromatin $phiChromatin --bond_length $bondLength --m $m --n_sweeps $nSweeps --dump_stats_frequency $dumpStatsFrequency --dump_frequency $dumpFrequency --track_contactmap $trackContactmap --gridmove_on $gridMoveOn --update_contacts_distance $updateContactsDistance --TICG_seed $TICGSeed --constant_chi $constantChi --e_constant $eConstant --s_constant $sConstant --use_ematrix $useE --use_smatrix $useS --use_dmatrix $useD --load_configuration_filename $init_config --relabel $relabel --bond_type $bondType --parallel $parallel --num_threads $numThreads --dense_diagonal_on $dense > config.log
+	python3 ~/TICG-chromatin/scripts/get_config.py --phi_chromatin $phiChromatin --bond_length $bondLength --m $m --n_sweeps $nSweeps --dump_stats_frequency $dumpStatsFrequency --dump_frequency $dumpFrequency --track_contactmap $trackContactMap --gridmove_on $gridMoveOn --update_contacts_distance $updateContactsDistance --TICG_seed $TICGSeed --constant_chi $constantChi --e_constant $eConstant --s_constant $sConstant --use_ematrix $useE --use_smatrix $useS --use_dmatrix $useD --load_configuration_filename $init_config --relabel $relabel --bond_type $bondType --parallel $parallel --num_threads $numThreads --dense_diagonal_on $dense > config.log
 
 	# run simulation
 	~/TICG-chromatin/TICG-engine > log.log

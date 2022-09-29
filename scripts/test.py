@@ -875,9 +875,9 @@ def check_if_same():
 
 if __name__ == '__main__':
     # compare_y_diag()
-    check_if_same()
+    # check_if_same()
     # test_robust_PCA()
-    # check_dataset('dataset_9_26_22')
+    check_dataset('dataset_9_26_22')
     # time_comparison()
     # time_comparison_merge_PCA()
     # construct_sc_xyz()
