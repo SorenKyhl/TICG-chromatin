@@ -5,8 +5,9 @@ import os.path as osp
 import sys
 
 import numpy as np
-from seq2contact import (LETTERS, ArgparserConverter, calculate_E_S,
-                         calculate_S, crop, s_to_E)
+from seq2contact import (LETTERS, ArgparserConverter, calculate_D,
+                         calculate_diag_chi_step, calculate_E_S, calculate_S,
+                         crop, plot_matrix, s_to_E)
 from sklearn.metrics.pairwise import polynomial_kernel
 
 
@@ -71,6 +72,12 @@ def getArgs():
                         help='True to use e_matrix')
     parser.add_argument('--use_smatrix', type=AC.str2bool, default=False,
                         help='True to use s_matrix')
+    parser.add_argument('--use_dmatrix', type=AC.str2bool, default=False,
+                        help='True to use d_matrix')
+    parser.add_argument('--e_constant', type=float, default=0,
+                        help='constant to add to e')
+    parser.add_argument('--s_constant', type=float, default=0,
+                        help='constant to add to s')
 
     # diagonal config params
     parser.add_argument('--diag_pseudobeads_on', type=AC.str2bool, default=True)
@@ -162,6 +169,9 @@ def main():
     args = getArgs()
     print(args)
 
+    with open(args.config_ifile, 'rb') as f:
+        config = json.load(f)
+
     if args.m == -1:
         # need to infer m
         if osp.exists('x.npy'):
@@ -181,6 +191,9 @@ def main():
             raise Exception('Could not infer m')
         else:
             print(f'inferred m = {args.m}')
+
+    # save nbeads
+    config['nbeads'] = args.m
 
     # infer k
     if osp.exists('psi.npy'):
@@ -207,10 +220,6 @@ def main():
             y_gt = crop(np.load(y_gt_file), args.m)
             print(f'y_gt.shape = {y_gt.shape}')
             np.save('y_gt.npy', y_gt)
-
-
-    with open(args.config_ifile, 'rb') as f:
-        config = json.load(f)
 
     if args.relabel is not None:
         x = np.load('x.npy')
@@ -239,6 +248,9 @@ def main():
     else:
         args.chi = None
 
+    # save dense_diagonal
+    config['dense_diagonal_on'] = args.dense_diagonal_on
+
     # load diag chi
     diag_chis_file = 'diag_chis.npy'
     if args.use_ground_truth_diag_chi:
@@ -253,6 +265,15 @@ def main():
             diag_chis = np.array(sample_config["diag_chis"])
             config["diag_chis"] = list(diag_chis)
             np.save(diag_chis_file, diag_chis)
+    elif args.use_dmatrix:
+        assert args.use_ematrix or args.use_smatrix
+        config["diagonal_on"] = False
+        diag_chis = np.load('diag_chis.npy')
+        print(config)
+        diag_chis_step = calculate_diag_chi_step(config, diag_chis)
+        D = calculate_D(diag_chis_step)
+        np.save('D.npy', D)
+        Dprime = 2*D
     elif osp.exists(diag_chis_file):
         config["diagonal_on"] = True
         if args.max_ent:
@@ -266,9 +287,6 @@ def main():
 
     # save diag_pseudobeads_on
     config['diag_pseudobeads_on'] = args.diag_pseudobeads_on
-
-    # save dense_diagonal
-    config['dense_diagonal_on'] = args.dense_diagonal_on
 
     # set up psi
     if osp.exists('psi.npy'):
@@ -288,46 +306,19 @@ def main():
 
         e, s = calculate_E_S(psi, args.chi)
 
-        if args.use_smatrix:
-            np.savetxt('s_matrix.txt', s, fmt='%0.5f')
-            np.save('s.npy', s)
-        if args.use_ematrix:
-            np.savetxt('e_matrix.txt', e, fmt='%0.5f')
-            np.save('e.npy', e)
-            np.save('s.npy', s) # save s either way
-
-    # if args.e is not None:
-    #     assert args.use_ematrix
-    #     if osp.exists(args.e):
-    #         if args.e.endswith('.npy'):
-    #             e = np.load(args.e)
-    #         elif args.e.endswith('.txt'):
-    #             e = np.loadtxt(args.e)
-    #         else:
-    #             raise Exception(f'unrecongined file format for {args.e}')
-    #     else:
-    #         raise Exception(f'e does not exist at {args.e}')
-    #     np.savetxt('e_matrix.txt', e, fmt='%0.5f')
-    #     np.save('e.npy', e)
-    # elif args.s is not None:
-    #     assert args.use_smatrix or args.use_ematrix
-    #     if osp.exists(args.s):
-    #         if args.s.endswith('.npy'):
-    #             s = np.load(args.s)
-    #         elif args.s.endswith('.txt'):
-    #             s = np.loadtxt(args.s)
-    #         else:
-    #             raise Exception(f'unrecongined file format for {args.s}')
-    #     else:
-    #         raise Exception(f's does not exist at {args.s}')
-    #
-    #     np.save('s.npy', s)
-    #     if args.use_ematrix:
-    #         e = s_to_E(s)
-    #         np.savetxt('e_matrix.txt', e, fmt='%0.5f')
-    #         np.save('e.npy', e)
-    #     else:
-    #         np.savetxt('s_matrix.txt', s, fmt='%0.5f')
+    s += args.s_constant
+    e += args.e_constant
+    if args.use_dmatrix:
+        s += D
+        e += Dprime
+        # e = s_to_E(s)
+    if args.use_smatrix:
+        np.savetxt('s_matrix.txt', s, fmt='%0.5f')
+        np.save('s.npy', s)
+    if args.use_ematrix:
+        np.savetxt('e_matrix.txt', e, fmt='%0.5f')
+        np.save('e.npy', e)
+        np.save('s.npy', s) # save s either way
 
     if args.use_ematrix or args.use_smatrix:
         config['bead_type_files'] = None
@@ -378,9 +369,6 @@ def main():
         config['bond_type'] = args.bond_type
         if args.bond_type == 'gaussian':
             config["rotate_on"] = False
-
-    # save nbeads
-    config['nbeads'] = args.m
 
     # save nSweeps
     if args.n_sweeps is not None:

@@ -787,19 +787,60 @@ def test_logarithmic_diagonal():
     print(bounds)
 
 def compare_y_diag():
-    dir = '/home/erschultz/dataset_test'
+    dir = '/home/erschultz/dataset_test/samples'
 
-    dir = osp.join(dir, 'sample1')
-    y_diag = np.load(osp.join(dir, 'y_diag.npy'))
-    y_diag_log = np.log(y_diag)
+    #
+    # for sample in [1, 2, 3, 4]:
+    #     sample_dir = osp.join(dir, f'sample{sample}')
+    #     y_ticg = np.load(osp.join(sample_dir, 'y.npy'))
+    #     y_diag_ticg = np.load(osp.join(sample_dir, 'y_diag.npy'))
+    #     for sweep in [100000, 250000, 500000, 750000, 1000000]:
+    #         y = np.loadtxt(osp.join(sample_dir, 'data_out', f'contacts{sweep}.txt'))
+    #         np.save(osp.join(sample_dir, f'y_sweep{sweep}.npy'), y)
+    #         plot_matrix(y, osp.join(sample_dir, f'y_sweep{sweep}.png'), vmax = 'mean')
+    #
+    #         diff = y_ticg - y
+    #         plot_matrix(diff, osp.join(sample_dir, f'y_vs_y_sweep{sweep}.png'), title = f'y - y_sweep{sweep}', cmap='bluered')
+    #
+    #         meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
+    #         y_diag = DiagonalPreprocessing.process(y, meanDist)
+    #         plot_matrix(y_diag, osp.join(sample_dir, f'y_diag_sweep{sweep}.png'), vmax = 'max')
+    #
+    #         diff = y_diag_ticg - y_diag
+    #         plot_matrix(diff, osp.join(sample_dir, f'y_diag_vs_y_diag_sweep{sweep}.png'), title = f'y_diag - y_diag_sweep{sweep}', cmap='bluered')
+    #
+    mode='grid'
+    for sample in [1, 2, 3, 4]:
+        sample_dir = osp.join(dir, f'sample{sample}')
+        y_ticg = np.load(osp.join(sample_dir, 'y.npy'))
+        y_diag_ticg = np.load(osp.join(sample_dir, 'y_diag.npy'))
+        for size in [1000, 2500, 5000, 10000]:
+            y = np.loadtxt(osp.join(sample_dir, 'data_out', f'contacts{size}.txt'))
+            np.save(osp.join(sample_dir, f'y_{mode}{size}.npy'), y)
+            plot_matrix(y, osp.join(sample_dir, f'y_{mode}{size}.png'), vmax = 'mean')
 
-    dir = osp.join(dir, 'sample2')
-    y2_diag = np.load(osp.join(dir, 'y_diag.npy'))
-    y2_diag_log = np.log(y1000_diag)
+            diff = y_ticg - y
+            plot_matrix(diff, osp.join(sample_dir, f'y_vs_y_{mode}{size}.png'), title = f'y - y_{mode}{size}', cmap='bluered')
 
-    diff = y_diag - y1000_diag
-    plot_matrix(diff, osp.join(dir, 'diagvs1000diag.png'), 'diag - 1000diag', vmin = 'min',
-                vmax = 'max', cmap = 'bluered')
+            meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
+            y_diag = DiagonalPreprocessing.process(y, meanDist)
+            plot_matrix(y_diag, osp.join(sample_dir, f'y_diag_{mode}{size}.png'), vmax = 'max')
+
+            diff = y_diag_ticg - y_diag
+            plot_matrix(diff, osp.join(sample_dir, f'y_diag_vs_y_diag_{mode}{size}.png'), title = f'y_diag - y_diag_{mode}{size}', cmap='bluered')
+
+
+    # dir = osp.join(dir, 'sample1')
+    # y_diag = np.load(osp.join(dir, 'y_diag.npy'))
+    # y_diag_log = np.log(y_diag)
+    #
+    # dir = osp.join(dir, 'sample2')
+    # y2_diag = np.load(osp.join(dir, 'y_diag.npy'))
+    # y2_diag_log = np.log(y1000_diag)
+    #
+    # diff = y_diag - y1000_diag
+    # plot_matrix(diff, osp.join(dir, 'diagvs1000diag.png'), 'diag - 1000diag', vmin = 'min',
+    #             vmax = 'max', cmap = 'bluered')
 
     # diff = y_diag - y5000_diag
     # plot_matrix(diff, osp.join(dir, 'diagvs5000diag.png'), 'diag - 5000diag', vmin = 'min',
@@ -817,12 +858,26 @@ def compare_y_diag():
     # plot_matrix(diff, osp.join(dir, 'diag5000logvs1000diaglog.png'), '5000diaglog - 1000diaglog', vmin = 'min',
     #             vmax = 'max', cmap = 'bluered')
 
+def check_if_same():
+    # check if contact maps are identical
+    dir = '/home/erschultz/dataset_test/samples'
+
+    y_ref = np.load(osp.join(dir, 'sample10/y.npy'))
+
+    for s in [5, 11]:
+        print('s', s)
+        sample_dir = osp.join(dir, f'sample{s}')
+        y = np.load(osp.join(sample_dir, 'y.npy'))
+        diff = y_ref - y
+        print(np.mean(diff))
+        plot_matrix(diff, osp.join(sample_dir, 'diff.png'), cmap='bluered')
 
 
 if __name__ == '__main__':
     # compare_y_diag()
+    check_if_same()
     # test_robust_PCA()
-    check_dataset('dataset_9_26_22')
+    # check_dataset('dataset_9_26_22')
     # time_comparison()
     # time_comparison_merge_PCA()
     # construct_sc_xyz()

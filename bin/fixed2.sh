@@ -3,7 +3,7 @@
 source ~/TICG-chromatin/bin/random/random_fns.sh
 
 param_setup
-m=2048
+m=1024
 dataFolder="/home/erschultz/dataset_test"
 scratchDir='/home/erschultz/scratch'
 relabel='none'
@@ -11,8 +11,7 @@ lmbda=0.8
 chiSeed='31'
 seqSeed='31'
 chiMethod="/home/erschultz/sequences_to_contact_maps/dataset_04_27_22/samples/sample1/chis.npy"
-seqMethod="random"
-# "/home/erschultz/sequences_to_contact_maps/dataset_04_27_22/samples/sample1/psi.npy"
+seqMethod="/home/erschultz/sequences_to_contact_maps/dataset_04_27_22/samples/sample1/psi.npy"
 minChi=-0.4
 maxChi=0.4
 fillDiag='none'
@@ -41,12 +40,12 @@ run()  {
 # mv TICG-engine ..
 
 k=10
-nSweeps=500000
-dumpFrequency=1000
-dumpStatsFrequency=200
+nSweeps=1000000
+dumpFrequency=10000
+dumpStatsFrequency=100
 trackContactmap='true'
 TICGSeed=10
-dense='true'
+dense='false'
 diagBins=32
 maxDiagChi=10
 nSmallBins=16
@@ -65,7 +64,7 @@ chiDiagMethod="linear"
 # i=2
 # gridMoveOn='false'
 # run &
-
+#
 # i=3
 # gridMoveOn='true'
 # updateContactsDistance='true'
@@ -81,25 +80,72 @@ chiDiagMethod="linear"
 gridMoveOn='true'
 trackContactmap='false'
 chiDiagMethod="linear"
+updateContactsDistance='true'
 
-# # baseline
-# i=5
-# run &
-#
-# # 2x bins
-# i=6
-# diagBins=64
-# run &
+# baseline
+i=5
+run &
+
+# 2x bins
+i=6
+diagBins=64
+run &
 
 # 4x bins
 i=7
 diagBins=128
 run &
 
-# # e matrix
-# i=8
-# diagBins=32
+# s matrix
+i=8
+diagBins=32
+useE='false'
+useS='true'
+run &
+
+# e matrix
+i=9
+useE='true'
+useS='false'
+run &
+
+# s+d matrix
+i=10
+useE='false'
+useD='true'
+useS='true'
+run &
+
+# e+d matrix
+i=11
+useE='true'
+useD='true'
+useS='false'
+run &
+
+# i=12
+# chiDiagMethod='linear'
 # useE='true'
+# useD='false'
+# useS='false'
+# run &
+# #
+# i=13
+# constantChi=2
+# run &
+#
+# i=14
+# constantChi=0
+# chiDiagConstant=2
+# run &
+#
+# i=15
+# constantChi=0
+# chiDiagConstant=0
+# eConstant=0
+# sConstant=2
+# useE='false'
+# useS='true'
 # run &
 
 wait

@@ -1446,7 +1446,21 @@ void Sim::dumpEnergy(int sweep) {
 	double bonded = 0;
 	bonded = bonded_on ? getAllBondedEnergy() : 0;
 	double plaid = 0;
-	plaid = plaid_on ? getJustPlaidEnergy(grid.active_cells) : 0; // includes diagonal and boundary energy
+  if (plaid_on)
+  {
+    if (smatrix_on)
+    {
+      plaid = grid.SmatrixEnergy(grid.active_cells, smatrix, chis);
+    }
+    else if (ematrix_on)
+    {
+      plaid = grid.EmatrixEnergy(grid.active_cells, ematrix, chis);
+    }
+    else
+    {
+      plaid = grid.energy(grid.active_cells, chis);
+    }
+  }
 	double diagonal = 0;
 	diagonal = diagonal_on ? getJustDiagEnergy(grid.active_cells) : 0;
 	double boundary = 0;
