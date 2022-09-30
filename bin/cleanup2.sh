@@ -6,18 +6,25 @@
 #SBATCH --ntasks=10
 #SBATCH --mem-per-cpu=1000
 
-dir="/project2/depablo/erschultz/michrom/project/chr_05/chr_05_02"
+dir=/project2/depablo/erschultz/dataset_05_18_22/samples
 
-cd $dir
-rm -r sc_contacts
+rm -r "${dir}/sample16"
+rm -r "${dir}/sample17"
+rm -r "${dir}/sample18"
 
-for i in 0 1 2 3
+for i in $(seq 1 15)
 do
-  rm -r "${dir}/contact_diffusion_eig2/iteration_${i}/sc_contacts" &
-  rm -r "${dir}/contact_diffusion_kNN3/iteration_${i}/sc_contacts" &
+  cd "${dir}/sample${i}"
+  rm *.png
+  rm *.txt
+  rm -r PCA-normalize-diagMLP*
+  rm -r GNN-150-E
 done
 
-wait
+dir=/project2/depablo/erschultz/dataset_11_03_21/samples
+for i in $(seq 1 2000)
+do
+  cd "${dir}/sample${i}"
+  rm -r data_out
 
-cd ~/scratch-midway2
-rm -r dataset_05_12_12
+done
