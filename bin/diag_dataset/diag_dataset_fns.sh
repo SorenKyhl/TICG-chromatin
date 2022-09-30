@@ -6,8 +6,8 @@ param_setup
 dataFolder="/project2/depablo/erschultz/dataset_09_30_22"
 scratchDir='/home/erschultz/scratch-midway2'
 #
-dataFolder="/home/erschultz/dataset_9_30_22"
-scratchDir='/home/erschultz/scratch'
+# dataFolder="/home/erschultz/dataset_9_30_22"
+# scratchDir='/home/erschultz/scratch'
 
 k=4
 m=1024
@@ -24,7 +24,7 @@ overwrite=1
 useS='true'
 useD='true'
 
-nSweeps=50000
+nSweeps=500000
 dumpFrequency=100000
 TICGSeed=10
 chiDiagMethod='logistic'
