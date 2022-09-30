@@ -272,7 +272,6 @@ def main():
         print(config)
         diag_chis_step = calculate_diag_chi_step(config, diag_chis)
         D = calculate_D(diag_chis_step)
-        np.save('D.npy', D)
         Dprime = 2*D
     elif osp.exists(diag_chis_file):
         config["diagonal_on"] = True
@@ -309,14 +308,13 @@ def main():
     s += args.s_constant
     e += args.e_constant
     if args.use_dmatrix:
-        s += D
-        e += Dprime
-        # e = s_to_E(s)
+        sD = s + D
+        eD = e + Dprime
     if args.use_smatrix:
-        np.savetxt('s_matrix.txt', s, fmt='%0.5f')
+        np.savetxt('sd_matrix.txt', sD, fmt='%0.5f')
         np.save('s.npy', s)
     if args.use_ematrix:
-        np.savetxt('e_matrix.txt', e, fmt='%0.5f')
+        np.savetxt('ed_matrix.txt', eD, fmt='%0.5f')
         np.save('e.npy', e)
         np.save('s.npy', s) # save s either way
 
@@ -329,11 +327,11 @@ def main():
             assert not args.use_ematrix, 'Cannot use smatrix and ematrix'
             # save smatrix_on
             config['smatrix_on'] = True
-            config["smatrix_filename"] = "s_matrix.txt"
+            config["smatrix_filename"] = "sd_matrix.txt"
         else:
             # save ematrix_on
             config['ematrix_on'] = True
-            config["ematrix_filename"] = "e_matrix.txt"
+            config["ematrix_filename"] = "ed_matrix.txt"
     elif args.k == 0:
             config['plaid_on'] = False
             config['bead_type_files'] = None

@@ -1,18 +1,36 @@
 #! /bin/bash
 #SBATCH --job-name=cleanup
 #SBATCH --output=logFiles/cleanup.out
-#SBATCH --time=2:30:00
+#SBATCH --time=6:30:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=10
 #SBATCH --mem-per-cpu=1000
 
-dir=/project2/depablo/erschultz/dataset_09_21_21/samples
+dir=/project2/depablo/erschultz/dataset_09_26_22/samples
 
-for i in 1 2 8 14 20
+for i in $(seq 1 2520)
 do
   cd "${dir}/sample${i}"
-  cd GNN-137-E-diagOn
-  rm -r k
-  cd ../GNN-109-E-diagOn
-  rm -r k
+  rm *.png
+  rm y_diag.npy
+  rm *.txt
+done
+
+dir=/project2/depablo/erschultz/dataset_04_27_22/samples
+
+for i in $(seq 1 2000)
+do
+  cd "${dir}/sample${i}"
+  rm *.png
+  rm *.txt
+done
+
+dir=/project2/depablo/erschultz/dataset_05_12_22/samples
+
+for i in $(seq 1 2000)
+do
+  cd "${dir}/sample${i}"
+  rm *.png
+  rm *.txt
+  rm e.npy
 done

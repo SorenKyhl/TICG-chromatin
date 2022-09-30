@@ -3,11 +3,11 @@
 source ~/TICG-chromatin/bin/random/random_fns.sh
 
 param_setup
-dataFolder="/project2/depablo/erschultz/dataset_09_26_22"
+dataFolder="/project2/depablo/erschultz/dataset_09_30_22"
 scratchDir='/home/erschultz/scratch-midway2'
 #
-# dataFolder="/home/erschultz/dataset_9_30_22"
-# scratchDir='/home/erschultz/scratch'
+dataFolder="/home/erschultz/dataset_9_30_22"
+scratchDir='/home/erschultz/scratch'
 
 k=4
 m=1024
@@ -24,7 +24,7 @@ overwrite=1
 useS='true'
 useD='true'
 
-nSweeps=500000
+nSweeps=50000
 dumpFrequency=100000
 TICGSeed=10
 chiDiagMethod='logistic'
@@ -38,7 +38,7 @@ diagCutoff='none'
 phiChromatin=0.06
 diagStart=0
 bondLength=20
-trackContactMap='false'
+trackContactMap='true'
 
 
 run()  {

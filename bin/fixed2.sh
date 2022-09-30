@@ -4,7 +4,7 @@ source ~/TICG-chromatin/bin/random/random_fns.sh
 
 param_setup
 m=1024
-dataFolder="/home/erschultz/dataset_test"
+dataFolder="/home/erschultz/sequences_to_contact_maps/dataset_04_27_22"
 scratchDir='/home/erschultz/scratch'
 relabel='none'
 lmbda=0.8
@@ -58,6 +58,17 @@ bondLength=28
 
 # this tests if grid move is a problem, and if the TICG simulations have any systematic bias as a function of time
 chiDiagMethod="linear"
+i=10
+maxDiagChi=10
+run &
+
+i=20
+maxDiagChi=20
+run &
+
+
+
+
 # i=1
 # run &
 #
@@ -83,45 +94,45 @@ chiDiagMethod="linear"
 updateContactsDistance='true'
 
 # baseline
-i=5
-run &
-
-# 2x bins
-i=6
-diagBins=64
-run &
-
-# 4x bins
-i=7
-diagBins=128
-run &
-
-# s matrix
-i=8
-diagBins=32
-useE='false'
-useS='true'
-run &
-
-# e matrix
-i=9
-useE='true'
-useS='false'
-run &
-
-# s+d matrix
-i=10
-useE='false'
-useD='true'
-useS='true'
-run &
-
-# e+d matrix
-i=11
-useE='true'
-useD='true'
-useS='false'
-run &
+# i=5
+# run &
+#
+# # 2x bins
+# i=6
+# diagBins=64
+# run &
+#
+# # 4x bins
+# i=7
+# diagBins=128
+# run &
+#
+# # s matrix
+# i=8
+# diagBins=32
+# useE='false'
+# useS='true'
+# run &
+#
+# # e matrix
+# i=9
+# useE='true'
+# useS='false'
+# run &
+#
+# # s+d matrix
+# i=10
+# useE='false'
+# useD='true'
+# useS='true'
+# run &
+#
+# # e+d matrix
+# i=11
+# useE='true'
+# useD='true'
+# useS='false'
+# run &
 
 # i=12
 # chiDiagMethod='linear'

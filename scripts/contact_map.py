@@ -28,6 +28,8 @@ def getArgs():
                         help='true to save y as .npy')
     parser.add_argument('--random_mode', action='store_true',
                         help='true for random_mode, default is max_ent mode')
+    parser.add_argument('--plot', action='store_true',
+                        help='True to plot data, False to just save')
 
     # random_mode
     parser.add_argument('--sample_folder', type=str, default='',
@@ -81,7 +83,8 @@ def main():
         else:
             raise Exception(f"y path does not exist: {y_path}")
 
-    plot_matrix(y, ofile = osp.join(args.save_folder, 'y.png'), vmax = 'mean')
+    if args.plot:
+        plot_matrix(y, ofile = osp.join(args.save_folder, 'y.png'), vmax = 'mean')
 
     if args.random_mode:
         if args.k == 0:
@@ -96,7 +99,7 @@ def main():
     meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
     y_diag = DiagonalPreprocessing.process(y, meanDist)
 
-    if args.m < 5000:
+    if args.m < 5000 and args.plot:
         # takes a long time for large m and not really necessary
         plot_matrix(y_diag, ofile = osp.join(args.save_folder, 'y_diag.png'),
                     vmax = 'max')
@@ -183,37 +186,38 @@ def main():
 
 
     # meanDist
-    diag_chi_step = calculate_diag_chi_step(config)
-    if args.random_mode:
-        plot_mean_vs_genomic_distance(y, args.save_folder, 'meanDist.png',
-                                        diag_chi_step)
-        plot_mean_vs_genomic_distance(y, args.save_folder, 'meanDist.png',
-                                        diag_chi_step, logx = True)
+    if args.plot:
+        diag_chi_step = calculate_diag_chi_step(config)
+        if args.random_mode:
+            plot_mean_vs_genomic_distance(y, args.save_folder, 'meanDist.png',
+                                            diag_chi_step)
+            plot_mean_vs_genomic_distance(y, args.save_folder, 'meanDist.png',
+                                            diag_chi_step, logx = True)
 
-    else:
-        meanDist_max_ent = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
-        y_gt_file = osp.join(args.replicate_folder, 'resources', 'y_gt.npy')
-        if osp.exists(y_gt_file):
-            y_gt = np.load(y_gt_file)
-            meanDist_gt = DiagonalPreprocessing.genomic_distance_statistics(y_gt, 'prob')
-            mse = mean_squared_error(meanDist_max_ent, meanDist_gt)
-            title = f'MSE: {np.round(mse, 9)}'
         else:
-            meanDist_gt = None
-            title = None
+            meanDist_max_ent = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+            y_gt_file = osp.join(args.replicate_folder, 'resources', 'y_gt.npy')
+            if osp.exists(y_gt_file):
+                y_gt = np.load(y_gt_file)
+                meanDist_gt = DiagonalPreprocessing.genomic_distance_statistics(y_gt, 'prob')
+                mse = mean_squared_error(meanDist_max_ent, meanDist_gt)
+                title = f'MSE: {np.round(mse, 9)}'
+            else:
+                meanDist_gt = None
+                title = None
 
-        if args.final_it == 1:
-            sim_label = 'MLP'
-            color = 'green'
-        else:
-            sim_label = 'Max Ent'
-            color = 'blue'
-        plot_mean_dist(meanDist_max_ent, args.save_folder, 'meanDist.png',
-                        diag_chi_step, False, meanDist_gt, 'Reference', sim_label,
-                        color, title)
-        plot_mean_dist(meanDist_max_ent, args.save_folder, 'meanDist_log.png',
-                        diag_chi_step, True, meanDist_gt, 'Reference', sim_label,
-                        color, title)
+            if args.final_it == 1:
+                sim_label = 'MLP'
+                color = 'green'
+            else:
+                sim_label = 'Max Ent'
+                color = 'blue'
+            plot_mean_dist(meanDist_max_ent, args.save_folder, 'meanDist.png',
+                            diag_chi_step, False, meanDist_gt, 'Reference', sim_label,
+                            color, title)
+            plot_mean_dist(meanDist_max_ent, args.save_folder, 'meanDist_log.png',
+                            diag_chi_step, True, meanDist_gt, 'Reference', sim_label,
+                            color, title)
 
 
 if __name__ == '__main__':

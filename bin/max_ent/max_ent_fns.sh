@@ -97,7 +97,7 @@ max_ent_resume_inner(){
   cd $odir
 
   # compare results
-  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --k $k --replicate_folder $odir --save_npy > contact.log
+  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --k $k --replicate_folder $odir --save_npy --plot > contact.log
   python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${odir}/y.npy" --y_diag "$sampleFolder/y_diag.npy" --yhat_diag "${odir}/y_diag.npy" >> contact.log
 
   echo ''

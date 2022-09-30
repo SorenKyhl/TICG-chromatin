@@ -16,9 +16,11 @@ jobs=0
 waitCount=0
 for chiDiagSlope in 2 4 6
 do
-	for maxDiagChi in 2 3 4 5 6 7 8 10 12 14
+	for maxDiagChi in 2
+	 # 3 4 5 6 7 8 10 12 14
 	do
-		for chiDiagMidpoint in 20 25 30 35 40 45 50
+		for chiDiagMidpoint in 20
+		# 25 30 35 40 45 50
 		do
 			for range in 2 4 6
 				do
@@ -26,19 +28,16 @@ do
 					maxChi=$range
 
 		   		i=$(( $i + 1 ))
-					if [ $i == 90 ]
-					then
-				  	echo $i 'chiDiagSlope' $chiDiagSlope 'maxDiagChi' $maxDiagChi 'chiDiagMidpoint' $chiDiagMidpoint 'minMaxChi' $minChi $maxChi
-				  	run &
+			  	echo $i 'chiDiagSlope' $chiDiagSlope 'maxDiagChi' $maxDiagChi 'chiDiagMidpoint' $chiDiagMidpoint 'minMaxChi' $minChi $maxChi
+			  	run &
 
-						jobs=$(( $jobs + 1 ))
-						if [ $jobs -gt 19 ]
-						then
-							echo 'Waiting'
-							waitCount=$(( $waitCount + 1 ))
-							wait
-							jobs=0
-						fi
+					jobs=$(( $jobs + 1 ))
+					if [ $jobs -gt 19 ]
+					then
+						echo 'Waiting'
+						waitCount=$(( $waitCount + 1 ))
+						wait
+						jobs=0
 					fi
 				done
 		  done
