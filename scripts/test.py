@@ -860,24 +860,24 @@ def compare_y_diag():
 
 def check_if_same():
     # check if contact maps are identical
-    dir = '/home/erschultz/dataset_test/samples'
+    dir = '/home/erschultz/sequences_to_contact_maps/dataset_04_27_22/samples'
 
-    y_ref = np.load(osp.join(dir, 'sample10/y.npy'))
+    y_ref = np.load(osp.join(dir, 'sample10/y_diag.npy'))
 
-    for s in [5, 11]:
+    for s in [20]:
         print('s', s)
         sample_dir = osp.join(dir, f'sample{s}')
-        y = np.load(osp.join(sample_dir, 'y.npy'))
+        y = np.load(osp.join(sample_dir, 'y_diag.npy'))
         diff = y_ref - y
         print(np.mean(diff))
-        plot_matrix(diff, osp.join(sample_dir, 'diff.png'), cmap='bluered')
+        plot_matrix(diff, osp.join(sample_dir, 'diff.png'), cmap='bluered', vmin = -7, vmax = 7)
 
 
 if __name__ == '__main__':
     # compare_y_diag()
-    # check_if_same()
+    check_if_same()
     # test_robust_PCA()
-    check_dataset('dataset_09_26_22')
+    # check_dataset('dataset_09_26_22')
     # time_comparison()
     # time_comparison_merge_PCA()
     # construct_sc_xyz()
