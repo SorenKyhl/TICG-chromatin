@@ -6,10 +6,6 @@
 #SBATCH --ntasks=10
 #SBATCH --mem-per-cpu=1000
 
-dir=/project2/depablo/erschultz/dataset_09_26_22/samples
+dir=/project2/depablo/erschultz/dataset_09_26_22
 
-for i in $(seq 1 2520)
-do
-  cd "${dir}/sample${i}"
-  rm D.npy
-done
+rm -r $dir
