@@ -16,7 +16,7 @@ from seq2contact import (LETTERS, ArgparserConverter, DiagonalPreprocessing,
                          knightRuiz, load_E_S, load_final_max_ent_S,
                          load_saved_model, load_X_psi, load_Y, load_Y_diag,
                          plot_matrix, plot_seq_binary, plot_seq_exclusive,
-                         project_S_to_psi_basis, s_to_E)
+                         project_S_to_psi_basis, s_to_E, triu_to_full)
 from sklearn.cluster import KMeans
 from sklearn.decomposition import NMF, PCA, KernelPCA
 
@@ -133,26 +133,26 @@ class GetSeq():
             return
 
         if args.binarize:
-            if args.method in {'k_means', 'chromhmm'}:
+            if args.method_base in {'k_means', 'chromhmm'}:
                 print(f"{args.method} is binarized by default")
-            elif args.method in {'nmf'} or args.method.startswith('block'):
+            elif args.method_base in {'nmf'} or args.method_base.startswith('block'):
                 args.exclusive = True # will also be exclusive
             else:
-                raise Exception(f'binarize not yet supported for {args.method}')
+                raise Exception(f'binarize not yet supported for {args.method_base}')
         if args.normalize:
-            if args.method.startswith('pca') or args.method.startswith('rpca'):
+            if args.method_base == 'pca' or args.method_base == 'rpca':
                 pass
             else:
-                raise Exception(f'normalize not yet supported for {args.method}')
+                raise Exception(f'normalize not yet supported for {args.method_base}')
         if args.exclusive:
-            if args.method in {'nmf'} or args.method.startswith('block'):
+            if args.method_base in {'nmf'} or args.method_base.startswith('block'):
                 args.binarize = True # will also be binary
-            elif args.method in {'random'}:
+            elif args.method_base in {'random'}:
                 pass
             else:
-                raise Exception(f'exclusive not yet supported for {args.method}')
+                raise Exception(f'exclusive not yet supported for {args.method_base}')
         if args.scale_resolution != 1:
-            assert args.method == 'random', f"{args.method} not supported yet"
+            assert args.method_base == 'random', f"{args.method_base} not supported yet"
 
     def _process_method(self, args):
         if args.method is None:
@@ -171,11 +171,8 @@ class GetSeq():
         args.diag = False # (for RPCA) apply diagonal processing
         args.add_constant = False # add constant seq (all ones)
 
-
-        args.method = args.method.lower()
-        args.method_copy = args.method
-        method_split = re.split(r'[-+]', args.method)
-        method_split.pop(0)
+        method_split = re.split(r'[-+]', args.method.lower())
+        args.method_base = method_split.pop(0)
         modes = set(method_split)
 
         if 'x' in modes:
@@ -599,85 +596,87 @@ class GetSeq():
                 seq = np.load(args.method)
             else:
                 raise Exception(f'Unrecognized file format {args.chi_method}')
-        elif args.method == 'pca-soren':
-            files = [osp.join(self.sample_folder, f'pcf{i}.txt') for i in range(1,self.k)]
-            seq = np.zeros((self.m, self.k))
-            for i, f in enumerate(files):
-                seq[:, i] = np.loadtxt(f)
-        elif args.method.startswith('random'):
-            seq = self.get_random_seq(args.lmbda, args.f, args.p_switch, args.seq_seed, args.exclusive,
-                                        args.scale_resolution)
-        elif args.method.startswith('block'):
-            seq = self.get_block_seq(args.method)
-        elif args.method.startswith('pca_split'):
-            y_diag = load_Y_diag(self.sample_folder)
-            seq = self.get_PCA_split_seq(y_diag)
-        elif args.method.startswith('pca'):
-            y_diag = load_Y_diag(self.sample_folder)
-            seq = self.get_PCA_seq(y_diag, args.normalize, args.scale)
-        elif args.method.startswith('rpca'):
-            L_file = osp.join(self.sample_folder, 'PCA_analysis', 'L_log.npy')
-            if osp.exists(L_file):
-                L = np.load(L_file)
-                if args.exp:
-                    L = np.exp(L)
-                if args.diag:
-                    meanDist = DiagonalPreprocessing.genomic_distance_statistics(L)
-                    L = DiagonalPreprocessing.process(L, meanDist)
-                seq = self.get_PCA_seq(L, args.normalize, args.scale)
-            else:
-                y = np.load(osp.join(self.sample_folder, 'y.npy'))
-                seq = self.get_RPCA_seq(y, args.normalize, args.exp, args.diag)
-        elif args.method.startswith('kpca'):
-            if args.input == 'y':
-                input = load_Y_diag(self.sample_folder)
-            elif args.input == 'x':
-                input = np.load(osp.join(self.sample_folder, 'x.npy'))
-            elif args.input == 'psi':
-                input = np.load(osp.join(self.sample_folder, 'psi.npy'))
-            seq = self.get_PCA_seq(input, args.normalize, args.scale, use_kernel = True, kernel = args.kernel)
-        elif args.method.startswith('ground_truth'):
-            x, psi = load_X_psi(self.sample_folder, throw_exception = False)
-
-            if args.input is None:
-                assert args.use_ematrix or args.use_smatrix, 'missing input'
-            elif args.input == 'x':
-                assert x is not None
-                seq = x
-                print(f'seq loaded with shape {seq.shape}')
-            elif args.input == 'psi':
-                assert psi is not None
-                seq = psi
-                # this input will reproduce ground_truth-S barring random seed
-                print(f'seq loaded with shape {seq.shape}')
-            else:
-                raise Exception(f'Unrecognized input mode {args.input} for method {args.method} '
-                                f'for sample {self.sample_folder}')
-
-            if args.append_random:
-                # TODO this is broken
-                assert not args.use_smatrix and not args.use_ematrix
-                _, k = seq.shape
-                assert args.k > k, f"{args.k} not > {k}"
-                seq_random = GetSeq(args.m, args.k - k).get_random_seq(args.lmbda, args.f, args.p_switch, args.seq_seed)
-                seq = np.concatenate((seq, seq_random), axis = 1)
-
-            if args.use_smatrix or args.use_ematrix:
-                e, s = load_E_S(self.sample_folder, psi)
-        elif args.method.startswith('k_means') or args.method.startswith('k-means'):
-            y_diag = np.load(osp.join(self.sample_folder, 'y_diag.npy'))
-            seq, args.labels = self.get_k_means_seq(y_diag)
-            args.X = y_diag
-        elif args.method.startswith('nmf'):
-            y_diag = np.load(osp.join(self.sample_folder, 'y_diag.npy'))
-            seq, args.labels = self.get_nmf_seq(y_diag, args.binarize)
-            args.X = y_diag
-        elif args.method.startswith('epigenetic'):
-            seq, marks = self.get_epigenetic_seq(args.epigenetic_data_folder)
-        elif args.method.startswith('chromhmm'):
-            seq, labels = self.get_ChromHMM_seq(args.ChromHMM_data_file)
         else:
-            raise Exception(f'Unkown method: {args.method}')
+            args.method = args.method.lower()
+            if args.method == 'pca-soren':
+                files = [osp.join(self.sample_folder, f'pcf{i}.txt') for i in range(1,self.k)]
+                seq = np.zeros((self.m, self.k))
+                for i, f in enumerate(files):
+                    seq[:, i] = np.loadtxt(f)
+            elif args.method.startswith('random'):
+                seq = self.get_random_seq(args.lmbda, args.f, args.p_switch, args.seq_seed, args.exclusive,
+                                            args.scale_resolution)
+            elif args.method.startswith('block'):
+                seq = self.get_block_seq(args.method)
+            elif args.method.startswith('pca_split'):
+                y_diag = load_Y_diag(self.sample_folder)
+                seq = self.get_PCA_split_seq(y_diag)
+            elif args.method.startswith('pca'):
+                y_diag = load_Y_diag(self.sample_folder)
+                seq = self.get_PCA_seq(y_diag, args.normalize, args.scale)
+            elif args.method.startswith('rpca'):
+                L_file = osp.join(self.sample_folder, 'PCA_analysis', 'L_log.npy')
+                if osp.exists(L_file):
+                    L = np.load(L_file)
+                    if args.exp:
+                        L = np.exp(L)
+                    if args.diag:
+                        meanDist = DiagonalPreprocessing.genomic_distance_statistics(L)
+                        L = DiagonalPreprocessing.process(L, meanDist)
+                    seq = self.get_PCA_seq(L, args.normalize, args.scale)
+                else:
+                    y = np.load(osp.join(self.sample_folder, 'y.npy'))
+                    seq = self.get_RPCA_seq(y, args.normalize, args.exp, args.diag)
+            elif args.method.startswith('kpca'):
+                if args.input == 'y':
+                    input = load_Y_diag(self.sample_folder)
+                elif args.input == 'x':
+                    input = np.load(osp.join(self.sample_folder, 'x.npy'))
+                elif args.input == 'psi':
+                    input = np.load(osp.join(self.sample_folder, 'psi.npy'))
+                seq = self.get_PCA_seq(input, args.normalize, args.scale, use_kernel = True, kernel = args.kernel)
+            elif args.method.startswith('ground_truth'):
+                x, psi = load_X_psi(self.sample_folder, throw_exception = False)
+
+                if args.input is None:
+                    assert args.use_ematrix or args.use_smatrix, 'missing input'
+                elif args.input == 'x':
+                    assert x is not None
+                    seq = x
+                    print(f'seq loaded with shape {seq.shape}')
+                elif args.input == 'psi':
+                    assert psi is not None
+                    seq = psi
+                    # this input will reproduce ground_truth-S barring random seed
+                    print(f'seq loaded with shape {seq.shape}')
+                else:
+                    raise Exception(f'Unrecognized input mode {args.input} for method {args.method} '
+                                    f'for sample {self.sample_folder}')
+
+                if args.append_random:
+                    # TODO this is broken
+                    assert not args.use_smatrix and not args.use_ematrix
+                    _, k = seq.shape
+                    assert args.k > k, f"{args.k} not > {k}"
+                    seq_random = GetSeq(args.m, args.k - k).get_random_seq(args.lmbda, args.f, args.p_switch, args.seq_seed)
+                    seq = np.concatenate((seq, seq_random), axis = 1)
+
+                if args.use_smatrix or args.use_ematrix:
+                    e, s = load_E_S(self.sample_folder, psi)
+            elif args.method.startswith('k_means') or args.method.startswith('k-means'):
+                y_diag = np.load(osp.join(self.sample_folder, 'y_diag.npy'))
+                seq, args.labels = self.get_k_means_seq(y_diag)
+                args.X = y_diag
+            elif args.method.startswith('nmf'):
+                y_diag = np.load(osp.join(self.sample_folder, 'y_diag.npy'))
+                seq, args.labels = self.get_nmf_seq(y_diag, args.binarize)
+                args.X = y_diag
+            elif args.method.startswith('epigenetic'):
+                seq, marks = self.get_epigenetic_seq(args.epigenetic_data_folder)
+            elif args.method.startswith('chromhmm'):
+                seq, labels = self.get_ChromHMM_seq(args.ChromHMM_data_file)
+            else:
+                raise Exception(f'Unkown method: {args.method}')
 
         m, k = seq.shape
         assert m == self.m, f"m mismatch: seq has {m} particles not {self.m}"
@@ -763,24 +762,29 @@ class GetPlaidChi():
             else:
                 raise Exception(f'Unrecognized file format {args.chi_method}')
             rows, cols = chi.shape
-            assert self.k == rows, f'number of particle types {self.k} does not match shape of chi {rows}'
+            if rows > self.k and cols > self.k:
+                chi = triu_to_full(chi[-1])
+                rows, cols = chi.shape
+            assert self.k == rows, f'number of particle types {self.k} does not match shape of chi {rows, cols}'
             assert rows == cols, f"chi not square: {chi}"
-        elif args.chi_method == 'zero':
-            chi = np.zeros((self.k, self.k))
-        elif args.chi_method == 'random':
-            chi = self.random_chi()
-        elif args.chi_method.startswith('polynomial'):
-            x = np.load('x.npy') # original particle types that interact nonlinearly
-            ind = np.triu_indices(self.k)
-            self.k = int(self.k*(self.k+1)/2)
-            psi = np.zeros((self.m, self.k))
-            for i in range(self.m):
-                psi[i] = np.outer(x[i], x[i])[ind]
-
-            np.save('psi.npy', psi)
-            chi = self.random_chi()
         else:
-            raise Exception(f"Unrecognized chi_method: {args.chi_method}")
+            args.chi_method = args.chi_method.lower()
+            if args.chi_method == 'zero':
+                chi = np.zeros((self.k, self.k))
+            elif args.chi_method == 'random':
+                chi = self.random_chi()
+            elif args.chi_method.startswith('polynomial'):
+                x = np.load('x.npy') # original particle types that interact nonlinearly
+                ind = np.triu_indices(self.k)
+                self.k = int(self.k*(self.k+1)/2)
+                psi = np.zeros((self.m, self.k))
+                for i in range(self.m):
+                    psi[i] = np.outer(x[i], x[i])[ind]
+
+                np.save('psi.npy', psi)
+                chi = self.random_chi()
+            else:
+                raise Exception(f"Unrecognized chi_method: {args.chi_method}")
 
         # save chi
         if chi is not None:
@@ -1046,6 +1050,7 @@ class GetDiagChi():
                     return diag_chis
             curr_bin_vals.append(val)
         diag_chis[i] = np.mean(curr_bin_vals)
+        diag_chis = np.round(diag_chis, 5)
 
         return diag_chis
 
@@ -1090,6 +1095,7 @@ class GetDiagChi():
         opt.log_file = sys.stdout # change
         opt.output_mode = None # None for prediction mode
         opt.crop = (0, self.m)
+        opt.device = torch.device('cpu')
         print(opt)
 
         # get model
@@ -1161,8 +1167,8 @@ class GetEnergy():
 
 
         self.args, _ = parser.parse_known_args(unknown_args)
-        self._process_method(self.args)
         print('\nEnergy args')
+        self._process_method(self.args)
         print(self.args)
 
     def _process_method(self, args):
@@ -1177,11 +1183,10 @@ class GetEnergy():
             # (assumes load_maxent is True)
         args.rank = None # max rank for energy matrix
 
-        args.method = args.method.lower()
-        args.method_copy = args.method
         method_split = re.split(r'[-+]', args.method)
-        method_split.pop(0)
-        modes = set(method_split)
+        print('method_split:', method_split)
+        self.method_path = method_split.pop(0)
+        modes = set([i.lower() for i in method_split])
 
         if 's' in modes:
             args.use_smatrix = True
@@ -1202,7 +1207,7 @@ class GetEnergy():
     def set_up_energy(self):
         args = self.args
         if args.load_maxent:
-            method_split = re.split(r'[-+]', args.method_copy)
+            method_split = re.split(r'[-+]', args.method)
             method_split.remove('load_maxent')
             method_split.remove('e')
             if 'project' in method_split:
@@ -1213,22 +1218,32 @@ class GetEnergy():
             assert osp.exists(replicate_path), f"path does not exist: {replicate_path}"
             s = load_final_max_ent_S(args.k, replicate_path, max_it_path = None)
             e = s_to_E(s)
-        elif args.method.startswith('ground_truth'):
-            e, s = load_E_S(self.sample_folder)
-        elif args.method.startswith('gnn'):
-            if args.use_smatrix:
-                s = self.get_energy_gnn(args.gnn_model_path, self.sample_folder)
+        elif osp.exists(self.method_path):
             if args.use_ematrix:
-                s = self.get_energy_gnn(args.gnn_model_path, self.sample_folder)
-                e = s_to_E(s)
+                e = np.load(self.method_path)
+            elif args.use_smatrix:
+                s = np.load(self.method_path)
         else:
-            raise Exception(f'Unkown method: {args.method}')
+            args.method = args.method.lower()
+            if args.method.startswith('ground_truth'):
+                e, s = load_E_S(self.sample_folder)
+            elif args.method.startswith('gnn'):
+                if args.use_smatrix:
+                    s = self.get_energy_gnn(args.gnn_model_path, self.sample_folder)
+                if args.use_ematrix:
+                    s = self.get_energy_gnn(args.gnn_model_path, self.sample_folder)
+                    e = s_to_E(s)
+            else:
+                raise Exception(f'Unkown method: {args.method}')
 
         if args.project:
             _, psi = load_X_psi(self.sample_folder)
             s, e = project_S_to_psi_basis(s, psi)
-        s = crop(s, self.m)
-        e = crop(e, self.m)
+        if s is not None:
+            s = crop(s, self.m)
+            e = s_to_E(s)
+        elif e is not None:
+            e = crop(e, self.m)
         if args.rank is not None:
             pca = PCA(n_components = args.rank)
             s_transform = pca.fit_transform((s+s.T)/2)
@@ -1243,11 +1258,14 @@ class GetEnergy():
         elif args.use_ematrix:
             np.savetxt('e_matrix.txt', e, fmt = '%.3e')
             np.save('e.npy', e)
-            np.save('s.npy', s)
+            if s is not None:
+                np.save('s.npy', s)
 
         if self.m < 2000:
-            print(f'Rank of S: {np.linalg.matrix_rank(s)}')
-            print(f'Rank of E: {np.linalg.matrix_rank(e)}\n')
+            if s is not None:
+                print(f'Rank of S: {np.linalg.matrix_rank(s)}')
+            if e is not None:
+                print(f'Rank of E: {np.linalg.matrix_rank(e)}\n')
 
 
         if self.plot:

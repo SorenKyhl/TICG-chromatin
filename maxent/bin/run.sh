@@ -179,7 +179,7 @@ run_simulation () {
 	cd $scratchDir
 }
 
-# directory checks
+directory checks
 if [ -d $outputDir ]
 then
 	if [ $overwrite -eq 1 ]

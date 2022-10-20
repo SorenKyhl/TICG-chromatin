@@ -252,37 +252,38 @@ def main():
     config['dense_diagonal_on'] = args.dense_diagonal_on
 
     # load diag chi
-    diag_chis_file = 'diag_chis.npy'
     if args.use_ground_truth_diag_chi:
         assert sample_config is not None, 'ground truth config missing'
         config["diagonal_on"] = sample_config["diagonal_on"]
+        config["dense_diagonal_on"] = sample_config["dense_diagonal_on"]
+        diag_chis = np.array(sample_config["diag_chis"])
+        config["diag_chis"] = list(diag_chis)
+        np.save('diag_chis.npy', diag_chis)
         if config["diagonal_on"]:
             config['n_small_bins'] = sample_config['n_small_bins']
             config['n_big_bins'] = sample_config['n_big_bins']
             config['small_binsize'] = sample_config['small_binsize']
             config['big_binsize'] = sample_config['big_binsize']
 
-            diag_chis = np.array(sample_config["diag_chis"])
-            config["diag_chis"] = list(diag_chis)
-            np.save(diag_chis_file, diag_chis)
-    elif args.use_dmatrix:
-        assert args.use_ematrix or args.use_smatrix
-        config["diagonal_on"] = False
-        diag_chis = np.load('diag_chis.npy')
-        print(config)
-        diag_chis_step = calculate_diag_chi_step(config, diag_chis)
-        D = calculate_D(diag_chis_step)
-        Dprime = 2*D
-    elif osp.exists(diag_chis_file):
+    elif osp.exists('diag_chis.npy'):
         config["diagonal_on"] = True
         if args.max_ent:
-            diag_chis = np.load(diag_chis_file)
+            diag_chis = np.load('diag_chis.npy')
             with open('chis_diag.txt', 'w', newline='') as f:
                 wr = csv.writer(f, delimiter = '\t')
                 wr.writerow(diag_chis)
                 wr.writerow(diag_chis)
     else:
         config["diagonal_on"] = False
+
+    if args.use_dmatrix:
+        # assert args.use_ematrix or args.use_smatrix
+        diag_chis = np.load('diag_chis.npy')
+        if len(diag_chis) == args.m:
+            D = calculate_D(diag_chis)
+        else:
+            diag_chis_step = calculate_diag_chi_step(config, diag_chis)
+            D = calculate_D(diag_chis_step)
 
     # save diag_pseudobeads_on
     config['diag_pseudobeads_on'] = args.diag_pseudobeads_on
@@ -299,57 +300,69 @@ def main():
         print('psi is None')
 
     # set up e, s
+    e = None; s = None
     if psi is not None:
-        # psi is only None if not doing max ent
         writeSeq(psi)
 
         e, s = calculate_E_S(psi, args.chi)
+    else:
+        if osp.exists('s.npy'):
+            s = np.load('s.npy')
+        if osp.exists('e.npy'):
+            e = np.load('e.npy')
 
-    s += args.s_constant
-    e += args.e_constant
-    if args.use_dmatrix:
-        sD = s + D
-        eD = e + Dprime
-    if args.use_smatrix:
-        np.savetxt('sd_matrix.txt', sD, fmt='%0.5f')
-        np.save('s.npy', s)
-    if args.use_ematrix:
-        np.savetxt('ed_matrix.txt', eD, fmt='%0.5f')
-        np.save('e.npy', e)
-        np.save('s.npy', s) # save s either way
+    if e is not None:
+        e += args.e_constant
+    if s is not None:
+        s += args.s_constant
+
+
 
     if args.use_ematrix or args.use_smatrix:
         config['bead_type_files'] = None
         config["nspecies"] = 0
-
-        # set up config
         if args.use_smatrix:
-            assert not args.use_ematrix, 'Cannot use smatrix and ematrix'
-            # save smatrix_on
+            np.save('s.npy', s)
+            if args.use_dmatrix:
+                config['diagonal_on'] = False
+                s = s + D + np.diag(np.diagonal(D).copy())
+            np.savetxt('s_matrix.txt', s, fmt='%0.5f')
+
             config['smatrix_on'] = True
-            config["smatrix_filename"] = "sd_matrix.txt"
-        else:
-            # save ematrix_on
+            config["smatrix_filename"] = "s_matrix.txt"
+        if args.use_ematrix:
+            assert not args.use_smatrix, 'Cannot use smatrix and ematrix'
+            np.save('e.npy', e)
+            np.save('s.npy', s) # save s either way
+            if args.use_dmatrix:
+                config['diagonal_on'] = False
+                e = e + 2*D
+            np.savetxt('e_matrix.txt', e, fmt='%0.5f')
             config['ematrix_on'] = True
-            config["ematrix_filename"] = "ed_matrix.txt"
-    elif args.k == 0:
+            config["ematrix_filename"] = "e_matrix.txt"
+    else:
+        if args.use_dmatrix:
+            config['dmatrix_on'] = True
+            np.savetxt('d_matrix.txt', D, fmt='%0.5f')
+
+        if args.k == 0:
             config['plaid_on'] = False
             config['bead_type_files'] = None
             config["nspecies"] = 0
-    else:
-        # save seq
-        config['bead_type_files'] = [f'seq{i}.txt' for i in range(args.k)]
+        else:
+            # save seq
+            config['bead_type_files'] = [f'seq{i}.txt' for i in range(args.k)]
 
-        # save nspecies
-        config["nspecies"] = args.k
+            # save nspecies
+            config["nspecies"] = args.k
 
-        # save chi to config
-        rows, cols = args.chi.shape
-        for row in range(rows):
-            for col in range(row, cols):
-                key = f'chi{LETTERS[row]}{LETTERS[col]}'
-                val = args.chi[row, col]
-                config[key] = val
+            # save chi to config
+            rows, cols = args.chi.shape
+            for row in range(rows):
+                for col in range(row, cols):
+                    key = f'chi{LETTERS[row]}{LETTERS[col]}'
+                    val = args.chi[row, col]
+                    config[key] = val
 
     if not config['plaid_on'] and not config["diagonal_on"]:
         config['nonbonded_on'] = False

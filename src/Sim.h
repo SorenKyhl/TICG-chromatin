@@ -131,13 +131,17 @@ public:
 	bool update_contacts_distance;
 
 
-	std::vector<std::vector<double>> smatrix;
-	std::string smatrix_filename;
+
 	bool smatrix_on;
 	bool ematrix_on;
+	bool dmatrix_on;
 
+	std::vector<std::vector<double>> smatrix;
+	std::string smatrix_filename;
 	std::vector<std::vector<double>> ematrix;
 	std::string ematrix_filename;
+	std::vector<std::vector<double>> dmatrix;
+	std::string dmatrix_filename;
 
 	// methods
 	Sim();
@@ -186,4 +190,5 @@ public:
 
 	void setupSmatrix();
 	void setupEmatrix();
+	void setupDmatrix();
 };

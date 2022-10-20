@@ -212,19 +212,6 @@ double Grid::diagEnergy(const std::unordered_set<Cell*>& flagged_cells, const st
 	}
 	else
 	{
-		/*
-		U = std::accumulate(flagged_cells.begin(),
-							flagged_cells.end(),
-                            0,
-                            [diag_chis](int sum, Cell* el){ return sum + el->getDiagEnergy(diag_chis);} );
-							*/
-		/*
-		U = std::reduce(std::execution::par_unseq,
-							flagged_cells.begin(),
-							flagged_cells.end(),
-                            0,
-                            [diag_chis](int sum, Cell* el){ return sum + el->getDiagEnergy(diag_chis);} );
-							*/
 		for(Cell* cell : flagged_cells)
 		{
 			U += cell->getDiagEnergy(diag_chis);
@@ -246,7 +233,7 @@ double Grid::boundaryEnergy(const std::unordered_set<Cell*>& flagged_cells, cons
 	return U;
 };
 
-double Grid::SmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Smatrix, const Eigen::MatrixXd &chis) {
+double Grid::SmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Smatrix) {
 	// nonbonded volume interactions
 	double U = 0;
 	for(Cell* cell : flagged_cells)
@@ -257,13 +244,24 @@ double Grid::SmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const
 	return U;
 };
 
-double Grid::EmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Ematrix, const Eigen::MatrixXd &chis) {
+double Grid::EmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Ematrix) {
 	// nonbonded volume interactions
 	double U = 0;
 	for(Cell* cell : flagged_cells)
 	{
 		double ematrixenergy = cell->getEmatrixEnergy(Ematrix);
 		U += ematrixenergy;
+	}
+	return U;
+};
+
+double Grid::DmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells,  const std::vector<std::vector<double>> &Dmatrix) {
+	// nonbonded volume interactions
+	double U = 0;
+	for(Cell* cell : flagged_cells)
+	{
+		double dmatrixenergy = cell->getDmatrixEnergy(Dmatrix);
+		U += dmatrixenergy;
 	}
 	return U;
 };

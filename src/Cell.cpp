@@ -149,28 +149,92 @@ double Cell::getEmatrixEnergy(const std::vector<std::vector<double>> &Ematrix)
 	return U;
 }
 
+double Cell::getDmatrixEnergy(const std::vector<std::vector<double>> &Dmatrix)
+{
+	double U = 0;
+
+	std::vector<int> indices;
+	int imax = (int) contains.size();
+	for (const auto& elem : contains)
+	{
+		indices.push_back(elem->id);
+	}
+
+	assert(imax == indices.size());
+
+	// this also works
+	// for (int i=0; i<imax; i++)
+	// {
+	// 	for(int j=0; j<imax; j++)
+	// 	{
+	// 		if (i == j)
+	// 		{
+	// 			U += Dmatrix[indices[i]][indices[j]] * beadvol/vol * 2;
+	// 		}
+	// 		else
+	// 		{
+	// 			U += Dmatrix[indices[i]][indices[j]] * beadvol/vol;
+	// 		}
+	// 	}
+	// }
+	for (int i=0; i<imax; i++)
+	{
+		for(int j=i; j<imax; j++)
+		{
+			U += Dmatrix[indices[i]][indices[j]] * beadvol/vol * 2;
+		}
+	}
+	return U;
+}
+//
+// int Cell::binDiagonal(int d)
+// {
+// 	int bin_index = -1;
+//
+// 	if (dense_diagonal_on)
+// 	{
+// 		int dense_cutoff = n_small_bins * small_binsize;
+// 		// diagonal chis are binned in a dense set (small bins) from d=0 to d=dense_cutoff,
+// 		// then a sparse set (large bins) from d=cutoff to d=diag_cutoff
+// 		if ( d > dense_cutoff )
+// 		{
+// 			bin_index = n_small_bins + std::floor( (d - dense_cutoff) / big_binsize );
+// 		}
+// 		else
+// 		{
+// 			bin_index = std::floor( d / small_binsize );
+// 		}
+// 	}
+// 	else
+// 	{
+// 		// diagonal chis are linearly spaced from d=0 to d=nbeads
+// 		bin_index = std::floor( d / diag_binsize );
+// 	}
+// 	return bin_index;
+// }
+
 int Cell::binDiagonal(int d)
 {
 	int bin_index = -1;
 
-	if (dense_diagonal_on)
+	if (Cell::dense_diagonal_on)
 	{
-		int dense_cutoff = n_small_bins * small_binsize;
+		int dense_cutoff = Cell::n_small_bins * Cell::small_binsize;
 		// diagonal chis are binned in a dense set (small bins) from d=0 to d=dense_cutoff,
 		// then a sparse set (large bins) from d=cutoff to d=diag_cutoff
 		if ( d > dense_cutoff )
 		{
-			bin_index = n_small_bins + std::floor( (d - dense_cutoff) / big_binsize );
+			bin_index = Cell::n_small_bins + std::floor( (d - dense_cutoff) / Cell::big_binsize );
 		}
 		else
 		{
-			bin_index = std::floor( d / small_binsize );
+			bin_index = std::floor( d / Cell::small_binsize );
 		}
 	}
 	else
 	{
 		// diagonal chis are linearly spaced from d=0 to d=nbeads
-		bin_index = std::floor( d / diag_binsize );
+		bin_index = std::floor( d / Cell::diag_binsize );
 	}
 	return bin_index;
 }

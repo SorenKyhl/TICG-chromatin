@@ -2,6 +2,7 @@ import json
 import math
 import os
 import os.path as osp
+import tarfile
 from collections import defaultdict
 
 import hicrep
@@ -63,7 +64,6 @@ def makeDirsForMaxEnt(dataset):
                     os.mkdir(osp.join(sample_folder, method, f'k{k}', f'replicate{replicate}'), mode = 0o755)
 
 def test_robust_PCA():
-
     if False:
         dir = '/home/eric/dataset_test/rpca_test'
         n = 1000
@@ -147,7 +147,6 @@ def test_robust_PCA():
         # plotContactMap(ydiag, ofile = osp.join(dir, 'ydiag.png'), vmax = 'max')
         # plotContactMap(ydiag_rank_1, ofile = osp.join(dir, 'ydiag_rank_1.png'), vmax = 'max')
         # plotContactMap(dif, ofile = osp.join(dir, 'dif.png'), vmin = 'min', vmax = 'max', cmap='blue-red')
-
 
     if False:
         # dir = '/home/eric/dataset_test/samples/sample104'
@@ -256,118 +255,10 @@ def time_comparison():
     plt.savefig(osp.join(dir, 'time.png'))
     plt.close()
 
-def time_comparison_merge_PCA():
-    # dir = '/project2/depablo/erschultz/dataset_05_18_22/samples'
-    dir = '/home/erschultz/sequences_to_contact_maps/dataset_05_18_22/samples'
-    samples_per_size = 3
-    num_sizes = 3
-
-    times_dict = defaultdict()
-    # dictionary with keys = method : vals = array of times with rows = sizes, cols = replicate samples
-    it = 1
-    for row in range(num_sizes):
-        PCA_col = 0
-        PCA_diag_col = 0
-        for col in range(samples_per_size):
-            print(it)
-            sample_dir = osp.join(dir, f'sample{it}')
-            max_ent_file = osp.join(sample_dir, 'max_ent_table_2.txt')
-
-            if not osp.exists(max_ent_file):
-                continue
-
-            with open(osp.join(max_ent_file, ), 'r') as f:
-                line = f.readline()
-                while not line.startswith('Method'):
-                    line = f.readline()
-                line = f.readline()
-
-                while not line.startswith('\end'):
-                    if line.startswith('\hline'):
-                        line = f.readline()
-                        continue
-
-                    line_list = line.split(' & ')
-                    try:
-                        if line_list[1] != '':
-                            k = line_list[1]
-                        method = line_list[0].replace('-normalize', '')
-                        if 'diagMLP' in method:
-                            method = '-'.join(method.split('-')[:-1])
-                        if method == 'Ground Truth-diag_chi-E':
-                            method = 'Ground Truth'
-                        if 'GNN' in method:
-                            method = 'GNN-' + '-'.join(method.split('-')[3:])
-                        label = f'{method}'
-                        print(label)
-                        time = float(line_list[-1].split(' ')[0])
-                    except:
-                        print(line)
-                        raise
-                    if label not in times_dict:
-                        if 'PCA' in label:
-                            times_dict[label] =  np.full([num_sizes, samples_per_size*3], np.nan)
-
-                        else:
-                            times_dict[label] =  np.full([num_sizes, samples_per_size], np.nan)
-
-                    if 'PCA-diagMLP' in label:
-                        print(it, k, PCA_diag_col)
-                        times_dict[label][row, PCA_diag_col] = time
-                        PCA_diag_col += 1
-                    elif 'PCA' in label:
-                        print(it, k, PCA_col)
-                        times_dict[label][row, PCA_col] = time
-                        PCA_col += 1
-                    else:
-                        times_dict[label][row,col] = time
-                    line = f.readline()
-
-            it += 1
-
-
-    cmap = matplotlib.cm.get_cmap('tab20')
-    fig, ax = plt.subplots()
-    ax2 = ax.twinx()
-    sizes = np.array([512., 1024., 2048., 4096.])[:num_sizes]
-    sizes_shift = np.copy(sizes)
-    ind = 0
-    for method in sorted(times_dict.keys()):
-        if method in {'GNN-'}:
-            continue
-        arr = times_dict[method][:num_sizes, :]
-        print('method: ', method)
-        print(arr, arr.shape)
-        times = np.nanmean(arr, axis = 1)
-        prcnt_converged = np.count_nonzero(~np.isnan(arr), axis = 1) / arr.shape[1]
-        prcnt_converged[prcnt_converged == 0] = np.nan
-        times_std = np.nanstd(arr, axis = 1)
-        print('times', times)
-        print('prcnt_converged', prcnt_converged)
-        print('times std', times_std)
-        print()
-
-        ax2.plot(sizes_shift, prcnt_converged, ls = '--', color = cmap(ind % cmap.N))
-        ax.errorbar(sizes_shift, times, yerr = times_std, label = method,
-                    color = cmap(ind % cmap.N), fmt = "o")
-        sizes_shift += 20
-        ind += 1
-
-
-    ax.set_ylabel('Total Time (mins)', fontsize=16)
-    ax2.set_ylabel(f'Percent Converged (of {arr.shape[1]})', fontsize=16)
-    ax.set_xlabel('Simulation size', fontsize=16)
-    ax.set_ylim((0, None))
-    ax.set_xticks(sizes) # , 2048, 4096
-    ax.legend(loc='upper left')
-    plt.tight_layout()
-    plt.savefig(osp.join(dir, 'time_merge.png'))
-    plt.close()
-
 def convergence_check():
-    dir = '/home/erschultz/sequences_to_contact_maps/dataset_05_18_22/samples'
-    results_1 = {}
-    results_2 = {}
+    dir = '/home/erschultz/dataset_09_30_22/samples'
+    results_1 = {} # param convergence
+    results_2 = {} # loss convergence
     for file in os.listdir(dir):
         sample = osp.join(dir, file)
         if file.startswith('sample') and osp.isdir(sample):
@@ -406,7 +297,7 @@ def convergence_check():
                                 results_1[label] = vals
 
 
-                                conv_file = osp.join(replicate, 'convergence_diag.txt')
+                                conv_file = osp.join(replicate, 'convergence.txt')
                                 if osp.exists(conv_file):
                                     conv = np.loadtxt(conv_file)
                                 else:
@@ -424,18 +315,17 @@ def convergence_check():
     for label, vals in results_1.items():
         print(label)
         id = int(label.split('_')[0])
-        if id < 7:
-            continue
         k = int(label[-4])
 
-        plt.plot(vals, label = label, ls = ls_arr[k // 2], color = cmap(id % cmap.N))
+        plt.plot(vals, label = label, ls = ls_arr[k // 2])
 
-    plt.axhline(5, c = 'k')
+    eps = 1
+    plt.axhline(eps, c = 'k')
     plt.yscale('log')
     plt.xlabel('Iteration', fontsize=16)
     plt.ylabel(r'$||x_t - x_{t-1}||_2$', fontsize=16)
     plt.legend()
-    plt.title(r'$||x_t - x_{t-1}||_2 < 5$')
+    plt.title(r'$||x_t - x_{t-1}||_2 < $'+f'{eps}')
     plt.savefig(osp.join(dir, 'param_convergence.png'))
     plt.close()
 
@@ -445,33 +335,19 @@ def convergence_check():
     for label, vals in results_2.items():
         print(label)
         id = int(label.split('_')[0])
-        if id < 7:
-            continue
         k = int(label[-4])
 
-        plt.plot(vals, label = label, ls = ls_arr[k // 2], color = cmap(id % cmap.N))
+        plt.plot(vals, label = label, ls = ls_arr[k // 2])
 
-    plt.axhline(1e-2, c = 'k')
+    eps = 1e-3
+    plt.axhline(eps, c = 'k')
     plt.yscale('log')
     plt.xlabel('Iteration', fontsize=16)
     plt.ylabel(r'$|f(x_t) - f(x_{t-1})|$', fontsize=16)
     plt.legend(loc = 'upper right')
-    plt.title(r'$|f(x_t) - f(x_{t-1})| < 10^{-2}$')
+    plt.title(r'$|f(x_t) - f(x_{t-1})| < 10^{-3}$')
     plt.savefig(osp.join(dir, 'loss_convergence.png'))
     plt.close()
-
-def bin_zhang_contact_function_comparison():
-    x = np.linspace(0, 5, 1000)
-    y = 0.5 * (1 + np.tanh(3.22*(1.78 - x)))
-    plt.plot(x, y, label=2016)
-    x = np.linspace(0, 1.76, 1000)
-    y = 0.5 * (1 + np.tanh(3.72*(1.76 - x)))
-    plt.plot(x, y, label = 2019, color = 'k')
-    x = np.linspace(1.76, 5, 1000)
-    y = 0.5 * (1.76 / x)**4
-    plt.plot(x, y, color = 'k')
-    plt.legend()
-    plt.show()
 
 def main():
     # quick function to plot sc p(s) curves
@@ -538,35 +414,40 @@ def main():
     plt.savefig(osp.join(data_dir, 'sc_contacts_time', 'meanDist_log2.png'))
     plt.close()
 
-def main2(params = True):
+def main2(params = False):
     # plot different p(s) curves
-    dataset = 'dataset_07_20_22'
-    dir = f'/home/erschultz/sequences_to_contact_maps/{dataset}/samples'
+    dataset = 'dataset_09_30_22'
+    dir = f'/home/erschultz/{dataset}/samples'
     fig, ax = plt.subplots()
     if params:
         ax2 = ax.twinx()
 
-    for sample in [11, 12, 13, 14]:
-        s_dir = osp.join(dir, f'sample{sample}')
-        ifile = osp.join(s_dir, 'y.npy')
+    s_dir = osp.join(dir, f'sample100')
+    reps = [s_dir, osp.join(s_dir, 'PCA-normalize/k4/replicate1'), osp.join(s_dir, 'GNN-177-S-diagMLP-79/k0/replicate1')]
+    labels = ['Original Simulation', 'Maximum Entropy', 'Machine Learning']
+    for rep, label in zip(reps, labels):
+        ifile = osp.join(rep, 'y.npy')
         if osp.exists(ifile):
             y = np.load(ifile)
+            plot_matrix(y, osp.join(rep, 'y.png'), vmax = 20)
             meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
-            ax.plot(meanDist, label = sample, color = 'k')
+            ax.plot(meanDist, label = label)
+        else:
+            print(ifile)
 
-    for sample in [11, 12, 13, 14]:
-        s_dir = osp.join(dir, f'sample{sample}_log_max')
-        ifile = osp.join(s_dir, 'y.npy')
-        if osp.exists(ifile):
-            y = np.load(ifile)
-            meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
-            ax.plot(meanDist, label = sample)
-
-            if params:
-                with open(osp.join(s_dir, 'config.json')) as f:
-                    config = json.load(f)
-                diag_chis_step = calculate_diag_chi_step(config)
-                ax2.plot(diag_chis_step, ls = '--', label = 'Parameters')
+    # for sample in [11, 12, 13, 14]:
+    #     s_dir = osp.join(dir, f'sample{sample}_log_max')
+    #     ifile = osp.join(s_dir, 'y.npy')
+    #     if osp.exists(ifile):
+    #         y = np.load(ifile)
+    #         meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+    #         ax.plot(meanDist, label = sample)
+    #
+    #         if params:
+    #             with open(osp.join(s_dir, 'config.json')) as f:
+    #                 config = json.load(f)
+    #             diag_chis_step = calculate_diag_chi_step(config)
+    #             ax2.plot(diag_chis_step, ls = '--', label = 'Parameters')
 
 
     ax.set_yscale('log')
@@ -585,6 +466,70 @@ def main2(params = True):
     plt.savefig(osp.join(dir, 'meanDist_log.png'))
     plt.close()
 
+def plot_sd():
+    # plot sd matrix at every max ent iteration
+    dataset = 'dataset_09_30_22'
+    dir = f'/home/erschultz/{dataset}/samples'
+    sample = 10
+    sample_dir = osp.join(dir, f'sample{sample}')
+    y = np.load(osp.join(sample_dir, 'y.npy'))
+    y /= np.max(y)
+    s = np.load(osp.join(sample_dir, 's.npy'))
+    s_sym = (s + s.T)/2
+    diag_chis = np.load(osp.join(sample_dir, 'diag_chis.npy'))
+    d = calculate_D(diag_chis)
+    sd = s_sym + d
+
+    rep_dir = osp.join(sample_dir, 'PCA-normalize/k4/replicate1')
+    chis = np.loadtxt(osp.join(rep_dir, 'chis.txt'))
+    chis_diag = np.loadtxt(osp.join(rep_dir, 'chis_diag.txt'))
+    x = np.load(osp.join(rep_dir, 'resources/x.npy'))
+    m, k = x.shape
+
+    rmse_list = []
+    rmse_diag_list = []
+    rmse_s_list = []
+    rmse_y_list = []
+    for it in range(1, 22):
+        print(it)
+        it_dir = osp.join(rep_dir, f'iteration{it}')
+        chis_it = triu_to_full(chis[it])
+        chis_diag_it = chis_diag[it]
+
+        data_file = osp.join(it_dir, 'production_out.tar.gz')
+        if osp.exists(data_file):
+            with tarfile.open(data_file) as f:
+                f.extractall(it_dir)
+        y_file = osp.join(it_dir, 'production_out/contacts.txt')
+        yhat = np.loadtxt(y_file)
+        yhat /= np.max(yhat)
+        rmse = mean_squared_error(y, yhat, squared = False)
+        rmse_y_list.append(rmse)
+
+        s_it = calculate_S(x, chis_it)
+        s_sym_it = (s_it + s_it.T)/2
+        rmse_s_list.append(mean_squared_error(s_sym, s_sym_it, squared = False))
+
+        with open(osp.join(it_dir, 'config.json'), 'r') as f:
+            config = json.load(f)
+        diag_chi_continuous = calculate_diag_chi_step(config, chis_diag_it)
+        rmse_diag_list.append(mean_squared_error(diag_chi_continuous, diag_chis, squared = False))
+
+        d = calculate_D(diag_chi_continuous)
+        sd_it = s_sym_it + d
+        rmse_list.append(mean_squared_error(sd, sd_it, squared = False))
+
+    plt.plot(rmse_list, label = 'combined')
+    plt.plot(rmse_diag_list, label = 'diag')
+    plt.plot(rmse_s_list, label = 's')
+    plt.plot(rmse_y_list, label = 'y')
+    plt.ylabel('RMSE')
+    plt.xlabel('Max Ent Iteration')
+    plt.yscale('log')
+    plt.legend()
+    plt.savefig(osp.join(rep_dir, 'convergence_mse.png'))
+    plt.show()
+
 def plot_modified_max_ent(sample, params = True):
     # plot different p(s) curves
     dataset = 'dataset_07_20_22'
@@ -600,26 +545,32 @@ def plot_modified_max_ent(sample, params = True):
 
     ax.plot(meanDist_gt, label = 'Experiment' , color = 'k')
 
-    files = [f'sample{sample}/none/k0/replicate1', f'sample{sample}/none-diagMLP-66/k0/replicate1',
+    files = [f'sample{sample}/none/k0/replicate1', f'sample{sample}/none-diagMLP-79/k0/replicate1',
+            f'sample{sample}/GNN-177-S-diagMLP-79/k0/replicate1',
             f'sample{sample}_edit', f'sample{sample}_edit2', f'sample{sample}_edit_zero',
             f'sample{sample}_zero', f'sample{sample}_log', f'sample{sample}_logistic',
             f'sample{sample}_log_max', f'sample{sample}_linear_max',
-            f'sample{sample}_logistic_manual']
+            f'sample{sample}_logistic_manual', f'sample{sample}_mlp']
     colors = ['blue', 'green',
+            'purple',
             'lightblue', 'teal', 'darkslateblue',
             'pink', 'orange', 'purple',
             'yellow', 'brown',
-            'darkgreen']
-    labels = ['Max Ent', 'MLP-66',
+            'darkgreen', 'orange']
+    labels = ['Max Ent', 'MLP',
+            'MLP+GNN',
             'Max Ent Edit', 'Max Ent Edit 2', 'Max Ent Edit Zero',
             'Zero', 'Log Fit', 'Logistic Fit',
             'Log Max Fit', 'Linear Max Fit',
-            'Logistic Manual Fit']
+            'Logistic Manual Fit',
+            'MLP+PCA']
 
     for file, color, label in zip(files, colors, labels):
         if label in {'Logistic Manual Fit', 'Linear Max Fit',
                     'Log Max Fit',
-                    'Log Fit',}:
+                    'Log Fit'}:
+            continue
+        if not label.startswith('MLP'):
             continue
         ifile = osp.join(dir, file, 'y.npy')
         if osp.exists(ifile):
@@ -782,10 +733,6 @@ def logistic_curve(x, max, slope, midpoint):
     return result
 
 
-def test_logarithmic_diagonal():
-    bounds = np.logspace(0, np.log2(1024), 32)
-    print(bounds)
-
 def compare_y_diag():
     dir = '/home/erschultz/dataset_test/samples'
 
@@ -862,27 +809,152 @@ def check_if_same():
     # check if contact maps are identical
     dir = '/home/erschultz/sequences_to_contact_maps/dataset_04_27_22/samples'
 
-    y_ref = np.load(osp.join(dir, 'sample10/y_diag.npy'))
+    y_file = 'y.npy'
+    y_ref = np.load(osp.join(dir, f'sample105/{y_file}'))
 
-    for s in [20]:
+    for s in [8, 9, 10, 11, 12]:
         print('s', s)
         sample_dir = osp.join(dir, f'sample{s}')
-        y = np.load(osp.join(sample_dir, 'y_diag.npy'))
+        y = np.load(osp.join(sample_dir, f'{y_file}'))
         diff = y_ref - y
         print(np.mean(diff))
-        plot_matrix(diff, osp.join(sample_dir, 'diff.png'), cmap='bluered', vmin = -7, vmax = 7)
+        plot_matrix(diff, osp.join(sample_dir, 'diff.png'), cmap='bluered')
 
+def time_comparison_dmatrix():
+    dir = '/home/erschultz/dataset_test/samples'
+
+    time_dict_e = defaultdict(list) # m : list of times (when use_e = True)
+    time_dict = defaultdict(list) # m : list of times
+    for sample in range(1, 25):
+        print(sample)
+        sample_dir = osp.join(dir, f'sample{sample}')
+        log_file = osp.join(sample_dir, 'log.log')
+
+        if osp.exists(log_file):
+            with open(log_file) as f:
+                for line in f:
+                    if line.startswith('Took'):
+                        time = int(line.split(' ')[1][:-7])
+                        time /= 60
+                        print(time)
+                    if line.startswith('contactmap size'):
+                        m = int(line.split(': ')[1])
+                        print(m)
+            if osp.exists(osp.join(sample_dir, 'e_matrix.txt')):
+                time_dict_e[m].append(time)
+            else:
+                time_dict[m].append(time)
+
+    print(time_dict_e)
+    print(time_dict)
+
+    m_arr = np.array([512, 1024, 2048, 4096])
+    time_mean = np.zeros_like(m_arr)
+    time_std = np.zeros_like(m_arr)
+    time_e_mean = np.zeros_like(m_arr)
+    time_e_std = np.zeros_like(m_arr)
+    for i, m in enumerate(m_arr):
+        time = time_dict[m]
+        time_mean[i] = np.mean(time)
+        time_std[i] = np.std(time, ddof = 1)
+
+        time_e = time_dict_e[m]
+        time_e_mean[i] = np.mean(time_e)
+        time_e_std[i] = np.std(time_e, ddof = 1)
+
+    prcnt_diff = time_e_mean / time_mean * 100
+    print(prcnt_diff)
+
+
+    fig, ax = plt.subplots()
+    ax2 = ax.twinx()
+    ax.scatter(m_arr, time_mean, color = 'blue', label = 'Original')
+    ax.errorbar(m_arr, time_mean, yerr = time_std, ls='none', color = 'blue')
+    ax.scatter(m_arr, time_e_mean, color = 'red', label = 'Net Energy')
+    ax.errorbar(m_arr, time_e_mean, yerr = time_e_std, ls='none', color = 'red')
+    ax2.plot(m_arr, prcnt_diff, color = 'black', label='% of original')
+
+    ax.set_ylabel('Total Time (mins)', fontsize=16)
+    ax2.set_ylabel('% of Original', fontsize=16)
+    ax.set_xlabel('Simulation size', fontsize=16)
+    ax.set_ylim((0, 84))
+    ax2.set_ylim((None, 74))
+    ax.set_xticks(m_arr)
+    ax.legend(loc='upper left', title='Total Time')
+    ax2.legend(loc='upper right')
+    plt.tight_layout()
+    plt.savefig(osp.join(dir, 'time.png'))
+    plt.close()
+
+
+    time_dict_e = defaultdict(list) # num_diag_chis : list of times (when use_e = True)
+    time_dict = defaultdict(list) # num_diag_chis : list of times
+    for sample in range(100, 106):
+        print(sample)
+        sample_dir = osp.join(dir, f'sample{sample}')
+
+        log_file = osp.join(sample_dir, 'log.log')
+        if osp.exists(log_file):
+            with open(log_file) as f:
+                for line in f:
+                    if line.startswith('Took'):
+                        time = int(line.split(' ')[1][:-7])
+
+        config_file = osp.join(sample_dir, 'config.json')
+        if osp.exists(config_file):
+            with open(config_file) as f:
+                config = json.load(f)
+                k = len(config['diag_chis'])
+
+        print('k', k, 'time', time)
+
+        if osp.exists(osp.join(sample_dir, 'd_matrix.txt')):
+            time_dict_e[k].append(time)
+        else:
+            time_dict[k].append(time)
+
+    print(time_dict)
+    print(time_dict_e)
+
+    k_arr = np.array([32, 64, 128])
+    time_mean = np.zeros_like(k_arr)
+    time_std = np.zeros_like(k_arr)
+    time_e_mean = np.zeros_like(k_arr)
+    time_e_std = np.zeros_like(k_arr)
+    for i, k in enumerate(k_arr):
+        time = time_dict[k]
+        time_mean[i] = np.mean(time)
+        # time_std[i] = np.std(time, ddof = 1)
+
+        time_e = time_dict_e[k]
+        time_e_mean[i] = np.mean(time_e)
+        # time_e_std[i] = np.std(time_e, ddof = 1)
+
+    fig, ax = plt.subplots()
+    ax.scatter(k_arr, time_mean, color = 'blue', label = 'Original')
+    ax.scatter(k_arr, time_e_mean, color = 'red', label = 'Net Energy')
+
+    ax.set_ylabel('Total Time (seconds)', fontsize=16)
+    ax.set_xlabel('Number of Diagonal Bins', fontsize=16)
+    ax.set_ylim((0, None))
+    ax.set_xticks(k_arr)
+    ax.legend(loc='upper left', title='Total Time')
+    plt.tight_layout()
+    plt.savefig(osp.join(dir, 'time2.png'))
+    plt.close()
 
 if __name__ == '__main__':
     # compare_y_diag()
-    check_if_same()
+    # check_if_same()
     # test_robust_PCA()
     # check_dataset('dataset_09_26_22')
     # time_comparison()
-    # time_comparison_merge_PCA()
+    time_comparison_dmatrix()
     # construct_sc_xyz()
     # convergence_check()
     # main()
+    # main2()
+    # plot_sd()
     # plot_modified_max_ent(10)
     # modify_maxent_diag_chi(10)
     # makeDirsForMaxEnt("dataset_09_21_21")

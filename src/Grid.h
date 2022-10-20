@@ -44,8 +44,9 @@ public:
 	double diagEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<double> diag_chis);
 	double boundaryEnergy(const std::unordered_set<Cell*>& flagged_cells, const double boundary_chi);
 	// double boundaryEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Smatrix);
-	double SmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Smatrix, const Eigen::MatrixXd &chis);
-	double EmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Ematrix, const Eigen::MatrixXd &chis);
+	double SmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Smatrix);
+	double EmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Ematrix);
+	double DmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Dmatrix);
 	double get_ij_Contacts(int i, int j);
 	double getContacts();
 	void getDiagObs(std::vector<double> &diag_obs);

@@ -20,6 +20,7 @@ from sequences_to_contact_maps.utils.load_utils import (load_all,
                                                         load_E_S,
                                                         load_final_max_ent_chi,
                                                         load_final_max_ent_S,
+                                                        load_max_ent_chi,
                                                         load_X_psi, load_Y,
                                                         load_Y_diag)
 from sequences_to_contact_maps.utils.neural_net_utils import (get_dataset,
@@ -32,5 +33,5 @@ from sequences_to_contact_maps.utils.similarity_measures import SCC
 from sequences_to_contact_maps.utils.utils import (LETTERS,
                                                    DiagonalPreprocessing,
                                                    calc_dist_strat_corr, crop,
-                                                   pearson_round)
+                                                   pearson_round, triu_to_full)
 from sequences_to_contact_maps.utils.xyz_utils import xyz_load

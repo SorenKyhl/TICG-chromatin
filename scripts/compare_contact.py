@@ -106,6 +106,8 @@ def plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, dir):
     plt.savefig(osp.join(dir, 'distance_pearson.png'))
     plt.close()
 
+    return overall_corr, corr_scc, avg_diag
+
 def main():
     args = getArgs()
     if not osp.exists(args.y):

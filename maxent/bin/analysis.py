@@ -97,8 +97,8 @@ class Sim:
         else:
             print(f"{plaid_observables_file} does not exist")
 
-        diag_observables_file = osp.join(self.path,"diag_observables.traj")
-        if osp.exists(diag_observables_file):
+        diag_observables_file = osp.join(self.path, "diag_observables.traj")
+        if osp.exists(diag_observables_file) and osp.getsize(diag_observables_file) > 0:
             self.diag_obs_full = pd.read_csv(diag_observables_file, sep ='\t', header=None)
             self.diag_obs = self.diag_obs_full.mean().values[1:]
         else:

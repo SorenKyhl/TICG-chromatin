@@ -35,9 +35,10 @@ void Sim::run() {
 	if (system(NULL)) std::cout << "system ready" << std::endl;
 		else exit (EXIT_FAILURE);
 
+  calculateParameters(config);  // calculates derived parameters
 	if (smatrix_on) { setupSmatrix(); }
 	if (ematrix_on) { setupEmatrix(); }
-	calculateParameters(config);  // calculates derived parameters
+  if (dmatrix_on) { setupDmatrix(); }
 	makeOutputFiles();      // open files
 	initialize();           // set particle positions and construct bonds
 	grid.generate();        // creates the grid locations
@@ -262,10 +263,21 @@ nlohmann::json Sim::readInput() {
   assert(config.contains("boundary_chi")); boundary_chi = config["boundary_chi"];
   assert(config.contains("constant_chi_on")); constant_chi_on = config["constant_chi_on"];
   assert(config.contains("constant_chi")); constant_chi = config["constant_chi"];
-	assert(config.contains("smatrix_filename")); smatrix_filename = config["smatrix_filename"];
 	assert(config.contains("smatrix_on")); smatrix_on = config["smatrix_on"];
-	assert(config.contains("ematrix_filename")); ematrix_filename = config["ematrix_filename"];
+  if (smatrix_on)
+  {
+    assert(config.contains("smatrix_filename")); smatrix_filename = config["smatrix_filename"];
+  }
 	assert(config.contains("ematrix_on")); ematrix_on = config["ematrix_on"];
+  if (ematrix_on)
+  {
+    assert(config.contains("ematrix_filename")); ematrix_filename = config["ematrix_filename"];
+  }
+	assert(config.contains("dmatrix_on")); dmatrix_on = config["dmatrix_on"];
+  if (dmatrix_on)
+  {
+    assert(config.contains("dmatrix_filename")); dmatrix_filename = config["dmatrix_filename"];
+  }
   assert(config.contains("boundary_attract_on")); boundary_attract_on = config["boundary_attract_on"];
 
   // bead/bond params
@@ -751,11 +763,11 @@ double Sim::getNonBondedEnergy(const std::unordered_set<Cell*>& flagged_cells) {
 	{
 		if (smatrix_on)
 		{
-			U += grid.SmatrixEnergy(flagged_cells, smatrix, chis);
+			U += grid.SmatrixEnergy(flagged_cells, smatrix);
 		}
 		else if (ematrix_on)
 		{
-			U += grid.EmatrixEnergy(flagged_cells, ematrix, chis);
+			U += grid.EmatrixEnergy(flagged_cells, ematrix);
 		}
 		else
 		{
@@ -768,7 +780,14 @@ double Sim::getNonBondedEnergy(const std::unordered_set<Cell*>& flagged_cells) {
   }
 	if (diagonal_on)
 	{
-		U += grid.diagEnergy(flagged_cells, diag_chis);
+    if (dmatrix_on)
+    {
+      U += grid.DmatrixEnergy(flagged_cells, dmatrix);
+    }
+    else
+    {
+      U += grid.diagEnergy(flagged_cells, diag_chis);
+    }
 	}
 	if (boundary_attract_on)
 	{
@@ -784,12 +803,6 @@ double Sim::getNonBondedEnergy(const std::unordered_set<Cell*>& flagged_cells) {
 double Sim::getJustPlaidEnergy(const std::unordered_set<Cell*>& flagged_cells) {
 	// for when dumping energy;
 	double U = grid.energy(flagged_cells, chis);
-	return U;
-}
-
-double Sim::getJustDiagEnergy(const std::unordered_set<Cell*>& flagged_cells) {
-	// for when dumping energy;
-	double U = grid.diagEnergy(flagged_cells, diag_chis);
 	return U;
 }
 
@@ -1450,11 +1463,11 @@ void Sim::dumpEnergy(int sweep) {
   {
     if (smatrix_on)
     {
-      plaid = grid.SmatrixEnergy(grid.active_cells, smatrix, chis);
+      plaid = grid.SmatrixEnergy(grid.active_cells, smatrix);
     }
     else if (ematrix_on)
     {
-      plaid = grid.EmatrixEnergy(grid.active_cells, ematrix, chis);
+      plaid = grid.EmatrixEnergy(grid.active_cells, ematrix);
     }
     else
     {
@@ -1462,12 +1475,22 @@ void Sim::dumpEnergy(int sweep) {
     }
   }
 	double diagonal = 0;
-	diagonal = diagonal_on ? getJustDiagEnergy(grid.active_cells) : 0;
-	double boundary = 0;
+  if (diagonal_on)
+  {
+    if (dmatrix_on)
+    {
+      diagonal = grid.DmatrixEnergy(grid.active_cells, dmatrix);
+    }
+    else
+    {
+      diagonal = grid.diagEnergy(grid.active_cells, diag_chis);
+    }
+  }
 
+	double boundary = 0;
 	boundary = boundary_attract_on ? getJustBoundaryEnergy(grid.active_cells) : 0;
 	energy_out = fopen(energy_out_filename.c_str(), "a");
-	fprintf(energy_out, "%d\t %lf\t %lf\t %lf\t %lf\n", sweep, bonded, plaid, diagonal, boundary);
+	fprintf(energy_out, "%d\t %lf\t %lf\t %lf\t %lf\t %lf\n", sweep, bonded, plaid, diagonal, boundary, bonded+plaid+diagonal+boundary);
 	fclose(energy_out);
 }
 
@@ -1619,4 +1642,40 @@ void Sim::setupEmatrix() {
 		}
 	}
 	std::cout << "loaded Ematrix, first element:" << ematrix[0][0] << std::endl;
+}
+
+void Sim::setupDmatrix() {
+	std::ifstream dmatrixfile(dmatrix_filename);
+  dmatrix.resize(nbeads);
+
+	if ( dmatrixfile.good() ) {
+    std::cout << dmatrix_filename << " opened\n";
+    for (int i=0; i<nbeads; i++) {
+      dmatrix[i].resize(nbeads);
+      for (int j=0; j<nbeads; j++) {
+        dmatrixfile >> dmatrix[i][j];
+      }
+    }
+	}
+  else
+  {
+    std::cout << dmatrix_filename << " does not exist or cannot be opened\n";
+
+    // try and create dmatrix from diag_chis
+    for (int i=0; i<nbeads; i++)
+    {
+      dmatrix[i].resize(nbeads);
+      for (int j=0; j<nbeads; j++)
+      {
+        int d = std::abs(i - j);
+        if ((d <= Cell::diag_cutoff) && (d >= Cell::diag_start))
+        {
+          d -= Cell::diag_start; // TODO check that this works for non-zero diag_start
+          int d_index = Cell::binDiagonal(d);
+          dmatrix[i][j] = diag_chis[d_index];
+        }
+      }
+    }
+	std::cout << "loaded Dmatrix, first element:" << dmatrix[0][0] << std::endl;
+  }
 }
