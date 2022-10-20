@@ -13,28 +13,30 @@ source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dir="/home/erschultz/sequences_to_contact_maps"
+  dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
-  numIterations=0
-  finalSimProductionSweeps=100000
-  productionSweeps=80000
-  equilibSweeps=5000
+  numIterations=1
+  finalSimProductionSweeps=10000
+  productionSweeps=10000
+  equilibSweeps=1000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
-i=1
-dataset='dataset_09_21_21'
-useE='true'
-method='GNN'
-GNNModelID=150
+i=50
+dataset='dataset_09_30_22'
+useE='false'
+useD='true'
+GNNModelID='none'
 bondType='gaussian'
 m=1024
+mode='none'
+chiMethod='zero'
 replicate=1
 
-diagChiMethod="${dir}/${dataset}/samples/sample1/none/k0/replicate1/chis_diag.txt"
-# diagChiMethod='linear'
-useGroundTruthDiagChi='false'
+# diagChiMethod="${dir}/${dataset}/samples/sample1/none/k0/replicate1/chis_diag.txt"
+diagChiMethod='zero'
+useGroundTruthDiagChi='true'
 maxDiagChi=10
 dense='true'
 diagBins=32
@@ -42,12 +44,12 @@ nSmallBins=16
 smallBinSize=4
 diagStart=0
 diagCutoff=1024
-bondLength=34
+bondLength=20
 
 k=0
-sample=1
-for method in GNN
- # 3 4 5
+method=none
+for sample in 1
+# 10 100 1000 1001 1002 1003
 do
   echo $sample $m
   max_ent

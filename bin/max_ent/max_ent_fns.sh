@@ -19,6 +19,7 @@ numThreads=1
 # energy params
 useE='false'
 useS='false'
+useD='false'
 
 # general params
 overwrite=1
@@ -135,7 +136,7 @@ max_ent_inner () {
   python3 ~/TICG-chromatin/scripts/get_params.py --config_ifile "${resources}/default_config_maxent.json" --method=$method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --gnn_model_path $GNNModelPath --mlp_model_path $MLPModelPath --seq_seed $seqSeed --chi_method $chiMethod --min_chi=-1 --max_chi=1 --chi_seed $chiSeed --diag_chi_method $diagChiMethod --diag_bins $diagBins --max_diag_chi $maxDiagChi --dense_diagonal_on $dense --dense_diagonal_cutoff $denseCutoff --dense_diagonal_loading $denseLoading --small_binsize $smallBinSize --big_binsize $bigBinSize --n_small_bins $nSmallBins --n_big_bins $nBigBins --diag_start $diagStart --diag_cutoff $diagCutoff --diag_chi_slope $chiDiagSlope --diag_chi_scale $chiDiagScale > params.log
 
   echo "starting get_config"
-  python3 ~/TICG-chromatin/scripts/get_config.py --parallel $parallel --num_threads $numThreads --m $m --max_ent --mode $mode --bond_type $bondType --bond_length $bondLength --dense_diagonal_on $dense --use_ematrix $useE --use_smatrix $useS --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_diag_chi $useGroundTruthDiagChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $TICGSeed --sample_folder $sampleFolder --load_configuration_filename $init_config --phi_chromatin $phiChromatin --boundary_type $boundaryType > config.log
+  python3 ~/TICG-chromatin/scripts/get_config.py --parallel $parallel --num_threads $numThreads --m $m --max_ent --mode $mode --bond_type $bondType --bond_length $bondLength --dense_diagonal_on $dense --use_ematrix $useE --use_smatrix $useS --use_dmatrix $useD --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_diag_chi $useGroundTruthDiagChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $TICGSeed --sample_folder $sampleFolder --load_configuration_filename $init_config --phi_chromatin $phiChromatin --boundary_type $boundaryType > config.log
 
 
   # generate goals
@@ -154,7 +155,7 @@ max_ent_inner () {
   cd $odir
 
   # compare results
-  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --k $k --replicate_folder $odir --save_npy > contact.log
+  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --k $k --replicate_folder $odir --save_npy --plot > contact.log
   python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${odir}/y.npy" --y_diag "$sampleFolder/y_diag.npy" --yhat_diag "${odir}/y_diag.npy" >> contact.log
 
   echo ''

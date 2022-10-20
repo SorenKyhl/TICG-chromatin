@@ -13,50 +13,47 @@ source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dir="/home/erschultz/sequences_to_contact_maps"
+  dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
-  numIterations=10
-  finalSimProductionSweeps=800000
-  productionSweeps=800000
-  equilibSweeps=50000
+  numIterations=1
+  finalSimProductionSweeps=1000000
+  productionSweeps=1000000
+  equilibSweeps=100000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
 i=1001
-dataset='dataset_09_21_21'
+dataset='dataset_09_30_22'
 useE='false'
-diagChiMethod='zero'
-chiMethod='none'
-mode='diag'
-dense='true'
-bondtype='gaussian'
-bondLength=34
+useS='false'
+useD='true'
+GNNModelID='none'
+bondType='gaussian'
+m=1024
+mode='none'
 replicate=1
-parallel='false'
-numThreads=1
-trust_region=100
 
-diagBins=32
+# diagChiMethod="${dir}/${dataset}/samples/sample1/none/k0/replicate1/chis_diag.txt"
+diagChiMethod='mlp'
+MLPModelID=79
+useGroundTruthDiagChi='false'
+maxDiagChi=10
+dense='false'
+diagBins=1024
 nSmallBins=16
 smallBinSize=4
 diagStart=0
-diagCutoff='none'
+diagCutoff=1024
+bondLength=20
 
-
-method='none'
-m=1024
-for sample in 1
-# 14
+k=0
+method=none
+for sample in 1 10 100 1000 1001 1002 1003
 do
-  for k in 0
-  do
-    echo $sample $m
-    max_ent
-    m=$(( $m * 2 ))
-  done
+  echo $sample $m
+  max_ent
 done
-
 
 wait
 

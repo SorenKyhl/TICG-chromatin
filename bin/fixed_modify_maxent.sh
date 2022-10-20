@@ -35,13 +35,13 @@ run()  {
 	rm -d $scratchDirI
 }
 
-k=0
-nSweeps=100000
-dumpFrequency=10000
+k=2
+nSweeps=1000000
+dumpFrequency=100000
 TICGSeed=10
 diag='true'
-dense='true'
-diagBins=32
+dense='false'
+diagBins=1024
 maxDiagChi=10
 nSmallBins=16
 smallBinSize=4
@@ -54,10 +54,14 @@ bondLength=20
 sample=10
 m=1024
 
-# chiDiagMethod="${dataFolder}/samples/sample${sample}/none/k0/replicate1/chis_diag_edit_zero.txt"
-# i=10_edit_zero
-# run &
-#
+chiDiagMethod="${dataFolder}/samples/sample${sample}/GNN-177-S-diagMLP-79/k0/replicate1/chis_diag.txt"
+chiMethod="none"
+seqMethod="${dataFolder}/samples/sample${sample}/ss.npy-s"
+useD='true'
+useS='true'
+i=10_mlp_zeroed
+run &
+
 # chiDiagMethod="${dataFolder}/samples/sample${sample}/none/k0/replicate1/chis_diag_edit2.txt"
 # i=244_edit2
 # run &
@@ -66,22 +70,22 @@ m=1024
 # i=10_edit
 # run &
 #
-chiDiagMethod="${dataFolder}/samples/sample${sample}_edit/log_max_fit.txt"
-i=10_logmax
-run &
-
-chiDiagMethod="${dataFolder}/samples/sample${sample}_edit/logistic_fit.txt"
-i=10_logistic
-run &
-
-chiDiagMethod="${dataFolder}/samples/sample${sample}_edit/logistic_fit_manual.txt"
-i=10_logistic_manual
-run &
-
-chiDiagMethod="${dataFolder}/samples/sample${sample}_edit/linear_max_fit.txt"
-i=10_linearmax
-run &
-
-chiDiagMethod="${dataFolder}/samples/sample${sample}_edit/log_fit.txt"
-i=10_log
-run &
+# chiDiagMethod="${dataFolder}/samples/sample${sample}_edit/log_max_fit.txt"
+# i=10_logmax
+# run &
+#
+# chiDiagMethod="${dataFolder}/samples/sample${sample}_edit/logistic_fit.txt"
+# i=10_logistic
+# run &
+#
+# chiDiagMethod="${dataFolder}/samples/sample${sample}_edit/logistic_fit_manual.txt"
+# i=10_logistic_manual
+# run &
+#
+# chiDiagMethod="${dataFolder}/samples/sample${sample}_edit/linear_max_fit.txt"
+# i=10_linearmax
+# run &
+#
+# chiDiagMethod="${dataFolder}/samples/sample${sample}_edit/log_fit.txt"
+# i=10_log
+# run &

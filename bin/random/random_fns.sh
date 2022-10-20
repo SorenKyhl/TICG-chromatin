@@ -94,7 +94,7 @@ random_inner() {
 	~/TICG-chromatin/TICG-engine > log.log
 
 	# calculate contact map
-	python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --k $k --save_npy --random_mode > contact_map.log
+	python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --k $k --save_npy --random_mode --plot > contact_map.log
 
 	# move inputs and outputs to own folder
 	mkdir -p $dir

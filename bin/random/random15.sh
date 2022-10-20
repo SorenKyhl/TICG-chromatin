@@ -37,7 +37,7 @@ for i in $(seq 1 $tasks)
 do
   start=$(( $(( $(( $i - 1 ))*$samples / $tasks ))+$startSample ))
   stop=$(( $start + $samplesPerTask - 1 ))
-  i=$(( i + $tasks * $scriptIndex ))
+  i=$(( $i + $tasks * $scriptIndex ))
   echo $start $stop
   scratchDirI="${scratchDir}/TICG${i}"
   random &
