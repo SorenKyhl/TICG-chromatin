@@ -943,17 +943,21 @@ def time_comparison_dmatrix():
     plt.savefig(osp.join(dir, 'time2.png'))
     plt.close()
 
+def main3():
+    print('hello world')
+
 if __name__ == '__main__':
     # compare_y_diag()
     # check_if_same()
     # test_robust_PCA()
     # check_dataset('dataset_09_26_22')
     # time_comparison()
-    time_comparison_dmatrix()
+    # time_comparison_dmatrix()
     # construct_sc_xyz()
     # convergence_check()
     # main()
     # main2()
+    main3()
     # plot_sd()
     # plot_modified_max_ent(10)
     # modify_maxent_diag_chi(10)

@@ -136,11 +136,11 @@ public:
 	bool ematrix_on;
 	bool dmatrix_on;
 
-	std::vector<std::vector<double>> smatrix;
+	Eigen::MatrixXd smatrix;
 	std::string smatrix_filename;
-	std::vector<std::vector<double>> ematrix;
+	Eigen::MatrixXd ematrix;
 	std::string ematrix_filename;
-	std::vector<std::vector<double>> dmatrix;
+	Eigen::MatrixXd dmatrix;
 	std::string dmatrix_filename;
 
 	// methods

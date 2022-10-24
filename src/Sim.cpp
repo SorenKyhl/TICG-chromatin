@@ -176,7 +176,9 @@ nlohmann::json Sim::readInput() {
 	nlohmann::json config;
 	i >> config;
 
+  assert(config.contains("nbeads")); nbeads = config["nbeads"];
 	assert(config.contains("plaid_on")); plaid_on = config["plaid_on"];
+  assert(config.contains("diagonal_on")); diagonal_on= config["diagonal_on"];
 
 	if (plaid_on)
 	{
@@ -229,11 +231,14 @@ nlohmann::json Sim::readInput() {
 		load_bead_types = false;
 	}
 
-	assert(config.contains("diagonal_on")); diagonal_on= config["diagonal_on"];
-	assert(config.contains("nbeads")); nbeads = config["nbeads"];
-
 	if (diagonal_on)
 	{
+    assert(config.contains("diag_pseudobeads_on")); Cell::diag_pseudobeads_on = config["diag_pseudobeads_on"];
+    assert(config.contains("diagonal_linear")); Cell::diagonal_linear = config["diagonal_linear"];
+    assert(config.contains("dense_diagonal_on")); Cell::dense_diagonal_on = config["dense_diagonal_on"];
+    assert(config.contains("diag_cutoff")); Cell::diag_cutoff = config["diag_cutoff"];
+    assert(config.contains("diag_start")); Cell::diag_start = config["diag_start"];
+
 		assert(config.contains("diag_chis"));
 		for (auto e : config["diag_chis"])
 		{
@@ -241,7 +246,51 @@ nlohmann::json Sim::readInput() {
 		}
 
 		Cell::diag_nbins = diag_chis.size();
-	}
+
+    int ndiag_beads = Cell::diag_cutoff - Cell::diag_start; // only count beads that will have diagonal interactions
+  	if (Cell::dense_diagonal_on)
+  	{
+      if (config.contains("n_small_bins") && config.contains("n_big_bins"))
+      {
+        Cell::n_small_bins = config["n_small_bins"];
+        Cell::n_big_bins = config["n_big_bins"];
+        assert(Cell::n_small_bins + Cell::n_big_bins == Cell::diag_nbins);
+      }
+      else
+      {
+        assert(config.contains("dense_diagonal_loading")); dense_diagonal_loading = config["dense_diagonal_loading"];
+
+        Cell::n_small_bins = int(dense_diagonal_loading * Cell::diag_nbins);
+        Cell::n_big_bins = Cell::diag_nbins - Cell::n_small_bins;
+      }
+
+      if (config.contains("small_binsize") && config.contains("big_binsize"))
+      {
+        Cell::small_binsize = config["small_binsize"];
+        Cell::big_binsize = config["big_binsize"];
+      }
+      else
+      {
+        assert(config.contains("dense_diagonal_cutoff")); dense_diagonal_cutoff = config["dense_diagonal_cutoff"];
+        assert(floorf(ndiag_beads * dense_diagonal_cutoff) == ndiag_beads * dense_diagonal_cutoff);
+        int dividing_line = ndiag_beads * dense_diagonal_cutoff;
+        Cell::small_binsize = int( dividing_line / Cell::n_small_bins );
+        Cell::big_binsize = int( (ndiag_beads - dividing_line) / Cell::n_big_bins );
+      }
+  		std::cout << "number of small bins: " << Cell::n_small_bins << ", of size: " << Cell::small_binsize << std::endl;
+  		std::cout << "number of big bins: " << Cell::n_big_bins << ", of size: " << Cell::big_binsize << std::endl;
+      std::cout << "number of diag beads: " << ndiag_beads << std::endl;
+  		assert(Cell::n_big_bins + Cell::n_small_bins == Cell::diag_nbins);
+  		assert(Cell::small_binsize * Cell::n_small_bins + Cell::big_binsize * Cell::n_big_bins == ndiag_beads);
+  	}
+  	else
+  	{
+  		std::cout << "number of bins: " << Cell::diag_nbins << std::endl;
+  		Cell::diag_binsize = ndiag_beads / diag_chis.size();
+  		std::cout << "binsize " << Cell::diag_binsize << std::endl;
+      assert(ndiag_beads % Cell::diag_binsize == 0);
+  	}
+  }
 
 	assert(config.contains("gridmove_on")); gridmove_on = config["gridmove_on"];
 	//
@@ -258,8 +307,6 @@ nlohmann::json Sim::readInput() {
 	assert(config.contains("rotate_on")); rotate_on = config["rotate_on"];
 
   // energy/chi params
-  assert(config.contains("bonded_on")); bonded_on = config["bonded_on"];
-	assert(config.contains("nonbonded_on")); nonbonded_on = config["nonbonded_on"];
   assert(config.contains("boundary_chi")); boundary_chi = config["boundary_chi"];
   assert(config.contains("constant_chi_on")); constant_chi_on = config["constant_chi_on"];
   assert(config.contains("constant_chi")); constant_chi = config["constant_chi"];
@@ -284,6 +331,9 @@ nlohmann::json Sim::readInput() {
   assert(config.contains("beadvol")); Cell::beadvol  = config["beadvol"];
 	assert(config.contains("bond_type")); bond_type = config["bond_type"];
 	assert(config.contains("bond_length")); bond_length = config["bond_length"];
+  assert(config.contains("bonded_on")); bonded_on = config["bonded_on"];
+	assert(config.contains("nonbonded_on")); nonbonded_on = config["nonbonded_on"]; // TODO does this still work as intended?
+
 
   // dump params
   assert(config.contains("dump_frequency")); dump_frequency = config["dump_frequency"];
@@ -307,12 +357,6 @@ nlohmann::json Sim::readInput() {
 	assert(config.contains("compressibility_on")); Cell::compressibility_on = config["compressibility_on"];
   assert(config.contains("kappa")); Cell::kappa = config["kappa"];
 
-  // diag params
-  assert(config.contains("diag_pseudobeads_on")); Cell::diag_pseudobeads_on = config["diag_pseudobeads_on"];
-  assert(config.contains("diagonal_linear")); Cell::diagonal_linear = config["diagonal_linear"];
-  assert(config.contains("dense_diagonal_on")); Cell::dense_diagonal_on = config["dense_diagonal_on"];
-  assert(config.contains("diag_cutoff")); Cell::diag_cutoff = config["diag_cutoff"];
-  assert(config.contains("diag_start")); Cell::diag_start = config["diag_start"];
   assert(config.contains("parallel")); Grid::parallel = config["parallel"];
 	assert(config.contains("beadvol")); Cell::beadvol  = config["beadvol"];
 	assert(config.contains("cell_volumes")); Grid::cell_volumes = config["cell_volumes"];
@@ -534,53 +578,6 @@ void Sim::calculateParameters(nlohmann::json config) {
 	n_pivot = pivot_on ? decay_length/10: 0;
 	n_rot = rotate_on ? nbeads : 0;
 	nSteps = n_trans + n_crank + n_pivot + n_rot;
-
-  if (diagonal_on)
-  {
-    int ndiag_beads = Cell::diag_cutoff - Cell::diag_start; // only count beads that will have diagonal interactions
-  	if (Cell::dense_diagonal_on)
-  	{
-      if (config.contains("n_small_bins") && config.contains("n_big_bins"))
-      {
-        Cell::n_small_bins = config["n_small_bins"];
-        Cell::n_big_bins = config["n_big_bins"];
-        assert(Cell::n_small_bins + Cell::n_big_bins == Cell::diag_nbins);
-      }
-      else
-      {
-        assert(config.contains("dense_diagonal_loading")); dense_diagonal_loading = config["dense_diagonal_loading"];
-
-        Cell::n_small_bins = int(dense_diagonal_loading * Cell::diag_nbins);
-        Cell::n_big_bins = Cell::diag_nbins - Cell::n_small_bins;
-      }
-
-      if (config.contains("small_binsize") && config.contains("big_binsize"))
-      {
-        Cell::small_binsize = config["small_binsize"];
-        Cell::big_binsize = config["big_binsize"];
-      }
-      else
-      {
-        assert(config.contains("dense_diagonal_cutoff")); dense_diagonal_cutoff = config["dense_diagonal_cutoff"];
-        assert(floorf(ndiag_beads * dense_diagonal_cutoff) == ndiag_beads * dense_diagonal_cutoff);
-        int dividing_line = ndiag_beads * dense_diagonal_cutoff;
-        Cell::small_binsize = int( dividing_line / Cell::n_small_bins );
-        Cell::big_binsize = int( (ndiag_beads - dividing_line) / Cell::n_big_bins );
-      }
-  		std::cout << "number of small bins: " << Cell::n_small_bins << ", of size: " << Cell::small_binsize << std::endl;
-  		std::cout << "number of big bins: " << Cell::n_big_bins << ", of size: " << Cell::big_binsize << std::endl;
-      std::cout << "number of diag beads: " << ndiag_beads << std::endl;
-  		assert(Cell::n_big_bins + Cell::n_small_bins == Cell::diag_nbins);
-  		assert(Cell::small_binsize * Cell::n_small_bins + Cell::big_binsize * Cell::n_big_bins == ndiag_beads);
-  	}
-  	else
-  	{
-  		std::cout << "number of bins: " << Cell::diag_nbins << std::endl;
-  		Cell::diag_binsize = ndiag_beads / diag_chis.size();
-  		std::cout << "binsize " << Cell::diag_binsize << std::endl;
-      assert(ndiag_beads % Cell::diag_binsize == 0);
-  	}
-  }
 }
 
 void Sim::loadConfiguration() {
@@ -698,7 +695,7 @@ void Sim::loadBeadTypes() {
 
 		if ( IFBEADTYPE.good() )
 		{
-			for(int i=0; i<nbeads; i++)
+			for (int i=0; i<nbeads; i++)
 			{
 				//beads[i].d.reserve(nspecies);
 				beads[i].d.resize(nspecies);
@@ -1612,46 +1609,70 @@ void Sim::dumpContacts(int sweep) {
 
 void Sim::setupSmatrix() {
 	std::ifstream smatrixfile(smatrix_filename);
+  smatrix.resize(nbeads, nbeads);
 
-	if ( !smatrixfile.good() ) {
-		throw std::runtime_error(smatrix_filename + " does not exist or cannot be opened");
+	if ( smatrixfile.good() ) {
+    for (int i=0; i<nbeads; i++) {
+  		for (int j=0; j<nbeads; j++) {
+  			smatrixfile >> smatrix[i][j];
+  		}
+  	}
 	}
+  else
+  {
+    std::cout << smatrix_filename << " does not exist or cannot be opened\n";
+    Eigen::MatrixXd psi;
 
-	smatrix.resize(nbeads);
-	for (int i=0; i<nbeads; i++) {
-		smatrix[i].resize(nbeads);
-		for (int j=0; j<nbeads; j++) {
-			smatrixfile >> smatrix[i][j];
-		}
-	}
+    // need to define psi
+    psi = Eigen::MatrixXd::Zero(nbeads, nspecies);
+    for (int i=0; i<nbeads; i++)
+    {
+      for (int k=0; k<nspecies; k++)
+      {
+        psi(i, k) = beads[i].d[k];
+      }
+
+    }
+    // try and create smatrix from chi and psi
+    smatrix = psi*chis*psi.T // chi must be triu - TODO check
+  }
+
 	std::cout << "loaded Smatrix, first element:" << smatrix[0][0] << std::endl;
 }
 
 void Sim::setupEmatrix() {
 	std::ifstream ematrixfile(ematrix_filename);
+  ematrix.resize(nbeads, nbeads);
 
-	if ( !ematrixfile.good() ) {
-		throw std::runtime_error(ematrix_filename + " does not exist or cannot be opened");
+	if ( ematrixfile.good() ) {
+    for (int i=0; i<nbeads; i++) {
+      for (int j=0; j<nbeads; j++) {
+        ematrixfile >> ematrix(i,j);
+      }
+    }
 	}
+  else
+  {
+    // first get smatrix
+    Sim::setupSmatrix();
 
-	ematrix.resize(nbeads);
-	for (int i=0; i<nbeads; i++) {
-		ematrix[i].resize(nbeads);
-		for (int j=0; j<nbeads; j++) {
-			ematrixfile >> ematrix[i][j];
-		}
-	}
+    ematrix = smatrix + smatrix.transpose() - smatrix.diagonal().asDiagonal();
+
+    throw std::runtime_error(ematrix_filename + " does not exist or cannot be opened");
+  }
+
+
+
 	std::cout << "loaded Ematrix, first element:" << ematrix[0][0] << std::endl;
 }
 
 void Sim::setupDmatrix() {
 	std::ifstream dmatrixfile(dmatrix_filename);
-  dmatrix.resize(nbeads);
+  dmatrix.resize(nbeads, nbeads);
 
 	if ( dmatrixfile.good() ) {
     std::cout << dmatrix_filename << " opened\n";
     for (int i=0; i<nbeads; i++) {
-      dmatrix[i].resize(nbeads);
       for (int j=0; j<nbeads; j++) {
         dmatrixfile >> dmatrix[i][j];
       }
@@ -1664,7 +1685,6 @@ void Sim::setupDmatrix() {
     // try and create dmatrix from diag_chis
     for (int i=0; i<nbeads; i++)
     {
-      dmatrix[i].resize(nbeads);
       for (int j=0; j<nbeads; j++)
       {
         int d = std::abs(i - j);
@@ -1672,10 +1692,14 @@ void Sim::setupDmatrix() {
         {
           d -= Cell::diag_start; // TODO check that this works for non-zero diag_start
           int d_index = Cell::binDiagonal(d);
-          dmatrix[i][j] = diag_chis[d_index];
+          dmatrix(i,j) = diag_chis[d_index];
+        }
+        else
+        {
+          dmatrix(i,j) = 0;
         }
       }
     }
-	std::cout << "loaded Dmatrix, first element:" << dmatrix[0][0] << std::endl;
   }
+  std::cout << "loaded Dmatrix, first element:" << dmatrix[0][0] << std::endl;
 }
