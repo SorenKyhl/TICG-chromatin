@@ -37,8 +37,8 @@ run()  {
 
 
 k=4
-nSweeps=10000
-dumpFrequency=1000
+nSweeps=1000000
+dumpFrequency=100000
 dumpStatsFrequency=100
 trackContactMap='true'
 TICGSeed=10
@@ -53,63 +53,52 @@ diagStart=0
 diagCutoff='none'
 bondLength=28
 
-# this tests if grid move is a problem, and if the TICG simulations have any systematic bias as a function of time
-# chiDiagMethod="linear"
-# i=10
-# maxDiagChi=10
-# run &
-# i=20
-# maxDiagChi=20
-# run &
-# i=2
-# gridMoveOn='false'
-# run &
-
 # this tests time comparison of various energy formalisms
 gridMoveOn='true'
 trackContactMap='false'
 chiDiagMethod="linear"
 updateContactsDistance='false'
 
-# i=1
-# for m in 1024 2048 4096 512
-# do
-# 	for useD in 'true' 'false'
-# 	do
-# 		for j in 1 2 3
-# 		do
-# 			if [ $useD = 'true' ]
-# 			then
-# 				useE='true'
-# 				echo $i $useD $m $useE
-# 				run &
-# 			else
-# 				useE='false'
-# 			fi
-# 			i=$(( $i + 1 ))
-# 		done
-# 	done
-# done
-
-i=100
-useE='false'
-m=1024
-dense='false'
-diagBins=32
-chiSeed=21
-seqSeed=12
-for diagBins in 32 64 128
+i=201
+for m in 512 1024 2048
 do
 	for useD in 'true' 'false'
 	do
-		for j in 1
+		for j in 1 2 3
 		do
-			echo $i $useD $m $diagBins
+			if [ $useD = 'true' ]
+			then
+				useE='true'
+			else
+				useE='false'
+			fi
+			echo $i $useD $m $useE
 			# run &
-
 			i=$(( $i + 1 ))
 		done
 	done
 done
+#
+# i=204
+# useE='true'
+# useS='false'
+# m=1024
+# dense='false'
+# diagBins=32
+# chiSeed=21
+# seqSeed=12
+# for diagBins in 32
+# do
+# 	for useD in 'true'
+# 	do
+# 		for j in 1
+# 		do
+# 			echo $i $useD $m $diagBins
+# 			run &
+#
+# 			i=$(( $i + 1 ))
+# 		done
+# 	done
+# done
 
 wait

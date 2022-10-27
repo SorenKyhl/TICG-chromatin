@@ -233,7 +233,7 @@ double Grid::boundaryEnergy(const std::unordered_set<Cell*>& flagged_cells, cons
 	return U;
 };
 
-double Grid::SmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Smatrix) {
+double Grid::SmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const Eigen::MatrixXd &Smatrix) {
 	// nonbonded volume interactions
 	double U = 0;
 	for(Cell* cell : flagged_cells)
@@ -244,7 +244,7 @@ double Grid::SmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const
 	return U;
 };
 
-double Grid::EmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Ematrix) {
+double Grid::EmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const Eigen::MatrixXd &Ematrix) {
 	// nonbonded volume interactions
 	double U = 0;
 	for(Cell* cell : flagged_cells)
@@ -255,7 +255,7 @@ double Grid::EmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const
 	return U;
 };
 
-double Grid::DmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells,  const std::vector<std::vector<double>> &Dmatrix) {
+double Grid::DmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells,  const Eigen::MatrixXd &Dmatrix) {
 	// nonbonded volume interactions
 	double U = 0;
 	for(Cell* cell : flagged_cells)

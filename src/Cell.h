@@ -46,9 +46,9 @@ public:
 	double getConstantEnergy(const double constant_chi);
 	double getDiagEnergy(const std::vector<double> diag_chis);
 	double getBoundaryEnergy(const double boundary_chi, const double delta);
-	double getSmatrixEnergy(const std::vector<std::vector<double>> &Smatrix);
-	double getEmatrixEnergy(const std::vector<std::vector<double>> &Ematrix);
-	double getDmatrixEnergy(const std::vector<std::vector<double>> &Dmatrix);
+	double getSmatrixEnergy(const Eigen::MatrixXd &Smatrix);
+	double getEmatrixEnergy(const Eigen::MatrixXd &Ematrix);
+	double getDmatrixEnergy(const Eigen::MatrixXd &Dmatrix);
 
 
 	double bonds_to_beads(int bonds);

@@ -34,7 +34,6 @@
   "smatrix_on": false,
   "ematrix_on": false,
   "dmatrix_on": false,
-  "dmatrix_filename": "none",
   "phi_solvent_max": 0.5,
   "phi_chromatin": 0.06,
   "kappa": 0,

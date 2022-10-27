@@ -807,12 +807,12 @@ def compare_y_diag():
 
 def check_if_same():
     # check if contact maps are identical
-    dir = '/home/erschultz/sequences_to_contact_maps/dataset_04_27_22/samples'
+    dir = '/home/erschultz/dataset_test/samples'
 
     y_file = 'y.npy'
-    y_ref = np.load(osp.join(dir, f'sample105/{y_file}'))
+    y_ref = np.load(osp.join(dir, f'sample301/{y_file}'))
 
-    for s in [8, 9, 10, 11, 12]:
+    for s in [304, 305, 306, 307]:
         print('s', s)
         sample_dir = osp.join(dir, f'sample{s}')
         y = np.load(osp.join(sample_dir, f'{y_file}'))
@@ -825,8 +825,7 @@ def time_comparison_dmatrix():
 
     time_dict_e = defaultdict(list) # m : list of times (when use_e = True)
     time_dict = defaultdict(list) # m : list of times
-    for sample in range(1, 25):
-        print(sample)
+    for sample in range(201, 219):
         sample_dir = osp.join(dir, f'sample{sample}')
         log_file = osp.join(sample_dir, 'log.log')
 
@@ -836,19 +835,21 @@ def time_comparison_dmatrix():
                     if line.startswith('Took'):
                         time = int(line.split(' ')[1][:-7])
                         time /= 60
-                        print(time)
                     if line.startswith('contactmap size'):
                         m = int(line.split(': ')[1])
-                        print(m)
-            if osp.exists(osp.join(sample_dir, 'e_matrix.txt')):
-                time_dict_e[m].append(time)
-            else:
-                time_dict[m].append(time)
+
+        config_file = osp.join(sample_dir, 'config.json')
+        with open(config_file, 'r') as f:
+            config = json.load(f)
+        if config['ematrix_on']:
+            time_dict_e[m].append(time)
+        else:
+            time_dict[m].append(time)
 
     print(time_dict_e)
     print(time_dict)
 
-    m_arr = np.array([512, 1024, 2048, 4096])
+    m_arr = np.array([512, 1024, 2048])
     time_mean = np.zeros_like(m_arr)
     time_std = np.zeros_like(m_arr)
     time_e_mean = np.zeros_like(m_arr)
@@ -877,8 +878,8 @@ def time_comparison_dmatrix():
     ax.set_ylabel('Total Time (mins)', fontsize=16)
     ax2.set_ylabel('% of Original', fontsize=16)
     ax.set_xlabel('Simulation size', fontsize=16)
-    ax.set_ylim((0, 84))
-    ax2.set_ylim((None, 74))
+    # ax.set_ylim((0, 84))
+    # ax2.set_ylim((None, 74))
     ax.set_xticks(m_arr)
     ax.legend(loc='upper left', title='Total Time')
     ax2.legend(loc='upper right')
@@ -943,12 +944,10 @@ def time_comparison_dmatrix():
     plt.savefig(osp.join(dir, 'time2.png'))
     plt.close()
 
-def main3():
-    print('hello world')
 
 if __name__ == '__main__':
     # compare_y_diag()
-    # check_if_same()
+    check_if_same()
     # test_robust_PCA()
     # check_dataset('dataset_09_26_22')
     # time_comparison()
@@ -957,9 +956,7 @@ if __name__ == '__main__':
     # convergence_check()
     # main()
     # main2()
-    main3()
     # plot_sd()
     # plot_modified_max_ent(10)
     # modify_maxent_diag_chi(10)
     # makeDirsForMaxEnt("dataset_09_21_21")
-    # test_logarithmic_diagonal()

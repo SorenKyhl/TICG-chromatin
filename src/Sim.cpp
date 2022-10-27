@@ -36,11 +36,10 @@ void Sim::run() {
 		else exit (EXIT_FAILURE);
 
   calculateParameters(config);  // calculates derived parameters
+  initialize();           // set particle positions and construct bonds
+  if (dmatrix_on) { setupDmatrix(); }
 	if (smatrix_on) { setupSmatrix(); }
 	if (ematrix_on) { setupEmatrix(); }
-  if (dmatrix_on) { setupDmatrix(); }
-	makeOutputFiles();      // open files
-	initialize();           // set particle positions and construct bonds
 	grid.generate();        // creates the grid locations
 	grid.setActiveCells();  // populates the active cell locations
 	grid.meshBeads(beads);  // populates the grid locations with beads;
@@ -178,7 +177,7 @@ nlohmann::json Sim::readInput() {
 
   assert(config.contains("nbeads")); nbeads = config["nbeads"];
 	assert(config.contains("plaid_on")); plaid_on = config["plaid_on"];
-  assert(config.contains("diagonal_on")); diagonal_on= config["diagonal_on"];
+  assert(config.contains("diagonal_on")); diagonal_on = config["diagonal_on"];
 
 	if (plaid_on)
 	{
@@ -310,21 +309,15 @@ nlohmann::json Sim::readInput() {
   assert(config.contains("boundary_chi")); boundary_chi = config["boundary_chi"];
   assert(config.contains("constant_chi_on")); constant_chi_on = config["constant_chi_on"];
   assert(config.contains("constant_chi")); constant_chi = config["constant_chi"];
+  smatrix_filename="none";
+  ematrix_filename="none";
+  dmatrix_filename="none";
 	assert(config.contains("smatrix_on")); smatrix_on = config["smatrix_on"];
-  if (smatrix_on)
-  {
-    assert(config.contains("smatrix_filename")); smatrix_filename = config["smatrix_filename"];
-  }
+  if (config.contains("smatrix_filename")) {smatrix_filename = config["smatrix_filename"];}
 	assert(config.contains("ematrix_on")); ematrix_on = config["ematrix_on"];
-  if (ematrix_on)
-  {
-    assert(config.contains("ematrix_filename")); ematrix_filename = config["ematrix_filename"];
-  }
+  if (config.contains("ematrix_filename")) {ematrix_filename = config["ematrix_filename"];}
 	assert(config.contains("dmatrix_on")); dmatrix_on = config["dmatrix_on"];
-  if (dmatrix_on)
-  {
-    assert(config.contains("dmatrix_filename")); dmatrix_filename = config["dmatrix_filename"];
-  }
+  if (config.contains("dmatrix_filename")) {dmatrix_filename = config["dmatrix_filename"];}
   assert(config.contains("boundary_attract_on")); boundary_attract_on = config["boundary_attract_on"];
 
   // bead/bond params
@@ -402,7 +395,7 @@ void Sim::makeDataAndLogFiles()
 }
 
 void Sim::makeOutputFiles() {
-	std::cout << "making output files ... ";
+	std::cout << " making output files ... ";
 
 	xyz_out_filename = "./" + data_out_filename + "/output.xyz";
 	energy_out_filename = "./" + data_out_filename + "/energy.traj";
@@ -466,9 +459,11 @@ void Sim::initialize() {
 	std::cout << "Initializing simulation objects ... " << std::endl;
 	Timer t_init("Initializing");
 
+  makeOutputFiles();      // open files
+
 	// set configuration
 	beads.resize(nbeads);  // uses default constructor initialization to create nbeads;
-	std::cout << "load configuration is " << load_configuration << std::endl;
+	std::cout << " load configuration is " << load_configuration << std::endl;
 	if(load_configuration)
 	{
 		loadConfiguration();
@@ -486,22 +481,7 @@ void Sim::initialize() {
 
 	// output initial xyz configuration
 	dumpData();
-	std::cout << "Objects created" << std::endl;
-
-}
-
-
-
-void Sim::volParameters() {
-	double Vbar = 7765.77;  // nm^3/bead: reduced number volume per spakowitz: V/N
-	double vol = Vbar*nbeads; // simulation volume in nm^3
-	grid.L= std::round(std::pow(vol,1.0/3.0) / grid.delta); // number of grid cells per side // ROUNDED, won't exactly equal a desired volume frac
-	std::cout << "grid.L is: " << grid.L << std::endl;
-	total_volume = pow(grid.L*grid.delta/1000.0, 3); // micrometers^3 ONLY TRUE FOR CUBIC SIMULATIONS
-	std::cout << "volume is: " << total_volume << std::endl;
-	std::cout << "volume fraction is: " << nbeads*Cell::beadvol/(total_volume*1000*1000*1000) << std::endl;
-
-	grid.radius = std::pow(3*vol/(4*M_PI), 1.0/3.0); // radius of simulation volume
+	std::cout << "Simulation objects initialized" << std::endl;
 }
 
 void Sim::volParameters_new() {
@@ -545,7 +525,7 @@ void Sim::volParameters_new() {
 		std::cout << "grid.radius is " << grid.radius << std::endl;
 		std::cout << "grid.L is: " << grid.L << std::endl;
 		std::cout << "simulation volume is: " << total_volume/1000/1000/1000 << " um^3" << std::endl;
-		std::cout << "sphere_center is : " << grid.sphere_center[0] << " nm " << std::endl;
+		// std::cout << "sphere_center is : " << grid.sphere_center[0] << " nm " << std::endl;
 	}
 
 }
@@ -556,7 +536,6 @@ void Sim::calculateParameters(nlohmann::json config) {
 	step_grid = grid.delta/10.0; // size of grid displacement MC moves
 
 	std::cout << "bead volume is : " << Cell::beadvol << std::endl;
-	//volParameters();
 	volParameters_new();
 
 	//grid.boundary_radius = std::round(grid.radius); // radius in units of grid cells
@@ -635,20 +614,19 @@ void Sim::initRandomCoil(double bondlength) {
 	double center; // center of simulation box
 	if (grid.cubic_boundary)
 	{
-		std::cout << "------------ cubic centering" << std::endl;
+		std::cout << " cubic centering" << std::endl;
 		center = grid.delta*grid.L/2;
 	}
 	else if (grid.spherical_boundary)
 	{
-		std::cout << "------------ sphere centering" << std::endl;
-		std::cout << "assigning center" << std::endl;
+		std::cout << " sphere centering" << std::endl;
+		std::cout << "  assigning center" << std::endl;
 		center = grid.sphere_center[0];
-		std::cout << " center is " << center << std::endl;
-		std::cout << " grid.sphere_center[0] " << grid.sphere_center[0] << std::endl;
+		std::cout << "  center is " << center << std::endl;
 	}
 	else
 	{
-		std::cout << "------------ did not center" << std::endl;
+		std::cout << " did not center" << std::endl;
 	}
 
 	beads[0].r = {center, center, center}; // start in middlle of the box
@@ -709,6 +687,7 @@ void Sim::loadBeadTypes() {
 			throw std::runtime_error(bead_type_file + " does not exist or could not be opened");
 		}
 	}
+  std::cout << " loaded beads, first bead, first mark:" << beads[0].d[0] << std::endl;
 }
 
 void Sim::constructBonds() {
@@ -727,6 +706,7 @@ void Sim::constructBonds() {
 			bonds[i] = new Harmonic_Bond{&beads[i], &beads[i+1], k, 0};
 		}
   }
+  std::cout << " bonds constructed " << std::endl;
 }
 
 void Sim::print() {
@@ -1528,7 +1508,8 @@ void Sim::dumpObservables(int sweep) {
 		fclose(obs_out);
   }
 
-	if (diagonal_on)
+	if (diagonal_on || dmatrix_on)
+  // if dmatrix_on and (smatrix_on or ematrix_on), diagonal_on will be set to False for computational efficiency
 	{
 		double Udiag = grid.diagEnergy(grid.active_cells, diag_chis); // to update phis_diag? jan 28-2022
 		diag_obs_out = fopen(diag_obs_out_filename.c_str(), "a");
@@ -1612,15 +1593,16 @@ void Sim::setupSmatrix() {
   smatrix.resize(nbeads, nbeads);
 
 	if ( smatrixfile.good() ) {
+    std::cout << smatrix_filename << "smatrix_filename is good\n";
     for (int i=0; i<nbeads; i++) {
   		for (int j=0; j<nbeads; j++) {
-  			smatrixfile >> smatrix[i][j];
+  			smatrixfile >> smatrix(i,j);
   		}
   	}
 	}
   else
   {
-    std::cout << smatrix_filename << " does not exist or cannot be opened\n";
+    std::cout << "smatrix_filename (" << smatrix_filename << ") does not exist or cannot be opened\n";
     Eigen::MatrixXd psi;
 
     // need to define psi
@@ -1633,11 +1615,23 @@ void Sim::setupSmatrix() {
       }
 
     }
+    // ensure chis are triu
+    Eigen::MatrixXd chis_triu;
+    chis_triu = chis.triangularView<Eigen::Upper>();
+
     // try and create smatrix from chi and psi
-    smatrix = psi*chis*psi.T // chi must be triu - TODO check
+    smatrix = psi*chis*psi.transpose();
   }
 
-	std::cout << "loaded Smatrix, first element:" << smatrix[0][0] << std::endl;
+  if (dmatrix_on)
+  {
+    Eigen::MatrixXd dmatrix_diag = dmatrix.diagonal().asDiagonal();
+    dmatrix += dmatrix_diag;
+    smatrix += dmatrix;
+    diagonal_on = false;
+  }
+
+	std::cout << "loaded Smatrix, first element:" << smatrix(0,0) << std::endl;
 }
 
 void Sim::setupEmatrix() {
@@ -1656,14 +1650,12 @@ void Sim::setupEmatrix() {
     // first get smatrix
     Sim::setupSmatrix();
 
-    ematrix = smatrix + smatrix.transpose() - smatrix.diagonal().asDiagonal();
+    Eigen::MatrixXd left = smatrix + smatrix.transpose();
+    Eigen::MatrixXd right = smatrix.diagonal().asDiagonal();
 
-    throw std::runtime_error(ematrix_filename + " does not exist or cannot be opened");
+    ematrix = left - right;
   }
-
-
-
-	std::cout << "loaded Ematrix, first element:" << ematrix[0][0] << std::endl;
+	std::cout << "loaded Ematrix, first element:" << ematrix(0,0) << std::endl;
 }
 
 void Sim::setupDmatrix() {
@@ -1674,13 +1666,13 @@ void Sim::setupDmatrix() {
     std::cout << dmatrix_filename << " opened\n";
     for (int i=0; i<nbeads; i++) {
       for (int j=0; j<nbeads; j++) {
-        dmatrixfile >> dmatrix[i][j];
+        dmatrixfile >> dmatrix(i,j);
       }
     }
 	}
   else
   {
-    std::cout << dmatrix_filename << " does not exist or cannot be opened\n";
+    std::cout << "dmatrix_filename (" << dmatrix_filename << ") does not exist or cannot be opened\n";
 
     // try and create dmatrix from diag_chis
     for (int i=0; i<nbeads; i++)
@@ -1701,5 +1693,5 @@ void Sim::setupDmatrix() {
       }
     }
   }
-  std::cout << "loaded Dmatrix, first element:" << dmatrix[0][0] << std::endl;
+  std::cout << "loaded Dmatrix, first element:" << dmatrix(0,0) << std::endl;
 }

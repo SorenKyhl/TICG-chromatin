@@ -105,7 +105,7 @@ double Cell::getConstantEnergy(const double constant_chi) {
 	return U;
 };
 
-double Cell::getSmatrixEnergy(const std::vector<std::vector<double>> &Smatrix)
+double Cell::getSmatrixEnergy(const Eigen::MatrixXd &Smatrix)
 {
 	double U = 0;
 
@@ -123,13 +123,13 @@ double Cell::getSmatrixEnergy(const std::vector<std::vector<double>> &Smatrix)
 		for(int j=0; j<imax; j++)
 		{
 
-			U += Smatrix[indices[i]][indices[j]] * beadvol/vol;
+			U += Smatrix(indices[i],indices[j]) * beadvol/vol;
 		}
 	}
 	return U;
 }
 
-double Cell::getEmatrixEnergy(const std::vector<std::vector<double>> &Ematrix)
+double Cell::getEmatrixEnergy(const Eigen::MatrixXd &Ematrix)
 {
 	double U = 0;
 	std::vector<int> indices;
@@ -143,13 +143,13 @@ double Cell::getEmatrixEnergy(const std::vector<std::vector<double>> &Ematrix)
 	{
 		for(int j=i; j<imax; j++)
 		{
-			U += Ematrix[indices[i]][indices[j]] * beadvol/vol;
+			U += Ematrix(indices[i],indices[j]) * beadvol/vol;
 		}
 	}
 	return U;
 }
 
-double Cell::getDmatrixEnergy(const std::vector<std::vector<double>> &Dmatrix)
+double Cell::getDmatrixEnergy(const Eigen::MatrixXd &Dmatrix)
 {
 	double U = 0;
 
@@ -181,7 +181,7 @@ double Cell::getDmatrixEnergy(const std::vector<std::vector<double>> &Dmatrix)
 	{
 		for(int j=i; j<imax; j++)
 		{
-			U += Dmatrix[indices[i]][indices[j]] * beadvol/vol * 2;
+			U += Dmatrix(indices[i], indices[j]) * beadvol/vol * 2;
 		}
 	}
 	return U;

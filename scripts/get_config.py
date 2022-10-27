@@ -277,7 +277,6 @@ def main():
         config["diagonal_on"] = False
 
     if args.use_dmatrix:
-        # assert args.use_ematrix or args.use_smatrix
         diag_chis = np.load('diag_chis.npy')
         if len(diag_chis) == args.m:
             D = calculate_D(diag_chis)
@@ -306,63 +305,55 @@ def main():
 
         e, s = calculate_E_S(psi, args.chi)
     else:
-        if osp.exists('s.npy'):
-            s = np.load('s.npy')
-        if osp.exists('e.npy'):
-            e = np.load('e.npy')
-
-    if e is not None:
-        e += args.e_constant
-    if s is not None:
-        s += args.s_constant
-
-
-
-    if args.use_ematrix or args.use_smatrix:
+        assert args.use_ematrix or args.use_smatrix
         config['bead_type_files'] = None
         config["nspecies"] = 0
+
+        if osp.exists('s.npy'):
+            s = np.load('s.npy')
+            s += args.s_constant
+        if osp.exists('e.npy'):
+            e = np.load('e.npy')
+            e += args.e_constant
+
+        np.save('s.npy', s) # save s either way
         if args.use_smatrix:
             np.save('s.npy', s)
-            if args.use_dmatrix:
-                config['diagonal_on'] = False
-                s = s + D + np.diag(np.diagonal(D).copy())
             np.savetxt('s_matrix.txt', s, fmt='%0.5f')
-
-            config['smatrix_on'] = True
             config["smatrix_filename"] = "s_matrix.txt"
         if args.use_ematrix:
             assert not args.use_smatrix, 'Cannot use smatrix and ematrix'
             np.save('e.npy', e)
-            np.save('s.npy', s) # save s either way
-            if args.use_dmatrix:
-                config['diagonal_on'] = False
-                e = e + 2*D
             np.savetxt('e_matrix.txt', e, fmt='%0.5f')
-            config['ematrix_on'] = True
             config["ematrix_filename"] = "e_matrix.txt"
+            # TODO use https://github.com/rogersce/cnpy to allow cpp to load e.npy
+
+    if args.use_dmatrix:
+        config['dmatrix_on'] = True
+    if args.use_ematrix:
+        config['ematrix_on'] = True
+        assert not args.use_smatrix
+    if args.use_smatrix:
+        config['smatrix_on'] = True
+
+    if args.k == 0:
+        config['plaid_on'] = False
+        config['bead_type_files'] = None
+        config["nspecies"] = 0
     else:
-        if args.use_dmatrix:
-            config['dmatrix_on'] = True
-            np.savetxt('d_matrix.txt', D, fmt='%0.5f')
+        # save seq
+        config['bead_type_files'] = [f'seq{i}.txt' for i in range(args.k)]
 
-        if args.k == 0:
-            config['plaid_on'] = False
-            config['bead_type_files'] = None
-            config["nspecies"] = 0
-        else:
-            # save seq
-            config['bead_type_files'] = [f'seq{i}.txt' for i in range(args.k)]
+        # save nspecies
+        config["nspecies"] = args.k
 
-            # save nspecies
-            config["nspecies"] = args.k
-
-            # save chi to config
-            rows, cols = args.chi.shape
-            for row in range(rows):
-                for col in range(row, cols):
-                    key = f'chi{LETTERS[row]}{LETTERS[col]}'
-                    val = args.chi[row, col]
-                    config[key] = val
+        # save chi to config
+        rows, cols = args.chi.shape
+        for row in range(rows):
+            for col in range(row, cols):
+                key = f'chi{LETTERS[row]}{LETTERS[col]}'
+                val = args.chi[row, col]
+                config[key] = val
 
     if not config['plaid_on'] and not config["diagonal_on"]:
         config['nonbonded_on'] = False

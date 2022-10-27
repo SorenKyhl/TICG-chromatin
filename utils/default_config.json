@@ -35,7 +35,6 @@
   "smatrix_on": false,
   "ematrix_on": false,
   "dmatrix_on": false,
-  "dmatrix_filename": "none",
   "phi_solvent_max": 0.5,
   "phi_chromatin": 0.06966,
   "kappa": 0,
@@ -49,7 +48,6 @@
   "parallel": false,
   "set_num_threads": true,
   "num_threads": 2,
-  "contact_bead_skipping": false,
   "contact_bead_skipping": false,
   "boundary_type": "spherical"
 }
