@@ -1,7 +1,7 @@
-import epilib as ep
 import numpy as np
 import matplotlib.pyplot as plt
 
+from pylib import epilib as ep
 plt.rcParams['figure.figsize'] = [8,6]
 plt.rcParams.update({'font.size':18})
 

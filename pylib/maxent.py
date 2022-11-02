@@ -14,7 +14,7 @@ from pylib import analysis
 from pylib.utils import cd, newton
 from pylib.pysim import Pysim
 from pylib import utils
-import epilib as ep
+from pylib import epilib as ep
 
 import matplotlib.pyplot as plt
 plt.rcParams['figure.figsize'] = [8,6]
