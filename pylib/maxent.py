@@ -9,6 +9,7 @@ import jsbeautifier
 import os
 from multiprocessing import Process 
 import time
+import pickle
 
 from pylib import analysis
 from pylib.utils import cd, newton
@@ -34,8 +35,7 @@ class Maxent:
         overwrite: will overwrite existing files
         """
         
-        self.root = Path(root)
-        self.resources = Path(self.root, "resources")
+        self.set_root(root)
         self.params = params
         self.config = config
         self.seqs = seqs
@@ -52,7 +52,13 @@ class Maxent:
         self.dampen_first_step = True
         self.lengthen_iterations = lengthen_iterations
         self.analysis_on = analysis_on
-        
+
+    def set_root(self, root):
+        """
+        sets the root directory and other directories in the file tree
+        """
+        self.root = Path(root)
+        self.resources = Path(self.root, "resources")
         
     def update_defualt_config(self):
         """
@@ -83,7 +89,10 @@ class Maxent:
         # TODO: write seqs, defaultsim.config, goals, gthic to resources. 
         # or: maybe just pickle the maxent instance? 
         
-    def update_state(self, newchis, newloss, sim):
+    def track_progress(self, newchis, newloss, sim):
+        """
+        saves (and plots) parameter values and loss over the course of optimization
+        """
         self.chis = np.vstack((self.chis, newchis))
         self.loss = np.append(self.loss, newloss)
         
@@ -119,9 +128,11 @@ class Maxent:
         
         self.make_directory()
         newchis = self.defaultsim.flatten_chis() # initial chis
-        utils.write_json(self.params, self.root/"params.json")
+        utils.write_json(self.params, self.resources/"params.json")
         
         for it in range(self.params["num_iterations"]):
+
+            self.save_state() 
             
             sim = Pysim(root = self.root/f"iteration{it}", 
                         config = self.defaultsim.config,
@@ -155,13 +166,31 @@ class Maxent:
                                       trust_region = self.params["trust_region"], 
                                       method = "n")
             
-            self.update_state(newchis, newloss, sim)
+            self.track_progress(newchis, newloss, sim)
             os.symlink(self.resources/"experimental_hic.npy", sim.root/"experimental_hic.npy")
             with cd(sim.root):
                 self.analyze()
                 
             print(f"{it}: {newloss}")
         
+    def save_state(self):
+        if (self.resources/"experimental_hic.npy").exists():
+            # save space, don't need to pickle gthic if it's already in resources
+            del self.gthic
+
+        with open(self.root/"backup.pickle", "wb") as f:
+            pickle.dump(self,f)
+
+    @classmethod
+    def load_state(cls, filename):
+        """
+        loads maxent optimization from a saved state (pickle)
+        reloads gthic, which is not included in pickle to save disk space
+        """
+        with open(filename, "rb") as f:
+            loaded_maxent = pickle.load(f)
+            loaded_maxent.gthic = np.load(loaded_maxent.resources/"experimental_hic.npy")
+            return loaded_maxent
     
     def set_config(self, path):
         """ load config from path """
