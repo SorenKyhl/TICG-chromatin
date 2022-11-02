@@ -101,7 +101,7 @@ def load_chis(config):
 newton's method
 """
 
-def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method, multiplicity=1):
+def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method):
     obj_goal = np.array(obj_goal)
     lam = np.array(lam)
     
@@ -138,7 +138,7 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method, multipli
         print('step: ', step)
         print('lam: ', lam)
         
-    new_chis = current_chis - multiplicity*step
+    new_chis = current_chis - step
     # print(f"new chi values: {new_chis}\n")
 
     howfar = np.sqrt(difference@difference)/np.sqrt(obj_goal@obj_goal)

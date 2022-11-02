@@ -24,7 +24,7 @@ plt.rcParams.update({'font.size':18})
 Maxent
 """
 class Maxent:
-    def __init__(self, root, params, config, seqs, gthic, overwrite=False):
+    def __init__(self, root, params, config, seqs, gthic, overwrite=False, lengthen_iterations=False, analysis_on=True):
         """
         root: root of maxent filesystem
         params: maxent parameters
@@ -50,6 +50,9 @@ class Maxent:
         self.track_plaid_chis, self.track_diag_chis = self.defaultsim.split_chis(self.chis)
 
         self.dampen_first_step = True
+        self.lengthen_iterations = lengthen_iterations
+        self.analysis_on = analysis_on
+        
         
     def update_defualt_config(self):
         """
@@ -108,7 +111,8 @@ class Maxent:
         
         
     def analyze(self):
-        analysis.main()
+        if self.analysis_on:
+            analysis.main()
         
     def run(self):
         """ execute maxent optimization """ 
@@ -126,6 +130,9 @@ class Maxent:
             
             sim.set_chis(newchis)
   
+            if self.lengthen_iterations and (it>0):
+                self.params["production_sweeps"] = int(1.1*self.params["production_sweeps"]) 
+                
             sim.run_eq(self.params["equilib_sweeps"], 
                        self.params["production_sweeps"], 
                        self.params["parallel"])
@@ -133,7 +140,6 @@ class Maxent:
             curr_chis = sim.flatten_chis()
             obs, jac = sim.load_observables(jacobian=True)
             
-
             if self.dampen_first_step:
                 # dampen the first step so it doesn't overshoot
                 if (it == 0):
@@ -147,8 +153,7 @@ class Maxent:
                                       gamma = gamma, 
                                       current_chis = curr_chis, 
                                       trust_region = self.params["trust_region"], 
-                                      method = "n",
-                                      multiplicity = self.params["multiplicity"])
+                                      method = "n")
             
             self.update_state(newchis, newloss, sim)
             os.symlink(self.resources/"experimental_hic.npy", sim.root/"experimental_hic.npy")
