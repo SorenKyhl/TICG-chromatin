@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from pylib.pysim import Pysim
 from pylib import utils
 from pylib import epilib
+from pylib import plot_contactmap
+
 
 config = utils.load_json("config.json")
 config['nSweeps'] = 100000 # modify desired config settings
@@ -32,7 +34,5 @@ sim.run_eq(eq_sweeps=10000, prod_sweeps=50000, parallel=1)
 # and aggregate the results in "production_out"
 """
 
-# optional analysis
-sim_out = epilib.Sim("output_dir")
-sim_out.plot_contactmap()
-plt.savefig("simulated_contactmap.png")
+# optional analysis-plot contactmap
+plot_contactmap("output_dir")
