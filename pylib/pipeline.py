@@ -44,7 +44,7 @@ class Pipeline:
                         seqs=self.seqs, 
                         gthic=self.gthic)
 
-        optimizer.run()
+        optimizer.fit()
         
     def load_sequences(self):
         seqs = []

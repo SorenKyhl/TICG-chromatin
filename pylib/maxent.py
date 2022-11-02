@@ -114,7 +114,7 @@ class Maxent:
         if self.analysis_on:
             analysis.main()
         
-    def run(self):
+    def fit(self):
         """ execute maxent optimization """ 
         
         self.make_directory()
