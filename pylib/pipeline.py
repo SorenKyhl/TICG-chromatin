@@ -6,7 +6,7 @@ plt.rcParams.update({'font.size':18})
 
 
 import pylib.maxent as me
-import epilib as ep
+from pylib import epilib as ep
 import pylib.utils
 
 class Pipeline:

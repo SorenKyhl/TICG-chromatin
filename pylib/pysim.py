@@ -2,7 +2,6 @@ from pathlib import Path
 import shutil
 import json
 import numpy as np
-import epilib as ep
 import hicstraw
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -15,6 +14,7 @@ from pylib.pyticg import Sim
 from pylib import analysis
 from pylib.utils import cd, cat, copy_last_snapshot, newton
 from pylib import utils
+from pylib import epilib as ep
 
 """
 pysim

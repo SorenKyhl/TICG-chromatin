@@ -14,6 +14,6 @@ setup(
     description='set up library',
     author='Soren Kyhl',
     license='MIT',
-    install_requires=[],
+	install_requires=['hic-straw'],
     ext_modules=[module1],
 )

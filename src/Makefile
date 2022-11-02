@@ -29,7 +29,7 @@ debug:
 	g++ $(DEBUG_FLAGS) -I ../include -o TICG-debug $(MAIN) Grid.o Sim.o random_mars.o
 
 pybind:
-	g++ -O3 -shared -std=c++11 -fPIC $$(python3 -m pybind11 --includes) pybind_Sim.cpp -o pyticg$$(python3-config --extension-suffix)
+	g++ -O3 -shared -std=c++11 $(INCLUDE) -fPIC $$(python3 -m pybind11 --includes) pybind_Sim.cpp -o pyticg$$(python3-config --extension-suffix)
 
 clean:
 	rm *.o
