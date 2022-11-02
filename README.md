@@ -2,15 +2,13 @@
 
 
 # python implementation
-a python wrapper for the TICG engine is packaged in the pylib (temporary name)
+a python wrapper for the TICG engine is packaged in pylib (temporary name).
 the library includes classes for running individual simulations, maxent optimization, and data pipelines
 
 ## installation:
 ```
-python setup.py bdist_wheel
-python -m pip install dist/*.whl
+make install
 ```
-
 
 # old readme
 all dependencies included
