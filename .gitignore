@@ -12,3 +12,4 @@ examples
 .magicindex.json
 build
 dist
+pylib/pyticg*
