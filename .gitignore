@@ -8,7 +8,6 @@ test
 __pycache__
 *.ipynb_checkpoints
 debug
-examples
 .magicindex.json
 build
 dist
