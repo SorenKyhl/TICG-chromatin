@@ -15,7 +15,7 @@ if [ $local = 'true' ]
 then
   dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
-  numIterations=1
+  numIterations=20
   finalSimProductionSweeps=1000000
   productionSweeps=1000000
   equilibSweeps=100000
@@ -26,30 +26,26 @@ STARTTIME=$(date +%s)
 i=1001
 dataset='dataset_09_30_22'
 useE='false'
-useS='false'
-useD='true'
-GNNModelID='none'
 bondType='gaussian'
 m=1024
-mode='none'
-replicate=1
+mode='diag'
 
 # diagChiMethod="${dir}/${dataset}/samples/sample1/none/k0/replicate1/chis_diag.txt"
-diagChiMethod='mlp'
+diagChiMethod='zero'
 MLPModelID=79
-useGroundTruthDiagChi='false'
-maxDiagChi=10
-dense='false'
-diagBins=1024
+
+diagChiMethod='zero'
+dense='true'
+diagBins=32
 nSmallBins=16
 smallBinSize=4
-diagStart=0
 diagCutoff=1024
 bondLength=20
 
 k=0
-method=none
-for sample in 1 10 100 1000 1001 1002 1003
+method='none'
+for sample in 1128
+ # 1131 1794 552 1938
 do
   echo $sample $m
   max_ent

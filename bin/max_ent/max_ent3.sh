@@ -13,48 +13,42 @@ source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dir="/home/erschultz/sequences_to_contact_maps"
+  dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
-  numIterations=20
+  numIterations=1
   finalSimProductionSweeps=1000000
   productionSweeps=1000000
-  equilibSweeps=100000
+  equilibSweeps=100
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
 i=2001
-dataset='dataset_07_20_22'
-useE='false'
-useD='true'
+dataset='dataset_09_30_22'
 diagChiMethod='mlp'
-MLPModelID='79'
+m=1024
+GNNModelID=177
+MLPModelID=79
 chiMethod='zero'
-mode='plaid'
-dense='true'
+mode='none'
+
 bondtype='gaussian'
 bondLength=20
-replicate=1
-parallel='false'
-numThreads=1
-trust_region=100
 
+diagChiMethod='mlp'
+dense='false'
 diagBins=1024
 nSmallBins=16
-smallBinSize=1
-diagStart=0
-diagCutoff='none'
+smallBinSize=4
+diagCutoff=1024
+bondLength=20
 
-method='PCA-normalize'
-m=1024
-for sample in 10
-# 14
+k=0
+method='GNN'
+for sample in 1 1128 1131 1794 552 1938
 do
-  for k in 3
-  do
-    echo $sample $m
-    max_ent
-  done
+  echo $sample $m
+  max_ent
 done
 
 wait

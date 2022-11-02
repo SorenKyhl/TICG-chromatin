@@ -825,7 +825,7 @@ def time_comparison_dmatrix():
 
     time_dict_e = defaultdict(list) # m : list of times (when use_e = True)
     time_dict = defaultdict(list) # m : list of times
-    for sample in range(201, 219):
+    for sample in range(1, 25):
         sample_dir = osp.join(dir, f'sample{sample}')
         log_file = osp.join(sample_dir, 'log.log')
 
@@ -849,7 +849,7 @@ def time_comparison_dmatrix():
     print(time_dict_e)
     print(time_dict)
 
-    m_arr = np.array([512, 1024, 2048])
+    m_arr = np.array([512, 1024, 2048, 4096], dtype = np.float64)
     time_mean = np.zeros_like(m_arr)
     time_std = np.zeros_like(m_arr)
     time_e_mean = np.zeros_like(m_arr)
@@ -859,10 +859,11 @@ def time_comparison_dmatrix():
         time_mean[i] = np.mean(time)
         time_std[i] = np.std(time, ddof = 1)
 
-        time_e = time_dict_e[m]
+        time_e = np.array(time_dict_e[m])
         time_e_mean[i] = np.mean(time_e)
         time_e_std[i] = np.std(time_e, ddof = 1)
 
+    print('m', time_e_mean, 'std', time_e_std)
     prcnt_diff = time_e_mean / time_mean * 100
     print(prcnt_diff)
 
@@ -878,8 +879,8 @@ def time_comparison_dmatrix():
     ax.set_ylabel('Total Time (mins)', fontsize=16)
     ax2.set_ylabel('% of Original', fontsize=16)
     ax.set_xlabel('Simulation size', fontsize=16)
-    # ax.set_ylim((0, 84))
-    # ax2.set_ylim((None, 74))
+    ax.set_ylim((0, 84))
+    ax2.set_ylim((None, 74))
     ax.set_xticks(m_arr)
     ax.legend(loc='upper left', title='Total Time')
     ax2.legend(loc='upper right')
@@ -891,7 +892,6 @@ def time_comparison_dmatrix():
     time_dict_e = defaultdict(list) # num_diag_chis : list of times (when use_e = True)
     time_dict = defaultdict(list) # num_diag_chis : list of times
     for sample in range(100, 106):
-        print(sample)
         sample_dir = osp.join(dir, f'sample{sample}')
 
         log_file = osp.join(sample_dir, 'log.log')
@@ -907,7 +907,6 @@ def time_comparison_dmatrix():
                 config = json.load(f)
                 k = len(config['diag_chis'])
 
-        print('k', k, 'time', time)
 
         if osp.exists(osp.join(sample_dir, 'd_matrix.txt')):
             time_dict_e[k].append(time)
@@ -947,11 +946,11 @@ def time_comparison_dmatrix():
 
 if __name__ == '__main__':
     # compare_y_diag()
-    check_if_same()
+    # check_if_same()
     # test_robust_PCA()
     # check_dataset('dataset_09_26_22')
     # time_comparison()
-    # time_comparison_dmatrix()
+    time_comparison_dmatrix()
     # construct_sc_xyz()
     # convergence_check()
     # main()

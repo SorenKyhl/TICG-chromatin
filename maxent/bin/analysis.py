@@ -27,33 +27,34 @@ class Sim:
                 self.m = self.config["nbeads"]
                 self.v_bead = self.config['beadvol']
                 self.grid_size = self.config["grid_size"]
-                self.diag_bins = len(self.config['diag_chis'])
-                self.diag_start = self.config['diag_start']
-                self.diag_cutoff = self.config['diag_cutoff']
+                if 'diag_chis' in self.config.keys():
+                    self.diag_bins = len(self.config['diag_chis'])
+                    self.diag_start = self.config['diag_start']
+                    self.diag_cutoff = self.config['diag_cutoff']
 
-                self.dense = False
-                self.n_small_bins = None
-                self.small_binsize = None
-                self.big_binsize = None
-                if self.config['dense_diagonal_on']:
-                    self.dense = True
-                    if 'n_small_bins' in self.config.keys():
-                        self.n_small_bins = self.config['n_small_bins']
-                        self.small_binsize = self.config['small_binsize']
-                        self.big_binsize = self.config['big_binsize']
+                    if self.config['dense_diagonal_on']:
+                        self.dense = True
+                        if 'n_small_bins' in self.config.keys():
+                            self.n_small_bins = self.config['n_small_bins']
+                            self.small_binsize = self.config['small_binsize']
+                            self.big_binsize = self.config['big_binsize']
+                        else:
+                            self.dense = False
+                            # compatibility with Soren
+                            self.n_small_bins = int(self.config['dense_diagonal_loading'] * self.diag_bins)
+                            n_big_bins = self.diag_bins - self.n_small_bins
+                            m_eff = self.diag_cutoff - self.diag_start # number of beads with nonzero interaction
+                            dividing_line = m_eff * self.config['dense_diagonal_cutoff']
+                            self.small_binsize = int(dividing_line / (self.n_small_bins))
+                            self.big_binsize = int((m_eff- dividing_line) / n_big_bins)
                     else:
-                        # compatibility with Soren
-                        self.n_small_bins = int(self.config['dense_diagonal_loading'] * self.diag_bins)
-                        n_big_bins = self.diag_bins - self.n_small_bins
-                        m_eff = self.diag_cutoff - self.diag_start # number of beads with nonzero interaction
-                        dividing_line = m_eff * self.config['dense_diagonal_cutoff']
-                        self.small_binsize = int(dividing_line / (self.n_small_bins))
-                        self.big_binsize = int((m_eff- dividing_line) / n_big_bins)
+                        self.n_small_bins = None
+                        self.small_binsize = None
+                        self.big_binsize = None
 
         else:
             print(f"config.json missing at {config_file}")
 
-        self.diag_bins = np.shape(self.config['diag_chis'])[0]
         self.chi = self.load_chis()
 
         hic_file = osp.join(self.path, 'contacts.txt')
@@ -74,7 +75,7 @@ class Sim:
         if self.k > 0:
             try:
                 self.seqs = self.load_seqs()
-                self.k = np.shape(self.seqs)[0]
+                assert self.k == np.shape(self.seqs)[0]
             except:
                 print("load seqs failed")
 
@@ -502,10 +503,12 @@ def main():
     sim.plot_obs(diag=True)
     plt.savefig("obs.png")
 
-
-    plt.figure()
-    plt.plot(sim.config['diag_chis'], 'o')
-    plt.savefig("diag_chis.png")
+    try:
+        plt.figure()
+        plt.plot(sim.config['diag_chis'], 'o')
+        plt.savefig("diag_chis.png")
+    except KeyError:
+        pass
 
     if sim.obs_tot is not None:
         # obs tot is None if 0 max ent iterations

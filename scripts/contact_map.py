@@ -187,7 +187,10 @@ def main():
 
     # meanDist
     if args.plot:
-        diag_chi_step = calculate_diag_chi_step(config)
+        if 'diag_chis' in config.keys():
+            diag_chi_step = calculate_diag_chi_step(config)
+        else:
+            diag_chi_step = None
         if args.random_mode:
             plot_mean_vs_genomic_distance(y, args.save_folder, 'meanDist.png',
                                             diag_chi_step)

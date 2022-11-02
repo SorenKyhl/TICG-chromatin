@@ -298,49 +298,13 @@ def main():
         psi = None
         print('psi is None')
 
+    if args.s_constant != 0 or args.e_constant != 0:
+        raise Exception('deprecated')
+
     # set up e, s
-    e = None; s = None
     if psi is not None:
         writeSeq(psi)
 
-        e, s = calculate_E_S(psi, args.chi)
-    else:
-        assert args.use_ematrix or args.use_smatrix
-        config['bead_type_files'] = None
-        config["nspecies"] = 0
-
-        if osp.exists('s.npy'):
-            s = np.load('s.npy')
-            s += args.s_constant
-        if osp.exists('e.npy'):
-            e = np.load('e.npy')
-            e += args.e_constant
-
-        np.save('s.npy', s) # save s either way
-        if args.use_smatrix:
-            np.save('s.npy', s)
-            np.savetxt('s_matrix.txt', s, fmt='%0.5f')
-            config["smatrix_filename"] = "s_matrix.txt"
-        if args.use_ematrix:
-            assert not args.use_smatrix, 'Cannot use smatrix and ematrix'
-            np.save('e.npy', e)
-            np.savetxt('e_matrix.txt', e, fmt='%0.5f')
-            config["ematrix_filename"] = "e_matrix.txt"
-            # TODO use https://github.com/rogersce/cnpy to allow cpp to load e.npy
-
-    if args.use_dmatrix:
-        config['dmatrix_on'] = True
-    if args.use_ematrix:
-        config['ematrix_on'] = True
-        assert not args.use_smatrix
-    if args.use_smatrix:
-        config['smatrix_on'] = True
-
-    if args.k == 0:
-        config['plaid_on'] = False
-        config['bead_type_files'] = None
-        config["nspecies"] = 0
-    else:
         # save seq
         config['bead_type_files'] = [f'seq{i}.txt' for i in range(args.k)]
 
@@ -354,6 +318,21 @@ def main():
                 key = f'chi{LETTERS[row]}{LETTERS[col]}'
                 val = args.chi[row, col]
                 config[key] = val
+    elif args.use_ematrix or args.use_smatrix:
+        config['bead_type_files'] = None
+        config["nspecies"] = 0
+    else:
+        config['plaid_on'] = False
+        config['bead_type_files'] = None
+        config["nspecies"] = 0
+
+    if args.use_dmatrix:
+        config['dmatrix_on'] = True
+    if args.use_ematrix:
+        config['ematrix_on'] = True
+        assert not args.use_smatrix
+    if args.use_smatrix:
+        config['smatrix_on'] = True
 
     if not config['plaid_on'] and not config["diagonal_on"]:
         config['nonbonded_on'] = False

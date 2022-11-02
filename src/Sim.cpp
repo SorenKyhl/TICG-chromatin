@@ -205,7 +205,8 @@ nlohmann::json Sim::readInput() {
 			char first = 'A' + 1;
 			for (int i=0; i<nspecies; i++)
 			{
-				// should be included even if load_chipseq is false... fix later
+				// TODO should be included even if load_chipseq is false... fix later
+        std::cout << "Plaid Params:" << std::endl;
 				for (int j=i; j<nspecies; j++)
 				{
 					char first = 'A' + i;
@@ -215,13 +216,9 @@ nlohmann::json Sim::readInput() {
 					chistring += second;
 					assert(config.contains(chistring));
 					chis(i,j) = config[chistring];         //  i must be less than j
-					std::cout << chistring << " " << chis(i,j) << std::endl;
+					std::cout << "\t" << chistring << " " << chis(i,j) << std::endl;
 				}
 			}
-		}
-		else
-		{
-			nspecies = 0;
 		}
 	}
 	else
@@ -276,9 +273,10 @@ nlohmann::json Sim::readInput() {
         Cell::small_binsize = int( dividing_line / Cell::n_small_bins );
         Cell::big_binsize = int( (ndiag_beads - dividing_line) / Cell::n_big_bins );
       }
-  		std::cout << "number of small bins: " << Cell::n_small_bins << ", of size: " << Cell::small_binsize << std::endl;
-  		std::cout << "number of big bins: " << Cell::n_big_bins << ", of size: " << Cell::big_binsize << std::endl;
-      std::cout << "number of diag beads: " << ndiag_beads << std::endl;
+      std::cout << "Diagonal Params:"  << std::endl;
+  		std::cout << "\tnumber of small bins: " << Cell::n_small_bins << ", of size: " << Cell::small_binsize << std::endl;
+  		std::cout << "\tnumber of big bins: " << Cell::n_big_bins << ", of size: " << Cell::big_binsize << std::endl;
+      std::cout << "\tnumber of diag beads: " << ndiag_beads << std::endl;
   		assert(Cell::n_big_bins + Cell::n_small_bins == Cell::diag_nbins);
   		assert(Cell::small_binsize * Cell::n_small_bins + Cell::big_binsize * Cell::n_big_bins == ndiag_beads);
   	}
@@ -1631,7 +1629,7 @@ void Sim::setupSmatrix() {
     diagonal_on = false;
   }
 
-	std::cout << "loaded Smatrix, first element:" << smatrix(0,0) << std::endl;
+	std::cout << "loaded Smatrix, first element: " << smatrix(0,0) << std::endl;
 }
 
 void Sim::setupEmatrix() {
@@ -1655,7 +1653,7 @@ void Sim::setupEmatrix() {
 
     ematrix = left - right;
   }
-	std::cout << "loaded Ematrix, first element:" << ematrix(0,0) << std::endl;
+	std::cout << "loaded Ematrix, first element: " << ematrix(0,0) << std::endl;
 }
 
 void Sim::setupDmatrix() {
@@ -1693,5 +1691,5 @@ void Sim::setupDmatrix() {
       }
     }
   }
-  std::cout << "loaded Dmatrix, first element:" << dmatrix(0,0) << std::endl;
+  std::cout << "loaded Dmatrix, first element: " << dmatrix(0,0) << std::endl;
 }

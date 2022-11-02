@@ -75,12 +75,10 @@ class GetSeq():
         self.sample_folder = args.sample_folder
         self.sample = args.sample
         self.plot = args.plot
+        self.method_recognized = True # default value
         self._get_args(unknown_args)
-        if self.args.method is None:
-            return
-
-        if self.args.use_ematrix or self.args.use_smatrix:
-            # GetEnergy will handle this
+        if not self.method_recognized:
+            # method is None
             return
 
         self.set_up_seq()
@@ -118,6 +116,9 @@ class GetSeq():
 
         args, _ = parser.parse_known_args(unknown_args)
         print(args)
+        if args.method is None:
+            self.method_recognized = False
+            return
         self._process_method(args)
 
         args.labels = None
@@ -129,9 +130,6 @@ class GetSeq():
         print(self.args)
 
     def _check_args(self, args):
-        if args.method is None:
-            return
-
         if args.binarize:
             if args.method_base in {'k_means', 'chromhmm'}:
                 print(f"{args.method} is binarized by default")
@@ -155,9 +153,6 @@ class GetSeq():
             assert args.method_base == 'random', f"{args.method_base} not supported yet"
 
     def _process_method(self, args):
-        if args.method is None:
-            return
-
         # default values
         args.input = None # input in {y, x, psi}
         args.binarize = False # True to binarize labels (not implemented for all methods)') # TODO
@@ -585,10 +580,10 @@ class GetSeq():
     def set_up_seq(self):
         args = self.args
         if self.k == 0:
+            print('k is 0, returning')
+            self.method_recognized = False
             return
 
-        if args.method is None:
-            return
         elif osp.exists(args.method):
             if args.method.endswith('.txt'):
                 seq = np.loadtxt(args.method)
@@ -598,6 +593,7 @@ class GetSeq():
                 raise Exception(f'Unrecognized file format {args.chi_method}')
         else:
             args.method = args.method.lower()
+            print(f'Method lowercase: {args.method}')
             if args.method == 'pca-soren':
                 files = [osp.join(self.sample_folder, f'pcf{i}.txt') for i in range(1,self.k)]
                 seq = np.zeros((self.m, self.k))
@@ -676,7 +672,8 @@ class GetSeq():
             elif args.method.startswith('chromhmm'):
                 seq, labels = self.get_ChromHMM_seq(args.ChromHMM_data_file)
             else:
-                raise Exception(f'Unkown method: {args.method}')
+                print(f'Unkown method: {args.method}')
+                self.method_recognized = False
 
         m, k = seq.shape
         assert m == self.m, f"m mismatch: seq has {m} particles not {self.m}"
@@ -738,6 +735,7 @@ class GetPlaidChi():
         args = self.args
         if self.k == 0:
             print('k is 0, returning')
+            self.method_recognized = False
             return
         elif self.k == -1:
             x = np.load('x.npy')
@@ -1143,6 +1141,7 @@ class GetDiagChi():
 
 class GetEnergy():
     def __init__(self, args, unknown_args):
+        self.config = args.config
         self.m = args.m
         self.sample_folder = args.sample_folder
         self.plot = args.plot
@@ -1167,14 +1166,14 @@ class GetEnergy():
 
 
         self.args, _ = parser.parse_known_args(unknown_args)
+        if self.args.method is None:
+            self.method_recognized = False
+            return
         print('\nEnergy args')
         self._process_method(self.args)
         print(self.args)
 
     def _process_method(self, args):
-        if args.method is None:
-            return
-
         # default values
         args.use_ematrix = False
         args.use_smatrix = False
@@ -1253,9 +1252,12 @@ class GetEnergy():
             s = pca.inverse_transform(s_transform)
             e = s_to_E(s)
         if args.use_smatrix:
+            self.config["smatrix_filename"] = "s_matrix.txt"
             np.savetxt('s_matrix.txt', s, fmt = '%.3e')
             np.save('s.npy', s)
         elif args.use_ematrix:
+            self.config["ematrix_filename"] = "e_matrix.txt"
+            # TODO use https://github.com/rogersce/cnpy to allow cpp to load e.npy
             np.savetxt('e_matrix.txt', e, fmt = '%.3e')
             np.save('e.npy', e)
             if s is not None:
@@ -1310,13 +1312,13 @@ class GetEnergy():
             data_folder = f.readline().strip()
             gnn_dataset = osp.split(data_folder)[1]
 
-        if gnn_dataset == sample_dataset:
-            energy_hat_path = osp.join(model_path, f"{sample}/energy_hat.txt")
-            if osp.exists(energy_hat_path):
-                energy = np.loadtxt(energy_hat_path)
-                return energy
-        else:
-            print(f'WARNING: dataset mismatch: {gnn_dataset} vs {sample_dataset}')
+        # if gnn_dataset == sample_dataset:
+        #     energy_hat_path = osp.join(model_path, f"{sample}/energy_hat.txt")
+        #     if osp.exists(energy_hat_path):
+        #         energy = np.loadtxt(energy_hat_path)
+        #         return energy
+        # else:
+        #     print(f'WARNING: dataset mismatch: {gnn_dataset} vs {sample_dataset}')
 
         # set up argparse options
         parser = get_base_parser()
@@ -1380,11 +1382,12 @@ def plot_seq_continuous(seq, show = False, save = True, title = None):
 def main():
     args, unknown = getArgs()
     print(args)
-    GetSeq(args, unknown)
-    print(args)
+    getSeq = GetSeq(args, unknown)
+    print(f'Method recognized: {getSeq.method_recognized}')
     GetPlaidChi(args, unknown)
     GetDiagChi(args, unknown)
-    GetEnergy(args, unknown)
+    if not getSeq.method_recognized:
+        GetEnergy(args, unknown)
 
     with open(args.config_ofile, 'w') as f:
         json.dump(args.config, f, indent = 2)

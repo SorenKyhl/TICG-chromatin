@@ -17,9 +17,9 @@ parallel='false'
 numThreads=1
 
 # energy params
-useE='false'
+useE='true'
 useS='false'
-useD='false'
+useD='true'
 
 # general params
 overwrite=1
@@ -52,7 +52,7 @@ smallBinSize=0
 bigBinSize=-1
 nSmallBins=0
 nBigBins=-1
-diagStart=3
+diagStart=0
 diagCutoff='none'
 
 # ground truth params
@@ -217,19 +217,6 @@ format_method () {
 param_setup(){
   numIterationsCopy=$numIterations
   goalSpecifiedCopy=$goalSpecified
-  if [ $useS = 'true' ] || [ $useE = 'true' ]
-  then
-    useGroundTruthChi='false' # defaults to false anyways
-    if ! [ $mode = 'diag' ]
-    then
-      numIterationsCopy=0
-      goalSpecifiedCopy=0
-    fi
-    if ! [ $loadChi = 'true' ]
-    then
-      k=0
-    fi
-  fi
 
   if [ $useGroundTruthChi == 'true' ] && ! [ $mode = 'plaid' ]
   then
