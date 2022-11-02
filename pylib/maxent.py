@@ -35,6 +35,7 @@ class Maxent:
         overwrite: will overwrite existing files
         """
         
+        # maxent things
         self.set_root(root)
         self.params = params
         self.config = config
@@ -45,10 +46,12 @@ class Maxent:
         self.update_defualt_config()
         self.defaultsim = Pysim(self.resources, self.config, self.seqs, mkdir=False)
         
+        # tracking things
         self.chis = self.defaultsim.flatten_chis()
         self.loss = np.array([])
         self.track_plaid_chis, self.track_diag_chis = self.defaultsim.split_chis(self.chis)
 
+        # optimization things
         self.dampen_first_step = True
         self.lengthen_iterations = lengthen_iterations
         self.analysis_on = analysis_on
@@ -168,10 +171,9 @@ class Maxent:
             
             self.track_progress(newchis, newloss, sim)
             os.symlink(self.resources/"experimental_hic.npy", sim.root/"experimental_hic.npy")
+
             with cd(sim.root):
                 self.analyze()
-                
-            print(f"{it}: {newloss}")
         
     def save_state(self):
         if (self.resources/"experimental_hic.npy").exists():
