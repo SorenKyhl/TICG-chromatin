@@ -1514,18 +1514,24 @@ class parameters():
         nsites = L**3
         nint = self.N / nsites
         return nint
-    
-def initialize(hicfile, res, size, randomized=False, chrom='2'):
+
+def load_contactmap_hicstraw(hicfile, res, chrom, start, end, clean=True):
     assert(res in hicfile.getResolutions())
     mzd = hicfile.getMatrixZoomData(chrom, chrom, "observed", "KR", "BP", res)
-    
-    start = 0
-    end = 120_000_000
     
     if res > 50000:
         contact = mzd.getRecordsAsMatrix(start,end,start,end)
     else:
-        contact = load_map(mzd, start, end, res)
+        contact = load_contactmap_with_buffers(mzd, start, end, res)
+
+    contact, dropped_indices = clean_contactmap(contact)
+    return contact
+
+def initialize(hicfile, res, size, randomized=False, chrom='2'):
+    start = 0
+    end = 120_000_000
+
+    contact = load_contact_hicstraw(hicfile, res, chrom)
     print("loaded contactmap, shape: ", np.shape(contact))
     
     clean_contact, inds = clean_contactmap(contact)
@@ -1539,7 +1545,7 @@ def initialize(hicfile, res, size, randomized=False, chrom='2'):
     #return contact_out, seqs, inds
         
 
-def load_map(mzd, start, end, res):
+def load_contactmap_with_buffers(mzd, start, end, res):
     bufsize = 5_000_000 #increment
     width = end-start
     
