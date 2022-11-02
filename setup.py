@@ -14,6 +14,6 @@ setup(
     description='set up library',
     author='Soren Kyhl',
     license='MIT',
-	install_requires=['hic-straw'],
+	install_requires=['hic-straw','jsbeautifier'],
     ext_modules=[module1],
 )
