@@ -4,7 +4,7 @@ from pylib import utils
 class Config:
 
     def __init__(self, config):
-        self.config = self.set_config(config)
+        self.set_config(config)
 
     def __getitem__(self, key):
         "operates just like a normal config file"
@@ -17,7 +17,7 @@ class Config:
         if isinstance(config, dict):
             self.config = config
         else:
-            self.config = utils.load_json(path)  
+            self.config = utils.load_json(config)  
 
     def flatten_chis(self):
         """returns 1-D list: [plaid_chis, diag_chis]"""
