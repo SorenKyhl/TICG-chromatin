@@ -8,6 +8,7 @@ __pycache__
 *.ipynb_checkpoints
 debug
 .magicindex.json
+data
 
 # pylib things
 build
