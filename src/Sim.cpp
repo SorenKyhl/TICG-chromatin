@@ -1657,7 +1657,8 @@ void Sim::setupEmatrix() {
 
     ematrix = left - right;
   }
-	std::cout << "loaded Ematrix, first element:" << ematrix(0,0) << std::endl;
+  // can delete dmatrix and smatrix
+  std::cout << "loaded Ematrix, first element:" << ematrix(0,0) << std::endl;
 }
 
 void Sim::setupDmatrix() {

@@ -1,4 +1,5 @@
 from pathlib import Path
+import copy
 import shutil
 import json
 import numpy as np
@@ -20,6 +21,8 @@ from pylib import epilib as ep
 import matplotlib.pyplot as plt
 plt.rcParams['figure.figsize'] = [8,6]
 plt.rcParams.update({'font.size':18})
+
+from pylib.config import Config
 
 """
 Maxent
@@ -176,12 +179,17 @@ class Maxent:
                 self.analyze()
         
     def save_state(self):
-        if (self.resources/"experimental_hic.npy").exists():
+        self_copy = copy.deepcopy(self)
+        if (self_copy.resources/"experimental_hic.npy").exists():
             # save space, don't need to pickle gthic if it's already in resources
-            del self.gthic
+            del self_copy.gthic
 
-        with open(self.root/"backup.pickle", "wb") as f:
-            pickle.dump(self,f)
+        try:
+            with open(self_copy.root/"backup.pickle", "wb") as f:
+                pickle.dump(self_copy,f)
+        except:
+            with open("backup.pickle", "wb") as f:
+                pickle.dump(self_copy,f)
 
     @classmethod
     def load_state(cls, filename):
@@ -191,21 +199,14 @@ class Maxent:
         """
         with open(filename, "rb") as f:
             loaded_maxent = pickle.load(f)
-            loaded_maxent.gthic = np.load(loaded_maxent.resources/"experimental_hic.npy")
+
+            if loaded_maxent.resources.exists():
+                loaded_maxent.gthic = np.load(loaded_maxent.resources/"experimental_hic.npy")
+            else:
+                loaded_maxent.gthic = np.load("experimental_hic.npy")
+
             return loaded_maxent
     
     def set_config(self, path):
         """ load config from path """
-        self.config = self.load_json(path)
-                     
-    def load_json(self, path):
-        with open(path) as f:
-            myjson = json.load(f)
-        return myjson
-    
-    def write_json(self, data, path):
-        with open(path, 'w') as f:
-            opts = jsbeautifier.default_options()
-            opts.indent_size = 2
-            f.write(jsbeautifier.beautify(json.dumps(data), opts))
-            json.dump(data, f, indent=4)
+        self.config = utils.load_json(path)
