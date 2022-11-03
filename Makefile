@@ -6,6 +6,10 @@ install:
 build: 
 	(cd src && make pybind && mv pyticg* ../pylib)
 
+clean:
+	rm -r build
+	rm -r dist
+
 all:
 	build
 	install
