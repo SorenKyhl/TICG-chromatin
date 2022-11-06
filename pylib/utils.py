@@ -3,6 +3,8 @@ import json
 from contextlib import contextmanager
 import os
 import jsbeautifier
+from pathlib import Path
+import matplotlib.pyplot as plt
 
 """ 
 utils 
@@ -72,12 +74,19 @@ def cd(newdir):
         
     
 def load_sequences(config):
-    seqs = []
+    sequences  = []
     for file in config["bead_type_files"]:
         print("loading", file)
-        seqs.append(np.loadtxt(file) )
-    seqs = np.array(seqs)
-    return seqs
+        sequences.append(np.loadtxt(file) )
+    sequences  = np.array(sequences )
+    return sequences 
+
+def load_sequences_from_dir(dirname):
+    dirname = Path(dirname)
+    config = load_json(dirname/"config.json")
+    with cd(dirname):
+        sequences = load_sequences(config)
+    return sequences
 
 def load_chis(config):
     try:
@@ -96,6 +105,11 @@ def load_chis(config):
 
     return chi
 
+def plot_image(x):
+    v = x.flatten()
+    lim = np.max([np.abs(np.min(v)), np.max(v)])
+    plt.imshow(x, vmin=-lim, vmax=lim, cmap='bwr')
+    plt.colorbar()
 
 """ 
 newton's method

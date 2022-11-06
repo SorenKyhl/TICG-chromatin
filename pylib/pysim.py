@@ -25,26 +25,29 @@ import subprocess
 class Pysim:
     
     def __init__(self, root, config, seqs, randomize_seed=False, mkdir=True, setup_needed=True):
-        self.root = Path(root)
+        self.set_root(root, mkdir)
         self.set_config(config)
         self.seqs = seqs
 
         self.setup_needed = setup_needed # should be true unless instantiated using from_directory
 
-        
         if randomize_seed:
             self.randomize_seed()            
-        
-        if mkdir:
-            self.root.mkdir(exist_ok=False)
 
     @classmethod
     def from_directory(cls, root):
         """constructor that can initialize from directory that's already set up"""
+        #root = Path.cwd()/root
         root = Path(root)
         config = utils.load_json(root/"config.json")
-        seqs = utils.load_sequences(config)
+        with utils.cd(root):
+            seqs = utils.load_sequences(config)
         return cls(root, config, seqs, mkdir=False, setup_needed=False)
+
+    def set_root(self, root, mkdir):
+        self.root = Path(root)
+        if mkdir:
+            self.root.mkdir(exist_ok=False)
 
     def set_config(self, config):
         """ load config from path 
@@ -167,7 +170,8 @@ class Pysim:
         for p in processes:  
             self.randomize_seed()
             p.start()     # run simulation for process p
-            time.sleep(1) # engine needs time to load config.json before next iteration
+            sleeptime = int(self.config['nbeads']/1000) # larger simulations take longer to move over
+            time.sleep(sleeptime) # engine needs time to load config.json before next iteration
         
         # wait to join
         for p in processes:

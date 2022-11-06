@@ -5,6 +5,7 @@ import pandas as pd
 import scipy
 from statsmodels.graphics.tsaplots import plot_acf
 import seaborn as sns
+import sklearn.metrics
 #import straw
 #import strawC
 from os import system
@@ -169,6 +170,12 @@ class Sim:
         else:
             return get_pearson(self.hic, self.gthic)
 
+    def symmetry_score(self):
+        if "symmetry" in self.metrics:
+            return self.metrics["symmetry"]
+        else:
+            return get_pearson(self.hic, self.gthic)
+
     def SCC(self):
         if "SCC" in self.metrics:
             return self.metrics["SCC"]
@@ -255,7 +262,7 @@ class Sim:
         plot_obs(self, diag)
         
     def plot_tri(self, vmaxp=None, title="", dark=False, log=False):
-        plot_tri(self.hic, self.gthic, vmaxp, title=title, dark=dark)
+        plot_tri(self.hic, self.gthic, vmaxp, title=title, dark=dark, log=log)
         
     def plot_scatter(self):
         plot_scatter(self.hic, self.gthic)
@@ -556,8 +563,10 @@ def plot_diff(first, second, c=None, log=False, oe=False, title=""):
         c = first.mean() + 0.1*first.std()
     
     if log:
-        frac = np.log10(first+1e-20), np.log(second+1e-20)
+        print("log is true")
+        frac = np.log(first+1e-20), np.log(second+1e-20)
         plt.imshow(frac)
+        return
         
     plt.figure(figsize=(12,10))
     diff = first-second
@@ -573,7 +582,7 @@ def plot_diff(first, second, c=None, log=False, oe=False, title=""):
     rmse = get_RMSE(first, second)
 
     plt.title(title)
-    plt.xlabel("Pearson: {%.2f}, SCC: {%.2f}, RMSE: {%.2f}" %(pearson, scc, rmse))
+    plt.xlabel("Pearson: {%.4f}, SCC: {%.4f}, RMSE: {%.4f}" %(pearson, scc, rmse))
             
     plt.imshow(diff, vmin=vmin, vmax=vmax, cmap='bwr')
     plt.colorbar()
@@ -662,6 +671,27 @@ def map_0_1_chip(signal, backfrom=0):
     signal *= 1.5
     signal[signal>1] = 1
     return signal
+
+def get_baseline_signal(signal):
+    bin_populations, bin_signal = np.histogram(signal, bins=100)
+    baseline_signal = bin_signal[np.argmax(bin_populations)]
+    return baseline_signal
+
+def new_map_0_1_chip(signal):
+    baseline  = get_baseline_signal(signal)
+    signal = (signal - baseline)/(np.max(signal) - baseline)
+    signal[signal<0] = 0
+    signal *= 1.5
+    signal[signal>1] = 1
+    return signal
+
+def check_baseline(chipseq):
+    """ plots chipseq and the calculalted baseline signal"""
+    baseline_signal = get_baseline_signal(chipseq)
+    plt.plot(chipseq)
+    plt.hlines(baseline_signal, 0, 1024, 'r')
+    print(baseline_signal)
+
 
 def seq_from_pc(pc, beads_per_bin = 1, dtype="int", map01=True):
     np.random.seed(1) 
@@ -1093,6 +1123,8 @@ def bin_chipseq(df, resolution, method="max"):
             areas.append(np.trapz(sliced['value'], x=sliced['start']))
         if method == "max":
             areas.append(sliced['value'].max())
+        if method == "mean":
+            areas.append(sliced['value'].mean())
     return areas
 
 def maxent_setup(dirname, k, hic_full, seqs_full=None, start=None, size=None, plot=True, nchis_diag=32, adjust=True, ncells=0):
@@ -1214,14 +1246,10 @@ def get_SCC(hic1, hic2):
     return myscc.scc(hic1, hic2)
 
 def get_RMSE(hic1, hic2):
-    diff = hic1-hic2
-    rmse = np.sqrt(diff.flatten()@diff.flatten())
-    return rmse
+    return np.sqrt(sklearn.metrics.mean_squared_error(hic1, hic2))
               
 def get_RMSLE(hic1, hic2):
-    diff = np.log(hic1+1)-np.log(hic2+1)
-    rmsle = np.sqrt(diff.flatten()@diff.flatten())
-    return rmsle
+    return np.sqrt(sklearn.metrics.mean_squared_log_error(hic1, hic2))
 
 def get_pearson(hic1, hic2):
     return np.corrcoef(hic1.flatten(), hic2.flatten())[0,1]
@@ -1438,6 +1466,26 @@ def plot_consistency(sim):
         print("cannot plot consistency because sim.config['contact_resolution'] >1")
         return 0
 
+def get_symmetry_score(A, order='fro'):
+    symmetric = np.linalg.norm(1/2*(A + A.T), order)
+    skew_symmetric = np.linalg.norm(1/2*(A - A.T), order)
+    
+    return symmetric / (symmetric + skew_symmetric)    
+
+def get_symmetry_score_2(first, second, order='fro'):
+    composite = make_tri_composite(first, second)
+    return get_symmetry_score(composite, order)
+
+def make_tri_composite(first, second):
+    npixels = np.shape(first)[0]
+    indu = np.triu_indices(npixels)
+    indl = np.tril_indices(npixels)
+    
+    composite = np.zeros((npixels, npixels))
+    
+    composite[indu] = first[indu]
+    composite[indl] = second[indl]
+    return composite
     
 def plot_tri(first, second, vmaxp=None, oe=False, title="", dark=False, log=False):
     
@@ -1454,20 +1502,16 @@ def plot_tri(first, second, vmaxp=None, oe=False, title="", dark=False, log=Fals
     else:
         plot_fn = plot_contactmap
         
-    npixels = np.shape(first)[0]
-    indu = np.triu_indices(npixels)
-    indl = np.tril_indices(npixels)
-    
-    composite = np.zeros((npixels, npixels))
-    
-    composite[indu] = first[indu]
-    composite[indl] = second[indl]
+    composite = make_tri_composite(first, second)
+    symmetry_score = get_symmetry_score(composite)
     
     if vmaxp is None:
         plot_fn(composite, title=title, log=log)
     else:
         plot_fn(composite, vmaxp=vmaxp, absolute=True, title=title, log=log)
-        
+
+    plt.title("symmetry score: {%.2f}"%(symmetry_score))
+
 def plot_obs_vs_goal(sim):
     fig, axs = plt.subplots(2, figsize=(12,14))
     obs = sim.obs_tot
@@ -1515,7 +1559,7 @@ class parameters():
         nint = self.N / nsites
         return nint
 
-def load_contactmap_hicstraw(hicfile, res, chrom, start, end, clean=True):
+def load_contactmap_hicstraw(hicfile, res, chrom, start, end, clean=False):
     assert(res in hicfile.getResolutions())
     mzd = hicfile.getMatrixZoomData(chrom, chrom, "observed", "KR", "BP", res)
     
@@ -1524,7 +1568,9 @@ def load_contactmap_hicstraw(hicfile, res, chrom, start, end, clean=True):
     else:
         contact = load_contactmap_with_buffers(mzd, start, end, res)
 
-    contact, dropped_indices = clean_contactmap(contact)
+    if clean:
+        contact, dropped_indices = clean_contactmap(contact)
+
     return contact
 
 def initialize(hicfile, res, size, randomized=False, chrom='2'):

@@ -26,9 +26,10 @@ from pylib.config import Config
 
 """
 Maxent
+TODO - move most recent iteration to "best" directory for easy access.
 """
 class Maxent:
-    def __init__(self, root, params, config, seqs, gthic, overwrite=False, lengthen_iterations=False, analysis_on=True):
+    def __init__(self, root, params, config, seqs, gthic, overwrite=False, lengthen_iterations=False, analysis_on=True, initial_chis=None, dampen_first_step=True):
         """
         root: root of maxent filesystem
         params: maxent parameters
@@ -45,9 +46,15 @@ class Maxent:
         self.seqs = seqs
         self.gthic = gthic
         self.overwrite = overwrite
+
         
         self.update_defualt_config()
         self.defaultsim = Pysim(self.resources, self.config, self.seqs, mkdir=False)
+        if initial_chis is None:
+            self.initial_chis = self.defaultsim.flatten_chis()
+        else:
+            self.initial_chis = initial_chis
+            self.defaultsim.set_chis(self.initial_chis)
         
         # tracking things
         self.chis = self.defaultsim.flatten_chis()
@@ -55,7 +62,7 @@ class Maxent:
         self.track_plaid_chis, self.track_diag_chis = self.defaultsim.split_chis(self.chis)
 
         # optimization things
-        self.dampen_first_step = True
+        self.dampen_first_step = dampen_first_step 
         self.lengthen_iterations = lengthen_iterations
         self.analysis_on = analysis_on
 
@@ -133,10 +140,10 @@ class Maxent:
         """ execute maxent optimization """ 
         
         self.make_directory()
-        newchis = self.defaultsim.flatten_chis() # initial chis
+        newchis = self.initial_chis
         utils.write_json(self.params, self.resources/"params.json")
         
-        for it in range(self.params["num_iterations"]):
+        for it in range(self.params["iterations"]):
 
             self.save_state() 
             
@@ -157,12 +164,12 @@ class Maxent:
             curr_chis = sim.flatten_chis()
             obs, jac = sim.load_observables(jacobian=True)
             
-            if self.dampen_first_step:
-                # dampen the first step so it doesn't overshoot
-                if (it == 0):
-                    gamma = 0.25*self.params["gamma"]
-                else:
-                    gamma = self.params["gamma"]
+            gamma = self.params["gamma"]
+            if self.dampen_first_step and (it == 0):
+                gamma *= 0.25
+
+            print(f"gammma = {gamma}")
+            print("self.gamma = " + str(self.params["gamma"]))
                 
             newchis, newloss = newton(lam = obs, 
                                       obj_goal = self.params["goals"], 
