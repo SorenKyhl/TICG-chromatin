@@ -26,16 +26,20 @@ do
 					maxChi=$range
 
 		   		i=$(( $i + 1 ))
-			  	echo $i 'chiDiagSlope' $chiDiagSlope 'maxDiagChi' $maxDiagChi 'chiDiagMidpoint' $chiDiagMidpoint 'minMaxChi' $minChi $maxChi
-			  	run &
-
-					jobs=$(( $jobs + 1 ))
-					if [ $jobs -gt 19 ]
+					if [ $i -eq 552 ]
 					then
-						echo 'Waiting'
-						waitCount=$(( $waitCount + 1 ))
-						wait
-						jobs=0
+						i_tmp="${i}_long"
+				  	echo $i_tmp 'chiDiagSlope' $chiDiagSlope 'maxDiagChi' $maxDiagChi 'chiDiagMidpoint' $chiDiagMidpoint 'minMaxChi' $minChi $maxChi
+				  	run &
+
+						jobs=$(( $jobs + 1 ))
+						if [ $jobs -gt 19 ]
+						then
+							echo 'Waiting'
+							waitCount=$(( $waitCount + 1 ))
+							wait
+							jobs=0
+						fi
 					fi
 				done
 		  done

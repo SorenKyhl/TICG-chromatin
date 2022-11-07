@@ -674,6 +674,8 @@ class GetSeq():
             else:
                 print(f'Unkown method: {args.method}')
                 self.method_recognized = False
+                return
+
 
         m, k = seq.shape
         assert m == self.m, f"m mismatch: seq has {m} particles not {self.m}"
@@ -759,10 +761,14 @@ class GetPlaidChi():
                 chi = np.load(args.chi_method)
             else:
                 raise Exception(f'Unrecognized file format {args.chi_method}')
-            rows, cols = chi.shape
-            if rows > self.k and cols > self.k:
-                chi = triu_to_full(chi[-1])
+            if len(chi.shape) == 1:
+                chi = triu_to_full(chi)
                 rows, cols = chi.shape
+            else:
+                rows, cols = chi.shape
+                if rows > self.k and cols > self.k:
+                    chi = triu_to_full(chi[-1])
+                    rows, cols = chi.shape
             assert self.k == rows, f'number of particle types {self.k} does not match shape of chi {rows, cols}'
             assert rows == cols, f"chi not square: {chi}"
         else:
@@ -931,7 +937,7 @@ class GetDiagChi():
                     # crop to m_continuous
                     diag_chis_continuous = temp[:args.m_continuous]
                 else:
-                    f'{len(diag_chis)} != {args.diag_bins} != {args.m_continuous}'
+                    raise Exception(f'{len(temp)} != {args.diag_bins} != {args.m_continuous}')
             else:
                 args.diag_chi_method = args.diag_chi_method.lower()
                 if args.diag_chi_method == 'zero':
@@ -1181,6 +1187,8 @@ class GetEnergy():
         args.project = False # True to project e into space of ground truth bead labels
             # (assumes load_maxent is True)
         args.rank = None # max rank for energy matrix
+        args.kr = False # True to use kr as input
+        args.clean = False # True to clean input
 
         method_split = re.split(r'[-+]', args.method)
         print('method_split:', method_split)
@@ -1198,6 +1206,10 @@ class GetEnergy():
         if 'project' in modes:
             assert args.use_ematrix or args.use_smatrix
             args.project = True
+        if 'kr' in modes:
+            args.kr = True
+        if 'clean' in modes:
+            args.clean = True
 
         for mode in modes:
             if mode.startswith('rank'):
@@ -1312,13 +1324,13 @@ class GetEnergy():
             data_folder = f.readline().strip()
             gnn_dataset = osp.split(data_folder)[1]
 
-        # if gnn_dataset == sample_dataset:
-        #     energy_hat_path = osp.join(model_path, f"{sample}/energy_hat.txt")
-        #     if osp.exists(energy_hat_path):
-        #         energy = np.loadtxt(energy_hat_path)
-        #         return energy
-        # else:
-        #     print(f'WARNING: dataset mismatch: {gnn_dataset} vs {sample_dataset}')
+        if gnn_dataset == sample_dataset:
+            energy_hat_path = osp.join(model_path, f"{sample}/energy_hat.txt")
+            if osp.exists(energy_hat_path):
+                energy = np.loadtxt(energy_hat_path)
+                return energy
+        else:
+            print(f'WARNING: dataset mismatch: {gnn_dataset} vs {sample_dataset}')
 
         # set up argparse options
         parser = get_base_parser()
@@ -1335,6 +1347,10 @@ class GetEnergy():
         opt.log_file = sys.stdout # change
         opt.cuda = False # force to use cpu
         opt.device = torch.device('cpu')
+        if self.args.kr:
+            opt.y_preprocessing = f'kr_{opt.y_preprocessing}'
+        if self.args.clean:
+            opt.y_preprocessing = f'clean_{opt.y_preprocessing}'
         print(opt)
 
         # get model
@@ -1351,6 +1367,25 @@ class GetEnergy():
             yhat = model(data)
             yhat = yhat.cpu().detach().numpy()
             energy = yhat.reshape((opt.m,opt.m))
+            plaid_hat = model.plaid_component(data)
+            diagonal_hat = model.diagonal_component(data)
+            if plaid_hat is not None and diagonal_hat is not None:
+                # plot plaid contribution
+                v_max = max(np.max(energy), -1*np.min(energy))
+                # v_max = 100
+                v_min = -1 * v_max
+                # vmin = vmax = 'center'
+                plaid_hat = plaid_hat.cpu().detach().numpy().reshape((opt.m,opt.m))
+                plot_matrix(plaid_hat, 'plaid_hat.png', vmin = v_min,
+                                vmax = v_max, title = 'plaid portion', cmap = 'blue-red')
+                np.savetxt('plaid_hat.txt', plaid_hat)
+
+
+                # plot diag contribution
+                diagonal_hat = diagonal_hat.cpu().detach().numpy().reshape((opt.m,opt.m))
+                plot_matrix(diagonal_hat, 'diagonal_hat.png', vmin = v_min,
+                                vmax = v_max, title = 'diagonal portion', cmap = 'blue-red')
+                np.savetxt('diagonal_hat.txt', diagonal_hat)
 
         # cleanup
         # opt.root is set in get_dataset

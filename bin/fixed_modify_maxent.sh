@@ -35,13 +35,13 @@ run()  {
 	rm -d $scratchDirI
 }
 
-k=2
-nSweeps=1000000
+k=5
+nSweeps=500000
 dumpFrequency=100000
 TICGSeed=10
 diag='true'
-dense='false'
-diagBins=1024
+dense='true'
+diagBins=32
 maxDiagChi=10
 nSmallBins=16
 smallBinSize=4
@@ -51,20 +51,17 @@ diagStart=0
 diagCutoff='none'
 bondLength=20
 
-sample=10
+sample=104
 m=1024
 
-chiDiagMethod="${dataFolder}/samples/sample${sample}/GNN-177-S-diagMLP-79/k0/replicate1/chis_diag.txt"
-chiMethod="none"
-seqMethod="${dataFolder}/samples/sample${sample}/ss.npy-s"
+chiMethod="${dataFolder}/samples/sample${sample}/chis.txt"
+seqMethod="${dataFolder}/samples/sample${sample}/x.npy"
 useD='true'
-useS='true'
-i=10_mlp_zeroed
-run &
+useE='true'
 
-# chiDiagMethod="${dataFolder}/samples/sample${sample}/none/k0/replicate1/chis_diag_edit2.txt"
-# i=244_edit2
-# run &
+chiDiagMethod="${dataFolder}/samples/sample${sample}/chis_diag_edit.txt"
+i=104_edit
+run &
 # #
 # chiDiagMethod="${dataFolder}/samples/sample${sample}/none/k0/replicate1/chis_diag_edit.txt"
 # i=10_edit

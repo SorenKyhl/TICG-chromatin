@@ -13,8 +13,9 @@ from compare_contact import plotDistanceStratifiedPearsonCorrelation
 from scipy.stats import pearsonr
 from seq2contact import (SCC, ArgparserConverter, DiagonalPreprocessing,
                          calc_dist_strat_corr, calculate_D,
-                         calculate_diag_chi_step, calculate_E_S, crop,
-                         load_E_S, load_max_ent_chi, load_Y)
+                         calculate_diag_chi_step, calculate_E_S,
+                         calculate_net_energy, crop, load_E_S,
+                         load_max_ent_chi, load_Y)
 from sklearn.metrics import mean_squared_error
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -96,7 +97,9 @@ def loadData(args):
     for i, sample in enumerate(args.samples):
         sample_folder = osp.join(args.data_folder, 'samples', f'sample{sample}')
         diag_chi_continuous = np.load(osp.join(sample_folder, 'diag_chis_continuous.npy'))
-        ground_truth_sd = calculate_D(diag_chi_continuous)
+        D = calculate_D(diag_chi_continuous)
+        S = np.load(osp.join(sample_folder, 's.npy'))
+        ground_truth_ED = calculate_net_energy(S, D)
         ground_truth_y, ground_truth_ydiag = load_Y(sample_folder)
         for method in os.listdir(sample_folder):
             method_folder = osp.join(sample_folder, method)
@@ -188,8 +191,8 @@ def loadData(args):
                                 else:
                                     print(f"Didn't find {y_file}")
 
-                            rmse_sd = None
-                            if ground_truth_sd is not None:
+                            rmse_ED = None
+                            if ground_truth_ED is not None:
                                 if converged_it is not None:
                                     # load bead types
                                     psi_file = osp.join(replicate_folder, 'resources', 'x.npy')
@@ -203,7 +206,7 @@ def loadData(args):
                                     chi = load_max_ent_chi(k, converged_path, throw_exception = False)
 
                                     # calc s
-                                    _, s = calculate_E_S(psi, chi)
+                                    _, S = calculate_E_S(psi, chi)
 
                                     with open(osp.join(converged_path, 'config.json'), 'r') as f:
                                         config = json.load(f)
@@ -211,18 +214,18 @@ def loadData(args):
                                     D = calculate_D(diag_chis_continuous)
 
                                     # calc s+d
-                                    sd = (s + s.T)/2 + D
+                                    ED = calculate_net_energy(S, D)
                                 elif converged_path is not None:
                                     # but converged_it is None
                                     # means this is a GNN/MLP result
-                                    sd = np.loadtxt(osp.join(replicate_folder, 'resources/sd_matrix.txt'))
+                                    ED = np.loadtxt(osp.join(replicate_folder, 'resources/e_matrix.txt'))
                                 else:
-                                    sd = None
+                                    ED = None
 
-                                if sd is not None:
-                                    rmse_sd = mean_squared_error(ground_truth_sd, sd, squared = False)
+                                if ED is not None:
+                                    rmse_ED = mean_squared_error(ground_truth_ED, ED, squared = False)
 
-                            replicate_data['rmse-s+d'].append(rmse_sd)
+                            replicate_data['rmse-E+D'].append(rmse_ED)
 
                             rmse_y = None
                             if yhat is not None:
@@ -267,7 +270,7 @@ def loadData(args):
                         data[k][method]['overall_pearson'].append(replicate_data['overall_pearson'])
                         data[k][method]['scc'].append(replicate_data['scc'])
                         data[k][method]['avg_dist_pearson'].append(replicate_data['avg_dist_pearson'])
-                        data[k][method]['rmse-s+d'].append(replicate_data['rmse-s+d'])
+                        data[k][method]['rmse-E+D'].append(replicate_data['rmse-E+D'])
                         data[k][method]['rmse-y'].append(replicate_data['rmse-y'])
                         data[k][method]['converged_time'].append(replicate_data['converged_time'])
                         data[k][method]['final_time'].append(replicate_data['final_time'])
@@ -298,9 +301,9 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
         # set up first rows of table
         o.write("\\begin{center}\n")
         if small:
-            metrics = ['scc', 'rmse-s+d', 'rmse-y', 'total_time']
+            metrics = ['scc', 'rmse-E+D', 'rmse-y', 'total_time']
         else:
-            metrics = ['scc', 'rmse-s+d', 'rmse-y',
+            metrics = ['scc', 'rmse-E+D', 'rmse-y',
                         'converged_it', 'converged_time', 'final_time']
         num_cols = len(metrics) + 2
         num_cols_str = str(num_cols)
@@ -315,9 +318,9 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
         o.write("\\hline\n")
 
         if small:
-            o.write("Method & k & SCC & RMSE-S+D & RMSE-Y & Total Time \\\ \n")
+            o.write("Method & k & SCC & RMSE-Energy & RMSE-Y & Total Time \\\ \n")
         else:
-            o.write("Method & k & SCC & RMSE-S+D & RMSE-Y & Converged It & Converged Time & Final Time \\\ \n")
+            o.write("Method & k & SCC & RMSE-Energy & RMSE-Y & Converged It & Converged Time & Final Time \\\ \n")
         o.write("\\hline\\hline\n")
 
         # get reference data

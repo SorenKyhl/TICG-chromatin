@@ -169,6 +169,16 @@ format_method () {
     method_fmt="${method_fmt}-${GNNModelID}"
   fi
 
+  if [ $method = 'GNN-kr' ] # TODO
+  then
+    method_fmt="${method_fmt}-${GNNModelID}"
+  fi
+
+  if [ $method = 'GNN-clean' ] # TODO
+  then
+    method_fmt="${method_fmt}-${GNNModelID}"
+  fi
+
   if [ $loadChi = 'true' ]
   then
     method_fmt="${method_fmt}-load_chi"

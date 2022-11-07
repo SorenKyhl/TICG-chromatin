@@ -943,6 +943,23 @@ def time_comparison_dmatrix():
     plt.savefig(osp.join(dir, 'time2.png'))
     plt.close()
 
+def main3():
+    # edit dataset
+    dir = '/home/erschultz/sequences_to_contact_maps/dataset_07_20_22/samples/sample10'
+    y = np.load(osp.join(dir, 'y_kr.npy')).astype(np.float64)
+    p = y / np.mean(np.diagonal(y))
+    p_max = np.mean(p)
+    plot_matrix(p, osp.join(dir, 'p.png'), vmax = p_max)
+
+    dir2 = osp.join(dir, 'GNN-177-S-diagMLP-79/k0/replicate1')
+    y = np.load(osp.join(dir2, 'y.npy')).astype(np.float64)
+    p = y / np.mean(np.diagonal(y))
+    plot_matrix(p, osp.join(dir2, 'p.png'), vmax = p_max)
+
+    dir3 = osp.join(dir, 'GNN-223-E/k0/replicate1')
+    y = np.load(osp.join(dir3, 'y.npy')).astype(np.float64)
+    p = y / np.mean(np.diagonal(y))
+    plot_matrix(p, osp.join(dir3, 'p.png'), vmax = p_max)
 
 if __name__ == '__main__':
     # compare_y_diag()
@@ -950,11 +967,12 @@ if __name__ == '__main__':
     # test_robust_PCA()
     # check_dataset('dataset_09_26_22')
     # time_comparison()
-    time_comparison_dmatrix()
+    # time_comparison_dmatrix()
     # construct_sc_xyz()
     # convergence_check()
     # main()
     # main2()
+    main3()
     # plot_sd()
     # plot_modified_max_ent(10)
     # modify_maxent_diag_chi(10)

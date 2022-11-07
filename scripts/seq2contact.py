@@ -11,7 +11,8 @@ from sequences_to_contact_maps.utils.argparse_utils import (ArgparserConverter,
 from sequences_to_contact_maps.utils.clean_directories import clean_directories
 from sequences_to_contact_maps.utils.dataset_classes import make_dataset
 from sequences_to_contact_maps.utils.energy_utils import (
-    calculate_D, calculate_diag_chi_step, calculate_E_S, calculate_S, s_to_E)
+    calculate_D, calculate_diag_chi_step, calculate_E_S, calculate_net_energy,
+    calculate_S, s_to_E)
 from sequences_to_contact_maps.utils.InteractionConverter import \
     InteractionConverter
 from sequences_to_contact_maps.utils.knightRuiz import knightRuiz

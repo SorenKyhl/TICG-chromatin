@@ -17,13 +17,13 @@ else
   source activate python3.9_pytorch1.9_cuda10.2
 fi
 
-dataset='dataset_09_30_22'
-samples='1-10-100-1000-1001-1002-1003'
+dataset='dataset_9_30_22'
+samples='552-1128-1131-1794-1938'
 dataFolder="${dataDir}/${dataset}"
-# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
+python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
 #
 #
-for sample in 1 10 100 1000 1001 1002 1003
-do
-  python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
-done
+# for sample in 552 1128 1131 1794 1938
+# do
+#   python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
+# done
