@@ -487,6 +487,7 @@ void Sim::initialize() {
 }
 
 void Sim::volParameters_new() {
+	assert(phi_chromatin > 0 && phi_chromatin < 1);
 	double vol_beads = nbeads*Cell::beadvol;
 	double vol  = vol_beads/Cell::phi_chromatin;
 
@@ -873,7 +874,7 @@ void Sim::MC() {
 		}
 		//t_rotation.~Timer();
 
-		if (sweep%dump_frequency == 0) {
+		if (sweep%dump_frequency == 0 || sweep == nSweeps ) {
 			auto stop = std::chrono::high_resolution_clock::now();
 			auto totaltime = std::chrono::duration_cast<std::chrono::seconds>(stop-start);
 			auto blocktime = std::chrono::duration_cast<std::chrono::seconds>(stop-laststop);
@@ -915,9 +916,7 @@ void Sim::MC() {
 		}
 	}
 
-	// final contact map
-	dumpContacts(nSweeps);
-	std::cout << "acceptance rate: " << (float) acc/(nSweeps*nSteps)*100.0 << "%" << std::endl;
+	std::cout << "overall acceptance rate: " << (float) acc/(nSweeps*nSteps)*100.0 << "%" << std::endl;
 }
 
 
