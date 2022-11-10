@@ -106,6 +106,7 @@ def load_chis(config):
     return chi
 
 def plot_image(x):
+    x = np.array(x)
     v = x.flatten()
     lim = np.max([np.abs(np.min(v)), np.max(v)])
     plt.imshow(x, vmin=-lim, vmax=lim, cmap='bwr')

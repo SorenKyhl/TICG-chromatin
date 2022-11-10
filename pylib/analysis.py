@@ -8,7 +8,85 @@ plt.rcParams['figure.figsize'] = [8,6]
 plt.rcParams.update({'font.size':18})
 
 
+def sim_analysis(sim):
+    """analyze data from simulation only (doesn't require ground truth hic)"""
+    error = sim.plot_consistency()
+    plt.savefig("consistency.png")
+    plt.close()
+    if error > 0.01:
+        print("SIMULATION IS NOT CONSISTENT")
+
+    plt.figure()
+    sim.plot_contactmap()
+    plt.savefig("contactmap.png")
+    plt.close()
+
+    plt.figure()
+    sim.plot_energy()
+    plt.savefig("energy.png")
+    plt.close()
+
+    plt.figure()
+    sim.plot_obs(diag=False)
+    plt.savefig("obs.png")
+    plt.close()
+
+    plt.figure()
+    plt.plot(sim.config['diag_chis'], 'o')
+    plt.savefig("diag_chis.png")
+    plt.close()
+
+    plt.figure()
+    utils.plot_image(sim.config['chis'])
+    plt.savefig("chis.png")
+    plt.close()
+
+    plot_energy_matrices(sim)
+    plot_chi_matrix(sim)
+
+    sim.plot_oe()
+    plt.savefig("oe.png")
+    plt.close()
+
+    plt.figure()
+    sim.plot_diagonal()
+    plt.savefig("diagonal.png")
+    plt.close()
+
+    plt.figure()
+    sim.plot_diagonal(scale="log")
+    plt.savefig("diagonal-log.png")
+    plt.close()
+
+def compare_analysis(sim):
+    """ analyze comparison of simulation with ground truth contact map"""
+    plt.figure()
+    ep.plot_tri(sim.hic, sim.gthic, oe=True)
+    plt.savefig("tri_oe.png")
+    plt.close()
+
+    sim.plot_tri()
+    plt.savefig("tri.png")
+    plt.close()
+
+    sim.plot_tri(log=True)
+    plt.savefig("tri_log.png")
+    plt.close()
+
+    sim.plot_tri(vmaxp=np.mean(sim.hic)/2)
+    plt.savefig("tri_dark.png")
+    plt.close()
+
+    sim.plot_diff()
+    plt.savefig("diff.png")
+    plt.close()
+
+    sim.plot_scatter()
+    plt.savefig("scatter.png")
+    plt.close()
+
 def maxent_analysis(sim):
+    """analyze properties related to maxent optimization"""
     SCC = ep.get_SCC(sim.hic, sim.gthic)
     RMSE = ep.get_RMSE(sim.hic, sim.gthic)
     RMSLE = ep.get_RMSLE(sim.hic, sim.gthic)
@@ -54,68 +132,9 @@ def maxent_analysis(sim):
     plt.savefig("../error.png")
     plt.close()
 
-
     # plt.figure()
     # sim.plot_obs_vs_goal()
     # plt.savefig("obs_vs_goal.png")
-
-def sim_analysis(sim):
-    error = sim.plot_consistency()
-    plt.savefig("consistency.png")
-    plt.close()
-    if error > 0.01:
-        print("SIMULATION IS NOT CONSISTENT")
-
-    sim.plot_oe()
-    plt.savefig("oe.png")
-    plt.close()
-
-    plt.figure()
-    ep.plot_tri(sim.hic, sim.gthic, oe=True)
-    plt.savefig("tri_oe.png")
-    plt.close()
-
-    plt.figure()
-    sim.plot_diagonal()
-    plt.savefig("diagonal.png")
-    plt.close()
-
-    sim.plot_tri()
-    plt.savefig("tri.png")
-    plt.close()
-
-    sim.plot_tri(log=True)
-    plt.savefig("tri_log.png")
-    plt.close()
-
-    sim.plot_tri(vmaxp=np.mean(sim.hic)/2)
-    plt.savefig("tri_dark.png")
-    plt.close()
-
-    sim.plot_diff()
-    plt.savefig("diff.png")
-    plt.close()
-
-    sim.plot_scatter()
-    plt.savefig("scatter.png")
-    plt.close()
-
-    sim.plot_energy()
-    plt.savefig("energy.png")
-    plt.close()
-
-    plt.figure()
-    sim.plot_obs(diag=False)
-    plt.savefig("obs.png")
-    plt.close()
-
-    plt.figure()
-    plt.plot(sim.config['diag_chis'], 'o')
-    plt.savefig("diag_chis.png")
-    plt.close()
-
-    plot_energy_matrices(sim)
-    plot_chi_matrix(sim)
 
 def plot_chi_matrix(sim):
     utils.plot_image(np.array(sim.config['chis']))
@@ -149,12 +168,10 @@ def plot_energy_matrices(sim):
     plt.close()
 
 def main():
-    print("analysis")
-
     sim = ep.Sim("production_out")
     sim_analysis(sim)
+    compare_analysis(sim)
     maxent_analysis(sim)
-
 
 if __name__ == "__main__":
     main()

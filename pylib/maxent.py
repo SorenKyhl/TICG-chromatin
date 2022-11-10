@@ -47,8 +47,7 @@ class Maxent:
         self.gthic = gthic
         self.overwrite = overwrite
 
-        
-        self.update_defualt_config()
+        self.update_default_config()
         self.defaultsim = Pysim(self.resources, self.config, self.seqs, mkdir=False)
         if initial_chis is None:
             self.initial_chis = self.defaultsim.flatten_chis()
@@ -73,7 +72,7 @@ class Maxent:
         self.root = Path(root)
         self.resources = Path(self.root, "resources")
         
-    def update_defualt_config(self):
+    def update_default_config(self):
         """
         ensure that the default config has the correct size chi matrix, nspecies,
         and number of bead_type_files

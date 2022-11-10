@@ -537,6 +537,8 @@ void Sim::calculateParameters(nlohmann::json config) {
 	grid.delta = grid_size;
 	std::cout << "grid size is : " << grid.delta << std::endl;
 	step_grid = grid.delta/10.0; // size of grid displacement MC moves
+	step_disp = step_disp_percentage * bond_length;
+	step_trans = step_trans_percentage * bond_length;
 
 	std::cout << "bead volume is : " << Cell::beadvol << std::endl;
 	volParameters_new();

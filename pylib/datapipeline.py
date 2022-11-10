@@ -8,7 +8,7 @@ from pylib import epilib
 
 class DataPipeline:
     def __init__(self, res, chrom, start, end, size):
-        self.res = res
+        self.res = int(res)
         self.chrom = str(chrom)
         self.chromstr = "chr"+str(self.chrom)
         self.start = start
@@ -16,11 +16,12 @@ class DataPipeline:
         self.size = size
         
     def load_hic(self, filename):
+        filename = str(filename) # hicstraw doesn't accept pathlib objects
         hic = hicstraw.HiCFile(filename)
         contact = epilib.load_contactmap_hicstraw(hic, self.res, self.chrom, self.start, self.end)
         self.bigsize, _ = np.shape(contact)
         contact, self.dropped_inds = epilib.clean_contactmap(contact)
-        contact = epilib.get_contactmap(contact, normtype="mean") #TODO- phase this out into it's own function
+        contact = epilib.get_contactmap(contact, normtype="mean") #TODO- phase this out into it's own function. just normalizes 
         return contact[0:self.size,0:self.size]
         
     def load_bigWig(self, filename, method="mean"):
@@ -28,7 +29,9 @@ class DataPipeline:
         load chipseq from .bigWig file format using pyBigWig
         can load from local or remote files.
         """
-        bw = pyBigWig.open(str(filename)) # H3K36me3 FC
+        assert(method in ["mean", "max"])
+        filename = str(filename) # pyBigWig doesn't accept pathlib objects
+        bw = pyBigWig.open(filename)
         signal = bw.stats(self.chromstr, self.start, self.end, type=method, nBins=self.bigsize)
         signal = np.delete(signal, self.dropped_inds)
         return np.array(signal[0:self.size])
@@ -38,6 +41,7 @@ class DataPipeline:
         load chipseq from .wig file format using custom routines
         can only load from local files.
         """
+        assert(method in ["mean", "max"])
         df = pd.read_csv(filename, sep='\t', names=['start','end','value'], skiprows=1)
         chip = epilib.bin_chipseq(df, res, method=method) # this also sets the baseline for "low signal"
         chip = np.nan_to_num(chip)

@@ -337,8 +337,12 @@ class Sim:
         
         diag = self.d
         plot_fn(np.linspace(1/len(diag),1,len(diag)), diag, label="sim")
-        diag = get_diagonal(self.gthic)
-        plot_fn(np.linspace(1/len(diag),1,len(diag)), diag, "k", label="exp")
+        try:
+            diag = get_diagonal(self.gthic)
+            plot_fn(np.linspace(1/len(diag),1,len(diag)), diag, "k", label="exp")
+        except:
+            print("no ground truth hi-c for plot_diagonal")
+
         plt.xlabel("genomic distance")
         plt.ylabel("probability")
         plt.legend()
@@ -1267,7 +1271,6 @@ def change_goals(goals, nbeads, ncells, vbead):
     return goals * nbeads**2 / (2 * vbead * 2 * ncells)
 
 def get_goals(hic, seqs,beadvol, grid_size, diag_bins=32, save_path=None):
-    
     plaid = get_goal_plaid(hic, seqs, beadvol, grid_size)
     diag = get_goal_diag(hic, beadvol, grid_size, diag_bins)
     
