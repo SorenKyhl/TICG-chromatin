@@ -42,8 +42,12 @@ def sim_analysis(sim):
     plt.close()
 
     plot_energy_matrices(sim)
-    plot_chi_matrix(sim)
 
+    plt.figure()
+    plot_chi_matrix(sim)
+    plt.close()
+
+    plt.figure()
     sim.plot_oe()
     plt.savefig("oe.png")
     plt.close()
