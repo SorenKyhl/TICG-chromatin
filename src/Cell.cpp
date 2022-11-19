@@ -222,7 +222,12 @@ int Cell::binDiagonal(int d)
 		int dense_cutoff = Cell::n_small_bins * Cell::small_binsize;
 		// diagonal chis are binned in a dense set (small bins) from d=0 to d=dense_cutoff,
 		// then a sparse set (large bins) from d=cutoff to d=diag_cutoff
-		if ( d > dense_cutoff )
+		if ( d == 0 )
+		{
+			// this clause avoids divide by zero error
+			bin_index = 0;
+		}
+		else if ( d > dense_cutoff )
 		{
 			bin_index = Cell::n_small_bins + std::floor( (d - dense_cutoff) / Cell::big_binsize );
 		}

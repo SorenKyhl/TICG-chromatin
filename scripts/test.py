@@ -4,13 +4,13 @@ import os
 import os.path as osp
 import tarfile
 from collections import defaultdict
+from functools import partial
 
 import hicrep
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.ndimage import uniform_filter
-from scipy.optimize import curve_fit
 from seq2contact import *
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
@@ -414,10 +414,16 @@ def main():
     plt.savefig(osp.join(data_dir, 'sc_contacts_time', 'meanDist_log2.png'))
     plt.close()
 
-def main2(params = False):
+def plot_p_s(params = False):
     # plot different p(s) curves
-    dataset = 'dataset_09_30_22'
-    dir = f'/home/erschultz/{dataset}/samples'
+    dir = '/home/erschultz/'
+    data_dir = osp.join(dir, 'dataset_11_14_22/samples/sample1') # experimental data sample
+    file = osp.join(data_dir, 'y.npy')
+    y_exp = np.load(file)
+    meanDist_ref = DiagonalPreprocessing.genomic_distance_statistics(y_exp, 'prob')
+
+    dataset = 'dataset_test_vbead'
+    dir = osp.join(dir, dataset, 'samples')
     fig, ax = plt.subplots()
     if params:
         ax2 = ax.twinx()
@@ -435,20 +441,30 @@ def main2(params = False):
         else:
             print(ifile)
 
-    # for sample in [11, 12, 13, 14]:
-    #     s_dir = osp.join(dir, f'sample{sample}_log_max')
-    #     ifile = osp.join(s_dir, 'y.npy')
-    #     if osp.exists(ifile):
-    #         y = np.load(ifile)
-    #         meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
-    #         ax.plot(meanDist, label = sample)
-    #
-    #         if params:
-    #             with open(osp.join(s_dir, 'config.json')) as f:
-    #                 config = json.load(f)
-    #             diag_chis_step = calculate_diag_chi_step(config)
-    #             ax2.plot(diag_chis_step, ls = '--', label = 'Parameters')
+    for sample in range(200, 1000):
+        sample_dir = osp.join(dir, f'sample{sample}')
+        ifile = osp.join(sample_dir, 'y.npy')
+        if osp.exists(ifile):
+            y = np.load(ifile)
+            meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
 
+            # get config
+            # with open(osp.join(sample_dir, 'config.json')) as f:
+            #     config = json.load(f)
+            #     key = 'bond_length'
+            #     label = config[key]
+            key = 'sample'
+            label = sample
+
+            ax.plot(meanDist, label = label)
+
+            if params:
+                with open(osp.join(sample_dir, 'config.json')) as f:
+                    config = json.load(f)
+                diag_chis_step = calculate_diag_chi_step(config)
+                ax2.plot(diag_chis_step, ls = '--', label = 'Parameters')
+
+    ax.plot(meanDist_ref, label = 'Experiment', color = 'k')
 
     ax.set_yscale('log')
     ax.set_xscale('log')
@@ -456,12 +472,12 @@ def main2(params = False):
     ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
 
     if params:
-        ax.legend(loc='upper left')
+        ax.legend(loc='upper left', title = key)
         ax2.set_xscale('log')
         ax2.set_ylabel('Diagonal Parameter', fontsize = 16)
         ax2.legend(loc='upper right')
     else:
-        ax.legend(loc='upper right')
+        ax.legend(loc='upper right', title = key)
     plt.tight_layout()
     plt.savefig(osp.join(dir, 'meanDist_log.png'))
     plt.close()
@@ -529,209 +545,6 @@ def plot_sd():
     plt.legend()
     plt.savefig(osp.join(rep_dir, 'convergence_mse.png'))
     plt.show()
-
-def plot_modified_max_ent(sample, params = True):
-    # plot different p(s) curves
-    dataset = 'dataset_07_20_22'
-    dir = f'/home/erschultz/sequences_to_contact_maps/{dataset}/samples'
-    fig, ax = plt.subplots()
-    if params:
-        ax2 = ax.twinx()
-
-    ifile = osp.join(dir, f'sample{sample}/y.npy')
-    y_gt = np.load(ifile)
-    meanDist_gt = DiagonalPreprocessing.genomic_distance_statistics(y_gt, 'prob', smoothen = False)[:1024]
-    # meanDist_gt[50:] = uniform_filter(meanDist_gt[50:], 3, mode = 'constant')
-
-    ax.plot(meanDist_gt, label = 'Experiment' , color = 'k')
-
-    files = [f'sample{sample}/none/k0/replicate1', f'sample{sample}/none-diagMLP-79/k0/replicate1',
-            f'sample{sample}/GNN-177-S-diagMLP-79/k0/replicate1',
-            f'sample{sample}_edit', f'sample{sample}_edit2', f'sample{sample}_edit_zero',
-            f'sample{sample}_zero', f'sample{sample}_log', f'sample{sample}_logistic',
-            f'sample{sample}_log_max', f'sample{sample}_linear_max',
-            f'sample{sample}_logistic_manual', f'sample{sample}_mlp']
-    colors = ['blue', 'green',
-            'purple',
-            'lightblue', 'teal', 'darkslateblue',
-            'pink', 'orange', 'purple',
-            'yellow', 'brown',
-            'darkgreen', 'orange']
-    labels = ['Max Ent', 'MLP',
-            'MLP+GNN',
-            'Max Ent Edit', 'Max Ent Edit 2', 'Max Ent Edit Zero',
-            'Zero', 'Log Fit', 'Logistic Fit',
-            'Log Max Fit', 'Linear Max Fit',
-            'Logistic Manual Fit',
-            'MLP+PCA']
-
-    for file, color, label in zip(files, colors, labels):
-        if label in {'Logistic Manual Fit', 'Linear Max Fit',
-                    'Log Max Fit',
-                    'Log Fit'}:
-            continue
-        if not label.startswith('MLP'):
-            continue
-        ifile = osp.join(dir, file, 'y.npy')
-        if osp.exists(ifile):
-            y = np.load(ifile)
-            meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
-            ax.plot(meanDist, label = label, color = color)
-            m = len(y)
-            mse = mean_squared_error(meanDist_gt[:m], meanDist)
-            print(f'{label} MSE:', mse)
-
-            if params:
-                # find config
-                config = None
-                config_file = osp.join(dir, file, 'config.json')
-                if osp.exists(config_file):
-                    with open(config_file) as f:
-                        config = json.load(f)
-                else:
-                    # look for last iteration
-                    max_it = -1
-                    for f in os.listdir(osp.join(dir, file)):
-                        if f.startswith('iteration'):
-                            it = int(f[9:])
-                            if it > max_it:
-                                max_it = it
-                    config_file = osp.join(dir, file, f'iteration{it}', 'config.json')
-                    if osp.exists(config_file):
-                        with open(config_file) as f:
-                            config = json.load(f)
-
-                diag_chis_step = calculate_diag_chi_step(config)
-                ax2.plot(diag_chis_step, ls = '--', label = 'Parameters', color = color)
-
-
-    ax.set_yscale('log')
-    ax.set_xscale('log')
-    ax.set_ylabel('Contact Probability', fontsize = 16)
-    ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
-
-    if params:
-        ax.set_ylim(None, 50)
-        ax.legend(loc='upper left')
-        ax2.set_ylabel('Diagonal Parameter', fontsize = 16)
-        ax2.legend(loc='upper right')
-    else:
-        ax.legend(loc='upper right')
-    plt.tight_layout()
-    plt.savefig(osp.join(dir, f'sample{sample}_edit', 'meanDist_log.png'))
-    plt.close()
-
-def modify_maxent_diag_chi(sample):
-    # try different modifications to diag chis learned by max ent
-    dataset = 'dataset_07_20_22'
-
-    # make version with intercept 0
-    dir = f'/home/erschultz/sequences_to_contact_maps/{dataset}/samples/sample{sample}/none/k0/replicate1'
-    diag_chis = np.loadtxt(osp.join(dir, 'chis_diag.txt'))[-1]
-    diag_chis -= np.min(diag_chis)
-    np.savetxt(osp.join(dir, 'chis_diag_edit_zero.txt'), diag_chis)
-
-
-    dir = f'/home/erschultz/sequences_to_contact_maps/{dataset}/samples/sample{sample}_edit'
-    diag_chis = np.load(osp.join(dir, 'diag_chis.npy'))
-
-    ifile = osp.join(dir, 'config.json')
-    with open(ifile, 'r') as f:
-        config = json.load(f)
-
-    diag_chi_step = calculate_diag_chi_step(config, diag_chis)
-    diag_chi_step -= np.min(diag_chi_step)
-    np.savetxt(osp.join(dir, 'diag_chi_edit.txt'), diag_chi_step)
-    print(diag_chi_step[:12])
-
-    m = len(diag_chi_step)
-    x = np.arange(0, 2*m)
-
-    try:
-        init = [1, 1]
-        popt, pcov = curve_fit(log_curve, x[:64], diag_chi_step[:64], p0 = init, maxfev = 2000)
-        print('Log popt', popt)
-        log_fit = log_curve(x, *popt)
-        np.savetxt(osp.join(dir, 'log_fit.txt'), log_fit)
-    except RuntimeError as e:
-        log_fit = None
-        print('Log:', e)
-
-    try:
-        init = [1, 1]
-        popt, pcov = curve_fit(log_max_curve, x[:64], diag_chi_step[:64], p0 = init, maxfev = 2000)
-        print('Log_max popt', popt)
-        log_max_fit = log_max_curve(x, *popt)
-        np.savetxt(osp.join(dir, 'log_max_fit.txt'), log_max_fit)
-    except RuntimeError as e:
-        log_max_fit = None
-        print('Log_max:', e)
-
-    try:
-        init = [1, 1, 0]
-        popt, pcov = curve_fit(logistic_curve, x[:m], diag_chi_step, p0 = init, maxfev = 2000)
-        print('Logistic popt', popt)
-        logistic_fit = logistic_curve(x, *popt)
-        np.savetxt(osp.join(dir, 'logistic_fit.txt'), logistic_fit)
-    except RuntimeError as e:
-        logistic_fit = None
-        print('Logistic:', e)
-
-    logistic_manual = [np.mean(diag_chi_step[64:]), 0.04, 35]
-    logistic_fit_manual = logistic_curve(x, *logistic_manual)
-    np.savetxt(osp.join(dir, 'logistic_fit_manual.txt'), logistic_fit_manual)
-
-    init = [1, 0]
-    popt, pcov = curve_fit(linear_max_curve, x[:m], diag_chi_step, p0 = init, maxfev = 2000)
-    print('Linear_max popt', popt)
-    linear_max_fit = linear_max_curve(x, *popt)
-    np.savetxt(osp.join(dir, 'linear_max_fit.txt'), linear_max_fit)
-
-    plt.plot(diag_chi_step, label = 'Max Ent Edit2', color = 'teal')
-    plt.plot(log_fit, label = 'log', color = 'orange')
-    if log_max_fit is not None:
-        plt.plot(log_max_fit, label = 'log_max', color = 'yellow')
-    if logistic_fit is not None:
-        plt.plot(logistic_fit, label = 'logistic', color = 'purple')
-    if logistic_fit_manual is not None:
-        plt.plot(logistic_fit_manual, label = 'logistic_manual', color = 'maroon')
-    plt.plot(linear_max_fit, label = 'linear_max', color = 'brown')
-    plt.legend()
-    plt.savefig(osp.join(dir, 'meanDist_fit.png'))
-    plt.close()
-
-    plt.plot(diag_chi_step, label = 'Max Ent Edit2', color = 'teal')
-    plt.plot(log_fit, label = 'log', color = 'orange')
-    if log_max_fit is not None:
-        plt.plot(log_max_fit, label = 'log_max', color = 'yellow')
-    if logistic_fit is not None:
-        plt.plot(logistic_fit, label = 'logistic', color = 'purple')
-    if logistic_fit_manual is not None:
-        plt.plot(logistic_fit_manual, label = 'logistic_manual', color = 'maroon')
-    plt.plot(linear_max_fit, label = 'linear_max', color = 'brown')
-    plt.xscale('log')
-    plt.legend()
-    plt.savefig(osp.join(dir, 'meanDist_fit_log.png'))
-    plt.close()
-
-def linear_max_curve(x, A, B):
-    result = A*x + B
-    result[result < 0] = 0
-    return result
-
-def log_curve(x, A, B):
-    result = A * np.log(B * x + 1)
-    return result
-
-def log_max_curve(x, A, B):
-    result = A * np.log(B * x)
-    result[result < 0] = 0
-    return result
-
-def logistic_curve(x, max, slope, midpoint):
-    result = (max) / (1 + np.exp(-1*slope * (x - midpoint)))
-    return result
-
 
 def compare_y_diag():
     dir = '/home/erschultz/dataset_test/samples'
@@ -943,24 +756,6 @@ def time_comparison_dmatrix():
     plt.savefig(osp.join(dir, 'time2.png'))
     plt.close()
 
-def main3():
-    # edit dataset
-    dir = '/home/erschultz/sequences_to_contact_maps/dataset_07_20_22/samples/sample10'
-    y = np.load(osp.join(dir, 'y_kr.npy')).astype(np.float64)
-    p = y / np.mean(np.diagonal(y))
-    p_max = np.mean(p)
-    plot_matrix(p, osp.join(dir, 'p.png'), vmax = p_max)
-
-    dir2 = osp.join(dir, 'GNN-177-S-diagMLP-79/k0/replicate1')
-    y = np.load(osp.join(dir2, 'y.npy')).astype(np.float64)
-    p = y / np.mean(np.diagonal(y))
-    plot_matrix(p, osp.join(dir2, 'p.png'), vmax = p_max)
-
-    dir3 = osp.join(dir, 'GNN-223-E/k0/replicate1')
-    y = np.load(osp.join(dir3, 'y.npy')).astype(np.float64)
-    p = y / np.mean(np.diagonal(y))
-    plot_matrix(p, osp.join(dir3, 'p.png'), vmax = p_max)
-
 if __name__ == '__main__':
     # compare_y_diag()
     # check_if_same()
@@ -970,10 +765,8 @@ if __name__ == '__main__':
     # time_comparison_dmatrix()
     # construct_sc_xyz()
     # convergence_check()
-    # main()
-    # main2()
-    main3()
+    main()
+    # plot_p_s()
+    # main3()
     # plot_sd()
-    # plot_modified_max_ent(10)
-    # modify_maxent_diag_chi(10)
     # makeDirsForMaxEnt("dataset_09_21_21")

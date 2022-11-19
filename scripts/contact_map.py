@@ -85,6 +85,8 @@ def main():
 
     if args.plot:
         plot_matrix(y, ofile = osp.join(args.save_folder, 'y.png'), vmax = 'mean')
+        p = y / np.mean(np.diagonal(y))
+        plot_matrix(p, ofile = osp.join(args.save_folder, 'p.png'), vmax = 'mean')
 
     if args.random_mode:
         if args.k == 0:
@@ -102,7 +104,7 @@ def main():
     if args.m < 5000 and args.plot:
         # takes a long time for large m and not really necessary
         plot_matrix(y_diag, ofile = osp.join(args.save_folder, 'y_diag.png'),
-                    vmax = 'max')
+                    vmin = 'center1', cmap='blue-red')
 
         if s is not None:
             plot_matrix(s, ofile = osp.join(args.save_folder, 's.png'), title = 'S',

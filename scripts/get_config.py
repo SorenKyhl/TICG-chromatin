@@ -37,9 +37,6 @@ def getArgs():
                         help='True to copy seed from config file in sample_folder')
     parser.add_argument('--sample_folder', type=str,
                         help='location of sample for ground truth chi')
-    parser.add_argument('--relabel', type=AC.str2None,
-                        help='specify mark combinations to be relabeled'
-                            '(e.g. AB-C will relabel AB mark pairs as mark C)')
     parser.add_argument('--bond_type', type=AC.str2None, default='gaussian',
                         help='type of bonded interaction')
     parser.add_argument('--parallel', type=AC.str2bool, default=False,
@@ -56,6 +53,10 @@ def getArgs():
                         help='True to dump contact map every dump_frequency')
     parser.add_argument('--gridmove_on', type=AC.str2bool, default=True,
                         help='True to use grid MC move')
+    parser.add_argument('--grid_size', type=float, default=28.7,
+                        help='TICG grid size')
+    parser.add_argument('--bead_vol', type=float, default=520,
+                        help='bead volume')
     parser.add_argument('--update_contacts_distance', type=AC.str2bool, default=False,
                         help='True to use distance instead of grid')
 
@@ -83,8 +84,6 @@ def getArgs():
     parser.add_argument('--diag_pseudobeads_on', type=AC.str2bool, default=True)
     parser.add_argument('--dense_diagonal_on', type=AC.str2bool, default=False,
                         help='True to place 1/2 of beads left of cutoff')
-    parser.add_argument('--use_ground_truth_diag_chi', type=AC.str2bool, default=False,
-                        help='True to use ground truth diag chi')
 
 
     # max_ent options
@@ -180,8 +179,6 @@ def main():
         elif osp.exists('e.npy'):
             e = np.load('e.npy')
             args.m, _ = e.shape
-        elif sample_config is not None:
-            args.m = sample_config['nbeads']
         elif args.sample_folder is not None:
             y_file = osp.join(args.sample_folder, 'y.npy')
             if osp.exists(y_file):
@@ -221,14 +218,6 @@ def main():
             print(f'y_gt.shape = {y_gt.shape}')
             np.save('y_gt.npy', y_gt)
 
-    if args.relabel is not None:
-        x = np.load('x.npy')
-        old, new = args.relabel.split('-')
-        assert len(new) == 1, f"unsupported relabel: {args.relabel}"
-        args.k += 1
-        psi = relabel_x_to_psi(x, args.relabel)
-        np.save('psi.npy', psi)
-
     # load chi
     chi_file = 'chis.npy'
     if args.use_ground_truth_chi:
@@ -252,23 +241,11 @@ def main():
     config['dense_diagonal_on'] = args.dense_diagonal_on
 
     # load diag chi
-    if args.use_ground_truth_diag_chi:
-        assert sample_config is not None, 'ground truth config missing'
-        config["diagonal_on"] = sample_config["diagonal_on"]
-        config["dense_diagonal_on"] = sample_config["dense_diagonal_on"]
-        diag_chis = np.array(sample_config["diag_chis"])
-        config["diag_chis"] = list(diag_chis)
-        np.save('diag_chis.npy', diag_chis)
-        if config["diagonal_on"]:
-            config['n_small_bins'] = sample_config['n_small_bins']
-            config['n_big_bins'] = sample_config['n_big_bins']
-            config['small_binsize'] = sample_config['small_binsize']
-            config['big_binsize'] = sample_config['big_binsize']
-
-    elif osp.exists('diag_chis.npy'):
+    if osp.exists('diag_chis.npy'):
         config["diagonal_on"] = True
         if args.max_ent:
             diag_chis = np.load('diag_chis.npy')
+            print(f'diag_chis loaded with shape {diag_chis.shape}')
             with open('chis_diag.txt', 'w', newline='') as f:
                 wr = csv.writer(f, delimiter = '\t')
                 wr.writerow(diag_chis)
@@ -379,6 +356,12 @@ def main():
 
     # save gridmove_on
     config['gridmove_on'] = args.gridmove_on
+
+    # save grid_size
+    config['grid_size'] = args.grid_size
+
+    # save bead volume
+    config['beadvol'] = args.bead_vol
 
     # save update_contacts_distance
     config['update_contacts_distance'] = args.update_contacts_distance

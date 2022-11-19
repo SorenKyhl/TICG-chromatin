@@ -68,7 +68,9 @@ def get_mask(bin, m, diag_bins, dense, n_small_bins,
                 continue
             d_eff = d - diag_start
             if dense:
-                if d_eff > dividing_line:
+                if d_eff == 0:
+                    curr_bin = 0
+                elif d_eff > dividing_line:
                     curr_bin = n_small_bins + math.floor( (d_eff - dividing_line) / big_binsize)
                 else:
                     curr_bin =  math.floor( d_eff / small_binsize)

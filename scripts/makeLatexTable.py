@@ -15,7 +15,7 @@ from seq2contact import (SCC, ArgparserConverter, DiagonalPreprocessing,
                          calc_dist_strat_corr, calculate_D,
                          calculate_diag_chi_step, calculate_E_S,
                          calculate_net_energy, crop, load_E_S,
-                         load_max_ent_chi, load_Y)
+                         load_max_ent_chi, load_Y, s_to_E)
 from sklearn.metrics import mean_squared_error
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -101,6 +101,7 @@ def loadData(args):
         S = np.load(osp.join(sample_folder, 's.npy'))
         ground_truth_ED = calculate_net_energy(S, D)
         ground_truth_y, ground_truth_ydiag = load_Y(sample_folder)
+        ground_truth_y = ground_truth_y.astype(np.float64) / np.max(np.diagonal(ground_truth_y))
         for method in os.listdir(sample_folder):
             method_folder = osp.join(sample_folder, method)
             # methods should be formatted such that method.split('-')[0] is in METHODS
@@ -218,7 +219,15 @@ def loadData(args):
                                 elif converged_path is not None:
                                     # but converged_it is None
                                     # means this is a GNN/MLP result
-                                    ED = np.loadtxt(osp.join(replicate_folder, 'resources/e_matrix.txt'))
+                                    ematrix_file = osp.join(replicate_folder, 'resources/e_matrix.txt')
+                                    smatrix_file = osp.join(replicate_folder, 'resources/s_matrix.txt')
+                                    if osp.exists(ematrix_file):
+                                        ED = np.loadtxt(ematrix_file)
+                                    elif osp.exists(smatrix_file):
+                                        SD = np.loadtxt(smatrix_file)
+                                        ED = s_to_E(SD)
+                                    else:
+                                        raise Exception(f'no <e,s>_matrix.txt for {replicate_folder}')
                                 else:
                                     ED = None
 
@@ -229,9 +238,9 @@ def loadData(args):
 
                             rmse_y = None
                             if yhat is not None:
-                                # rescale gt to be same max as simulation
-                                ground_truth_y = ground_truth_y.astype(np.float64) / np.max(np.diagonal(ground_truth_y)) * np.max(yhat)
-                                rmse_y = mean_squared_error(ground_truth_y, yhat.astype(np.float64), squared = False)
+                                # normalize yhat
+                                yhat = yhat.astype(np.float64) / np.mean(np.diagonal(yhat))
+                                rmse_y = mean_squared_error(ground_truth_y, yhat, squared = False)
                             replicate_data['rmse-y'].append(rmse_y)
 
                             bash_file = osp.join(replicate_folder, 'bash.log')
@@ -392,8 +401,10 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
 
                     if 'time' in metric:
                         roundoff = 1
-                    elif metric.startswith('rmse'):
+                    elif metric == 'rmse-E+D':
                         roundoff = 2
+                    elif metric == 'rmse-y':
+                        roundoff = 4
                     else:
                         roundoff = 3
 
