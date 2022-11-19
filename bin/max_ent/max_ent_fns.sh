@@ -39,6 +39,8 @@ phiChromatin=0.06
 boundaryType='spherical'
 # randomizeSeed=1
 bondLength=16.5
+gridSize=28.7
+beadVol=520
 
 # diag params
 diagChiMethod='linear'
@@ -57,7 +59,6 @@ diagCutoff='none'
 
 # ground truth params
 useGroundTruthChi='false'
-useGroundTruthDiagChi='false'
 useGroundTruthSeed='false'
 
 # newton's method params
@@ -66,9 +67,13 @@ trust_region=50
 gamma=1.
 
 # experimental data
-chipSeqFolder="/home/erschultz/sequences_to_contact_maps/chip_seq_data"
-epiData="${chipSeqFolder}/fold_change_control/processed"
 chromHMMData="${chipSeqFolder}/aligned_reads/ChromHMM_15/STATEBYLINE/HTC116_15_chr2_statebyline.txt"
+start='none'
+end='none'
+chrom='none'
+resolution=50000
+cellLine=HCT116
+dataType=fold_change_control
 
 max_ent_resume(){
   # args:
@@ -133,10 +138,10 @@ max_ent_inner () {
   # generate sequences
   echo "starting get_params"
   echo $method_fmt
-  python3 ~/TICG-chromatin/scripts/get_params.py --config_ifile "${resources}/default_config_maxent.json" --method=$method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --epigenetic_data_folder $epiData --ChromHMM_data_file $chromHMMData --gnn_model_path $GNNModelPath --mlp_model_path $MLPModelPath --seq_seed $seqSeed --chi_method $chiMethod --min_chi=-1 --max_chi=1 --chi_seed $chiSeed --diag_chi_method $diagChiMethod --diag_bins $diagBins --max_diag_chi $maxDiagChi --dense_diagonal_on $dense --dense_diagonal_cutoff $denseCutoff --dense_diagonal_loading $denseLoading --small_binsize $smallBinSize --big_binsize $bigBinSize --n_small_bins $nSmallBins --n_big_bins $nBigBins --diag_start $diagStart --diag_cutoff $diagCutoff --diag_chi_slope $chiDiagSlope --diag_chi_scale $chiDiagScale > params.log
+  python3 ~/TICG-chromatin/scripts/get_params.py --config_ifile "${resources}/default_config_maxent.json" --method=$method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --cell_line $cellLine --epi_data_type $dataType --resolution $resolution --start $start --end $end --chromosome $chrom --ChromHMM_data_file $chromHMMData --gnn_model_path $GNNModelPath --mlp_model_path $MLPModelPath --seq_seed $seqSeed --chi_method $chiMethod --min_chi=-1 --max_chi=1 --chi_seed $chiSeed --diag_chi_method $diagChiMethod --diag_bins $diagBins --max_diag_chi $maxDiagChi --dense_diagonal_on $dense --dense_diagonal_cutoff $denseCutoff --dense_diagonal_loading $denseLoading --small_binsize $smallBinSize --big_binsize $bigBinSize --n_small_bins $nSmallBins --n_big_bins $nBigBins --diag_start $diagStart --diag_cutoff $diagCutoff --diag_chi_slope $chiDiagSlope --diag_chi_scale $chiDiagScale > params.log
 
   echo "starting get_config"
-  python3 ~/TICG-chromatin/scripts/get_config.py --parallel $parallel --num_threads $numThreads --m $m --max_ent --mode $mode --bond_type $bondType --bond_length $bondLength --dense_diagonal_on $dense --use_ematrix $useE --use_smatrix $useS --use_dmatrix $useD --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_diag_chi $useGroundTruthDiagChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $TICGSeed --sample_folder $sampleFolder --load_configuration_filename $init_config --phi_chromatin $phiChromatin --boundary_type $boundaryType > config.log
+  python3 ~/TICG-chromatin/scripts/get_config.py --parallel $parallel --num_threads $numThreads --m $m --max_ent --mode $mode --bond_type $bondType --bond_length $bondLength --grid_size $gridSize --bead_vol $beadVol --dense_diagonal_on $dense --use_ematrix $useE --use_smatrix $useS --use_dmatrix $useD --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $TICGSeed --sample_folder $sampleFolder --load_configuration_filename $init_config --phi_chromatin $phiChromatin --boundary_type $boundaryType > config.log
 
 
   # generate goals
@@ -163,6 +168,11 @@ max_ent_inner () {
 
 format_method () {
   method_fmt=$method
+
+  if [ $method = 'chromhmm' ]
+  then
+    method_fmt="${method_fmt}-${dataType}"
+  fi
 
   if [ $method = 'GNN' ]
   then
@@ -194,7 +204,7 @@ format_method () {
     method_fmt="${method_fmt}-chi"
   fi
 
-  if [ $useGroundTruthDiagChi = 'true' ]
+  if [ $diagChiMethod = 'ground_truth' ]
   then
     method_fmt="${method_fmt}-diag_chi"
   fi

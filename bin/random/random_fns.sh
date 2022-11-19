@@ -9,7 +9,9 @@ param_setup() {
 	seqMethod='random'
 	exclusive='false'
 	pSwitch='none' # using lmbda instead
+	lmbda='none'
 	seqSeed='none'
+	argsFile='none'
 
 	overwrite=1
 	dumpFrequency=50000
@@ -26,21 +28,37 @@ param_setup() {
 	constantChi=0
 	phiChromatin=0.06
 	bondLength=16.5
+	gridSize=28.7
+	beadVol=520
 
+	dense='false'
 	denseCutoff='none'
 	denseLoading='none'
 
 	chi='none'
+	chiMethod='none'
+	k=0
 	chiConstant=0
 	chiMultiplier=1
+	minChi=-1
+	maxChi=1
+	chiSeed='none'
+	fillDiag='none'
 
+	chiDiagMethod='none'
+	diagBins=32
 	chiDiagConstant=0
 	chiDiagMidpoint=0
 	chiDiagSlope=1
 	chiDiagScale='none'
 	mContinuous='none'
+	smallBinSize=0
+	bigBinSize=-1
+	nSmallBins=0
+	nBigBins=-1
 	diagStart=0
 	diagCutoff='none'
+	maxDiagChi=10
 
 	TICGSeed='none'
 	bondType='gaussian'
@@ -73,7 +91,9 @@ check_dir() {
 	then
 		if [ $overwrite -eq 1 ]
 		then
-			echo "output directory already exists - overwriting"
+			echo "output directory already exists:"
+			echo $dir
+			echo "overwriting"
 			rm -r $dir
 		else
 			# don't overrite previous results!
@@ -85,10 +105,10 @@ check_dir() {
 
 random_inner() {
 	# generate sequences
-	python3 ~/TICG-chromatin/scripts/get_params.py --method $seqMethod --exclusive $exclusive --m $m --p_switch $pSwitch --lmbda $lmbda --k $k --save_npy --seq_seed $seqSeed --chi=$chi --chi_method $chiMethod --chi_seed $chiSeed --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable --diag_chi_method $chiDiagMethod --diag_chi_slope $chiDiagSlope --diag_chi_scale $chiDiagScale --max_diag_chi $maxDiagChi --diag_bins $diagBins --chi_constant=$chiConstant --chi_multiplier=$chiMultiplier --diag_chi_constant=$chiDiagConstant --diag_chi_midpoint=$chiDiagMidpoint --dense_diagonal_on $dense --dense_diagonal_cutoff $denseCutoff --dense_diagonal_loading $denseLoading --m_continuous $mContinuous --small_binsize $smallBinSize --big_binsize $bigBinSize --n_small_bins $nSmallBins --n_big_bins $nBigBins --diag_start $diagStart --diag_cutoff $diagCutoff > params.log
+	python3 ~/TICG-chromatin/scripts/get_params.py --args_file $argsFile --method $seqMethod --exclusive $exclusive --m $m --p_switch $pSwitch --lmbda $lmbda --k $k --save_npy --seq_seed $seqSeed --chi=$chi --chi_method $chiMethod --chi_seed $chiSeed --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable --diag_chi_method $chiDiagMethod --diag_chi_slope $chiDiagSlope --diag_chi_scale $chiDiagScale --max_diag_chi $maxDiagChi --diag_bins $diagBins --chi_constant=$chiConstant --chi_multiplier=$chiMultiplier --diag_chi_constant=$chiDiagConstant --diag_chi_midpoint=$chiDiagMidpoint --dense_diagonal_on $dense --dense_diagonal_cutoff $denseCutoff --dense_diagonal_loading $denseLoading --m_continuous $mContinuous --small_binsize $smallBinSize --big_binsize $bigBinSize --n_small_bins $nSmallBins --n_big_bins $nBigBins --diag_start $diagStart --diag_cutoff $diagCutoff > params.log
 
 	# set up config.json
-	python3 ~/TICG-chromatin/scripts/get_config.py --phi_chromatin $phiChromatin --bond_length $bondLength --m $m --n_sweeps $nSweeps --dump_stats_frequency $dumpStatsFrequency --dump_frequency $dumpFrequency --track_contactmap $trackContactMap --gridmove_on $gridMoveOn --update_contacts_distance $updateContactsDistance --TICG_seed $TICGSeed --constant_chi $constantChi --e_constant $eConstant --s_constant $sConstant --use_ematrix $useE --use_smatrix $useS --use_dmatrix $useD --load_configuration_filename $init_config --relabel $relabel --bond_type $bondType --parallel $parallel --num_threads $numThreads --dense_diagonal_on $dense > config.log
+	python3 ~/TICG-chromatin/scripts/get_config.py --phi_chromatin $phiChromatin --bond_length $bondLength --grid_size $gridSize --bead_vol $beadVol --m $m --n_sweeps $nSweeps --dump_stats_frequency $dumpStatsFrequency --dump_frequency $dumpFrequency --track_contactmap $trackContactMap --gridmove_on $gridMoveOn --update_contacts_distance $updateContactsDistance --TICG_seed $TICGSeed --constant_chi $constantChi --e_constant $eConstant --s_constant $sConstant --use_ematrix $useE --use_smatrix $useS --use_dmatrix $useD --load_configuration_filename $init_config --bond_type $bondType --parallel $parallel --num_threads $numThreads --dense_diagonal_on $dense > config.log
 
 	# run simulation
 	~/TICG-chromatin/TICG-engine > log.log

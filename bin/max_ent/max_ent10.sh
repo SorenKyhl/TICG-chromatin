@@ -8,66 +8,52 @@
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=erschultz@uchicago.edu
 
-local='false'
+local='true'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dir="/home/erschultz/sequences_to_contact_maps"
+  dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
   numIterations=1
-  finalSimProductionSweeps=2000
-  productionSweeps=2000
+  finalSimProductionSweeps=500000
+  productionSweeps=500000
   equilibSweeps=1000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
 i=9000
-
-dataset='dataset_09_21_21'
+dataset='dataset_11_14_22'
+useS='false'
 useE='false'
-method='PCA-normalize'
-diagChiMethod='linear'
-maxDiagChi=20
+useD='false'
 m=1024
-sample=1
-trust_region=10
+chiMethod='none'
+mode='none'
 
-mode='both'
-# bondType='DSS'
-# for k in 4 6
-# do
-#   max_ent
-# done
+bondtype='gaussian'
+bondLength=28
+gridSize=26.6
+phiChromatin=0.06
 
-bondType='gaussian'
-replicate=2
-for k in 4 6
-do
-  max_ent
-done
-
+diagChiMethod='none'
 dense='true'
-replicate=3
-for k in 4 6
-do
-  max_ent
-done
+diagBins=32
+nSmallBins=16
+smallBinSize=4
+diagCutoff=1024
 
-denseCutoff=0.125
-replicate=4
-for k in 4 6
+method='none'
+for k in 0
 do
-  max_ent
+  for sample in 1
+  do
+    echo $sample $m
+    echo $CONDA_DEFAULT_ENV
+    max_ent
+  done
 done
-#
-# minDiagChi=0
-# replicate=5
-# for k in 4 6
-# do
-#   max_ent
-# done
 
 wait
 

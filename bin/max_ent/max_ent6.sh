@@ -8,53 +8,60 @@
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=erschultz@uchicago.edu
 
-local='false'
+local='true'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dir="/home/erschultz/sequences_to_contact_maps"
+  dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
-  numIterations=2
-  finalSimProductionSweeps=2000
-  equilibSweeps=1000
-  productionSweeps=2000
+  numIterations=10
+  finalSimProductionSweeps=500000
+  equilibSweeps=500000
+  productionSweeps=500000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
 i=5000
-dataset='dataset_05_18_22'
+dataset='dataset_11_14_22'
+useS='false'
 useE='true'
-m=2048
+useD='true'
+m=1024
+chiMethod='zero'
+mode='both'
 
-method='GNN'
-GNNModelID=150
-diagChiMethod='linear'
-mode='diag'
-for sample in 7 8
- # 9
+bondtype='gaussian'
+bondLength=28
+phiChromatin=0.06
+
+diagChiMethod='zero'
+dense='true'
+diagBins=32
+nSmallBins=16
+smallBinSize=4
+diagCutoff=1024
+
+# epigenetic args
+start=15000000
+end=66150000
+chrom=1
+
+method='chromhmm'
+dataType='fold_change_control'
+trust_region=10
+for k in 6 8 10
 do
-  max_ent_resume 39
+  for sample in 1
+  # 2 5 6 9
+  # 10 13 14 16 18
+  do
+    echo $sample $m
+    echo $CONDA_DEFAULT_ENV
+    max_ent
+  done
 done
-
-# method='GNN'
-# GNNModelID=150
-# diagChiMethod='mlp'
-# MLPModelID=3
-# mode='none'
-# for sample in 7 8 9
-# do
-#   max_ent
-# done
-
-# method='ground_truth'
-# mode='none'
-# useGroundTruthDiagChi='true'
-# for sample in 7 8 9
-# do
-#   max_ent
-# done
 
 wait
 

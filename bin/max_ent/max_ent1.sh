@@ -24,7 +24,7 @@ fi
 
 STARTTIME=$(date +%s)
 i=1
-dataset='dataset_09_30_22'
+dataset='dataset_9_30_22'
 bondType='gaussian'
 m=1024
 mode='both'
@@ -39,7 +39,7 @@ smallBinSize=4
 diagCutoff=1024
 bondLength=20
 
-k=4
+k=6
 method='PCA-normalize'
 for sample in 1128 1131 1794 552 1938
 do

@@ -17,19 +17,19 @@ then
   scratchDir='/home/erschultz/scratch'
   numIterations=1
   finalSimProductionSweeps=500000
-  productionSweeps=1000000
+  productionSweeps=1000
   equilibSweeps=100
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
-i=3001
+i=3003
 dataset='dataset_07_20_22'
 useS='false'
 useE='true'
 useD='false'
 m=1024
-GNNModelID=223
+GNNModelID=243
 chiMethod='none'
 mode='none'
 
@@ -45,10 +45,11 @@ diagCutoff=1024
 
 k=0
 method='GNN'
-for sample in 105
+for sample in 10
  # 1 1128 1131 1794 552 1938
 do
   echo $sample $m
+  echo $CONDA_DEFAULT_ENV
   max_ent
 done
 

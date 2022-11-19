@@ -15,37 +15,37 @@ if [ $local = 'true' ]
 then
   dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
-  numIterations=20
-  finalSimProductionSweeps=1000000
-  productionSweeps=1000000
-  equilibSweeps=100000
+  numIterations=1
+  finalSimProductionSweeps=500000
+  productionSweeps=100000
+  equilibSweeps=1000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
 i=1001
-dataset='dataset_09_30_22'
-useE='false'
-bondType='gaussian'
+dataset='dataset_9_30_22'
+useS='false'
+useE='true'
+useD='false'
 m=1024
-mode='diag'
+GNNModelID=243
+chiMethod='none'
+mode='none'
 
-# diagChiMethod="${dir}/${dataset}/samples/sample1/none/k0/replicate1/chis_diag.txt"
-diagChiMethod='zero'
-MLPModelID=79
+bondtype='gaussian'
+bondLength=20
 
-diagChiMethod='zero'
-dense='true'
-diagBins=32
+diagChiMethod='none'
+dense='false'
+diagBins=1
 nSmallBins=16
 smallBinSize=4
 diagCutoff=1024
-bondLength=20
 
 k=0
-method='none'
-for sample in 1128
- # 1131 1794 552 1938
+method='GNN'
+for sample in 1128 1131 1794 552 1938
 do
   echo $sample $m
   max_ent

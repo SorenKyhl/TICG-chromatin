@@ -1,22 +1,6 @@
 #! /bin/bash
 
 source ~/TICG-chromatin/bin/random/random_fns.sh
-
-param_setup
-m=1024
-dataset=dataset_07_20_22
-dataFolder="/home/erschultz/sequences_to_contact_maps/${dataset}"
-scratchDir='/home/erschultz/scratch'
-relabel='none'
-lmbda=0.8
-chiSeed='31'
-seqSeed='31'
-chiMethod='zero'
-minChi=-0.4
-maxChi=0.4
-fillDiag='none'
-overwrite=1
-
 source activate python3.9_pytorch1.9
 
 cd ~/TICG-chromatin
@@ -35,54 +19,70 @@ run()  {
 	rm -d $scratchDirI
 }
 
-k=5
-nSweeps=500000
-dumpFrequency=100000
+param_setup
+m=1024
+dataset=dataset_11_14_22
+baseDataFolder="/home/erschultz/${dataset}"
+scratchDir='/home/erschultz/scratch'
+overwrite=1
+
+k=8
+nSweeps=100000
+dumpFrequency=10000
 TICGSeed=10
 diag='true'
 dense='true'
 diagBins=32
-maxDiagChi=10
 nSmallBins=16
 smallBinSize=4
 bigBinSize=-1
 nBigBins=-1
-diagStart=0
-diagCutoff='none'
-bondLength=20
-
-sample=104
-m=1024
-
-chiMethod="${dataFolder}/samples/sample${sample}/chis.txt"
-seqMethod="${dataFolder}/samples/sample${sample}/x.npy"
+bondLength=28
 useD='true'
 useE='true'
+m=1024
 
-chiDiagMethod="${dataFolder}/samples/sample${sample}/chis_diag_edit.txt"
-i=104_edit
-run &
-# #
-# chiDiagMethod="${dataFolder}/samples/sample${sample}/none/k0/replicate1/chis_diag_edit.txt"
-# i=10_edit
-# run &
-#
-# chiDiagMethod="${dataFolder}/samples/sample${sample}_edit/log_max_fit.txt"
-# i=10_logmax
-# run &
-#
-# chiDiagMethod="${dataFolder}/samples/sample${sample}_edit/logistic_fit.txt"
-# i=10_logistic
-# run &
-#
-# chiDiagMethod="${dataFolder}/samples/sample${sample}_edit/logistic_fit_manual.txt"
-# i=10_logistic_manual
-# run &
-#
-# chiDiagMethod="${dataFolder}/samples/sample${sample}_edit/linear_max_fit.txt"
-# i=10_linearmax
-# run &
-#
-# chiDiagMethod="${dataFolder}/samples/sample${sample}_edit/log_fit.txt"
-# i=10_log
-# run &
+for sample in 6
+do
+	dataFolder="${baseDataFolder}/samples/sample${sample}/PCA_split-binarizeMean-E/k${k}/replicate1"
+	chiMethod="${dataFolder}/chis.txt"
+	seqMethod="${dataFolder}/resources/x.npy"
+
+	chiDiagMethod="${dataFolder}/fitting/chis_diag_edit.txt"
+	i="${sample}_edit"
+	run &
+
+	# chiDiagMethod="${dataFolder}/chis_diag_edit_zero.txt"
+	# i="${sample}_edit_zero"
+	# run &
+
+	# chiDiagMethod="${dataFolder}/log_max_fit.txt"
+	# i=logmax
+	# run &
+	#
+	# chiDiagMethod="${dataFolder}/logistic_fit.txt"
+	# i=logistic
+	# run &
+	#
+	# chiDiagMethod="${dataFolder}/fitting/logistic_fit_manual.txt"
+	# i="${sample}_logistic_manual"
+	# run &
+
+	chiDiagMethod="${dataFolder}/fitting/linear_fit.txt"
+	i="${sample}_linear"
+	run &
+	# #
+	# # chiDiagMethod="${dataFolder}/log_fit.txt"
+	# # i=log
+	# # run &
+	# #
+	chiDiagMethod="${dataFolder}/fitting/poly2_fit.txt"
+	i="${sample}_poly2"
+	run &
+	#
+	chiDiagMethod="${dataFolder}/fitting/poly3_fit.txt"
+	i="${sample}_poly3"
+	run &
+done
+
+wait
