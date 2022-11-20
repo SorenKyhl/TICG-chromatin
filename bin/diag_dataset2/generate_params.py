@@ -42,7 +42,7 @@ def linear_dataset(N, k, dataset):
         chi_file = osp.join(odir, f'chi_{i+1}.npy')
         np.save(chi_file, chi)
 
-        chi_file = osp.join('/project2/depablo/erschultz', dataset, f'chi_{i+1}.npy')
+        chi_file = osp.join('/project2/depablo/erschultz', dataset, f'setup/chi_{i+1}.npy')
         sample_dict[i]['chi_method'] = chi_file
 
     # get seq params
