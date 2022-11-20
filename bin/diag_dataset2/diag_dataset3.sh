@@ -14,7 +14,7 @@ source ~/TICG-chromatin/bin/diag_dataset2/diag_dataset_fns.sh
 
 jobs=0
 waitCount=0
-for i in {801..1200}
+for i in {601..900}
 do
 	echo $i
 	run &

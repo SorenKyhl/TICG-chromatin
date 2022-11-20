@@ -49,7 +49,7 @@ def linear_dataset(N, k, dataset):
     for i in range(N):
         p11 = -1
         p00 = -1
-        while p00 < 0 or p11 < 0:
+        while p00 < 0 or p11 < 0 or p00 > 1 or p11 > 1:
             f = skewnorm.rvs(-1.091, 0.426, 0.15)
             lmbda = skewnorm.rvs(0, 0.865, 0.06)
             p11 = f*(1-lmbda)+lmbda

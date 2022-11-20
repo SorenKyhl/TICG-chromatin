@@ -1,6 +1,6 @@
 #! /bin/bash
-#SBATCH --job-name=fds5
-#SBATCH --output=logFiles/fixed_diag_dataset5.out
+#SBATCH --job-name=fds7
+#SBATCH --output=logFiles/fixed_diag_dataset7.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20
@@ -14,7 +14,7 @@ source ~/TICG-chromatin/bin/diag_dataset2/diag_dataset_fns.sh
 
 jobs=0
 waitCount=0
-for i in {1201..1500}
+for i in {1801..2100}
 do
 	echo $i
 	run &

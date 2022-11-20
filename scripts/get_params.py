@@ -296,9 +296,13 @@ class GetSeq():
             # lmda is not None
             seq[0, :] = rng.choice([1,0], size = self.k)
             p11 = f*(1-lmbda)+lmbda
+            assert p11 >= 0, f'p11={p11} for f={f}, lambda={lmbda}'
             p00 = f*(lmbda-1) + 1
+            assert p00 >= 0, f'p00={p00} for f={f}, lambda={lmbda}'
             p01 = 1 - p11
+            assert p01 >= 0, f'p01={p01} for f={f}, lambda={lmbda}'
             p10 = 1 - p00
+            assert p10 >= 0, f'p10={p10} for f={f}, lambda={lmbda}'
 
             # p10 = f*(1-lmbda)
             # p00 = 1 - p10
