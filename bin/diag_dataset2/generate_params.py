@@ -68,7 +68,7 @@ def logistic_dataset(N):
     pass
 
 def main():
-    linear_dataset(2500, 8, 'dataset_11_18_22')
+    linear_dataset(2400, 8, 'dataset_11_18_22')
     logistic_dataset(2500)
 
 if __name__ == '__main__':

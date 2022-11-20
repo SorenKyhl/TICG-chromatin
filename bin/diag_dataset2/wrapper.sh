@@ -8,7 +8,7 @@
 # necessary to ensure log files are in right place
 cd ~/TICG-chromatin
 
-for i in 1 2 3 4 5
+for i in 1 2 3 4 5 6
 do
   echo $i
   sbatch ~/TICG-chromatin/bin/diag_dataset2/diag_dataset${i}.sh &
