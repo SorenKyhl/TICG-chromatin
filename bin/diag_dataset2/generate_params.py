@@ -47,12 +47,13 @@ def linear_dataset(N, k, dataset):
 
     # get seq params
     for i in range(N):
-        f = -1
-        while f < 0:
+        p11 = -1
+        p00 = -1
+        while p00 < 0 or p11 < 0:
             f = skewnorm.rvs(-1.091, 0.426, 0.15)
-        lmbda = -1
-        while lmbda < -f/(1-f) or lmbda > 1:
             lmbda = skewnorm.rvs(0, 0.865, 0.06)
+            p11 = f*(1-lmbda)+lmbda
+            p00 = f*(lmbda-1) + 1
 
         sample_dict[i]['lmbda'] = lmbda
         sample_dict[i]['f'] = f
