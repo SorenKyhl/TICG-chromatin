@@ -27,7 +27,7 @@ scratchDir='/home/erschultz/scratch'
 overwrite=1
 
 k=8
-nSweeps=100000
+nSweeps=500000
 dumpFrequency=10000
 TICGSeed=10
 diag='true'
@@ -42,7 +42,7 @@ useD='true'
 useE='true'
 m=1024
 
-for sample in 6
+for sample in 1 2 3 4
 do
 	dataFolder="${baseDataFolder}/samples/sample${sample}/PCA_split-binarizeMean-E/k${k}/replicate1"
 	chiMethod="${dataFolder}/chis.txt"
@@ -76,13 +76,13 @@ do
 	# # i=log
 	# # run &
 	# #
-	chiDiagMethod="${dataFolder}/fitting/poly2_fit.txt"
-	i="${sample}_poly2"
-	run &
+	# chiDiagMethod="${dataFolder}/fitting/poly2_fit.txt"
+	# i="${sample}_poly2"
+	# run &
 	#
-	chiDiagMethod="${dataFolder}/fitting/poly3_fit.txt"
-	i="${sample}_poly3"
-	run &
+	# chiDiagMethod="${dataFolder}/fitting/poly3_fit.txt"
+	# i="${sample}_poly3"
+	# run &
 done
 
 wait

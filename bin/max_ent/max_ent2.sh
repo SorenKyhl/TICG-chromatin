@@ -24,17 +24,17 @@ fi
 
 STARTTIME=$(date +%s)
 i=1001
-dataset='dataset_9_30_22'
+dataset='dataset_11_18_22'
 useS='false'
 useE='true'
 useD='false'
 m=1024
-GNNModelID=243
+GNNModelID=254
 chiMethod='none'
 mode='none'
 
 bondtype='gaussian'
-bondLength=20
+bondLength=28
 
 diagChiMethod='none'
 dense='false'
@@ -45,7 +45,8 @@ diagCutoff=1024
 
 k=0
 method='GNN'
-for sample in 1128 1131 1794 552 1938
+for sample in 410
+# 653 1462 1801 2290
 do
   echo $sample $m
   max_ent

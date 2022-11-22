@@ -11,6 +11,7 @@ source activate python3.8_pytorch1.9
 # necessary to ensure log files are in right place
 cd ~/TICG-chromatin
 
+echo 'generate_params'
 python  ~/TICG-chromatin/bin/diag_dataset2/generate_params.py
 mv ~/dataset_11_21_22 /project2/depablo/erschultz
 

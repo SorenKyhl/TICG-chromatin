@@ -13,7 +13,7 @@ source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
 then
-  dir="/home/erschultz/sequences_to_contact_maps"
+  dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
   numIterations=1
   finalSimProductionSweeps=500000
@@ -24,7 +24,7 @@ fi
 
 STARTTIME=$(date +%s)
 i=3003
-dataset='dataset_07_20_22'
+dataset='dataset_11_14_22'
 useS='false'
 useE='true'
 useD='false'
@@ -34,7 +34,7 @@ chiMethod='none'
 mode='none'
 
 bondtype='gaussian'
-bondLength=20
+bondLength=28
 
 diagChiMethod='none'
 dense='false'
@@ -45,14 +45,11 @@ diagCutoff=1024
 
 k=0
 method='GNN'
-for sample in 10
- # 1 1128 1131 1794 552 1938
+for sample in 1 2 3 4 5
 do
   echo $sample $m
-  echo $CONDA_DEFAULT_ENV
   max_ent
 done
-
 wait
 
 ENDTIME=$(date +%s)

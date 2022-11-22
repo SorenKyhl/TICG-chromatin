@@ -15,47 +15,42 @@ if [ $local = 'true' ]
 then
   dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
-  numIterations=15
+  numIterations=1
   finalSimProductionSweeps=500000
-  equilibSweeps=50000
-  productionSweeps=500000
+  equilibSweeps=500
+  productionSweeps=5000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
-i=4001
-dataset='dataset_11_14_22'
+i=4002
+dataset='dataset_11_14_22/samples/sample2/PCA_split-binarizeMean-E/k8/replicate1'
 useS='false'
 useE='true'
-useD='true'
+useD='false'
 m=1024
-chiMethod='zero'
-mode='both'
+GNNModelID=254
+chiMethod='none'
+mode='none'
 
 bondtype='gaussian'
 bondLength=28
-gridSize=28.7
-beadVol=520
-phiChromatin=0.06
 
-diagChiMethod='zero'
-dense='true'
-diagBins=32
+diagChiMethod='none'
+dense='false'
+diagBins=1
 nSmallBins=16
 smallBinSize=4
 diagCutoff=1024
 
-method='PCA_split-binarizeMean'
-for k in 8 12
+k=0
+method='GNN'
+for sample in 2_linear
+# 2_edit
 do
-  for sample in 8 11 12 15 17 19 20 21 22
-  do
-    echo $sample $m
-    echo $CONDA_DEFAULT_ENV
-    max_ent
-  done
+  echo $sample $m
+  max_ent
 done
-
 wait
 
 ENDTIME=$(date +%s)

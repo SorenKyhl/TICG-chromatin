@@ -1526,7 +1526,8 @@ class GetEnergy():
             if isinstance(opt.y_preprocessing, list):
                 opt.y_preprocessing = '_'.join(opt.y_preprocessing)
         if self.args.kr:
-            opt.y_preprocessing = f'kr_{opt.y_preprocessing}'
+            opt.kr = True
+            opt.y_preprocessing = f'{opt.y_preprocessing}'
         print(opt)
 
         # get model
