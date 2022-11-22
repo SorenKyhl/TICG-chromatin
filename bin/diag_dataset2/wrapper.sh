@@ -5,7 +5,8 @@
 # make
 # mv TICG-engine ..
 
-
+source activate python3.9_pytorch1.9_cuda10.2
+source activate python3.8_pytorch1.9
 
 # necessary to ensure log files are in right place
 cd ~/TICG-chromatin
