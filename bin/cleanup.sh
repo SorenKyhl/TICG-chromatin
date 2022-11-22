@@ -14,5 +14,5 @@ tar -xzvf dataset_09_30_22.tar.gz dataset_09_30_22_mini
 
 for i in {1..20}
 do
-  mv "dataset_09_30_22_mini/samples/sample${i}" "dataset_09_30_22/samples/sample${i}"
+  mv "dataset_09_30_22_mini/sample${i}" "dataset_09_30_22/samples/sample${i}"
 done

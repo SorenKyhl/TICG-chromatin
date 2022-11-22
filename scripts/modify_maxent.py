@@ -18,6 +18,8 @@ def modify_maxent_diag_chi(sample, k = 8):
     dataset = 'dataset_11_14_22'
     dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
     max_ent_dir = osp.join(dir, f'PCA_split-binarizeMean-E/k{k}/replicate1')
+    if not osp.exists(max_ent_dir):
+        return
     odir = osp.join(max_ent_dir, 'fitting')
     if not osp.exists(odir):
         os.mkdir(odir, mode = 0o755)
@@ -45,7 +47,8 @@ def modify_maxent_diag_chi(sample, k = 8):
     m = len(diag_chi_step)
     x = np.arange(0, 2*m)
 
-    log_fit = curve_fit_helper(log_curve, x[:64], diag_chi_step[:64], 'log', odir)
+    log_fit = curve_fit_helper(log_curve, x[:64], diag_chi_step[:64],
+                                    'log', odir)
     log_max_fit = curve_fit_helper(log_max_curve, x[:64], diag_chi_step[:64],
                                     'log_max', odir)
     logistic_fit = curve_fit_helper(logistic_curve, x[:m], diag_chi_step,
@@ -104,10 +107,9 @@ def modify_maxent_diag_chi(sample, k = 8):
 
 def curve_fit_helper(fn, x, y, label, odir, init = [1,1]):
     try:
-        init = [1, 1]
-        popt, pcov = curve_fit(log_curve, x, y, p0 = init, maxfev = 2000)
+        popt, pcov = curve_fit(fn, x, y, p0 = init, maxfev = 2000)
         print(f'\t{label} popt', popt)
-        fit = log_curve(x, *popt)
+        fit = fn(x, *popt)
         np.savetxt(osp.join(odir, f'{label}_fit.txt'), fit)
         np.savetxt(osp.join(odir, f'{label}_popt.txt'), popt)
     except RuntimeError as e:
@@ -277,9 +279,11 @@ def find_params_for_synthetic_data(k_arr):
     lmbda_list = []
     f_list = []
     for k in k_arr:
-        for sample in [1, 2, 5, 6, 9, 10, 13, 14, 16, 18]:
+        for sample in range(19):
             dir = osp.join(data_dir, f'samples/sample{sample}')
             max_ent_dir = osp.join(dir, f'PCA_split-binarizeMean-E/k{k}/replicate1')
+            if not osp.exists(max_ent_dir):
+                continue
             fitting_dir = osp.join(max_ent_dir, 'fitting')
             edit_dir = osp.join(max_ent_dir, 'samples')
 
@@ -335,10 +339,14 @@ def find_params_for_synthetic_data(k_arr):
 
     arrs = [f_list, lmbda_list, linear_popt_arr[:, 0], linear_popt_arr[:, 1],
             logistic_popt_arr[:, 0], logistic_popt_arr[:, 1], logistic_popt_arr[:, 2]]
-    labels = ['f', 'lambda', 'diag_slope', 'diag_intercept',
-            'diag_max', 'diag_slope', 'diag_midpoint']
+    labels = ['f', 'lambda', 'diag_linear_slope', 'diag_linear_intercept',
+            'diag_logistic_max', 'diag_logistic_slope', 'diag_logistic_midpoint']
     dist = skewnorm
     for arr, label in zip(arrs, labels):
+        if np.min(arr) < 0.001 * np.median(arr):
+            print(label, np.min(arr))
+            arr = np.delete(arr, np.argmin(arr), axis = None)
+            print(arr)
         n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
                                     bins = 20, color = 'blue', alpha = 0.5)
         bin_width = bins[1] - bins[0]
@@ -355,9 +363,9 @@ def find_params_for_synthetic_data(k_arr):
 
 
 if __name__ == '__main__':
-    for i in [1, 2, 5, 6, 9, 10, 13, 14, 16, 18]:
-        #  1, 2, 5, 6, 9, 10, 13, 14, 16, 18
+    # for i in range(1,19):
+         # 1, 2, 5, 6, 9, 10, 13, 14, 16, 18
         # 13 is a meh fit
-        modify_maxent_diag_chi(i, k = 8)
+        # modify_maxent_diag_chi(i, k = 8)
         # plot_modified_max_ent(i, k = 8)
-    # find_params_for_synthetic_data([8])
+    find_params_for_synthetic_data([8])

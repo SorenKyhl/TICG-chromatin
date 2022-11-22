@@ -125,11 +125,14 @@ def main3():
     filename="https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-treated_6hr_combined_30.hic"
     m = 1024
 
-    slices = [(1, 15), (1, 150), (2, 5), (2, 135), (3, 5), (3, 110), (4, 60), (4, 115), (5, 75), (5, 120), (6, 4), (6, 100), (7, 6), (7, 77), (8, 90), (9, 75), (10, 55), (11, 56)]
+    slices = [(1, 15), (1, 150), (2, 5), (2, 135), (3, 5), (3, 110), (4, 60),
+                (4, 115), (5, 75), (5, 120), (6, 4), (6, 100), (7, 6), (7, 77),
+                (8, 90), (9, 75), (10, 55), (11, 56), (12, 45), (13, 22),
+                (14, 35), (18, 20)]
 
     # set up for multiprocessing
     mapping = []
-    start_sample=101
+    start_sample=22
     for i, (chromosome, start_mb) in enumerate(slices):
         start = start_mb * 1000000
         end = start + resolution * (m-1)

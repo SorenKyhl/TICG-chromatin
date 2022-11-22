@@ -31,7 +31,7 @@ def check_dataset(dataset):
                 m, k = psi.shape
                 seq = np.zeros((m, k))
                 for i in range(k):
-                    seq_i = np.loadtxt(osp.join(file_dir, 'seq{}.txt'.format(i)))
+                    seq_i = np.loadtxt(osp.join(file_dir, f'seq{i}.txt'))
                     seq[:, i] = seq_i
 
                 if not np.array_equal(seq, psi):
