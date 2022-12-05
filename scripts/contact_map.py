@@ -201,10 +201,12 @@ def main():
 
         else:
             meanDist_max_ent = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+            print('meanDist_max_ent', meanDist_max_ent)
             y_gt_file = osp.join(args.replicate_folder, 'resources', 'y_gt.npy')
             if osp.exists(y_gt_file):
                 y_gt = np.load(y_gt_file)
                 meanDist_gt = DiagonalPreprocessing.genomic_distance_statistics(y_gt, 'prob')
+                print('meanDist_gt', meanDist_gt)
                 mse = mean_squared_error(meanDist_max_ent, meanDist_gt)
                 title = f'MSE: {np.round(mse, 9)}'
             else:

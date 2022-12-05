@@ -363,9 +363,9 @@ def find_params_for_synthetic_data(k_arr):
 
 
 if __name__ == '__main__':
-    # for i in range(1,19):
+    for i in range(1,22):
          # 1, 2, 5, 6, 9, 10, 13, 14, 16, 18
         # 13 is a meh fit
-        # modify_maxent_diag_chi(i, k = 8)
+        modify_maxent_diag_chi(i, k = 8)
         # plot_modified_max_ent(i, k = 8)
-    find_params_for_synthetic_data([8])
+    # find_params_for_synthetic_data([8])

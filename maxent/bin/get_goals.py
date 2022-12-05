@@ -1,7 +1,7 @@
-import epilib as ep
-import numpy as np
 import sys
 
+import epilib as ep
+import numpy as np
 
 bins = int(sys.argv[1])
 sim = ep.Sim(".")

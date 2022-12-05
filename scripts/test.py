@@ -6,10 +6,13 @@ import tarfile
 from collections import defaultdict
 from functools import partial
 
+import bioframe
 import hicrep
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import pyBigWig
+import scipy.stats as ss
 from scipy.ndimage import uniform_filter
 from seq2contact import *
 from sklearn.linear_model import LinearRegression
@@ -756,11 +759,20 @@ def time_comparison_dmatrix():
     plt.savefig(osp.join(dir, 'time2.png'))
     plt.close()
 
+
+def compare_kr_vs_none():
+    dir = '/home/erschultz/dataset_11_14_22/samples'
+    y_kr = np.load(osp.join(dir, 'sample101/y.npy'))
+    y = np.load(osp.join(dir, 'sample1/y.npy'))
+    diff = y - y_kr
+    plot_matrix(diff, osp.join(dir, 'sample1/diff_kr.png'), cmap='blue-red', title='y-y_kr')
+
+
 if __name__ == '__main__':
     # compare_y_diag()
     # check_if_same()
     # test_robust_PCA()
-    check_dataset('dataset_09_30_22')
+    # check_dataset('dataset_09_30_22')
     # time_comparison()
     # time_comparison_dmatrix()
     # construct_sc_xyz()
@@ -770,3 +782,4 @@ if __name__ == '__main__':
     # main3()
     # plot_sd()
     # makeDirsForMaxEnt("dataset_09_21_21")
+    compare_kr_vs_none()

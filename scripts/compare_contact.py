@@ -92,19 +92,24 @@ def plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, dir):
     overall_corr = np.round(overall_corr, 3)
 
     # format title
-    title = 'Overall Pearson R: {}'.format(overall_corr)
-    title +='\nAvg Dist Pearson R: {}'.format(avg_diag)
-    title +='\nSCC: {}'.format(corr_scc)
+    title = f'Overall Pearson Corr: {overall_corr}'
+    title += f'\nMean Diagonal Pearson Corr: {avg_diag}'
+    title += f'\nSCC: {corr_scc}'
 
-    plt.plot(np.arange(m-2), corr_arr, color = 'black')
-    plt.ylim(-0.5, 1)
-    plt.xlabel('Distance', fontsize = 16)
-    plt.ylabel('Pearson Correlation Coefficient', fontsize = 16)
-    plt.title(title, fontsize = 16)
+    for log in [True, False]:
+        plt.plot(np.arange(m-2), corr_arr, color = 'black')
+        plt.ylim(-0.5, 1)
+        plt.xlabel('Distance', fontsize = 16)
+        plt.ylabel('Pearson Correlation Coefficient', fontsize = 16)
+        plt.title(title, fontsize = 16)
 
-    plt.tight_layout()
-    plt.savefig(osp.join(dir, 'distance_pearson.png'))
-    plt.close()
+        plt.tight_layout()
+        if log:
+            plt.xscale('log')
+            plt.savefig(osp.join(dir, 'distance_pearson_log.png'))
+        else:
+            plt.savefig(osp.join(dir, 'distance_pearson.png'))
+        plt.close()
 
     return overall_corr, corr_scc, avg_diag
 

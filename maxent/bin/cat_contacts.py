@@ -1,6 +1,7 @@
-import numpy as np
-import sys
 import os
+import sys
+
+import numpy as np
 
 print(sys.argv)
 
@@ -16,7 +17,3 @@ for file in files:
     os.remove(file)
 
 np.savetxt(output_file, output, fmt="%d", delimiter=" ")
-
-
-
-    

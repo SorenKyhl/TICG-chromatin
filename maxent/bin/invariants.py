@@ -1,5 +1,6 @@
-import numpy as np
 import sys
+
+import numpy as np
 
 N = float(sys.argv[1])
 b = float(sys.argv[2])
@@ -14,4 +15,3 @@ def sqrtNbar(N,b,v):
 
 print(sqrtNbar(N,b,b))
 print(R(N,b,v)**3/(v*N))
-

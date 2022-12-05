@@ -21,7 +21,7 @@ from sklearn.metrics import mean_squared_error
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 METHODS = ['ground_truth', 'random', 'PCA', 'PCA_split', 'kPCA', 'RPCA',
             'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM']
-SMALL_METHODS = {'ground_truth', 'random', 'PCA', 'k_means', 'nmf', 'GNN',
+SMALL_METHODS = {'ground_truth', 'random', 'PCA', 'PCA_split', 'k_means', 'nmf', 'GNN',
             'epigenetic', 'ChromHMM'}
 LABELS = ['Ground Truth', 'Random', 'PCA', 'PCA Split', 'kPCA', 'RPCA',
             'K-means', 'NMF', 'GNN', 'Epigenetic', 'ChromHMM']
@@ -96,12 +96,15 @@ def loadData(args):
 
     for i, sample in enumerate(args.samples):
         sample_folder = osp.join(args.data_folder, 'samples', f'sample{sample}')
-        diag_chi_continuous = np.load(osp.join(sample_folder, 'diag_chis_continuous.npy'))
-        D = calculate_D(diag_chi_continuous)
-        S = np.load(osp.join(sample_folder, 's.npy'))
-        ground_truth_ED = calculate_net_energy(S, D)
+        if args.experimental:
+            ground_truth_ED = None
+        else:
+            diag_chi_continuous = np.load(osp.join(sample_folder, 'diag_chis_continuous.npy'))
+            D = calculate_D(diag_chi_continuous)
+            S = np.load(osp.join(sample_folder, 's.npy'))
+            ground_truth_ED = calculate_net_energy(S, D)
         ground_truth_y, ground_truth_ydiag = load_Y(sample_folder)
-        ground_truth_y = ground_truth_y.astype(np.float64) / np.max(np.diagonal(ground_truth_y))
+        ground_truth_meanDist = DiagonalPreprocessing.genomic_distance_statistics(ground_truth_y, 'prob')
         for method in os.listdir(sample_folder):
             method_folder = osp.join(sample_folder, method)
             # methods should be formatted such that method.split('-')[0] is in METHODS
@@ -191,6 +194,14 @@ def loadData(args):
                                     replicate_data['avg_dist_pearson'].append(avg_diag)
                                 else:
                                     print(f"Didn't find {y_file}")
+                                    continue
+
+                            rmse_diag = None
+                            if yhat is not None:
+                                meanDist = DiagonalPreprocessing.genomic_distance_statistics(yhat, 'prob')
+                                rmse_diag = mean_squared_error(ground_truth_meanDist, meanDist, squared = False)
+                            replicate_data['rmse-diag'].append(rmse_diag)
+
 
                             rmse_ED = None
                             if ground_truth_ED is not None:
@@ -281,6 +292,7 @@ def loadData(args):
                         data[k][method]['avg_dist_pearson'].append(replicate_data['avg_dist_pearson'])
                         data[k][method]['rmse-E+D'].append(replicate_data['rmse-E+D'])
                         data[k][method]['rmse-y'].append(replicate_data['rmse-y'])
+                        data[k][method]['rmse-diag'].append(replicate_data['rmse-diag'])
                         data[k][method]['converged_time'].append(replicate_data['converged_time'])
                         data[k][method]['final_time'].append(replicate_data['final_time'])
                         data[k][method]['total_time'].append(replicate_data['total_time'])
@@ -309,11 +321,17 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
     with open(ofile, mode) as o:
         # set up first rows of table
         o.write("\\begin{center}\n")
+        metric_labels = {'scc':'SCC', 'rmse-E+D':'RMSE-Energy', 'rmse-y':'RMSE-Y',
+                        'rmse-diag':'RMSE-P(s)', 'avg_dist_pearson':'Mean Diagonal Corr',
+                        'total_time':'Total Time', 'converged_it':'Converged Iteration',
+                        'converged_time':'Converged Time', 'final_time':'Final Time'}
         if small:
-            metrics = ['scc', 'rmse-E+D', 'rmse-y', 'total_time']
+            metrics = ['scc', 'rmse-E+D', 'avg_dist_pearson', 'rmse-diag', 'total_time']
         else:
-            metrics = ['scc', 'rmse-E+D', 'rmse-y',
+            metrics = ['scc', 'avg_dist_pearson', 'rmse-E+D', 'rmse-y', 'rmse-diag',
                         'converged_it', 'converged_time', 'final_time']
+        if experimental:
+            metrics.pop(1)
         num_cols = len(metrics) + 2
         num_cols_str = str(num_cols)
 
@@ -326,10 +344,12 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
 
         o.write("\\hline\n")
 
-        if small:
-            o.write("Method & k & SCC & RMSE-Energy & RMSE-Y & Total Time \\\ \n")
-        else:
-            o.write("Method & k & SCC & RMSE-Energy & RMSE-Y & Converged It & Converged Time & Final Time \\\ \n")
+        row = "Method & k"
+        for metric in metrics:
+            label = metric_labels[metric]
+            row += f" & {label}"
+        row += ' \\\ \n'
+        o.write(row)
         o.write("\\hline\\hline\n")
 
         # get reference data
@@ -354,9 +374,10 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
 
         for k in sorted(data.keys()):
             first = True # only write k for first row in section
-            keys, labels = sort_method_keys(data[k].keys())
-            for key, label in zip(keys, labels):
+            keys_labels = sort_method_keys(data[k].keys())
+            for key, label in keys_labels:
                 if small and key.split('-')[0] not in SMALL_METHODS:
+                    print(key)
                     # skip methods not in SMALL_METHODS
                     continue
                 if nan_mask is not None and len(nested_list_to_array(data[k][key]['scc'])) != len(nan_mask):
@@ -403,7 +424,7 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                         roundoff = 1
                     elif metric == 'rmse-E+D':
                         roundoff = 2
-                    elif metric == 'rmse-y':
+                    elif metric == 'rmse-y' or metric == 'rmse-diag':
                         roundoff = 4
                     else:
                         roundoff = 3
@@ -426,19 +447,21 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
 
 def sort_method_keys(keys):
     '''Sorts keys to match order of METHODS and gets corresponding labels from LABELS.'''
-    sorted_keys = []
-    sorted_labels = []
+    sorted_key_labels = []
     for method, label in zip(METHODS, LABELS):
+        key_labels = [] # list of (key, label) tuples of type method
         for key in keys:
             split = key.split('-')
             if split[0] == method:
-                sorted_keys.append(key)
                 if len(split) > 1:
-                    sorted_labels.append(label + '-' + '-'.join(split[1:]))
+                    label_str = label + '-' + '-'.join(split[1:])
                 else:
-                    sorted_labels.append(label)
+                    label_str = label
+                key_labels.append((key, label_str))
 
-    return sorted_keys, sorted_labels
+        sorted_key_labels.extend(sorted(key_labels))
+
+    return sorted_key_labels
 
 def main(data_folder=None, sample=None):
     args = getArgs(data_folder = data_folder, sample = sample)

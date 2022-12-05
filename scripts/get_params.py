@@ -1555,6 +1555,7 @@ class GetEnergy():
                 plaid_hat = plaid_hat.cpu().detach().numpy().reshape((opt.m,opt.m))
                 plot_matrix(plaid_hat, 'plaid_hat.png', vmin = v_min,
                                 vmax = v_max, title = 'plaid portion', cmap = 'blue-red')
+                print(f'Rank of plaid_hat: {np.linalg.matrix_rank(plaid_hat)}')
                 np.savetxt('plaid_hat.txt', plaid_hat)
 
 

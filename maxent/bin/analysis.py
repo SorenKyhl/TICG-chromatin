@@ -1,6 +1,7 @@
 import json
 import os
 import os.path as osp
+import sys
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -10,6 +11,11 @@ import scipy
 from get_goal_experimental import get_diag_goal, get_plaid_goal
 from numba import njit
 from scipy.ndimage import uniform_filter
+
+for p in ['/home/erschultz', '/home/erschultz/sequences_to_contact_maps']:
+    sys.path.insert(1, p)
+from sequences_to_contact_maps.utils.plotting_utils import plot_matrix
+from sequences_to_contact_maps.utils.similarity_measures import SCC
 
 
 class Sim:
@@ -60,7 +66,7 @@ class Sim:
         hic_file = osp.join(self.path, 'contacts.txt')
         if osp.exists(hic_file):
             self.hic = np.loadtxt(hic_file)
-            self.hic /= np.mean(self.hic.diagonal()) # TODO why only diagonal
+            self.hic /= np.mean(self.hic.diagonal())
             self.d = get_diagonal(self.hic)
         else:
             print(f"{hic_file} does not exist")
@@ -81,10 +87,12 @@ class Sim:
 
         gthic_path = osp.join(self.replicate_path, "resources/y_gt.npy")
         if osp.exists(gthic_path):
-            self.gthic = np.load(gthic_path)
+            self.gthic = np.load(gthic_path).astype(np.float64)
+            self.gthic /= np.mean(self.gthic.diagonal())
         else:
             self.gthic = None
             print(f"{gthic_path} does not exist")
+
 
         plaid_observables_file = osp.join(self.path,"observables.traj")
         self.obs_full = None
@@ -189,7 +197,10 @@ class Sim:
             d = np.array(self.diag_obs_full.T)
             plt.semilogy(d[1:].T)
 
-    def plot_tri(self, vmaxp=None, title=""):
+    def plot_tri(self, ofile, vmaxp, title=""):
+        '''
+        Plot contact map with lower triangle as ground truth and upper as simulation.
+        '''
         first = self.hic
         second = self.gthic
 
@@ -204,10 +215,7 @@ class Sim:
         composite[indu] = first[indu]
         composite[indl] = second[indl]
 
-        if vmaxp is None:
-            plot_contactmap(composite, title=title)
-        else:
-            plot_contactmap(composite, vmaxp=vmaxp, absolute=True, title=title)
+        plot_matrix(composite, ofile, title, vmax = vmaxp, triu = True)
 
     def plot_scatter(self):
         hic1 = self.hic
@@ -299,98 +307,6 @@ class Sim:
             print("cannot plot consistency because sim.config['contact_resolution'] > 1")
             return 0
 
-def plot_contactmap(contact, vmaxp=0.1, absolute=False, imshow=True, cbar=True, dark=False, title=""):
-    plt.figure(figsize=(12,10))
-    mycmap = mpl.colors.LinearSegmentedColormap.from_list('custom',
-                                             [(0,    'white'),
-                                              (0.3,  'white'),
-                                              (1,    '#ff0000')], N=126)
-
-    if dark:
-        vmaxp=np.mean(contact)/2
-        absolute = True
-
-    if imshow:
-        fn = plt.imshow
-    else:
-        fn = sns.heatmap
-
-    if absolute:
-        fn(contact, cmap=mycmap, vmin = 0, vmax = vmaxp)
-    else:
-        fn(contact, cmap=mycmap, vmin = 0, vmax = contact.mean()+vmaxp*contact.std())
-
-    if cbar:
-        plt.colorbar()
-        plt.title(title)
-
-class SCC():
-    '''
-    Class for calculation of SCC as defined by https://pubmed.ncbi.nlm.nih.gov/28855260/
-    '''
-    def __init__(self):
-        self.r_2k_dict = {} # memoized solution for var_stabilized r_2k
-    def r_2k(self, x_k, y_k, var_stabilized):
-        '''
-        Compute r_2k (numerator of pearson correlation)
-        Inputs:
-            x: contact map
-            y: contact map of same shape as x
-            var_stabilized: True to use var_stabilized version
-        '''
-        # x and y are stratums
-        if var_stabilized:
-            N_k = len(x_k)
-            if N_k in self.r_2k_dict:
-                result = self.r_2k_dict[N_k]
-            else:
-                result = np.var(np.arange(1, N_k+1)/N_k)
-                self.r_2k_dict[N_k] = result
-            return result
-        else:
-            return np.sqrt(np.var(x_k) * np.var(y_k))
-    def mean_filter(x, size):
-        return uniform_filter(x, size, mode = 'constant') / (size)**2
-    def scc(self, x, y, h = 3, K = None, var_stabilized = False, verbose = False):
-        '''
-        Compute scc between contact map x and y.
-        Inputs:
-            x: contact map
-            y: contact map of same shape as x
-            h: span of convolutional kernel (width = (1+2h))
-            K: maximum stratum (diagonal) to consider (None for all)
-            var_stabilized: True to use var_stabilized r_2k
-            verbose: True to print when nan found
-        '''
-        x = SCC.mean_filter(x.astype(np.float64), 1+2*h)
-        y = SCC.mean_filter(y.astype(np.float64), 1+2*h)
-        if K is None:
-            K = len(y) - 2
-        num = 0
-        denom = 0
-        nan_list = []
-        for k in range(1, K):
-            # get stratum (diagonal) of contact map
-            x_k = np.diagonal(x, k)
-            y_k = np.diagonal(y, k)
-            N_k = len(x_k)
-            r_2k = self.r_2k(x_k, y_k, var_stabilized)
-            #p_k, _ = pearsonr(x_k, y_k)
-            p_k = np.corrcoef(x_k, y_k)[0,1]
-            if np.isnan(p_k):
-                # nan is hopefully rare so just set to 0
-                nan_list.append(k)
-                p_k = 0
-                if verbose:
-                    print(f'k={k}')
-                    print(x_k)
-                    print(y_k)
-            num += N_k * r_2k * p_k
-            denom += N_k * r_2k
-        if len(nan_list) > 0:
-            print(f'{len(nan_list)} nans: k = {nan_list}')
-        return num / denom
-
 def get_RMSE(hic1, hic2):
     diff = hic1-hic2
     rmse = np.sqrt(diff.flatten()@diff.flatten())
@@ -433,69 +349,16 @@ def main():
     print("analysis")
     sim = Sim("production_out")
 
-    # SCC = ep.get_SCC(sim.hic, sim.gthic)
-    # RMSE = ep.get_RMSE(sim.hic, sim.gthic)
-    # RMSLE = ep.get_RMSLE(sim.hic, sim.gthic)
-    #
-    # with open("../SCC.txt", "a") as f:
-    #     f.write(str(SCC) + "\n")
-    #
-    # with open("../RMSE.txt", "a") as f:
-    #     f.write(str(RMSE) + "\n")
-    #
-    # with open("../RMSLE.txt", "a") as f:
-    #     f.write(str(RMSLE) + "\n")
-    #
-    # plt.figure()
-    # SCC_vec = np.loadtxt("../SCC.txt")
-    # plt.plot(SCC_vec)
-    # plt.xlabel("iteration")
-    # plt.ylabel("SCC")
-    # plt.savefig("../SCC.png")
-    #
-    # plt.figure()
-    # RMSE_vec = np.loadtxt("../RMSE.txt")
-    # RMSLE_vec = np.loadtxt("../RMSLE.txt")
-    # plt.plot(RMSE_vec, label="RMSE")
-    # plt.plot(RMSLE_vec, label="RMSLE")
-    # plt.xlabel("iteration")
-    # plt.ylabel("RMSE")
-    # plt.savefig("../RMSE.png")
-    #
-    # convergence = np.loadtxt("../convergence.txt")
-    # fig, axs = plt.subplots(3, figsize=(12,14))
-    # axs[0].plot(convergence)
-    # axs[0].set_title("Loss")
-    # #axs[1].plot(RMSE_vec, label="RMSE")
-    # #axs[1].plot(RMSLE_vec, label="RMSLE")
-    # axs[1].set_title("RMSE/RMSLE")
-    # axs[1].legend()
-    # #axs[2].plot(SCC_vec)
-    # axs[2].set_title("SCC")
-    # plt.savefig("../error.png")
-    #
-    # sim.plot_oe()
-    # plt.savefig("oe.png")
-    # sim.plot_tri()
-    # plt.savefig("tri.png")
-
-    # plt.figure()
-    # ep.plot_tri(sim.hic, sim.gthic, oe=True)
-    # plt.savefig("tri_oe.png")
-
     if sim.gthic is not None:
-        sim.plot_tri(vmaxp=np.mean(sim.hic)/2)
-        plt.savefig("tri_dark.png")
+        sim.plot_tri("tri.png", np.mean(sim.gthic))
+
+        sim.plot_tri("tri_dark.png", np.mean(sim.gthic)/2)
 
         sim.plot_diff()
         plt.savefig("diff.png")
 
         sim.plot_scatter()
         plt.savefig("scatter.png")
-
-    # plt.figure()
-    # sim.plot_diagonal()
-    # plt.savefig("diagonal.png")
 
     sim.plot_energy()
     plt.savefig("energy.png")
@@ -520,5 +383,13 @@ def main():
         if error > 0.01:
             print("SIMULATION IS NOT CONSISTENT")
 
+def test():
+    dir = '/home/erschultz/dataset_11_21_22/samples/sample410/GNN-267-E/k0/replicate1/iteration1'
+    os.chdir(dir)
+    sim = Sim("production_out")
+    sim.plot_tri("tri.png", np.mean(sim.gthic))
+    sim.plot_tri("tri_dark.png", np.mean(sim.gthic)/2)
+
 if __name__ == '__main__':
     main()
+    # test()
