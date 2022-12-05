@@ -9,7 +9,7 @@
 
 source activate python3.9_pytorch1.9_cuda10.2
 source activate python3.8_pytorch1.9
-source ~/TICG-chromatin/bin/diag_dataset2/diag_dataset_fns.sh
+source ~/TICG-chromatin/bin/diag_dataset3/diag_dataset_fns.sh
 
 
 jobs=0
