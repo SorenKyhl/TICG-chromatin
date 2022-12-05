@@ -102,7 +102,7 @@ class DatasetGenerator():
 
 def main():
     # linear_dataset(2400, 8, 'dataset_11_18_22')
-    generator = DatasetGenerator(5000, 8, 'dataset_12_05_22')
+    generator = DatasetGenerator(10000, 8, 'dataset_12_05_22')
     generator.logistic_dataset()
 
 if __name__ == '__main__':
