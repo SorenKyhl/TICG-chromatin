@@ -1549,13 +1549,17 @@ class GetEnergy():
             if plaid_hat is not None and diagonal_hat is not None:
                 # plot plaid contribution
                 v_max = max(np.max(energy), -1*np.min(energy))
-                # v_max = 100
+                v_max = 4.8 # TODO
                 v_min = -1 * v_max
                 # vmin = vmax = 'center'
                 plaid_hat = plaid_hat.cpu().detach().numpy().reshape((opt.m,opt.m))
                 plot_matrix(plaid_hat, 'plaid_hat.png', vmin = v_min,
                                 vmax = v_max, title = 'plaid portion', cmap = 'blue-red')
                 print(f'Rank of plaid_hat: {np.linalg.matrix_rank(plaid_hat)}')
+                w, v = np.linalg.eig(plaid_hat)
+                prcnt = np.abs(w) / np.sum(np.abs(w))
+                print(prcnt[0:4])
+                print(np.sum(prcnt[0:4]))
                 np.savetxt('plaid_hat.txt', plaid_hat)
 
 

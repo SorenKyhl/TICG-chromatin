@@ -38,15 +38,15 @@ phiChromatin=0.06
 
 diagChiMethod='zero'
 dense='true'
-diagBins=32
-nSmallBins=16
-smallBinSize=4
+diagBins=64
+nSmallBins=32
+smallBinSize=2
 diagCutoff=1024
 
 method='PCA_split-binarizeMean'
 for k in 8
 do
-  for sample in 2202
+  for sample in 2201
   # 1001 1002 1003 1004 1005 1101 1102 1103 1104 1105
   # 201 301
   do
