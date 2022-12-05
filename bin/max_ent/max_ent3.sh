@@ -25,11 +25,10 @@ fi
 STARTTIME=$(date +%s)
 i=2001
 dataset='dataset_11_14_22'
-useS='false'
-useE='true'
+useS='true'
+useE='false'
 useD='false'
 m=1024
-GNNModelID=254
 chiMethod='none'
 mode='none'
 
@@ -44,13 +43,19 @@ smallBinSize=4
 diagCutoff=1024
 
 k=0
-method='GNN-kr'
-for sample in 1
- # 2 3 4 5
+method='GNN'
+for sample in 1003
+# 2202
 do
-  echo $sample $m
-  max_ent
+  for GNNModelID in 271
+  # 272 243 254 262 265 267 271 276
+  do
+    echo $sample $m
+    max_ent
+  done
+  # wait
 done
+
 wait
 
 ENDTIME=$(date +%s)

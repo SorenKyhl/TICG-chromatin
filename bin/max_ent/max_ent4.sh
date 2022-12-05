@@ -29,7 +29,7 @@ useS='false'
 useE='true'
 useD='false'
 m=1024
-GNNModelID=243
+GNNModelID=276
 chiMethod='none'
 mode='none'
 
@@ -45,7 +45,7 @@ diagCutoff=1024
 
 k=0
 method='GNN'
-for sample in 1 2 3 4 5
+for sample in 301
 do
   echo $sample $m
   max_ent

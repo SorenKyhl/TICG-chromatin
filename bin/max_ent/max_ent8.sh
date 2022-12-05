@@ -23,7 +23,7 @@ then
 fi
 
 STARTTIME=$(date +%s)
-i=7000
+i=7001
 dataset='dataset_11_14_22'
 useS='false'
 useE='true'
@@ -43,13 +43,12 @@ nSmallBins=16
 smallBinSize=4
 diagCutoff=1024
 
-k=4
-method='PCA-binarize'
-for k in 4 6
+method='PCA_split-binarizeMean'
+for k in 8
 do
-  for sample in 1
-  # 5 6 9
-  # 10 13 14 16 18
+  for sample in 2202
+  # 1001 1002 1003 1004 1005 1101 1102 1103 1104 1105
+  # 201 301
   do
     echo $sample $m
     echo $CONDA_DEFAULT_ENV

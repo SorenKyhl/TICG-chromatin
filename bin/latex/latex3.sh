@@ -7,22 +7,26 @@
 #SBATCH --mem-per-cpu=4000
 #SBATCH --qos=depablo-debug
 
-local='false'
+local='true'
 if [ $local = 'true' ]
 then
-  dataDir='/home/erschultz/sequences_to_contact_maps'
+  dataDir='/home/erschultz'
   source activate python3.9_pytorch1.9
 else
   dataDir='/project2/depablo/erschultz'
   source activate python3.9_pytorch1.9_cuda10.2
 fi
 
-dataset='dataset_09_21_21'
+dataset='dataset_11_14_22'
+samples='1001-1002-1003-1004-1005'
 dataFolder="${dataDir}/${dataset}"
+convergenceDefinition='strict'
+# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples --convergence_definition $convergenceDefinition --experimental &
 
-for sample in 1 2 8 14 20
+
+for sample in 1003
 do
-  python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample --experimental &
+  python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample --convergence_definition $convergenceDefinition --experimental &
 done
 
 wait

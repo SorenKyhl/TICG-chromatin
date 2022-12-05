@@ -25,5 +25,7 @@ python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --s
 #
 for sample in 1128 552 1128 1131 1794 1938
 do
-  python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample
+  python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample &
 done
+
+wait

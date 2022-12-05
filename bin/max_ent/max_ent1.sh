@@ -17,19 +17,19 @@ then
   scratchDir='/home/erschultz/scratch'
   numIterations=1
   finalSimProductionSweeps=500000
-  productionSweeps=100000
+  productionSweeps=1000
   equilibSweeps=1000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
 i=1
-dataset='dataset_11_18_22'
+dataset='dataset_11_21_22'
 useS='false'
 useE='true'
 useD='false'
 m=1024
-GNNModelID=243
+GNNModelID=267
 chiMethod='none'
 mode='none'
 
