@@ -16,7 +16,7 @@ then
   dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
   numIterations=1
-  finalSimProductionSweeps=5000
+  finalSimProductionSweeps=500000
   productionSweeps=1000
   equilibSweeps=100
   source activate python3.9_pytorch1.9
@@ -44,10 +44,11 @@ diagCutoff=1024
 
 k=0
 method='GNN'
-for sample in 2201
+for sample in 1001
 # 2202
 do
-  for GNNModelID in 272 243 254 262 265 267 271 276
+  for GNNModelID in 280
+   # 243 254 262 265 267 271 276
   do
     echo $sample $m
     max_ent

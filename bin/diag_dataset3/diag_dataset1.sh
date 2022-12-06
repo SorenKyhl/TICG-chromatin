@@ -14,10 +14,10 @@ source ~/TICG-chromatin/bin/diag_dataset3/diag_dataset_fns.sh
 
 jobs=0
 waitCount=0
-for i in {1..1000}
+for i in {1..100}
 do
 	echo $i
-	# run &
+	run &
 
 	jobs=$(( $jobs + 1 ))
 	if [ $jobs -gt 19 ]
