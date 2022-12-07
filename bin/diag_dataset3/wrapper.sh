@@ -19,7 +19,5 @@ cd ~/TICG-chromatin
 for i in 1 2 3 4 5 6 7 8 9 10
 do
   echo $i
-  sbatch ~/TICG-chromatin/bin/diag_dataset3/diag_dataset${i}.sh &
+  sbatch ~/TICG-chromatin/bin/diag_dataset3/diag_dataset${i}.sh
 done
-
-wait

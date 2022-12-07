@@ -1531,7 +1531,7 @@ class GetEnergy():
         print(opt)
 
         # get model
-        model, _, _ = load_saved_model(opt, False)
+        model, _, _ = load_saved_model(opt, True)
 
         # get dataset
         dataset = get_dataset(opt, verbose = True, samples = [sample_id])

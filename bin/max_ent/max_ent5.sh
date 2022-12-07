@@ -24,12 +24,12 @@ fi
 
 STARTTIME=$(date +%s)
 i=4002
-dataset='dataset_11_14_22/samples/sample2/PCA_split-binarizeMean-E/k8/replicate1'
+dataset='dataset_11_14_22/samples/sample1001/PCA_split-binarizeMean-E/k8/replicate1'
 useS='false'
 useE='true'
 useD='false'
 m=1024
-GNNModelID=254
+GNNModelID=271
 chiMethod='none'
 mode='none'
 
@@ -45,8 +45,7 @@ diagCutoff=1024
 
 k=0
 method='GNN'
-for sample in 2_linear
-# 2_edit
+for sample in 1001
 do
   echo $sample $m
   max_ent

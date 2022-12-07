@@ -11,7 +11,5 @@ cd ~/TICG-chromatin
 for i in 1 2 3 4
 do
   echo $i
-  bash ~/TICG-chromatin/bin/diag_dataset/diag_dataset${i}.sh &
+  bash ~/TICG-chromatin/bin/diag_dataset/diag_dataset${i}.sh
 done
-
-wait

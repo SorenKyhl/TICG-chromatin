@@ -16,10 +16,9 @@ cd ~/TICG-chromatin
 # mv ~/dataset_11_21_22 /project2/depablo/erschultz
 
 
-for i in 1 2 3 4 5 6 7 8
+for i in 1 
+# 2 3 4 5 6 7 8
 do
   echo $i
-  sbatch ~/TICG-chromatin/bin/diag_dataset2/diag_dataset${i}.sh &
+  sbatch ~/TICG-chromatin/bin/diag_dataset2/diag_dataset${i}.sh
 done
-
-wait
