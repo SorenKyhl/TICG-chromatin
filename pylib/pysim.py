@@ -38,7 +38,7 @@ class Pysim:
     def from_directory(cls, root):
         """constructor that can initialize from directory that's already set up"""
         #root = Path.cwd()/root
-        root = Path(root)
+        root = Path(root).absolute()
         config = utils.load_json(root/"config.json")
         with utils.cd(root):
             seqs = utils.load_sequences(config)

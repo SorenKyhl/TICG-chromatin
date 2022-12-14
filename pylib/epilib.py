@@ -3,6 +3,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pandas as pd
 import scipy
+import skimage
 from statsmodels.graphics.tsaplots import plot_acf
 import seaborn as sns
 import sklearn.metrics
@@ -20,6 +21,9 @@ from tqdm import tqdm
 
 #import palettable
 #from palettable.colorbrewer.sequential import Reds_3
+
+
+from pylib import utils
 
 mycmap = mpl.colors.LinearSegmentedColormap.from_list('custom',
                                              [(0,    'white'),
@@ -122,7 +126,13 @@ class Sim:
         try:
             self.obj_goal_tot = np.hstack((self.obj_goal, self.obj_goal_diag))
         except:
-            print("no goals to stack")
+            try:
+                params_path = osp.join(resources_path, "params.json")
+                params = utils.load_json(params_path)
+                self.obj_goal_tot = params["goals"]
+                print("looking for goals in params")
+            except:
+                print("no params found")
            
     def init_sim(self, overwrite=True, getgoals=False):
         if os.path.exists(self.path):
@@ -146,8 +156,8 @@ class Sim:
         if getgoals:
             ndiag_bins = 32
             nchis =  k*(k+1)/2
-            goals_plaid = get_goal_plaid(self.gthic, self.seqs, beadvol=self.config['beadvol'], grid_size = self.config['grid_size'])
-            goals_diag = get_goal_diag(self.gthic, beadvol=self.config['beadvol'], grid_size = self.config['grid_size'], ndiag_bins=ndiag_bins, dense_diagonal_on=True)
+            goals_plaid = get_goal_plaid(self.gthic, self.seqs, self.config)
+            goals_diag = get_goal_diag(self.gthic, self.config, ndiag_bins=ndiag_bins, dense_diagonal_on=True)
 
             np.savetxt(osp.join(self.path,"chis.txt"), np.zeros((2,nchis)), fmt="%.8f")
             np.savetxt(osp.join(self.path,"chis_diag.txt"), np.zeros((2,ndiag_bins)), fmt="%.8f")
@@ -328,7 +338,7 @@ class Sim:
         np.savetxt("obj_goal.txt", plaid, newline=" ", fmt="%.8f")
         np.savetxt("obj_goal_diag.txt", diag, newline=" ", fmt="%.8f")
     
-    def plot_diagonal(self, scale="semilogy"):
+    def plot_diagonal(self, *args, scale="semilogy"):
         
         if scale == "semilogy":
             plot_fn = plt.semilogy
@@ -336,7 +346,7 @@ class Sim:
             plot_fn = plt.loglog
         
         diag = self.d
-        plot_fn(np.linspace(1/len(diag),1,len(diag)), diag, label="sim")
+        plot_fn(np.linspace(1/len(diag),1,len(diag)), diag, *args, label="sim")
         try:
             diag = get_diagonal(self.gthic)
             plot_fn(np.linspace(1/len(diag),1,len(diag)), diag, "k", label="exp")
@@ -432,6 +442,7 @@ def get_contactmap(filename, norm=True, log=False, rawcounts=False, normtype="ma
         return contactmap
     else:  
         if norm:
+            # rescale_contactmap(contactmap, method=normtype)
             if normtype == "max":
                 contactmap /= np.max(np.diagonal(contactmap))
             elif normtype == "mean":
@@ -442,6 +453,15 @@ def get_contactmap(filename, norm=True, log=False, rawcounts=False, normtype="ma
             contactmap = np.log(contactmap)
     
         return contactmap
+
+def rescale_contactmap(contactmap, method="mean"):
+    """rescale contact map so that the entries are probabilities rather than frequencies"""
+    if method == "max":
+        contactmap /= np.max(np.diagonal(contactmap))
+    elif method == "mean":
+        contactmap /= np.mean(np.diagonal(contactmap))
+        np.fill_diagonal(contactmap, 1)
+    return contactmap
 
 '''
 def get_contactmap_matrix(contactmap, norm=True, log=False):
@@ -525,11 +545,11 @@ def plot_contactmap(contact, vmaxp=0.1, absolute=False, imshow=True, cbar=True, 
         plt.colorbar()
         plt.title(title)
 
-def plot_diagonal(diag, scale="semilogy", label=None):
+def plot_diagonal(diag, *args, scale="semilogy", label=None):
     if scale=="semilogy":
-        plt.semilogy(np.linspace(1/len(diag),1,len(diag)), diag, label=label)
+        plt.semilogy(np.linspace(1/len(diag),1,len(diag)), diag, *args, label=label)
     elif scale=="loglog":
-        plt.loglog(np.linspace(1/len(diag),1,len(diag)), diag, label=label)
+        plt.loglog(np.linspace(1/len(diag),1,len(diag)), diag, *args, label=label)
         
         
 def plot_energy(sim):
@@ -901,7 +921,7 @@ def compare_diagonal(filename, nbeads=1024, bins=16, plot=True, getgoal=False, f
     return diag_sim, diag_exp, diag_mask, correction
 
 @njit
-def make_mask(size, b, ndiag_bins, dense_diagonal_on):
+def make_mask(size, b, loading, cutoff, ndiag_bins, dense_diagonal_on):
     """ makes a mask with 1's in subdiagonals inside
     
     actually faster than numpy version when jitted
@@ -912,7 +932,7 @@ def make_mask(size, b, ndiag_bins, dense_diagonal_on):
     for r in range(rows):
         for c in range(cols):
             #if int((r-c)/binsize) == b:
-            bin_index = binDiagonal(r, c, ndiag_bins, rows, dense_diagonal_on)
+            bin_index = binDiagonal(r, c, loading, cutoff, ndiag_bins, rows, dense_diagonal_on)
             if bin_index == b:
                 mask[r,c] = 1
                 mask[c,r] = 1
@@ -931,7 +951,7 @@ def make_mask_fast(size, binsize, b):
     return mask
 
 @njit
-def mask_diagonal(contact, ndiag_bins=16, dense_diagonal_on=False):
+def mask_diagonal(contact, cutoff, loading, ndiag_bins=16, dense_diagonal_on=False):
     """Returns weighted averages of contact map"""
     rows, cols = contact.shape
     binsize = int(rows/ndiag_bins)
@@ -952,7 +972,7 @@ def mask_diagonal(contact, ndiag_bins=16, dense_diagonal_on=False):
                     if r==c:
                         mask[r,r] = 2
         '''
-        mask = make_mask(nbeads, b, ndiag_bins, dense_diagonal_on)
+        mask = make_mask(nbeads, b, cutoff, loading, ndiag_bins, dense_diagonal_on)
         #measure.append(np.mean((mask*contact).flatten()))
         #correction.append(np.sum(mask)/nbeads**2)
         measure.append(np.sum((mask*contact).flatten()))        
@@ -971,12 +991,12 @@ def mask_diagonal(contact, ndiag_bins=16, dense_diagonal_on=False):
     return measure, correction
 
 @njit
-def binDiagonal(i, j, ndiag_bins, nbeads, dense_diagonal_on):
+def binDiagonal(i, j, loading, cutoff, ndiag_bins, nbeads, dense_diagonal_on):
     s = abs(i-j)
 
     if dense_diagonal_on:
-        loading = 0.50
-        cutoff = 0.0625
+        #loading = config["loading"]
+        #cutoff = config["cutoff"]
         dividing_line = nbeads*cutoff
 
 
@@ -1007,7 +1027,7 @@ def downsample(sequence, res):
 
     return np.array(new)
 
-def get_goal_plaid(hic, seqs, beadvol, grid_size, flat=True, norm=False, adj=True):
+def get_goal_plaid(hic, seqs, config, flat=True, norm=False, adj=True):
     """
     flat: return vector. else return matrix of chis.
     """
@@ -1019,8 +1039,8 @@ def get_goal_plaid(hic, seqs, beadvol, grid_size, flat=True, norm=False, adj=Tru
             goal_exp[i,j] = np.sum((np.outer(seqi,seqj)*hic).flatten())
             
             if adj:
-                vbead = beadvol
-                vcell = grid_size**3
+                vbead = config["beadvol"]
+                vcell = config["grid_size"]**3
                 goal_exp[i,j] *= vbead/vcell
                 
             if norm == "abs":
@@ -1071,12 +1091,17 @@ def get_goal_plaid2(hic, seqs, k, flat=True):
         
     return goal_exp
 
-def get_goal_diag(hic, beadvol, grid_size, ndiag_bins=32, getcorrect=False, adj=True, dense_diagonal_on=True):
-    diag_mask, correction = mask_diagonal(hic, ndiag_bins, dense_diagonal_on)
+def get_goal_diag(hic, config, ndiag_bins=32, getcorrect=False, adj=True, dense_diagonal_on=True):
+    cutoff = config["dense_diagonal_cutoff"]
+    loading = config["dense_diagonal_loading"]
+    print(cutoff, loading)
+    import pdb
+    pdb.set_trace
+    diag_mask, correction = mask_diagonal(hic, cutoff, loading, ndiag_bins, dense_diagonal_on)
     
     if adj:
-        vbead = beadvol
-        vcell = grid_size**3
+        vbead = config["beadvol"]
+        vcell = config["grid_size"]**3
         diag_mask *= vbead/vcell
         
     if getcorrect:
@@ -1270,9 +1295,9 @@ def fill_subdiagonal(a, offset, fn):
 def change_goals(goals, nbeads, ncells, vbead):
     return goals * nbeads**2 / (2 * vbead * 2 * ncells)
 
-def get_goals(hic, seqs,beadvol, grid_size, diag_bins=32, save_path=None):
-    plaid = get_goal_plaid(hic, seqs, beadvol, grid_size)
-    diag = get_goal_diag(hic, beadvol, grid_size, diag_bins)
+def get_goals(hic, seqs, config, diag_bins=32, save_path=None):
+    plaid = get_goal_plaid(hic, seqs, config)
+    diag = get_goal_diag(hic, config, diag_bins)
     
     if save_path is not None:
         np.savetxt(save_path, plaid, newline=" ", fmt="%.8f")
@@ -1562,9 +1587,13 @@ class parameters():
         nint = self.N / nsites
         return nint
 
-def load_contactmap_hicstraw(hicfile, res, chrom, start, end, clean=False):
+def load_contactmap_hicstraw(hicfile, res, chrom, start, end, clean=False, KR=True):
     assert(res in hicfile.getResolutions())
-    mzd = hicfile.getMatrixZoomData(chrom, chrom, "observed", "KR", "BP", res)
+    
+    if KR:
+        mzd = hicfile.getMatrixZoomData(chrom, chrom, "observed", "KR", "BP", res)
+    else:
+        mzd = hicfile.getMatrixZoomData(chrom, chrom, "observed", "NONE", "BP", res)
     
     if res > 50000:
         contact = mzd.getRecordsAsMatrix(start,end,start,end)
@@ -1680,3 +1709,26 @@ def scale_sim(orig, factor, overwrite=False):
     newsim.path = str(newbeads)
 
     newsim.init_sim(overwrite = overwrite, getgoals = False)
+
+def rescale_matrix(inp, factor, method="sum"):
+    '''
+    Rescales input matrix by factor.
+    if inp is 1024x1024 and factor=2, out is 512x512
+    '''
+
+    assert len(inp.shape) == 2, f'must be 2d array not {inp.shape}'
+    m, _ = inp.shape
+    assert m % factor == 0, f'factor must evenly divide m {m}%{factor}={m%factor}'
+    inp = np.triu(inp) # need triu to not double count entries
+
+    if method=="sum":
+        fn = np.sum
+    if method=="mean":
+        fn = np.mean
+
+    processed = skimage.measure.block_reduce(inp, (factor, factor), fn)
+    # need to make symmetric again
+    processed = np.triu(processed)
+    out = processed + np.triu(processed, 1).T 
+    
+    return out

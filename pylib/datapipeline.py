@@ -15,14 +15,25 @@ class DataPipeline:
         self.end = end
         self.size = size
         
-    def load_hic(self, filename):
+    def load_hic(self, filename, KR=True, clean=True, rescale_method="mean"):
+        """
+        KR: bool, knight-rubin normalization.
+        rescale_method: str ["mean", "max"], rescale contactmap so entries are probabilities, rather than frequencies
+        clean: remove rows and colums for which the main diagonal is zero
+        """
         filename = str(filename) # hicstraw doesn't accept pathlib objects
         hic = hicstraw.HiCFile(filename)
-        contact = epilib.load_contactmap_hicstraw(hic, self.res, self.chrom, self.start, self.end)
-        self.bigsize, _ = np.shape(contact)
-        contact, self.dropped_inds = epilib.clean_contactmap(contact)
-        contact = epilib.get_contactmap(contact, normtype="mean") #TODO- phase this out into it's own function. just normalizes 
-        return contact[0:self.size,0:self.size]
+        contactmap = epilib.load_contactmap_hicstraw(hic, self.res, self.chrom, self.start, self.end, KR=KR)
+
+        self.bigsize, _ = np.shape(contactmap) # used for loading the correct number of chipseq bins
+
+        if clean:
+            contactmap, self.dropped_inds = epilib.clean_contactmap(contactmap)
+
+        if rescale_method:
+            contactmap = epilib.rescale_contactmap(contactmap, method=rescale_method) 
+
+        return contactmap[0:self.size,0:self.size]
         
     def load_bigWig(self, filename, method="mean"):
         """

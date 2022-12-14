@@ -136,9 +136,9 @@ def maxent_analysis(sim):
     plt.savefig("../error.png")
     plt.close()
 
-    # plt.figure()
-    # sim.plot_obs_vs_goal()
-    # plt.savefig("obs_vs_goal.png")
+    plt.figure()
+    sim.plot_obs_vs_goal()
+    plt.savefig("obs_vs_goal.png")
 
 def plot_chi_matrix(sim):
     utils.plot_image(np.array(sim.config['chis']))
