@@ -15,7 +15,7 @@ if [ $local = 'true' ]
 then
   dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
-  numIterations=20
+  numIterations=15
   finalSimProductionSweeps=500000
   equilibSweeps=50000
   productionSweeps=500000
@@ -38,23 +38,36 @@ phiChromatin=0.06
 
 diagChiMethod='zero'
 dense='true'
-diagBins=64
-nSmallBins=32
-smallBinSize=2
+diagBins=96
+nSmallBins=64
+smallBinSize=1
 diagCutoff=1024
 
 method='PCA_split-binarizeMean'
-for k in 8
+for k in 16 24
 do
   for sample in 2201
+  # 2203 2204 2205 2206 2207 2208 2209
   # 1001 1002 1003 1004 1005 1101 1102 1103 1104 1105
   # 201 301
   do
     echo $sample $m
-    echo $CONDA_DEFAULT_ENV
     max_ent
   done
 done
+
+wait
+
+# for k in 8 12
+# do
+#   for sample in 2210 2211 2212 2213 2214
+#   # 1001 1002 1003 1004 1005 1101 1102 1103 1104 1105
+#   # 201 301
+#   do
+#     echo $sample $m
+#     max_ent
+#   done
+# done
 
 wait
 

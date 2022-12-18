@@ -81,8 +81,9 @@ class Sim:
         if self.k > 0:
             try:
                 self.seqs = self.load_seqs()
-                assert self.k == np.shape(self.seqs)[0]
-            except:
+                assert self.k == np.shape(self.seqs)[1], f'{self.k} != {np.shape(self.seqs)[0]}'
+            except Exception as e:
+                print(e)
                 print("load seqs failed")
 
         gthic_path = osp.join(self.replicate_path, "resources/y_gt.npy")
@@ -197,12 +198,16 @@ class Sim:
             d = np.array(self.diag_obs_full.T)
             plt.semilogy(d[1:].T)
 
-    def plot_tri(self, ofile, vmaxp, title=""):
+    def plot_tri(self, ofile, vmaxp=None, title="", log=False):
         '''
         Plot contact map with lower triangle as ground truth and upper as simulation.
         '''
-        first = self.hic
-        second = self.gthic
+        if log:
+            first = np.log(self.hic + 1)
+            second = np.log(self.gthic + 1)
+        else:
+            first = self.hic
+            second = self.gthic
 
         assert np.shape(first) == np.shape(second)
 
@@ -214,6 +219,9 @@ class Sim:
 
         composite[indu] = first[indu]
         composite[indl] = second[indl]
+
+        if vmaxp is None:
+            vmaxp = np.mean(second)
 
         plot_matrix(composite, ofile, title, vmax = vmaxp, triu = True)
 
@@ -253,19 +261,22 @@ class Sim:
         plt.imshow(diff, vmin= cutoffmin, vmax = cutoffmax, cmap = 'bwr')
         plt.colorbar()
 
-    def plot_obs_vs_goal(self):
+    def plot_obs_vs_goal(self, ofile):
         fig, axs = plt.subplots(2, figsize=(12,14))
         obs = self.obs_tot
         goal = self.obj_goal_tot
         axs[0].plot(obs, '--o', label="obs")
         axs[0].plot(goal, 'ko', label="goal")
         axs[0].legend()
-        axs[0].set_title("Observables vs Goals")
+        axs[0].set_title("Observables vs Goals", fontsize = 16)
 
         diff = self.obs_tot - self.obj_goal_tot
+        diff_sum = np.round(np.sum(diff), 3)
         axs[1].plot(diff, '--o')
         axs[1].hlines(0, len(self.obs_tot), 0, 'k')
-        axs[1].set_title("Difference")
+        axs[1].set_title(f"Difference\nSum: {diff_sum}", fontsize = 16)
+        plt.savefig(ofile)
+        plt.close()
 
     def plot_oe(self):
         oe = get_oe(self.hic)
@@ -350,8 +361,8 @@ def main():
     sim = Sim("production_out")
 
     if sim.gthic is not None:
-        sim.plot_tri("tri.png", np.mean(sim.gthic))
-
+        sim.plot_tri("tri.png")
+        sim.plot_tri("tri_log.png", log = True)
         sim.plot_tri("tri_dark.png", np.mean(sim.gthic)/2)
 
         sim.plot_diff()
@@ -375,8 +386,7 @@ def main():
 
     if sim.obs_tot is not None:
         # obs tot is None if 0 max ent iterations
-        sim.plot_obs_vs_goal()
-        plt.savefig("obs_vs_goal.png")
+        sim.plot_obs_vs_goal("obs_vs_goal.png")
 
         error = sim.plot_consistency()
         plt.savefig("consistency.png")
@@ -384,11 +394,11 @@ def main():
             print("SIMULATION IS NOT CONSISTENT")
 
 def test():
-    dir = '/home/erschultz/dataset_11_21_22/samples/sample410/GNN-267-E/k0/replicate1/iteration1'
+    dir = '/home/erschultz/dataset_11_14_22/samples/sample2201/PCA-normalize-E/k12/replicate1/iteration16'
     os.chdir(dir)
     sim = Sim("production_out")
-    sim.plot_tri("tri.png", np.mean(sim.gthic))
-    sim.plot_tri("tri_dark.png", np.mean(sim.gthic)/2)
+    sim.plot_tri("tri.png")
+    sim.plot_tri("tri_log.png", log = True)
 
 if __name__ == '__main__':
     main()

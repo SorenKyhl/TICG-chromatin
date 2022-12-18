@@ -54,6 +54,7 @@ diagCutoff='none'
 bondLength=28
 
 # this tests time comparison of various energy formalisms
+# params are different for each sample
 gridMoveOn='true'
 trackContactMap='false'
 chiDiagMethod="linear"

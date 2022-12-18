@@ -112,8 +112,6 @@ class GetSeq():
                             help='cell line (only used with method = epigenetic)')
         parser.add_argument('--genome_build', type=str, default='hg19',
                             help='genome build for method = {epigenetic, chromhmm}')
-        parser.add_argument('--epi_data_type', type=str, default='fold_change_control',
-                            help='type of epigenetic data for method = epigenetic')
         parser.add_argument('--resolution', type=int, default=50000,
                             help='contact map resolution for method = epigenetic')
         parser.add_argument('--chromosome', type=AC.str2None,
@@ -157,6 +155,22 @@ class GetSeq():
         self._check_args(args)
         self.args = args
 
+        if self.args.start is None and self.sample_folder is not None:
+            import_log_file = osp.join(self.sample_folder, 'import.log')
+            if osp.exists(import_log_file):
+                with open(import_log_file, 'r') as f:
+                    for line in f:
+                        line = line.strip()
+                        line = line.split('=')
+                        if line[0] == 'chrom':
+                            self.args.chromosome = line[1]
+                        elif line[0] == 'start':
+                            self.args.start = int(line[1])
+                        elif line[0] == 'end':
+                            self.args.end = int(line[1])
+                        elif line[0] == 'resolution':
+                            self.args.resolution = int(line[1])
+
         print(self.args)
 
     def _check_args(self, args):
@@ -187,10 +201,10 @@ class GetSeq():
     def _process_method(self, args):
         # default values
         args.input = None # input in {y, x, psi}
-        args.binarize = False # True to binarize labels (not implemented for all methods)') # TODO
+        args.binarize = False # True to binarize labels (not implemented for all methods)')
         args.binarize_threshold = None
         args.normalize = False # True to normalize labels to [0,1] (or [-1, 1] for some methods)
-            # (not implemented for all methods)') # TODO
+            # (not implemented for all methods)')
         args.scale = False # True to scale variance for PCA
         args.use_ematrix = False
         args.use_smatrix = False
@@ -198,6 +212,8 @@ class GetSeq():
         args.exp = False # (for RPCA) convert from log space back to original space
         args.diag = False # (for RPCA) apply diagonal processing
         args.add_constant = False # add constant seq (all ones)
+        args.epi_data_type = None # Type of data for experimental ChIP-seq
+        args.log_inf = False # True to use log_inf before diag (only implemented for PCA)
 
         if osp.exists(args.method):
             return
@@ -222,7 +238,6 @@ class GetSeq():
                         pass
                     else:
                         args.binarize_threshold = float(args.binarize_threshold)
-
                 args.binarize = True
             elif mode == 'normalize':
                 args.normalize = True
@@ -242,6 +257,12 @@ class GetSeq():
             elif mode == 'constant':
                 args.add_constant = True
                 self.k -= 1
+            elif mode == 'fold_change_control':
+                args.epi_data_type = mode
+            elif mode == 'signal_p_value':
+                args.epi_data_type = mode
+            elif mode == 'log_inf':
+                args.log_inf = True
 
     def get_random_seq(self, lmbda=None, f=0.5, p_switch=None,
                         seed=None, exclusive=False, scale_resolution=1):
@@ -386,9 +407,10 @@ class GetSeq():
             pcpos[pc < 0] = 0 # set negative part to zero
             if normalize:
                 max = np.max(pcpos)
-                # multiply by scale such that max x scale = 1
-                scale = 1/max
-                pcpos *= scale
+                if not max == 0:
+                    # multiply by scale such that max x scale = 1
+                    scale = 1/max
+                    pcpos *= scale
             if binarize:
                 # pc has already been normalized to [0, 1]
                 if isinstance(binarize_threshold, float):
@@ -397,8 +419,9 @@ class GetSeq():
                     val = np.mean(pcpos)
                 else:
                     raise Exception(f'issue with {binarize_threshold}')
-                pcpos[pcpos < val] = 0
+                pcpos[pcpos <= val] = 0
                 pcpos[pcpos > val] = 1
+                print(pcpos)
             seq[:,j] = pcpos
 
             pcneg = pc.copy()
@@ -415,7 +438,7 @@ class GetSeq():
                     val = binarize_threshold
                 elif binarize_threshold == 'mean':
                     val = np.mean(pcneg)
-                pcneg[pcneg < val] = 0
+                pcneg[pcneg <= val] = 0
                 pcneg[pcneg > val] = 1
             seq[:,j+1] = pcneg
 
@@ -551,39 +574,51 @@ class GetSeq():
             seq = H.T
             return seq, None
 
-    def get_epigenetic_seq(self, data_folder, start, end,
-                            res, chr, min_coverage_prcnt=5):
+    def get_epigenetic_seq(self, data_dir, start, end,
+                            res, chr, sigmoid, min_coverage_prcnt=5):
         '''
         Loads experimental epigenetic data from data_folder to use as particle types.
 
         Inputs:
-            data_folder: location of epigenetic data - file format: <chr>_*.npy
+            data_dir: location of epigenetic data - file format: <chr>_*.npy
             start: start in base pairs
             end: end location in base pairs
             res: resolution of data/simulation
             chr: chromosome
+            sigmoid: True to use sigmoid preprocessed ChIP-seq
             min_coverage_prcnt: minimum percent of particle of given particle type
+
 
         Outputs:
             seq: particle type np array of shape m x k
         '''
+        if sigmoid:
+            data_folder = osp.join(data_dir, 'processed_sigmoid')
+        else:
+            data_folder = osp.join(data_dir, 'processed')
         start = int(start / res)
         end = int(end / res)
-        m = end - start + 1 # number of particles in simulation
-        assert m == self.m
+        m = end - start # number of particles in simulation
+        assert m == self.m, f'{m} != {self.m}'
 
         # store file names and coverage in list
+        print(data_folder)
         file_list = [] # list of tuples (file_name, coverage)
         for file in os.listdir(data_folder):
             if file.startswith(f'chr{chr}_') and file.endswith('.npy'):
                 seq_i = np.load(osp.join(data_folder, file))
-                seq_i = seq_i[start:end+1, 1] # crop to appropriate size
+                if sigmoid:
+                    seq_i = seq_i[start:end+1]
+                else:
+                    seq_i = seq_i[start:end+1, 1] # crop to appropriate size
                 coverage = np.sum(seq_i)
                 file_list.append((file, coverage))
+        print(file_list)
 
-        # sort based on coverage
-        file_list = sorted(file_list, key = lambda pair: pair[1], reverse = True)
-        print(f'Top {self.k} marks with most coverage:\n\t{file_list[:self.k]}')
+        if not sigmoid:
+            # sort based on coverage
+            file_list = sorted(file_list, key = lambda pair: pair[1], reverse = True)
+            print(f'Top {self.k} marks with most coverage:\n\t{file_list[:self.k]}')
 
         # choose k marks with most coverage
         seq = np.zeros((self.m, self.k))
@@ -591,10 +626,13 @@ class GetSeq():
         for i, (file, coverage) in enumerate(file_list[:self.k]):
             mark = file.split('_')[1]
             marks.append(mark)
-            if coverage < min_coverage_prcnt / 100 * m:
+            if coverage < min_coverage_prcnt / 100 * m and not sigmoid:
                 print(f"WARNING: mark {mark} has insufficient coverage: {coverage}")
             seq_i = np.load(osp.join(data_folder, file))
-            seq_i = seq_i[start:end+1, 1]
+            if sigmoid:
+                seq_i = seq_i[start:end]
+            else:
+                seq_i = seq_i[start:end, 1]
             seq[:, i] = seq_i
         i += 1
         if i < self.k:
@@ -617,7 +655,7 @@ class GetSeq():
 
         start = int(start / res)
         end = int(end / res)
-        m = end - start + 1 # number of particles in simulation
+        m = end - start # number of particles in simulation
         assert m == self.m, f"m != m, {m} != {self.m}"
 
         with open(ifile, 'r') as f:
@@ -625,7 +663,7 @@ class GetSeq():
             f.readline()
             states = np.array([int(state.strip()) - 1 for state in f.readlines()])
             # subtract 1 to convert to 0 based indexing
-            states = states[start:end+1] # crop to size of contact map
+            states = states[start:end] # crop to size of contact map
 
         seq = np.zeros((self.m, self.k))
         seq[np.arange(self.m), states] = 1 # one hot encoding of states
@@ -714,7 +752,15 @@ class GetSeq():
                 y_diag = load_Y_diag(self.sample_folder)
                 seq = self.get_PCA_split_seq(y_diag, args.normalize, args.binarize, args.binarize_threshold, args.scale)
             elif args.method.startswith('pca'):
-                y_diag = load_Y_diag(self.sample_folder)
+                y, y_diag = load_Y(self.sample_folder)
+                if args.log_inf:
+                    y = np.log(y)
+                    y[np.isinf(y)] = np.nan
+                    meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
+                    print(y, y.shape)
+                    y_diag = DiagonalPreprocessing.process(y, meanDist, verbose = False)
+                    np.nan_to_num(y_diag, copy = False, nan = 1.0)
+
                 seq = self.get_PCA_seq(y_diag, args.normalize, args.binarize, args.scale)
             elif args.method.startswith('rpca'):
                 L_file = osp.join(self.sample_folder, 'PCA_analysis', 'L_log.npy')
@@ -774,13 +820,19 @@ class GetSeq():
                 seq, args.labels = self.get_nmf_seq(y_diag, args.binarize)
                 args.X = y_diag
             elif args.method.startswith('epigenetic'):
+                sigmoid = False
+                if '_' in args.method:
+                    for mode in args.method.split('-')[0].split('_')[1:]:
+                        print(mode)
+                        if mode == 'sigmoid':
+                            sigmoid = True
+
                 chip_seq_data_dir = '/home/erschultz/sequences_to_contact_maps/chip_seq_data'
-                epigenetic_data_folder = osp.join(chip_seq_data_dir, args.cell_line,
-                                                args.genome_build, args.epi_data_type,
-                                                'processed')
-                seq, marks = self.get_epigenetic_seq(epigenetic_data_folder,
+                epigenetic_data_dir = osp.join(chip_seq_data_dir, args.cell_line,
+                                                args.genome_build, args.epi_data_type)
+                seq, marks = self.get_epigenetic_seq(epigenetic_data_dir,
                                                 args.start, args.end, args.resolution,
-                                                args.chromosome)
+                                                args.chromosome, sigmoid)
             elif args.method.startswith('chromhmm'):
                 chip_seq_data_dir = '/home/erschultz/sequences_to_contact_maps/chip_seq_data'
                 ChromHMM_data_file = osp.join(chip_seq_data_dir, args.cell_line,
@@ -1026,8 +1078,8 @@ class GetDiagChi():
                             help='specify n_big_bins instead of using dense_diagonal_loading')
         parser.add_argument('--max_diag_chi', type=AC.str2float,
                             help='maximum diag chi value for diag_chi_method')
-        parser.add_argument('--min_diag_chi', type=float,
-                            help='minimum diag chi value for diag_chi_method (currently only supported for logistic)')
+        parser.add_argument('--min_diag_chi', type=float, default=0,
+                            help='minimum diag chi value for diag_chi_method (currently only supported for logistic and linear)')
         parser.add_argument('--diag_chi_midpoint', type=float, default=0,
                             help='midpoint for logistic diag chi')
         parser.add_argument('--diag_chi_constant', type=AC.str2float, default=0,
@@ -1450,10 +1502,22 @@ class GetEnergy():
                 np.save('s.npy', s)
 
         if self.m < 2000:
-            if s is not None:
-                print(f'Rank of S: {np.linalg.matrix_rank(s)}')
-            if e is not None:
-                print(f'Rank of E: {np.linalg.matrix_rank(e)}\n')
+            try:
+                if s is not None:
+                    print(f'Rank of S: {np.linalg.matrix_rank(s)}')
+                if e is not None:
+                    print(f'Rank of E: {np.linalg.matrix_rank(e)}\n')
+            except np.linalg.LinAlgError as e:
+                print(e)
+
+
+
+        # look for ground truth:
+        if self.sample_folder is not None:
+            sd_file = osp.join(self.sample_folder, 'sd.npy')
+            if osp.exists(sd_file):
+                ground_truth_sd = np.load(sd_file)
+
 
 
         if self.plot:
@@ -1541,15 +1605,26 @@ class GetEnergy():
         for i, data in enumerate(dataset):
             print(i, data)
             data = data.to(opt.device)
+            print(f'data first node: {data.x[0]}')
             yhat = model(data)
-            yhat = yhat.cpu().detach().numpy()
-            energy = yhat.reshape((opt.m,opt.m))
-            plaid_hat = model.plaid_component(data)
-            diagonal_hat = model.diagonal_component(data)
+            yhat = yhat.cpu().detach().numpy().reshape((opt.m,opt.m))
+            print(f'yhat first row: {yhat[0]}')
+
+            if opt.output_preprocesing == 'log':
+                yhat = np.multiply(np.sign(yhat), np.exp(np.abs(yhat)) - 1)
+
+                # ln(E + D) doesn't simplify, so these can't be determined
+                plaid_hat = None
+                diagonal_hat = None
+            else:
+                plaid_hat = model.plaid_component(data)
+                diagonal_hat = model.diagonal_component(data)
+
+            energy = yhat
+
             if plaid_hat is not None and diagonal_hat is not None:
                 # plot plaid contribution
                 v_max = max(np.max(energy), -1*np.min(energy))
-                v_max = 4.8 # TODO
                 v_min = -1 * v_max
                 # vmin = vmax = 'center'
                 plaid_hat = plaid_hat.cpu().detach().numpy().reshape((opt.m,opt.m))

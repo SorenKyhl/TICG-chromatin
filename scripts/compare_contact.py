@@ -88,6 +88,7 @@ def plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, dir):
 
     # round
     corr_scc = np.round(corr_scc, 3)
+    corr_scc_var = np.round(corr_scc_var, 3)
     avg_diag = np.round(avg_diag, 3)
     overall_corr = np.round(overall_corr, 3)
 
@@ -111,7 +112,7 @@ def plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, dir):
             plt.savefig(osp.join(dir, 'distance_pearson.png'))
         plt.close()
 
-    return overall_corr, corr_scc, avg_diag
+    return overall_corr, corr_scc, corr_scc_var, avg_diag
 
 def main():
     args = getArgs()

@@ -12,12 +12,15 @@ source activate python3.8_pytorch1.9
 cd ~/TICG-chromatin
 #
 # echo 'generate_params'
-# python  ~/TICG-chromatin/bin/diag_dataset3/generate_params.py
-# mv ~/dataset_12_05_22 /project2/depablo/erschultz
+# dataset="dataset_11_21_22"
+# python  ~/TICG-chromatin/bin/generate_params.py --samples 2400 --k 8 --dataset $dataset
+# mv "~/${dataset}" /project2/depablo/erschultz
 
 
-for i in 1 2 3 4 5 6 7 8 9 10
+
+for i in 1
+# 2 3 4 5 6 7 8
 do
   echo $i
-  sbatch ~/TICG-chromatin/bin/diag_dataset3/diag_dataset${i}.sh
+  sbatch ~/TICG-chromatin/bin/diag_dataset2/diag_dataset${i}.sh
 done

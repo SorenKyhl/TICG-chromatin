@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 import os.path as osp
@@ -7,11 +8,32 @@ import numpy as np
 from scipy.stats import norm, qmc, skewnorm
 
 
+def getArgs():
+    parser = argparse.ArgumentParser(description='Base parser', allow_abbrev = False)
+
+    # input data args
+    parser.add_argument('--dataset', type=str,
+                        help='output dataset')
+    parser.add_argument('--k', type=int,
+                        help='number of marks')
+    parser.add_argument('--samples', type=int,
+                        help='number of samples')
+    parser.add_argument('--diag_mode', type=str, default='logistic',
+                    help='mode for diagonal parameters')
+    parser.add_argument('--seq_mode', type=str, default='markov',
+                    help='mode for seq parameters')
+
+    args = parser.parse_args()
+    return args
+
+
 class DatasetGenerator():
-    def __init__(self, N, k, dataset):
+    def __init__(self, N, k, dataset, diag_mode, seq_mode):
         self.N = N
         self.k = k
         self.dataset = dataset
+        self.diag_mode = diag_mode
+        self.seq_mode = seq_mode
 
         data_dir = osp.join('/home/erschultz', dataset)
         if not osp.exists(data_dir):
@@ -23,7 +45,7 @@ class DatasetGenerator():
         # sample : dictionary of params
         self.sample_dict = defaultdict(dict)
 
-    def get_plaid_chis(self):
+    def plaid_params(self):
         for i in range(self.N):
             self.sample_dict[i]['k'] = self.k
             chi_ii = skewnorm.rvs(0.83, -2.459, 2.594, size = self.k)
@@ -39,7 +61,7 @@ class DatasetGenerator():
             chi_file = osp.join('/project2/depablo/erschultz', self.dataset, f'setup/chi_{i+1}.npy')
             self.sample_dict[i]['chi_method'] = chi_file
 
-    def get_seq_params(self):
+    def seq_markov_params(self):
         for i in range(self.N):
             p11 = -1
             p00 = -1
@@ -52,13 +74,19 @@ class DatasetGenerator():
             self.sample_dict[i]['lmbda'] = lmbda
             self.sample_dict[i]['f'] = f
 
-        for i in range(self.N):
-            ofile = osp.join(self.odir, f'sample_{i+1}.txt')
-            with open(ofile, 'w') as f:
-                for key, val in self.sample_dict[i].items():
-                    f.write(f'--{key}\n{val}\n')
 
-    def linear_dataset(self):
+    def seq_pc_params(self):
+        for i in range(self.N):
+            j = np.random.choice(range(2201, 2216))
+            x = np.load(f'/home/erschultz/dataset_11_14_22/samples/sample{j}/PCA-normalize-E/k8/replicate1/resources/x.npy')
+
+            seq_file = osp.join(self.odir, f'x_{i+1}.npy')
+            np.save(seq_file, x)
+
+            seq_file = osp.join('/project2/depablo/erschultz', self.dataset, f'setup/x_{i+1}.npy')
+            self.sample_dict[i]['method'] = seq_file
+
+    def linear_params(self):
         # first get diagonal params
         # l_bounds = [0.001, 0]
         # u_bounds = [0.004, 8]
@@ -73,13 +101,8 @@ class DatasetGenerator():
             self.sample_dict[i]['diag_chi_slope'] = vals[0] * 1000
             self.sample_dict[i]['diag_chi_constant'] = vals[1]
 
-        # get plaid chis
-        self.get_plaid_chis()
 
-        # get seq params
-        self.get_seq_params()
-
-    def logistic_dataset(self):
+    def logistic_params(self):
         # first get diagonal params
         l_bounds = [0.001, -100, 3]
         u_bounds = [0.004, 600, 15]
@@ -94,16 +117,33 @@ class DatasetGenerator():
             self.sample_dict[i]['max_diag_chi'] = vals[2]
             self.sample_dict[i]['min_diag_chi'] = 0
 
-        # get plaid chis
-        self.get_plaid_chis()
 
-        # get seq params
-        self.get_seq_params()
+    def get_dataset(self):
+        if self.diag_mode == 'linear':
+            self.linear_params()
+        elif self.diag_mode == 'logistic':
+            self.logistic_params()
+
+        self.plaid_params()
+
+        if self.seq_mode == 'markov':
+            self.seq_markov_params()
+        elif self.seq_mode == 'pcs':
+            self.seq_pc_params()
+
+        # write to odir
+        for i in range(self.N):
+            ofile = osp.join(self.odir, f'sample_{i+1}.txt')
+            with open(ofile, 'w') as f:
+                for key, val in self.sample_dict[i].items():
+                    f.write(f'--{key}\n{val}\n')
+
 
 def main():
-    # linear_dataset(2400, 8, 'dataset_11_18_22')
-    generator = DatasetGenerator(2400, 8, 'dataset_11_21_22')
-    generator.logistic_dataset()
+    args = getArgs()
+    generator = DatasetGenerator(args.samples, args.k, args.dataset,
+                                args.diag_mode, args.seq_mode)
+    generator.get_dataset()
 
 if __name__ == '__main__':
     main()

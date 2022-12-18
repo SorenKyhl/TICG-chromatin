@@ -17,13 +17,13 @@ then
   scratchDir='/home/erschultz/scratch'
   numIterations=15
   finalSimProductionSweeps=500000
-  equilibSweeps=10000
+  equilibSweeps=100000
   productionSweeps=500000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
-i=6030
+i=6001
 dataset='dataset_11_14_22'
 useS='false'
 useE='true'
@@ -38,30 +38,18 @@ phiChromatin=0.06
 
 diagChiMethod='zero'
 dense='true'
-diagBins=32
-nSmallBins=16
-smallBinSize=4
+diagBins=96
+nSmallBins=64
+smallBinSize=1
 diagCutoff=1024
 
-
-# epigenetic args
-start=15000000
-end=66150000
-chrom=1
-
-sleep 45m
-
-method='chromhmm'
-dataType='narrow_peaks'
-trust_region=10
-for k in 6 8 10
+method='epigenetic_sigmoid-signal_p_value'
+for k in 12
 do
-  for sample in 1
-   # 2 5 6 9
-  # 10 13 14 16 18
+  for sample in 2216
+  # 2201 2202 2203 2204 2205 2206 2207 2208
   do
     echo $sample $m
-    echo $CONDA_DEFAULT_ENV
     max_ent
   done
 done

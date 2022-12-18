@@ -2,6 +2,7 @@ import json
 import math
 import os
 import os.path as osp
+import sys
 import tarfile
 from collections import defaultdict
 from functools import partial
@@ -18,6 +19,10 @@ from seq2contact import *
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import PolynomialFeatures
+
+sys.path.append('/home/erschultz/TICG-chromatin/maxent/bin')
+from analysis import Sim
+from get_goal_experimental import get_diag_goal, get_plaid_goal
 
 
 def check_dataset(dataset):
@@ -48,23 +53,6 @@ def check_dataset(dataset):
                 continue
 
     print(ids, len(ids))
-
-def makeDirsForMaxEnt(dataset):
-    '''
-    Create empty directories with appropriate max ent file stucture.
-    Helpful for before downloading data from cluster.
-    '''
-    for sample in [1]:
-        dir = '/home/erschultz/sequences_to_contact_maps'
-        sample_folder = osp.join(dir, dataset, 'samples', f'sample{sample}')
-        assert osp.exists(sample_folder)
-
-        for method in ['PCA-normalize']:
-            os.mkdir(osp.join(sample_folder, method), mode = 0o755)
-            for k in [2, 4, 6]:
-                os.mkdir(osp.join(sample_folder, method, f'k{k}'), mode = 0o755)
-                for replicate in [1]:
-                    os.mkdir(osp.join(sample_folder, method, f'k{k}', f'replicate{replicate}'), mode = 0o755)
 
 def test_robust_PCA():
     if False:
@@ -103,37 +91,48 @@ def test_robust_PCA():
         # plotContactMap(l0, ofile = osp.join(dir, 'L0.png'), vmax = 'max')
         # plotContactMap(l0_log, ofile = osp.join(dir, 'L0_log.png'), vmax = 'max')
         # plotContactMap(m, ofile = osp.join(dir, 'M.png'), vmax = 'mean')
-        # plotContactMap(m_log, ofile = osp.join(dir, 'M_log.png'), vmin = 'min', vmax = 'max')
-        # plotContactMap(s0, ofile = osp.join(dir, 'S0.png'), vmin = 'min', vmax = 'mean', cmap='blue-red')
+        # plotContactMap(m_log, ofile = osp.join(dir, 'M_log.png'), vmin = 'min',
+        #                 vmax = 'max')
+        # plotContactMap(s0, ofile = osp.join(dir, 'S0.png'), vmin = 'min',
+        #                 vmax = 'mean', cmap='blue-red')
 
         # plotContactMap(p, ofile = osp.join(dir, 'P.png'), vmax = 'mean')
-        # plotContactMap(p_log, ofile = osp.join(dir, 'P_log.png'), vmin = 'min', vmax = 'max')
+        # plotContactMap(p_log, ofile = osp.join(dir, 'P_log.png'), vmin = 'min',
+        #                 vmax = 'max')
 
         # L, S = R_pca(m).fit(max_iter=200)
         # plotContactMap(L, ofile = osp.join(dir, 'RPCA_L.png'), vmax = 'mean')
-        # plotContactMap(S, ofile = osp.join(dir, 'RPCA_S.png'), vmin = 'min', vmax = 'max', cmap='blue-red')
+        # plotContactMap(S, ofile = osp.join(dir, 'RPCA_S.png'), vmin = 'min',
+        #                 vmax = 'max', cmap='blue-red')
         L_log, S_log = R_pca(m_log).fit(max_iter=2000)
-        plotContactMap(L_log, ofile = osp.join(dir, 'RPCA_L_log.png'), vmin = 'min', vmax = 'max')
-        plotContactMap(S_log, ofile = osp.join(dir, 'RPCA_S_log.png'), vmin = 'min', vmax = 'max', cmap='blue-red')
+        plotContactMap(L_log, ofile = osp.join(dir, 'RPCA_L_log.png'), vmin = 'min',
+                    vmax = 'max')
+        plotContactMap(S_log, ofile = osp.join(dir, 'RPCA_S_log.png'), vmin = 'min',
+                    vmax = 'max', cmap='blue-red')
         L_log_exp = np.exp(L_log)
         S_log_exp = np.exp(S_log)
-        plotContactMap(L_log_exp, ofile = osp.join(dir, 'RPCA_L_log_exp.png'), vmax = 'max')
-        plotContactMap(S_log_exp, ofile = osp.join(dir, 'RPCA_S_log_exp.png'), vmin = 'min', vmax = 'max', cmap='blue-red')
+        plotContactMap(L_log_exp, ofile = osp.join(dir, 'RPCA_L_log_exp.png'),
+                    vmax = 'max')
+        plotContactMap(S_log_exp, ofile = osp.join(dir, 'RPCA_S_log_exp.png'),
+                    vmin = 'min', vmax = 'max', cmap='blue-red')
 
         PC_m = plot_top_PCs(m, inp_type='m', verbose = True, odir = dir, plot = True)
         meanDist = genomic_distance_statistics(m)
         m_diag = diagonal_preprocessing(m, meanDist)
-        PC_m_diag = plot_top_PCs(m_diag, inp_type='m_diag', verbose = True, odir = dir, plot = True)
+        PC_m_diag = plot_top_PCs(m_diag, inp_type='m_diag', verbose = True,
+                                odir = dir, plot = True)
 
         # plot_top_PCs(L_log_exp, inp_type='L_log_exp', verbose = True, odir = dir, plot = True)
-        PC_L_log = plot_top_PCs(L_log, inp_type='L_log', verbose = True, odir = dir, plot = True)
+        PC_L_log = plot_top_PCs(L_log, inp_type='L_log', verbose = True,
+                                odir = dir, plot = True)
         stat = pearsonround(PC_L_log[0], PC_m[0])
         print("Correlation between PC 1 of L_log and M: ", stat)
         stat = pearsonround(PC_L_log[1], PC_m[1])
         print("Correlation between PC 2 of L_log and M: ", stat)
         meanDist = genomic_distance_statistics(L_log)
         L_log_diag = diagonal_preprocessing(L_log, meanDist)
-        PC_L_log_diag = plot_top_PCs(L_log_diag, inp_type='L_log_diag', verbose = True, odir = dir, plot = True)
+        PC_L_log_diag = plot_top_PCs(L_log_diag, inp_type='L_log_diag',
+                                    verbose = True, odir = dir, plot = True)
         stat = pearsonround(PC_L_log_diag[0], PC_m_diag[0])
         print("Correlation between PC 1 of L_log_diag and M_diag: ", stat)
         stat = pearsonround(PC_L_log_diag[1], PC_m_diag[1])
@@ -141,29 +140,24 @@ def test_robust_PCA():
         # plot_top_PCs(m_log, inp_type='m_log', verbose = True, odir = dir, plot = True)
         # meanDist = genomic_distance_statistics(m_log)
         # m_log_diag = diagonal_preprocessing(m_log, meanDist)
-        # plot_top_PCs(m_log_diag, inp_type='m_log_diag', verbose = True, odir = dir, plot = True)
-
-
-        # ydiag = np.load(osp.join(dataset_test, 'sample21/y_diag.npy'))
-        # ydiag_rank_1 = np.load(osp.join(dataset_test, 'sample21/PCA_analysis/y_diag_rank_1.npy'))
-        # dif = ydiag - ydiag_rank_1
-        # plotContactMap(ydiag, ofile = osp.join(dir, 'ydiag.png'), vmax = 'max')
-        # plotContactMap(ydiag_rank_1, ofile = osp.join(dir, 'ydiag_rank_1.png'), vmax = 'max')
-        # plotContactMap(dif, ofile = osp.join(dir, 'dif.png'), vmin = 'min', vmax = 'max', cmap='blue-red')
+        # plot_top_PCs(m_log_diag, inp_type='m_log_diag', verbose = True, odir = dir,
+        #             plot = True)
 
     if False:
         # dir = '/home/eric/dataset_test/samples/sample104'
         dir = '/home/eric/sequences_to_contact_maps/dataset_09_21_21/samples/sample1'
         y = np.load(osp.join(dir, 'y.npy'))
-        # L, S = R_pca(y).fit(max_iter=200)
+        # L, S = R_pca(y).fit(max_iter=200)def time_comparison():
         # plotContactMap(L, ofile = osp.join(dir, 'RPCA_L.png'), vmax = np.mean(y))
         # plotContactMap(S, ofile = osp.join(dir, 'RPCA_S.png'), vmax = np.mean(y))
 
         # l = 1/np.sqrt(1024) * 1/100
         y_diag = np.load(osp.join(dir, 'y_diag.npy'))
         L, S = R_pca(y_diag).fit(max_iter=200)
-        plotContactMap(L, ofile = osp.join(dir, 'RPCA_L_diag.png'), vmin='min', vmax = 'max')
-        plotContactMap(S, ofile = osp.join(dir, 'RPCA_S_diag.png'), vmin='min', vmax = np.max(S), cmap='blue-red')
+        plotContactMap(L, ofile = osp.join(dir, 'RPCA_L_diag.png'), vmin='min',
+                        vmax = 'max')
+        plotContactMap(S, ofile = osp.join(dir, 'RPCA_S_diag.png'), vmin='min',
+                        vmax = np.max(S), cmap='blue-red')
         plotContactMap(y_diag, ofile = osp.join(dir, 'y_diag.png'), vmax = 'max')
         plot_top_PCs(L, verbose = True)
 
@@ -174,7 +168,8 @@ def time_comparison():
     num_sizes = 3
 
     times_dict = defaultdict(lambda: np.full([num_sizes, samples_per_size], np.nan))
-    # dictionary with keys = method : vals = array of times with rows = sizes, cols = replicate samples
+    # dictionary with keys = method : vals = array of times with rows = sizes,
+    # cols = replicate samples
     it = 1
     for row in range(num_sizes):
         for col in range(samples_per_size):
@@ -359,7 +354,8 @@ def main():
     fig, ax = plt.subplots()
     ax2 = ax.twinx()
 
-    with open(osp.join(dir, 'contact_diffusion_kNN8scc/iteration_0/sc_contacts/ifile_dict.json')) as f:
+    ifile = osp.join(dir, 'contact_diffusion_kNN8scc/iteration_0/sc_contacts/ifile_dict.json')
+    with open(ifile) as f:
         ifile_dict = json.load(f)
 
     with open(osp.join(dir, 'samples/phase_dict.json'), 'r') as f:
@@ -402,7 +398,8 @@ def main():
             ax.fill_between(x, meanDist - meanDist_stdev,
                             meanDist + meanDist_stdev, alpha = 0.5)
     #
-    # y = np.load('/home/erschultz/sequences_to_contact_maps/single_cell_nagano_imputed/samples/sample390/none-diagMLP-66/k0/replicate1/y.npy')
+    # y = np.load('/home/erschultz/sequences_to_contact_maps/single_cell_nagano_imputed/' /
+                # 'samples/sample390/none-diagMLP-66/k0/replicate1/y.npy')
     # meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
     # ax.plot(meanDist, label = 'MLP-66', color = 'k')
 
@@ -432,7 +429,8 @@ def plot_p_s(params = False):
         ax2 = ax.twinx()
 
     s_dir = osp.join(dir, f'sample100')
-    reps = [s_dir, osp.join(s_dir, 'PCA-normalize/k4/replicate1'), osp.join(s_dir, 'GNN-177-S-diagMLP-79/k0/replicate1')]
+    reps = [s_dir, osp.join(s_dir, 'PCA-normalize/k4/replicate1'),
+            osp.join(s_dir, 'GNN-177-S-diagMLP-79/k0/replicate1')]
     labels = ['Original Simulation', 'Maximum Entropy', 'Machine Learning']
     for rep, label in zip(reps, labels):
         ifile = osp.join(rep, 'y.npy')
@@ -532,7 +530,8 @@ def plot_sd():
         with open(osp.join(it_dir, 'config.json'), 'r') as f:
             config = json.load(f)
         diag_chi_continuous = calculate_diag_chi_step(config, chis_diag_it)
-        rmse_diag_list.append(mean_squared_error(diag_chi_continuous, diag_chis, squared = False))
+        rmse_diag_list.append(mean_squared_error(diag_chi_continuous, diag_chis,
+                                                squared = False))
 
         d = calculate_D(diag_chi_continuous)
         sd_it = s_sym_it + d
@@ -563,15 +562,18 @@ def compare_y_diag():
     #         plot_matrix(y, osp.join(sample_dir, f'y_sweep{sweep}.png'), vmax = 'mean')
     #
     #         diff = y_ticg - y
-    #         plot_matrix(diff, osp.join(sample_dir, f'y_vs_y_sweep{sweep}.png'), title = f'y - y_sweep{sweep}', cmap='bluered')
+            # plot_matrix(diff, osp.join(sample_dir, f'y_vs_y_sweep{sweep}.png'),
+            #             title = f'y - y_sweep{sweep}', cmap='bluered')
     #
     #         meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
     #         y_diag = DiagonalPreprocessing.process(y, meanDist)
-    #         plot_matrix(y_diag, osp.join(sample_dir, f'y_diag_sweep{sweep}.png'), vmax = 'max')
+            # plot_matrix(y_diag, osp.join(sample_dir, f'y_diag_sweep{sweep}.png'),
+            #             vmax = 'max')
     #
     #         diff = y_diag_ticg - y_diag
-    #         plot_matrix(diff, osp.join(sample_dir, f'y_diag_vs_y_diag_sweep{sweep}.png'), title = f'y_diag - y_diag_sweep{sweep}', cmap='bluered')
-    #
+            # plot_matrix(diff, osp.join(sample_dir, f'y_diag_vs_y_diag_sweep{sweep}.png'),
+            #             title = f'y_diag - y_diag_sweep{sweep}', cmap='bluered')
+
     mode='grid'
     for sample in [1, 2, 3, 4]:
         sample_dir = osp.join(dir, f'sample{sample}')
@@ -583,14 +585,16 @@ def compare_y_diag():
             plot_matrix(y, osp.join(sample_dir, f'y_{mode}{size}.png'), vmax = 'mean')
 
             diff = y_ticg - y
-            plot_matrix(diff, osp.join(sample_dir, f'y_vs_y_{mode}{size}.png'), title = f'y - y_{mode}{size}', cmap='bluered')
+            plot_matrix(diff, osp.join(sample_dir, f'y_vs_y_{mode}{size}.png'),
+                        title = f'y - y_{mode}{size}', cmap='bluered')
 
             meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
             y_diag = DiagonalPreprocessing.process(y, meanDist)
             plot_matrix(y_diag, osp.join(sample_dir, f'y_diag_{mode}{size}.png'), vmax = 'max')
 
             diff = y_diag_ticg - y_diag
-            plot_matrix(diff, osp.join(sample_dir, f'y_diag_vs_y_diag_{mode}{size}.png'), title = f'y_diag - y_diag_{mode}{size}', cmap='bluered')
+            plot_matrix(diff, osp.join(sample_dir, f'y_diag_vs_y_diag_{mode}{size}.png'),
+                        title = f'y_diag - y_diag_{mode}{size}', cmap='bluered')
 
 
     # dir = osp.join(dir, 'sample1')
@@ -602,23 +606,26 @@ def compare_y_diag():
     # y2_diag_log = np.log(y1000_diag)
     #
     # diff = y_diag - y1000_diag
-    # plot_matrix(diff, osp.join(dir, 'diagvs1000diag.png'), 'diag - 1000diag', vmin = 'min',
-    #             vmax = 'max', cmap = 'bluered')
+    # plot_matrix(diff, osp.join(dir, 'diagvs1000diag.png'), 'diag - 1000diag',
+    #             vmin = 'min', vmax = 'max', cmap = 'bluered')
 
     # diff = y_diag - y5000_diag
-    # plot_matrix(diff, osp.join(dir, 'diagvs5000diag.png'), 'diag - 5000diag', vmin = 'min',
-    #             vmax = 'max', cmap = 'bluered')
+    # plot_matrix(diff, osp.join(dir, 'diagvs5000diag.png'), 'diag - 5000diag',
+    #             vmin = 'min', vmax = 'max', cmap = 'bluered')
     #
     # diff = y5000_diag - y1000_diag
-    # plot_matrix(diff, osp.join(dir, 'diag5000vs1000diag.png'), '5000diag - 1000diag', vmin = 'min',
+    # plot_matrix(diff, osp.join(dir, 'diag5000vs1000diag.png'),
+    #             '5000diag - 1000diag', vmin = 'min',
     #             vmax = 'max', cmap = 'bluered')
     #
     # diff = y_diag_log - y5000_diag_log
-    # plot_matrix(diff, osp.join(dir, 'diaglogvs5000diaglog.png'), 'diaglog - 5000diaglog', vmin = 'min',
+    # plot_matrix(diff, osp.join(dir, 'diaglogvs5000diaglog.png'),
+    #             'diaglog - 5000diaglog', vmin = 'min',
     #             vmax = 'max', cmap = 'bluered')
     #
     # diff = y5000_diag_log - y1000_diag_log
-    # plot_matrix(diff, osp.join(dir, 'diag5000logvs1000diaglog.png'), '5000diaglog - 1000diaglog', vmin = 'min',
+    # plot_matrix(diff, osp.join(dir, 'diag5000logvs1000diaglog.png'),
+    #             '5000diaglog - 1000diaglog', vmin = 'min',
     #             vmax = 'max', cmap = 'bluered')
 
 def check_if_same():
@@ -765,22 +772,77 @@ def compare_kr_vs_none():
     y_kr = np.load(osp.join(dir, 'sample101/y.npy'))
     y = np.load(osp.join(dir, 'sample1/y.npy'))
     diff = y - y_kr
-    plot_matrix(diff, osp.join(dir, 'sample1/diff_kr.png'), cmap='blue-red', title='y-y_kr')
+    plot_matrix(diff, osp.join(dir, 'sample1/diff_kr.png'), cmap='blue-red',
+                title='y-y_kr')
+
+def main2():
+    # shuffle plaid chis
+    dataset = 'dataset_11_14_22'
+    sample = 2201
+    dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
+    max_ent_dir = osp.join(dir, 'PCA-normalize-E/k8/replicate1')
+    chis = np.loadtxt(osp.join(max_ent_dir, 'chis.txt'))[-1]
+    chis = triu_to_full(chis)
+    plot_matrix(chis, osp.join(max_ent_dir, 'chis.png'), cmap = 'blue-red')
+
+    chis_neg = -1 * chis
+    plot_matrix(chis_neg, osp.join(max_ent_dir, 'chis_neg.png'), cmap = 'blue-red')
+    np.save(osp.join(max_ent_dir, 'chis_neg.npy'), chis_neg)
+
+
+    diag = np.copy(np.diagonal(chis))
+    tri = chis[np.triu_indices(len(chis), 1)]
+    np.random.shuffle(diag)
+    np.fill_diagonal(chis, diag)
+    np.random.shuffle(tri)
+    chis[np.triu_indices(len(chis), 1)] = tri
+    # chis[np.tril_indices(len(chis), -1)] = np.nan
+    chis = np.triu(chis, 1) + np.triu(chis).T
+    # print(chis)
+    np.save(osp.join(max_ent_dir, 'chis_shuffle.npy'), chis)
+    plot_matrix(chis, osp.join(max_ent_dir, 'chis_shuffle.png'), cmap = 'blue-red')
+
+    x = np.load(osp.join(max_ent_dir, 'resources/x.npy'))
+    # x = np.array([[1,0],[2, 3], [5,6]])
+    np.random.shuffle(x.T)
+    np.save(osp.join(max_ent_dir, 'resources/x_shuffle.npy'), x)
+
+def max_ent_loss_for_gnn(dataset, sample):
+    dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
+
+    PCA_dir = osp.join(dir, 'PCA_split-binarizeMean-E/k12/replicate1')
+    PCA_dir_final = get_final_max_ent_folder(PCA_dir)
+    os.chdir(PCA_dir_final)
+    sim = Sim("production_out")
+    sim.plot_obs_vs_goal('test.png')
+
+    GNN_dir = osp.join(dir, 'GNN-289-E/k0/replicate1')
+    y = np.load(osp.join(GNN_dir, 'y.npy'))
+    y = y.astype(float) # ensure float
+    y /= np.mean(np.diagonal(y))
+    sim.verbose = False
+    print(sim.seqs)
+    plaid = get_plaid_goal(y, sim, sim.seqs)
+    diag = get_diag_goal(y, sim)
+    sim.obs_tot = np.hstack((plaid, diag))
+    sim.plot_obs_vs_goal('test2.png')
+
+
 
 
 if __name__ == '__main__':
     # compare_y_diag()
     # check_if_same()
     # test_robust_PCA()
-    check_dataset('dataset_11_18_22')
-    check_dataset('dataset_11_21_22')
+    # check_dataset('dataset_11_18_22')
+    # check_dataset('dataset_11_21_22')
     # time_comparison()
     # time_comparison_dmatrix()
     # construct_sc_xyz()
     # convergence_check()
     # main()
     # plot_p_s()
-    # main3()
+    main2()
     # plot_sd()
-    # makeDirsForMaxEnt("dataset_09_21_21")
     # compare_kr_vs_none()
+    # max_ent_loss_for_gnn('dataset_11_14_22', 2201)

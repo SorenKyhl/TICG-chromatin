@@ -14,17 +14,21 @@ from scipy.stats import pearsonr
 from seq2contact import (SCC, ArgparserConverter, DiagonalPreprocessing,
                          calc_dist_strat_corr, calculate_D,
                          calculate_diag_chi_step, calculate_E_S,
-                         calculate_net_energy, crop, load_E_S,
-                         load_max_ent_chi, load_Y, s_to_E)
+                         calculate_SD_ED, crop, load_E_S, load_max_ent_chi,
+                         load_Y, s_to_E)
 from sklearn.metrics import mean_squared_error
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 METHODS = ['ground_truth', 'random', 'PCA', 'PCA_split', 'kPCA', 'RPCA',
-            'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM']
+            'k_means', 'nmf', 'GNN',
+            'epigenetic', 'epigenetic_sigmoid',
+            'ChromHMM']
 SMALL_METHODS = {'ground_truth', 'random', 'PCA', 'PCA_split', 'k_means', 'nmf', 'GNN',
-            'epigenetic', 'ChromHMM'}
+            'epigenetic', 'epigenetic_sigmoid', 'ChromHMM'}
 LABELS = ['Ground Truth', 'Random', 'PCA', 'PCA Split', 'kPCA', 'RPCA',
-            'K-means', 'NMF', 'GNN', 'Epigenetic', 'ChromHMM']
+            'K-means', 'NMF', 'GNN',
+            'Epigenetic', 'Epigenetic (Sigmoid)',
+            'ChromHMM']
 
 def getArgs(data_folder = None, sample = None, samples = None):
     parser = argparse.ArgumentParser(description='Base parser')
@@ -97,12 +101,13 @@ def loadData(args):
     for i, sample in enumerate(args.samples):
         sample_folder = osp.join(args.data_folder, 'samples', f'sample{sample}')
         if args.experimental:
+            ground_truth_SD = None
             ground_truth_ED = None
         else:
             diag_chi_continuous = np.load(osp.join(sample_folder, 'diag_chis_continuous.npy'))
             D = calculate_D(diag_chi_continuous)
             S = np.load(osp.join(sample_folder, 's.npy'))
-            ground_truth_ED = calculate_net_energy(S, D)
+            ground_truth_SD, ground_truth_ED = calculate_SD_ED(S, D)
         ground_truth_y, ground_truth_ydiag = load_Y(sample_folder)
         ground_truth_meanDist = DiagonalPreprocessing.genomic_distance_statistics(ground_truth_y, 'prob')
         for method in os.listdir(sample_folder):
@@ -120,7 +125,7 @@ def loadData(args):
                         for replicate in os.listdir(k_folder):
                             if args.replicate is not None and int(replicate[-1]) != args.replicate:
                                 continue
-                            print('\t', replicate)
+                            print(f'\tk{k} {replicate}')
                             replicate_folder = osp.join(k_folder, replicate)
 
                             # convergence
@@ -187,7 +192,7 @@ def loadData(args):
                                     meanDist = DiagonalPreprocessing.genomic_distance_statistics(yhat)
                                     yhat_diag = DiagonalPreprocessing.process(yhat, meanDist, verbose = False)
 
-                                    overall_corr, corr_scc, avg_diag = plotDistanceStratifiedPearsonCorrelation(ground_truth_y,
+                                    overall_corr, corr_scc, corr_scc_var, avg_diag = plotDistanceStratifiedPearsonCorrelation(ground_truth_y,
                                                                             yhat, ground_truth_ydiag, yhat_diag, converged_path)
                                     replicate_data['overall_pearson'].append(overall_corr)
                                     replicate_data['scc'].append(corr_scc)
@@ -226,19 +231,32 @@ def loadData(args):
                                     D = calculate_D(diag_chis_continuous)
 
                                     # calc s+d
-                                    ED = calculate_net_energy(S, D)
+                                    SD, ED = calculate_SD_ED(S, D)
                                 elif converged_path is not None:
-                                    # but converged_it is None
-                                    # means this is a GNN/MLP result
+                                    # this is either GNN/MLP or ground truth
                                     ematrix_file = osp.join(replicate_folder, 'resources/e_matrix.txt')
                                     smatrix_file = osp.join(replicate_folder, 'resources/s_matrix.txt')
                                     if osp.exists(ematrix_file):
-                                        ED = np.loadtxt(ematrix_file)
+                                        E = np.loadtxt(ematrix_file)
+                                        S = None
                                     elif osp.exists(smatrix_file):
-                                        SD = np.loadtxt(smatrix_file)
-                                        ED = s_to_E(SD)
+                                        E = None
+                                        S = np.loadtxt(smatrix_file)
                                     else:
                                         raise Exception(f'no <e,s>_matrix.txt for {replicate_folder}')
+                                    if method.startswith('ground_truth'):
+                                        with open(osp.join(replicate_folder, 'resources/config.json'), 'r') as f:
+                                            config = json.load(f)
+                                        diag_chis_continuous = calculate_diag_chi_step(config)
+                                        D = calculate_D(diag_chis_continuous)
+
+                                        # calc s+d
+                                        if E is not None:
+                                            ED = E + 2*D
+                                        elif S is not None:
+                                            SD, ED = calculate_SD_ED(S, D)
+                                    else:
+                                        ED = E
                                 else:
                                     ED = None
 

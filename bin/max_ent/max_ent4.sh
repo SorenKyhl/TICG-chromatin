@@ -15,37 +15,36 @@ if [ $local = 'true' ]
 then
   dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
-  numIterations=1
+  numIterations=15
   finalSimProductionSweeps=500000
-  productionSweeps=1000
-  equilibSweeps=100
+  productionSweeps=500000
+  equilibSweeps=100000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
 i=3003
-dataset='dataset_11_14_22'
+dataset='dataset_11_14_22/samples/sample2201/PCA_split-binarizeMean-E/k8/replicate1'
 useS='false'
 useE='true'
-useD='false'
+useD='true'
 m=1024
-GNNModelID=276
-chiMethod='none'
-mode='none'
+chiMethod='zeros'
+mode='both'
 
 bondtype='gaussian'
 bondLength=28
 
-diagChiMethod='none'
-dense='false'
-diagBins=1
-nSmallBins=16
-smallBinSize=4
+diagChiMethod='zeros'
+dense='true'
+diagBins=96
+nSmallBins=64
+smallBinSize=1
 diagCutoff=1024
 
-k=0
-method='GNN'
-for sample in 301
+k=8
+method='PCA-normalize'
+for sample in 2201_other_pcs 2201
 do
   echo $sample $m
   max_ent

@@ -23,7 +23,7 @@ then
 fi
 
 STARTTIME=$(date +%s)
-i=2001
+i=2050
 dataset='dataset_11_14_22'
 useS='false'
 useE='true'
@@ -44,10 +44,10 @@ diagCutoff=1024
 
 k=0
 method='GNN'
-for sample in 1001
-# 2202
+for sample in 2203 2204 2205 2206 2207
+# 2203 2204 2205 2206 2207
 do
-  for GNNModelID in 280
+  for GNNModelID in 271
    # 243 254 262 265 267 271 276
   do
     echo $sample $m

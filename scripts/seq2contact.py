@@ -11,19 +11,15 @@ from sequences_to_contact_maps.utils.argparse_utils import (ArgparserConverter,
 from sequences_to_contact_maps.utils.clean_directories import clean_directories
 from sequences_to_contact_maps.utils.dataset_classes import make_dataset
 from sequences_to_contact_maps.utils.energy_utils import (
-    calculate_D, calculate_diag_chi_step, calculate_E_S, calculate_net_energy,
-    calculate_S, s_to_E)
+    calculate_D, calculate_diag_chi_step, calculate_E_S, calculate_S,
+    calculate_SD_ED, s_to_E)
 from sequences_to_contact_maps.utils.InteractionConverter import \
     InteractionConverter
 from sequences_to_contact_maps.utils.knightRuiz import knightRuiz
-from sequences_to_contact_maps.utils.load_utils import (load_all,
-                                                        load_contact_map,
-                                                        load_E_S,
-                                                        load_final_max_ent_chi,
-                                                        load_final_max_ent_S,
-                                                        load_max_ent_chi,
-                                                        load_X_psi, load_Y,
-                                                        load_Y_diag)
+from sequences_to_contact_maps.utils.load_utils import (
+    get_final_max_ent_folder, load_all, load_contact_map, load_E_S,
+    load_final_max_ent_chi, load_final_max_ent_S, load_max_ent_chi, load_X_psi,
+    load_Y, load_Y_diag)
 from sequences_to_contact_maps.utils.neural_net_utils import (get_dataset,
                                                               load_saved_model)
 from sequences_to_contact_maps.utils.plotting_utils import (

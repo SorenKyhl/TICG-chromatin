@@ -15,42 +15,42 @@ if [ $local = 'true' ]
 then
   dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
-  numIterations=1
+  numIterations=5
   finalSimProductionSweeps=500000
   productionSweeps=500000
-  equilibSweeps=1000
+  equilibSweeps=100000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
-i=9000
+i=9002
 dataset='dataset_11_14_22'
 useS='false'
-useE='false'
-useD='false'
+useE='true'
+useD='true'
 m=1024
-chiMethod='none'
-mode='none'
+chiMethod='zero'
+mode='both'
 
 bondtype='gaussian'
 bondLength=28
-gridSize=26.6
 phiChromatin=0.06
+trust_region=10000
 
-diagChiMethod='none'
+diagChiMethod='zero'
 dense='true'
 diagBins=32
 nSmallBins=16
 smallBinSize=4
 diagCutoff=1024
 
-method='none'
-for k in 0
+method='chromhmm-fold_change_control'
+for k in 10
 do
-  for sample in 1
+  for sample in 2201
+  # 2203 2204 2205 2206 2207 2208 2209
   do
     echo $sample $m
-    echo $CONDA_DEFAULT_ENV
     max_ent
   done
 done

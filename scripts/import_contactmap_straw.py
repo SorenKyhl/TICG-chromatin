@@ -82,8 +82,7 @@ def main2():
 
 
 def main():
-    dir = '/home/erschultz/sequences_to_contact_maps'
-    # dir = '/project2/depablo/erschultz'
+    dir = '/home/erschultz'
     dataset='dataset_07_20_22'
     data_folder = osp.join(dir, dataset)
     if not osp.exists(data_folder):
@@ -91,22 +90,23 @@ def main():
     if not osp.exists(osp.join(data_folder, 'samples')):
         os.mkdir(osp.join(data_folder, 'samples'), mode = 0o755)
 
-    start=60000000
-    resolution=5000
-    norm = 'KR'
-    chromosome=4
-    filename="https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic"
+    resolution=10000
+    norm = 'NONE'
     filename='https://www.encodeproject.org/files/ENCFF718AWL/@@download/ENCFF718AWL.hic' #GM12878
+    m = 1024*5
+
+    slices = [(10, 60)]
+
 
     # set up for multiprocessing
     mapping = []
-    for i, m in enumerate([512, 1024, 2048, 4096]):
-        # chromsizes = bioframe.fetch_chromsizes('hg38')
-        # end = chromsizes[f'chr{chromosome}']
-        end = start + resolution * (m-1)
-        # m = (end - start) / resolution + 1
-        print(f'i={i+11}: m={m}')
-        sample_folder = osp.join(data_folder, 'samples', f'sample{i+11}')
+    start_sample=2010
+    for i, (chromosome, start_mb) in enumerate(slices):
+        start = start_mb * 1000000
+        end = start + resolution * m
+        end_mb = end / 1000000
+        print(f'i={i+start_sample}: chr{chromosome} {start_mb}-{end_mb}')
+        sample_folder = osp.join(data_folder, 'samples', f'sample{i+start_sample}')
         mapping.append((sample_folder, filename, chromosome, start, end, resolution, norm))
 
     with multiprocessing.Pool(10) as p:
@@ -124,19 +124,18 @@ def main3():
 
     resolution=10000
     norm = 'NONE'
-    chromosome=1
     filename="https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-treated_6hr_combined_30.hic"
     m = 1024*5
 
-    slices = [(1, 15), (1, 150),]
-     #  (2, 5), (2, 135), (3, 5), (3, 110), (4, 60),
-                # (4, 115), (5, 75), (5, 120), (6, 4), (6, 100), (7, 6), (7, 77),
-                # (8, 90), (9, 75), (10, 55), (11, 56), (12, 45), (13, 22),
-                # (14, 35), (18, 20)]
+    slices = [(2, 17.6)]
+    # slices = [(2, 5), (2, 135), (3, 5), (3, 110), (4, 60),
+    #             (4, 115), (5, 75), (5, 120), (6, 4), (6, 100), (7, 6), (7, 77),]
+    #             # (8, 90), (9, 75), (10, 55), (11, 56), (12, 45), (13, 22),
+    #             # (14, 35), (18, 20)]
 
     # set up for multiprocessing
     mapping = []
-    start_sample=2001
+    start_sample=2016
     for i, (chromosome, start_mb) in enumerate(slices):
         start = start_mb * 1000000
         end = start + resolution * m

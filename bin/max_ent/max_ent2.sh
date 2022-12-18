@@ -17,19 +17,18 @@ then
   scratchDir='/home/erschultz/scratch'
   numIterations=1
   finalSimProductionSweeps=500000
-  productionSweeps=1000
-  equilibSweeps=1000
+  productionSweeps=1
+  equilibSweeps=1
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
 i=1001
-dataset='dataset_11_21_22'
+dataset='dataset_11_18_22'
 useS='false'
 useE='true'
 useD='false'
 m=1024
-GNNModelID=262
 chiMethod='none'
 mode='none'
 
@@ -47,8 +46,13 @@ k=0
 method='GNN'
 for sample in 410 653 1462 1801 2290
 do
-  echo $sample $m
-  max_ent
+  for GNNModelID in 277
+  # 271
+   # 243 254 262 265 267 271 276
+  do
+    echo $sample $m
+    max_ent
+  done
 done
 
 wait
