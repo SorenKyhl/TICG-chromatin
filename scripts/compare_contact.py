@@ -95,7 +95,7 @@ def plotDistanceStratifiedPearsonCorrelation(y, yhat, y_diag, yhat_diag, dir):
     # format title
     title = f'Overall Pearson Corr: {overall_corr}'
     title += f'\nMean Diagonal Pearson Corr: {avg_diag}'
-    title += f'\nSCC: {corr_scc}'
+    title += f'\nSCC: {corr_scc_var}'
 
     for log in [True, False]:
         plt.plot(np.arange(m-2), corr_arr, color = 'black')

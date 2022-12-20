@@ -22,20 +22,23 @@ def getArgs():
                     help='mode for diagonal parameters')
     parser.add_argument('--seq_mode', type=str, default='markov',
                     help='mode for seq parameters')
+    parser.add_argument('--chi_param_version', type=str, default='v1',
+                    help='version for chi param distribution')
 
     args = parser.parse_args()
     return args
 
 
 class DatasetGenerator():
-    def __init__(self, N, k, dataset, diag_mode, seq_mode):
-        self.N = N
-        self.k = k
-        self.dataset = dataset
-        self.diag_mode = diag_mode
-        self.seq_mode = seq_mode
+    def __init__(self, args):
+        self.N = args.samples
+        self.k = args.k
+        self.dataset = args.dataset
+        self.diag_mode = args.diag_mode
+        self.seq_mode = args.seq_mode
+        self.chi_param_version = args.chi_param_version
 
-        data_dir = osp.join('/home/erschultz', dataset)
+        data_dir = osp.join('/home/erschultz', self.dataset)
         if not osp.exists(data_dir):
             os.mkdir(data_dir, mode = 0o755)
         self.odir = osp.join(data_dir, 'setup')
@@ -48,8 +51,12 @@ class DatasetGenerator():
     def plaid_params(self):
         for i in range(self.N):
             self.sample_dict[i]['k'] = self.k
-            chi_ii = skewnorm.rvs(0.83, -2.459, 2.594, size = self.k)
-            chi_ij = skewnorm.rvs(-1.566, 1.815, 2.892, size = int(self.k*(self.k-1)/2))
+            if self.chi_param_version == 'v1':
+                chi_ii = skewnorm.rvs(0.83, -2.459, 2.594, size = self.k)
+                chi_ij = skewnorm.rvs(-1.566, 1.815, 2.892, size = int(self.k*(self.k-1)/2))
+            elif self.chi_param_version == 'v2':
+                chi_ii = skewnorm.rvs(-3.619, 2.119, 5.244, size = self.k)
+                chi_ij = skewnorm.rvs(-1.307, 3.257, 5.888, size = int(self.k*(self.k-1)/2))
             chi = np.zeros((self.k, self.k))
             np.fill_diagonal(chi, chi_ii)
             chi[np.triu_indices(self.k, 1)] = chi_ij
@@ -141,8 +148,7 @@ class DatasetGenerator():
 
 def main():
     args = getArgs()
-    generator = DatasetGenerator(args.samples, args.k, args.dataset,
-                                args.diag_mode, args.seq_mode)
+    generator = DatasetGenerator(args)
     generator.get_dataset()
 
 if __name__ == '__main__':

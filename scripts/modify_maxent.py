@@ -13,11 +13,17 @@ from sklearn.metrics import mean_squared_error
 
 
 def modify_maxent_diag_chi(sample, k = 8, edit = True):
+    '''
+    Inputs:
+        sample: sample id
+        k: number of marks
+        edit: True to modify maxent result so that is is flat at start
+    '''
     print(f'sample{sample}, k{k}')
     # try different modifications to diag chis learned by max ent
     dataset = 'dataset_11_14_22'
     dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
-    max_ent_dir = osp.join(dir, f'PCA_split-binarizeMean-E/k{k}/replicate1')
+    max_ent_dir = osp.join(dir, f'PCA-normalize-E/k{k}/replicate1')
     if not osp.exists(max_ent_dir):
         return
     if edit:
@@ -308,7 +314,6 @@ def plot_modified_max_ent(sample, params = True, k = 8):
 def find_params_for_synthetic_data(k_arr):
     dataset = 'dataset_11_14_22'
     data_dir = osp.join('/home/erschultz', dataset)
-    k_arr = [str(k) for k in k_arr]
 
     linear_popt_list = []
     logistic_popt_list = []
@@ -317,27 +322,27 @@ def find_params_for_synthetic_data(k_arr):
     lmbda_list = []
     f_list = []
     for k in k_arr:
-        for sample in range(19):
+        for sample in range(2201, 2216):
             dir = osp.join(data_dir, f'samples/sample{sample}')
-            max_ent_dir = osp.join(dir, f'PCA_split-binarizeMean-E/k{k}/replicate1')
+            max_ent_dir = osp.join(dir, f'PCA-normalize-E/k{k}/replicate1')
             if not osp.exists(max_ent_dir):
                 continue
             fitting_dir = osp.join(max_ent_dir, 'fitting')
             edit_dir = osp.join(max_ent_dir, 'samples')
 
-            # get diagonal params
-            linear_popt = np.loadtxt(osp.join(fitting_dir, 'linear_popt.txt'))
-            linear_popt_list.append(linear_popt)
-            logistic_popt = np.loadtxt(osp.join(fitting_dir, 'logistic_manual_popt.txt'))
-            logistic_popt_list.append(logistic_popt)
-
-            # get lambda from sequences
-            x = np.load(osp.join(max_ent_dir, 'resources/x.npy'))
-            m, k = x.shape
-            for i in range(k):
-                f, lmbda = Tester.infer_lambda(x[:,i])
-                f_list.append(f)
-                lmbda_list.append(lmbda)
+            # # get diagonal params
+            # linear_popt = np.loadtxt(osp.join(fitting_dir, 'linear_popt.txt'))
+            # linear_popt_list.append(linear_popt)
+            # logistic_popt = np.loadtxt(osp.join(fitting_dir, 'logistic_manual_popt.txt'))
+            # logistic_popt_list.append(logistic_popt)
+            #
+            # # get lambda from sequences
+            # x = np.load(osp.join(max_ent_dir, 'resources/x.npy'))
+            # m, k = x.shape
+            # for i in range(k):
+            #     f, lmbda = Tester.infer_lambda(x[:,i])
+            #     f_list.append(f)
+            #     lmbda_list.append(lmbda)
 
             # get plaid params
             chi = np.loadtxt(osp.join(max_ent_dir, 'chis.txt'))[-1]
@@ -371,38 +376,39 @@ def find_params_for_synthetic_data(k_arr):
     plt.legend()
     plt.ylabel('probability', fontsize=16)
     plt.xlabel('plaid parameter', fontsize=16)
+    plt.xlim(-10, 10)
     plt.title('\n'.join(title))
-    plt.savefig(osp.join(data_dir, f'k{"-".join(k_arr)}_chi.png'))
+    plt.savefig(osp.join(data_dir, f'k{"-".join([str(k) for k in k_arr])}_chi.png'))
     plt.close()
 
-    arrs = [f_list, lmbda_list, linear_popt_arr[:, 0], linear_popt_arr[:, 1],
-            logistic_popt_arr[:, 0], logistic_popt_arr[:, 1], logistic_popt_arr[:, 2]]
-    labels = ['f', 'lambda', 'diag_linear_slope', 'diag_linear_intercept',
-            'diag_logistic_max', 'diag_logistic_slope', 'diag_logistic_midpoint']
-    dist = skewnorm
-    for arr, label in zip(arrs, labels):
-        if np.min(arr) < 0.001 * np.median(arr):
-            print(label, np.min(arr))
-            arr = np.delete(arr, np.argmin(arr), axis = None)
-            print(arr)
-        n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
-                                    bins = 20, color = 'blue', alpha = 0.5)
-        bin_width = bins[1] - bins[0]
-        params = dist.fit(arr)
-        y = dist.pdf(bins, *params) * bin_width
-        plt.plot(bins, y, ls = '--', color = 'blue')
-
-        plt.ylabel('probability', fontsize=16)
-        plt.xlabel(label, fontsize=16)
-        params = [np.round(p, 3) for p in params]
-        plt.title(f'{label}, {params}')
-        plt.savefig(osp.join(data_dir, f'k{"-".join(k_arr)}_{label}.png'))
-        plt.close()
+    # arrs = [f_list, lmbda_list, linear_popt_arr[:, 0], linear_popt_arr[:, 1],
+    #         logistic_popt_arr[:, 0], logistic_popt_arr[:, 1], logistic_popt_arr[:, 2]]
+    # labels = ['f', 'lambda', 'diag_linear_slope', 'diag_linear_intercept',
+    #         'diag_logistic_max', 'diag_logistic_slope', 'diag_logistic_midpoint']
+    # dist = skewnorm
+    # for arr, label in zip(arrs, labels):
+    #     if np.min(arr) < 0.001 * np.median(arr):
+    #         print(label, np.min(arr))
+    #         arr = np.delete(arr, np.argmin(arr), axis = None)
+    #         print(arr)
+    #     n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
+    #                                 bins = 20, color = 'blue', alpha = 0.5)
+    #     bin_width = bins[1] - bins[0]
+    #     params = dist.fit(arr)
+    #     y = dist.pdf(bins, *params) * bin_width
+    #     plt.plot(bins, y, ls = '--', color = 'blue')
+    #
+    #     plt.ylabel('probability', fontsize=16)
+    #     plt.xlabel(label, fontsize=16)
+    #     params = [np.round(p, 3) for p in params]
+    #     plt.title(f'{label}, {params}')
+    #     plt.savefig(osp.join(data_dir, f'k{"-".join(k_arr)}_{label}.png'))
+    #     plt.close()
 
 
 if __name__ == '__main__':
-    for i in [2201, 2202]:
+    # for i in [2201, 2202]:
         # modify_maxent_diag_chi(i, k = 6)
-        modify_maxent_diag_chi(i, k = 6, edit = False)
+        # modify_maxent_diag_chi(i, k = 8, edit = False)
         # plot_modified_max_ent(i, k = 6)
-    # find_params_for_synthetic_data([8])
+    find_params_for_synthetic_data([8])

@@ -11,11 +11,9 @@ import numpy as np
 import scipy.stats as ss
 from compare_contact import plotDistanceStratifiedPearsonCorrelation
 from scipy.stats import pearsonr
-from seq2contact import (SCC, ArgparserConverter, DiagonalPreprocessing,
-                         calc_dist_strat_corr, calculate_D,
-                         calculate_diag_chi_step, calculate_E_S,
-                         calculate_SD_ED, crop, load_E_S, load_max_ent_chi,
-                         load_Y, s_to_E)
+from seq2contact import (ArgparserConverter, DiagonalPreprocessing,
+                         calculate_D, calculate_diag_chi_step, calculate_E_S,
+                         calculate_SD_ED, load_max_ent_chi, load_Y)
 from sklearn.metrics import mean_squared_error
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -83,7 +81,8 @@ def loadData(args):
 
     Data is expected to be found at args.data_folder/samples/sample<i>/<method>.
 
-    <method> must be formatted such that <method>.split('-')[0] \in METHODS (e.g. 'nmf-binarize'.split('-')[0] = 'nmf')
+    <method> must be formatted such that <method>.split('-')[0] \in METHODS
+        (e.g. 'nmf-binarize'.split('-')[0] = 'nmf')
 
     All directories within <method> that start with 'k' or 's' are assumed to contain replicate directories.
     All replicate directories are assumed to contain 'distance_pearson.json', from which data is loaded.
@@ -162,7 +161,8 @@ def loadData(args):
                                     elif args.convergence_definition == 'normal':
                                         eps = 1e-2
                                     else:
-                                        raise Exception(f'Unrecognized convergence_definition: {args.convergence_definition}')
+                                        raise Exception(f'Unrecognized convergence_definition: '
+                                                        '{args.convergence_definition}')
 
                                     convergence_file = osp.join(replicate_folder, 'convergence.txt')
                                     if osp.exists(convergence_file):
@@ -174,7 +174,8 @@ def loadData(args):
                                                 break
 
                                 if converged_it is not None:
-                                    converged_path = osp.join(replicate_folder, f'iteration{converged_it+1}') # converged path is iteration after max ent converged
+                                    converged_path = osp.join(replicate_folder, f'iteration{converged_it+1}')
+                                    # converged path is iteration after max ent converged
                                 else:
                                     converged_mask[i] = 0
                                     converged_path = None
@@ -192,10 +193,11 @@ def loadData(args):
                                     meanDist = DiagonalPreprocessing.genomic_distance_statistics(yhat)
                                     yhat_diag = DiagonalPreprocessing.process(yhat, meanDist, verbose = False)
 
-                                    overall_corr, corr_scc, corr_scc_var, avg_diag = plotDistanceStratifiedPearsonCorrelation(ground_truth_y,
-                                                                            yhat, ground_truth_ydiag, yhat_diag, converged_path)
+                                    result = plotDistanceStratifiedPearsonCorrelation(ground_truth_y,
+                                                    yhat, ground_truth_ydiag, yhat_diag, converged_path)
+                                    overall_corr, _, corr_scc_var, avg_diag = result
                                     replicate_data['overall_pearson'].append(overall_corr)
-                                    replicate_data['scc'].append(corr_scc)
+                                    replicate_data['scc'].append(corr_scc_var)
                                     replicate_data['avg_dist_pearson'].append(avg_diag)
                                 else:
                                     print(f"Didn't find {y_file}")

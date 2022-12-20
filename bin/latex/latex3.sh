@@ -21,7 +21,7 @@ dataset='dataset_11_14_22'
 samples='2201-2202-2203-2204-2205'
 dataFolder="${dataDir}/${dataset}"
 convergenceDefinition='strict'
-python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples --convergence_definition $convergenceDefinition --experimental &
+# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples --convergence_definition $convergenceDefinition --experimental &
 
 
 for sample in 2201
