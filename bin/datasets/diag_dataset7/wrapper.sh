@@ -11,8 +11,8 @@ source activate python3.8_pytorch1.9
 # necessary to ensure log files are in right place
 cd ~/TICG-chromatin
 
-echo 'generate_params'
 dataset="dataset_01_03_23"
+echo "generate_params for ${dataset}"
 # this dataset uses shuffled experimental PCs as sequences, with wider range of chi values, and k = 12
 python  ~/TICG-chromatin/bin/datasets/generate_params.py --samples 5000 --k 12 --dataset $dataset --seq_mode 'pcs_shuffle' --chi_param_version 'v2'
 # mv "~/${dataset}" /project2/depablo/erschultz
