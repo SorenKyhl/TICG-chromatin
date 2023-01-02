@@ -82,16 +82,19 @@ class DatasetGenerator():
             self.sample_dict[i]['f'] = f
 
 
-    def seq_pc_params(self):
+    def seq_pc_params(self, shuffle = False):
         for i in range(self.N):
             j = np.random.choice(range(2201, 2216))
             x = np.load(f'/home/erschultz/dataset_11_14_22/samples/sample{j}/PCA-normalize-E/k8/replicate1/resources/x.npy')
+            if shuffle:
+                np.random.shuffle(x)
 
             seq_file = osp.join(self.odir, f'x_{i+1}.npy')
             np.save(seq_file, x)
 
             seq_file = osp.join('/project2/depablo/erschultz', self.dataset, f'setup/x_{i+1}.npy')
             self.sample_dict[i]['method'] = seq_file
+
 
     def linear_params(self):
         # first get diagonal params
@@ -108,7 +111,6 @@ class DatasetGenerator():
             self.sample_dict[i]['diag_chi_slope'] = vals[0] * 1000
             self.sample_dict[i]['diag_chi_constant'] = vals[1]
 
-
     def logistic_params(self):
         # first get diagonal params
         l_bounds = [0.001, -100, 3]
@@ -124,7 +126,6 @@ class DatasetGenerator():
             self.sample_dict[i]['max_diag_chi'] = vals[2]
             self.sample_dict[i]['min_diag_chi'] = 0
 
-
     def get_dataset(self):
         if self.diag_mode == 'linear':
             self.linear_params()
@@ -137,6 +138,9 @@ class DatasetGenerator():
             self.seq_markov_params()
         elif self.seq_mode == 'pcs':
             self.seq_pc_params()
+        elif self.seq_mode == 'pcs_shuffle':
+            self.seq_pc_params(True)
+
 
         # write to odir
         for i in range(self.N):
