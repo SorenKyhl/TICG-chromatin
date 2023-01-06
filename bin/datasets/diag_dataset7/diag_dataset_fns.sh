@@ -3,7 +3,7 @@
 source ~/TICG-chromatin/bin/random/random_fns.sh
 
 param_setup
-dataset=dataset_01_03_23
+dataset=dataset_01_06_23
 dataFolder="/project2/depablo/erschultz/${dataset}"
 scratchDir='/home/erschultz/scratch-midway2'
 #

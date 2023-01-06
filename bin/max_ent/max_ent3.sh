@@ -47,7 +47,7 @@ method='GNN'
 for sample in 2201 2202
 # 2203 2204 2205 2206 2207
 do
-  for GNNModelID in 322 323
+  for GNNModelID in 327
    # 243 254 262 265 267 271 276
   do
     echo $sample $m
