@@ -23,8 +23,8 @@ then
 fi
 
 STARTTIME=$(date +%s)
-i=3003
-dataset='dataset_11_14_22/samples/sample2201/PCA_split-binarizeMean-E/k8/replicate1'
+i=3010
+dataset='dataset_11_14_22'
 useS='false'
 useE='true'
 useD='true'
@@ -42,12 +42,14 @@ nSmallBins=64
 smallBinSize=1
 diagCutoff=1024
 
-k=8
 method='PCA-normalize'
-for sample in 2201_other_pcs 2201
+for sample in 2219 2220 2221
 do
-  echo $sample $m
-  max_ent
+  for k in 4 6 8
+  do
+    echo $sample $m
+    max_ent
+  done
 done
 wait
 

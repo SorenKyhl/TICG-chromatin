@@ -44,10 +44,10 @@ diagCutoff=1024
 
 k=0
 method='GNN'
-for sample in 2201 2202
+for sample in 2217 2218 2219 2220 2221
 # 2203 2204 2205 2206 2207
 do
-  for GNNModelID in 334
+  for GNNModelID in 298
    # 243 254 262 265 267 271 276
   do
     echo $sample $m

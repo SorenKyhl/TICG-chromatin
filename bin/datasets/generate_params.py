@@ -2,10 +2,15 @@ import argparse
 import json
 import os
 import os.path as osp
+import sys
 from collections import defaultdict
 
 import numpy as np
 from scipy.stats import norm, qmc, skewnorm
+
+sys.path.insert(0, '/home/erschultz/TICG-chromatin')
+from scripts.get_params import GetSeq
+from scripts.seq2contact import load_Y
 
 
 def getArgs():
@@ -18,6 +23,8 @@ def getArgs():
                         help='number of marks')
     parser.add_argument('--samples', type=int,
                         help='number of samples')
+    parser.add_argument('--m', type=int,
+                        help='number of beads')
     parser.add_argument('--diag_mode', type=str, default='logistic',
                     help='mode for diagonal parameters')
     parser.add_argument('--seq_mode', type=str, default='markov',
@@ -32,6 +39,7 @@ def getArgs():
 class DatasetGenerator():
     def __init__(self, args):
         self.N = args.samples
+        self.m = args.m
         self.k = args.k
         self.dataset = args.dataset
         self.diag_mode = args.diag_mode
@@ -83,9 +91,21 @@ class DatasetGenerator():
 
 
     def seq_pc_params(self, shuffle = False):
+        x_dict = {} # id : x
+        self.plot = False
+        self.args_file = None
+        self.sample = None
+        for j in range(2201, 2216):
+            self.sample_folder = f'/home/erschultz/dataset_11_14_22/samples/sample{j}'
+            _, y_diag = load_Y(self.sample_folder)
+            getseq = GetSeq(self, None, False)
+            x = getseq.get_PCA_seq(y_diag, normalize = True)
+            x_dict[j] = x
+
+
         for i in range(self.N):
             j = np.random.choice(range(2201, 2216))
-            x = np.load(f'/home/erschultz/dataset_11_14_22/samples/sample{j}/PCA-normalize-E/k8/replicate1/resources/x.npy')
+            x = x_dict[j]
             if shuffle:
                 np.random.shuffle(x)
 
@@ -151,6 +171,7 @@ class DatasetGenerator():
 
 
 def main():
+    print(os.getcwd())
     args = getArgs()
     generator = DatasetGenerator(args)
     generator.get_dataset()

@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch_geometric
+
+sys.path.insert(1, '/home/erschultz/TICG-chromatin/scripts')
 from seq2contact import (LETTERS, ArgparserConverter, DiagonalPreprocessing,
                          InteractionConverter, R_pca, clean_directories, crop,
                          finalize_opt, get_base_parser, get_dataset,
@@ -84,7 +86,7 @@ def getArgs():
     return args, unknown
 
 class GetSeq():
-    def __init__(self, args, unknown_args):
+    def __init__(self, args, unknown_args, verbose = True):
         self.m = args.m
         self.k = args.k
         self.sample_folder = args.sample_folder
@@ -92,6 +94,7 @@ class GetSeq():
         self.plot = args.plot
         self.method_recognized = True # default value
         self.args_file = args.args_file
+        self.verbose = verbose
         self._get_args(unknown_args)
         if not self.method_recognized:
             # method is None
@@ -135,7 +138,8 @@ class GetSeq():
                                 "find average frequency at lower resolution")
                             # TODO rename and document better
 
-        print("\nSeq args:")
+        if self.verbose:
+            print("\nSeq args:")
         if self.args_file is not None:
             assert osp.exists(self.args_file)
             print(f'parsing {self.args_file}')
@@ -144,7 +148,8 @@ class GetSeq():
 
         else:
             args, _ = parser.parse_known_args(unknown_args)
-        print(args)
+        if self.verbose:
+            print(args)
         if args.method is None:
             self.method_recognized = False
             return
@@ -171,8 +176,8 @@ class GetSeq():
                             self.args.end = int(line[1])
                         elif line[0] == 'resolution':
                             self.args.resolution = int(line[1])
-
-        print(self.args)
+        if self.verbose:
+            print(self.args)
 
     def _check_args(self, args):
         if args.binarize:

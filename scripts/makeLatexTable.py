@@ -384,24 +384,45 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                     print(f'key 1: {key}, key 2: {data[key].keys()}')
 
         GNN_ref = None
+        GNN_ref_id = float('inf')
         if 0 in data.keys():
             for method in data[0].keys():
                 if 'GNN' in method:
-                    print(f'GNN found: using {method}')
-                    GNN_ref = data[0][method]
-                    # TODO get best GNN not first
-                    break
+                    id = int(method.split('-')[1])
+                    if id < GNN_ref_id:
+                        GNN_ref = data[0][method]
+                        GNN_ref_id = id
+
+        if GNN_ref is not None:
+            print(f'GNN found: using GNN {id}')
 
         for k in sorted(data.keys()):
             first = True # only write k for first row in section
             keys_labels = sort_method_keys(data[k].keys())
-            for key, label in keys_labels:
-                if small and key.split('-')[0] not in SMALL_METHODS:
-                    print(key)
+            for method, label in keys_labels:
+                if small and method.split('-')[0] not in SMALL_METHODS:
+                    print(method)
                     # skip methods not in SMALL_METHODS
                     continue
-                if nan_mask is not None and len(nested_list_to_array(data[k][key]['scc'])) != len(nan_mask):
-                    # skip method is not performed for all samples
+                dataset = None
+                if 'GNN' in method:
+                    id = method.split('-')[1]
+                    try:
+                        with open(f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{id}/argparse.txt', 'r') as f:
+                            for line in f:
+                                line = line.strip()
+                                if line == '--data_folder':
+                                    dataset = f.readline().strip()
+                                    dataset_list = dataset.split('-')
+                                    dataset_list = [osp.split(i)[1] for i in dataset_list]
+                                    dataset_list = [i[8:].replace('_', '/') for i in dataset_list]
+                                    dataset = '-'.join(dataset_list)
+                                    break
+                    except Exception as e:
+                        dataset = None
+                        print(e)
+                if nan_mask is not None and len(nested_list_to_array(data[k][method]['scc'])) != len(nan_mask):
+                    # skip method if not performed for all samples
                     continue
                 if first: # only write k for first row in section
                     k_label = k
@@ -410,14 +431,17 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                     first = False
                 else:
                     k_label = ''
-                text = f"{label} & {k_label}"
+                if dataset is None:
+                    text = f"{label} & {k_label}"
+                else:
+                    text = f"{label} ({dataset}) & {k_label}"
 
                 for metric in metrics:
                     significant = False # two sided t test
-                    sample_results = nested_list_to_array(data[k][key][metric])
+                    sample_results = nested_list_to_array(data[k][method][metric])
 
                     if sample_id is not None:
-                        assert sample_results.shape[0] == 1, f"label {label}, metric {metric}, k {k_label}, results {data[k][key][metric]}, {sample_results}"
+                        assert sample_results.shape[0] == 1, f"label {label}, metric {metric}, k {k_label}, results {data[k][method][metric]}, {sample_results}"
                         result = sample_results.reshape(-1)
                         if GNN_ref is not None:
                             ref_result = nested_list_to_array(GNN_ref[metric]).reshape(-1)
@@ -435,7 +459,7 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                                     if pval < 0.05:
                                         significant = True
                         except Exception as e:
-                            print(f'method {key}, k {k}, metric: {metric}')
+                            print(f'method {method}, k {k}, metric: {metric}')
                             print('GNN ref', GNN_ref[metric])
                             print('sample results', sample_results)
                             raise

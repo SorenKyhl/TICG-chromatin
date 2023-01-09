@@ -30,7 +30,7 @@ def getArgs():
     return args
 
 def get_diag_goal(y, args, return_correction = False):
-    assert np.mean(y.diagonal()) == 1, f'{args.contact_map} is not normalized: {np.mean(y.diagonal())}'
+    assert abs(np.mean(y.diagonal()) - 1) < 1e-5, f'{args.contact_map} is not normalized: {np.mean(y.diagonal())} '
     m, _ = y.shape
     if args.diag_cutoff > m:
         args.diag_cutoff = m
@@ -85,7 +85,7 @@ def get_mask(bin, m, diag_bins, dense, n_small_bins,
     return mask
 
 def get_plaid_goal(y, args, x = None):
-    assert np.mean(y.diagonal()) == 1, f'{args.contact_map} is not normalized: {np.mean(y.diagonal())} '
+    assert abs(np.mean(y.diagonal()) - 1) < 1e-5, f'{args.contact_map} is not normalized: {np.mean(y.diagonal())} '
     obj_goal = []
     if args.verbose:
         print(y, y.shape, y.dtype, '\n')
