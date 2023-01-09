@@ -6,6 +6,8 @@
 #SBATCH --ntasks=20
 #SBATCH --nodes=1
 #SBATCH --mem-per-cpu=2000
+#SBATCH --mail-type=END
+#SBATCH --mail-user=erschultz@uchicago.edu
 
 source activate python3.9_pytorch1.9_cuda10.2
 source activate python3.8_pytorch1.9

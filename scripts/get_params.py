@@ -11,6 +11,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import torch_geometric
 from seq2contact import (LETTERS, ArgparserConverter, DiagonalPreprocessing,
                          InteractionConverter, R_pca, clean_directories, crop,
                          finalize_opt, get_base_parser, get_dataset,
@@ -1600,9 +1601,11 @@ class GetEnergy():
         # get dataset
         dataset = get_dataset(opt, verbose = True, samples = [sample_id])
         print('Dataset: ', dataset, len(dataset))
+        dataloader = torch_geometric.loader.DataLoader(dataset, batch_size = 1,
+                            shuffle = False, num_workers = 1)
 
         # get prediction
-        for i, data in enumerate(dataset):
+        for i, data in enumerate(dataloader):
             print(i, data)
             data = data.to(opt.device)
             print(f'data first node: {data.x[0]}')
