@@ -1,4 +1,13 @@
 #! /bin/bash
+#SBATCH --job-name=fds
+#SBATCH --output=logFiles/wrapper7.out
+#SBATCH --time=24:00:00
+#SBATCH --partition=depablo-ivyb
+#SBATCH --ntasks=20
+#SBATCH --nodes=1
+#SBATCH --mem-per-cpu=2000
+#SBATCH --mail-type=END
+#SBATCH --mail-user=erschultz@uchicago.edu
 
 # module load gcc/10.2.0
 # cd ~/TICG-chromatin/src
