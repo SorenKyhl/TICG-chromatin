@@ -1,5 +1,5 @@
 #! /bin/bash
-#SBATCH --job-name=fds
+#SBATCH --job-name=wrapper7
 #SBATCH --output=logFiles/wrapper7.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
@@ -28,9 +28,9 @@ echo "generate_params for ${dataset}"
 # cd "/home/erschultz/${dataset}"
 # tar -czvf setup.tar.gz setup
 #
-cd /project2/depablo/erschultz/dataset_01_06_23
-tar -xzf setup.tar.gz
-rm -r samples
+# cd /project2/depablo/erschultz/dataset_01_06_23
+# tar -xzf setup.tar.gz
+# rm -r samples
 
 sourceFile=~/TICG-chromatin/bin/datasets/diag_dataset7/diag_dataset_fns.sh
 for i in 1 2 3 4 5 6 7 8 9 10
