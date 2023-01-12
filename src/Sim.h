@@ -11,6 +11,7 @@
 #include "Bead.h"
 #include "DSS_Bond.h"
 #include "Harmonic_Bond.h"
+#include "Harmonic_Angle.h"
 #include "Cell.h"
 #include "Grid.h"
 #include "prof_timer.cpp"
@@ -20,6 +21,7 @@ class Sim {
 public:
 	std::vector<Bead> beads;
 	std::vector<Bond*> bonds; // pointers because Bond class is virtual
+	std::vector<Angle*> angles; // pointers because Angle class is virtual
 	Grid grid;
 	RanMars* rng;  // random number generator
 
@@ -34,6 +36,7 @@ public:
 	double grid_size; // nm
 	double bond_length; // nm
 	std::string bond_type;
+	double k_angle;
 	float dense_diagonal_cutoff;
 	float dense_diagonal_loading;
   std::string boundary_type;
@@ -94,6 +97,7 @@ public:
 
 	bool bonded_on;
 	bool nonbonded_on;
+	bool angles_on;
 
 	bool displacement_on;
 	bool translation_on;

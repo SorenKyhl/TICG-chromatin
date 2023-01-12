@@ -359,6 +359,8 @@ nlohmann::json Sim::readInput() {
 	assert(config.contains("bond_length")); bond_length = config["bond_length"];
 	assert(config.contains("contact_bead_skipping")); contact_bead_skipping = config["contact_bead_skipping"];
 	assert(config.contains("boundary_type")); boundary_type = config["boundary_type"];
+	assert(config.contains("angles_on")); angles_on = config["angles_on"];
+	assert(config.contains("k_angle")); k_angle = config["k_angle"];
 
   // parallel config params
   assert(config.contains("parallel")); Grid::parallel = config["parallel"];
@@ -487,7 +489,7 @@ void Sim::initialize() {
 }
 
 void Sim::volParameters_new() {
-	assert(phi_chromatin > 0 && phi_chromatin < 1);
+	assert(Cell::phi_chromatin > 0 && Cell::phi_chromatin < 1);
 	double vol_beads = nbeads*Cell::beadvol;
 	double vol  = vol_beads/Cell::phi_chromatin;
 
@@ -699,7 +701,7 @@ void Sim::constructBonds() {
 	// constructs bond objects. Particle positions must already be initialized.
 	bonds.resize(nbeads-1); // use default constructor
 	for(int i=0; i<nbeads-1; i++)
-  {
+	{
 		if (bond_type == "DSS")
 		{
 			bonds[i] = new DSS_Bond{&beads[i], &beads[i+1]};
@@ -710,8 +712,22 @@ void Sim::constructBonds() {
 			double k = 3 / (2*bond_length*bond_length);
 			bonds[i] = new Harmonic_Bond{&beads[i], &beads[i+1], k, 0};
 		}
-  }
-  std::cout << " bonds constructed " << std::endl;
+		std::cout << " bonds constructed " << std::endl;
+	}
+
+	// make angles
+	if (angles_on)
+	{
+		angles.resize(nbeads-2);
+		for(int i=0; i<nbeads-2; i++)
+		{
+			if(bond_type == "gaussian" && angles_on)
+			{
+				angles[i] = new Harmonic_Angle(&beads[i], &beads[i+1], &beads[i+2], k_angle);
+			}
+		}
+		std::cout << "angles constructed" << std::endl;
+	}
 }
 
 void Sim::print() {
@@ -725,6 +741,12 @@ void Sim::print() {
 double Sim::getAllBondedEnergy() {
 	double U = 0;
 	for(Bond* bond : bonds) {U += bond->energy();}
+
+	if (angles_on)
+	{
+		for(Angle* angle : angles) {U += angle->energy();}
+	}
+
 	return U;
 }
 
@@ -733,6 +755,23 @@ double Sim::getBondedEnergy(int first, int last) {
 	//for(Bond* bo : bonds) U += bo->energy();  // inefficient
 	if (first>0) U += bonds[first-1]->energy(); // move affects bond going into first
 	if (last<(nbeads-1)) U += bonds[last]->energy();   // ... and leaving the second
+
+	if (angles_on)
+	{
+		if (first<(nbeads-1) && first >= 2)
+		{
+			U += angles[first-2]->energy();
+			U += angles[first-1]->energy();
+		}
+		if(last<(nbeads-2) && last >= 1)
+		{
+			U += angles[last]->energy();
+			U += angles[last-1]->energy();
+		}
+
+		// the above is equivalent to the limiting case below:
+		// for(Angle* angle : angles) {U += angle->energy();}
+	}
 	return U;
 }
 
