@@ -712,8 +712,8 @@ void Sim::constructBonds() {
 			double k = 3 / (2*bond_length*bond_length);
 			bonds[i] = new Harmonic_Bond{&beads[i], &beads[i+1], k, 0};
 		}
-		std::cout << " bonds constructed " << std::endl;
 	}
+	std::cout << " bonds constructed " << std::endl;
 
 	// make angles
 	if (angles_on)
@@ -726,8 +726,8 @@ void Sim::constructBonds() {
 				angles[i] = new Harmonic_Angle(&beads[i], &beads[i+1], &beads[i+2], k_angle);
 			}
 		}
-		std::cout << "angles constructed" << std::endl;
 	}
+	std::cout << "angles constructed" << std::endl;
 }
 
 void Sim::print() {
