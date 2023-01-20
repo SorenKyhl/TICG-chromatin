@@ -24,7 +24,7 @@ public:
 	std::vector<std::unique_ptr<Bond>> bonds; // pointers because Bond class is virtual
 	std::vector<std::unique_ptr<Angle>> angles; // pointers because Angle class is virtual
 	Grid grid;
-	std::unique_pointer<RanMars> rng;  // random number generator
+	std::unique_ptr<RanMars> rng;  // random number generator
 
 	double chi;
 	Eigen::MatrixXd chis;
@@ -158,20 +158,22 @@ public:
 	void updateContactsGrid();
 	void updateContactsDistance();
 	Eigen::MatrixXd unit_vec(Eigen::MatrixXd b);
-	nlohmann::json readInput();
+	void readInput();
 	void makeDataAndLogFiles();
 	void makeOutputFiles();
 	bool outside_boundary(Eigen::RowVector3d r);
 	bool allBeadsInBoundary();
-	void initialize();
-	void calculateParameters(nlohmann::json config);
+	void setInitialConfiguration();
+	void initializeObjects();
+	void calculateParameters();
 	void volParameters();
 	void volParameters_new();
 	void loadConfiguration();
-	void initRandomCoil(double bondlength);
+	void generateRandomCoil(double bondlength);
 	int countLines(std::string filepath);
 	void loadBeadTypes();
 	void constructBonds();
+	void constructAngles();
 	void print();
 	double getAllBondedEnergy();
 	double getBondedEnergy(int first, int last);
@@ -188,7 +190,7 @@ public:
 	void MCmove_rotate();
 	void MCmove_pivot(int sweep);
 	void MCmove_grid();
-	void dumpData() ;
+	void dumpXyz() ;
 	void dumpEnergy(int sweep);
 	void dumpObservables(int sweep);
 	void dumpContacts(int sweep);

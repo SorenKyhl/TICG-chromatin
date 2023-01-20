@@ -13,6 +13,7 @@ void read_json(const nlohmann::json& json, T& var, std::string varname) {
     std::cout << "loaded: " << std::to_string(var) << std::endl;
 }
 
+// logging information is sent to stdout
 Sim::Sim()
 {
 	data_out_filename = "data_out";
@@ -20,7 +21,7 @@ Sim::Sim()
 	makeDataAndLogFiles();
 }
 
-
+// logging information is not sent to stdout
 Sim::Sim(std::string filename)
 {
 	data_out_filename = filename;
@@ -29,15 +30,12 @@ Sim::Sim(std::string filename)
 	makeDataAndLogFiles();
 }
 
-
+// Run TICG simulation
 void Sim::run() {
-	nlohmann::json config = readInput();            // load parameters from config.json
+	readInput();            // load parameters from config.json
 	if (!system(NULL)) exit (EXIT_FAILURE);
-	calculateParameters(config);  // calculates derived parameters
-	initialize();           // set particle positions and construct bonds
-	if (dmatrix_on) { setupDmatrix(); }
-	if (smatrix_on) { setupSmatrix(); }
-	if (ematrix_on) { setupEmatrix(); }
+	calculateParameters();  // calculates derived parameters
+	initializeObjects();           // set particle positions and construct bonds
 	grid.generate();        // creates the grid locations
 	grid.setActiveCells();  // populates the active cell locations
 	grid.meshBeads(beads);  // populates the grid locations with beads;
@@ -49,9 +47,9 @@ void Sim::run() {
 
 void Sim::xyzToContact()
 {
-	nlohmann::json config = readInput();
+	readInput();
  	beads.resize(nbeads);
- 	calculateParameters(config);
+ 	calculateParameters();
  	loadConfiguration();
  	grid.generate();
  	grid.meshBeads(beads);
@@ -169,7 +167,7 @@ Eigen::MatrixXd Sim::unit_vec(Eigen::MatrixXd b) {
 	return b;
 }
 
-nlohmann::json Sim::readInput() {
+void Sim::readInput() {
 	// reads simulation parameters from config.json file
 
 	std::cout << "reading input config.json file ... " << std::endl;
@@ -388,8 +386,6 @@ nlohmann::json Sim::readInput() {
 	rng = std::make_unique<RanMars>(seed);
 
 	std::cout << "config_file read successfully" << std::endl;
-
-  return config;
 }
 
 
@@ -468,32 +464,32 @@ bool Sim::allBeadsInBoundary()
 	return true;
 }
 
-void Sim::initialize() {
-	std::cout << "Initializing simulation objects ... " << std::endl;
+
+// set initial bead positions, either by loading from an existing 
+// .xyz file, or otherwise generating a random coil
+void Sim::setInitialConfiguration()
+{
+	beads.resize(nbeads);
+	load_configuration ? loadConfiguration() : generateRandomCoil(bond_length);
+	assert(allBeadsInBoundary());
+}
+
+
+void Sim::initializeObjects() {
+	std::cout << "initializing simulation objects ... " << std::endl;
 	Timer t_init("Initializing");
 
-	makeOutputFiles();      // open files
-
-	// set configuration
-	beads.resize(nbeads);  // uses default constructor initialization to create nbeads;
-	std::cout << " load configuration is " << load_configuration << std::endl;
-	if(load_configuration)
-	{
-		loadConfiguration();
-	}
-	else {
-		initRandomCoil(bond_length);
-	}
-	assert(allBeadsInBoundary());
-
-	// set up bead types
-	if (load_bead_types) { loadBeadTypes(); }
-
-	// set bonds
+	makeOutputFiles();      
+	setInitialConfiguration();
+	if (load_bead_types) loadBeadTypes(); 
 	constructBonds();
+	if (angles_on) constructAngles();
+	dumpXyz();
 
-	// output initial xyz configuration
-	dumpData();
+	if (dmatrix_on) { setupDmatrix(); }
+	if (smatrix_on) { setupSmatrix(); }
+	if (ematrix_on) { setupEmatrix(); }
+
 	std::cout << "Simulation objects initialized" << std::endl;
 }
 
@@ -544,10 +540,13 @@ void Sim::volParameters_new() {
 
 }
 
-void Sim::calculateParameters(nlohmann::json config) {
+// calculate all derived physical parameters relevant to simulation
+void Sim::calculateParameters() {
 	grid.delta = grid_size;
 	std::cout << "grid size is : " << grid.delta << std::endl;
-	step_grid = grid.delta/10.0; // size of grid displacement MC moves
+
+	// size of Monte-Carlo proposal steps for each type:
+	step_grid = grid.delta/10.0; 
 	step_disp = step_disp_percentage * bond_length;
 	step_trans = step_trans_percentage * bond_length;
 
@@ -567,6 +566,7 @@ void Sim::calculateParameters(nlohmann::json config) {
 		throw std::runtime_error("bead type is gaussian, set rotate_on = false");
 	}
 
+	// number of Monte-Carlo proposal steps for each type
 	n_disp = displacement_on ? nbeads : 0;
 	n_trans = translation_on ? decay_length : 0;
 	n_crank = crankshaft_on ? decay_length : 0;
@@ -624,7 +624,7 @@ void Sim::loadConfiguration() {
 	beads[nbeads-1].u = unit_vec(beads[nbeads-1].u); // random orientation for last bead
 }
 
-void Sim::initRandomCoil(double bondlength) {
+void Sim::generateRandomCoil(double bondlength) {
 	// generates x,y,z positions for all particles according to a random coil
 
 	double center; // center of simulation box
@@ -706,8 +706,8 @@ void Sim::loadBeadTypes() {
   std::cout << " loaded beads, first bead, first mark:" << beads[0].d[0] << std::endl;
 }
 
+
 void Sim::constructBonds() {
-	// constructs bond objects. Particle positions must already be initialized.
 	bonds.resize(nbeads-1); // use default constructor
 	for(int i=0; i<nbeads-1; i++)
 	{
@@ -724,16 +724,16 @@ void Sim::constructBonds() {
 	}
 	std::cout << " bonds constructed " << std::endl;
 
-	// make angles
-	if (angles_on)
+}
+
+
+void Sim::constructAngles() {
+	angles.resize(nbeads-2);
+	for(int i=0; i<nbeads-2; i++)
 	{
-		angles.resize(nbeads-2);
-		for(int i=0; i<nbeads-2; i++)
+		if(bond_type == "gaussian" && angles_on)
 		{
-			if(bond_type == "gaussian" && angles_on)
-			{
-				angles[i] = std::make_unique<Harmonic_Angle>(&beads[i], &beads[i+1], &beads[i+2], k_angle);
-			}
+			angles[i] = std::make_unique<Harmonic_Angle>(&beads[i], &beads[i+1], &beads[i+2], k_angle);
 		}
 	}
 	std::cout << "angles constructed" << std::endl;
@@ -804,21 +804,24 @@ double Sim::getNonBondedEnergy(const std::unordered_set<Cell*>& flagged_cells) {
 			U += grid.energy(flagged_cells, chis);
 		}
 	}
-  if (constant_chi > 0)
-  {
-    U += grid.constantEnergy(flagged_cells, constant_chi);
-  }
+
+	if (constant_chi > 0)
+	{
+		U += grid.constantEnergy(flagged_cells, constant_chi);
+	}
+
 	if (diagonal_on)
 	{
-    if (dmatrix_on)
-    {
-      U += grid.DmatrixEnergy(flagged_cells, dmatrix);
-    }
-    else
-    {
-      U += grid.diagEnergy(flagged_cells, diag_chis);
-    }
+		if (dmatrix_on)
+		{
+		  U += grid.DmatrixEnergy(flagged_cells, dmatrix);
+		}
+		else
+		{
+		  U += grid.diagEnergy(flagged_cells, diag_chis);
+		}
 	}
+
 	if (boundary_attract_on)
 	{
 		U += grid.boundaryEnergy(flagged_cells, boundary_chi);
@@ -940,7 +943,7 @@ void Sim::MC() {
 			std::cout << "Beads Moved " << nbeads_moved << " beads \t|\t ";
 			if (blocktime.count() > 0)
 				std::cout << "Rate (last block)" << beads_moved/blocktime.count() << " beads/s \n";
-			dumpData();
+			dumpXyz();
 			if (production) {dumpContacts(sweep);}
 
 			if (print_acceptance_rates) {
@@ -1460,8 +1463,9 @@ void Sim::MCmove_grid() {
 	}
 }
 
-
-void Sim::dumpData()  {
+// write bead coordinates and bead types to .xyz file
+// format: {id} {x,y,z} {bead_types}
+void Sim::dumpXyz()  {
 	xyz_out = fopen(xyz_out_filename.c_str(), "a");
 	fprintf(xyz_out, "%d\n", nbeads);
 	fprintf(xyz_out, "atoms\n");
