@@ -1,4 +1,6 @@
 {
+	"angles_on": true,
+	"k_angle": 0,
   "dmatrix_on": true,
   "emmatrix_on": true,
   "dense_diagonal_cutoff": 0.0625,
@@ -65,7 +67,6 @@
   "nspecies": 11,
   "load_configuration_filename": "equilibrated.xyz",
   "bead_type_files": ["pcf1.txt", "pcf2.txt", "pcf3.txt", "pcf4.txt", "pcf5.txt", "pcf6.txt", "pcf7.txt", "pcf8.txt", "pcf9.txt", "pcf10.txt", "pcf11.txt"],
-  "chipseq_files": ["pcf1.txt", "pcf2.txt"],
   "chis": [
     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
