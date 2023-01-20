@@ -33,10 +33,9 @@ Sim::Sim(std::string filename)
 void Sim::run() {
 	nlohmann::json config = readInput();            // load parameters from config.json
 	if (!system(NULL)) exit (EXIT_FAILURE);
-
-  calculateParameters(config);  // calculates derived parameters
-  initialize();           // set particle positions and construct bonds
-  if (dmatrix_on) { setupDmatrix(); }
+	calculateParameters(config);  // calculates derived parameters
+	initialize();           // set particle positions and construct bonds
+	if (dmatrix_on) { setupDmatrix(); }
 	if (smatrix_on) { setupSmatrix(); }
 	if (ematrix_on) { setupEmatrix(); }
 	grid.generate();        // creates the grid locations
@@ -386,7 +385,7 @@ nlohmann::json Sim::readInput() {
 	//cellcount_on = config["cellcount_on"];
 	assert(config.contains("seed"));
 	int seed = config["seed"];
-	rng = new RanMars(seed);
+	rng = std::make_unique<RanMars>(seed);
 
 	std::cout << "config_file read successfully" << std::endl;
 
@@ -473,7 +472,7 @@ void Sim::initialize() {
 	std::cout << "Initializing simulation objects ... " << std::endl;
 	Timer t_init("Initializing");
 
-  makeOutputFiles();      // open files
+	makeOutputFiles();      // open files
 
 	// set configuration
 	beads.resize(nbeads);  // uses default constructor initialization to create nbeads;
@@ -714,13 +713,13 @@ void Sim::constructBonds() {
 	{
 		if (bond_type == "DSS")
 		{
-			bonds[i] = new DSS_Bond{&beads[i], &beads[i+1]};
+			bonds[i] = std::make_unique<DSS_Bond>(&beads[i], &beads[i+1]);
 		}
 		if(bond_type == "gaussian")
 		{
 			// gaussian coil spring constant is 3/(2b^2)
 			double k = 3 / (2*bond_length*bond_length);
-			bonds[i] = new Harmonic_Bond{&beads[i], &beads[i+1], k, 0};
+			bonds[i] = std::make_unique<Harmonic_Bond>(&beads[i], &beads[i+1], k, 0);
 		}
 	}
 	std::cout << " bonds constructed " << std::endl;
@@ -733,7 +732,7 @@ void Sim::constructBonds() {
 		{
 			if(bond_type == "gaussian" && angles_on)
 			{
-				angles[i] = new Harmonic_Angle(&beads[i], &beads[i+1], &beads[i+2], k_angle);
+				angles[i] = std::make_unique<Harmonic_Angle>(&beads[i], &beads[i+1], &beads[i+2], k_angle);
 			}
 		}
 	}
@@ -743,18 +742,18 @@ void Sim::constructBonds() {
 void Sim::print() {
 	std::cout << "simulation in : ";
 	std::cout << "With beads: " << std::endl;
-	for(Bead& bb : beads) bb.print();             // use reference to avoid copies
+	for(auto& bead : beads) bead.print();             // use reference to avoid copies
 	std::cout << "And bonds: " << std::endl;
-	for(Bond* bo : bonds) bo->print();
+	for(auto& bond : bonds) bond->print();
 }
 
 double Sim::getAllBondedEnergy() {
 	double U = 0;
-	for(Bond* bond : bonds) {U += bond->energy();}
+	for(auto& bond : bonds) {U += bond->energy();}
 
 	if (angles_on)
 	{
-		for(Angle* angle : angles) {U += angle->energy();}
+		for(auto& angle : angles) {U += angle->energy();}
 	}
 
 	return U;
