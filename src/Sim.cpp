@@ -85,8 +85,15 @@ void Sim::updateContacts() {
 	}
 }
 
+// accumulates contacts for the current configuration in the contact map.
+// two beads are considered in contact if they reside in the same grid cell
+// self-self contacts are included
+// optional behavior:
+// - contact_bead_skipping: (e.g.) if contact_resolution is 5, only check every 5th bead 
+//		for the purposes of contact counting
+// - visit_tracking: only count a maximum of one contact per hic-matrix pixel for a 
+//		given configuration (only relevant when contact_resolution > 1)
 void Sim::updateContactsGrid() {
-	// contact defined as residing within same grid cell
 	{
 		int rows = contact_map.size();
 		int cols = contact_map.size();
@@ -103,6 +110,7 @@ void Sim::updateContactsGrid() {
 					id1 = bead1->id/contact_resolution;
 					id2 = bead2->id/contact_resolution;
 
+					// ignore every other bead for the purposes of contact counting (in the case where contact_resolution=2)
 					if (contact_bead_skipping)
 					{
 						if (bead1->id % contact_resolution != 0 || bead2->id % contact_resolution != 0)
@@ -111,12 +119,14 @@ void Sim::updateContactsGrid() {
 						}
 					}
 
+				
 					if (visited[id1][id2] == false)
 					{
 						if (!ignore) {
-							contact_map[id1][id2] += 1;
+							contact_map[id1][id2] += 1; // incrememt contacts
 						}
 
+						// count only a maximum of one contact per hic-matrix pixel for each configuration
 						if (visit_tracking) visited[id1][id2] = true;
 					}
 				}
