@@ -11,6 +11,4 @@ clean:
 	rm -r dist
 
 all:
-	make clean
-	make build
-	make install
+	make clean || make build && make install
