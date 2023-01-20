@@ -19,4 +19,5 @@ size = 1024
 data_pipeline = DataPipeline(res, chrom, start, end, size)
 
 HCT116_hic = "/home/skyhl/Documents/chromatin/hic-data/HCT116_auxin/HIC-GSE104333_Rao-2017-treated_6hr_combined_30.hic"
+HCT116_chipseq = "/home/skyhl/Documents/chromatin/maxent-analysis/HCT116_chipseq_hg19/"
 

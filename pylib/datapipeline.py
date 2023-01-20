@@ -6,6 +6,22 @@ import hicstraw
 
 from pylib import epilib
 
+def get_experiment_marks(directory):
+    """
+    gets the mapping between experiement codes and epigenetic marks 
+
+    args:
+        (str) directory: directory containing .bigwig files
+    returns: 
+        (dict) lookup_table[str, str] maps experiment codes to epigenetic marks
+    """
+    
+    directory = Path(directory)
+    metadata = pd.read_csv(directory/"metadata.tsv", sep="\t")
+    marks =  metadata['Experiment target'].apply(lambda s: s.split('-')[0])
+    lookup_table = dict(zip(metadata['File accession'], marks))
+    return lookup_table
+
 class DataPipeline:
     def __init__(self, res, chrom, start, end, size):
         self.res = int(res)
@@ -14,6 +30,9 @@ class DataPipeline:
         self.start = start
         self.end = end
         self.size = size
+
+        self.bigsize = self.size
+        self.dropped_inds = []
         
     def load_hic(self, filename, KR=True, clean=True, rescale_method="mean"):
         """
@@ -37,7 +56,6 @@ class DataPipeline:
         
     def load_bigWig(self, filename, method="mean"):
         """
-        load chipseq from .bigWig file format using pyBigWig
         can load from local or remote files.
         """
         assert(method in ["mean", "max"])
@@ -72,6 +90,29 @@ class DataPipeline:
                 seqs[name] = self.load_bigWig(file, method)
             elif extension == '.wig':
                 name = str(file).split("_")[-2]
+                seqs[name] = self.load_wig(file, method)
+            else:
+                print("file extension must either be .bigWig or .wig")
+                raise ValueError
+
+    def load_chipseq_from_directory(self, directory, method):
+        """
+        filenames: list of paths to chipseq files (.bigWig or .wig)
+        method: (str) ["mean", "max"] - method to call on each bin of data
+        """
+        seqs = {}
+        directory = Path(directory)
+        filenames = list(directory.glob("*.bigWig"))
+        lookup_table = get_experiment_marks(directory)
+
+        for file in filenames:
+            extension = file.suffix
+
+            if extension == '.bigWig':
+                name = lookup_table[file.stem]
+                seqs[name] = self.load_bigWig(file, method)
+            elif extension == '.wig':
+                name = lookup_table[file.stem]
                 seqs[name] = self.load_wig(file, method)
             else:
                 print("file extension must either be .bigWig or .wig")

@@ -29,7 +29,17 @@ Maxent
 TODO - move most recent iteration to "best" directory for easy access.
 """
 class Maxent:
-    def __init__(self, root, params, config, seqs, gthic, overwrite=False, lengthen_iterations=False, analysis_on=True, initial_chis=None, dampen_first_step=True):
+    def __init__(self, 
+            root : str, 
+            params : dict, 
+            config : dict, 
+            seqs : list[list[float]], 
+            gthic : list[list[int]], 
+            overwrite : bool = False, 
+            lengthen_iterations : bool = False, 
+            analysis_on : bool = True, 
+            initial_chis : bool = None, 
+            dampen_first_step : bool = True):
         """
         root: root of maxent filesystem
         params: maxent parameters
@@ -65,7 +75,7 @@ class Maxent:
         self.lengthen_iterations = lengthen_iterations
         self.analysis_on = analysis_on
 
-    def set_root(self, root):
+    def set_root(self, root : str):
         """
         sets the root directory and other directories in the file tree
         """
@@ -198,9 +208,8 @@ class Maxent:
                 pickle.dump(self_copy,f)
 
     @classmethod
-    def load_state(cls, filename):
-        """
-        loads maxent optimization from a saved state (pickle)
+    def load_state(cls, filename : str):
+        """ loads maxent optimization from a saved state (pickle)
         reloads gthic, which is not included in pickle to save disk space
         """
         with open(filename, "rb") as f:

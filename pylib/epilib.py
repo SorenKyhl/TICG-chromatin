@@ -332,8 +332,8 @@ class Sim:
         return plot_consistency(self)
     
     def calc_goals(self):
-        plaid = get_goal_plaid(self.gthic, self.seqs,  beadvol=self.config['beadvol'], grid_size = self.config['grid_size'])
-        diag = get_goal_diag(self.gthic,  beadvol=self.config['beadvol'], grid_size = self.config['grid_size'],ndiag_bins=self.diag_bins, adj=True, dense_diagonal_on=self.config['dense_diagonal_on'])
+        plaid = get_goal_plaid(self.gthic, self.seqs,  self.config)
+        diag = get_goal_diag(self.gthic, self.config, ndiag_bins=self.diag_bins, adj=True, dense_diagonal_on=self.config['dense_diagonal_on'])
    
         np.savetxt("obj_goal.txt", plaid, newline=" ", fmt="%.8f")
         np.savetxt("obj_goal_diag.txt", diag, newline=" ", fmt="%.8f")
@@ -921,7 +921,7 @@ def compare_diagonal(filename, nbeads=1024, bins=16, plot=True, getgoal=False, f
     return diag_sim, diag_exp, diag_mask, correction
 
 @njit
-def make_mask(size, b, loading, cutoff, ndiag_bins, dense_diagonal_on):
+def make_mask(size, b, cutoff, loading, ndiag_bins, dense_diagonal_on):
     """ makes a mask with 1's in subdiagonals inside
     
     actually faster than numpy version when jitted
@@ -932,7 +932,7 @@ def make_mask(size, b, loading, cutoff, ndiag_bins, dense_diagonal_on):
     for r in range(rows):
         for c in range(cols):
             #if int((r-c)/binsize) == b:
-            bin_index = binDiagonal(r, c, loading, cutoff, ndiag_bins, rows, dense_diagonal_on)
+            bin_index = binDiagonal(r, c, cutoff, loading, ndiag_bins, rows, dense_diagonal_on)
             if bin_index == b:
                 mask[r,c] = 1
                 mask[c,r] = 1
@@ -951,10 +951,10 @@ def make_mask_fast(size, binsize, b):
     return mask
 
 @njit
-def mask_diagonal(contact, cutoff, loading, ndiag_bins=16, dense_diagonal_on=False):
+def mask_diagonal(contact, cutoff, loading, ndiag_bins, dense_diagonal_on):
     """Returns weighted averages of contact map"""
     rows, cols = contact.shape
-    binsize = int(rows/ndiag_bins)
+    #binsize = int(rows/ndiag_bins)
     
     assert(rows==cols), "contact map must be square"
     nbeads = rows
@@ -991,14 +991,13 @@ def mask_diagonal(contact, cutoff, loading, ndiag_bins=16, dense_diagonal_on=Fal
     return measure, correction
 
 @njit
-def binDiagonal(i, j, loading, cutoff, ndiag_bins, nbeads, dense_diagonal_on):
+def binDiagonal(i, j, cutoff, loading, ndiag_bins, nbeads, dense_diagonal_on):
     s = abs(i-j)
 
     if dense_diagonal_on:
         #loading = config["loading"]
         #cutoff = config["cutoff"]
         dividing_line = nbeads*cutoff
-
 
         n_small_bins = int(loading*ndiag_bins)
         n_big_bins = ndiag_bins-n_small_bins
@@ -1092,11 +1091,10 @@ def get_goal_plaid2(hic, seqs, k, flat=True):
     return goal_exp
 
 def get_goal_diag(hic, config, ndiag_bins=32, getcorrect=False, adj=True, dense_diagonal_on=True):
+    # TODO - get dense diagonal on from config
     cutoff = config["dense_diagonal_cutoff"]
     loading = config["dense_diagonal_loading"]
-    print(cutoff, loading)
-    import pdb
-    pdb.set_trace
+    dense_diagonal_on = config["dense_diagonal_on"]
     diag_mask, correction = mask_diagonal(hic, cutoff, loading, ndiag_bins, dense_diagonal_on)
     
     if adj:
@@ -1475,8 +1473,8 @@ def plot_consistency(sim):
         else:
             hic = sim.hic
 
-        plaid = get_goal_plaid(hic, sim.seqs,sim.config['beadvol'], sim.config['grid_size'])
-        diag = get_goal_diag(hic, sim.config['beadvol'], sim.config['grid_size'], sim.diag_bins, dense_diagonal_on=sim.config["dense_diagonal_on"])
+        plaid = get_goal_plaid(hic, sim.seqs, sim.config)
+        diag = get_goal_diag(hic, sim.config, sim.diag_bins, dense_diagonal_on=sim.config["dense_diagonal_on"])
         goal = np.hstack((plaid,diag))
 
 
