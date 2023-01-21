@@ -34,6 +34,7 @@ public:
 	void setActiveCells();
 	void printActiveCells();
 	void meshBeads(std::vector<Bead> &beads);
+	void initialize(std::vector<Bead> &beads);
 	void getCellVolumes();
 	Cell* getCell(const Bead& bead);
 	Cell* getCell(const Eigen::RowVector3d &r);

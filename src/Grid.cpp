@@ -97,6 +97,11 @@ void Grid::meshBeads(std::vector<Bead> &beads) {
 	if(cell_volumes) getCellVolumes();
 };
 
+void Grid::initialize(std::vector<Bead> &beads) {
+	generate(); // create grid locations
+	setActiveCells(); // activate only grid cells containing beads
+	meshBeads(beads); // populate grid cells with the appropriate beads
+}
 
 void Grid::getCellVolumes() {
 
