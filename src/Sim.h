@@ -153,7 +153,7 @@ public:
 	Sim(std::string);
 	void run();
 	void xyzToContact();
-	void setupContacts();
+	void initializeContactmap();
 	void updateContacts();
 	void updateContactsGrid();
 	void updateContactsDistance();

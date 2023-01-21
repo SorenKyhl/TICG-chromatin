@@ -33,25 +33,27 @@ Sim::Sim(std::string filename)
 // Run TICG simulation
 void Sim::run() {
 	readInput();            // load parameters from config.json
-	if (!system(NULL)) exit (EXIT_FAILURE);
 	calculateParameters();  // calculates derived physical parameters
 	initializeObjects();    // set particle positions and construct bonds
 	dumpXyz();				// dump initial configuration
 	MC();                   // MC simulation
 }
 
+// compute the contactmap for a given .xyz file
+// specify input .xyz file in config file
 void Sim::xyzToContact()
 {
-	readInput();
+	readInput();		
  	beads.resize(nbeads);
  	calculateParameters();
- 	loadConfiguration();
+ 	loadConfiguration();      // load .xyz file specified in config file
 	grid.initialize(beads);
- 	setupContacts();
+ 	initializeContactmap();
  	dumpContacts(0);
 }
 
-void Sim::setupContacts() {
+// initialize contact map to zeros
+void Sim::initializeContactmap() {
 	std::cout << "setting up contacts" << std::endl;
 	int nbins = nbeads/contact_resolution;
 	std::cout << "contactmap size: " << nbins << std::endl;
@@ -491,7 +493,7 @@ void Sim::initializeObjects() {
 	grid.initialize(beads);
 
 	// contactmap
-	setupContacts();    
+	initializeContactmap();    
 
 	std::cout << "Simulation objects initialized" << std::endl;
 }
