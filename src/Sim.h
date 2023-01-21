@@ -40,7 +40,7 @@ public:
 	double k_angle;
 	float dense_diagonal_cutoff;
 	float dense_diagonal_loading;
-  std::string boundary_type;
+	std::string boundary_type;
 
 	// output files
 	bool redirect_stdout = false;
@@ -88,7 +88,6 @@ public:
 	int acc_pivot = 0;
 	int acc_rot = 0;
 
-	bool production; // if false, equilibration
 	int nSteps;// = n_trans + n_crank + n_pivot + n_rot
 	int nSweeps;
 	int dump_frequency; // dump every x sweeps
@@ -124,7 +123,6 @@ public:
 	// analytics
 	bool prof_timer_on; // = false;
 	bool print_trans; // = false;
-	bool print_acceptance_rates; // = true;
 
 	unsigned long nbeads_moved = 0;
 
@@ -153,14 +151,15 @@ public:
 	Sim(std::string);
 	void run();
 	void xyzToContact();
+ 
+	// contact maps
 	void initializeContactmap();
 	void updateContacts();
 	void updateContactsGrid();
 	void updateContactsDistance();
+
 	Eigen::MatrixXd unit_vec(Eigen::MatrixXd b);
 	void readInput();
-	void makeDataAndLogFiles();
-	void makeOutputFiles();
 	bool outside_boundary(Eigen::RowVector3d r);
 	bool allBeadsInBoundary();
 	void setInitialConfiguration();
@@ -175,6 +174,9 @@ public:
 	void constructBonds();
 	void constructAngles();
 	void print();
+	void checkConsistency();
+
+	// energy calculation
 	double getAllBondedEnergy();
 	double getBondedEnergy(int first, int last);
 	double getNonBondedEnergy(const std::unordered_set<Cell*>& flagged_cells);
@@ -182,20 +184,25 @@ public:
 	double getJustDiagEnergy(const std::unordered_set<Cell*>& flagged_cells);
 	double getJustBoundaryEnergy(const std::unordered_set<Cell*>& flagged_cells);
 	double getTotalEnergy(int first, int last, const std::unordered_set<Cell*>& flagged_cells);
-	double randomExp(double mu, double decay);
+
+	// Monte Carlo moves
 	void MC();
-	void checkConsistency();
+	double randomExp(double mu, double decay);
 	void MCmove_displace();
 	void MCmove_translate();
 	void MCmove_crankshaft();
 	void MCmove_rotate();
 	void MCmove_pivot(int sweep);
 	void MCmove_grid();
-	void dumpXyz() ;
-	void dumpEnergy(int sweep);
-	void dumpObservables(int sweep);
-	void dumpContacts(int sweep);
+	void printAcceptanceRates(int sweep);
 
+	// saving data
+	void saveXyz() ;
+	void saveEnergy(int sweep);
+	void saveObservables(int sweep);
+	void saveContacts(int sweep);
+	void makeDataAndLogFiles();
+	void makeOutputFiles();
 	void setupSmatrix();
 	void setupEmatrix();
 	void setupDmatrix();

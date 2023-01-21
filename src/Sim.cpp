@@ -36,7 +36,7 @@ void Sim::run()
 	readInput();            // load parameters from config.json
 	calculateParameters();  // calculates derived physical parameters
 	initializeObjects();    // set particle positions and construct bonds
-	dumpXyz();				// dump initial configuration
+	saveXyz();				// dump initial configuration
 	MC();                   // MC simulation
 }
 
@@ -50,7 +50,7 @@ void Sim::xyzToContact()
  	loadConfiguration();      // load .xyz file specified in config file
 	grid.initialize(beads);
  	initializeContactmap();
- 	dumpContacts(0);
+ 	saveContacts(0);
 }
 
 // set contact map to zeros
@@ -63,6 +63,7 @@ void Sim::initializeContactmap()
 
 // calcualte contacts between adjacent beads
 // the contactmap keeps a running sum of contacts
+// does not write out out contact map to file
 void Sim::updateContacts() 
 {
 	if (update_contacts_distance) {
@@ -83,30 +84,29 @@ void Sim::updateContacts()
 //		given configuration (only relevant when contact_resolution > 1)
 void Sim::updateContactsGrid() 
 {
-		std::vector<std::vector<bool>> visited(contact_map.size(), std::vector<bool>(contact_map.size(), false)); // for visit tracking
+	std::vector<std::vector<bool>> visited(contact_map.size(), std::vector<bool>(contact_map.size(), false)); // for visit tracking
 
-		int pixel1, pixel2;
-		for(Cell* cell : grid.active_cells)
+	int pixel1, pixel2;
+	for(Cell* cell : grid.active_cells)
+	{
+		for(Bead* bead1 : cell->contains)
 		{
-			for(Bead* bead1 : cell->contains)
+			for(Bead* bead2 : cell->contains)
 			{
-				for(Bead* bead2 : cell->contains)
-				{
-					bool ignore = false;
-					pixel1 = bead1->id/contact_resolution;
-					pixel2 = bead2->id/contact_resolution;
+				bool ignore = false;
+				pixel1 = bead1->id/contact_resolution;
+				pixel2 = bead2->id/contact_resolution;
 
-					// ignore every other bead for the purposes of contact counting (in the case where contact_resolution=2)
-					if (contact_bead_skipping) {
-						if (bead1->id % contact_resolution != 0 || bead2->id % contact_resolution != 0) {
-							ignore = true;
-						}
+				// ignore every other bead for the purposes of contact counting (in the case where contact_resolution=2)
+				if (contact_bead_skipping) {
+					if (bead1->id % contact_resolution != 0 || bead2->id % contact_resolution != 0) {
+						ignore = true;
 					}
-				
-					if (visited[pixel1][pixel2] == false) {
-						if (!ignore) contact_map[pixel1][pixel2] += 1; // increment contacts
-						if (visit_tracking) visited[pixel1][pixel2] = true;
-					}
+				}
+			
+				if (visited[pixel1][pixel2] == false) {
+					if (!ignore) contact_map[pixel1][pixel2] += 1; // increment contacts
+					if (visit_tracking) visited[pixel1][pixel2] = true;
 				}
 			}
 		}
@@ -285,7 +285,6 @@ void Sim::readInput() {
   	}
   }
 
-	assert(config.contains("production")); production = config["production"];
 	assert(config.contains("gridmove_on")); gridmove_on = config["gridmove_on"];
 	std::cout << "grid move is : " << gridmove_on << std::endl;
 
@@ -330,7 +329,6 @@ void Sim::readInput() {
 	assert(config.contains("load_configuration_filename")); load_configuration_filename = config["load_configuration_filename"];
 	assert(config.contains("prof_timer_on")); prof_timer_on = config["prof_timer_on"];
 	assert(config.contains("print_trans")); print_trans = config["print_trans"];
-	assert(config.contains("print_acceptance_rates")); print_acceptance_rates = config["print_acceptance_rates"];
 	assert(config.contains("contact_resolution")); contact_resolution = config["contact_resolution"];
 	assert(config.contains("grid_size")); grid_size = config["grid_size"];
 	assert(config.contains("track_contactmap")); track_contactmap = config["track_contactmap"];
@@ -920,49 +918,57 @@ void Sim::MC() {
 		//t_rotation.~Timer();
 
 		if (sweep%dump_frequency == 0 || sweep == nSweeps ) {
-			auto stop = std::chrono::high_resolution_clock::now();
-			auto totaltime = std::chrono::duration_cast<std::chrono::seconds>(stop-start);
-			auto blocktime = std::chrono::duration_cast<std::chrono::seconds>(stop-laststop);
-			laststop = stop;
 
-			int beads_moved = nbeads_moved - beads_moved_last_sweep;
-			beads_moved_last_sweep = nbeads_moved;
-
-			std::cout << "------ Sweep number " << sweep << " ------\n";
-			std::cout << "elapsed: " << totaltime.count() << "sec \t|\t";
-			if(totaltime.count() > 0)
-				std::cout <<  sweep/totaltime.count() << " sweep/sec \n";
-			std::cout << "Beads Moved " << nbeads_moved << " beads \t|\t ";
-			if (blocktime.count() > 0)
-				std::cout << "Rate (last block)" << beads_moved/blocktime.count() << " beads/s \n";
-			dumpXyz();
-			if (production) {dumpContacts(sweep);}
-
-			if (print_acceptance_rates) {
-				std::cout << "acceptance rate: " << (float) acc/((sweep+1)*nSteps)*100.0 << "%" << std::endl;
-				if (displacement_on) std::cout << "disp: " << (float) acc_disp/(sweep*n_disp)*100 << "% \t";
-				if (translation_on) std::cout << "trans: " << (float) acc_trans/(sweep*n_trans)*100 << "% \t";
-				if (crankshaft_on) std::cout << "crank: " << (float) acc_crank/(sweep*n_crank)*100 << "% \t";
-				if (pivot_on) std::cout << "pivot: " << (float) acc_pivot/(sweep*n_pivot)*100 << "% \t";
-				if (rotate_on) std::cout << "rot: " << (float) acc_rot/(sweep*n_rot)*100 << "% \t";
-				//std::cout << "cellcount: " << grid.cellCount();
-				std::cout << std::endl;
-			}
+			saveXyz();
+			saveContacts(sweep);
+			printAcceptanceRates(sweep);
 		}
 
 		if (sweep%dump_stats_frequency == 0)
 		{
-			dumpEnergy(sweep);
-			if (production)
-			{
-				updateContacts();  // calculate contact data, but dont dump to file
-				dumpObservables(sweep);
-			}
+			saveEnergy(sweep);
+			updateContacts();
+			saveObservables(sweep);
 		}
 	}
 
 	checkConsistency();
 	std::cout << "overall acceptance rate: " << (float) acc/(nSweeps*nSteps)*100.0 << "%" << std::endl;
+}
+
+void Sim::logAnalytics(start, laststop, beads_moved, beads_moved_last_sweep)
+{
+	auto stop = std::chrono::high_resolution_clock::now();
+	auto totaltime = std::chrono::duration_cast<std::chrono::seconds>(stop-start);
+	auto blocktime = std::chrono::duration_cast<std::chrono::seconds>(stop-laststop);
+	laststop = stop;
+
+	int beads_moved = nbeads_moved - beads_moved_last_sweep;
+	beads_moved_last_sweep = nbeads_moved;
+
+	std::cout << "------ Sweep number " << sweep << " ------\n";
+	std::cout << "elapsed: " << totaltime.count() << "sec \t|\t";
+	if(totaltime.count() > 0) 
+	{
+		std::cout <<  sweep/totaltime.count() << " sweep/sec \n"; 
+	}
+	std::cout << "Beads Moved " << nbeads_moved << " beads \t|\t ";
+	if (blocktime.count() > 0)
+	{
+		std::cout << "Rate (last block)" << beads_moved/blocktime.count() << " beads/s \n";
+	}
+}
+
+void Sim::printAcceptanceRates(int sweep)
+{
+	std::cout << "acceptance rate: " << (float) acc/((sweep+1)*nSteps)*100.0 << "%" << std::endl;
+	if (displacement_on) std::cout << "disp: " << (float) acc_disp/(sweep*n_disp)*100 << "% \t";
+	if (translation_on) std::cout << "trans: " << (float) acc_trans/(sweep*n_trans)*100 << "% \t";
+	if (crankshaft_on) std::cout << "crank: " << (float) acc_crank/(sweep*n_crank)*100 << "% \t";
+	if (pivot_on) std::cout << "pivot: " << (float) acc_pivot/(sweep*n_pivot)*100 << "% \t";
+	if (rotate_on) std::cout << "rot: " << (float) acc_rot/(sweep*n_rot)*100 << "% \t";
+	//std::cout << "cellcount: " << grid.cellCount();
+	std::cout << std::endl;
 }
 
 void Sim::checkConsistency()
@@ -1463,7 +1469,7 @@ void Sim::MCmove_grid() {
 
 // write bead coordinates and bead types to .xyz file
 // format: {id} {x,y,z} {bead_types}
-void Sim::dumpXyz()  {
+void Sim::saveXyz()  {
 	xyz_out = fopen(xyz_out_filename.c_str(), "a");
 	fprintf(xyz_out, "%d\n", nbeads);
 	fprintf(xyz_out, "atoms\n");
@@ -1485,7 +1491,7 @@ void Sim::dumpXyz()  {
 	fclose(xyz_out);
 }
 
-void Sim::dumpEnergy(int sweep) {
+void Sim::saveEnergy(int sweep) {
 	double bonded = 0;
 	bonded = bonded_on ? getAllBondedEnergy() : 0;
 	double plaid = 0;
@@ -1524,7 +1530,7 @@ void Sim::dumpEnergy(int sweep) {
 	fclose(energy_out);
 }
 
-void Sim::dumpObservables(int sweep) {
+void Sim::saveObservables(int sweep) {
 	// TODO phis are not updated unless energy function is called
 	// leads to error if dumping observables after a rejected move;
 	// beads are returned to their original state and typenums is updated
@@ -1606,7 +1612,7 @@ void Sim::dumpObservables(int sweep) {
 }
 
 // write contact map to file
-void Sim::dumpContacts(int sweep) {
+void Sim::saveContacts(int sweep) {
 	if (track_contactmap) {
 		// outputs new contact map, doesn't override
 		contact_map_filename = "./" + data_out_filename + "/contacts" + std::to_string(sweep) + ".txt";
