@@ -52,22 +52,15 @@ void Sim::xyzToContact()
  	dumpContacts(0);
 }
 
-// initialize contact map to zeros
+// set contact map to zeros
+// contact resolution is the number of beads per contact map pixel
 void Sim::initializeContactmap() {
-	std::cout << "setting up contacts" << std::endl;
 	int nbins = nbeads/contact_resolution;
-	std::cout << "contactmap size: " << nbins << std::endl;
-	contact_map.resize(nbins);
-	for(int i=0; i<nbins; i++)
-	{
-		contact_map[i].resize(nbins);
-		for(int j=0; j<nbins; j++)
-		{
-			contact_map[i][j] = 0;
-		}
-	}
+	contact_map.resize(nbins, std::vector<int>(nbins, 0));
 }
 
+// calcualte contacts between adjacent beads
+// the contactmap keeps a running sum of contacts
 void Sim::updateContacts() {
 	if (update_contacts_distance){
 		updateContactsDistance();
@@ -90,7 +83,7 @@ void Sim::updateContactsGrid() {
 		int rows = contact_map.size();
 		int cols = contact_map.size();
 		int id1, id2;
-		std::vector<std::vector<bool>> visited(rows, std::vector<bool>(cols, false));
+		std::vector<std::vector<bool>> visited(rows, std::vector<bool>(cols, false)); // for visit tracking
 
 		for(Cell* cell : grid.active_cells)
 		{
@@ -127,8 +120,10 @@ void Sim::updateContactsGrid() {
 	}
 }
 
+
+// alternative method for calculating bead contacts
+// two beads are considered in contact if they are closer than a cutoff radius
 void Sim::updateContactsDistance() {
-	// contacts defined as two beads within a cutoff distance
 	double cutoff = 28.7; // nm
 	int id1, id2;
 	for(int i=0; i<beads.size(); i++)
