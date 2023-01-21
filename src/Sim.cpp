@@ -31,7 +31,8 @@ Sim::Sim(std::string filename)
 }
 
 // Run TICG simulation
-void Sim::run() {
+void Sim::run() 
+{
 	readInput();            // load parameters from config.json
 	calculateParameters();  // calculates derived physical parameters
 	initializeObjects();    // set particle positions and construct bonds
@@ -54,15 +55,17 @@ void Sim::xyzToContact()
 
 // set contact map to zeros
 // contact resolution is the number of beads per contact map pixel
-void Sim::initializeContactmap() {
+void Sim::initializeContactmap() 
+{
 	int nbins = nbeads/contact_resolution;
 	contact_map.resize(nbins, std::vector<int>(nbins, 0));
 }
 
 // calcualte contacts between adjacent beads
 // the contactmap keeps a running sum of contacts
-void Sim::updateContacts() {
-	if (update_contacts_distance){
+void Sim::updateContacts() 
+{
+	if (update_contacts_distance) {
 		updateContactsDistance();
 	}
 	else {
@@ -78,13 +81,11 @@ void Sim::updateContacts() {
 //		for the purposes of contact counting
 // - visit_tracking: only count a maximum of one contact per hic-matrix pixel for a 
 //		given configuration (only relevant when contact_resolution > 1)
-void Sim::updateContactsGrid() {
-	{
-		int rows = contact_map.size();
-		int cols = contact_map.size();
-		int id1, id2;
-		std::vector<std::vector<bool>> visited(rows, std::vector<bool>(cols, false)); // for visit tracking
+void Sim::updateContactsGrid() 
+{
+		std::vector<std::vector<bool>> visited(contact_map.size(), std::vector<bool>(contact_map.size(), false)); // for visit tracking
 
+		int pixel1, pixel2;
 		for(Cell* cell : grid.active_cells)
 		{
 			for(Bead* bead1 : cell->contains)
@@ -92,27 +93,19 @@ void Sim::updateContactsGrid() {
 				for(Bead* bead2 : cell->contains)
 				{
 					bool ignore = false;
-					id1 = bead1->id/contact_resolution;
-					id2 = bead2->id/contact_resolution;
+					pixel1 = bead1->id/contact_resolution;
+					pixel2 = bead2->id/contact_resolution;
 
 					// ignore every other bead for the purposes of contact counting (in the case where contact_resolution=2)
-					if (contact_bead_skipping)
-					{
-						if (bead1->id % contact_resolution != 0 || bead2->id % contact_resolution != 0)
-						{
+					if (contact_bead_skipping) {
+						if (bead1->id % contact_resolution != 0 || bead2->id % contact_resolution != 0) {
 							ignore = true;
 						}
 					}
-
 				
-					if (visited[id1][id2] == false)
-					{
-						if (!ignore) {
-							contact_map[id1][id2] += 1; // incrememt contacts
-						}
-
-						// count only a maximum of one contact per hic-matrix pixel for each configuration
-						if (visit_tracking) visited[id1][id2] = true;
+					if (visited[pixel1][pixel2] == false) {
+						if (!ignore) contact_map[pixel1][pixel2] += 1; // increment contacts
+						if (visit_tracking) visited[pixel1][pixel2] = true;
 					}
 				}
 			}
@@ -125,7 +118,7 @@ void Sim::updateContactsGrid() {
 // two beads are considered in contact if they are closer than a cutoff radius
 void Sim::updateContactsDistance() {
 	double cutoff = 28.7; // nm
-	int id1, id2;
+	int pixel1, pixel2;
 	for(int i=0; i<beads.size(); i++)
 	{
 		for(int j=i; j<beads.size(); j++)
@@ -133,10 +126,10 @@ void Sim::updateContactsDistance() {
 			Eigen::RowVector3d distance =  beads[i].r - beads[j].r;
 			if (distance.norm() < cutoff)
 			{
-				id1 = beads[i].id/contact_resolution;
-				id2 = beads[j].id/contact_resolution;
-				contact_map[id1][id2] += 1;
-				if (id1 != id2) contact_map[id2][id1] += 1;
+				pixel1 = beads[i].id/contact_resolution;
+				pixel2 = beads[j].id/contact_resolution;
+				contact_map[pixel1][pixel2] += 1;
+				if (pixel1 != pixel2) contact_map[pixel2][pixel1] += 1;
 			}
 		}
 	}
