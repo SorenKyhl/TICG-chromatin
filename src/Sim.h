@@ -184,6 +184,7 @@ public:
 	double getTotalEnergy(int first, int last, const std::unordered_set<Cell*>& flagged_cells);
 	double randomExp(double mu, double decay);
 	void MC();
+	void checkConsistency();
 	void MCmove_displace();
 	void MCmove_translate();
 	void MCmove_crankshaft();

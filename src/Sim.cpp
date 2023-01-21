@@ -34,15 +34,10 @@ Sim::Sim(std::string filename)
 void Sim::run() {
 	readInput();            // load parameters from config.json
 	if (!system(NULL)) exit (EXIT_FAILURE);
-	calculateParameters();  // calculates derived parameters
-	initializeObjects();           // set particle positions and construct bonds
-	grid.generate();        // creates the grid locations
-	grid.setActiveCells();  // populates the active cell locations
-	grid.meshBeads(beads);  // populates the grid locations with beads;
-	setupContacts();        // construct contact map
-	assert (grid.checkCellConsistency(nbeads));
+	calculateParameters();  // calculates derived physical parameters
+	initializeObjects();    // set particle positions and construct bonds
+	dumpXyz();				// dump initial configuration
 	MC();                   // MC simulation
-	assert (grid.checkCellConsistency(nbeads));
 }
 
 void Sim::xyzToContact()
@@ -51,9 +46,7 @@ void Sim::xyzToContact()
  	beads.resize(nbeads);
  	calculateParameters();
  	loadConfiguration();
- 	grid.generate();
- 	grid.meshBeads(beads);
- 	grid.setActiveCells();
+	grid.initialize(beads);
  	setupContacts();
  	dumpContacts(0);
 }
@@ -475,20 +468,30 @@ void Sim::setInitialConfiguration()
 }
 
 
+// initializes all objects prior to simulation
 void Sim::initializeObjects() {
 	std::cout << "initializing simulation objects ... " << std::endl;
 	Timer t_init("Initializing");
 
+	// output files
 	makeOutputFiles();      
+
+	// physical objects
 	setInitialConfiguration();
 	if (load_bead_types) loadBeadTypes(); 
 	constructBonds();
 	if (angles_on) constructAngles();
-	dumpXyz();
 
+	// energy matrices
 	if (dmatrix_on) { setupDmatrix(); }
 	if (smatrix_on) { setupSmatrix(); }
 	if (ematrix_on) { setupEmatrix(); }
+
+	// grid
+	grid.initialize(beads);
+
+	// contactmap
+	setupContacts();    
 
 	std::cout << "Simulation objects initialized" << std::endl;
 }
@@ -870,12 +873,12 @@ double Sim::randomExp(double mu, double decay) {
 }
 
 void Sim::MC() {
-
+	std::cout << "Beginning Simulation" << std::endl;
 	auto start = std::chrono::high_resolution_clock::now();
 	auto laststop = std::chrono::high_resolution_clock::now();
-	int beads_moved_last_sweep = 0;
 
-	std::cout << "Beginning Simulation" << std::endl;
+	checkConsistency();
+	int beads_moved_last_sweep = 0;
 	for(int sweep = 1; sweep<nSweeps+1; sweep++)
 	{
 		//std::cout << sweep << std::endl;
@@ -969,7 +972,13 @@ void Sim::MC() {
 		}
 	}
 
+	checkConsistency();
 	std::cout << "overall acceptance rate: " << (float) acc/(nSweeps*nSteps)*100.0 << "%" << std::endl;
+}
+
+void Sim::checkConsistency()
+{
+	assert(grid.checkCellConsistency(nbeads));
 }
 
 
