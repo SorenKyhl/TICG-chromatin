@@ -21,7 +21,7 @@ Sim::Sim()
 	makeDataAndLogFiles();
 }
 
-// logging information is not sent to stdout
+// logging information is sent to {data_out_filename}/log.log
 Sim::Sim(std::string filename)
 {
 	data_out_filename = filename;
@@ -143,8 +143,8 @@ void Sim::updateContactsDistance() {
 }
 
 
+// generates random unit vector
 Eigen::MatrixXd Sim::unit_vec(Eigen::MatrixXd b) {
-	// generates random unit vector
 	double R1,R2,R3;
 	do { R1 = (2*rng->uniform()-1);
 		R2 = (2*rng->uniform()-1);
@@ -157,9 +157,9 @@ Eigen::MatrixXd Sim::unit_vec(Eigen::MatrixXd b) {
 	return b;
 }
 
-void Sim::readInput() {
-	// reads simulation parameters from config.json file
 
+// read simulation parameters from config.json file
+void Sim::readInput() {
 	std::cout << "reading input config.json file ... " << std::endl;
 
 	std::ifstream i("config.json");
@@ -171,9 +171,9 @@ void Sim::readInput() {
 	nlohmann::json config;
 	i >> config;
 
-  assert(config.contains("nbeads")); nbeads = config["nbeads"];
+	assert(config.contains("nbeads")); nbeads = config["nbeads"];
 	assert(config.contains("plaid_on")); plaid_on = config["plaid_on"];
-  assert(config.contains("diagonal_on")); diagonal_on = config["diagonal_on"];
+	assert(config.contains("diagonal_on")); diagonal_on = config["diagonal_on"];
 
 	if (plaid_on)
 	{
@@ -381,16 +381,16 @@ void Sim::readInput() {
 
 void Sim::makeDataAndLogFiles()
 {
-	// make and populate data output directory
 	std::string command = "mkdir " + data_out_filename;
 	const int dir_err = system(command.c_str());
-	if (dir_err == -1) {std::cout << "error making data_out directory" << std::endl;}
 
-	if (redirect_stdout)
-	{
-		std::freopen(log_filename.c_str(), "w", stdout);
+	if (dir_err == -1) {
+		std::cout << "error making data_out directory" << std::endl;
 	}
 
+	if (redirect_stdout) { 
+		std::freopen(log_filename.c_str(), "w", stdout);
+	}
 }
 
 void Sim::makeOutputFiles() {
@@ -400,7 +400,7 @@ void Sim::makeOutputFiles() {
 	energy_out_filename = "./" + data_out_filename + "/energy.traj";
 	obs_out_filename = "./" + data_out_filename + "/observables.traj";
 	diag_obs_out_filename = "./" + data_out_filename + "/diag_observables.traj";
-  constant_obs_out_filename = "./" + data_out_filename + "/constant_observable.traj";
+	constant_obs_out_filename = "./" + data_out_filename + "/constant_observable.traj";
 	density_out_filename = "./" + data_out_filename + "/density.traj";
 	extra_out_filename = "./" + data_out_filename + "/extra.traj";
 
@@ -410,12 +410,11 @@ void Sim::makeOutputFiles() {
 	energy_out = fopen((energy_out_filename).c_str(), "w");
 	obs_out = fopen((obs_out_filename).c_str(), "w");
 	diag_obs_out = fopen((diag_obs_out_filename).c_str(), "w");
-  constant_obs_out = fopen((constant_obs_out_filename).c_str(), "w");
+	constant_obs_out = fopen((constant_obs_out_filename).c_str(), "w");
 	density_out = fopen((density_out_filename).c_str(), "w");
 	extra_out = fopen((extra_out_filename).c_str(), "w");
 
 	std::cout << "created successfully" << std::endl;
-
 
 	std::string command = "cp config.json " + data_out_filename;
 	const int result = system(command.c_str());
@@ -427,15 +426,15 @@ void Sim::makeOutputFiles() {
 	}
 }
 
+
+// check if vector r is inside simulation boundary
 bool Sim::outside_boundary(Eigen::RowVector3d r) {
 	bool is_out = false;
 
-	if (grid.cubic_boundary)
-	{
+	if (grid.cubic_boundary) {
 		is_out = (r.minCoeff() < 0 || r.maxCoeff() > grid.side_length);
 	}
-	else if (grid.spherical_boundary)
-	{
+	else if (grid.spherical_boundary) {
 		is_out = (r - grid.sphere_center).norm() > grid.radius;
 	}
 
@@ -1533,7 +1532,6 @@ void Sim::dumpEnergy(int sweep) {
 }
 
 void Sim::dumpObservables(int sweep) {
-
 	// TODO phis are not updated unless energy function is called
 	// leads to error if dumping observables after a rejected move;
 	// beads are returned to their original state and typenums is updated
@@ -1614,9 +1612,9 @@ void Sim::dumpObservables(int sweep) {
 	fclose(extra_out);
 }
 
+// write contact map to file
 void Sim::dumpContacts(int sweep) {
-
-	if (track_contactmap){
+	if (track_contactmap) {
 		// outputs new contact map, doesn't override
 		contact_map_filename = "./" + data_out_filename + "/contacts" + std::to_string(sweep) + ".txt";
 	}
@@ -1627,24 +1625,14 @@ void Sim::dumpContacts(int sweep) {
 
 	std::ofstream contactsOutFile(contact_map_filename);
 	for (const auto &row : contact_map) {
-		/*
-		for (const int &element : row) {
-			contactsOutFile << element << " ";
-		}
-		*/
-
-		for (int i=0; i<row.size(); i++)
-		{
-			if (i == row.size()-1)
-			{
+		for (int i=0; i<row.size(); i++) {
+			if (i == row.size()-1) {
 				contactsOutFile << row[i];
 			}
-			else
-			{
+			else {
 				contactsOutFile << row[i] << " ";
 			}
 		}
-
 		contactsOutFile << "\n";
 	}
 }
@@ -1722,38 +1710,38 @@ void Sim::setupEmatrix() {
 
 void Sim::setupDmatrix() {
 	std::ifstream dmatrixfile(dmatrix_filename);
-  dmatrix.resize(nbeads, nbeads);
+	dmatrix.resize(nbeads, nbeads);
 
 	if ( dmatrixfile.good() ) {
-    std::cout << dmatrix_filename << " opened\n";
-    for (int i=0; i<nbeads; i++) {
-      for (int j=0; j<nbeads; j++) {
-        dmatrixfile >> dmatrix(i,j);
-      }
-    }
+		std::cout << dmatrix_filename << " opened\n";
+		for (int i=0; i<nbeads; i++) {
+			for (int j=0; j<nbeads; j++) {
+			dmatrixfile >> dmatrix(i,j);
+			}
+		}
 	}
-  else
-  {
-    std::cout << "dmatrix_filename (" << dmatrix_filename << ") does not exist or cannot be opened\n";
+	else
+	{
+	std::cout << "dmatrix_filename (" << dmatrix_filename << ") does not exist or cannot be opened\n";
 
-    // try and create dmatrix from diag_chis
-    for (int i=0; i<nbeads; i++)
-    {
-      for (int j=0; j<nbeads; j++)
-      {
-        int d = std::abs(i - j);
-        if ((d <= Cell::diag_cutoff) && (d >= Cell::diag_start))
-        {
-          d -= Cell::diag_start; // TODO check that this works for non-zero diag_start
-          int d_index = Cell::binDiagonal(d);
-          dmatrix(i,j) = diag_chis[d_index];
-        }
-        else
-        {
-          dmatrix(i,j) = 0;
-        }
-      }
-    }
-  }
-  std::cout << "loaded Dmatrix, first element:" << dmatrix(0,0) << std::endl;
+	// try and create dmatrix from diag_chis
+	for (int i=0; i<nbeads; i++)
+	{
+	  for (int j=0; j<nbeads; j++)
+	  {
+		int d = std::abs(i - j);
+		if ((d <= Cell::diag_cutoff) && (d >= Cell::diag_start))
+		{
+		  d -= Cell::diag_start; // TODO check that this works for non-zero diag_start
+		  int d_index = Cell::binDiagonal(d);
+		  dmatrix(i,j) = diag_chis[d_index];
+		}
+		else
+		{
+		  dmatrix(i,j) = 0;
+		}
+	  }
+	}
+	}
+	std::cout << "loaded Dmatrix, first element:" << dmatrix(0,0) << std::endl;
 }

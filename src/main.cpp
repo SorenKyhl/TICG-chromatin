@@ -20,9 +20,12 @@ int main(int argc, char* argv[])
 
 	if (argc == 1) {
 		mySim = new Sim();
+		// log goes to stdout
 	}
 	else {
-		mySim = new Sim(argv[1]);
+		std::string data_out_file = argv[1];
+		mySim = new Sim(data_out_file);
+		// log goes to {data_out_file}/log.log
 	}
 
 	mySim->run();
