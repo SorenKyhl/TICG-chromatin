@@ -15,8 +15,10 @@
 #include "Harmonic_Angle.h"
 #include "Cell.h"
 #include "Grid.h"
+#include "Analytics.h"
 #include "prof_timer.cpp"
 #include "random_mars.h"
+
 
 class Sim {
 public:
@@ -76,6 +78,8 @@ public:
 	double step_rot = M_PI/12; // radians
 	double step_grid; // based off fraction of delta, see initialize
 
+	Analytics analytics;
+
 	int n_disp;
 	int n_trans;
 	int n_crank;
@@ -121,7 +125,7 @@ public:
 	std::vector<std::string> bead_type_files;
 
 	// analytics
-	bool prof_timer_on; // = false;
+	bool profiling_on; // = false;
 	bool print_trans; // = false;
 
 	unsigned long nbeads_moved = 0;

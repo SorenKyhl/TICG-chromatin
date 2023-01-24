@@ -327,7 +327,7 @@ void Sim::readInput() {
   assert(config.contains("nSweeps")); nSweeps = config["nSweeps"];
 	assert(config.contains("load_configuration")); load_configuration = config["load_configuration"];
 	assert(config.contains("load_configuration_filename")); load_configuration_filename = config["load_configuration_filename"];
-	assert(config.contains("prof_timer_on")); prof_timer_on = config["prof_timer_on"];
+	assert(config.contains("profiling_on")); profiling_on = config["profiling_on"];
 	assert(config.contains("print_trans")); print_trans = config["print_trans"];
 	assert(config.contains("contact_resolution")); contact_resolution = config["contact_resolution"];
 	assert(config.contains("grid_size")); grid_size = config["grid_size"];
@@ -861,64 +861,53 @@ double Sim::randomExp(double mu, double decay) {
 
 void Sim::MC() {
 	std::cout << "Beginning Simulation" << std::endl;
-	auto start = std::chrono::high_resolution_clock::now();
-	auto laststop = std::chrono::high_resolution_clock::now();
 
+	analytics.startTimer();
 	checkConsistency();
-	int beads_moved_last_sweep = 0;
+
 	for(int sweep = 1; sweep<nSweeps+1; sweep++)
 	{
-		//std::cout << sweep << std::endl;
 		double nonbonded;
-		//nonbonded = getNonBondedEnergy(grid.active_cells);
-		//std::cout << "beginning sim: nonbonded: " <<  grid.active_cells.size() << std::endl;
 
-		Timer t_pivot("pivoting", prof_timer_on);
-		for(int j=0; j<n_pivot; j++) {
+		Timer t_pivot("pivoting", profiling_on);
+		for(int j=0; j<n_pivot; j++) 
+		{
 			MCmove_pivot(sweep);
-			//nonbonded = getNonBondedEnergy(grid.active_cells);
-			//std::cout << nonbonded << std::endl;
 		}
 		//t_pivot.~Timer();
 
-		Timer t_crankshaft("Cranking", prof_timer_on);
-		for(int j=0; j<n_crank; j++) {
+		Timer t_crankshaft("cranking", profiling_on);
+		for(int j=0; j<n_crank; j++) 
+		{
 			MCmove_crankshaft();
-			//nonbonded = getNonBondedEnergy(grid.active_cells);
-			//std::cout << nonbonded << std::endl;
 		}
 		//t_crankshaft.~Timer();
 
-		Timer t_translation("translating", prof_timer_on);
+		Timer t_translation("translating", profiling_on);
 		for(int j=0; j<n_trans; j++)
 		{
 			MCmove_translate();
-			//nonbonded = getnonbondedenergy(grid.active_cells);
-			//std::cout << nonbonded << std::endl;
 		}
 		//t_translation.~Timer();
 
 		if (gridmove_on) MCmove_grid();
-		//nonbonded = getNonBondedEnergy(grid.active_cells);
-		//std::cout << nonbonded << std::endl;
 
-		Timer t_displace("displacing", prof_timer_on);
+		Timer t_displace("displacing", profiling_on);
 		for(int j=0; j<n_disp; j++)
 		{
 			MCmove_displace();
-			//nonbonded = getNonBondedEnergy(grid.active_cells);
-			//std::cout << nonbonded << std::endl;
 		}
 		//t_displace.~Timer();
 
-		Timer t_rotation("Rotating", prof_timer_on);
+		Timer t_rotation("Rotating", profiling_on);
 		for(int j=0; j<n_rot; j++) {
 			MCmove_rotate();
 		}
 		//t_rotation.~Timer();
 
-		if (sweep%dump_frequency == 0 || sweep == nSweeps ) {
-
+		if (sweep%dump_frequency == 0 || sweep == nSweeps ) 
+		{
+			analytics.log(sweep);
 			saveXyz();
 			saveContacts(sweep);
 			printAcceptanceRates(sweep);
@@ -934,29 +923,6 @@ void Sim::MC() {
 
 	checkConsistency();
 	std::cout << "overall acceptance rate: " << (float) acc/(nSweeps*nSteps)*100.0 << "%" << std::endl;
-}
-
-void Sim::logAnalytics(start, laststop, beads_moved, beads_moved_last_sweep)
-{
-	auto stop = std::chrono::high_resolution_clock::now();
-	auto totaltime = std::chrono::duration_cast<std::chrono::seconds>(stop-start);
-	auto blocktime = std::chrono::duration_cast<std::chrono::seconds>(stop-laststop);
-	laststop = stop;
-
-	int beads_moved = nbeads_moved - beads_moved_last_sweep;
-	beads_moved_last_sweep = nbeads_moved;
-
-	std::cout << "------ Sweep number " << sweep << " ------\n";
-	std::cout << "elapsed: " << totaltime.count() << "sec \t|\t";
-	if(totaltime.count() > 0) 
-	{
-		std::cout <<  sweep/totaltime.count() << " sweep/sec \n"; 
-	}
-	std::cout << "Beads Moved " << nbeads_moved << " beads \t|\t ";
-	if (blocktime.count() > 0)
-	{
-		std::cout << "Rate (last block)" << beads_moved/blocktime.count() << " beads/s \n";
-	}
 }
 
 void Sim::printAcceptanceRates(int sweep)
@@ -978,7 +944,7 @@ void Sim::checkConsistency()
 
 
 void Sim::MCmove_displace() {
-	Timer t_displacemove("Displacement move", prof_timer_on);
+	Timer t_displacemove("Displacement move", profiling_on);
 	// pick random particle
 	int o = floor(beads.size()*rng->uniform());
 
@@ -1021,7 +987,7 @@ void Sim::MCmove_displace() {
 		//std::cout << "Accepted"<< std::endl;
 		acc += 1;
 		acc_disp += 1;
-		nbeads_moved += 1;
+		analytics.nbeads_moved += 1;
 	}
 	else
 	{
@@ -1115,7 +1081,7 @@ void Sim::MCmove_translate() {
 		// move accepted
 		acc += 1;
 		acc_trans += 1;
-		nbeads_moved += (last-first);
+		analytics.nbeads_moved += (last-first);
 	}
 	else
 	{
@@ -1237,7 +1203,7 @@ void Sim::MCmove_crankshaft() {
 			//std::cout << "Accepted"<< std::endl;
 			acc += 1;
 			acc_crank += 1;
-			nbeads_moved += (last-first);
+			analytics.nbeads_moved += (last-first);
 		}
 		else
 		{
@@ -1395,7 +1361,7 @@ void Sim::MCmove_pivot(int sweep) {
 		{
 			acc += 1;
 			acc_pivot += 1;
-			nbeads_moved += (last-first);
+			analytics.nbeads_moved += (last-first);
 		}
 		else
 		{
