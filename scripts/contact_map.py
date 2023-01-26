@@ -3,17 +3,24 @@ import json
 import math
 import os
 import os.path as osp
+import sys
 
 import imageio.v2 as imageio
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from seq2contact import (ArgparserConverter, DiagonalPreprocessing,
-                         calculate_diag_chi_step, crop, load_E_S,
-                         load_final_max_ent_S, plot_diag_chi, plot_matrix,
-                         plot_mean_dist, plot_mean_vs_genomic_distance, s_to_E)
 from sklearn.metrics import mean_squared_error
+
+sys.path.append('/home/erschultz')
+from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
+from sequences_to_contact_maps.scripts.energy_utils import (
+    calculate_diag_chi_step, s_to_E)
+from sequences_to_contact_maps.scripts.load_utils import (load_E_S,
+                                                          load_final_max_ent_S)
+from sequences_to_contact_maps.scripts.plotting_utils import (
+    plot_diag_chi, plot_matrix, plot_mean_dist, plot_mean_vs_genomic_distance)
+from sequences_to_contact_maps.scripts.utils import DiagonalPreprocessing, crop
 
 
 def getArgs():

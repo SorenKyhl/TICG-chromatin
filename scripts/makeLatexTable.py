@@ -3,6 +3,7 @@ import csv
 import json
 import os
 import os.path as osp
+import sys
 import tarfile
 from collections import defaultdict
 
@@ -11,10 +12,15 @@ import numpy as np
 import scipy.stats as ss
 from compare_contact import plotDistanceStratifiedPearsonCorrelation
 from scipy.stats import pearsonr
-from seq2contact import (ArgparserConverter, DiagonalPreprocessing,
-                         calculate_D, calculate_diag_chi_step, calculate_E_S,
-                         calculate_SD_ED, load_max_ent_chi, load_Y)
 from sklearn.metrics import mean_squared_error
+
+sys.path.append('/home/erschultz')
+from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
+from sequences_to_contact_maps.scripts.energy_utils import (
+    calculate_D, calculate_diag_chi_step, calculate_E_S, calculate_SD_ED)
+from sequences_to_contact_maps.scripts.load_utils import (load_max_ent_chi,
+                                                          load_Y)
+from sequences_to_contact_maps.scripts.utils import DiagonalPreprocessing
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 METHODS = ['ground_truth', 'random', 'PCA', 'PCA_split', 'kPCA', 'RPCA',
@@ -98,6 +104,7 @@ def loadData(args):
     converged_mask = np.ones(len(args.samples)).astype(bool)
 
     for i, sample in enumerate(args.samples):
+        print(sample)
         sample_folder = osp.join(args.data_folder, 'samples', f'sample{sample}')
         if args.experimental:
             ground_truth_SD = None
@@ -161,8 +168,8 @@ def loadData(args):
                                     elif args.convergence_definition == 'normal':
                                         eps = 1e-2
                                     else:
-                                        raise Exception(f'Unrecognized convergence_definition: '
-                                                        '{args.convergence_definition}')
+                                        raise Exception('Unrecognized convergence_definition: '
+                                                        f'{args.convergence_definition}')
 
                                     convergence_file = osp.join(replicate_folder, 'convergence.txt')
                                     if osp.exists(convergence_file):
@@ -177,6 +184,7 @@ def loadData(args):
                                     converged_path = osp.join(replicate_folder, f'iteration{converged_it+1}')
                                     # converged path is iteration after max ent converged
                                 else:
+                                    print('\tDID NOT CONVERGE')
                                     converged_mask[i] = 0
                                     converged_path = None
 
@@ -394,7 +402,7 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                         GNN_ref_id = id
 
         if GNN_ref is not None:
-            print(f'GNN found: using GNN {id}')
+            print(f'GNN found: using GNN {GNN_ref_id}')
 
         for k in sorted(data.keys()):
             first = True # only write k for first row in section
@@ -540,6 +548,7 @@ def main(data_folder=None, sample=None):
         temp_label = label + f' {defn} convergence'
         data, converged_mask = loadData(args)
         not_converged_mask = np.logical_not(converged_mask) # now 1 if not converged
+        # not_converged_mask = np.zeros_like(not_converged_mask) # TODO, manually override
 
         # small
         makeLatexTable(data, ofile, temp_label, True, mode,

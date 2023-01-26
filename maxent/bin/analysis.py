@@ -14,8 +14,8 @@ from scipy.ndimage import uniform_filter
 
 for p in ['/home/erschultz', '/home/erschultz/sequences_to_contact_maps']:
     sys.path.insert(1, p)
-from sequences_to_contact_maps.utils.plotting_utils import plot_matrix
-from sequences_to_contact_maps.utils.similarity_measures import SCC
+from sequences_to_contact_maps.scripts.plotting_utils import plot_matrix
+from sequences_to_contact_maps.scripts.similarity_measures import SCC
 
 
 class Sim:

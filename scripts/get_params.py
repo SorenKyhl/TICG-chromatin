@@ -14,15 +14,30 @@ import torch
 import torch_geometric
 
 sys.path.insert(1, '/home/erschultz/TICG-chromatin/scripts')
-from seq2contact import (LETTERS, ArgparserConverter, DiagonalPreprocessing,
-                         InteractionConverter, R_pca, clean_directories, crop,
-                         finalize_opt, get_base_parser, get_dataset,
-                         knightRuiz, load_E_S, load_final_max_ent_S,
-                         load_saved_model, load_X_psi, load_Y, load_Y_diag,
-                         plot_matrix, plot_seq_binary, plot_seq_continuous,
-                         project_S_to_psi_basis, s_to_E, triu_to_full)
 from sklearn.cluster import KMeans
 from sklearn.decomposition import NMF, PCA, KernelPCA
+
+sys.path.append('/home/erschultz')
+from sequences_to_contact_maps.scripts.argparse_utils import (
+    ArgparserConverter, finalize_opt, get_base_parser)
+from sequences_to_contact_maps.scripts.clean_directories import \
+    clean_directories
+from sequences_to_contact_maps.scripts.energy_utils import s_to_E
+from sequences_to_contact_maps.scripts.InteractionConverter import \
+    InteractionConverter
+from sequences_to_contact_maps.scripts.knightRuiz import knightRuiz
+from sequences_to_contact_maps.scripts.load_utils import (load_E_S,
+                                                          load_final_max_ent_S,
+                                                          load_X_psi, load_Y,
+                                                          load_Y_diag)
+from sequences_to_contact_maps.scripts.neural_nets.utils import (
+    get_dataset, load_saved_model)
+from sequences_to_contact_maps.scripts.plotting_utils import (
+    plot_matrix, plot_seq_binary, plot_seq_continuous)
+from sequences_to_contact_maps.scripts.R_pca import R_pca
+from sequences_to_contact_maps.scripts.utils import (LETTERS,
+                                                     DiagonalPreprocessing,
+                                                     crop, triu_to_full)
 
 
 def getArgs():
@@ -408,15 +423,20 @@ class GetSeq():
         PC_count = self.k // 2 # 2 seqs per PC
         for pc_i in range(PC_count):
             pc = pca.components_[pc_i]
+            if normalize:
+                min = np.min(pc)
+                max = np.max(pc)
+                if max > abs(min):
+                    val = max
+                else:
+                    val = abs(min)
+
+                # multiply by scale such that val x scale = 1
+                scale = 1/val
+                pc *= scale
 
             pcpos = pc.copy()
             pcpos[pc < 0] = 0 # set negative part to zero
-            if normalize:
-                max = np.max(pcpos)
-                if not max == 0:
-                    # multiply by scale such that max x scale = 1
-                    scale = 1/max
-                    pcpos *= scale
             if binarize:
                 # pc has already been normalized to [0, 1]
                 if isinstance(binarize_threshold, float):
@@ -433,11 +453,6 @@ class GetSeq():
             pcneg = pc.copy()
             pcneg[pc > 0] = 0 # set positive part to zero
             pcneg *= -1 # make positive
-            if normalize:
-                max = np.max(pcneg)
-                # multiply by scale such that max x scale = 1
-                scale = 1/max
-                pcneg *= scale
             if binarize:
                 # pc has already been normalized to [0, 1]
                 if isinstance(binarize_threshold, float):
@@ -867,10 +882,10 @@ class GetSeq():
         print(f"Seq[0,:]: {seq[0,:]}")
 
         if self.plot:
-            if args.method in {'k_means', 'chromhmm'} or (args.method == 'nmf' and args.binarize):
-                plot_seq_exclusive(seq, labels=args.labels, X=args.X)
+            if args.method_base in {'k_means', 'chromhmm'}:
+                # plot_seq_exclusive(seq, labels=args.labels, X=args.X)
+                plot_seq_binary(seq)
             elif args.binarize:
-                print(args.method)
                 if args.method.startswith('pca_split'):
                     plot_seq_binary(seq, split = True)
                 else:
@@ -1621,9 +1636,9 @@ class GetEnergy():
             if opt.output_preprocesing == 'log':
                 yhat = np.multiply(np.sign(yhat), np.exp(np.abs(yhat)) - 1)
 
-                # ln(E + D) doesn't simplify, so these can't be determined
-                plaid_hat = None
-                diagonal_hat = None
+                # ln(E + D) doesn't simplify, so these can't be compared to the ground truth
+                plaid_hat = model.plaid_component(data)
+                diagonal_hat = model.diagonal_component(data)
             else:
                 plaid_hat = model.plaid_component(data)
                 diagonal_hat = model.diagonal_component(data)
@@ -1679,7 +1694,7 @@ class Tester():
         self.args_file = None
         self.sample_folder = osp.join('/home/erschultz', self.dataset, f'samples/sample{self.sample}')
         self.m = 1024
-        self.k = 8
+        self.k = 4
         self.plot = False
         self.GetSeq = GetSeq(self, None)
 
@@ -1735,15 +1750,17 @@ class Tester():
         seq = self.GetSeq.get_seq_gnn(model_path, self.sample, normalize)
 
     def test_PCA(self):
-        sample_folder = "/home/erschultz/dataset_test/samples/sample1"
+        sample_folder = "/home/erschultz/dataset_11_14_22/samples/sample2217"
         input = np.load(osp.join(sample_folder, 'y_diag.npy'))
         y = np.load(osp.join(sample_folder, 'y.npy'))
 
-        seq = self.GetSeq.get_PCA_seq(input, use_kernel = True, kernel = 'polynomial')
-        # plot_seq_continuous(seq, show = True, save = False, title = 'kPCA test')
+        seq = self.GetSeq.get_PCA_seq(input, normalize = True, use_kernel = False, kernel = 'polynomial')
+        # plot_seq_continuous(seq, show = True, save = False)
 
-        seq = self.GetSeq.get_PCA_split_seq(input, normalize = True, binarize = True)
-        plot_seq_binary(seq, show = True, save = False, title = 'PCA split test', split = True)
+        self.GetSeq.k = 8
+        seq = self.GetSeq.get_PCA_split_seq(input, normalize = True, binarize = False)
+        plot_seq_continuous(seq, show = True, save = False, split = True)
+        # plot_seq_binary(seq, show = True, save = False, title = 'PCA split test', split = True)
 
         # seq = self.GetSeq.get_RPCA_seq(y, normalize = True, max_it = 500)
         # plot_seq_continuous(seq, show = True, save = False, title = 'RPCA test')
@@ -1790,13 +1807,13 @@ class Tester():
 
 
     def test_suite(self):
-        self.test_markov()
+        # self.test_markov()
         # self.test_nmf_k_means()
         # self.test_random()
         # self.test_epi()
         # self.test_ChromHMM()
         # self.test_GNN()
-        # self.test_PCA()
+        self.test_PCA()
 
 
 if __name__ ==  "__main__":

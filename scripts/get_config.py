@@ -5,10 +5,14 @@ import os.path as osp
 import sys
 
 import numpy as np
-from seq2contact import (LETTERS, ArgparserConverter, calculate_D,
-                         calculate_diag_chi_step, calculate_E_S, calculate_S,
-                         crop, plot_matrix, s_to_E)
 from sklearn.metrics.pairwise import polynomial_kernel
+
+sys.path.append('/home/erschultz')
+from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
+from sequences_to_contact_maps.scripts.energy_utils import (
+    calculate_D, calculate_diag_chi_step, calculate_E_S, calculate_S, s_to_E)
+from sequences_to_contact_maps.scripts.plotting_utils import plot_matrix
+from sequences_to_contact_maps.scripts.utils import LETTERS, crop
 
 
 def getArgs():
