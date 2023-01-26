@@ -2,15 +2,20 @@ import argparse
 import json
 import os
 import os.path as osp
+import pickle
 import sys
 from collections import defaultdict
 
 import numpy as np
-from scipy.stats import norm, qmc, skewnorm
+from scipy.stats import multivariate_normal, norm, qmc, skewnorm
 
 sys.path.insert(0, '/home/erschultz/TICG-chromatin')
+from scripts.ECDF import Ecdf
 from scripts.get_params import GetSeq
-from scripts.seq2contact import load_Y
+
+sys.path.insert(0, '/home/erschultz')
+from sequences_to_contact_maps.scripts.load_utils import load_Y
+from sequences_to_contact_maps.scripts.utils import triu_to_full
 
 
 def getArgs():
@@ -57,6 +62,16 @@ class DatasetGenerator():
         self.sample_dict = defaultdict(dict)
 
     def plaid_params(self):
+        if self.chi_param_version == 'v3':
+            dist_ii = Ecdf(fname = osp.join('/home/erschultz/dataset_11_14_22/k8_chi_ii.json'))
+            dist_ij = Ecdf(fname = osp.join('/home/erschultz/dataset_11_14_22/k8_chi_ij.json'))
+        elif self.chi_param_version == 'v4':
+            with open(osp.join('/home/erschultz/dataset_11_14_22/k4_chi.pickle'), 'rb') as f:
+                dict = pickle.load(f)
+                cov = dict['cov']
+                mean = dict['mean']
+            dist = multivariate_normal(mean, cov)
+
         for i in range(self.N):
             self.sample_dict[i]['k'] = self.k
             if self.chi_param_version == 'v1':
@@ -65,15 +80,23 @@ class DatasetGenerator():
             elif self.chi_param_version == 'v2':
                 chi_ii = skewnorm.rvs(-3.619, 2.119, 5.244, size = self.k)
                 chi_ij = skewnorm.rvs(-1.307, 3.257, 5.888, size = int(self.k*(self.k-1)/2))
-            chi = np.zeros((self.k, self.k))
-            np.fill_diagonal(chi, chi_ii)
-            chi[np.triu_indices(self.k, 1)] = chi_ij
-            chi = chi + np.triu(chi, 1).T
+            elif self.chi_param_version == 'v3':
+                chi_ii = dist_ii.rvs(size = self.k)
+                chi_ij = dist_ij.rvs(size = int(self.k*(self.k-1)/2))
+            elif self.chi_param_version == 'v4':
+                chi = dist.rvs()
+                chi = triu_to_full(chi)
+
+            if self.chi_param_version != 'v4':
+                chi = np.zeros((self.k, self.k))
+                np.fill_diagonal(chi, chi_ii)
+                chi[np.triu_indices(self.k, 1)] = chi_ij
+                chi = chi + np.triu(chi, 1).T
 
             chi_file = osp.join(self.odir, f'chi_{i+1}.npy')
             np.save(chi_file, chi)
 
-            chi_file = osp.join('/project2/depablo/erschultz', self.dataset, f'setup/chi_{i+1}.npy')
+            chi_file = osp.join('/home/erschultz', self.dataset, f'setup/chi_{i+1}.npy')
             self.sample_dict[i]['chi_method'] = chi_file
 
     def seq_markov_params(self):
@@ -112,7 +135,7 @@ class DatasetGenerator():
             seq_file = osp.join(self.odir, f'x_{i+1}.npy')
             np.save(seq_file, x)
 
-            seq_file = osp.join('/project2/depablo/erschultz', self.dataset, f'setup/x_{i+1}.npy')
+            seq_file = osp.join('/home/erschultz', self.dataset, f'setup/x_{i+1}.npy')
             self.sample_dict[i]['method'] = seq_file
 
 

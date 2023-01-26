@@ -49,34 +49,39 @@ do
 	chiDiagMethod="${dataFolder}/chis_diag.txt"
 
 
-	chiMethod="${dataFolder}/chis.txt"
-	seqMethod="${dataFolder}/resources/x_shuffle.npy"
-	i="${sample}_shuffle_seq"
-	run &
+	# chiMethod="${dataFolder}/chis.txt"
+	# seqMethod="${dataFolder}/resources/x_shuffle.npy"
+	# i="${sample}_shuffle_seq"
+	# run &
+	#
+	# chiMethod="${dataFolder}/chis.txt"
+	# seqMethod="${baseDataFolder}/samples/sample2202/PCA-normalize-E/k${k}/replicate1/resources/x.npy"
+	# i="${sample}_other_pcs"
+	# run &
+	#
+	# chiMethod="${dataFolder}/chis_neg.npy"
+	# seqMethod="${dataFolder}/resources/x.npy"
+	# i="${sample}_neg_chi"
+	# run &
+	#
+	# chiMethod="${dataFolder}/chis_shuffle.npy"
+	# seqMethod="${dataFolder}/resources/x.npy"
+	# i="${sample}_shuffle_chi"
+	# run &
+	#
+	# chiMethod="/home/erschultz/dataset_11_21_22/samples/sample1462/chis.npy"
+	# seqMethod="${dataFolder}/resources/x.npy"
+	# i="${sample}_rand_chi"
+	# run &
+	#
+	# chiMethod="${dataFolder}/chis.txt"
+	# seqMethod="/home/erschultz/dataset_11_21_22/samples/sample1462/x.npy"
+	# i="${sample}_rand_seq"
+	# run &
 
 	chiMethod="${dataFolder}/chis.txt"
-	seqMethod="${baseDataFolder}/samples/sample2202/PCA-normalize-E/k${k}/replicate1/resources/x.npy"
-	i="${sample}_other_pcs"
-	run &
-
-	chiMethod="${dataFolder}/chis_neg.npy"
 	seqMethod="${dataFolder}/resources/x.npy"
-	i="${sample}_neg_chi"
-	run &
-
-	chiMethod="${dataFolder}/chis_shuffle.npy"
-	seqMethod="${dataFolder}/resources/x.npy"
-	i="${sample}_shuffle_chi"
-	run &
-
-	chiMethod="/home/erschultz/dataset_11_21_22/samples/sample1462/chis.npy"
-	seqMethod="${dataFolder}/resources/x.npy"
-	i="${sample}_rand_chi"
-	run &
-
-	chiMethod="${dataFolder}/chis.txt"
-	seqMethod="/home/erschultz/dataset_11_21_22/samples/sample1462/x.npy"
-	i="${sample}_rand_seq"
+	i="${sample}_copy"
 	run &
 
 	# chiDiagMethod="${dataFolder}/fitting/chis_diag_edit.txt"

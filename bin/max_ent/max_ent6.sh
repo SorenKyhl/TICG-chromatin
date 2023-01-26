@@ -24,34 +24,32 @@ fi
 
 STARTTIME=$(date +%s)
 i=5001
-dataset='dataset_11_14_22'
+dataset='dataset_11_14_22/samples/sample2217/PCA-normalize-E/k8/replicate1'
 useS='false'
 useE='true'
 useD='true'
 m=1024
-chiMethod='zero'
+chiMethod='zeros'
 mode='both'
 
 bondtype='gaussian'
 bondLength=28
-phiChromatin=0.06
 
-diagChiMethod='zero'
+diagChiMethod='zeros'
 dense='true'
 diagBins=96
 nSmallBins=64
 smallBinSize=1
 diagCutoff=1024
 
-method='epigenetic_sigmoid-fold_change_control'
-for k in 12
+k=8
+method='PCA-normalize'
+for sample in 2217_copy 2217_neg_chi 2217_other_pcs 2217_rand_chi 2217_rand_seq 2217_shuffle_chi 2217_shuffle_seq
 do
-  for sample in 2216
-  do
-    echo $sample $m
-    max_ent
-  done
+  echo $sample $m
+  max_ent
 done
+wait
 
 wait
 

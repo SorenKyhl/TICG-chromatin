@@ -29,7 +29,7 @@ useS='false'
 useE='true'
 useD='false'
 m=1024
-GNNModelID=289
+GNNModelID=341
 chiMethod='none'
 mode='none'
 
@@ -45,7 +45,7 @@ diagCutoff=1024
 
 k=0
 method='GNN'
-for sample in 2201_shuffle_seq 2201_shuffle_chis 2201_rand_seq 2201_other_pcs 2201_neg_chi 2201_rand_chi
+for sample in 2201_copy 2201_neg_chi 2201_other_pcs 2201_rand_chi 2201_rand_seq 2201_shuffle_chi 2201_shuffle_seq
 do
   echo $sample $m
   max_ent

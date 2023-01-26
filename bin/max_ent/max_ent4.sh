@@ -15,7 +15,7 @@ if [ $local = 'true' ]
 then
   dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
-  numIterations=15
+  numIterations=1
   finalSimProductionSweeps=500000
   productionSweeps=500000
   equilibSweeps=100000
@@ -24,28 +24,30 @@ fi
 
 STARTTIME=$(date +%s)
 i=3010
-dataset='dataset_11_14_22'
+dataset='dataset_01_17_22'
 useS='false'
 useE='true'
-useD='true'
+useD='false'
 m=1024
-chiMethod='zeros'
-mode='both'
+chiMethod='none'
+mode='none'
 
 bondtype='gaussian'
 bondLength=28
 
-diagChiMethod='zeros'
-dense='true'
-diagBins=96
-nSmallBins=64
-smallBinSize=1
+diagChiMethod='none'
+dense='false'
+diagBins=1
+nSmallBins=16
+smallBinSize=4
 diagCutoff=1024
 
-method='PCA-normalize'
-for sample in 2219 2220 2221
+k=0
+method='GNN'
+for sample in 201 202 203 204 205
 do
-  for k in 4 6 8
+  for GNNModelID in 341
+   # 243 254 262 265 267 271 276
   do
     echo $sample $m
     max_ent

@@ -24,7 +24,7 @@ fi
 
 STARTTIME=$(date +%s)
 i=1001
-dataset='dataset_11_18_22'
+dataset='dataset_11_21_22'
 useS='false'
 useE='true'
 useD='false'
@@ -46,7 +46,7 @@ k=0
 method='GNN'
 for sample in 410 653 1462 1801 2290
 do
-  for GNNModelID in 277
+  for GNNModelID in 341
   # 271
    # 243 254 262 265 267 271 276
   do
