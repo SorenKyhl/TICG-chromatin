@@ -71,6 +71,12 @@ class DatasetGenerator():
                 cov = dict['cov']
                 mean = dict['mean']
             dist = multivariate_normal(mean, cov)
+        elif self.chi_param_version == 'v5':
+            with open(osp.join('/home/erschultz/dataset_01_26_23/k4_chi.pickle'), 'rb') as f:
+                dict = pickle.load(f)
+                cov = dict['cov']
+                mean = dict['mean']
+            dist = multivariate_normal(mean, cov)
 
         for i in range(self.N):
             self.sample_dict[i]['k'] = self.k
@@ -83,11 +89,11 @@ class DatasetGenerator():
             elif self.chi_param_version == 'v3':
                 chi_ii = dist_ii.rvs(size = self.k)
                 chi_ij = dist_ij.rvs(size = int(self.k*(self.k-1)/2))
-            elif self.chi_param_version == 'v4':
+            elif self.chi_param_version in {'v4', 'v5'}:
                 chi = dist.rvs()
                 chi = triu_to_full(chi)
 
-            if self.chi_param_version != 'v4':
+            if self.chi_param_version not in {'v4', 'v5'}:
                 chi = np.zeros((self.k, self.k))
                 np.fill_diagonal(chi, chi_ii)
                 chi[np.triu_indices(self.k, 1)] = chi_ij
@@ -118,8 +124,15 @@ class DatasetGenerator():
         self.plot = False
         self.args_file = None
         self.sample = None
-        for j in range(2201, 2216):
-            self.sample_folder = f'/home/erschultz/dataset_11_14_22/samples/sample{j}'
+        if self.m == 1024:
+            dataset = '/home/erschultz/dataset_11_14_22/samples'
+            samples = range(2201, 2216)
+        elif self.m == 512:
+            dataset = f'/home/erschultz/dataset_01_17_23/samples'
+            samples = range(201, 225)
+
+        for j in samples:
+            self.sample_folder = osp.join(data_dir,f'sample{j}')
             _, y_diag = load_Y(self.sample_folder)
             getseq = GetSeq(self, None, False)
             x = getseq.get_PCA_seq(y_diag, normalize = True)

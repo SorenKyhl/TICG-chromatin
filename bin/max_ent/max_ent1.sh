@@ -15,7 +15,7 @@ if [ $local = 'true' ]
 then
   dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
-  numIterations=15
+  numIterations=10
   finalSimProductionSweeps=500000
   productionSweeps=500000
   equilibSweeps=100000
@@ -42,11 +42,11 @@ nSmallBins=64
 smallBinSize=1
 diagCutoff=1024
 
-k=0
-method='PCA-normalize'
-for sample in 410 653 1462 1801 2290
+method='k_means'
+for sample in 410
+ # 653 1462 1801 2290
 do
-  for k in 8
+  for k in 6
   # 4 8 12
   do
       echo $sample $m

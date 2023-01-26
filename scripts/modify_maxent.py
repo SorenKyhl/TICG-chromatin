@@ -5,6 +5,7 @@ import os.path as osp
 import pickle
 import sys
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from ECDF import Ecdf
@@ -472,14 +473,20 @@ def test3():
 
 def maxent_dist(plot=True):
     # distribution of max ent params
-    dataset = 'dataset_11_14_22'
+    dataset = 'dataset_01_26_23'
+    if dataset == 'dataset_11_14_22':
+        samples = range(2201, 2222)
+    elif dataset == 'dataset_01_26_23':
+        samples = range(201, 258)
+
     data_dir = osp.join('/home/erschultz', dataset)
 
     s_list = []
     sd_list = []
     chi_ij_list = []
+    chi_list = []
     k = 4
-    for sample in range(2201, 2215):
+    for sample in samples:
         dir = osp.join(data_dir, f'samples/sample{sample}')
         max_ent_dir = osp.join(dir, f'PCA-normalize-E/k{k}/replicate1')
         if not osp.exists(max_ent_dir):
@@ -488,7 +495,7 @@ def maxent_dist(plot=True):
         edit_dir = osp.join(max_ent_dir, 'samples')
 
         s = np.load(osp.join(max_ent_dir, 's.npy'))
-        with open(osp.join(max_ent_dir, 'iteration16/config.json')) as f:
+        with open(osp.join(max_ent_dir, 'iteration13/config.json')) as f:
             config = json.load(f)
         d = calculate_D(calculate_diag_chi_step(config))
         sd = calculate_SD(s,d)
@@ -500,6 +507,7 @@ def maxent_dist(plot=True):
         # get plaid params
         chi = np.loadtxt(osp.join(max_ent_dir, 'chis.txt'))[-1]
         chi = triu_to_full(chi)
+        chi_list.append(chi)
         for i in range(k):
             for j in range(i+1):
                 chi_ij = chi[i,j]
@@ -509,11 +517,10 @@ def maxent_dist(plot=True):
                     chi_ij_list.append(chi_ij)
 
     if plot:
-        # plot plaid parameters
+        # plot plaid chi parameters
         title = []
-        dist = skewnorm
-        arr = np.array(s_list).reshape(-1)
-        print(arr, np.min(arr), np.max(arr))
+        dist = norm
+        arr = np.array(chi_ij_list).reshape(-1)
         n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
                                     bins = 50, alpha = 0.5)
         bin_width = bins[1] - bins[0]
@@ -524,32 +531,131 @@ def maxent_dist(plot=True):
         plt.plot(bins, y, ls = '--')
         plt.legend()
         plt.ylabel('probability', fontsize=16)
-        plt.xlabel(r'$L_{ij}$', fontsize=16)
+        plt.xlabel(r'$\chi_{ij}$', fontsize=16)
         plt.xlim(-20, 20)
         plt.title(f'{params}')
-        plt.savefig(osp.join(data_dir, f'max_ent_k8_L_dist.png'))
+        plt.savefig(osp.join(data_dir, f'max_ent_k{k}_chi_dist.png'))
         plt.close()
 
-        # plot plaid parameters
-        title = []
-        dist = skewnorm
-        arr = np.array(sd_list).reshape(-1)
-        print(arr, np.min(arr), np.max(arr))
-        n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
-                                    bins = 50, alpha = 0.5)
-        bin_width = bins[1] - bins[0]
-        params = dist.fit(arr)
-        print('dist params', params)
-        y = dist.pdf(bins, *params) * bin_width
-        params = [np.round(p, 3) for p in params]
-        plt.plot(bins, y, ls = '--')
-        plt.legend()
-        plt.ylabel('probability', fontsize=16)
-        plt.xlabel(r'$S_{ij}$', fontsize=16)
+        # plot plaid Lij parameters
+        # title = []
+        # dist = skewnorm
+        # arr = np.array(s_list).reshape(-1)
+        # print(arr, np.min(arr), np.max(arr))
+        # n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
+        #                             bins = 50, alpha = 0.5)
+        # bin_width = bins[1] - bins[0]
+        # params = dist.fit(arr)
+        # print('dist params', params)
+        # y = dist.pdf(bins, *params) * bin_width
+        # params = [np.round(p, 3) for p in params]
+        # plt.plot(bins, y, ls = '--')
+        # plt.legend()
+        # plt.ylabel('probability', fontsize=16)
+        # plt.xlabel(r'$L_{ij}$', fontsize=16)
+        # plt.xlim(-20, 20)
+        # plt.title(f'{params}')
+        # plt.savefig(osp.join(data_dir, f'max_ent_k{k}_L_dist.png'))
+        # plt.close()
+
+        # plaid per chi
+        bin_width = 1
+        cmap = matplotlib.cm.get_cmap('tab10')
+        ind = np.arange(k*(k-1)/2 + k) % cmap.N
+        colors = cmap(ind.astype(int))
+        fig, ax = plt.subplots(k, k, sharey = True, sharex = True)
+        row = 0
+        col = 0
+        c = 0
+        print(colors)
+        for i in range(k):
+            for j in range(i,k):
+                print(c, colors[c])
+                data = []
+                for chi in chi_list:
+                    data.append(chi[i,j])
+
+                dist = norm
+                arr = np.array(data).reshape(-1)
+                bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width)
+                n, bins, patches = ax[i][j].hist(arr, weights = np.ones_like(arr) / len(arr),
+                                            bins = bins, alpha = 0.5, color = colors[c])
+
+                params = dist.fit(arr)
+                print('dist params', params)
+                y = dist.pdf(bins, *params) * bin_width
+                params = np.round(params, 2)
+                ax[i][j].plot(bins, y, ls = '--', color = 'k')
+                ax[i][j].set_title(r'$\mu$='+f'{params[0]} '+r'$\sigma$='+f'{params[1]}')
+                c += 1
+
+        fig.supylabel('probability', fontsize=16)
         plt.xlim(-20, 20)
-        plt.title(f'{params}')
-        plt.savefig(osp.join(data_dir, f'max_ent_k8_S_dist.png'))
+        plt.tight_layout()
+        plt.savefig(osp.join(data_dir, f'max_ent_k{k}_chi_ij_dist.png'))
         plt.close()
+
+        # plaid per pc
+        bin_width = 1
+        cmap = matplotlib.cm.get_cmap('tab10')
+        ind = np.arange(k) % cmap.N
+        colors = cmap(ind)
+        cols = math.ceil(k/2)
+        fig, ax = plt.subplots(2, cols, sharey = True, sharex = True)
+        row = 0
+        col = 0
+        for i in range(k):
+            print(i)
+            data = []
+            for chi in chi_list:
+                data.extend(chi[i,:])
+
+            dist = norm
+            arr = np.array(data).reshape(-1)
+            bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width)
+            n, bins, patches = ax[row][col].hist(arr, weights = np.ones_like(arr) / len(arr),
+                                        bins = bins, alpha = 0.5, color = colors[i])
+
+            params = dist.fit(arr)
+            print('dist params', params)
+            y = dist.pdf(bins, *params) * bin_width
+            params = np.round(params, 3)
+            ax[row][col].plot(bins, y, ls = '--', color = colors[i])
+            ax[row][col].set_title(f'PC{i}\n'+r'$\mu$='+f'{params[0]} '+r'$\sigma$='+f'{params[1]}')
+
+            col += 1
+            if col == cols:
+                row += 1
+                col = 0
+
+        fig.supylabel('probability', fontsize=16)
+        fig.supxlabel(r'$chi_{ij}$', fontsize=16)
+        plt.xlim(-20, 20)
+        plt.tight_layout()
+        plt.savefig(osp.join(data_dir, f'max_ent_k{k}_chi_pc_dist.png'))
+        plt.close()
+
+
+        # plot net energy parameters
+        # title = []
+        # dist = skewnorm
+        # arr = np.array(sd_list).reshape(-1)
+        # print(arr, np.min(arr), np.max(arr))
+        # n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
+        #                             bins = 50, alpha = 0.5)
+        # bin_width = bins[1] - bins[0]
+        # params = dist.fit(arr)
+        # print('dist params', params)
+        # y = dist.pdf(bins, *params) * bin_width
+        # params = [np.round(p, 3) for p in params]
+        # plt.plot(bins, y, ls = '--')
+        # plt.legend()
+        # plt.ylabel('probability', fontsize=16)
+        # plt.xlabel(r'$S_{ij}$', fontsize=16)
+        # plt.xlim(-20, 20)
+        # plt.title(f'{params}')
+        # plt.savefig(osp.join(data_dir, f'max_ent_k{k}_S_dist.png'))
+        # plt.close()
 
     return s_list, chi_ij_list
 
@@ -665,17 +771,17 @@ def compare_maxent_simulation():
     # s_list.append(simulated_dist('dataset_11_21_22', False))
     # l_list.append('Sim Markov')
 
-    s_sim, chi_sim = simulated_dist('dataset_12_20_22', False)
-    s_list.append(s_sim)
-    chi_list.append(chi_sim)
-    l_list.append('Sim PCs')
+    # s_sim, chi_sim = simulated_dist('dataset_12_20_22', False)
+    # s_list.append(s_sim)
+    # chi_list.append(chi_sim)
+    # l_list.append('Sim PCs')
 
     # s_sim, chi_sim = simulated_dist('dataset_01_23_23', False)
     # s_list.append(s_sim)
     # chi_list.append(chi_sim)
     # l_list.append('Sim PCs + chi ecdf')
 
-    s_sim, chi_sim = simulated_dist('dataset_01_25_23', False)
+    s_sim, chi_sim = simulated_dist('dataset_01_27_23', False)
     s_list.append(s_sim)
     chi_list.append(chi_sim)
     l_list.append('Sim PCs + chi multi gauss')
@@ -713,17 +819,21 @@ def compare_maxent_simulation():
     plt.close()
 
 def fit_multivariate_gaussian():
-    dataset = 'dataset_11_14_22'
+    dataset = 'dataset_01_26_23'
+    if dataset == 'dataset_11_14_22':
+        samples = range(2201, 2222)
+    elif dataset == 'dataset_01_26_23':
+        samples = range(201, 225)
+
     data_dir = osp.join('/home/erschultz', dataset)
 
     chi_list = []
     k=4
-    for sample in range(2201, 2215):
+    for sample in samples:
         dir = osp.join(data_dir, f'samples/sample{sample}')
         max_ent_dir = osp.join(dir, f'PCA-normalize-E/k{k}/replicate1')
         if not osp.exists(max_ent_dir):
             continue
-        fitting_dir = osp.join(max_ent_dir, 'fitting')
 
         # get plaid params
         chi = np.loadtxt(osp.join(max_ent_dir, 'chis.txt'))[-1]
@@ -733,12 +843,10 @@ def fit_multivariate_gaussian():
     print(chi_arr.shape)
     mean = np.mean(chi_arr, axis = 0)
     cov = np.cov(chi_arr, rowvar = 0)
-    with open('/home/erschultz/dataset_11_14_22/k4_chi.pickle', 'wb') as f:
+    with open(f'/home/erschultz/{dataset}/k4_chi.pickle', 'wb') as f:
         dict = {'mean':mean, 'cov':cov}
         pickle.dump(dict, f)
-    # print(np.linalg.det(cov))
-    # print(mean)
-    dist = multivariate_skewnorm
+    dist = multivariate_normal
     hat = dist.rvs(mean, cov)
     print(hat)
 
@@ -749,9 +857,9 @@ if __name__ == '__main__':
         # modify_maxent_diag_chi(i, k = 8, edit = False)
         # plot_modified_max_ent(i, k = 8)
     # find_params_for_synthetic_data([8])
-    # maxent_dist()
-    # simulated_dist()
+    maxent_dist(True)
+    # simulated_dist('dataset_01_27_23')
     # test_ecdf()
     # test3()
-    compare_maxent_simulation()
+    # compare_maxent_simulation()
     # fit_multivariate_gaussian()

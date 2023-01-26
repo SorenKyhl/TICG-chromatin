@@ -45,7 +45,7 @@ diagCutoff=1024
 constantChi=10
 
 method='k_means'
-for k in 3
+for k in 12
 do
   for sample in 2201
   # 2201 2202 2203 2204 2205 2206 2207 2208

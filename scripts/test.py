@@ -2,6 +2,7 @@ import json
 import math
 import os
 import os.path as osp
+import shutil
 import sys
 import tarfile
 from collections import defaultdict
@@ -33,7 +34,7 @@ from sequences_to_contact_maps.scripts.energy_utils import (
     calculate_SD_ED)
 from sequences_to_contact_maps.scripts.knightRuiz import knightRuiz
 from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_all, load_contact_map)
+    get_final_max_ent_folder, load_all, load_contact_map, load_Y)
 from sequences_to_contact_maps.scripts.neural_nets.utils import (
     get_dataset, load_saved_model)
 from sequences_to_contact_maps.scripts.plotting_utils import (plot_matrix,
@@ -837,8 +838,8 @@ def max_ent_loss_for_gnn(dataset, sample):
     sim.obs_tot = np.hstack((plaid, diag))
     sim.plot_obs_vs_goal('test2.png')
 
-def molar_contact_ratio():
-    dir = '/home/erschultz/'
+def molar_contact_ratio(plot=True):
+    dir = '/project2/depablo/erschultz/'
     dataset = 'dataset_11_21_22'
     data_dir = osp.join(dir, dataset)
 
@@ -846,16 +847,18 @@ def molar_contact_ratio():
         return a@y@b
 
     def r(y, a, b):
-        num = c(y,a,b)**2
-        denom = c(y,a,a) * c(y,b,b)
+        denom = c(y,a,b)**2
+        num = c(y,a,a) * c(y,b,b)
         return num/denom
 
-    def getseq():
+    def get_seq_kmeans():
         kmeans = KMeans(n_clusters = 2)
         kmeans.fit(y_diag)
-        seq = np.zeros((m, 4))
+        seq = np.zeros((m, 2))
         seq[np.arange(m), kmeans.labels_] = 1
+        return seq
 
+    def get_seq_pca(binarize=False):
         pca = PCA()
         pca.fit(y_diag)
         pc = pca.components_[0]
@@ -871,23 +874,23 @@ def molar_contact_ratio():
         scale = 1/val
         pc *= scale
 
-        pca_var.append(pca.explained_variance_ratio_[0])
+        pca_var[i] = pca.explained_variance_ratio_[0]
         pcpos = pc.copy()
         pcpos[pc < 0] = 0 # set negative part to zero
         pcneg = pc.copy()
         pcneg[pc > 0] = 0 # set positive part to zero
         pcneg *= -1 # make positive
 
-        # binarize
-        val = np.mean(pcpos)
-        pcpos[pcpos <= val] = 0
-        pcpos[pcpos > val] = 1
-        seq[:,2] = pcpos
+        if binarize:
+            val = np.mean(pcpos)
+            pcpos[pcpos <= val] = 0
+            pcpos[pcpos > val] = 1
+            val = np.mean(pcneg)
+            pcneg[pcneg <= val] = 0
+            pcneg[pcneg > val] = 1
 
-        val = np.mean(pcneg)
-        pcneg[pcneg <= val] = 0
-        pcneg[pcneg > val] = 1
-        seq[:,3] = pcneg
+        seq[:,0] = pcpos
+        seq[:,1] = pcneg
 
         return seq
 
@@ -910,6 +913,7 @@ def molar_contact_ratio():
         opt.cuda = False # force to use cpu
         opt.device = torch.device('cpu')
         opt.verbose = False
+        opt.scratch = '/home/erschultz/scratch'
         if opt.y_preprocessing.startswith('sweep'):
             _, *opt.y_preprocessing = opt.y_preprocessing.split('_')
             if isinstance(opt.y_preprocessing, list):
@@ -944,77 +948,103 @@ def molar_contact_ratio():
         return mse_dict
 
 
+    experimental = False
     if dataset == 'dataset_12_20_22':
         samples = [324, 981, 1936, 2834, 3464]
     elif dataset == 'dataset_11_21_22':
         samples = [1, 2, 3, 410, 653, 1462, 1801, 2290]
+        # samples = range(1,2000)
     elif dataset == 'dataset_11_14_22':
         samples = range(2201, 2222)
+        experimental = True
+    elif dataset == 'dataset_01_26_23':
+        samples = range(201, 283)
+        experimental = True
     else:
         samples = range(1, 11)
 
-    k_means_rab = []
-    pca_rab = []
-    pca_var = []
-    for sample in samples:
+    N = len(samples)
+    k_means_rab = np.zeros(N)
+    pca_rab = np.zeros(N)
+    pca_b_rab = np.zeros(N)
+    pca_var = np.zeros(N)
+    for i, sample in enumerate(samples):
         sample_dir = osp.join(data_dir, f'samples/sample{sample}')
 
-        y_diag = np.load(osp.join(sample_dir, 'y_diag.npy')).astype(np.float64)
-        y = np.load(osp.join(sample_dir, 'y.npy')).astype(np.float64)
+        y, y_diag = load_Y(sample_dir)
         y /= np.mean(np.diagonal(y))
         m = len(y)
-        seq = getseq()
 
         # plot_seq_binary(seq, save = False, show = True)
 
         # kmeans
+        seq = get_seq_kmeans()
         rab = r(y, seq[:, 1], seq[:, 0])
-        k_means_rab.append(rab)
+        k_means_rab[i] = rab
 
         # pca
-        rab = r(y, seq[:, 3], seq[:, 2])
-        pca_rab.append(rab)
+        seq = get_seq_pca()
+        rab = r(y, seq[:, 1], seq[:, 0])
+        pca_rab[i] = rab
+
+        # pca
+        seq = get_seq_pca(True)
+        rab = r(y, seq[:, 1], seq[:, 0])
+        pca_b_rab[i] = rab
 
     # GNN MSE
-    mse_dict = get_gnn_mse()
+    if not experimental:
+        mse_dict = get_gnn_mse()
 
-    # make table
-    mse_list = []
-    with open(osp.join(data_dir, 'plaid_score_table.txt'), 'w') as o:
-        o.write("\\begin{center}\n")
-        o.write("\\begin{tabular}{|" + "c|"*5 + "}\n")
-        o.write("\\hline\n")
-        o.write("\\multicolumn{5}{|c|}{" + dataset.replace('_', "\_") + "} \\\ \n")
-        o.write("\\hline\n")
-        o.write('Sample & K\_means R(a,b) & PCA R(a,b) & PCA \% Var & MSE \\\ \n')
-        o.write("\\hline\\hline\n")
+        # # make table
+        # mse_list = []
+        # with open(osp.join(data_dir, 'plaid_score_table.txt'), 'w') as o:
+        #     o.write("\\begin{center}\n")
+        #     o.write("\\begin{tabular}{|" + "c|"*5 + "}\n")
+        #     o.write("\\hline\n")
+        #     o.write("\\multicolumn{5}{|c|}{" + dataset.replace('_', "\_") + "} \\\ \n")
+        #     o.write("\\hline\n")
+        #     o.write('Sample & K\_means R(a,b) & PCA R(a,b) & PCA \% Var & MSE \\\ \n')
+        #     o.write("\\hline\\hline\n")
+        #     for i, s in enumerate(samples):
+        #         mse = mse_dict[s]
+        #         mse_list.append(mse)
+        #         vals = [k_means_rab[i], pca_rab[i], pca_var[i]]
+        #         vals = np.round(vals, 4)
+        #         o.write(f'{s} & {vals[0]} & {vals[1]} & {vals[2]} & {mse}\\\ \n')
+        #     o.write("\\hline\n")
+        #     o.write("\\end{tabular}\n")
+        #     o.write("\\end{center}\n\n")
+
+        # make new dataset with samples < cutoff
+        new_data_dir = f'{dir}/{dataset}_plaid_cutoff'
+        if not osp.exists(new_data_dir):
+            os.mkdir(new_data_dir, mode=0o755)
+            os.mkdir(osp.join(new_data_dir, 'samples'), mode=0o755)
+        cutoff = 50
         for i, s in enumerate(samples):
-            mse = mse_dict[s]
-            mse_list.append(mse)
-            vals = [k_means_rab[i], pca_rab[i], pca_var[i]]
-            vals = np.round(vals, 4)
-            o.write(f'{s} & {vals[0]} & {vals[1]} & {vals[2]} & {mse}\\\ \n')
-        o.write("\\hline\n")
-        o.write("\\end{tabular}\n")
-        o.write("\\end{center}\n\n")
-
+            if k_means_rab[i] < cutoff:
+                shutil.copytree(osp.join(data_dir, f'samples/sample{s}'),
+                            osp.join(new_data_dir, f'samples/sample{s}'))
 
     # plot distributions
-    for arr, label in zip([k_means_rab, pca_rab, pca_var], ['kmeans_Rab', 'PCA_Rab', 'PCA_var']):
-        print(label)
-        p = pearson_round(arr, mse_list)
-        print(p)
-        arr = np.array(arr).reshape(-1)
-        print(np.min(arr), np.max(arr))
-        n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
-                                    bins=20,
-                                    alpha = 0.5, label = label)
-        plt.legend()
-        plt.ylabel('probability', fontsize=16)
-        plt.xlabel(f'{label}', fontsize=16)
-        # plt.xlim(-20, 20)
-        plt.savefig(osp.join(data_dir, f'{label}_distribution.png'))
-        plt.close()
+    if plot:
+        for arr, label in zip([k_means_rab, pca_rab, pca_b_rab, pca_var], ['kmeans_Rab', 'PCA_Rab', 'PCA_binary_Rab','PCA_var']):
+            print(label)
+            if not experimental:
+                p = pearson_round(arr, mse_list)
+                print(p)
+            arr = np.array(arr).reshape(-1)
+            print(np.min(arr), np.max(arr))
+            n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
+                                        bins=20,
+                                        alpha = 0.5, label = label)
+            plt.legend()
+            plt.ylabel('probability', fontsize=16)
+            plt.xlabel(f'{label}', fontsize=16)
+            # plt.xlim(-20, 20)
+            plt.savefig(osp.join(data_dir, f'{label}_distribution.png'))
+            plt.close()
 
 
 
@@ -1023,7 +1053,6 @@ if __name__ == '__main__':
     # check_if_same()
     # test_robust_PCA()
     # check_dataset('dataset_11_18_22')
-    # check_dataset('dataset_11_21_22')
     # time_comparison()
     # time_comparison_dmatrix()
     # construct_sc_xyz()
@@ -1031,7 +1060,6 @@ if __name__ == '__main__':
     # main()
     # plot_p_s()
     # main2()
-    molar_contact_ratio()
+    molar_contact_ratio(False)
     # plot_sd()
-    # compare_kr_vs_none()
     # max_ent_loss_for_gnn('dataset_11_14_22', 2201)

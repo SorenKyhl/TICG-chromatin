@@ -48,13 +48,13 @@ jobs=0
 waitCount=0
 for k in 4
 do
-  for sample in {201..210}
+  for sample in {226..282}
   # 2201 2202 2203 2204 2205 2206 2207 2208 2209 2210 2211 2212 2213 2214 2215
   do
     echo $sample $m
     max_ent
     jobs=$(( $jobs + 1 ))
-    if [ $jobs -gt 19 ]
+    if [ $jobs -gt 15 ]
     then
       echo 'Waiting'
       waitCount=$(( $waitCount + 1 ))
