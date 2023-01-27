@@ -119,9 +119,9 @@ void Sim::updateContactsGrid()
 void Sim::updateContactsDistance() {
 	double cutoff = 28.7; // nm
 	int pixel1, pixel2;
-	for(int i=0; i<beads.size(); i++)
+	for(std::size_t i=0; i<beads.size(); i++)
 	{
-		for(int j=i; j<beads.size(); j++)
+		for(std::size_t j=i; j<beads.size(); j++)
 		{
 			Eigen::RowVector3d distance =  beads[i].r - beads[j].r;
 			if (distance.norm() < cutoff)
@@ -1215,7 +1215,7 @@ void Sim::MCmove_crankshaft() {
 	catch (const char* msg)
 	{
 		// restore particle positions
-		for(int i=0; i<old_positions.size(); i++)
+		for(std::size_t i=0; i<old_positions.size(); i++)
 		{
 			beads[first+i].r = old_positions[i];
 			beads[first+i].u = old_orientations[i];
@@ -1372,7 +1372,7 @@ void Sim::MCmove_pivot(int sweep) {
 	catch (const char* msg)
 	{
 		// restore particle positions
-		for(int i=0; i<old_positions.size(); i++)
+		for(std::size_t i=0; i<old_positions.size(); i++)
 		{
 			beads[first+i].r = old_positions[i];
 			beads[first+i].u = old_orientations[i];
@@ -1507,9 +1507,9 @@ void Sim::saveObservables(int sweep) {
 		obs_out = fopen(obs_out_filename.c_str(), "a");
 		fprintf(obs_out, "%d", sweep);
 
-		for (int i=0; i<nspecies; i++)
+		for(int i=0; i<nspecies; i++)
 		{
-			for (int j=i; j<nspecies; j++)
+			for(int j=i; j<nspecies; j++)
 			{
 				double ij_contacts = grid.get_ij_Contacts(i, j);
 				fprintf(obs_out, "\t%lf", ij_contacts);
@@ -1590,7 +1590,7 @@ void Sim::saveContacts(int sweep) {
 
 	std::ofstream contactsOutFile(contact_map_filename);
 	for (const auto &row : contact_map) {
-		for (int i=0; i<row.size(); i++) {
+		for (std::size_t i=0; i<row.size(); i++) {
 			if (i == row.size()-1) {
 				contactsOutFile << row[i];
 			}

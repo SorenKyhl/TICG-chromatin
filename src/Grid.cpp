@@ -76,9 +76,9 @@ void Grid::printActiveCells() {
 void Grid::meshBeads(std::vector<Bead> &beads) {
 	// Inserts all beads into their corresponding grid cells
 	// and recomputes cell volumes
-	for(int i=0; i<cells.size(); i++) {
-		for(int j=0; j<cells[i].size(); j++) {
-			for(int k=0; k<cells[i][j].size(); k++) {
+	for(std::size_t i=0; i<cells.size(); i++) {
+		for(std::size_t j=0; j<cells[i].size(); j++) {
+			for(std::size_t k=0; k<cells[i][j].size(); k++) {
 				cells[i][j][k].reset(); // initialize cells to contain no beads
 			}
 		}
@@ -299,7 +299,7 @@ double Grid::getContacts()
 void Grid::getDiagObs(std::vector<double> &diag_obs) {
 	for (Cell* cell : active_cells)
 	{
-		for(int i=0; i<diag_obs.size(); i++)
+		for(std::size_t i=0; i<diag_obs.size(); i++)
 		{
 			diag_obs[i] += cell->diag_phis[i] * cell->diag_phis[i] * cell->vol / cell->beadvol;
 		}
