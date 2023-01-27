@@ -427,7 +427,7 @@ class SCC():
             print(f'{len(nan_list)} nans: k = {nan_list}')
         return num / denom           
 
-def get_contactmap(filename, norm=True, log=False, rawcounts=False, normtype="max"):
+def get_contactmap(filename, norm=True, log=False, rawcounts=False, normtype="mean"):
     """Loads contact map from file, returns array."""
     
     if type(filename) is str:
@@ -447,7 +447,7 @@ def get_contactmap(filename, norm=True, log=False, rawcounts=False, normtype="ma
                 contactmap /= np.max(np.diagonal(contactmap))
             elif normtype == "mean":
                 contactmap /= np.mean(np.diagonal(contactmap))
-                np.fill_diagonal(contactmap, 1)
+                #np.fill_diagonal(contactmap, 1)
             #df /= df[0][0]
         if log:
             contactmap = np.log(contactmap)

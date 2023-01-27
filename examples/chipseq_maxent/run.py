@@ -24,23 +24,22 @@ def chip_maxent(chrom, wig_method, encode_only):
     
     chipseqdata_dir = Path("/home/skyhl/Documents/chromatin/maxent-analysis/HCT116_chipseq_hg19/")
     HCT116_bigWig = list(chipseqdata_dir.glob("*.bigWig"))
-    sequences = pipe.load_chipseq_from_files(HCT116_bigWig, wig_method)
+    #sequences = pipe.load_chipseq_from_files(HCT116_bigWig, wig_method)
+    sequences = pipe.load_chipseq_from_directory(chipseqdata_dir, wig_method)
 
     if encode_only:
         seqs = []
         for name in encode_seqs:
             seqs.append(sequences[name])
         sequences = np.array(seqs)
-        print("encode loaded")
-        print(np.shape(sequences))
     else:
         sequences = np.array(list(sequences.values()))
     sequences = np.array([pylib.default.chipseq_pipeline.fit(seq) for seq in sequences])
 
     # set up config, params, goals
-    #config = pylib.default.config
-    config = utils.load_json("config.json")
-    goals = epilib.get_goals(gthic, sequences, config['beadvol'], config['grid_size'])
+    config = pylib.default.config
+    #config = utils.load_json("config.json")
+    goals = epilib.get_goals(gthic, sequences, config)
 
     params = pylib.default.params
     params['equilib_sweeps'] = 10000
