@@ -11,5 +11,6 @@
 
 
 source activate python3.9_pytorch1.9_cuda10.2
+source activate python3.9_pytorch1.9
 
 python3 ~/TICG-chromatin/scripts/test.py
