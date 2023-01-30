@@ -42,11 +42,25 @@ nSmallBins=64
 smallBinSize=1
 diagCutoff=1024
 
+sleep 4h
+
 method='k_means'
-for sample in 410
+for sample in 1801
  # 653 1462 1801 2290
 do
-  for k in 6
+  for k in 4 6 8
+  # 4 8 12
+  do
+      echo $sample $m
+      max_ent
+  done
+done
+
+method='PCA-normalize'
+for sample in 1801
+ # 653 1462 1801 2290
+do
+  for k in 4 6
   # 4 8 12
   do
       echo $sample $m

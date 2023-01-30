@@ -15,7 +15,7 @@ if [ $local = 'true' ]
 then
   dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
-  numIterations=12
+  numIterations=15
   finalSimProductionSweeps=500000
   equilibSweeps=100000
   productionSweeps=500000
@@ -43,18 +43,21 @@ nSmallBins=64
 smallBinSize=1
 diagCutoff=512
 
+
+sleep 2h # Wait 2 hour TODO
+
 method='PCA-normalize'
 jobs=0
 waitCount=0
-for k in 4
+for k in 8 12
 do
-  for sample in {226..282}
+  for sample in {201..282}
   # 2201 2202 2203 2204 2205 2206 2207 2208 2209 2210 2211 2212 2213 2214 2215
   do
     echo $sample $m
     max_ent
     jobs=$(( $jobs + 1 ))
-    if [ $jobs -gt 15 ]
+    if [ $jobs -gt 18 ]
     then
       echo 'Waiting'
       waitCount=$(( $waitCount + 1 ))

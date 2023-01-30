@@ -40,6 +40,7 @@ from sequences_to_contact_maps.scripts.neural_nets.utils import (
 from sequences_to_contact_maps.scripts.plotting_utils import (plot_matrix,
                                                               plot_seq_binary)
 from sequences_to_contact_maps.scripts.R_pca import R_pca
+from sequences_to_contact_maps.scripts.similarity_measures import SCC
 from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
                                                      pearson_round,
                                                      triu_to_full)
@@ -838,10 +839,13 @@ def max_ent_loss_for_gnn(dataset, sample):
     sim.obs_tot = np.hstack((plaid, diag))
     sim.plot_obs_vs_goal('test2.png')
 
-def molar_contact_ratio(plot=True):
+def molar_contact_ratio(dataset, plot=True):
     dir = '/project2/depablo/erschultz/'
-    dataset = 'dataset_11_21_22'
+    # dir = '/home/erschultz'
     data_dir = osp.join(dir, dataset)
+    odir = osp.join(data_dir, 'molar_contact_ratio')
+    if not osp.exists(odir):
+        os.mkdir(odir, mode = 0o755)
 
     def c(y, a, b):
         return a@y@b
@@ -952,13 +956,16 @@ def molar_contact_ratio(plot=True):
     if dataset == 'dataset_12_20_22':
         samples = [324, 981, 1936, 2834, 3464]
     elif dataset == 'dataset_11_21_22':
-        samples = [1, 2, 3, 410, 653, 1462, 1801, 2290]
-        # samples = range(1,2000)
+        # samples = [1, 2, 3, 410, 653, 1462, 1801, 2290]
+        samples = range(1,2000)
     elif dataset == 'dataset_11_14_22':
         samples = range(2201, 2222)
         experimental = True
     elif dataset == 'dataset_01_26_23':
         samples = range(201, 283)
+        experimental = True
+    elif dataset.startswith('dataset_01_27_23'):
+        samples = range(1, 15)
         experimental = True
     else:
         samples = range(1, 11)
@@ -995,10 +1002,14 @@ def molar_contact_ratio(plot=True):
     # GNN MSE
     if not experimental:
         mse_dict = get_gnn_mse()
+        mse_list = []
+        for i, s in enumerate(samples):
+            mse = mse_dict[s]
+            mse_list.append(mse)
+        np.save(osp.join(odir, 'mse.npy'), mse_list)
 
-        # # make table
-        # mse_list = []
-        # with open(osp.join(data_dir, 'plaid_score_table.txt'), 'w') as o:
+        # make table
+        # with open(osp.join(odir, 'plaid_score_table.txt'), 'w') as o:
         #     o.write("\\begin{center}\n")
         #     o.write("\\begin{tabular}{|" + "c|"*5 + "}\n")
         #     o.write("\\hline\n")
@@ -1006,9 +1017,7 @@ def molar_contact_ratio(plot=True):
         #     o.write("\\hline\n")
         #     o.write('Sample & K\_means R(a,b) & PCA R(a,b) & PCA \% Var & MSE \\\ \n')
         #     o.write("\\hline\\hline\n")
-        #     for i, s in enumerate(samples):
-        #         mse = mse_dict[s]
-        #         mse_list.append(mse)
+        #     for i, mse in enumerate(mse_list):
         #         vals = [k_means_rab[i], pca_rab[i], pca_var[i]]
         #         vals = np.round(vals, 4)
         #         o.write(f'{s} & {vals[0]} & {vals[1]} & {vals[2]} & {mse}\\\ \n')
@@ -1017,19 +1026,24 @@ def molar_contact_ratio(plot=True):
         #     o.write("\\end{center}\n\n")
 
         # make new dataset with samples < cutoff
-        new_data_dir = f'{dir}/{dataset}_plaid_cutoff'
-        if not osp.exists(new_data_dir):
-            os.mkdir(new_data_dir, mode=0o755)
-            os.mkdir(osp.join(new_data_dir, 'samples'), mode=0o755)
+        new_data_dir = osp.join(dir, f'{dataset}_plaid_cutoff')
+        if osp.exists(new_data_dir):
+            shutil.rmtree(new_data_dir)
+        os.mkdir(new_data_dir, mode=0o755)
+        os.mkdir(osp.join(new_data_dir, 'samples'), mode=0o755)
         cutoff = 50
         for i, s in enumerate(samples):
             if k_means_rab[i] < cutoff:
                 shutil.copytree(osp.join(data_dir, f'samples/sample{s}'),
                             osp.join(new_data_dir, f'samples/sample{s}'))
 
+
+
+
     # plot distributions
     if plot:
         for arr, label in zip([k_means_rab, pca_rab, pca_b_rab, pca_var], ['kmeans_Rab', 'PCA_Rab', 'PCA_binary_Rab','PCA_var']):
+            np.save(osp.join(odir, label + '.npy'), arr)
             print(label)
             if not experimental:
                 p = pearson_round(arr, mse_list)
@@ -1037,14 +1051,24 @@ def molar_contact_ratio(plot=True):
             arr = np.array(arr).reshape(-1)
             print(np.min(arr), np.max(arr))
             n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
-                                        bins=20,
+                                        bins = 50,
                                         alpha = 0.5, label = label)
             plt.legend()
             plt.ylabel('probability', fontsize=16)
             plt.xlabel(f'{label}', fontsize=16)
-            # plt.xlim(-20, 20)
-            plt.savefig(osp.join(data_dir, f'{label}_distribution.png'))
+            plt.xscale('log')
+            plt.savefig(osp.join(odir, f'{label}_distribution.png'))
             plt.close()
+
+
+def compare_scc_bio_replicates():
+    dir = '/home/erschultz/dataset_test/samples'
+    y_a = np.load(osp.join(dir, 'sample2201/y.npy'))
+    y_b = np.load(osp.join(dir, 'sample2202/y.npy'))
+    scc = SCC()
+    corr_scc = scc.scc(y_a, y_b, var_stabilized = False)
+    corr_scc_var = scc.scc(y_a, y_b, var_stabilized = True)
+    print(corr_scc, corr_scc_var)
 
 
 
@@ -1060,6 +1084,7 @@ if __name__ == '__main__':
     # main()
     # plot_p_s()
     # main2()
-    molar_contact_ratio(False)
+    molar_contact_ratio('dataset_11_21_22', True)
+    # compare_scc_bio_replicates()
     # plot_sd()
     # max_ent_loss_for_gnn('dataset_11_14_22', 2201)

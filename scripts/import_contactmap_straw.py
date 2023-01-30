@@ -63,7 +63,7 @@ def import_contactmap_straw(sample_folder, hic_filename, chrom, start,
     np.save(osp.join(sample_folder, 'y.npy'), y_arr)
     print(f'{sample_folder} done')
 
-def main2():
+def single_cell_import():
     dir = '/home/erschultz/sequences_to_contact_maps'
     # dir = '/project2/depablo/erschultz'
     dataset='single_cell_nagano_2017/samples'
@@ -174,7 +174,7 @@ def main3():
 
     resolution=10000
     norm = 'NONE'
-    filename="https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-treated_6hr_combined_30.hic"
+    filename='https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-treated_6hr_combined_30.hic'
     m = 1024*5
 
     # slices = [(2, 17.6)]
@@ -197,6 +197,88 @@ def main3():
     with multiprocessing.Pool(10) as p:
         p.starmap(import_contactmap_straw, mapping)
 
+def main2():
+    dir = '/home/erschultz'
+    # dir = '/project2/depablo/erschultz'
+    dataset='dataset_test'
+    data_folder = osp.join(dir, dataset)
+    if not osp.exists(data_folder):
+        os.mkdir(data_folder, mode = 0o755)
+    if not osp.exists(osp.join(data_folder, 'samples')):
+        os.mkdir(osp.join(data_folder, 'samples'), mode = 0o755)
+
+    resolution=10000
+    norm = 'NONE'
+    m = 1024*5
+    chromosome, start_mb =(1, 15)
+    files = ['ENCFF241RAY', 'ENCFF453DBX', 'ENCFF374EBH', 'ENCFF415XWQ',
+            'ENCFF246DOF', 'ENCFF125FXX', 'ENCFF590VOM']
+
+    # set up for multiprocessing
+    mapping = []
+    start_sample=2001
+    for i, f in enumerate(files):
+        filename=f"https://www.encodeproject.org/files/{f}/@@download/{f}.hic"
+        start = start_mb * 1000000
+        end = start + resolution * m
+        end_mb = end / 1000000
+        print(f'i={i+start_sample}: chr{chromosome} {start_mb}-{end_mb}')
+        sample_folder = osp.join(data_folder, 'samples', f'sample{i+start_sample}')
+        mapping.append((sample_folder, filename, chromosome, start, end, resolution, norm))
+
+    with multiprocessing.Pool(10) as p:
+        p.starmap(import_contactmap_straw, mapping)
+
+def pool():
+    dir = '/home/erschultz/dataset_test/samples'
+    y_list = []
+    f_list = []
+    for i in [2001, 2002, 2003, 2004]:
+        s_dir = osp.join(dir, f'sample{i}')
+        y = np.load(osp.join(s_dir, 'y.npy'))
+        y_list.append(y)
+        with open(osp.join(s_dir, 'import.log'), 'r') as f:
+            f_list.append(f.readline())
+            rest = f.readlines()
+    print(f_list)
+
+    s_dir = osp.join(dir, 'sample2101')
+    if not osp.exists(s_dir):
+        os.mkdir(s_dir, mode = 0o755)
+    y = np.array(y_list)
+    y = np.sum(y, axis = 0)
+    print(y.shape)
+    np.save(osp.join(s_dir, 'y.npy'), y)
+    with open(osp.join(s_dir, 'import.log'), 'w') as f:
+        for l in f_list:
+            f.write(l)
+        for l in rest:
+            f.write(l)
+
+    y_list = []
+    f_list = []
+    for i in [2005, 2006, 2007]:
+        s_dir = osp.join(dir, f'sample{i}')
+        y = np.load(osp.join(s_dir, 'y.npy'))
+        y_list.append(y)
+        with open(osp.join(s_dir, 'import.log'), 'r') as f:
+            f_list.append(f.readline())
+            rest = f.readlines()
+    print(f_list)
+
+    s_dir = osp.join(dir, 'sample2102')
+    if not osp.exists(s_dir):
+        os.mkdir(s_dir, mode = 0o755)
+    y = np.array(y_list)
+    y = np.sum(y, axis = 0)
+    print(y.shape)
+    np.save(osp.join(s_dir, 'y.npy'), y)
+    with open(osp.join(s_dir, 'import.log'), 'w') as f:
+        for l in f_list:
+            f.write(l)
+        for l in rest:
+            f.write(l)
+
 
 if __name__ == '__main__':
-    main()
+    pool()

@@ -1344,6 +1344,7 @@ class GetDiagChi():
         opt.output_mode = None # None for prediction mode
         opt.crop = (0, self.m)
         opt.device = torch.device('cpu')
+        opt.scratch = '/home/erschultz/scratch' # use local scratch
         print(opt)
 
         # get model
@@ -1606,6 +1607,8 @@ class GetEnergy():
         opt.log_file = sys.stdout # change
         opt.cuda = False # force to use cpu
         opt.device = torch.device('cpu')
+        opt.scratch = '/home/erschultz/scratch' # use local scratch
+
         if opt.y_preprocessing.startswith('sweep'):
             _, *opt.y_preprocessing = opt.y_preprocessing.split('_')
             if isinstance(opt.y_preprocessing, list):

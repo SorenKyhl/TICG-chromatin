@@ -51,7 +51,8 @@ class DatasetGenerator():
         self.seq_mode = args.seq_mode
         self.chi_param_version = args.chi_param_version
 
-        data_dir = osp.join('/home/erschultz', self.dataset)
+        self.dir = '/home/erschultz'
+        data_dir = osp.join(self.dir, self.dataset)
         if not osp.exists(data_dir):
             os.mkdir(data_dir, mode = 0o755)
         self.odir = osp.join(data_dir, 'setup')
@@ -66,13 +67,13 @@ class DatasetGenerator():
             dist_ii = Ecdf(fname = osp.join('/home/erschultz/dataset_11_14_22/k8_chi_ii.json'))
             dist_ij = Ecdf(fname = osp.join('/home/erschultz/dataset_11_14_22/k8_chi_ij.json'))
         elif self.chi_param_version == 'v4':
-            with open(osp.join('/home/erschultz/dataset_11_14_22/k4_chi.pickle'), 'rb') as f:
+            with open(osp.join(self.dir, 'dataset_11_14_22/plaid_param_distributions/k4_chi_multivariate.pickle'), 'rb') as f:
                 dict = pickle.load(f)
                 cov = dict['cov']
                 mean = dict['mean']
             dist = multivariate_normal(mean, cov)
         elif self.chi_param_version == 'v5':
-            with open(osp.join('/home/erschultz/dataset_01_26_23/k4_chi.pickle'), 'rb') as f:
+            with open(osp.join('/home/erschultz/dataset_01_26_23/plaid_param_distributions/k4_chi_multivariate.pickle'), 'rb') as f:
                 dict = pickle.load(f)
                 cov = dict['cov']
                 mean = dict['mean']
@@ -92,6 +93,29 @@ class DatasetGenerator():
             elif self.chi_param_version in {'v4', 'v5'}:
                 chi = dist.rvs()
                 chi = triu_to_full(chi)
+            elif self.chi_param_version == 'v6':
+                chi_ii = skewnorm.rvs(-6.91, 1.739, 11.897, size = self.k)
+                chi_ij = skewnorm.rvs(-1.722, 6.908, 12.136, size = int(self.k*(self.k-1)/2))
+            elif self.chi_param_version == 'v7':
+                chi_ii = np.zeros(self.k)
+                for j, l in enumerate('ABCD'):
+                    with open(osp.join(f'/home/erschultz/dataset_01_26_23/plaid_param_distributions/k4_chi{l}{l}.pickle'), 'rb') as f:
+                        dict_j = pickle.load(f)
+                    chi_ii[j] =  skewnorm.rvs(dict_j['alpha'], dict_j['mu'], dict_j['sigma'])
+                chi_ij = skewnorm.rvs(-1.722, 6.908, 12.136, size = int(self.k*(self.k-1)/2))
+            elif self.chi_param_version == 'v8':
+                chi_ii = np.zeros(self.k)
+                for j, l in enumerate('ABCD'):
+                    with open(osp.join(f'/home/erschultz/dataset_01_26_23/plaid_param_distributions/k4_chi{l}{l}.pickle'), 'rb') as f:
+                        dict_j = pickle.load(f)
+                    chi_ii[j] =  skewnorm.rvs(dict_j['alpha'], dict_j['mu'], dict_j['sigma'])
+                chi_ij = []
+                for j, l1 in enumerate('ABCD'):
+                    for k, l2 in enumerate('ABCD'):
+                        if k > j:
+                            with open(osp.join(f'/home/erschultz/dataset_01_26_23/plaid_param_distributions/k4_chi{l1}{l2}.pickle'), 'rb') as f:
+                                dict_j = pickle.load(f)
+                            chi_ij.append(skewnorm.rvs(dict_j['alpha'], dict_j['mu'], dict_j['sigma']))
 
             if self.chi_param_version not in {'v4', 'v5'}:
                 chi = np.zeros((self.k, self.k))
@@ -128,11 +152,11 @@ class DatasetGenerator():
             dataset = '/home/erschultz/dataset_11_14_22/samples'
             samples = range(2201, 2216)
         elif self.m == 512:
-            dataset = f'/home/erschultz/dataset_01_17_23/samples'
-            samples = range(201, 225)
+            dataset = f'/home/erschultz/dataset_01_26_23/samples'
+            samples = range(201, 250)
 
         for j in samples:
-            self.sample_folder = osp.join(data_dir,f'sample{j}')
+            self.sample_folder = osp.join(dataset, f'sample{j}')
             _, y_diag = load_Y(self.sample_folder)
             getseq = GetSeq(self, None, False)
             x = getseq.get_PCA_seq(y_diag, normalize = True)
@@ -140,7 +164,7 @@ class DatasetGenerator():
 
 
         for i in range(self.N):
-            j = np.random.choice(range(2201, 2216))
+            j = np.random.choice(samples)
             x = x_dict[j]
             if shuffle:
                 np.random.shuffle(x)
@@ -151,21 +175,31 @@ class DatasetGenerator():
             seq_file = osp.join('/home/erschultz', self.dataset, f'setup/x_{i+1}.npy')
             self.sample_dict[i]['method'] = seq_file
 
-
     def linear_params(self):
-        # first get diagonal params
-        # l_bounds = [0.001, 0]
-        # u_bounds = [0.004, 8]
-        l_bounds = [0.002, 0]
-        u_bounds = [0.01, 8]
-        sampler = qmc.LatinHypercube(d=2) # slope, intercept
-        sample = sampler.random(self.N)
-        sample = qmc.scale(sample, l_bounds, u_bounds)
+        if self.m == 512:
+            with open(osp.join(self.dir, 'dataset_01_26_23/diagonal_param_distributions/k4_linear_intercept.pickle'), 'rb') as f:
+                dict_intercept = pickle.load(f)
+            with open(osp.join(self.dir, 'dataset_01_26_23/diagonal_param_distributions/k4_linear_slope.pickle'), 'rb') as f:
+                dict_slope = pickle.load(f)
 
-        for i, vals in enumerate(sample):
-            self.sample_dict[i]['diag_chi_method'] = 'linear'
-            self.sample_dict[i]['diag_chi_slope'] = vals[0] * 1000
-            self.sample_dict[i]['diag_chi_constant'] = vals[1]
+            for i in range(self.N):
+                self.sample_dict[i]['diag_chi_method'] = 'linear'
+                self.sample_dict[i]['diag_chi_slope'] = skewnorm.rvs(dict_slope['alpha'], dict_slope['mu'], dict_slope['sigma'])
+                self.sample_dict[i]['diag_chi_constant'] = skewnorm.rvs(dict_intercept['alpha'], dict_intercept['mu'], dict_intercept['sigma'])
+
+        else:
+            # l_bounds = [0.001, 0]
+            # u_bounds = [0.004, 8]
+            l_bounds = [0.002, 0]
+            u_bounds = [0.01, 8]
+            sampler = qmc.LatinHypercube(d=2) # slope, intercept
+            sample = sampler.random(self.N)
+            sample = qmc.scale(sample, l_bounds, u_bounds)
+
+            for i, vals in enumerate(sample):
+                self.sample_dict[i]['diag_chi_method'] = 'linear'
+                self.sample_dict[i]['diag_chi_slope'] = vals[0] * 1000
+                self.sample_dict[i]['diag_chi_constant'] = vals[1]
 
     def logistic_params(self):
         # first get diagonal params

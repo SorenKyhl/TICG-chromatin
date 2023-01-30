@@ -24,7 +24,7 @@ fi
 
 STARTTIME=$(date +%s)
 i=5001
-dataset='dataset_11_14_22/samples/sample2217/PCA-normalize-E/k8/replicate1'
+dataset='dataset_test'
 useS='false'
 useE='true'
 useD='true'
@@ -44,7 +44,7 @@ diagCutoff=1024
 
 k=8
 method='PCA-normalize'
-for sample in 2217_copy 2217_neg_chi 2217_other_pcs 2217_rand_chi 2217_rand_seq 2217_shuffle_chi 2217_shuffle_seq
+for sample in 2201 2202
 do
   echo $sample $m
   max_ent
