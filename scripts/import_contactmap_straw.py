@@ -197,7 +197,33 @@ def main3():
     with multiprocessing.Pool(10) as p:
         p.starmap(import_contactmap_straw, mapping)
 
-def main2():
+def main():
+    dir = '/home/erschultz'
+    dataset='dataset_test'
+    data_folder = osp.join(dir, dataset)
+
+    resolution=10000
+    norm = 'NONE'
+    filename='https://hicfiles.s3.amazonaws.com/hiseq/huvec/in-situ/combined.hic'
+    m = 1024*5
+
+    chromosome, start_mb =(1, 15)
+
+    # set up for multiprocessing
+    mapping = []
+    start_sample=2104
+    start = start_mb * 1000000
+    end = start + resolution * m
+    end_mb = end / 1000000
+    print(f'i={start_sample}: chr{chromosome} {start_mb}-{end_mb}')
+    sample_folder = osp.join(data_folder, 'samples', f'sample{start_sample}')
+    mapping.append((sample_folder, filename, chromosome, start, end, resolution, norm))
+
+    with multiprocessing.Pool(10) as p:
+        p.starmap(import_contactmap_straw, mapping)
+
+
+def download_techinical_replicates():
     dir = '/home/erschultz'
     # dir = '/project2/depablo/erschultz'
     dataset='dataset_test'
@@ -281,4 +307,4 @@ def pool():
 
 
 if __name__ == '__main__':
-    pool()
+    main()

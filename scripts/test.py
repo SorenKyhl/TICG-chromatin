@@ -900,7 +900,7 @@ def molar_contact_ratio(dataset, plot=True):
 
     def get_gnn_mse():
         model_ID=341
-        model_path = osp.join(dir, f'sequences_to_contact_maps/results/ContactGNNEnergy/{model_ID}')
+        model_path = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{model_ID}'
         argparse_path = osp.join(model_path, 'argparse.txt')
 
 
@@ -1066,6 +1066,32 @@ def compare_scc_bio_replicates():
     dir = '/home/erschultz/dataset_test/samples'
     y_a = np.load(osp.join(dir, 'sample2201/y.npy'))
     y_b = np.load(osp.join(dir, 'sample2202/y.npy'))
+    scc = SCC()
+    corr_scc = scc.scc(y_a, y_b, var_stabilized = False)
+    corr_scc_var = scc.scc(y_a, y_b, var_stabilized = True)
+    print(corr_scc, corr_scc_var)
+
+
+    dir = '/home/erschultz/dataset_test/samples'
+    y_a = np.load(osp.join(dir, 'sample2201/y.npy'))
+    y_b = np.load(osp.join(dir, 'sample2204/y.npy'))
+    scc = SCC()
+    corr_scc = scc.scc(y_a, y_b, var_stabilized = False)
+    corr_scc_var = scc.scc(y_a, y_b, var_stabilized = True)
+    print(corr_scc, corr_scc_var)
+
+    dir = '/home/erschultz/dataset_test/samples'
+    y_a = np.load(osp.join(dir, 'sample2202/y.npy'))
+    y_b = np.load(osp.join(dir, 'sample2204/y.npy'))
+    scc = SCC()
+    corr_scc = scc.scc(y_a, y_b, var_stabilized = False)
+    corr_scc_var = scc.scc(y_a, y_b, var_stabilized = True)
+    print(corr_scc, corr_scc_var)
+
+
+    dir = '/home/erschultz/dataset_test/samples'
+    y_a = np.load(osp.join(dir, 'sample2203/y.npy'))
+    y_b = np.load(osp.join(dir, 'sample2204/y.npy'))
     scc = SCC()
     corr_scc = scc.scc(y_a, y_b, var_stabilized = False)
     corr_scc_var = scc.scc(y_a, y_b, var_stabilized = True)
