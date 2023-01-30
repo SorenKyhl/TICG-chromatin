@@ -957,7 +957,8 @@ def molar_contact_ratio(dataset, plot=True):
         samples = [324, 981, 1936, 2834, 3464]
     elif dataset == 'dataset_11_21_22':
         # samples = [1, 2, 3, 410, 653, 1462, 1801, 2290]
-        samples = range(1,2000)
+        samples = list(range(1,1000))
+        samples.extend(range(1021, 2401))
     elif dataset == 'dataset_11_14_22':
         samples = range(2201, 2222)
         experimental = True
