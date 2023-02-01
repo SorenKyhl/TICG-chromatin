@@ -2,7 +2,8 @@
 #SBATCH --job-name=fds3
 #SBATCH --output=logFiles/fixed_diag_dataset3.out
 #SBATCH --time=24:00:00
-#SBATCH --partition=depablo-ivyb
+#SBATCH --account=pi-depablo
+#SBATCH --partition=depablo
 #SBATCH --ntasks=20
 #SBATCH --nodes=1
 #SBATCH --mem-per-cpu=2000

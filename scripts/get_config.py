@@ -79,6 +79,9 @@ def getArgs():
                         help='True to use s_matrix')
     parser.add_argument('--use_dmatrix', type=AC.str2bool, default=False,
                         help='True to use d_matrix')
+    parser.add_argument('--use_lmatrix', type=AC.str2bool, default=False,
+                        help='True to use l_matrix')
+
     parser.add_argument('--e_constant', type=float, default=0,
                         help='constant to add to e')
     parser.add_argument('--s_constant', type=float, default=0,
@@ -309,6 +312,8 @@ def main():
 
     if args.use_dmatrix:
         config['dmatrix_on'] = True
+    if args.use_lmatrix:
+        config['lmatrix_on'] = True
     if args.use_ematrix:
         config['ematrix_on'] = True
         assert not args.use_smatrix

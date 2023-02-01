@@ -8,20 +8,120 @@ import sys
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import statsmodels.api as sm
 from ECDF import Ecdf
 from get_params import Tester
 from MultivariateSkewNormal import multivariate_skewnorm
 from scipy.optimize import curve_fit
-from scipy.stats import (beta, gamma, multivariate_normal, norm, skewnorm,
-                         weibull_max, weibull_min)
+from scipy.stats import (beta, gamma, laplace, multivariate_normal, norm,
+                         skewnorm, weibull_max, weibull_min)
+from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.energy_utils import (
     calculate_D, calculate_diag_chi_step, calculate_SD)
-from sequences_to_contact_maps.scripts.plotting_utils import plot_matrix
+from sequences_to_contact_maps.scripts.plotting_utils import (
+    plot_matrix, plot_seq_continuous)
 from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
+                                                     pearson_round,
                                                      triu_to_full)
+
+LETTERS = 'ABCDEFGHIJKLMN'
+
+
+def modify_plaid_chis():
+    # shuffle plaid chis
+    dataset = 'dataset_01_26_23'
+    for sample in range(201, 283):
+        k = 4
+        dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
+        max_ent_dir = osp.join(dir, f'PCA-normalize-E/k{k}/replicate1')
+        chis = np.loadtxt(osp.join(max_ent_dir, 'chis.txt'))[-1]
+        chis = triu_to_full(chis)
+        plot_matrix(chis, osp.join(max_ent_dir, 'chis.png'), cmap = 'blue-red')
+
+        # negative version of chi
+        chis_neg = -1 * chis
+        plot_matrix(chis_neg, osp.join(max_ent_dir, 'chis_neg.png'), cmap = 'blue-red')
+        np.save(osp.join(max_ent_dir, 'chis_neg.npy'), chis_neg)
+
+        # negative version of chi_ij
+        chis_neg = -1 * chis
+        np.fill_diagonal(chis_neg, np.diagonal(chis))
+        plot_matrix(chis_neg, osp.join(max_ent_dir, 'chis_neg_v2.png'), cmap = 'blue-red')
+        np.save(osp.join(max_ent_dir, 'chis_neg_v2.npy'), chis_neg)
+
+        # shuffle chis
+        chis_shuffle = np.copy(chis)
+        diag = np.copy(np.diagonal(chis))
+        tri = np.copy(chis[np.triu_indices(len(chis), 1)])
+        np.random.shuffle(diag)
+        np.fill_diagonal(chis_shuffle, diag)
+        np.random.shuffle(tri)
+        chis_shuffle[np.triu_indices(len(chis), 1)] = tri
+        chis_shuffle = np.triu(chis_shuffle, 1) + np.triu(chis_shuffle).T
+        np.save(osp.join(max_ent_dir, 'chis_shuffle.npy'), chis_shuffle)
+        plot_matrix(chis_shuffle, osp.join(max_ent_dir, 'chis_shuffle.png'), cmap = 'blue-red')
+
+        # make diagonal by zero out chi_ij
+        chis_zeroed = np.zeros_like(chis)
+        np.fill_diagonal(chis_zeroed, np.diagonal(chis))
+        np.save(osp.join(max_ent_dir, 'chis_zero.npy'), chis_zeroed)
+        plot_matrix(chis_zeroed, osp.join(max_ent_dir, 'chis_zero.png'), cmap = 'blue-red')
+
+        # shuffle seq
+        x = np.load(osp.join(max_ent_dir, 'resources/x.npy'))
+        x_shuffle = np.copy(x)
+        np.random.shuffle(x_shuffle.T)
+        np.save(osp.join(max_ent_dir, 'resources/x_shuffle.npy'), x_shuffle)
+
+        # compute EIG(L)
+        L = np.load(osp.join(max_ent_dir, 's.npy'))
+        L = (L+L.T)/2
+        w, V = np.linalg.eig(L)
+        x_eig = V[:,:k]
+
+        assert np.sum((np.isreal(x_eig)))
+        x_eig = np.real(x_eig)
+
+        chis_eig = np.zeros_like(chis)
+        for i, val in enumerate(w[:k]):
+            assert np.isreal(val)
+            chis_eig[i,i] = np.real(val)
+
+        np.save(osp.join(max_ent_dir, 'resources/x_eig.npy'), x_eig)
+        plot_seq_continuous(x_eig, ofile = osp.join(max_ent_dir, 'resources/x_eig.png'))
+        np.save(osp.join(max_ent_dir, 'chis_eig.npy'), chis_eig)
+        plot_matrix(chis_eig, osp.join(max_ent_dir, 'chis_eig.png'), cmap = 'blue-red')
+        L_eig = x_eig @ chis_eig @ x_eig.T
+        assert np.allclose(L, L_eig), L - L_eig
+
+        # normalize x_eig
+        x_eig_norm = np.zeros_like(x)
+        chis_eig_norm = np.zeros_like(chis)
+        for i in range(k):
+            xi = x_eig[:, i]
+            min = np.min(xi)
+            max = np.max(xi)
+            if max > abs(min):
+                val = max
+            else:
+                val = abs(min)
+
+            # multiply by scale such that val x scale = 1
+            scale = 1/val
+            x_eig_norm[:,i] = xi * scale
+
+            # multiply by val**2 to counteract
+            chis_eig_norm[i,i] = chis_eig[i,i] * val * val
+
+        np.save(osp.join(max_ent_dir, 'resources/x_eig_norm.npy'), x_eig_norm)
+        plot_seq_continuous(x_eig_norm, ofile = osp.join(max_ent_dir, 'resources/x_eig_norm.png'))
+        np.save(osp.join(max_ent_dir, 'chis_eig_norm.npy'), chis_eig_norm)
+        plot_matrix(chis_eig_norm, osp.join(max_ent_dir, 'chis_eig_norm.png'), cmap = 'blue-red')
+        L_eig = x_eig_norm @ chis_eig_norm @ x_eig_norm.T
+        assert np.allclose(L, L_eig), L - L_eig
 
 
 def modify_maxent_diag_chi(dataset, sample, k = 8, edit = True):
@@ -72,37 +172,37 @@ def modify_maxent_diag_chi(dataset, sample, k = 8, edit = True):
         piecewise_linear_fit = None
         piecewise_poly2_fit = None
         piecewise_poly3_fit = None
-        log_fit = curve_fit_helper(log_curve, x[:64], diag_chi_step[:64],
+        log_fit = curve_fit_helper(Curves.log_curve, x[:64], diag_chi_step[:64],
                                         'log', odir)
-        log_max_fit = curve_fit_helper(log_max_curve, x[:64], diag_chi_step[:64],
+        log_max_fit = curve_fit_helper(Curves.log_max_curve, x[:64], diag_chi_step[:64],
                                         'log_max', odir)
-        logistic_fit = curve_fit_helper(logistic_curve, x[:m], diag_chi_step,
+        logistic_fit = curve_fit_helper(Curves.logistic_curve, x[:m], diag_chi_step,
                                         'logistic', odir, [10, 1, 100])
-        poly2_fit = curve_fit_helper(poly2_curve, x[:m], diag_chi_step,
+        poly2_fit = curve_fit_helper(Curves.poly2_curve, x[:m], diag_chi_step,
                                         'poly2', odir, [1, 1, 1])
-        poly3_fit = curve_fit_helper(poly3_curve, x[:m], diag_chi_step,
+        poly3_fit = curve_fit_helper(Curves.poly3_curve, x[:m], diag_chi_step,
                                         'poly3', odir, [1, 1, 1, 1])
-        linear_max_fit = curve_fit_helper(linear_max_curve, x[:m], diag_chi_step,
+        linear_max_fit = curve_fit_helper(Curves.linear_max_curve, x[:m], diag_chi_step,
                                         'linear_max', odir)
-        linear_fit = curve_fit_helper(linear_curve, x[:m], diag_chi_step,
+        linear_fit = curve_fit_helper(Curves.linear_curve, x[:m], diag_chi_step,
                                         'linear', odir)
     else:
         log_fit = None
         log_max_fit = None
         logistic_fit = None
-        poly2_fit = curve_fit_helper(poly2_curve, x[:m], diag_chi_step,
+        poly2_fit = curve_fit_helper(Curves.poly2_curve, x[:m], diag_chi_step,
                                         'poly2', odir, [1, 1, 1],
                                         start = 2)
-        poly3_fit = curve_fit_helper(poly3_curve, x[:m], diag_chi_step,
+        poly3_fit = curve_fit_helper(Curves.poly3_curve, x[:m], diag_chi_step,
                                         'poly3', odir, [1, 1, 1, 1],
                                         start = 2)
-        piecewise_linear_fit = curve_fit_helper(piecewise_linear_curve, x[:m],
+        piecewise_linear_fit = curve_fit_helper(Curves.piecewise_linear_curve, x[:m],
                                 diag_chi_step, 'piecewise_linear', odir,
                                 [1, 1, 1, 1, 10], start = 2)
-        piecewise_poly2_fit = curve_fit_helper(piecewise_poly2_curve, x[:m],
+        piecewise_poly2_fit = curve_fit_helper(Curves.piecewise_poly2_curve, x[:m],
                                 diag_chi_step, 'piecewise_poly2', odir,
                                 [1, 1, 1, 1, 1, 1, 10], start = 2)
-        piecewise_poly3_fit = curve_fit_helper(piecewise_poly3_curve, x[:m],
+        piecewise_poly3_fit = curve_fit_helper(Curves.piecewise_poly3_curve, x[:m],
                                 diag_chi_step, 'piecewise_poly3', odir,
                                 [1, 1, 1, 1, 1, 1, 1, 1, 20], start = 2)
         linear_max_fit = None
@@ -154,60 +254,61 @@ def curve_fit_helper(fn, x, y, label, odir, init = [1,1], start = 0):
 
     return fit
 
-def piecewise_linear_curve(x, m1, m2, b1, b2, midpoint):
-    result = np.zeros_like(x).astype(np.float64)
-    midpoint = int(midpoint)
-    result[:midpoint] = x[:midpoint] * m1 + b1
-    result[midpoint:] = x[midpoint:] * m2 + b2
-    return result
+class Curves():
+    def piecewise_linear_curve(x, m1, m2, b1, b2, midpoint):
+        result = np.zeros_like(x).astype(np.float64)
+        midpoint = int(midpoint)
+        result[:midpoint] = x[:midpoint] * m1 + b1
+        result[midpoint:] = x[midpoint:] * m2 + b2
+        return result
 
-def piecewise_poly2_curve(x, A1, B1, C1, A2, B2, C2, midpoint):
-    result = np.zeros_like(x).astype(np.float64)
-    midpoint = int(midpoint)
-    result[:midpoint] = A1 + B1 * x[:midpoint] + C1 * x[:midpoint]**2
-    result[midpoint:] = A2 + B2 * x[midpoint:] + C2 * x[midpoint:]**2
-    return result
+    def piecewise_poly2_curve(x, A1, B1, C1, A2, B2, C2, midpoint):
+        result = np.zeros_like(x).astype(np.float64)
+        midpoint = int(midpoint)
+        result[:midpoint] = A1 + B1 * x[:midpoint] + C1 * x[:midpoint]**2
+        result[midpoint:] = A2 + B2 * x[midpoint:] + C2 * x[midpoint:]**2
+        return result
 
-def piecewise_poly3_curve(x, A1, B1, C1, D1, A2, B2, C2, D2, midpoint):
-    result = np.zeros_like(x).astype(np.float64)
-    midpoint = int(midpoint)
-    result[:midpoint] = A1 + B1 * x[:midpoint] + C1 * x[:midpoint]**2 + D1 * x[:midpoint]**3
-    result[midpoint:] = A2 + B2 * x[midpoint:] + C2 * x[midpoint:]**2 + D2 * x[midpoint:]**3
-    return result
+    def piecewise_poly3_curve(x, A1, B1, C1, D1, A2, B2, C2, D2, midpoint):
+        result = np.zeros_like(x).astype(np.float64)
+        midpoint = int(midpoint)
+        result[:midpoint] = A1 + B1 * x[:midpoint] + C1 * x[:midpoint]**2 + D1 * x[:midpoint]**3
+        result[midpoint:] = A2 + B2 * x[midpoint:] + C2 * x[midpoint:]**2 + D2 * x[midpoint:]**3
+        return result
 
-def linear_curve(x, A, B):
-    result = A*x + B
-    return result
+    def linear_curve(x, A, B):
+        result = A*x + B
+        return result
 
-def linear_max_curve(x, A, B):
-    result = A*x + B
-    result[result < 0] = 0
-    return result
+    def linear_max_curve(x, A, B):
+        result = A*x + B
+        result[result < 0] = 0
+        return result
 
-def log_curve(x, A, B):
-    result = A * np.log(B * x + 1)
-    return result
+    def log_curve(x, A, B):
+        result = A * np.log(B * x + 1)
+        return result
 
-def log_max_curve(x, A, B):
-    result = A * np.log(B * x)
-    result[result < 0] = 0
-    return result
+    def log_max_curve(x, A, B):
+        result = A * np.log(B * x)
+        result[result < 0] = 0
+        return result
 
-def logistic_curve(x, max, slope, midpoint):
-    result = (max) / (1 + np.exp(-1*slope * (x - midpoint)))
-    return result
+    def logistic_curve(x, max, slope, midpoint):
+        result = (max) / (1 + np.exp(-1*slope * (x - midpoint)))
+        return result
 
-def logistic_manual_curve(xmax, slope, midpoint):
-    x, max = xmax
-    return logistic_curve(x, max, slope, midpoint)
+    def logistic_manual_curve(xmax, slope, midpoint):
+        x, max = xmax
+        return logistic_curve(x, max, slope, midpoint)
 
-def poly3_curve(x, A, B, C, D):
-    result = A + B*x + C*x**2 + D*x**3
-    return result
+    def poly3_curve(x, A, B, C, D):
+        result = A + B*x + C*x**2 + D*x**3
+        return result
 
-def poly2_curve(x, A, B, C):
-    result = A + B*x + C*x**2
-    return result
+    def poly2_curve(x, A, B, C):
+        result = A + B*x + C*x**2
+        return result
 
 def plot_modified_max_ent(sample, params = True, k = 8):
     # plot different p(s) curves
@@ -424,8 +525,7 @@ def max_ent_diagonal_dist(dataset, k, plot=True):
             dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
             pickle.dump(dict, f)
 
-
-def plaid_dist(dataset, k=None, plot=True):
+def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
     # distribution of plaid params
     experimental = False
     if dataset == 'dataset_11_14_22':
@@ -437,7 +537,7 @@ def plaid_dist(dataset, k=None, plot=True):
     elif dataset == 'dataset_12_20_22':
         samples = [324, 981, 1936, 2834, 3464]
     elif dataset == 'dataset_11_21_22':
-        samples = [410, 653, 1462, 1801, 2290]
+        samples = [1, 2, 3, 410, 653, 1462, 1801, 2290]
     elif  dataset.startswith('dataset_01_27_23'):
         samples = range(1, 16)
     else:
@@ -445,15 +545,21 @@ def plaid_dist(dataset, k=None, plot=True):
 
     data_dir = osp.join('/home/erschultz', dataset)
     odir = osp.join(data_dir, 'plaid_param_distributions')
+    if eig:
+        odir = osp.join(data_dir, 'plaid_param_distributions_eig')
+    elif eig_norm:
+        odir = osp.join(data_dir, 'plaid_param_distributions_eig_norm')
+
     if not osp.exists(odir):
         os.mkdir(odir, mode = 0o755)
 
-    s_list = []
-    sd_list = []
+    L_list = []
+    S_list = []
     chi_ij_list = []
     chi_ii_list = []
     chi_list = []
     chi_flat_list = []
+    x_list = []
     for sample in samples:
         dir = osp.join(data_dir, f'samples/sample{sample}')
         if experimental:
@@ -461,38 +567,64 @@ def plaid_dist(dataset, k=None, plot=True):
         if not osp.exists(dir):
             continue
 
-        s = np.load(osp.join(dir, 's.npy'))
+        # get seq
+        if eig:
+            x = np.load(osp.join(dir, 'resources/x_eig.npy'))
+        elif eig_norm:
+            x = np.load(osp.join(dir, 'resources/x_eig_norm.npy'))
+        elif experimental:
+            x = np.load(osp.join(dir, 'resources/x.npy'))
+        else:
+            x = np.load(osp.join(dir, 'x.npy'))
+        x_list.append(x)
+
+        # get L
+        if osp.exists(osp.join(dir, 'L.npy')):
+            L = np.load(osp.join(dir, 'L.npy'))
+        else:
+            L = np.load(osp.join(dir, 's.npy'))
+        L = (L+L.T)/2
+
+        # get D
         if experimental:
             with open(osp.join(dir, 'iteration13/config.json')) as f:
                 config = json.load(f)
-            d = calculate_D(calculate_diag_chi_step(config))
-
+            D = calculate_D(calculate_diag_chi_step(config))
         else:
             diag_chis = np.load(osp.join(dir, 'diag_chis_continuous.npy'))
-            d = calculate_D(diag_chis)
-        sd = calculate_SD(s,d)
+            D = calculate_D(diag_chis)
+        S = calculate_SD(L, D)
 
-        m = len(s)
-        s_list.append(s[np.triu_indices(m)])
-        sd_list.append(sd[np.triu_indices(m)])
+        m = len(L)
+        L_list.append(L[np.triu_indices(m)])
+        S_list.append(S[np.triu_indices(m)])
 
         # get plaid params
-        if experimental:
+        if eig:
+            chi = np.load(osp.join(dir, 'chis_eig.npy'))
+        elif eig_norm:
+            chi = np.load(osp.join(dir, 'chis_eig_norm.npy'))
+        elif experimental:
             chi = np.loadtxt(osp.join(dir, 'chis.txt'))[-1]
             chi_flat_list.append(chi)
             chi = triu_to_full(chi)
         else:
-            chi = np.load(osp.join(dir, 'chis.npy'))
-            k = len(chi)
+            chi_file = osp.join(dir, 'chis.npy')
+            if osp.exists(chi_file):
+                chi = np.load(chi_file)
+                k = len(chi)
+            else:
+                chi = None
 
-        chi_list.append(chi)
-        for i in range(k):
-            for j in range(i+1):
-                chi_ij = chi[i,j]
-                if i == j:
-                    chi_ii_list.append(chi_ij)
-                else:
-                    chi_ij_list.append(chi_ij)
+        if chi is not None:
+            chi_list.append(chi)
+            for i in range(k):
+                for j in range(i+1):
+                    chi_ij = chi[i,j]
+                    if i == j:
+                        chi_ii_list.append(chi_ij)
+                    else:
+                        chi_ij_list.append(chi_ij)
 
     # multivariate normal
     if chi_flat_list:
@@ -509,35 +641,39 @@ def plaid_dist(dataset, k=None, plot=True):
         #     print(hat)
 
     if plot:
-        def simple_plot_wrapper(arr, xlabel, ofname, dist=skewnorm):
+        def simple_plot_wrapper(arr, xlabel='X', ofname=None, dist=skewnorm,
+                            label=None, legend_title=''):
             title = []
             arr = np.array(arr).reshape(-1)
             n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
-                                        bins = 50, alpha = 0.5)
+                                        bins = 50, alpha = 0.5, label = label)
             bin_width = bins[1] - bins[0]
             params = dist.fit(arr)
             y = dist.pdf(bins, *params) * bin_width
             params = [np.round(p, 3) for p in params]
-            with open(osp.join(odir, ofname[:-9]+'.pickle'), 'wb') as f:
-                dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
-                pickle.dump(dict, f)
+            print(ofname, params)
+            # with open(osp.join(odir, ofname[:-9]+'.pickle'), 'wb') as f:
+            #     dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
+            #     pickle.dump(dict, f)
 
             plt.plot(bins, y, ls = '--', color = 'k')
-            plt.legend()
-            plt.ylabel('probability', fontsize=16)
-            plt.xlabel(xlabel, fontsize=16)
-            plt.xlim(-20, 20)
-            plt.title(r'$\alpha=$' + f'{params[0]}\n' + r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
-            plt.savefig(osp.join(odir, ofname))
-            plt.close()
+            if ofname is not None:
+                if label is not None:
+                    plt.legend(title = legend_title)
+                plt.ylabel('probability', fontsize=16)
+                plt.xlabel(xlabel, fontsize=16)
+                # plt.xlim(-20, 20)
+                # plt.title(r'$\alpha=$' + f'{params[0]}\n' + r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
+                plt.savefig(osp.join(odir, ofname))
+                plt.close()
 
         # plot plaid chi parameters
         simple_plot_wrapper(chi_ij_list, r'$\chi_{ij}$',
-                            f'k{k}_chi_ij_dist.png')
+                            f'k{k}_chi_ij_dist.png', dist = laplace)
 
         # plaid chi_ii parameters
         simple_plot_wrapper(chi_ii_list, r'$\chi_{ii}$',
-                            f'k{k}_chi_ii_dist.png')
+                            f'k{k}_chi_ii_dist.png', dist = skewnorm)
 
         # plot plaid Lij parameters
         # simple_plot_wrapper(s_list, r'$L_{ij}$',
@@ -547,46 +683,163 @@ def plaid_dist(dataset, k=None, plot=True):
         # simple_plot_wrapper(s_list, r'$S_{ij}$',
         #                     f'k{k}_S_dist.png')
 
+        if not (eig or eig_norm):
+            # corr(A,B) vs chi_AB
+            for log in [True, False]:
+                X = []
+                Y = []
+                for i in range(k):
+                    for j in range(i+1,k):
+                        for s in range(len(samples)):
+                            chi = chi_list[s]
+                            chi_ij = chi[i,j]
+                            if log:
+                                chi_ij = np.sign(chi_ij) * np.log(np.abs(chi_ij)+1)
+                            X.append(chi_ij)
+                            corr = pearson_round(x_list[s][:, i], x_list[s][:, j])
+                            # if log:
+                                # corr = np.log(corr + 1)
+                            Y.append(corr)
+
+                est = sm.OLS(Y, X)
+                est = est.fit()
+                params = np.round(est.params, 3)
+                plt.plot(X, est.predict(X), ls='--', c = 'k')
+                plt.axhline(0, c = 'gray')
+                plt.axvline(0, c = 'gray')
+
+                plt.title(f'y={params[0]}x\n'+r'$R^2=$'+f'{np.round(est.rsquared, 2)}')
+                plt.scatter(X, Y)
+                plt.ylabel(r'Pearson($\psi_A$, $\psi_B$)', fontsize=16)
+                if log:
+                    plt.xlabel(r'sign$(\chi_{AB})$*ln(|$\chi_{AB}$|+1)', fontsize=16)
+                else:
+                    plt.xlabel(r'$\chi_{AB}$', fontsize=16)
+                plt.xlim(-5 ,5)
+                plt.tight_layout()
+                if log:
+                    plt.savefig(osp.join(odir, f'chi_ij_ln_vs_corr_ij.png'))
+                else:
+                    plt.savefig(osp.join(odir, f'chi_ij_vs_corr_ij.png'))
+                plt.close()
+
+            # plot chi_ij conditioned on corr(psi_i, psi_j)
+            X_neg = []
+            X_pos = []
+            for i in range(k):
+                for j in range(i+1,k):
+                    for s in range(len(samples)):
+                        chi = chi_list[s]
+                        chi_ij = chi[i,j]
+                        corr = pearson_round(x_list[s][:, i], x_list[s][:, j])
+                        if corr > 0:
+                            X_neg.append(chi_ij)
+                        else:
+                            X_pos.append(chi_ij)
+
+            simple_plot_wrapper(X_neg, dist = skewnorm, label='negative')
+            simple_plot_wrapper(X_pos, r'$\chi_{AB}$',
+                                f'k{k}_chi_ij_dist_conditioned.png', dist = skewnorm,
+                                label = 'positive', legend_title = r'Pearson($\psi_A$, $\psi_B$)')
+
+            # bivariate distributions
+            triples = [(2, 3, 'CD'), (1, 2, 'BC'), (1, 3, 'BD')]
+            X = []
+            for s in range(len(samples)):
+                chi = chi_list[s]
+                X.append(chi[0,1])
+            fig, ax = plt.subplots(1, 3, sharex = True)
+            for col, (i, j, label) in enumerate(triples):
+                Y = []
+                for s in range(len(samples)):
+                    chi = chi_list[s]
+                    Y.append(chi[i,j])
+
+                ax[col].scatter(X, Y)
+                ax[col].set_xlabel(r'$\chi_{AB}$', fontsize=16)
+                ax[col].set_ylabel(r'$\chi$'+label, fontsize=16)
+
+            plt.tight_layout()
+            plt.savefig(osp.join(odir, f'chi_AB_bivariates.png'))
+            plt.close()
+
+
+
         # plaid per chi
         bin_width = 1
         cmap = matplotlib.cm.get_cmap('tab10')
-        ind = np.arange(k*(k-1)/2 + k) % cmap.N
+        ind = np.arange(k) % cmap.N
         colors = cmap(ind.astype(int))
-        fig, ax = plt.subplots(k, k, sharey = True, sharex = True)
-        row = 0
-        col = 0
+        fig, ax = plt.subplots(1, k)
         c = 0
-        LETTERS = 'ABCDEFGH'
         for i in range(k):
-            for j in range(i,k):
-                data = []
-                for chi in chi_list:
-                    data.append(chi[i,j])
+            data = []
+            for chi in chi_list:
+                data.append(chi[i,i])
 
-                dist = skewnorm
-                arr = np.array(data).reshape(-1)
-                bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width)
-                n, bins, patches = ax[i][j].hist(arr, weights = np.ones_like(arr) / len(arr),
-                                            bins = bins, alpha = 0.5, color = colors[c])
+            dist = skewnorm
+            arr = np.array(data).reshape(-1)
+            bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width)
+            n, bins, patches = ax[i].hist(arr, weights = np.ones_like(arr) / len(arr),
+                                        bins = bins, alpha = 0.5, color = colors[c])
 
-                params = dist.fit(arr)
-                print('dist params', params)
-                y = dist.pdf(bins, *params) * bin_width
-                params = np.round(params, 1)
-                with open(osp.join(odir, f'k{k}_chi{LETTERS[i]}{LETTERS[j]}.pickle'), 'wb') as f:
-                    dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
-                    pickle.dump(dict, f)
+            params = dist.fit(arr)
+            y = dist.pdf(bins, *params) * bin_width
+            params = np.round(params, 1)
+            with open(osp.join(odir, f'k{k}_chi{LETTERS[i]}{LETTERS[i]}.pickle'), 'wb') as f:
+                dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
+                pickle.dump(dict, f)
 
-                ax[i][j].plot(bins, y, ls = '--', color = 'k')
-                ax[i][j].set_title(r'$\alpha=$' + f'{params[0]}\n' + r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
-                c += 1
 
-        fig.supxlabel(r'$\chi_{ij}$', fontsize=16)
+            ax[i].plot(bins, y, ls = '--', color = 'k')
+            ax[i].set_title(r'$\alpha=$' + f'{params[0]}\n' + r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
+            ax[i].set_xlabel(rf'$\chi${LETTERS[i]+LETTERS[i]}')
+
+            c += 1
+
+        fig.supxlabel(r'$\chi_{ii}$', fontsize=16)
         fig.supylabel('probability', fontsize=16)
-        plt.xlim(-20, 20)
         plt.tight_layout()
-        plt.savefig(osp.join(odir, f'k{k}_chi_per_dist.png'))
+        plt.savefig(osp.join(odir, f'k{k}_chi_per_ii_dist.png'))
         plt.close()
+
+        if not (eig or eig_norm):
+            ind = np.arange(k*(k-1)/2 + k) % cmap.N
+            colors = cmap(ind.astype(int))
+
+            fig, ax = plt.subplots(k, k, sharey = True, sharex = True)
+            row = 0
+            col = 0
+            c = 0
+            for i in range(k):
+                for j in range(i,k):
+                    data = []
+                    for chi in chi_list:
+                        data.append(chi[i,j])
+
+                    dist = skewnorm
+                    arr = np.array(data).reshape(-1)
+                    bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width)
+                    n, bins, patches = ax[i][j].hist(arr, weights = np.ones_like(arr) / len(arr),
+                                                bins = bins, alpha = 0.5, color = colors[c])
+
+                    params = dist.fit(arr)
+                    y = dist.pdf(bins, *params) * bin_width
+                    params = np.round(params, 1)
+                    with open(osp.join(odir, f'k{k}_chi{LETTERS[i]}{LETTERS[j]}.pickle'), 'wb') as f:
+                        dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
+                        pickle.dump(dict, f)
+
+                    ax[i][j].plot(bins, y, ls = '--', color = 'k')
+                    ax[i][j].set_title(r'$\alpha=$' + f'{params[0]}\n' + r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
+                    c += 1
+
+            fig.supxlabel(r'$\chi_{ij}$', fontsize=16)
+            fig.supylabel('probability', fontsize=16)
+            plt.xlim(-20, 20)
+            plt.tight_layout()
+            plt.savefig(osp.join(odir, f'k{k}_chi_per_dist.png'))
+            plt.close()
 
         # plaid per pc
         bin_width = 1
@@ -598,7 +851,6 @@ def plaid_dist(dataset, k=None, plot=True):
         row = 0
         col = 0
         for i in range(k):
-            print(i)
             data = []
             for chi in chi_list:
                 data.extend(chi[i,:])
@@ -610,7 +862,6 @@ def plaid_dist(dataset, k=None, plot=True):
                                         bins = bins, alpha = 0.5, color = colors[i])
 
             params = dist.fit(arr)
-            print('dist params', params)
             y = dist.pdf(bins, *params) * bin_width
             params = np.round(params, 3)
             ax[row][col].plot(bins, y, ls = '--', color = colors[i])
@@ -623,67 +874,99 @@ def plaid_dist(dataset, k=None, plot=True):
 
         fig.supylabel('probability', fontsize=16)
         fig.supxlabel(r'$\chi_{ij}$', fontsize=16)
-        plt.xlim(-20, 20)
+        # plt.xlim(-20, 20)
         plt.tight_layout()
         plt.savefig(osp.join(odir, f'k{k}_chi_pc_dist.png'))
         plt.close()
 
-    return s_list, chi_ij_list
+    return L_list, chi_ij_list, x_list
 
 def compare_maxent_simulation():
     dataset = 'dataset_01_26_23'
     data_dir = osp.join('/home/erschultz', dataset)
 
-    s_list = []
+    L_list = []
     chi_list = []
-    l_list = []
-    s_max_ent, chi_max_ent = plaid_dist(dataset, 4, False)
-    s_list.append(s_max_ent)
-    chi_list.append(chi_max_ent)
-    l_list.append('Max Ent')
+    label_list = []
+    L_max_ent, chi_max_ent, _ = plaid_dist(dataset, 4, False)
+    L_list.append(L_max_ent)
+    # chi_list.append(chi_max_ent)
+    label_list.append('Max Ent')
 
-    # s_list.append(simulated_dist('dataset_11_21_22', False))
-    # l_list.append('Sim Markov')
+    # L_list.append(simulated_dist('dataset_11_21_22', False))
+    # label_list.append('Sim Markov')
 
     # s_sim, chi_sim = simulated_dist('dataset_12_20_22', False)
-    # s_list.append(s_sim)
+    # L_list.append(s_sim)
     # chi_list.append(chi_sim)
-    # l_list.append('Sim PCs')
+    # label_list.append('Sim PCs')
 
-    # s_sim, chi_sim = simulated_dist('dataset_01_23_23', False)
-    # s_list.append(s_sim)
+    # s_sim, chi_sim, _ = plaid_dist('dataset_01_23_23', None, False)
+    # L_list.append(s_sim)
+    # # chi_list.append(chi_sim)
+    # label_list.append('Sim PCs + chi ecdf')
+
+    # s_sim, chi_sim = plaid_dist('dataset_01_27_23', None, False)
+    # L_list.append(s_sim)
     # chi_list.append(chi_sim)
-    # l_list.append('Sim PCs + chi ecdf')
+    # label_list.append('Multivariate gaussian')
 
-    s_sim, chi_sim = plaid_dist('dataset_01_27_23', None, False)
-    s_list.append(s_sim)
-    chi_list.append(chi_sim)
-    l_list.append('Multivariate gaussian')
-
-    s_sim, chi_sim = plaid_dist('dataset_01_27_23_v2', None, False)
-    s_list.append(s_sim)
-    chi_list.append(chi_sim)
-    l_list.append('Pooled ii and Pooled ij')
+    # s_sim, chi_sim, _ = plaid_dist('dataset_01_27_23_v2', None, False)
+    # L_list.append(s_sim)
+    # # chi_list.append(chi_sim)
+    # label_list.append('Pooled ii and Pooled ij')
 
     # s_sim, chi_sim = plaid_dist('dataset_01_27_23_v3', None, False)
-    # s_list.append(s_sim)
+    # L_list.append(s_sim)
     # chi_list.append(chi_sim)
-    # l_list.append('Univariate ii and Pooled ij')
+    # label_list.append('Univariate ii and Pooled ij')
 
-    s_sim, chi_sim = plaid_dist('dataset_01_27_23_v4', None, False)
-    s_list.append(s_sim)
-    chi_list.append(chi_sim)
-    l_list.append('Univariate skewed gaussian')
+    # s_sim, chi_sim, _ = plaid_dist('dataset_01_27_23_v4', None, False)
+    # L_list.append(s_sim)
+    # # chi_list.append(chi_sim)
+    # label_list.append('Univariate skewed gaussian')
+
+    # s_sim, chi_sim, _ = plaid_dist('dataset_01_27_23_v5', None, False)
+    # L_list.append(s_sim)
+    # # chi_list.append(chi_sim)
+    # label_list.append('Only ii')
+
+    # s_sim, chi_sim = plaid_dist('dataset_01_27_23_v6', None, False)
+    # L_list.append(s_sim)
+    # # chi_list.append(chi_sim)
+    # label_list.append('Max S')
+
+    # s_sim, chi_sim, _ = plaid_dist('dataset_01_27_23_v7', None, False)
+    # L_list.append(s_sim)
+    # # chi_list.append(chi_sim)
+    # label_list.append('Laplace ij')
+
+    # s_sim, chi_sim, _ = plaid_dist('dataset_01_27_23_v8', None, False)
+    # L_list.append(s_sim)
+    # # chi_list.append(chi_sim)
+    # label_list.append('Sign Conditioned')
+
+    s_sim, chi_sim, _ = plaid_dist('dataset_01_27_23_v9', None, False)
+    L_list.append(s_sim)
+    # chi_list.append(chi_sim)
+    label_list.append(r'Synthetic $\tilde{\chi}$')
 
     # plot plaid L_ij parameters
+    cmap = matplotlib.cm.get_cmap('tab10')
+    ind = np.arange(len(L_list)) % cmap.N
+    colors = cmap(ind)
+    dist = norm
     bin_width = 1
-    for arr, label in zip(s_list, l_list):
+    for i, (arr, label) in enumerate(zip(L_list, label_list)):
         arr = np.array(arr).reshape(-1)
         print(arr)
         print(np.min(arr), np.max(arr))
-        n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
+        _, bins, _ = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
                                     bins=range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width),
-                                    alpha = 0.5, label = label)
+                                    alpha = 0.5, label = label, color = colors[i])
+        params = dist.fit(arr)
+        y = dist.pdf(bins, *params) * bin_width
+        plt.plot(bins, y, ls = '--', color = colors[i])
 
     plt.legend()
     plt.ylabel('probability', fontsize=16)
@@ -693,27 +976,29 @@ def compare_maxent_simulation():
     plt.close()
 
     # plot plaid chi parameters
-    bin_width = 1
-    for arr, label in zip(chi_list, l_list):
-        arr = np.array(arr).reshape(-1)
-        print(np.min(arr), np.max(arr))
-        n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
-                                    bins=range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width),
-                                    alpha = 0.5, label = label)
-    plt.legend()
-    plt.ylabel('probability', fontsize=16)
-    plt.xlabel(r'$\chi_{ij}$', fontsize=16)
-    plt.xlim(-20, 20)
-    plt.savefig(osp.join(data_dir, 'chi_dist_comparison.png'))
-    plt.close()
+    # bin_width = 1
+    # for i, (arr, label) in enumerate(zip(chi_list, l_list)):
+    #     arr = np.array(arr).reshape(-1)
+    #     print(np.min(arr), np.max(arr))
+    #     n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
+    #                                 bins=range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width),
+    #                                 alpha = 0.5, label = label, color = colors[i])
+    # plt.legend()
+    # plt.ylabel('probability', fontsize=16)
+    # plt.xlabel(r'$\chi_{ij}$', fontsize=16)
+    # plt.xlim(-20, 20)
+    # plt.savefig(osp.join(data_dir, 'chi_dist_comparison.png'))
+    # plt.close()
+
 
 if __name__ == '__main__':
     # for i in range(201, 283):
         # modify_maxent_diag_chi('dataset_01_26_23', i, k = 4)
         # plot_modified_max_ent(i, k = 8)
     # max_ent_diagonal_dist('dataset_01_26_23', 4, True)
-    # plaid_dist('dataset_01_26_23', 4, True)
-    # plaid_dist('dataset_01_27_23_v3', 4, True)
+    # plaid_dist('dataset_01_26_23', 4, True, False, True)
+    # plaid_dist('dataset_01_27_23_v9', 4, True)
     # test_ecdf()
     # test3()
     compare_maxent_simulation()
+    # modify_plaid_chis()

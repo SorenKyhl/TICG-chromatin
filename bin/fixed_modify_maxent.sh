@@ -20,13 +20,13 @@ run()  {
 }
 
 param_setup
-m=1024
-dataset=dataset_11_14_22
+m=512
+dataset=dataset_01_26_23
 baseDataFolder="/home/erschultz/${dataset}"
 scratchDir='/home/erschultz/scratch'
 overwrite=1
 
-k=8
+k=4
 nSweeps=500000
 dumpFrequency=10000
 TICGSeed=10
@@ -38,16 +38,16 @@ smallBinSize=1
 bigBinSize=-1
 nBigBins=-1
 bondLength=28
+useL='true'
 useD='true'
 useE='true'
-m=1024
 
-for sample in 2201
-# 2201
+jobs=0
+waitCount=0
+for sample in 201
 do
 	dataFolder="${baseDataFolder}/samples/sample${sample}/PCA-normalize-E/k${k}/replicate1"
 	chiDiagMethod="${dataFolder}/chis_diag.txt"
-
 
 	# chiMethod="${dataFolder}/chis.txt"
 	# seqMethod="${dataFolder}/resources/x_shuffle.npy"
@@ -63,11 +63,26 @@ do
 	# seqMethod="${dataFolder}/resources/x.npy"
 	# i="${sample}_neg_chi"
 	# run &
+	# #
+	# chiMethod="${dataFolder}/chis_neg_v2.npy"
+	# seqMethod="${dataFolder}/resources/x.npy"
+	# i="${sample}_neg2_chi"
+	# run &
 	#
 	# chiMethod="${dataFolder}/chis_shuffle.npy"
 	# seqMethod="${dataFolder}/resources/x.npy"
 	# i="${sample}_shuffle_chi"
 	# run &
+	#
+	# chiMethod="${dataFolder}/chis_zero.npy"
+	# seqMethod="${dataFolder}/resources/x.npy"
+	# i="${sample}_zero_chi"
+	# run &
+
+	chiMethod="${dataFolder}/chis_eig.npy"
+	seqMethod="${dataFolder}/resources/x_eig.npy"
+	i="${sample}_eig"
+	run &
 	#
 	# chiMethod="/home/erschultz/dataset_11_21_22/samples/sample1462/chis.npy"
 	# seqMethod="${dataFolder}/resources/x.npy"
@@ -79,10 +94,10 @@ do
 	# i="${sample}_rand_seq"
 	# run &
 
-	chiMethod="${dataFolder}/chis.txt"
-	seqMethod="${dataFolder}/resources/x.npy"
-	i="${sample}_copy"
-	run &
+	# chiMethod="${dataFolder}/chis.txt"
+	# seqMethod="${dataFolder}/resources/x.npy"
+	# i="${sample}_copy"
+	# run &
 
 	# chiDiagMethod="${dataFolder}/fitting/chis_diag_edit.txt"
 	# i="${sample}_edit"
@@ -119,6 +134,18 @@ do
 	# chiDiagMethod="${dataFolder}/fitting/poly3_fit.txt"
 	# i="${sample}_poly3"
 	# run &
+
+	jobs=$(( $jobs + 6 ))
+	if [ $jobs -gt 15 ]
+	then
+		echo 'Waiting'
+		waitCount=$(( $waitCount + 1 ))
+		wait
+		jobs=0
+	fi
+
 done
 
 wait
+
+echo $waitCount

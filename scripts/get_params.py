@@ -141,7 +141,7 @@ class GetSeq():
                             help='contact map end in basepair for method = epigenetic')
 
         parser.add_argument('--p_switch', type=AC.str2float, default=None,
-                            help='probability to switch bead assignment (for method = random)')
+                            help='probability to switch bead assignment (for method=random)')
         parser.add_argument('--lmbda', type=AC.str2float, default=0.8,
                             help='lambda for Markov matrix of method = random')
         parser.add_argument('--f', type=AC.str2float, default=0.5,
@@ -158,7 +158,7 @@ class GetSeq():
         if self.args_file is not None:
             assert osp.exists(self.args_file)
             print(f'parsing {self.args_file}')
-            unknown_args.append(f'@{self.args_file}') # appending means args_file will override other args
+            unknown_args.append(f'@{self.args_file}') # appending args_file will override other args
             args, _ = parser.parse_known_args(unknown_args)
 
         else:
@@ -227,8 +227,7 @@ class GetSeq():
         args.normalize = False # True to normalize labels to [0,1] (or [-1, 1] for some methods)
             # (not implemented for all methods)')
         args.scale = False # True to scale variance for PCA
-        args.use_ematrix = False
-        args.use_smatrix = False
+        args.use_energy = False
         args.append_random = False # True to append random seq
         args.exp = False # (for RPCA) convert from log space back to original space
         args.diag = False # (for RPCA) apply diagonal processing
@@ -264,11 +263,8 @@ class GetSeq():
                 args.normalize = True
             elif mode == 'scale':
                 args.scale = True
-            elif mode == 's':
-                args.use_smatrix = True
-            elif mode == 'e':
-                args.use_ematrix = True
-                assert not args.use_smatrix
+            elif mode in {'e', 's', 'l'}:
+                args.use_energy = True
             elif mode == 'random':
                 args.append_random = True
             elif mode == 'exp':
@@ -765,13 +761,15 @@ class GetSeq():
                 for i, f in enumerate(files):
                     seq[:, i] = np.loadtxt(f)
             elif args.method.startswith('random'):
-                seq = self.get_random_seq(args.lmbda, args.f, args.p_switch, args.seq_seed, args.exclusive,
+                seq = self.get_random_seq(args.lmbda, args.f, args.p_switch,
+                                            args.seq_seed, args.exclusive,
                                             args.scale_resolution)
             elif args.method.startswith('block'):
                 seq = self.get_block_seq(args.method)
             elif args.method.startswith('pca_split'):
                 y_diag = load_Y_diag(self.sample_folder)
-                seq = self.get_PCA_split_seq(y_diag, args.normalize, args.binarize, args.binarize_threshold, args.scale)
+                seq = self.get_PCA_split_seq(y_diag, args.normalize, args.binarize,
+                                            args.binarize_threshold, args.scale)
             elif args.method.startswith('pca'):
                 y, y_diag = load_Y(self.sample_folder)
                 if args.log_inf:
@@ -803,12 +801,13 @@ class GetSeq():
                     input = np.load(osp.join(self.sample_folder, 'x.npy'))
                 elif args.input == 'psi':
                     input = np.load(osp.join(self.sample_folder, 'psi.npy'))
-                seq = self.get_PCA_seq(input, args.normalize, args.binarize, args.scale, use_kernel = True, kernel = args.kernel)
+                seq = self.get_PCA_seq(input, args.normalize, args.binarize,
+                                        args.scale, use_kernel = True, kernel = args.kernel)
             elif args.method.startswith('ground_truth'):
                 x, psi = load_X_psi(self.sample_folder, throw_exception = False)
 
                 if args.input is None:
-                    assert args.use_ematrix or args.use_smatrix, 'missing input'
+                    assert args.use_energy, 'missing input'
                 elif args.input == 'x':
                     assert x is not None
                     seq = x
@@ -824,13 +823,14 @@ class GetSeq():
 
                 if args.append_random:
                     # TODO this is broken
-                    assert not args.use_smatrix and not args.use_ematrix
+                    assert not args.use_energy
                     _, k = seq.shape
                     assert args.k > k, f"{args.k} not > {k}"
-                    seq_random = GetSeq(args.m, args.k - k).get_random_seq(args.lmbda, args.f, args.p_switch, args.seq_seed)
+                    seq_random = GetSeq(args.m, args.k - k).get_random_seq(args.lmbda,
+                                                args.f, args.p_switch, args.seq_seed)
                     seq = np.concatenate((seq, seq_random), axis = 1)
 
-                if args.use_smatrix or args.use_ematrix:
+                if args.use_energy:
                     e, s = load_E_S(self.sample_folder, psi)
             elif args.method.startswith('k_means') or args.method.startswith('k-means'):
                 y_diag = np.load(osp.join(self.sample_folder, 'y_diag.npy'))
@@ -1401,7 +1401,7 @@ class GetEnergy():
         if self.args.method is None:
             return
 
-        if not self.args.use_ematrix and not self.args.use_smatrix:
+        if not (self.args.use_lmatrix or self.args.use_ematrix or self.args.use_smatrix):
             # should have been handled by GetSeq already
             return
 
@@ -1426,6 +1426,7 @@ class GetEnergy():
 
     def _process_method(self, args):
         # default values
+        args.use_lmatrix = False
         args.use_ematrix = False
         args.use_smatrix = False
         args.load_maxent = False # True to load e matrix learned from prior maxent and re-run
@@ -1444,13 +1445,8 @@ class GetEnergy():
             args.use_smatrix = True
         if 'e' in modes:
             args.use_ematrix = True
-            assert not args.use_smatrix
-        if 'load_maxent' in modes:
-            args.load_maxent = True
-            assert args.use_ematrix or args.use_smatrix
-        if 'project' in modes:
-            assert args.use_ematrix or args.use_smatrix
-            args.project = True
+        if 'l' in modes:
+            args.use_lmatrix = True
         if 'kr' in modes:
             args.kr = True
         if 'clean' in modes:
@@ -1462,6 +1458,7 @@ class GetEnergy():
 
     def set_up_energy(self):
         args = self.args
+        L = None
         e = None
         s = None
 
@@ -1478,10 +1475,13 @@ class GetEnergy():
             s = load_final_max_ent_S(args.k, replicate_path, max_it_path = None)
             e = s_to_E(s)
         elif osp.exists(self.method_path):
+            print('Method path exists')
             if args.use_ematrix:
                 e = np.load(self.method_path)
             elif args.use_smatrix:
                 s = np.load(self.method_path)
+            elif args.use_lmatrix:
+                L = np.load(self.method_path)
         else:
             args.method = args.method.lower()
             if args.method.startswith('ground_truth'):
@@ -1511,6 +1511,10 @@ class GetEnergy():
             print(pca.components_.shape)
             s = pca.inverse_transform(s_transform)
             e = s_to_E(s)
+        if args.use_lmatrix:
+            self.config["lmatrix_filename"] = "l_matrix.txt"
+            np.savetxt('l_matrix.txt', L, fmt = '%.3e')
+            np.save('L.npy', L)
         if args.use_smatrix:
             self.config["smatrix_filename"] = "s_matrix.txt"
             np.savetxt('s_matrix.txt', s, fmt = '%.3e')
@@ -1525,6 +1529,8 @@ class GetEnergy():
 
         if self.m < 2000:
             try:
+                if L is not None:
+                    print(f'Rank of L: {np.linalg.matrix_rank(L)}')
                 if s is not None:
                     print(f'Rank of S: {np.linalg.matrix_rank(s)}')
                 if e is not None:
@@ -1532,25 +1538,26 @@ class GetEnergy():
             except np.linalg.LinAlgError as e:
                 print(e)
 
-
-
         # look for ground truth:
         if self.sample_folder is not None:
             sd_file = osp.join(self.sample_folder, 'sd.npy')
             if osp.exists(sd_file):
                 ground_truth_sd = np.load(sd_file)
 
-
-
         if self.plot:
             if args.use_smatrix:
-                plot_matrix(s, 's.png', vmin = 'min', vmax = 'max', cmap = 'blue-red', title = 'S')
+                plot_matrix(L, 'L.png', vmin = 'min', vmax = 'max',
+                            cmap = 'blue-red', title = 'L')
+            if args.use_smatrix:
+                plot_matrix(s, 's.png', vmin = 'min', vmax = 'max',
+                            cmap = 'blue-red', title = 'S')
             elif args.use_ematrix:
-                plot_matrix(e, 'e.png', vmin = 'min', vmax = 'max', cmap = 'blue-red', title = 'E')
+                plot_matrix(e, 'e.png', vmin = 'min', vmax = 'max',
+                            cmap = 'blue-red', title = 'E')
 
     def get_energy_gnn(self, model_path, sample_path):
         '''
-        Loads output from GNN model to use as ematrix or smatrix
+        Loads output from GNN model to use as energy matrix
 
         Inputs:
             model_path: path to model results
@@ -1608,6 +1615,7 @@ class GetEnergy():
         opt.cuda = False # force to use cpu
         opt.device = torch.device('cpu')
         opt.scratch = '/home/erschultz/scratch' # use local scratch
+        opt.plaid_score_cutoff = None # no cutoff at test time
 
         if opt.y_preprocessing.startswith('sweep'):
             _, *opt.y_preprocessing = opt.y_preprocessing.split('_')

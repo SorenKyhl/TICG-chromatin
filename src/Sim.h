@@ -132,10 +132,13 @@ public:
 
 
 
+	bool lmatrix_on;
 	bool smatrix_on;
 	bool ematrix_on;
 	bool dmatrix_on;
 
+	Eigen::MatrixXd lmatrix;
+	std::string lmatrix_filename;
 	Eigen::MatrixXd smatrix;
 	std::string smatrix_filename;
 	Eigen::MatrixXd ematrix;
@@ -188,6 +191,7 @@ public:
 	void dumpObservables(int sweep);
 	void dumpContacts(int sweep);
 
+	void setupLmatrix();
 	void setupSmatrix();
 	void setupEmatrix();
 	void setupDmatrix();

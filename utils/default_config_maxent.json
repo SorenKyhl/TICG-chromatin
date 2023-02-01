@@ -31,6 +31,7 @@
   "boundary_chi": 0,
   "constant_chi_on": false,
   "constant_chi": 0,
+  "lmatrix_on": false,
   "smatrix_on": false,
   "ematrix_on": false,
   "dmatrix_on": false,

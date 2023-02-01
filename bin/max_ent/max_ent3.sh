@@ -24,7 +24,8 @@ fi
 
 STARTTIME=$(date +%s)
 i=2001
-dataset='dataset_test'
+dataset='dataset_11_14_22'
+useL='false'
 useS='false'
 useE='true'
 useD='false'
@@ -44,12 +45,9 @@ diagCutoff=1024
 
 k=0
 method='GNN'
-for sample in 2201 2202
-# 2206 2207 2208 2209 2210 2211 2212 2213 2214 2215
-#
-# 2203 2204 2205 2206 2207
+for sample in 2201 2202 2203 2204 2205 2206 2207
 do
-  for GNNModelID in 341
+  for GNNModelID in 361
    # 243 254 262 265 267 271 276
   do
     echo $sample $m

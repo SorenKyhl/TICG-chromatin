@@ -38,7 +38,8 @@ void Sim::run() {
   calculateParameters(config);  // calculates derived parameters
   initialize();           // set particle positions and construct bonds
   if (dmatrix_on) { setupDmatrix(); }
-	if (smatrix_on) { setupSmatrix(); }
+	if (lmatrix_on) { setupLmatrix(); }
+  if (smatrix_on) { setupSmatrix(); }
 	if (ematrix_on) { setupEmatrix(); }
 	grid.generate();        // creates the grid locations
 	grid.setActiveCells();  // populates the active cell locations
@@ -307,9 +308,12 @@ nlohmann::json Sim::readInput() {
   assert(config.contains("boundary_chi")); boundary_chi = config["boundary_chi"];
   assert(config.contains("constant_chi_on")); constant_chi_on = config["constant_chi_on"];
   assert(config.contains("constant_chi")); constant_chi = config["constant_chi"];
+  lmatrix_filename="none";
   smatrix_filename="none";
   ematrix_filename="none";
   dmatrix_filename="none";
+  assert(config.contains("lmatrix_on")); lmatrix_on = config["lmatrix_on"];
+  if (config.contains("lmatrix_filename")) {lmatrix_filename = config["lmatrix_filename"];}
 	assert(config.contains("smatrix_on")); smatrix_on = config["smatrix_on"];
   if (config.contains("smatrix_filename")) {smatrix_filename = config["smatrix_filename"];}
 	assert(config.contains("ematrix_on")); ematrix_on = config["ematrix_on"];
@@ -736,9 +740,13 @@ double Sim::getNonBondedEnergy(const std::unordered_set<Cell*>& flagged_cells) {
 	double U = grid.densityCapEnergy(flagged_cells);
 	if (plaid_on)
 	{
-		if (smatrix_on)
+    if (lmatrix_on)
+    {
+      U += grid.SLmatrixEnergy(flagged_cells, lmatrix);
+    }
+		else if (smatrix_on)
 		{
-			U += grid.SmatrixEnergy(flagged_cells, smatrix);
+			U += grid.SLmatrixEnergy(flagged_cells, smatrix);
 		}
 		else if (ematrix_on)
 		{
@@ -822,22 +830,16 @@ void Sim::MC() {
 	{
 		//std::cout << sweep << std::endl;
 		double nonbonded;
-		//nonbonded = getNonBondedEnergy(grid.active_cells);
-		//std::cout << "beginning sim: nonbonded: " <<  grid.active_cells.size() << std::endl;
 
 		Timer t_pivot("pivoting", prof_timer_on);
 		for(int j=0; j<n_pivot; j++) {
 			MCmove_pivot(sweep);
-			//nonbonded = getNonBondedEnergy(grid.active_cells);
-			//std::cout << nonbonded << std::endl;
 		}
 		//t_pivot.~Timer();
 
 		Timer t_crankshaft("Cranking", prof_timer_on);
 		for(int j=0; j<n_crank; j++) {
 			MCmove_crankshaft();
-			//nonbonded = getNonBondedEnergy(grid.active_cells);
-			//std::cout << nonbonded << std::endl;
 		}
 		//t_crankshaft.~Timer();
 
@@ -845,21 +847,15 @@ void Sim::MC() {
 		for(int j=0; j<n_trans; j++)
 		{
 			MCmove_translate();
-			//nonbonded = getnonbondedenergy(grid.active_cells);
-			//std::cout << nonbonded << std::endl;
 		}
 		//t_translation.~Timer();
 
 		if (gridmove_on) MCmove_grid();
-		//nonbonded = getNonBondedEnergy(grid.active_cells);
-		//std::cout << nonbonded << std::endl;
 
 		Timer t_displace("displacing", prof_timer_on);
 		for(int j=0; j<n_disp; j++)
 		{
 			MCmove_displace();
-			//nonbonded = getNonBondedEnergy(grid.active_cells);
-			//std::cout << nonbonded << std::endl;
 		}
 		//t_displace.~Timer();
 
@@ -1436,9 +1432,13 @@ void Sim::dumpEnergy(int sweep) {
 	double plaid = 0;
   if (plaid_on)
   {
-    if (smatrix_on)
+    if (lmatrix_on)
     {
-      plaid = grid.SmatrixEnergy(grid.active_cells, smatrix);
+      plaid = grid.SLmatrixEnergy(grid.active_cells, lmatrix);
+    }
+    else if (smatrix_on)
+    {
+      plaid = grid.SLmatrixEnergy(grid.active_cells, smatrix);
     }
     else if (ematrix_on)
     {
@@ -1586,21 +1586,21 @@ void Sim::dumpContacts(int sweep) {
 	}
 }
 
-void Sim::setupSmatrix() {
-	std::ifstream smatrixfile(smatrix_filename);
-  smatrix.resize(nbeads, nbeads);
+void Sim::setupLmatrix() {
+	std::ifstream lmatrixfile(lmatrix_filename);
+  lmatrix.resize(nbeads, nbeads);
 
-	if ( smatrixfile.good() ) {
-    std::cout << smatrix_filename << "smatrix_filename is good\n";
+	if ( lmatrixfile.good() ) {
+    std::cout << lmatrix_filename << "lmatrix_filename is good\n";
     for (int i=0; i<nbeads; i++) {
   		for (int j=0; j<nbeads; j++) {
-  			smatrixfile >> smatrix(i,j);
+  			lmatrixfile >> lmatrix(i,j);
   		}
   	}
 	}
   else
   {
-    std::cout << "smatrix_filename (" << smatrix_filename << ") does not exist or cannot be opened\n";
+    std::cout << "lmatrix_filename (" << lmatrix_filename << ") does not exist or cannot be opened\n";
     Eigen::MatrixXd psi;
 
     // need to define psi
@@ -1617,16 +1617,34 @@ void Sim::setupSmatrix() {
     Eigen::MatrixXd chis_triu;
     chis_triu = chis.triangularView<Eigen::Upper>();
 
-    // try and create smatrix from chi and psi
-    smatrix = psi*chis*psi.transpose();
+    // try and create lmatrix from chi and psi
+    lmatrix = psi*chis*psi.transpose();
   }
+  std::cout << "loaded Lmatrix, first element: " << lmatrix(0,0) << std::endl;
 
-  if (dmatrix_on)
+}
+
+
+void Sim::setupSmatrix() {
+	std::ifstream smatrixfile(smatrix_filename);
+  smatrix.resize(nbeads, nbeads);
+
+	if ( smatrixfile.good() ) {
+    std::cout << smatrix_filename << "smatrix_filename is good\n";
+    for (int i=0; i<nbeads; i++) {
+  		for (int j=0; j<nbeads; j++) {
+  			smatrixfile >> smatrix(i,j);
+  		}
+  	}
+	}
+  else
   {
     Eigen::MatrixXd dmatrix_diag = dmatrix.diagonal().asDiagonal();
+    smatrix = lmatrix;
     dmatrix += dmatrix_diag;
     smatrix += dmatrix;
     diagonal_on = false;
+    lmatrix_on = false;
   }
 
 	std::cout << "loaded Smatrix, first element: " << smatrix(0,0) << std::endl;
@@ -1647,6 +1665,7 @@ void Sim::setupEmatrix() {
   {
     // first get smatrix
     Sim::setupSmatrix();
+    smatrix_on = false;
 
     Eigen::MatrixXd left = smatrix + smatrix.transpose();
     Eigen::MatrixXd right = smatrix.diagonal().asDiagonal();

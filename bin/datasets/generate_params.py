@@ -7,7 +7,7 @@ import sys
 from collections import defaultdict
 
 import numpy as np
-from scipy.stats import multivariate_normal, norm, qmc, skewnorm
+from scipy.stats import laplace, multivariate_normal, norm, qmc, skewnorm
 
 sys.path.insert(0, '/home/erschultz/TICG-chromatin')
 from scripts.ECDF import Ecdf
@@ -15,7 +15,7 @@ from scripts.get_params import GetSeq
 
 sys.path.insert(0, '/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import load_Y
-from sequences_to_contact_maps.scripts.utils import triu_to_full
+from sequences_to_contact_maps.scripts.utils import pearson_round, triu_to_full
 
 
 def getArgs():
@@ -36,6 +36,8 @@ def getArgs():
                     help='mode for seq parameters')
     parser.add_argument('--chi_param_version', type=str, default='v1',
                     help='version for chi param distribution')
+    parser.add_argument('--max_L', type=float,
+                    help='Any S_ij > max will be cropped to max')
 
     args = parser.parse_args()
     return args
@@ -50,6 +52,7 @@ class DatasetGenerator():
         self.diag_mode = args.diag_mode
         self.seq_mode = args.seq_mode
         self.chi_param_version = args.chi_param_version
+        self.max_L = args.max_L
 
         self.dir = '/home/erschultz'
         data_dir = osp.join(self.dir, self.dataset)
@@ -79,6 +82,7 @@ class DatasetGenerator():
                 mean = dict['mean']
             dist = multivariate_normal(mean, cov)
 
+
         for i in range(self.N):
             self.sample_dict[i]['k'] = self.k
             if self.chi_param_version == 'v1':
@@ -99,14 +103,14 @@ class DatasetGenerator():
             elif self.chi_param_version == 'v7':
                 chi_ii = np.zeros(self.k)
                 for j, l in enumerate('ABCD'):
-                    with open(osp.join(f'/home/erschultz/dataset_01_26_23/plaid_param_distributions/k4_chi{l}{l}.pickle'), 'rb') as f:
+                    with open(osp.join(f'/home/erschultz/dataset_01_26_23/plaid_param_distributions/k{self.k}_chi{l}{l}.pickle'), 'rb') as f:
                         dict_j = pickle.load(f)
                     chi_ii[j] =  skewnorm.rvs(dict_j['alpha'], dict_j['mu'], dict_j['sigma'])
                 chi_ij = skewnorm.rvs(-1.722, 6.908, 12.136, size = int(self.k*(self.k-1)/2))
             elif self.chi_param_version == 'v8':
                 chi_ii = np.zeros(self.k)
                 for j, l in enumerate('ABCD'):
-                    with open(osp.join(f'/home/erschultz/dataset_01_26_23/plaid_param_distributions/k4_chi{l}{l}.pickle'), 'rb') as f:
+                    with open(osp.join(f'/home/erschultz/dataset_01_26_23/plaid_param_distributions/k{self.k}_chi{l}{l}.pickle'), 'rb') as f:
                         dict_j = pickle.load(f)
                     chi_ii[j] =  skewnorm.rvs(dict_j['alpha'], dict_j['mu'], dict_j['sigma'])
                 chi_ij = []
@@ -116,6 +120,46 @@ class DatasetGenerator():
                             with open(osp.join(f'/home/erschultz/dataset_01_26_23/plaid_param_distributions/k4_chi{l1}{l2}.pickle'), 'rb') as f:
                                 dict_j = pickle.load(f)
                             chi_ij.append(skewnorm.rvs(dict_j['alpha'], dict_j['mu'], dict_j['sigma']))
+            elif self.chi_param_version == 'v9':
+                chi_ii = np.zeros(self.k)
+                for j, l in enumerate('ABCD'):
+                    with open(osp.join(f'/home/erschultz/dataset_01_26_23/plaid_param_distributions/k{self.k}_chi{l}{l}.pickle'), 'rb') as f:
+                        dict_j = pickle.load(f)
+                    chi_ii[j] =  skewnorm.rvs(dict_j['alpha'], dict_j['mu'], dict_j['sigma'])
+                chi_ij = np.zeros(int(self.k*(self.k-1)/2))
+            elif self.chi_param_version == 'v10':
+                chi_ii = np.zeros(self.k)
+                for j, l in enumerate('ABCD'):
+                    with open(osp.join(f'/home/erschultz/dataset_01_26_23/plaid_param_distributions/k{self.k}_chi{l}{l}.pickle'), 'rb') as f:
+                        dict_j = pickle.load(f)
+                    chi_ii[j] =  skewnorm.rvs(dict_j['alpha'], dict_j['mu'], dict_j['sigma'])
+                chi_ij = laplace.rvs(-0.109, 5.631, size = int(self.k*(self.k-1)/2))
+            elif self.chi_param_version == 'v11':
+                chi_ii = np.zeros(self.k)
+                for j, l in enumerate('ABCD'):
+                    with open(osp.join(f'/home/erschultz/dataset_01_26_23/plaid_param_distributions/k4_chi{l}{l}.pickle'), 'rb') as f:
+                        dict_j = pickle.load(f)
+                    chi_ii[j] =  skewnorm.rvs(dict_j['alpha'], dict_j['mu'], dict_j['sigma'])
+
+                # grab x.npy to check corr(seq_A, seq_B)
+                x = np.load(osp.join('/home/erschultz', self.dataset, f'setup/x_{i+1}.npy'))
+                chi_ij = []
+                for j, l1 in enumerate('ABCD'):
+                    for k, l2 in enumerate('ABCD'):
+                        if k > j:
+                            corr = pearson_round(x[:, j], x[:, k])
+                            val = np.abs(skewnorm.rvs(-1.722, 6.908, 12.136))
+                            if corr < 0:
+                                val *= -1
+                            chi_ij.append(val)
+            elif self.chi_param_version == 'v12':
+                chi_ii = np.zeros(self.k)
+                for j, l in enumerate('ABCD'):
+                    with open(osp.join(f'/home/erschultz/dataset_01_26_23/plaid_param_distributions_eig_norm/k{self.k}_chi{l}{l}.pickle'), 'rb') as f:
+                        dict_j = pickle.load(f)
+                    chi_ii[j] =  skewnorm.rvs(dict_j['alpha'], dict_j['mu'], dict_j['sigma'])
+                chi_ij = np.zeros(int(self.k*(self.k-1)/2))
+
 
             if self.chi_param_version not in {'v4', 'v5'}:
                 chi = np.zeros((self.k, self.k))
@@ -142,7 +186,6 @@ class DatasetGenerator():
             self.sample_dict[i]['lmbda'] = lmbda
             self.sample_dict[i]['f'] = f
 
-
     def seq_pc_params(self, shuffle = False):
         x_dict = {} # id : x
         self.plot = False
@@ -156,8 +199,8 @@ class DatasetGenerator():
             samples = range(201, 250)
 
         for j in samples:
-            self.sample_folder = osp.join(dataset, f'sample{j}')
-            _, y_diag = load_Y(self.sample_folder)
+            sample_folder = osp.join(dataset, f'sample{j}')
+            _, y_diag = load_Y(sample_folder)
             getseq = GetSeq(self, None, False)
             x = getseq.get_PCA_seq(y_diag, normalize = True)
             x_dict[j] = x
@@ -174,6 +217,35 @@ class DatasetGenerator():
 
             seq_file = osp.join('/home/erschultz', self.dataset, f'setup/x_{i+1}.npy')
             self.sample_dict[i]['method'] = seq_file
+
+    def seq_eig_params(self, norm=False):
+        x_dict = {} # id : x
+        if self.m == 1024:
+            dataset = '/home/erschultz/dataset_11_14_22/samples'
+            samples = range(2201, 2216)
+        elif self.m == 512:
+            dataset = f'/home/erschultz/dataset_01_26_23/samples'
+            samples = range(201, 250)
+
+        for j in samples:
+            sample_folder = osp.join(dataset, f'sample{j}')
+            max_ent_folder = osp.join(sample_folder, f'PCA-normalize-E/k{self.k}/replicate1/resources')
+            if norm:
+                x = np.load(osp.join(max_ent_folder, 'x_eig_norm.npy'))
+            else:
+                x = np.load(osp.join(max_ent_folder, 'x_eig.npy'))
+            x_dict[j] = x
+
+        for i in range(self.N):
+            j = np.random.choice(samples)
+            x = x_dict[j]
+
+            seq_file = osp.join(self.odir, f'x_{i+1}.npy')
+            np.save(seq_file, x)
+
+            seq_file = osp.join('/home/erschultz', self.dataset, f'setup/x_{i+1}.npy')
+            self.sample_dict[i]['method'] = seq_file
+
 
     def linear_params(self):
         if self.m == 512:
@@ -222,14 +294,31 @@ class DatasetGenerator():
         elif self.diag_mode == 'logistic':
             self.logistic_params()
 
-        self.plaid_params()
-
         if self.seq_mode == 'markov':
             self.seq_markov_params()
         elif self.seq_mode == 'pcs':
             self.seq_pc_params()
+        elif self.seq_mode == 'norm':
+            self.seq_eig_params()
+        elif self.seq_mode == 'eig_norm':
+            self.seq_eig_params(True)
         elif self.seq_mode == 'pcs_shuffle':
             self.seq_pc_params(True)
+
+        self.plaid_params()
+
+
+        if self.max_L is not None:
+            for i in range(self.N):
+                x = np.load(osp.join('/home/erschultz', self.dataset, f'setup/x_{i+1}.npy'))
+                chi = np.load(osp.join('/home/erschultz', self.dataset, f'setup/chi_{i+1}.npy'))
+                L = x @ chi @ x.T
+                L = (L + L.T) / 2
+                L[L > self.max_L] = self.max_L
+                L_file = osp.join('/home/erschultz', self.dataset, f'setup/L_{i+1}.npy')
+                np.save(L_file, L)
+                self.sample_dict[i]['method'] = L_file + '-L'
+                self.sample_dict[i]['chi_method'] = None
 
 
         # write to odir
@@ -241,7 +330,6 @@ class DatasetGenerator():
 
 
 def main():
-    print(os.getcwd())
     args = getArgs()
     generator = DatasetGenerator(args)
     generator.get_dataset()

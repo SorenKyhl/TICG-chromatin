@@ -11,8 +11,10 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats as ss
+import seaborn as sns
 import torch
 import torch_geometric
+from modify_maxent import plaid_dist
 from scipy.ndimage import uniform_filter
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
@@ -368,7 +370,7 @@ def convergence_check():
     plt.savefig(osp.join(dir, 'loss_convergence.png'))
     plt.close()
 
-def main():
+def plot_sc_p_s():
     # quick function to plot sc p(s) curves
     dir = '/home/erschultz/sequences_to_contact_maps/single_cell_nagano_2017'
     data_dir = osp.join(dir, 'contact_diffusion_kNN8scc/iteration_1/sc_contacts')
@@ -787,38 +789,6 @@ def time_comparison_dmatrix():
     plt.savefig(osp.join(dir, 'time2.png'))
     plt.close()
 
-def main2():
-    # shuffle plaid chis
-    dataset = 'dataset_11_14_22'
-    sample = 2217
-    dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
-    max_ent_dir = osp.join(dir, 'PCA-normalize-E/k8/replicate1')
-    chis = np.loadtxt(osp.join(max_ent_dir, 'chis.txt'))[-1]
-    chis = triu_to_full(chis)
-    plot_matrix(chis, osp.join(max_ent_dir, 'chis.png'), cmap = 'blue-red')
-
-    chis_neg = -1 * chis
-    plot_matrix(chis_neg, osp.join(max_ent_dir, 'chis_neg.png'), cmap = 'blue-red')
-    np.save(osp.join(max_ent_dir, 'chis_neg.npy'), chis_neg)
-
-
-    diag = np.copy(np.diagonal(chis))
-    tri = chis[np.triu_indices(len(chis), 1)]
-    np.random.shuffle(diag)
-    np.fill_diagonal(chis, diag)
-    np.random.shuffle(tri)
-    chis[np.triu_indices(len(chis), 1)] = tri
-    # chis[np.tril_indices(len(chis), -1)] = np.nan
-    chis = np.triu(chis, 1) + np.triu(chis).T
-    # print(chis)
-    np.save(osp.join(max_ent_dir, 'chis_shuffle.npy'), chis)
-    plot_matrix(chis, osp.join(max_ent_dir, 'chis_shuffle.png'), cmap = 'blue-red')
-
-    x = np.load(osp.join(max_ent_dir, 'resources/x.npy'))
-    # x = np.array([[1,0],[2, 3], [5,6]])
-    np.random.shuffle(x.T)
-    np.save(osp.join(max_ent_dir, 'resources/x_shuffle.npy'), x)
-
 def max_ent_loss_for_gnn(dataset, sample):
     dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
 
@@ -841,7 +811,8 @@ def max_ent_loss_for_gnn(dataset, sample):
 
 def molar_contact_ratio(dataset, plot=True):
     dir = '/project2/depablo/erschultz/'
-    # dir = '/home/erschultz'
+    if not osp.exists(dir):
+        dir = '/home/erschultz'
     data_dir = osp.join(dir, dataset)
     odir = osp.join(data_dir, 'molar_contact_ratio')
     if not osp.exists(odir):
@@ -867,16 +838,7 @@ def molar_contact_ratio(dataset, plot=True):
         pca.fit(y_diag)
         pc = pca.components_[0]
         # normalize
-        min = np.min(pc)
-        max = np.max(pc)
-        if max > abs(min):
-            val = max
-        else:
-            val = abs(min)
 
-        # multiply by scale such that val x scale = 1
-        scale = 1/val
-        pc *= scale
 
         pca_var[i] = pca.explained_variance_ratio_[0]
         pcpos = pc.copy()
@@ -951,14 +913,13 @@ def molar_contact_ratio(dataset, plot=True):
 
         return mse_dict
 
-
     experimental = False
     if dataset == 'dataset_12_20_22':
         samples = [324, 981, 1936, 2834, 3464]
     elif dataset == 'dataset_11_21_22':
-        # samples = [1, 2, 3, 410, 653, 1462, 1801, 2290]
-        samples = list(range(1,1000))
-        samples.extend(range(1021, 2401))
+        samples = [1, 2, 3, 410, 653, 1462, 1801, 2290]
+        # samples = list(range(1,1000))
+        # samples.extend(range(1021, 2401))
     elif dataset == 'dataset_11_14_22':
         samples = range(2201, 2222)
         experimental = True
@@ -970,17 +931,26 @@ def molar_contact_ratio(dataset, plot=True):
         experimental = True
     else:
         samples = range(1, 11)
+    samples = np.array(samples)
 
     N = len(samples)
     k_means_rab = np.zeros(N)
     pca_rab = np.zeros(N)
     pca_b_rab = np.zeros(N)
     pca_var = np.zeros(N)
+    y_list = []
+    L_list, _, _ = plaid_dist(dataset, 4, False)
+    L_list_exp, _, _ = plaid_dist('dataset_01_26_23', 4, False)
+    meanDist_list = []
     for i, sample in enumerate(samples):
         sample_dir = osp.join(data_dir, f'samples/sample{sample}')
 
         y, y_diag = load_Y(sample_dir)
         y /= np.mean(np.diagonal(y))
+        y_list.append(y)
+
+        meanDist_list.append(DiagonalPreprocessing.genomic_distance_statistics(y))
+
         m = len(y)
 
         # plot_seq_binary(seq, save = False, show = True)
@@ -1043,7 +1013,9 @@ def molar_contact_ratio(dataset, plot=True):
 
     # plot distributions
     if plot:
-        for arr, label in zip([k_means_rab, pca_rab, pca_b_rab, pca_var], ['kmeans_Rab', 'PCA_Rab', 'PCA_binary_Rab','PCA_var']):
+        # plot histograms
+        for arr, label in zip([k_means_rab, pca_rab, pca_b_rab, pca_var],
+                                ['kmeans_Rab', 'PCA_Rab', 'PCA_binary_Rab','PCA_var']):
             np.save(osp.join(odir, label + '.npy'), arr)
             print(label)
             if not experimental:
@@ -1060,6 +1032,87 @@ def molar_contact_ratio(dataset, plot=True):
             plt.xscale('log')
             plt.savefig(osp.join(odir, f'{label}_distribution.png'))
             plt.close()
+
+
+        # crop samples for plotting
+        plot_n = 8
+        y_arr = np.array(y_list[:8])
+        L_arr = np.array(L_list[:8])
+        k_means_rab = k_means_rab[:8]
+        meanDist_arr = np.array(meanDist_list[:8])
+        samples = samples[:8]
+
+        # plot contact maps orderd by rab
+        cmap = matplotlib.colors.LinearSegmentedColormap.from_list('custom',
+                                                 [(0,    'white'),
+                                                  (1,    'red')], N=126)
+        ind = np.argsort(k_means_rab)
+        y_arr = np.array(y_list)
+        fig, ax = plt.subplots(2, 5,
+                                gridspec_kw={'width_ratios':[1,1,1,1,0.08]})
+        fig.set_figheight(6*2)
+        fig.set_figwidth(6*3)
+        vmin = 0; vmax = np.mean(y_arr)
+        row = 0; col=0
+        for y, val, sample in zip(y_arr[ind], k_means_rab[ind], samples[ind]):
+            if col == 0:
+                s = sns.heatmap(y, linewidth = 0, vmin = vmin, vmax = vmax, cmap = cmap,
+                    ax = ax[row][col], cbar_ax = ax[row][4])
+            else:
+                s = sns.heatmap(y, linewidth = 0, vmin = vmin, vmax = vmax, cmap = cmap,
+                    ax = ax[row][col], cbar = False)
+            s.set_title(f'Sample {sample}\nPlaid Score = {np.round(val, 1)}', fontsize = 16)
+            s.set_xticks([])
+            s.set_yticks([])
+
+            col += 1
+            if col == 4:
+                col = 0
+                row += 1
+
+        plt.tight_layout()
+        plt.savefig(osp.join(data_dir, 'y_ordered.png'))
+        plt.close()
+
+
+        # plot L_ij ordered by rab
+        fig, ax = plt.subplots(2, 4)
+        fig.set_figheight(6*2)
+        fig.set_figwidth(6*3)
+        row = 0; col=0
+        bin_width = 1
+        arr_exp = np.array(L_list_exp).reshape(-1)
+        for L, val, sample in zip(L_arr[ind], k_means_rab[ind], samples[ind]):
+            arr = L.reshape(-1)
+            bins = range(math.floor(min(arr_exp)), math.ceil(max(arr_exp)) + bin_width, bin_width)
+            ax[row][col].hist(arr_exp, weights = np.ones_like(arr_exp) / len(arr_exp),
+                                        bins = bins,
+                                        alpha = 0.5, label = 'Experiment')
+            bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width)
+            ax[row][col].hist(arr, weights = np.ones_like(arr) / len(arr),
+                                        bins = bins,
+                                        alpha = 0.5, label = 'Simulation')
+            ax[row][col].set_title(f'Sample {sample}\nPlaid Score = {np.round(val, 1)}', fontsize = 16)
+
+            col += 1
+            if col == 4:
+                col = 0
+                row += 1
+
+        plt.tight_layout()
+        plt.savefig(osp.join(data_dir, 'L_dist_ordered.png'))
+        plt.close()
+
+        # plot meanDist colored by plaid score
+        for meanDist, val, sample in zip(meanDist_arr[ind], k_means_rab[ind], samples[ind]):
+            plt.plot(meanDist, label = np.round(val, 1))
+        plt.legend()
+        plt.yscale('log')
+        plt.xscale('log')
+        plt.tight_layout()
+        plt.savefig(osp.join(data_dir, 'meanDist_plaid_score.png'))
+        plt.close()
+
 
 
 def compare_scc_bio_replicates():
@@ -1097,6 +1150,44 @@ def compare_scc_bio_replicates():
     corr_scc_var = scc.scc(y_a, y_b, var_stabilized = True)
     print(corr_scc, corr_scc_var)
 
+def main():
+    dir = '/home/erschultz/dataset_11_21_22/molar_contact_ratio_cluster'
+    def simple_plot(arr, fname):
+        print(np.min(arr), np.max(arr))
+        n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
+                                    bins = np.logspace(np.log10(1),np.log10(1000), 50),
+                                    alpha = 0.5)
+        plt.ylabel('probability', fontsize=16)
+        plt.xscale('log')
+        plt.savefig(osp.join(dir, fname))
+        plt.close()
+
+
+    mse_arr = np.load(osp.join(dir, 'mse.npy'))
+    simple_plot(mse_arr, 'mse_distribution.png')
+
+    kmeans_arr = np.load(osp.join(dir, 'kmeans_Rab.npy'))
+    simple_plot(kmeans_arr, 'kmeans_distribution.png')
+    result = pearson_round(kmeans_arr, mse_arr, stat = 'spearman')
+    print(result)
+
+    # plt.scatter(kmeans_arr, mse_arr)
+    # plt.xlim(0, 100)
+    # plt.show()
+
+    kmeans_exp = np.load('/home/erschultz/dataset_01_26_23/molar_contact_ratio/kmeans_Rab.npy')
+    for arr, label in zip([kmeans_arr, kmeans_exp], ['Synthetic', 'Experiment']):
+        print(label)
+        print(np.min(arr), np.max(arr))
+        n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
+                                    bins = np.logspace(np.log10(1),np.log10(1000), 50),
+                                    alpha = 0.5, label = label)
+    plt.legend()
+    plt.ylabel('probability', fontsize=16)
+    plt.xlabel('KMeans Plaid Score', fontsize=16)
+    plt.xscale('log')
+    plt.savefig(osp.join(dir, f'kmeans_vs_exp_distribution.png'))
+    plt.close()
 
 
 if __name__ == '__main__':
@@ -1110,8 +1201,9 @@ if __name__ == '__main__':
     # convergence_check()
     # main()
     # plot_p_s()
-    # main2()
-    molar_contact_ratio('dataset_11_21_22', True)
+    # molar_contact_ratio('dataset_01_27_23_v5', True)
+    # molar_contact_ratio('dataset_11_21_22', True)
+    molar_contact_ratio('dataset_01_27_23_v9', True)
     # compare_scc_bio_replicates()
     # plot_sd()
     # max_ent_loss_for_gnn('dataset_11_14_22', 2201)

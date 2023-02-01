@@ -105,7 +105,7 @@ double Cell::getConstantEnergy(const double constant_chi) {
 	return U;
 };
 
-double Cell::getSmatrixEnergy(const Eigen::MatrixXd &Smatrix)
+double Cell::getSLmatrixEnergy(const Eigen::MatrixXd &SLmatrix)
 {
 	double U = 0;
 
@@ -123,7 +123,7 @@ double Cell::getSmatrixEnergy(const Eigen::MatrixXd &Smatrix)
 		for(int j=0; j<imax; j++)
 		{
 
-			U += Smatrix(indices[i],indices[j]) * beadvol/vol;
+			U += SLmatrix(indices[i],indices[j]) * beadvol/vol;
 		}
 	}
 	return U;

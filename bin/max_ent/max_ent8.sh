@@ -15,7 +15,7 @@ if [ $local = 'true' ]
 then
   dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
-  numIterations=15
+  numIterations=5
   finalSimProductionSweeps=500000
   equilibSweeps=100000
   productionSweeps=500000
@@ -25,18 +25,18 @@ fi
 STARTTIME=$(date +%s)
 i=7001
 dataset='dataset_01_26_23'
+useL='true'
 useS='false'
 useE='true'
 useD='true'
 m=512
-chiMethod='zero'
-mode='both'
+chiMethod='zeros'
+mode='plaid'
 
 bondtype='gaussian'
 bondLength=28
 phiChromatin=0.06
 
-diagChiMethod='zero'
 dense='true'
 diagBins=96
 nSmallBins=64
@@ -44,20 +44,19 @@ smallBinSize=1
 diagCutoff=512
 
 
-sleep 2h # Wait 2 hour TODO
-
-method='PCA-normalize'
+method='k_means'
 jobs=0
 waitCount=0
-for k in 8 12
+for k in 4
 do
-  for sample in {201..282}
+  for sample in {225..282}
   # 2201 2202 2203 2204 2205 2206 2207 2208 2209 2210 2211 2212 2213 2214 2215
   do
+    diagChiMethod="/home/erschultz/dataset_01_26_23/samples/sample${sample}/none/k0/replicate1/chis_diag.txt"
     echo $sample $m
     max_ent
     jobs=$(( $jobs + 1 ))
-    if [ $jobs -gt 18 ]
+    if [ $jobs -gt 11 ]
     then
       echo 'Waiting'
       waitCount=$(( $waitCount + 1 ))
