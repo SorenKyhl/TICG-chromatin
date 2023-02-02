@@ -89,23 +89,32 @@ void Sim::updateContactsGrid()
 	int pixel1, pixel2;
 	for(Cell* cell : grid.active_cells)
 	{
-		for(Bead* bead1 : cell->contains)
+		// enumerate pairs of beads - (don't double count!!)
+		for(auto bead1=cell->contains.begin(); bead1!=cell->contains.end(); bead1++)
 		{
-			for(Bead* bead2 : cell->contains)
+			for(auto bead2=bead1; bead2!=cell->contains.end(); bead2++)
 			{
 				bool ignore = false;
-				pixel1 = bead1->id/contact_resolution;
-				pixel2 = bead2->id/contact_resolution;
+				pixel1 = (*bead1)->id/contact_resolution;
+				pixel2 = (*bead2)->id/contact_resolution;
 
 				// ignore every other bead for the purposes of contact counting (in the case where contact_resolution=2)
 				if (contact_bead_skipping) {
-					if (bead1->id % contact_resolution != 0 || bead2->id % contact_resolution != 0) {
+					if ((*bead1)->id % contact_resolution != 0 || (*bead2)->id % contact_resolution != 0) {
 						ignore = true;
 					}
 				}
 			
 				if (visited[pixel1][pixel2] == false) {
-					if (!ignore) contact_map[pixel1][pixel2] += 1; // increment contacts
+					if (!ignore){
+						contact_map[pixel1][pixel2] += 1; // increment contacts
+						if (pixel1 != pixel2)
+						{
+							// symmetric, but don't double count main diagonal
+							contact_map[pixel2][pixel1] += 1;
+						}
+					}
+
 					if (visit_tracking) visited[pixel1][pixel2] = true;
 				}
 			}
