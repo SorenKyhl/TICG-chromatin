@@ -26,9 +26,31 @@ def pool(inp, factor, fn=np.nansum, normalize=False):
     out = processed + np.triu(processed, 1).T
 
     if normalize:
-        out = main_diagonal_to_one(out)
+        out = normalize_hic(out)
 
     return out
+
+def pool_sum(inp, factor, normalize=False): 
+    pooled = block_reduce(inp, (factor,factor), np.nansum)
+    if normalize:
+        pooled = normalize_hic(pooled)
+    return pooled
+
+
+def pool_diagonal(HiC, normalize=False):
+    """
+    reduce size of matrix by factor,
+    only include every factor'th bead
+    called "diagonal pooling" because the block_reduce kernel is the identity function
+    """
+    HiC_new = np.zeros([int(len(HiC)/2), int(len(HiC)/2)])
+    for i in range(len(HiC_new)):
+        for j in range(len(HiC_new)):
+            HiC_new[i,j] = (HiC[2*i, 2*j]+HiC[2*i+1,2*j+1])
+
+    if normalize:
+        HiC_new = normalize_hic(HiC_new)
+    return HiC_new
 
 def pool_double_count(inp, factor, fn=np.nansum):
     inp = copy.deepcopy(inp)
@@ -39,10 +61,12 @@ def pool_double_count(inp, factor, fn=np.nansum):
     processed = block_reduce(inp, (factor, factor), fn)
     return processed
 
+def pool_seqs(seqs, factor):
+    return np.array([block_reduce(seqi, (factor), np.mean) for seqi in seqs])
 
-def main_diagonal_to_one(hic):
-    d = epilib.get_diagonal(hic)
-    return hic/d[0]
+
+def normalize_hic(hic):
+    return hic / np.mean(np.diagonal(hic))
 
 def unpool(inp, factor):
     """

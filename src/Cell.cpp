@@ -186,32 +186,6 @@ double Cell::getDmatrixEnergy(const Eigen::MatrixXd &Dmatrix)
 	}
 	return U;
 }
-//
-// int Cell::binDiagonal(int d)
-// {
-// 	int bin_index = -1;
-//
-// 	if (dense_diagonal_on)
-// 	{
-// 		int dense_cutoff = n_small_bins * small_binsize;
-// 		// diagonal chis are binned in a dense set (small bins) from d=0 to d=dense_cutoff,
-// 		// then a sparse set (large bins) from d=cutoff to d=diag_cutoff
-// 		if ( d > dense_cutoff )
-// 		{
-// 			bin_index = n_small_bins + std::floor( (d - dense_cutoff) / big_binsize );
-// 		}
-// 		else
-// 		{
-// 			bin_index = std::floor( d / small_binsize );
-// 		}
-// 	}
-// 	else
-// 	{
-// 		// diagonal chis are linearly spaced from d=0 to d=nbeads
-// 		bin_index = std::floor( d / diag_binsize );
-// 	}
-// 	return bin_index;
-// }
 
 int Cell::binDiagonal(int d)
 {
@@ -263,7 +237,9 @@ double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
 			{
 				d -= diag_start; // TODO check that this works for non-zero diag_start
 				d_index = binDiagonal(d);
-				diag_phis[d_index] += 1; // diag phis is just a count, multiply by volumes later
+			
+				int nbonds = d ? 2 : 1; // count two for all off-diagonal
+				diag_phis[d_index] += nbonds; // diag phis is just a count, multiply by volumes later
 			}
 		}
 	}
@@ -273,7 +249,7 @@ double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
 	{
 		for (int i=0; i<diag_nbins; i++)
 		{
-			double npseudobeads = bonds_to_beads(diag_phis[i]);
+			double npseudobeads = bonds_to_beads(diag_phis[i], i);
 			// Udiag += diag_chis[i] * npseudobeads * npseudobeads;// * beadvol/vol;
 
 			diag_phis[i] = npseudobeads * beadvol/vol;
@@ -304,7 +280,7 @@ double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
 
 };
 
-double Cell::bonds_to_beads(int bonds)
+double Cell::bonds_to_beads(int bonds, int i)
 {
 	// convert number of bonds to number of pseudobeads
 	// correct way:
@@ -316,7 +292,12 @@ double Cell::bonds_to_beads(int bonds)
 	// solving for beads, using quadratic formula:
 	// beads = (1 + sqrt(1 + 8*bonds)) / 2
 	// return  (1 + sqrt( 1 + 8*bonds)) / 2.0 ;
-	return sqrt(2*bonds);
+	//
+	
+	//if (dont_double_count_main_diagonal)
+	//	return i ? sqrt(2*bonds) : sqrt(bonds);
+
+	return sqrt(bonds);
 }
 
 double Cell::getBoundaryEnergy(const double boundary_chi, const double delta) {

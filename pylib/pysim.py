@@ -237,11 +237,13 @@ class Pysim:
         """
         Path(self.root/"production_out").mkdir()
         
+        # aggregate files are concatenated together to form one trajectory
         aggregate_files = ["observables.traj", "diag_observables.traj",
                            "energy.traj", "output.xyz"]
         for file in aggregate_files:
             cat(self.root/"production_out"/file, self.root.glob("core*/"+str(file)))
             
+        # contact maps are summed together to form one contact map
         contact_files = list(self.root.glob("core*/contacts.txt"))
         self.combine_contactmaps(contact_files, output_file=self.root/"production_out/contacts.txt")
         

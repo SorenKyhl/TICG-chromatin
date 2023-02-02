@@ -279,35 +279,6 @@ class Sim:
         
     def plot_diff(self):
         plot_diff(self.hic, self.gthic)
-  
-    '''
-    def get_goal_plaid(self, flat=True):
-        k = self.config["nspecies"]
-        goal_exp = np.zeros((k,k))
-        
-        for i, seqi in enumerate(self.seqs):
-            for j, seqj in enumerate(self.seqs):
-                goal_exp[i,j] = np.mean((np.outer(seqi,seqj)*self.hic).flatten())
-        
-        goal_sim = np.zeros((k,k))
-        goal_sim[0,0] = np.mean(self.obs[1])
-        goal_sim[1,0] = np.mean(self.obs[2])
-        goal_sim[0,1] = np.mean(self.obs[2])
-        goal_sim[1,1] = np.mean(self.obs[3])
-        
-        if flat:
-            ind = np.triu_indices(k)
-            goal_sim = goal_sim[ind]        
-        
-        return goal_exp, goal_sim
-    '''
-    '''
-    def get_goal_diag(self):
-        nbeads = self.config['nbeads']
-        bins = len(self.config['diag_chis'])
-        diag_mask, correction = mask_diagonal(self.hic, bins, nbeads)
-        return diag_mask
-        '''
 
     def process(self):
         diag_sim = np.mean(self.diag_obs)[1:]
@@ -546,6 +517,9 @@ def plot_contactmap(contact, vmaxp=0.1, absolute=False, imshow=True, cbar=True, 
         plt.title(title)
 
 def plot_diagonal(diag, *args, scale="semilogy", label=None):
+    if diag.ndim == 2:
+        diag = get_diagonal(diag) # in case the input is a full matrix instead of just the diagonal
+
     if scale=="semilogy":
         plt.semilogy(np.linspace(1/len(diag),1,len(diag)), diag, *args, label=label)
     elif scale=="loglog":
@@ -921,7 +895,7 @@ def compare_diagonal(filename, nbeads=1024, bins=16, plot=True, getgoal=False, f
     return diag_sim, diag_exp, diag_mask, correction
 
 @njit
-def make_mask(size, b, cutoff, loading, ndiag_bins, dense_diagonal_on):
+def make_mask(size, b, cutoff, loading, ndiag_bins, dense_diagonal_on, double_diagonal=True):
     """ makes a mask with 1's in subdiagonals inside
     
     actually faster than numpy version when jitted
@@ -936,7 +910,7 @@ def make_mask(size, b, cutoff, loading, ndiag_bins, dense_diagonal_on):
             if bin_index == b:
                 mask[r,c] = 1
                 mask[c,r] = 1
-                if r==c:
+                if r==c and double_diagonal:
                     mask[r,r] = 2
     return mask
 
@@ -951,7 +925,7 @@ def make_mask_fast(size, binsize, b):
     return mask
 
 @njit
-def mask_diagonal(contact, cutoff, loading, ndiag_bins, dense_diagonal_on):
+def mask_diagonal(contact, cutoff, loading, ndiag_bins, dense_diagonal_on, double_diagonal):
     """Returns weighted averages of contact map"""
     rows, cols = contact.shape
     #binsize = int(rows/ndiag_bins)
@@ -972,7 +946,7 @@ def mask_diagonal(contact, cutoff, loading, ndiag_bins, dense_diagonal_on):
                     if r==c:
                         mask[r,r] = 2
         '''
-        mask = make_mask(nbeads, b, cutoff, loading, ndiag_bins, dense_diagonal_on)
+        mask = make_mask(nbeads, b, cutoff, loading, ndiag_bins, dense_diagonal_on, double_diagonal)
         #measure.append(np.mean((mask*contact).flatten()))
         #correction.append(np.sum(mask)/nbeads**2)
         measure.append(np.sum((mask*contact).flatten()))        
@@ -1090,12 +1064,12 @@ def get_goal_plaid2(hic, seqs, k, flat=True):
         
     return goal_exp
 
-def get_goal_diag(hic, config, ndiag_bins=32, getcorrect=False, adj=True, dense_diagonal_on=True):
+def get_goal_diag(hic, config, ndiag_bins=32, getcorrect=False, adj=True, dense_diagonal_on=True, double_diagonal=True):
     # TODO - get dense diagonal on from config
     cutoff = config["dense_diagonal_cutoff"]
     loading = config["dense_diagonal_loading"]
     dense_diagonal_on = config["dense_diagonal_on"]
-    diag_mask, correction = mask_diagonal(hic, cutoff, loading, ndiag_bins, dense_diagonal_on)
+    diag_mask, correction = mask_diagonal(hic, cutoff, loading, ndiag_bins, dense_diagonal_on, double_diagonal)
     
     if adj:
         vbead = config["beadvol"]
@@ -1293,9 +1267,9 @@ def fill_subdiagonal(a, offset, fn):
 def change_goals(goals, nbeads, ncells, vbead):
     return goals * nbeads**2 / (2 * vbead * 2 * ncells)
 
-def get_goals(hic, seqs, config, diag_bins=32, save_path=None):
+def get_goals(hic, seqs, config, diag_bins=32, save_path=None, double_diagonal=False):
     plaid = get_goal_plaid(hic, seqs, config)
-    diag = get_goal_diag(hic, config, diag_bins)
+    diag = get_goal_diag(hic, config, diag_bins, double_diagonal=double_diagonal)
     
     if save_path is not None:
         np.savetxt(save_path, plaid, newline=" ", fmt="%.8f")
@@ -1463,35 +1437,27 @@ def vacancy(hic, plot=True):
     return vacancy
 
 def plot_consistency(sim):
+    if np.shape(sim.hic) != np.shape(sim.seqs):
+        size = np.shape(sim.seqs[0])[0]
+        hic = resize_contactmap(sim.hic, size, size)
+    else:
+        hic = sim.hic
+
+    goal  = get_goals(hic, sim.seqs, sim.config)
+    #plaid = get_goal_plaid(hic, sim.seqs, sim.config)
+    #diag = get_goal_diag(hic, sim.config, sim.diag_bins, dense_diagonal_on=sim.config["dense_diagonal_on"])
+    #goal = np.hstack((plaid,diag))
+
+    diff = sim.obs_tot - goal
+    error = np.sqrt(diff@diff / (goal@goal))
+
+    plt.figure()
+    plt.plot(sim.obs_tot, 'o', label="obs")
+    plt.plot(goal, 'x', label="goal")
+    plt.title("sim.obs vs Goals(sim.hic); Error: {%.3f}"%error)
+    plt.legend()
+    return error
         
-    # can only calculate consistency if the hic resolution is the same
-    # as the observables resolution
-    if (sim.config['contact_resolution'] == 1):
-        if np.shape(sim.hic) != np.shape(sim.seqs):
-            size = np.shape(sim.seqs[0])[0]
-            hic = resize_contactmap(sim.hic, size, size)
-        else:
-            hic = sim.hic
-
-        plaid = get_goal_plaid(hic, sim.seqs, sim.config)
-        diag = get_goal_diag(hic, sim.config, sim.diag_bins, dense_diagonal_on=sim.config["dense_diagonal_on"])
-        goal = np.hstack((plaid,diag))
-
-
-        diff = sim.obs_tot - goal
-        error = np.sqrt(diff@diff / (goal@goal))
-
-        plt.figure()
-        plt.plot(sim.obs_tot, 'o', label="obs")
-        plt.plot(goal, 'x', label="goal")
-        plt.title("sim.obs vs Goals(sim.hic); Error: {%.3f}"%error)
-        plt.legend()
-        return error
-        
-    elif sim.config['contact_resolution'] > 1:
-        print("cannot plot consistency because sim.config['contact_resolution'] >1")
-        return 0
-
 def get_symmetry_score(A, order='fro'):
     symmetric = np.linalg.norm(1/2*(A + A.T), order)
     skew_symmetric = np.linalg.norm(1/2*(A - A.T), order)

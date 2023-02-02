@@ -10,8 +10,19 @@ from pylib import epilib as ep
 import pylib.utils
 
 class Pipeline:
+    """
+    Pipeline for running maximum entropy optimizations
+    args:
+        self [str]: name of output directory
+        gthic [ndarray]: ground truth hi-c contact map: optimization target
+        config [dir]: simulation configuration
+        params [dir]: maxent optimization parameters
+        load_first [bool]: if true, load sequences and goals rather than compute them
+        seqs_method [callable]: operates on gthic to return bead type sequences
+        goals_method [callable]: operates on gthic, seqs, and config to return maxent goals
+    """
     
-    def __init__(self, name, gthic, config, params, load_first=False, seqs_method=ep.get_sequences, goals_method=ep.get_goals):    
+    def __init__(self, name, gthic, config, params, load_first=False, seqs_method=ep.get_sequences, goals_method=ep.get_goals, analysis_on=True):    
         self.name = name
         self.root = Path.cwd()/self.name
         self.gthic = gthic
@@ -20,6 +31,7 @@ class Pipeline:
         self.seqs_method = seqs_method
         self.goals_method = goals_method
         self.load_first = load_first  
+        self.analysis_on = analysis_on
 
     def get_seqs(self):
         if self.load_first:
@@ -31,7 +43,7 @@ class Pipeline:
         if self.load_first:
             self.goals = self.load_goals()
         else: 
-            self.goals = self.goals_method(self.gthic, self.seqs, beadvol=self.config['beadvol'], grid_size=self.config['grid_size'])
+            self.goals = self.goals_method(self.gthic, self.seqs, self.config)
     
     def fit(self):            
         self.get_seqs()
@@ -42,7 +54,8 @@ class Pipeline:
                         params=self.params, 
                         config=self.config, 
                         seqs=self.seqs, 
-                        gthic=self.gthic)
+                        gthic=self.gthic,
+                        analysis_on=self.analysis_on)
 
         optimizer.fit()
         

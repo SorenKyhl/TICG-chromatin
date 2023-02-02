@@ -173,9 +173,13 @@ def plot_energy_matrices(sim):
 
 def main():
     sim = ep.Sim("production_out")
+    print("sim created")
     sim_analysis(sim)
+    print("sim analysis done")
     compare_analysis(sim)
+    print("compare analysis done")
     maxent_analysis(sim)
+    print("maxent analysis done")
 
 if __name__ == "__main__":
     main()

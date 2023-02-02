@@ -51,7 +51,7 @@ public:
 	double getDmatrixEnergy(const Eigen::MatrixXd &Dmatrix);
 
 
-	double bonds_to_beads(int bonds);
+	double bonds_to_beads(int bonds, int index);
 	static int binDiagonal(int d);
 
 

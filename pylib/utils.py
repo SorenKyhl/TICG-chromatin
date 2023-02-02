@@ -88,6 +88,17 @@ def load_sequences_from_dir(dirname):
         sequences = load_sequences(config)
     return sequences
 
+def uncorrelate_seqs(seqs):
+    """
+    transform sequences so that they are uncorrelated using cholesky transformation.
+    following this blog post:
+        https://blogs.sas.com/content/iml/2012/02/08/use-the-cholesky-transformation-to-correlate-and-uncorrelate-variables.html
+    """
+    sigma = np.cov(seqs)
+    L = np.linalg.cholesky(sigma)
+    seqs_uncorrelated = np.linalg.solve(L, seqs)
+    return seqs_uncorrelated
+
 def load_chis(config):
     try:
         nspecies = config['nspecies']
