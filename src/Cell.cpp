@@ -249,14 +249,16 @@ double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
 	{
 		for (int i=0; i<diag_nbins; i++)
 		{
-			double npseudobeads = bonds_to_beads(diag_phis[i], i);
+			//double npseudobeads = bonds_to_beads(diag_phis[i], i);
 			// Udiag += diag_chis[i] * npseudobeads * npseudobeads;// * beadvol/vol;
+			// diag_phis[i] = npseudobeads * beadvol/vol;
+			// Udiag += diag_chis[i] * diag_phis[i] * diag_phis[i];
 
-			diag_phis[i] = npseudobeads * beadvol/vol;
-			Udiag += diag_chis[i] * diag_phis[i] * diag_phis[i];
+			Udiag += diag_chis[i] * diag_phis[i];
 		}
 
-		return Udiag * vol/beadvol;
+		// return Udiag * vol/beadvol; original
+		return Udiag * beadvol/vol;
 	}
 	else
 	{

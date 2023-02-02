@@ -301,7 +301,8 @@ void Grid::getDiagObs(std::vector<double> &diag_obs) {
 	{
 		for(std::size_t i=0; i<diag_obs.size(); i++)
 		{
-			diag_obs[i] += cell->diag_phis[i] * cell->diag_phis[i] * cell->vol / cell->beadvol;
+			//diag_obs[i] += cell->diag_phis[i] * cell->diag_phis[i] * cell->vol / cell->beadvol;
+			diag_obs[i] += cell->diag_phis[i] * cell->beadvol / cell->vol;
 		}
 	}
 };
