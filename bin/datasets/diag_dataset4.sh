@@ -9,7 +9,7 @@
 #SBATCH --mem-per-cpu=2000
 
 source activate python3.9_pytorch1.9_cuda10.2
-source activate python3.8_pytorch1.9
+source activate python3.9_pytorch1.9
 sourceFile=$1
 source $sourceFile
 
