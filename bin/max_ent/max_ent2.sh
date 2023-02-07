@@ -47,7 +47,7 @@ k=0
 method='GNN'
 for sample in 410 653 1462 1801 2290
 do
-  for GNNModelID in 361
+  for GNNModelID in 360
   # 271
    # 243 254 262 265 267 271 276
   do

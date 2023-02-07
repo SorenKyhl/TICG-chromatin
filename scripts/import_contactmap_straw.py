@@ -94,7 +94,6 @@ def single_cell_import():
 
 def main():
     dir = '/home/erschultz'
-    dir = '/project2/depablo/erschultz'
     dataset='dataset_01_26_23'
     data_folder = osp.join(dir, dataset)
     if not osp.exists(data_folder):
@@ -162,7 +161,37 @@ def main():
     with multiprocessing.Pool(15) as p:
         p.starmap(import_contactmap_straw, mapping)
 
-def main3():
+def dataset_01_26():
+    dir = '/home/erschultz'
+    dataset='dataset_01_26_23'
+    data_folder = osp.join(dir, dataset)
+    if not osp.exists(data_folder):
+        os.mkdir(data_folder, mode = 0o755)
+    if not osp.exists(osp.join(data_folder, 'samples')):
+        os.mkdir(osp.join(data_folder, 'samples'), mode = 0o755)
+
+    resolution=10000
+    norm = 'NONE'
+    filename="https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-treated_6hr_combined_30.hic"
+    m = 512*5
+
+    slices = [(1, 15), (1, 166), (2, 110), (3, 130), (4, 140), (7, 89)]
+
+    # set up for multiprocessing
+    mapping = []
+    start_sample=83
+    for i, (chromosome, start_mb) in enumerate(slices):
+        start = start_mb * 1000000
+        end = start + resolution * m
+        end_mb = end / 1000000
+        print(f'i={i+start_sample}: chr{chromosome} {start_mb}-{end_mb}')
+        sample_folder = osp.join(data_folder, 'samples', f'sample{i+start_sample}')
+        mapping.append((sample_folder, filename, chromosome, start, end, resolution, norm))
+
+    with multiprocessing.Pool(10) as p:
+        p.starmap(import_contactmap_straw, mapping)
+
+def dataset_11_14():
     dir = '/home/erschultz'
     # dir = '/project2/depablo/erschultz'
     dataset='dataset_11_14_22'
@@ -193,31 +222,6 @@ def main3():
         print(f'i={i+start_sample}: chr{chromosome} {start_mb}-{end_mb}')
         sample_folder = osp.join(data_folder, 'samples', f'sample{i+start_sample}')
         mapping.append((sample_folder, filename, chromosome, start, end, resolution, norm))
-
-    with multiprocessing.Pool(10) as p:
-        p.starmap(import_contactmap_straw, mapping)
-
-def main():
-    dir = '/home/erschultz'
-    dataset='dataset_test'
-    data_folder = osp.join(dir, dataset)
-
-    resolution=10000
-    norm = 'NONE'
-    filename='https://hicfiles.s3.amazonaws.com/hiseq/huvec/in-situ/combined.hic'
-    m = 1024*5
-
-    chromosome, start_mb =(1, 15)
-
-    # set up for multiprocessing
-    mapping = []
-    start_sample=2104
-    start = start_mb * 1000000
-    end = start + resolution * m
-    end_mb = end / 1000000
-    print(f'i={start_sample}: chr{chromosome} {start_mb}-{end_mb}')
-    sample_folder = osp.join(data_folder, 'samples', f'sample{start_sample}')
-    mapping.append((sample_folder, filename, chromosome, start, end, resolution, norm))
 
     with multiprocessing.Pool(10) as p:
         p.starmap(import_contactmap_straw, mapping)
@@ -307,4 +311,4 @@ def pool():
 
 
 if __name__ == '__main__':
-    main()
+    dataset_01_26()

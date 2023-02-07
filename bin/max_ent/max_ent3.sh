@@ -24,12 +24,12 @@ fi
 
 STARTTIME=$(date +%s)
 i=2001
-dataset='dataset_11_14_22'
+dataset='dataset_01_26_23'
 useL='false'
 useS='false'
 useE='true'
 useD='false'
-m=1024
+m=512
 chiMethod='none'
 mode='none'
 
@@ -41,13 +41,13 @@ dense='false'
 diagBins=1
 nSmallBins=16
 smallBinSize=4
-diagCutoff=1024
+diagCutoff=512
 
 k=0
 method='GNN'
-for sample in 2201 2202 2203 2204 2205 2206 2207
+for sample in {283..288}
 do
-  for GNNModelID in 361
+  for GNNModelID in 362
    # 243 254 262 265 267 271 276
   do
     echo $sample $m

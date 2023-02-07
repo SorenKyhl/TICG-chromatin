@@ -153,13 +153,14 @@ class DatasetGenerator():
                                 val *= -1
                             chi_ij.append(val)
             elif self.chi_param_version == 'v12':
+                # eignorm approach
                 chi_ii = np.zeros(self.k)
                 for j, l in enumerate('ABCD'):
+                    assert self.m == 512
                     with open(osp.join(f'/home/erschultz/dataset_01_26_23/plaid_param_distributions_eig_norm/k{self.k}_chi{l}{l}.pickle'), 'rb') as f:
                         dict_j = pickle.load(f)
                     chi_ii[j] =  skewnorm.rvs(dict_j['alpha'], dict_j['mu'], dict_j['sigma'])
                 chi_ij = np.zeros(int(self.k*(self.k-1)/2))
-
 
             if self.chi_param_version not in {'v4', 'v5'}:
                 chi = np.zeros((self.k, self.k))
@@ -170,7 +171,7 @@ class DatasetGenerator():
             chi_file = osp.join(self.odir, f'chi_{i+1}.npy')
             np.save(chi_file, chi)
 
-            chi_file = osp.join('/home/erschultz', self.dataset, f'setup/chi_{i+1}.npy')
+            chi_file = osp.join('/project2/depablo/erschultz', self.dataset, f'setup/chi_{i+1}.npy')
             self.sample_dict[i]['chi_method'] = chi_file
 
     def seq_markov_params(self):
@@ -243,21 +244,26 @@ class DatasetGenerator():
             seq_file = osp.join(self.odir, f'x_{i+1}.npy')
             np.save(seq_file, x)
 
-            seq_file = osp.join('/home/erschultz', self.dataset, f'setup/x_{i+1}.npy')
+            seq_file = osp.join('/project2/depablo/erschultz', self.dataset, f'setup/x_{i+1}.npy')
             self.sample_dict[i]['method'] = seq_file
 
 
     def linear_params(self):
         if self.m == 512:
-            with open(osp.join(self.dir, 'dataset_01_26_23/diagonal_param_distributions/k4_linear_intercept.pickle'), 'rb') as f:
+            dir = osp.join(self.dir, 'dataset_01_26_23/diagonal_param_distributions')
+            with open(osp.join(dir, f'k{self.k}_linear_intercept.pickle'), 'rb') as f:
                 dict_intercept = pickle.load(f)
-            with open(osp.join(self.dir, 'dataset_01_26_23/diagonal_param_distributions/k4_linear_slope.pickle'), 'rb') as f:
+            with open(osp.join(dir, f'k{self.k}_linear_slope.pickle'), 'rb') as f:
                 dict_slope = pickle.load(f)
 
             for i in range(self.N):
                 self.sample_dict[i]['diag_chi_method'] = 'linear'
-                self.sample_dict[i]['diag_chi_slope'] = skewnorm.rvs(dict_slope['alpha'], dict_slope['mu'], dict_slope['sigma'])
-                self.sample_dict[i]['diag_chi_constant'] = skewnorm.rvs(dict_intercept['alpha'], dict_intercept['mu'], dict_intercept['sigma'])
+
+                slope = skewnorm.rvs(dict_slope['alpha'], dict_slope['mu'], dict_slope['sigma'])
+                self.sample_dict[i]['diag_chi_slope'] = slope
+
+                intercept = skewnorm.rvs(dict_intercept['alpha'], dict_intercept['mu'], dict_intercept['sigma'])
+                self.sample_dict[i]['diag_chi_constant'] = intercept
 
         else:
             # l_bounds = [0.001, 0]

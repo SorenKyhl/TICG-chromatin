@@ -29,12 +29,28 @@ from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
 
 LETTERS = 'ABCDEFGHIJKLMN'
 
+def get_samples(dataset):
+    experimental = False
+    if dataset == 'dataset_11_14_22':
+        samples = range(2201, 2214)
+        experimental = True
+    elif dataset == 'dataset_01_26_23':
+        samples = range(201, 283)
+        experimental = True
+    elif dataset == 'dataset_12_20_22':
+        samples = [324, 981, 1936, 2834, 3464]
+    elif dataset == 'dataset_11_21_22':
+        samples = [1, 2, 3, 410, 653, 1462, 1801, 2290]
+    elif dataset.startswith('dataset_01_27_23'):
+        samples = range(1, 16)
+    else:
+        samples = range(1, 11)
 
-def modify_plaid_chis():
-    # shuffle plaid chis
-    dataset = 'dataset_01_26_23'
-    for sample in range(201, 283):
-        k = 4
+    return samples, experimental
+
+def modify_plaid_chis(dataset, k):
+    samples, _ = get_samples(dataset)
+    for sample in samples:
         dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
         max_ent_dir = osp.join(dir, f'PCA-normalize-E/k{k}/replicate1')
         chis = np.loadtxt(osp.join(max_ent_dir, 'chis.txt'))[-1]
@@ -455,18 +471,40 @@ def test_shuffle():
     plt.savefig(osp.join(data_dir, f's_vs_shuffle_dist.png'))
     plt.close()
 
-def max_ent_diagonal_dist(dataset, k, plot=True):
+def simple_histogram(arr, xlabel='X', odir=None, ofname=None, dist=skewnorm,
+                    label=None, legend_title=''):
+    title = []
+    arr = np.array(arr).reshape(-1)
+    n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
+                                bins = 50, alpha = 0.5, label = label)
+    bin_width = bins[1] - bins[0]
+    params = dist.fit(arr)
+    y = dist.pdf(bins, *params) * bin_width
+    params = [np.round(p, 3) for p in params]
+    print(ofname, params)
+    # with open(osp.join(odir, ofname[:-9]+'.pickle'), 'wb') as f:
+    #     dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
+    #     pickle.dump(dict, f)
+
+    plt.plot(bins, y, ls = '--', color = 'k')
+    if not (odir is None or ofname is None):
+        if label is not None:
+            plt.legend(title = legend_title)
+        plt.ylabel('probability', fontsize=16)
+        plt.xlabel(xlabel, fontsize=16)
+        # plt.xlim(-20, 20)
+        # plt.title(r'$\alpha=$' + f'{params[0]}\n' + r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
+        plt.savefig(osp.join(odir, ofname))
+        plt.close()
+
+def diagonal_dist(dataset, k, plot=True):
+    # distribution of diagonal params
+    samples, experimental = get_samples(dataset)
     data_dir = osp.join('/home/erschultz', dataset)
-    if dataset == 'dataset_11_14_22':
-        samples = range(2201, 2222)
-    elif dataset == 'dataset_01_26_23':
-        samples = range(201, 283)
 
 
     linear_popt_list = []
     # logistic_popt_list = []
-    lmbda_list = []
-    f_list = []
     for sample in samples:
         dir = osp.join(data_dir, f'samples/sample{sample}')
         max_ent_dir = osp.join(dir, f'PCA-normalize-E/k{k}/replicate1')
@@ -479,14 +517,6 @@ def max_ent_diagonal_dist(dataset, k, plot=True):
         linear_popt_list.append(linear_popt)
         # logistic_popt = np.loadtxt(osp.join(fitting_dir, 'logistic_manual_popt.txt'))
         # logistic_popt_list.append(logistic_popt)
-
-        # get lambda from sequences
-        # x = np.load(osp.join(max_ent_dir, 'resources/x.npy'))
-        # m, k = x.shape
-        # for i in range(k):
-        #     f, lmbda = Tester.infer_lambda(x[:,i])
-        #     f_list.append(f)
-        #     lmbda_list.append(lmbda)
 
     linear_popt_arr = np.array(linear_popt_list)
     # logistic_popt_arr = np.array(logistic_popt_list)
@@ -525,42 +555,25 @@ def max_ent_diagonal_dist(dataset, k, plot=True):
             dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
             pickle.dump(dict, f)
 
-def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
-    # distribution of plaid params
-    experimental = False
-    if dataset == 'dataset_11_14_22':
-        samples = range(2201, 2222)
-        experimental = True
-    elif dataset == 'dataset_01_26_23':
-        samples = range(201, 283)
-        experimental = True
-    elif dataset == 'dataset_12_20_22':
-        samples = [324, 981, 1936, 2834, 3464]
-    elif dataset == 'dataset_11_21_22':
-        samples = [1, 2, 3, 410, 653, 1462, 1801, 2290]
-    elif  dataset.startswith('dataset_01_27_23'):
-        samples = range(1, 16)
-    else:
-        samples = range(1, 11)
-
+def seq_dist(dataset, k, plot=True, eig=False, eig_norm=False):
+    # distribution of seq params
+    samples, experimental = get_samples(dataset)
     data_dir = osp.join('/home/erschultz', dataset)
-    odir = osp.join(data_dir, 'plaid_param_distributions')
     if eig:
-        odir = osp.join(data_dir, 'plaid_param_distributions_eig')
+        odir = osp.join(data_dir, 'seq_param_distributions_eig')
     elif eig_norm:
-        odir = osp.join(data_dir, 'plaid_param_distributions_eig_norm')
+        odir = osp.join(data_dir, 'seq_param_distributions_eig_norm')
+    else:
+        odir = osp.join(data_dir, 'seq_param_distributions')
 
     if not osp.exists(odir):
         os.mkdir(odir, mode = 0o755)
 
-    L_list = []
-    S_list = []
-    chi_ij_list = []
-    chi_ii_list = []
-    chi_list = []
-    chi_flat_list = []
+    N = len(samples)
+    lmbda_arr = np.zeros((N, k))
+    f_arr = np.zeros((N, k))
     x_list = []
-    for sample in samples:
+    for i, sample in enumerate(samples):
         dir = osp.join(data_dir, f'samples/sample{sample}')
         if experimental:
             dir = osp.join(dir, f'PCA-normalize-E/k{k}/replicate1')
@@ -577,6 +590,91 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
         else:
             x = np.load(osp.join(dir, 'x.npy'))
         x_list.append(x)
+
+        lmbda_i_list = []
+        f_i_list = []
+        for j in range(k):
+            # first binarize
+            xj = np.copy(x[:, j])
+            xj[xj>0] = 1
+            xj[xj<0] = 0
+
+            f, lmbda = Tester.infer_lambda(xj)
+            if np.isnan(lmbda):
+                lmbda = 0
+            f_arr[i,j] = f
+            lmbda_arr[i,j] = lmbda
+
+    if plot:
+        simple_histogram(f_arr, 'f', odir,
+                            f'k{k}_f_dist.png', dist = skewnorm)
+        simple_histogram(lmbda_arr, r'$\lambda$', odir,
+                            f'k{k}_lambda_dist.png', dist = skewnorm)
+
+        # f dist per seq
+        cmap = matplotlib.cm.get_cmap('tab10')
+        ind = np.arange(k) % cmap.N
+        colors = cmap(ind.astype(int))
+        dist = skewnorm
+        for inp_arr, label in zip([f_arr, lmbda_arr], ['f', 'lambda']):
+            fig, ax = plt.subplots(1, k)
+            c = 0
+            for i in range(k):
+                arr = inp_arr[:, i].reshape(-1)
+                n, bins, _ = ax[i].hist(arr, weights = np.ones_like(arr) / len(arr),
+                                            bins = 30, alpha = 0.5, color = colors[c])
+                bin_width = bins[1] - bins[0]
+
+                params = dist.fit(arr)
+                y = dist.pdf(bins, *params) * bin_width
+                params = np.round(params, 1)
+                with open(osp.join(odir, f'k{k}_f_{LETTERS[i]}.pickle'), 'wb') as f:
+                    dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
+                    pickle.dump(dict, f)
+
+
+                ax[i].plot(bins, y, ls = '--', color = 'k')
+                ax[i].set_title(r'$\alpha=$' + f'{params[0]}\n' + r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
+                c += 1
+
+            fig.supxlabel(f'{label}', fontsize=16)
+            fig.supylabel('probability', fontsize=16)
+            plt.tight_layout()
+            plt.savefig(osp.join(odir, f'k{k}_{label}_per_dist.png'))
+            plt.close()
+
+
+    return x_list
+
+
+def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
+    # distribution of plaid params
+    samples, experimental = get_samples(dataset)
+    data_dir = osp.join('/home/erschultz', dataset)
+    if eig:
+        odir = osp.join(data_dir, 'plaid_param_distributions_eig')
+    elif eig_norm:
+        odir = osp.join(data_dir, 'plaid_param_distributions_eig_norm')
+    else:
+        odir = osp.join(data_dir, 'plaid_param_distributions')
+
+    if not osp.exists(odir):
+        os.mkdir(odir, mode = 0o755)
+
+    L_list = []
+    S_list = []
+    chi_ij_list = []
+    chi_ii_list = []
+    chi_list = []
+    chi_flat_list = []
+    if not (eig or eig_norm):
+        x_list = seq_dist(dataset, k, plot)
+    for sample in samples:
+        dir = osp.join(data_dir, f'samples/sample{sample}')
+        if experimental:
+            dir = osp.join(dir, f'PCA-normalize-E/k{k}/replicate1')
+        if not osp.exists(dir):
+            continue
 
         # get L
         if osp.exists(osp.join(dir, 'L.npy')):
@@ -599,7 +697,7 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
         L_list.append(L[np.triu_indices(m)])
         S_list.append(S[np.triu_indices(m)])
 
-        # get plaid params
+        # get chi
         if eig:
             chi = np.load(osp.join(dir, 'chis_eig.npy'))
         elif eig_norm:
@@ -641,46 +739,20 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
         #     print(hat)
 
     if plot:
-        def simple_plot_wrapper(arr, xlabel='X', ofname=None, dist=skewnorm,
-                            label=None, legend_title=''):
-            title = []
-            arr = np.array(arr).reshape(-1)
-            n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
-                                        bins = 50, alpha = 0.5, label = label)
-            bin_width = bins[1] - bins[0]
-            params = dist.fit(arr)
-            y = dist.pdf(bins, *params) * bin_width
-            params = [np.round(p, 3) for p in params]
-            print(ofname, params)
-            # with open(osp.join(odir, ofname[:-9]+'.pickle'), 'wb') as f:
-            #     dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
-            #     pickle.dump(dict, f)
-
-            plt.plot(bins, y, ls = '--', color = 'k')
-            if ofname is not None:
-                if label is not None:
-                    plt.legend(title = legend_title)
-                plt.ylabel('probability', fontsize=16)
-                plt.xlabel(xlabel, fontsize=16)
-                # plt.xlim(-20, 20)
-                # plt.title(r'$\alpha=$' + f'{params[0]}\n' + r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
-                plt.savefig(osp.join(odir, ofname))
-                plt.close()
-
         # plot plaid chi parameters
-        simple_plot_wrapper(chi_ij_list, r'$\chi_{ij}$',
+        simple_histogram(chi_ij_list, r'$\chi_{ij}$', odir,
                             f'k{k}_chi_ij_dist.png', dist = laplace)
 
         # plaid chi_ii parameters
-        simple_plot_wrapper(chi_ii_list, r'$\chi_{ii}$',
+        simple_histogram(chi_ii_list, r'$\chi_{ii}$', odir,
                             f'k{k}_chi_ii_dist.png', dist = skewnorm)
 
         # plot plaid Lij parameters
-        # simple_plot_wrapper(s_list, r'$L_{ij}$',
+        # simple_histogram(s_list, r'$L_{ij}$', odir,
         #                     f'k{k}_L_dist.png')
 
         # plot net energy parameters
-        # simple_plot_wrapper(s_list, r'$S_{ij}$',
+        # simple_histogram(s_list, r'$S_{ij}$', odir,
         #                     f'k{k}_S_dist.png')
 
         if not (eig or eig_norm):
@@ -737,8 +809,8 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
                         else:
                             X_pos.append(chi_ij)
 
-            simple_plot_wrapper(X_neg, dist = skewnorm, label='negative')
-            simple_plot_wrapper(X_pos, r'$\chi_{AB}$',
+            simple_histogram(X_neg, dist = skewnorm, label='negative')
+            simple_histogram(X_pos, r'$\chi_{AB}$', odir,
                                 f'k{k}_chi_ij_dist_conditioned.png', dist = skewnorm,
                                 label = 'positive', legend_title = r'Pearson($\psi_A$, $\psi_B$)')
 
@@ -770,8 +842,15 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
         cmap = matplotlib.cm.get_cmap('tab10')
         ind = np.arange(k) % cmap.N
         colors = cmap(ind.astype(int))
-        fig, ax = plt.subplots(1, k)
+        # per chi ii
+        rows = math.ceil(k / 4)
+        cols = min(4, k)
+        fig, ax = plt.subplots(rows, cols)
+        if rows == 1:
+            ax = [ax]
         c = 0
+        row = 0
+        col = 0
         for i in range(k):
             data = []
             for chi in chi_list:
@@ -780,7 +859,7 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
             dist = skewnorm
             arr = np.array(data).reshape(-1)
             bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width)
-            n, bins, patches = ax[i].hist(arr, weights = np.ones_like(arr) / len(arr),
+            n, bins, patches = ax[row][col].hist(arr, weights = np.ones_like(arr) / len(arr),
                                         bins = bins, alpha = 0.5, color = colors[c])
 
             params = dist.fit(arr)
@@ -791,10 +870,14 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
                 pickle.dump(dict, f)
 
 
-            ax[i].plot(bins, y, ls = '--', color = 'k')
-            ax[i].set_title(r'$\alpha=$' + f'{params[0]}\n' + r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
-            ax[i].set_xlabel(rf'$\chi${LETTERS[i]+LETTERS[i]}')
+            ax[row][col].plot(bins, y, ls = '--', color = 'k')
+            # ax[row][col].set_title(r'$\alpha=$' + f'{params[0]}\n' + r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
+            ax[row][col].set_xlabel(rf'$\chi${LETTERS[i]+LETTERS[i]}')
 
+            col += 1
+            if col == cols:
+                col = 0
+                row += 1
             c += 1
 
         fig.supxlabel(r'$\chi_{ii}$', fontsize=16)
@@ -803,6 +886,7 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
         plt.savefig(osp.join(odir, f'k{k}_chi_per_ii_dist.png'))
         plt.close()
 
+        # per chi all
         if not (eig or eig_norm):
             ind = np.arange(k*(k-1)/2 + k) % cmap.N
             colors = cmap(ind.astype(int))
@@ -879,7 +963,7 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
         plt.savefig(osp.join(odir, f'k{k}_chi_pc_dist.png'))
         plt.close()
 
-    return L_list, chi_ij_list, x_list
+    return L_list, chi_ij_list
 
 def compare_maxent_simulation():
     dataset = 'dataset_01_26_23'
@@ -888,7 +972,7 @@ def compare_maxent_simulation():
     L_list = []
     chi_list = []
     label_list = []
-    L_max_ent, chi_max_ent, _ = plaid_dist(dataset, 4, False)
+    L_max_ent, chi_max_ent = plaid_dist(dataset, 4, False)
     L_list.append(L_max_ent)
     # chi_list.append(chi_max_ent)
     label_list.append('Max Ent')
@@ -901,7 +985,7 @@ def compare_maxent_simulation():
     # chi_list.append(chi_sim)
     # label_list.append('Sim PCs')
 
-    # s_sim, chi_sim, _ = plaid_dist('dataset_01_23_23', None, False)
+    # s_sim, chi_sim = plaid_dist('dataset_01_23_23', None, False)
     # L_list.append(s_sim)
     # # chi_list.append(chi_sim)
     # label_list.append('Sim PCs + chi ecdf')
@@ -911,7 +995,7 @@ def compare_maxent_simulation():
     # chi_list.append(chi_sim)
     # label_list.append('Multivariate gaussian')
 
-    # s_sim, chi_sim, _ = plaid_dist('dataset_01_27_23_v2', None, False)
+    # s_sim, chi_sim = plaid_dist('dataset_01_27_23_v2', None, False)
     # L_list.append(s_sim)
     # # chi_list.append(chi_sim)
     # label_list.append('Pooled ii and Pooled ij')
@@ -921,12 +1005,12 @@ def compare_maxent_simulation():
     # chi_list.append(chi_sim)
     # label_list.append('Univariate ii and Pooled ij')
 
-    # s_sim, chi_sim, _ = plaid_dist('dataset_01_27_23_v4', None, False)
+    # s_sim, chi_sim = plaid_dist('dataset_01_27_23_v4', None, False)
     # L_list.append(s_sim)
     # # chi_list.append(chi_sim)
     # label_list.append('Univariate skewed gaussian')
 
-    # s_sim, chi_sim, _ = plaid_dist('dataset_01_27_23_v5', None, False)
+    # s_sim, chi_sim = plaid_dist('dataset_01_27_23_v5', None, False)
     # L_list.append(s_sim)
     # # chi_list.append(chi_sim)
     # label_list.append('Only ii')
@@ -936,17 +1020,17 @@ def compare_maxent_simulation():
     # # chi_list.append(chi_sim)
     # label_list.append('Max S')
 
-    # s_sim, chi_sim, _ = plaid_dist('dataset_01_27_23_v7', None, False)
+    # s_sim, chi_sim = plaid_dist('dataset_01_27_23_v7', None, False)
     # L_list.append(s_sim)
     # # chi_list.append(chi_sim)
     # label_list.append('Laplace ij')
 
-    # s_sim, chi_sim, _ = plaid_dist('dataset_01_27_23_v8', None, False)
+    # s_sim, chi_sim = plaid_dist('dataset_01_27_23_v8', None, False)
     # L_list.append(s_sim)
     # # chi_list.append(chi_sim)
     # label_list.append('Sign Conditioned')
 
-    s_sim, chi_sim, _ = plaid_dist('dataset_01_27_23_v9', None, False)
+    s_sim, chi_sim = plaid_dist('dataset_01_27_23_v9', None, False)
     L_list.append(s_sim)
     # chi_list.append(chi_sim)
     label_list.append(r'Synthetic $\tilde{\chi}$')
@@ -993,12 +1077,10 @@ def compare_maxent_simulation():
 
 if __name__ == '__main__':
     # for i in range(201, 283):
-        # modify_maxent_diag_chi('dataset_01_26_23', i, k = 4)
+        # modify_maxent_diag_chi('dataset_01_26_23', i, k = 12)
         # plot_modified_max_ent(i, k = 8)
-    # max_ent_diagonal_dist('dataset_01_26_23', 4, True)
-    # plaid_dist('dataset_01_26_23', 4, True, False, True)
-    # plaid_dist('dataset_01_27_23_v9', 4, True)
-    # test_ecdf()
-    # test3()
-    compare_maxent_simulation()
-    # modify_plaid_chis()
+    diagonal_dist('dataset_01_26_23', 12)
+    # plaid_dist('dataset_11_14_22', 4, True, False, True)
+    # seq_dist('dataset_01_26_23', 4, True, False, True)
+    # compare_maxent_simulation()
+    # modify_plaid_chis('dataset_11_14_22', 8)

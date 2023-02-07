@@ -20,10 +20,10 @@ source activate python3.8_pytorch1.9
 # necessary to ensure log files are in right place
 cd ~/TICG-chromatin
 
-dataset="dataset_02_01_23"
+dataset="dataset_02_07_23"
 echo "generate_params for ${dataset}"
 # this dataset uses shuffled experimental PCs as sequences, with wider range of chi values, and k = 12
-python  ~/TICG-chromatin/bin/datasets/generate_params.py --samples 5000 --k 4 --m 512 --dataset $dataset --seq_mode 'eig_norm' --chi_param_version 'v12' --diag_mode 'linear'
+python  ~/TICG-chromatin/bin/datasets/generate_params.py --samples 5000 --k 12 --m 512 --dataset $dataset --seq_mode 'eig_norm' --chi_param_version 'v12' --diag_mode 'linear'
 #
 # cd "/home/erschultz/${dataset}"
 # tar -czvf setup.tar.gz setup
@@ -32,7 +32,7 @@ python  ~/TICG-chromatin/bin/datasets/generate_params.py --samples 5000 --k 4 --
 # tar -xzf setup.tar.gz
 # rm -r samples
 
-# sourceFile=~/TICG-chromatin/bin/datasets/diag_dataset19/diag_dataset_fns.sh
+# sourceFile=~/TICG-chromatin/bin/datasets/diag_dataset21/diag_dataset_fns.sh
 # for i in 1 2 3 4 5 6 7 8 9 10
 # do
 #   echo $i

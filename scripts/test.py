@@ -939,8 +939,8 @@ def molar_contact_ratio(dataset, plot=True):
     pca_b_rab = np.zeros(N)
     pca_var = np.zeros(N)
     y_list = []
-    L_list, _, _ = plaid_dist(dataset, 4, False)
-    L_list_exp, _, _ = plaid_dist('dataset_01_26_23', 4, False)
+    L_list, _ = plaid_dist(dataset, 4, False)
+    L_list_exp, _ = plaid_dist('dataset_01_26_23', 4, False)
     meanDist_list = []
     for i, sample in enumerate(samples):
         sample_dir = osp.join(data_dir, f'samples/sample{sample}')
@@ -1113,7 +1113,30 @@ def molar_contact_ratio(dataset, plot=True):
         plt.savefig(osp.join(data_dir, 'meanDist_plaid_score.png'))
         plt.close()
 
+    return meanDist_list
 
+def meanDist_comparison():
+    data_dir = '/home/erschultz/dataset_01_26_23'
+    meanDist_exp_list = molar_contact_ratio('dataset_01_26_23', False)
+    meanDist_max_ent_list = molar_contact_ratio('dataset_01_27_23_v9', False)
+
+    fig, ax = plt.subplots()
+    for meanDist in meanDist_exp_list:
+        ax.plot(meanDist, c = 'k')
+    for meanDist in meanDist_max_ent_list:
+        ax.plot(meanDist,c = 'b')
+    ax.set_yscale('log')
+    ax.set_xscale('log')
+
+    ax2 = ax.twinx()
+    ax2.plot(np.NaN, np.NaN, label = 'Experiment', c = 'k')
+    ax2.plot(np.NaN, np.NaN, label = 'Max Ent', c = 'b')
+    ax2.get_yaxis().set_visible(False)
+    ax2.legend(loc='upper right')
+
+    plt.tight_layout()
+    plt.savefig(osp.join(data_dir, 'meanDist_comparison.png'))
+    plt.close()
 
 def compare_scc_bio_replicates():
     dir = '/home/erschultz/dataset_test/samples'
@@ -1189,6 +1212,38 @@ def main():
     plt.savefig(osp.join(dir, f'kmeans_vs_exp_distribution.png'))
     plt.close()
 
+def temp_p_s():
+    dir = '/home/erschultz/dataset_01_26_23/samples/sample265'
+    y_exp = np.load(osp.join(dir, 'y.npy'))
+    y_g = np.load(osp.join(dir, 'none/k1/replicate1/y.npy'))
+    y_me = np.load(osp.join(dir, 'PCA-normalize-E/k4/replicate1/y.npy'))
+    max_it = get_final_max_ent_folder(osp.join(dir, 'PCA-normalize-E/k4/replicate1'))
+    with open(osp.join(max_it, 'config.json')) as f:
+        config = json.load(f)
+        diag_chis_step = calculate_diag_chi_step(config)
+
+    fig, ax = plt.subplots()
+    for y, label, c in zip([y_exp, y_me, y_g], ['Experiment', 'Max Ent', 'Gaussian Chain'], ['black', 'blue', 'grey']):
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+        ax.plot(meanDist, label = label, color = c)
+
+    ax.legend(loc='upper left')
+    ax.set_yscale('log')
+    ax.set_xscale('log')
+
+    if diag_chis_step is not None:
+        ax2 = ax.twinx()
+        ax2.plot(diag_chis_step, ls = '--', label = 'Parameters', color = 'blue')
+        ax2.set_ylabel('Diagonal Parameter', fontsize = 16)
+        ax2.set_xscale('log')
+        ax2.legend(loc='upper right')
+
+    ax.set_ylabel('Contact Probability', fontsize = 16)
+    ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
+    plt.tight_layout()
+    plt.savefig(osp.join(dir, 'meanDist_comparison.png'))
+    plt.close()
+
 
 if __name__ == '__main__':
     # compare_y_diag()
@@ -1202,8 +1257,10 @@ if __name__ == '__main__':
     # main()
     # plot_p_s()
     # molar_contact_ratio('dataset_01_27_23_v5', True)
-    molar_contact_ratio('dataset_01_26_23', True)
+    # molar_contact_ratio('dataset_01_26_23', True)
     # molar_contact_ratio('dataset_01_27_23_v9', True)
     # compare_scc_bio_replicates()
     # plot_sd()
     # max_ent_loss_for_gnn('dataset_11_14_22', 2201)
+    # temp_p_s()
+    meanDist_comparison()
