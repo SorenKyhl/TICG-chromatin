@@ -1,7 +1,8 @@
 #! /bin/bash
 #SBATCH --job-name=cleanup2
 #SBATCH --output=logFiles/cleanup2.out
-#SBATCH --time=5:00:00
+#SBATCH --time=5:00:00'
+#SBATCH --account=pi-depablo
 #SBATCH --partition=depablo
 #SBATCH --ntasks=10
 #SBATCH --mem-per-cpu=1000
