@@ -6,6 +6,30 @@ from scipy import optimize
 from pylib import epilib, utils, default
 from pylib.pysim import Pysim
 
+""" 
+module for optimizing grid size.
+
+Context:
+    The diagonal interactions determined by maximum entropy optimization are sensitive
+    to the size of the grid used in TICG simulations. This is especially true for diagonal
+    interaction parameters governing beads separated by short contour lengths (small s). 
+
+    Often it is useful to modify the grid size in such a way that the prbability of 
+    contact between nearest neighbors along the chain (i.e. p(s=1)) for a chain with no
+    nonbonded interactions is identical to the probability observed in experiment. In 
+    this case, the maximum entropy method will need to make only minor 
+    adjustments to the diagonal interactions at short contour lengths. 
+
+    In the converse situation, large attractive or repulsive interactions are needed to recapitulate
+    the experimental p(s) curve for small s, and sometimes the experimental probabilities are
+    not achievable, because nearest neighbor beads cannot be brought into more (or less)
+    frequent contact simply becuase the grid spacing is too large or too small relative 
+    to the bond length. In this case, the maximum entropy method does not converge.
+
+    To ameliroate these issues, the grid size can be optimized prior to maximum entropy,
+    to ensure stable behavior of the maximum entropy optimization.
+"""
+
 
 def nearest_neighbor_contact_error(grid_bond_ratio, sim_engine, gthic):
     """ calculate the difference between simulated and experimental nearest-neighbor contact

@@ -32,6 +32,12 @@ def write_json(data, path):
         #json.dump(data, f, indent=4)
 
 def cat(outfilename, infilenames):
+    """python implementation of linux cat command, concatenates ``infilenames`` into ``outfilename``
+
+    Args:
+        outfilename (str): destination for concatenated contents of ``infilenames``
+        infilenames (List[str]): name of files to concatenate into ``outfilename``
+    """
     with open(outfilename, 'w') as outfile:
         for infilename in infilenames:
             with open(infilename) as infile:
@@ -74,6 +80,7 @@ def cd(newdir):
         
     
 def load_sequences(config):
+    """load sequences from files specified in config file"""
     sequences  = []
     for file in config["bead_type_files"]:
         print("loading", file)
