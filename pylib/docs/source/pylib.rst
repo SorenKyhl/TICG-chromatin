@@ -76,14 +76,6 @@ pylib.maxent module
    :undoc-members:
    :show-inheritance:
 
-pylib.myfunc module
--------------------
-
-.. automodule:: pylib.myfunc
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 pylib.optimize\_grid\_size module
 ---------------------------------
 

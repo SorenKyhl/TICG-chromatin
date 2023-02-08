@@ -23,6 +23,8 @@ def get_experiment_marks(directory):
     return lookup_table
 
 class DataPipeline:
+    """ class for loading and manipulating hic and chipseq files
+    """
     def __init__(self, res, chrom, start, end, size):
         self.res = int(res)
         self.chrom = str(chrom)
@@ -41,7 +43,7 @@ class DataPipeline:
         return self
         
     def load_hic(self, filename, KR=True, clean=True, rescale_method="mean"):
-        """
+        """ load hic from .hic file
         KR: bool, knight-rubin normalization.
         rescale_method: str ["mean", "max"], rescale contactmap so entries are probabilities, rather than frequencies
         clean: remove rows and colums for which the main diagonal is zero

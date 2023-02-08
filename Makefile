@@ -12,3 +12,6 @@ clean:
 
 all:
 	make clean || make build && make install
+
+docs: 
+	(cd pylib/docs && python -m sphinx.cmd.build -M html source/ build/)
