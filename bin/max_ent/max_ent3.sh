@@ -16,7 +16,7 @@ then
   dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
   numIterations=1
-  finalSimProductionSweeps=500000
+  finalSimProductionSweeps=50000
   productionSweeps=1000
   equilibSweeps=100
   source activate python3.9_pytorch1.9
@@ -24,7 +24,7 @@ fi
 
 STARTTIME=$(date +%s)
 i=2001
-dataset='dataset_01_26_23'
+dataset='dataset_02_04_23'
 useL='false'
 useS='false'
 useE='true'
@@ -45,7 +45,7 @@ diagCutoff=512
 
 k=0
 method='GNN'
-for sample in {283..288}
+for sample in 273
 do
   for GNNModelID in 362
    # 243 254 262 265 267 271 276

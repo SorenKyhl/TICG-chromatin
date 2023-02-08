@@ -7,6 +7,28 @@ import hicstraw  # https://github.com/aidenlab/straw
 import numpy as np
 import pandas as pd
 
+HG19_BAD_REGIONS = {1:'1-3,120-150',
+                    2:'85-97',
+                    3:'90-95',
+                    4:'48-54',
+                    5:'45-50,67-72',
+                    6:'57-65',
+                    7:'55-77',
+                    8:'44-48',
+                    9:'37-72',
+                    10:'37-52',
+                    11:'50-55',
+                    12:'34-39',
+                    13:'1-21',
+                    14:'1-22',
+                    15:'1-22',
+                    16:'34-47',
+                    17:'21-26',
+                    18:'14-19',
+                    19:'24-29',
+                    20:'25-30',
+                    21:'1-15,46-48',
+                    22:'1-20'}
 
 def intersect(region_1, region_2):
     # region_1/2 is a tuple
@@ -106,29 +128,6 @@ def main():
     filename="https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-treated_6hr_combined_30.hic"
     m = 512*5
 
-    bad_regions = {1:'1-3,120-150',
-                    2:'85-97',
-                    3:'90-95',
-                    4:'48-54',
-                    5:'45-50,67-72',
-                    6:'57-65',
-                    7:'55-77',
-                    8:'44-48',
-                    9:'37-72',
-                    10:'37-52',
-                    11:'50-55',
-                    12:'34-39',
-                    13:'1-21',
-                    14:'1-22',
-                    15:'1-22',
-                    16:'34-47',
-                    17:'21-26',
-                    18:'14-19',
-                    19:'24-29',
-                    20:'25-30',
-                    21:'1-15,46-48',
-                    22:'1-20'}
-
     chromsizes = bioframe.fetch_chromsizes('hg19')
     print(chromsizes['chr4'])
 
@@ -141,7 +140,7 @@ def main():
         end = start + resolution * m
         end_mb = end / 1000000
         while end < chromsizes[f'chr{chromosome}']:
-            for region in bad_regions[chromosome].split(','):
+            for region in HG19_BAD_REGIONS[chromosome].split(','):
                 region = region.split('-')
                 region = [int(d) for d in region]
                 if intersect((start_mb, end_mb), region):
@@ -224,6 +223,51 @@ def dataset_11_14():
         mapping.append((sample_folder, filename, chromosome, start, end, resolution, norm))
 
     with multiprocessing.Pool(10) as p:
+        p.starmap(import_contactmap_straw, mapping)
+
+def dataset_02_04():
+    dir = '/home/erschultz'
+    dataset='dataset_02_04_23'
+    data_folder = osp.join(dir, dataset)
+    if not osp.exists(data_folder):
+        os.mkdir(data_folder, mode = 0o755)
+    if not osp.exists(osp.join(data_folder, 'samples')):
+        os.mkdir(osp.join(data_folder, 'samples'), mode = 0o755)
+
+    resolution=10000
+    norm = 'NONE'
+    filename="https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic"
+    m = 512*5
+
+    chromsizes = bioframe.fetch_chromsizes('hg19')
+
+    # set up for multiprocessing
+    i = 1
+    mapping = []
+    for chromosome in range(1,23):
+        start_mb = 0
+        start = start_mb * 1000000
+        end = start + resolution * m
+        end_mb = end / 1000000
+        while end < chromsizes[f'chr{chromosome}']:
+            for region in HG19_BAD_REGIONS[chromosome].split(','):
+                region = region.split('-')
+                region = [int(d) for d in region]
+                if intersect((start_mb, end_mb), region):
+                    start_mb = region[1] # skip to end of bad region
+                    break
+            else:
+                print(f'i={i}: chr{chromosome} {start_mb}-{end_mb}')
+                sample_folder = osp.join(data_folder, 'samples', f'sample{i}')
+                mapping.append((sample_folder, filename, chromosome, start, end, resolution, norm))
+                i += 1
+                start_mb = end_mb
+
+            start = int(start_mb * 1000000)
+            end = start + resolution * m
+            end_mb = end / 1000000
+
+    with multiprocessing.Pool(15) as p:
         p.starmap(import_contactmap_straw, mapping)
 
 
@@ -311,4 +355,4 @@ def pool():
 
 
 if __name__ == '__main__':
-    dataset_01_26()
+    dataset_02_04()
