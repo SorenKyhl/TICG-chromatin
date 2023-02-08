@@ -50,6 +50,23 @@ class Sim:
 this module implements the pysim class, a wrapper around the pyticg engine with much more functionality. 
 This class is the main interface to the user performing simulations. 
 
+#### pysim usage:
+a single simulation can be set up:
+```python
+from pylib.pysim import Pysim
+
+# get config, sequences
+root = "path_to_output"
+sim = Pysim(root, config, seqs)
+
+# run simulation with parameters defined in config
+sim.run()
+
+# or, run equililbration followed by production. optionally, production can be parallelized
+sim.run_eq(equilibration_sweeps, production_sweeps, parallel_simulations)
+```
+a variation of this is shown in examples/single-simulation
+
 ### maxent module
 the maxent module is a low-level interface for executing maximum entropy optimization runs for genome folding.
 the class implements the minimal interface necessary for maximum entropy optimization (iteratively setting up 
@@ -64,6 +81,5 @@ this module provides a high-level interface for executing maximum entropy optimi
 it can be viewed as a wrapper around a maxent instance, combined with methods that derive all necessary
 inputs to the maxent procedure (polymer sequences, physical observables used as maxent goals).
 
-## Usage
 
 
