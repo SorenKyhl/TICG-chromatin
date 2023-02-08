@@ -81,6 +81,11 @@ def load_sequences(config):
     sequences  = np.array(sequences )
     return sequences 
 
+def write_sequences(sequences, config):
+    assert(len(sequences) == len(config["bead_type_files"]))
+    for seq, file in zip(sequences, config["bead_type_files"]):
+        np.savetxt(file, seq)
+
 def load_sequences_from_dir(dirname):
     dirname = Path(dirname)
     config = load_json(dirname/"config.json")

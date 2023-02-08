@@ -263,7 +263,8 @@ class Pysim:
         """
         combined = np.loadtxt(contact_files[0])
         for file in contact_files[1:]:
-            combined += np.loadtxt(file)
+            combined += np.array(pd.read_csv(file, header=None, sep=" ")) # much faster than np.loadtxt
+            #combined += np.loadtxt(file)
 
         if output_file:
             np.savetxt(output_file, combined, fmt="%d", delimiter=" ")  

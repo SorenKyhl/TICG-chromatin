@@ -33,6 +33,12 @@ class DataPipeline:
 
         self.bigsize = self.size
         self.dropped_inds = []
+
+    def resize(self, newsize):
+        factor = int(newsize/self.size)
+        self.res = int(self.res/factor)
+        self.size = newsize
+        return self
         
     def load_hic(self, filename, KR=True, clean=True, rescale_method="mean"):
         """

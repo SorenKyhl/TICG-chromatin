@@ -22,7 +22,16 @@ class Pipeline:
         goals_method [callable]: operates on gthic, seqs, and config to return maxent goals
     """
     
-    def __init__(self, name, gthic, config, params, load_first=False, seqs_method=ep.get_sequences, goals_method=ep.get_goals, analysis_on=True):    
+    def __init__(self, 
+            name, 
+            gthic, 
+            config, 
+            params, 
+            load_first=False, 
+            seqs_method=ep.get_sequences, 
+            goals_method=ep.get_goals, 
+            analysis_on=True,
+            initial_chis=None):    
         self.name = name
         self.root = Path.cwd()/self.name
         self.gthic = gthic
@@ -32,6 +41,7 @@ class Pipeline:
         self.goals_method = goals_method
         self.load_first = load_first  
         self.analysis_on = analysis_on
+        self.initial_chis = initial_chis
 
     def get_seqs(self):
         if self.load_first:
@@ -55,7 +65,8 @@ class Pipeline:
                         config=self.config, 
                         seqs=self.seqs, 
                         gthic=self.gthic,
-                        analysis_on=self.analysis_on)
+                        analysis_on=self.analysis_on,
+                        initial_chis=self.initial_chis)
 
         optimizer.fit()
         

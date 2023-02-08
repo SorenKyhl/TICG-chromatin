@@ -1,6 +1,8 @@
 import numpy as np
 import copy
 from skimage.measure import block_reduce
+import scipy.ndimage as ndimage
+
 
 from pylib import epilib
 
@@ -62,8 +64,23 @@ def pool_double_count(inp, factor, fn=np.nansum):
     return processed
 
 def pool_seqs(seqs, factor):
-    return np.array([block_reduce(seqi, (factor), np.mean) for seqi in seqs])
+    def pool_seq(seq, factor):
+        return block_reduce(seq, (factor), np.mean) 
 
+    if seqs.ndim == 1:
+        return pool_seq(seqs, factor)
+    else:
+        return np.array([pool_seq(seq, factor) for seq in seqs])
+
+def unpool_seqs(seqs, factor):
+    newseqs = []
+    for seq in seqs:
+        newseq = []
+        for e in seq:
+            for i in range(factor):
+                newseq.append(e)
+        newseqs.append(newseq)
+    return np.array(newseqs)
 
 def normalize_hic(hic):
     return hic / np.mean(np.diagonal(hic))
@@ -93,3 +110,9 @@ def pool_d(hic, factor):
     diag = ep.get_diagonal(x)
     x /= max(diag)
     return ep.get_diagonal(x)
+
+def sparsity(x):
+    return np.sum(x==0)/len(x)**2
+
+def smooth_hic(x, smooth_size=10):
+    return ndimage.gaussian_filter(x,(smooth_size,smooth_size))

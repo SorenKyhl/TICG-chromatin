@@ -37,13 +37,10 @@ mycmap = mpl.colors.LinearSegmentedColormap.from_list('custom',
         
 
 class Sim:
-    
-    def __init__(self):
-        print("you're in here")
-
-    def __init__(self, path):
+    def __init__(self, path, maxent_analysis=True):
         self.path = path
         self.metrics = {}
+        self.maxent_analysis = maxent_analysis
         
         try:
             self.config = self.load_config()
@@ -95,44 +92,44 @@ class Sim:
         if os.path.exists(resources_path):
             self.resources_path = resources_path
         
-        gthic_possibilites = [".", "..", "../../resources"]
-        gthic_loaded = False
-        for gtp in gthic_possibilites:
-            gthic_path = osp.join(self.path, gtp, "experimental_hic.npy")
-            print("looking in, ", gthic_path)
-            if os.path.exists(gthic_path) and not gthic_loaded:
-                self.gthic = np.load(gthic_path)
-                gthic_loaded = True
-                
-        if not gthic_loaded:
-            print("no ground truth hic found")
+        if self.maxent_analysis:
+            """ look for maxent related things """
+            gthic_possibilites = [".", "..", "../../resources"]
+            gthic_loaded = False
+            for gtp in gthic_possibilites:
+                gthic_path = osp.join(self.path, gtp, "experimental_hic.npy")
+                print("looking in, ", gthic_path)
+                if os.path.exists(gthic_path) and not gthic_loaded:
+                    self.gthic = np.load(gthic_path)
+                    gthic_loaded = True
+                    
+            if not gthic_loaded:
+                print("no ground truth hic found")
             
-
-        
-        obj_goal_path = osp.join(resources_path, "obj_goal.txt")
-        if os.path.exists(obj_goal_path):
-            self.obj_goal = np.loadtxt(obj_goal_path)
-        else:
-            print("no path to obj_goal.txt")
-            print("looking in obj_goal_path: ", obj_goal_path)
-        
-        obj_goal_diag_path = osp.join(resources_path, "obj_goal_diag.txt")
-        if os.path.exists(obj_goal_diag_path):
-            self.obj_goal_diag = np.loadtxt(obj_goal_diag_path)
-        else:
-            print("no path to obj_goal_diag.txt")
-            print("looking in obj_goal_diag_path: ", obj_goal_path)
-        
-        try:
-            self.obj_goal_tot = np.hstack((self.obj_goal, self.obj_goal_diag))
-        except:
+            obj_goal_path = osp.join(resources_path, "obj_goal.txt")
+            if os.path.exists(obj_goal_path):
+                self.obj_goal = np.loadtxt(obj_goal_path)
+            else:
+                print("no path to obj_goal.txt")
+                print("looking in obj_goal_path: ", obj_goal_path)
+            
+            obj_goal_diag_path = osp.join(resources_path, "obj_goal_diag.txt")
+            if os.path.exists(obj_goal_diag_path):
+                self.obj_goal_diag = np.loadtxt(obj_goal_diag_path)
+            else:
+                print("no path to obj_goal_diag.txt")
+                print("looking in obj_goal_diag_path: ", obj_goal_path)
+            
             try:
-                params_path = osp.join(resources_path, "params.json")
-                params = utils.load_json(params_path)
-                self.obj_goal_tot = params["goals"]
-                print("looking for goals in params")
+                self.obj_goal_tot = np.hstack((self.obj_goal, self.obj_goal_diag))
             except:
-                print("no params found")
+                try:
+                    params_path = osp.join(resources_path, "params.json")
+                    params = utils.load_json(params_path)
+                    self.obj_goal_tot = params["goals"]
+                    print("looking for goals in params")
+                except:
+                    print("no params found")
            
     def init_sim(self, overwrite=True, getgoals=False):
         if os.path.exists(self.path):
@@ -900,7 +897,6 @@ def make_mask(size, b, cutoff, loading, ndiag_bins, dense_diagonal_on, double_di
     
     actually faster than numpy version when jitted
     """
-    
     rows, cols = size, size
     mask = np.zeros((rows, cols))
     for r in range(rows):
@@ -1064,8 +1060,9 @@ def get_goal_plaid2(hic, seqs, k, flat=True):
         
     return goal_exp
 
-def get_goal_diag(hic, config, ndiag_bins=32, getcorrect=False, adj=True, dense_diagonal_on=True, double_diagonal=True):
+def get_goal_diag(hic, config, getcorrect=False, adj=True, dense_diagonal_on=True, double_diagonal=True):
     # TODO - get dense diagonal on from config
+    ndiag_bins = len(config['diag_chis'])
     cutoff = config["dense_diagonal_cutoff"]
     loading = config["dense_diagonal_loading"]
     dense_diagonal_on = config["dense_diagonal_on"]
@@ -1267,9 +1264,9 @@ def fill_subdiagonal(a, offset, fn):
 def change_goals(goals, nbeads, ncells, vbead):
     return goals * nbeads**2 / (2 * vbead * 2 * ncells)
 
-def get_goals(hic, seqs, config, diag_bins=32, save_path=None, double_diagonal=False):
+def get_goals(hic, seqs, config, save_path=None, double_diagonal=False):
     plaid = get_goal_plaid(hic, seqs, config)
-    diag = get_goal_diag(hic, config, diag_bins, double_diagonal=double_diagonal)
+    diag = get_goal_diag(hic, config, double_diagonal=double_diagonal)
     
     if save_path is not None:
         np.savetxt(save_path, plaid, newline=" ", fmt="%.8f")
