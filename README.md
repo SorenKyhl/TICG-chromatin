@@ -51,13 +51,16 @@ this module implements the pysim class, a wrapper around the pyticg engine with 
 This class is the main interface to the user performing simulations. 
 
 #### pysim usage:
-a single simulation can be set up:
+to set up a simulation, all that is needed are polymer sequences, and a config file.
+the config file contains physical constants (number of beads)  and parameters for the 
+monte carlo simulation (number of sweeps, etc)
+a default config file is available in maxent/defaults/config.json
 ```python
 from pylib.pysim import Pysim
 
-# get config, sequences
-root = "path_to_output"
-sim = Pysim(root, config, seqs)
+# load config, sequences ... 
+
+sim = Pysim(root="output_goes_here", config, sequences)
 
 # run simulation with parameters defined in config
 sim.run()
@@ -67,14 +70,38 @@ sim.run_eq(equilibration_sweeps, production_sweeps, parallel_simulations)
 ```
 a variation of this is shown in examples/single-simulation
 
+pysim objects can also be constructed from directories containing the required data. This is often 
+useful if the results of a previous simulation need to be reproduced, or extended
+``` python
+sim = Pysim.from_directory("output_directory_from_previous_sim")
+
+# tweak config
+sim.config["nSweeps"] = larger_number_than_last_time
+sim.run("reproduce")
+```
+a code snippet exists at /examples/snippets/simulate_current_directory.py and can be run from the command
+line while in the directory of choice
+
+
 ### maxent module
 the maxent module is a low-level interface for executing maximum entropy optimization runs for genome folding.
 the class implements the minimal interface necessary for maximum entropy optimization (iteratively setting up 
 pysim simulations and calling an optimizer to advance between iterations).
+
 It does not implement methods involving processing data, determining maxent optimizer goals 
 from experimental data, or deriving polymer sequences. These are provided as inputs to the maxent instance, and
 as such the maxent module is regarded as "low level" in the context of maximum entropy optimization features. 
 Higher level features are exposed through the pipeline module
+
+#### maxent usage:
+maxent optimization parameters (number of iterations, initial state, etc) are specified in params. 
+a default parameter file is available in maxent/defaults/params.json
+```python
+# load maxent parameters, simulation config, polymer sequences, and ground truth hic ...
+
+me = Maxent(root="output_goes_here", params, config, sequences, gthic)
+me.fit()
+```
 
 ### pipeline module
 this module provides a high-level interface for executing maximum entropy optimization runs for genome folding.
