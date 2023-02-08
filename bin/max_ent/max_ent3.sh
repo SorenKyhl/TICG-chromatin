@@ -16,7 +16,7 @@ then
   dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
   numIterations=1
-  finalSimProductionSweeps=50000
+  finalSimProductionSweeps=500000
   productionSweeps=1000
   equilibSweeps=100
   source activate python3.9_pytorch1.9
@@ -34,7 +34,7 @@ chiMethod='none'
 mode='none'
 
 bondtype='gaussian'
-bondLength=28
+bondLength=19
 
 diagChiMethod='none'
 dense='false'

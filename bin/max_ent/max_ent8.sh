@@ -24,7 +24,7 @@ fi
 
 STARTTIME=$(date +%s)
 i=7001
-dataset='dataset_01_26_23'
+dataset='dataset_02_04_23'
 useL='true'
 useS='false'
 useE='true'
@@ -50,14 +50,13 @@ jobs=0
 waitCount=0
 for k in 4 8
 do
-  for sample in {283..288}
-  # 2201 2202 2203 2204 2205 2206 2207 2208 2209 2210 2211 2212 2213 2214 2215
+  for sample in {201..282}
   do
     # diagChiMethod="/home/erschultz/dataset_01_26_23/samples/sample${sample}/none/k0/replicate1/chis_diag.txt"
     echo $sample $m
     max_ent
     jobs=$(( $jobs + 1 ))
-    if [ $jobs -gt 5 ]
+    if [ $jobs -gt 18 ]
     then
       echo 'Waiting'
       waitCount=$(( $waitCount + 1 ))
