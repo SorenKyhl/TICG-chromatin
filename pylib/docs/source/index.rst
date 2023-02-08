@@ -8,14 +8,20 @@ Welcome to TICG-Chromatin's documentation!
 
 TICG-Chromatin is a custom-built Monte Carlo simulation engine for genome folding.
 
+Check out the :doc:`usage` section for further information, including how to
+:ref:`install <installation>` the project.
+
 .. note:: 
     This project is under active development
 
+
+Contents
+--------
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
 
    usage
+   modules
 
 
 
