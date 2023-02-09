@@ -28,14 +28,13 @@ after building, they are located in pylib/docs/build/index.html, and can be open
 The core TICG simulation engine is written in C++ (located in src).
 Pybind is used to extend the engine as a python module (ticg).
 
-modules are available for both individual simulations and maxent optimizations both at 
-low-level and high level:
+further modules are built on top of the engine both individual simulations and maxent optimizations:
 
 Simulations:
 - pyticg (low level), just the bare engine
 - pysim	 (high level), wrapper around pyticg for manipulating simulations and their settings
 
-Maxent Optiimizations:
+Maxent Optimizations:
 - maxent (low level), just the optimizer and dispacher for iterative simulations
 - pipeline (high level), wrapper around maxent for manipulating maxent runs and their settings
 
