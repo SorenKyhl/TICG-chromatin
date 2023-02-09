@@ -61,10 +61,9 @@ this module implements the pysim class, a wrapper around the pyticg engine with 
 This class is the main interface to the user performing simulations. 
 
 #### usage:
-to set up a simulation, all that is needed are polymer sequences, and a config file.
+to set up a simulation, all that is needed are polymer sequences and a config file.
 the config file contains physical constants (number of beads)  and parameters for the 
-monte carlo simulation (number of sweeps, etc)
-a default config file is available in maxent/defaults/config.json
+monte carlo simulation (number of sweeps, etc). A default config file is available in maxent/defaults/config.json
 ```python
 from pylib.pysim import Pysim
 
@@ -100,8 +99,8 @@ pysim simulations and calling an optimizer to advance between iterations).
 
 It does not implement methods involving processing data, determining maxent optimizer goals 
 from experimental data, or deriving polymer sequences. These are provided as inputs to the maxent instance, and
-as such the maxent module is regarded as "low level" in the context of maximum entropy optimization features. 
-Higher level features are exposed through the pipeline module
+as such the maxent module is regarded as "low level" in the context of maximum entropy optimization features. These 
+features are implemented in the higher-level pipeline module
 
 #### usage:
 maxent optimization parameters (number of iterations, initial state, etc) are specified in params. 
