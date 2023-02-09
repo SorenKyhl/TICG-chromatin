@@ -223,7 +223,7 @@ class Maxent:
             return loaded_maxent
     
     @classmethod
-    def from_directory(cls, filename: str)
+    def from_directory(cls, filename: str):
         """ loads maxent optimization from a directory
         reloads gthic, which is not included in pickle to save disk space
         """
