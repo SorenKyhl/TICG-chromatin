@@ -34,7 +34,7 @@ chiMethod='zeros'
 mode='both'
 
 bondtype='gaussian'
-bondLength=28
+bondLength=16.5
 phiChromatin=0.06
 
 diagChiMethod="zeros"
@@ -44,15 +44,14 @@ nSmallBins=64
 smallBinSize=1
 diagCutoff=512
 
-
 method='PCA-normalize'
 jobs=0
 waitCount=0
-for k in 4 8
+for k in 4 8 12
 do
   for sample in {201..282}
   do
-    # diagChiMethod="/home/erschultz/dataset_01_26_23/samples/sample${sample}/none/k0/replicate1/chis_diag.txt"
+    gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
     echo $sample $m
     max_ent
     jobs=$(( $jobs + 1 ))

@@ -38,6 +38,8 @@ def getArgs():
                     help='version for chi param distribution')
     parser.add_argument('--max_L', type=float,
                     help='Any S_ij > max will be cropped to max')
+    parser.add_argument('--grid_mode', type=str,
+                    help='How to determine grid size')
 
     args = parser.parse_args()
     return args
@@ -51,6 +53,7 @@ class DatasetGenerator():
         self.dataset = args.dataset
         self.diag_mode = args.diag_mode
         self.seq_mode = args.seq_mode
+        self.grid_mode = args.grid_mode
         self.chi_param_version = args.chi_param_version
         self.max_L = args.max_L
 
@@ -247,7 +250,6 @@ class DatasetGenerator():
             seq_file = osp.join('/project2/depablo/erschultz', self.dataset, f'setup/x_{i+1}.npy')
             self.sample_dict[i]['method'] = seq_file
 
-
     def linear_params(self):
         if self.m == 512:
             dir = osp.join(self.dir, 'dataset_01_26_23/diagonal_param_distributions')
@@ -294,6 +296,15 @@ class DatasetGenerator():
             self.sample_dict[i]['max_diag_chi'] = vals[2]
             self.sample_dict[i]['min_diag_chi'] = 0
 
+    def grid_params(self):
+        for i in range(self.N):
+            if self.grid_mode == 'v1':
+                with open(osp.join(f'/home/erschultz/dataset_02_04_23/grid_size_distributions/grid_size.pickle'), 'rb') as f:
+                    dict_grid = pickle.load(f)
+                grid_size = skewnorm.rvs(dict_grid['alpha'], dict_grid['mu'], dict_grid['sigma'])
+            self.sample_dict[i]['grid_size'] = grid_size
+        print(self.sample_dict)
+
     def get_dataset(self):
         if self.diag_mode == 'linear':
             self.linear_params()
@@ -313,7 +324,6 @@ class DatasetGenerator():
 
         self.plaid_params()
 
-
         if self.max_L is not None:
             for i in range(self.N):
                 x = np.load(osp.join('/home/erschultz', self.dataset, f'setup/x_{i+1}.npy'))
@@ -325,6 +335,10 @@ class DatasetGenerator():
                 np.save(L_file, L)
                 self.sample_dict[i]['method'] = L_file + '-L'
                 self.sample_dict[i]['chi_method'] = None
+
+        print(self.grid_mode)
+        if self.grid_mode is not None:
+            self.grid_params()
 
 
         # write to odir

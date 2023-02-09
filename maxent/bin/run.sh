@@ -202,6 +202,7 @@ fi
 mkdir -p $outputDir
 if [ $start_iteration -le 1 ]
 then
+	mv resources/grid_size.txt .
 	mv resources/chi* .
 	mv resources/*.log .
 	touch track.log

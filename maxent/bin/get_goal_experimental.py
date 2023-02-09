@@ -138,9 +138,10 @@ def main():
             args.n_small_bins = None
             args.small_binsize = None
             args.big_binsize = None
-        args.diag_bins = len(config['diag_chis'])
-        args.diag_start = config['diag_start']
-        args.diag_cutoff = config['diag_cutoff']
+        if config['diagonal_on']:
+            args.diag_bins = len(config['diag_chis'])
+            args.diag_start = config['diag_start']
+            args.diag_cutoff = config['diag_cutoff']
         args.m = config['nbeads']
 
     if not osp.exists(args.contact_map):
@@ -171,6 +172,7 @@ def main():
     constant_goal = None
     plaid_goal = None
     diag_goal = None
+    grid_goal = None
     if args.mode == 'both':
         plaid_goal = get_plaid_goal(y, args)
         diag_goal = get_diag_goal(y, args)
@@ -196,6 +198,13 @@ def main():
             print('plaid_goal: ', plaid_goal, plaid_goal.shape)
             print('diag_goal: ', diag_goal, diag_goal.shape)
             print('constant_goal: ', constant_goal, constant_goal.shape)
+    elif args.mode == 'grid_size':
+        grid_goal = np.mean(np.diagonal(y, 1)) * 100
+        with open('obj_goal_grid.txt', 'w') as f:
+            f.write(f'{grid_goal}')
+        if args.verbose:
+            print('grid_goal: ', grid_goal)
+
 
     if plaid_goal is not None:
         with open('obj_goal.txt', 'w', newline='') as f:
@@ -240,7 +249,9 @@ class Tester():
         args.n_big_bins = 16
         args.big_binsize = 24
         args.dense = True
-        dir = '/home/erschultz/sequences_to_contact_maps/dataset_07_20_22/samples/sample4'
+        args.diag_start = 0
+        args.diag_cutoff = 1024
+        dir = '/home/erschultz/dataset_test/samples/sample1'
         y = np.load(osp.join(dir, 'y.npy'))
         y = y.astype(float)
         y /= np.max(y)
@@ -249,6 +260,9 @@ class Tester():
 
         t0 = time.time()
         goal = get_diag_goal(y, args)
+        print(np.mean(np.diagonal(y, 1)))
+        print()
+        print(goal)
         tf = time.time()
         # print(goal)
         print('time: ', tf - t0)
@@ -268,8 +282,18 @@ class Tester():
         y /= np.max(y)
         print(np.sum(y))
 
+    def test_grid():
+        args = getArgs()
+        dir = '/home/erschultz/dataset_test/samples/sample1'
+        y = np.load(osp.join(dir, 'y.npy'))
+        y = y.astype(float)
+        y /= np.max(y)
+        print(np.mean(np.diagonal(y, 1)))
+
+
 if __name__ == '__main__':
     main()
     # Tester.test_constant()
     # Tester.test_plaid()
     # Tester.test_diag()
+    # Tester.test_grid()

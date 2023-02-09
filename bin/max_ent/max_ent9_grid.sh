@@ -15,7 +15,7 @@ if [ $local = 'true' ]
 then
   dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
-  numIterations=1
+  numIterations=8
   finalSimProductionSweeps=50000
   equilibSweeps=10000
   productionSweeps=50000
@@ -31,32 +31,34 @@ useE='false'
 useD='false'
 m=512
 chiMethod='none'
-mode='none'
+mode='grid_size'
 
 bondtype='gaussian'
 phiChromatin=0.06
+bondLength=16.5
 
 diagChiMethod="none"
-
+dense='false'
 method='none'
+
+trust_region=5
+gamma=0.1
+gamma=1
 jobs=0
 waitCount=0
-for bondLength in {18..24}
+k=0
+for sample in {249..282}
 do
-  k=$bondLength
-  for sample in {273..274}
-  do
-    echo $sample $m
-    max_ent
-    jobs=$(( $jobs + 1 ))
-    if [ $jobs -gt 10 ]
-    then
-      echo 'Waiting'
-      waitCount=$(( $waitCount + 1 ))
-      wait
-      jobs=0
-    fi
-  done
+  echo $sample $m
+  max_ent
+  jobs=$(( $jobs + 1 ))
+  if [ $jobs -gt 17 ]
+  then
+    echo 'Waiting'
+    waitCount=$(( $waitCount + 1 ))
+    wait
+    jobs=0
+  fi
 done
 
 echo $waitCount

@@ -34,7 +34,7 @@ def get_samples(dataset):
     if dataset == 'dataset_11_14_22':
         samples = range(2201, 2214)
         experimental = True
-    elif dataset == 'dataset_01_26_23':
+    elif dataset == 'dataset_01_26_23' or dataset == 'dataset_02_04_23':
         samples = range(201, 283)
         experimental = True
     elif dataset == 'dataset_12_20_22':
@@ -482,9 +482,10 @@ def simple_histogram(arr, xlabel='X', odir=None, ofname=None, dist=skewnorm,
     y = dist.pdf(bins, *params) * bin_width
     params = [np.round(p, 3) for p in params]
     print(ofname, params)
-    # with open(osp.join(odir, ofname[:-9]+'.pickle'), 'wb') as f:
-    #     dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
-    #     pickle.dump(dict, f)
+    if dist == skewnorm:
+        with open(osp.join(odir, ofname[:-9]+'.pickle'), 'wb') as f:
+            dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
+            pickle.dump(dict, f)
 
     plt.plot(bins, y, ls = '--', color = 'k')
     if not (odir is None or ofname is None):
@@ -493,7 +494,8 @@ def simple_histogram(arr, xlabel='X', odir=None, ofname=None, dist=skewnorm,
         plt.ylabel('probability', fontsize=16)
         plt.xlabel(xlabel, fontsize=16)
         # plt.xlim(-20, 20)
-        # plt.title(r'$\alpha=$' + f'{params[0]}\n' + r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
+        if dist == skewnorm:
+            plt.title(r'$\alpha=$' + f'{params[0]}\n' + r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
         plt.savefig(osp.join(odir, ofname))
         plt.close()
 
@@ -965,6 +967,32 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
 
     return L_list, chi_ij_list
 
+def grid_dist(dataset, plot=True):
+    # distribution of plaid params
+    samples, experimental = get_samples(dataset)
+    assert experimental
+    data_dir = osp.join('/home/erschultz', dataset)
+    odir = osp.join(data_dir, 'grid_size_distributions')
+
+    if not osp.exists(odir):
+        os.mkdir(odir, mode = 0o755)
+
+    grid_size_arr = np.zeros(len(samples))
+    for i, sample in enumerate(samples):
+        dir = osp.join(data_dir, f'samples/sample{sample}/none/k0/replicate1')
+        if not osp.exists(dir):
+            continue
+
+        # get grid_size
+        grid_size_arr[i] = np.loadtxt(osp.join(dir, 'grid_size.txt'))[-1]
+
+    if plot:
+        # plot plaid chi parameters
+        simple_histogram(grid_size_arr, 'grid size', odir,
+                            'grid_size_dist.png', dist = skewnorm)
+
+
+
 def compare_maxent_simulation():
     dataset = 'dataset_01_26_23'
     data_dir = osp.join('/home/erschultz', dataset)
@@ -1079,7 +1107,8 @@ if __name__ == '__main__':
     # for i in range(201, 283):
         # modify_maxent_diag_chi('dataset_01_26_23', i, k = 12)
         # plot_modified_max_ent(i, k = 8)
-    diagonal_dist('dataset_01_26_23', 12)
+    # diagonal_dist('dataset_01_26_23', 12)
+    grid_dist('dataset_02_04_23')
     # plaid_dist('dataset_11_14_22', 4, True, False, True)
     # seq_dist('dataset_01_26_23', 4, True, False, True)
     # compare_maxent_simulation()

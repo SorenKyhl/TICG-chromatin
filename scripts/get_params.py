@@ -217,7 +217,7 @@ class GetSeq():
             else:
                 raise Exception(f'exclusive not yet supported for {args.method_base}')
         if args.scale_resolution != 1:
-            assert args.method_base == 'random', f"{args.method_base} rted yet"
+            assert args.method_base == 'random', f"{args.method_base} not supported yet"
 
     def _process_method(self, args):
         # default values
@@ -290,7 +290,7 @@ class GetSeq():
         seq = np.zeros((m, self.k))
 
         if p_switch is not None:
-            p_switch /= scale_resolution
+            assert not scale_resolution, 'not supported'
 
             if exclusive:
                 transition_probs = [1 - p_switch] # keep label with p = 1-p_switch
@@ -317,20 +317,7 @@ class GetSeq():
                             seq[i, j] = rng.choice([1,0], p=[1 - p_switch, p_switch])
                         else:
                             seq[i, j] = rng.choice([1,0], p=[p_switch, 1 - p_switch])
-
-            if scale_resolution != 1:
-                seq_high_resolution = seq.copy()
-                seq = np.zeros((self.m, self.k))
-                for i in range(self.m):
-                    lower = i * scale_resolution
-                    upper = lower + scale_resolution
-                    slice = seq_high_resolution[lower:upper, :]
-                    sum = np.sum(slice, axis = 0)
-                    # sum /= scale_resolution
-                    sum /= np.sum(sum)
-                    seq[i, :] = np.nan_to_num(sum)
         else:
-            assert scale_resolution == 1, 'not supported yet'
             # lmda is not None
             seq[0, :] = rng.choice([1,0], size = self.k)
             p11 = f*(1-lmbda)+lmbda
@@ -356,6 +343,15 @@ class GetSeq():
                     else:
                         # equals 0, need p00 or p10
                         seq[i, j] = rng.choice([1,0], p = [p10, p00])
+
+            if scale_resolution > 1:
+                seq_high_resolution = seq.copy()
+                seq = np.zeros((self.m, self.k))
+                for i in range(self.m):
+                    lower = i * scale_resolution
+                    upper = lower + scale_resolution
+                    slice = seq_high_resolution[lower:upper, :]
+                    seq[i, :] = np.mean(slice, axis = 0)
 
         return seq
 
@@ -752,6 +748,7 @@ class GetSeq():
                 seq = np.load(args.method)
             else:
                 raise Exception(f'Unrecognized file format {args.chi_method}')
+            seq = seq[:self.m, :]
         else:
             args.method = args.method.lower()
             print(f'Method lowercase: {args.method}')

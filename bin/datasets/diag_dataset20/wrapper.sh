@@ -22,7 +22,6 @@ cd ~/TICG-chromatin
 
 dataset="dataset_02_06_23"
 echo "generate_params for ${dataset}"
-# this dataset uses shuffled experimental PCs as sequences, with wider range of chi values, and k = 12
 # python  ~/TICG-chromatin/bin/datasets/generate_params.py --samples 5000 --k 8 --m 512 --dataset $dataset --seq_mode 'eig_norm' --chi_param_version 'v12' --diag_mode 'linear'
 #
 # cd "/home/erschultz/${dataset}"

@@ -20,61 +20,55 @@ run()  {
 }
 
 param_setup
-m=1024
+m=512
 dataset=dataset_test
 baseDataFolder="/home/erschultz/${dataset}"
 dataFolder=$baseDataFolder
 scratchDir='/home/erschultz/scratch'
 overwrite=1
 
-k=3
-nSweeps=5000
-dumpFrequency=100
+k=0
+nSweeps=50000
+dumpFrequency=1000
 TICGSeed=10
 chiSeed=3
 seqSeed=4
-diag='true'
+diag='false'
 dense='false'
-diagBins=1024
+diagBins=512
 nSmallBins=64
 smallBinSize=1
 bigBinSize=-1
 nBigBins=-1
 bondLength=28
-useD='true'
-useL='true'
-useE='true'
+useD='false'
+useL='false'
+useE='false'
+seqMethod='none'
+chiMethod="none"
+chiDiagMethod='none'
 
+i=4001
+jobs=0
+waitCount=0
+for bondLength in 18 19 20 21 22 23 24 25 26 27 28
+do
+	for gridSize in 20 22 24 26 28 30 32 34 36
+	do
+		echo $i bondLength $bondLength gridSize $gridSize
+		run &
+		i=$(( $i + 1 ))
+		jobs=$(( $jobs + 1 ))
+		if [ $jobs -gt 16 ]
+		then
+			echo 'Waiting'
+			waitCount=$(( $waitCount + 1 ))
+			wait
+			jobs=0
+		fi
+	done
+done
 
-sample=3001
-chiDiagMethod="zeros"
-maxDiagChi=10
-chiMethod="random"
-seqMethod="random"
-lmbda=0.85
-i="${sample}"
-# run
-
-sample=3002
-m=512
-diagBins=512
-maxDiagChi=5
-chiMethod="random"
-seqMethod="${dataFolder}/samples/sample3001/x.npy"
-i="${sample}"
-run &
-
-# gaussian renorm
-sample=3003
-seqMethod="random"
-scaleResolution=2
-m=512
-beadVol=1040
-bondLength=39.598
-diagBins=512
-maxDiagChi=5
-chiMethod="random"
-i="${sample}"
-run &
+echo $waitCount
 
 wait

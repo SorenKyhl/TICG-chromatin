@@ -22,7 +22,7 @@ def getArgs():
 def main():
     args = getArgs()
 
-    config_file = "iteration{}/config.json".format(args.it)
+    config_file = f"iteration{args.it}/config.json"
 
     with open(config_file) as f:
         config = json.load(f)
@@ -70,6 +70,10 @@ def main():
     if args.mode == 'all':
         allchis = np.loadtxt('chi_constant.txt')
         config['constant_chi'] = allchis[args.it]
+
+    if args.mode == 'grid_size':
+        allchis = np.loadtxt('grid_size.txt')
+        config['grid_size'] = allchis[args.it]
 
 
     with open(config_file, "w") as f:

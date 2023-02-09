@@ -57,7 +57,7 @@ def getArgs():
                         help='True to dump contact map every dump_frequency')
     parser.add_argument('--gridmove_on', type=AC.str2bool, default=True,
                         help='True to use grid MC move')
-    parser.add_argument('--grid_size', type=float, default=28.7,
+    parser.add_argument('--grid_size', default=28.7,
                         help='TICG grid size')
     parser.add_argument('--bead_vol', type=float, default=520,
                         help='bead volume')
@@ -367,7 +367,13 @@ def main():
     config['gridmove_on'] = args.gridmove_on
 
     # save grid_size
-    config['grid_size'] = args.grid_size
+    if isinstance(args.grid_size, float):
+        grid_size = args.grid_size
+    elif osp.exists(args.grid_size):
+        grid_size = np.loadtxt(args.grid_size)[-1]
+    else:
+        grid_size = float(args.grid_size)
+    config['grid_size'] = grid_size
 
     # save bead volume
     config['beadvol'] = args.bead_vol
@@ -400,6 +406,12 @@ def main():
             wr = csv.writer(f, delimiter = '\t')
             wr.writerow([args.constant_chi])
             wr.writerow([args.constant_chi])
+    if args.max_ent and args.mode == 'grid_size':
+        with open('grid_size.txt', 'w', newline='') as f:
+            wr = csv.writer(f, delimiter = '\t')
+            wr.writerow([args.grid_size])
+            wr.writerow([args.grid_size])
+
 
     # save parallel
     config['parallel'] = args.parallel

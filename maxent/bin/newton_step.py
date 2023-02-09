@@ -1,4 +1,5 @@
 import argparse
+import os
 import os.path as osp
 import sys
 
@@ -113,7 +114,6 @@ def step(parameter_files, obs_files, convergence_file, goal_files, gamma, it,
     df_total = pd.DataFrame()
     for f in obs_files:
         try:
-            # arr = np.loadtxt(f)[:, 1:]
             df = pd.read_csv(osp.join(it_root, f), delimiter="\t", header=None)
             df = df.dropna(axis=1)
             df = df.drop(df.columns[0] ,axis=1)
@@ -147,11 +147,11 @@ def step(parameter_files, obs_files, convergence_file, goal_files, gamma, it,
 
 def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method):
     difference = obj_goal - lam
-    Binv = np.linalg.pinv(B)
     if method == "n":
+        Binv = np.linalg.pinv(B)
         step = Binv@difference
     elif method == "g":
-        step = difference
+        step = -1*difference
     else:
         raise Exception(f'Unrecognized method: {method}')
 
@@ -235,10 +235,42 @@ def main():
         obs_files = ["observables.traj"]
         goal_files = ["obj_goal.txt"]
         copy_chis("chis_diag.txt", args.it)
+    elif args.mode == 'grid_size':
+        # manually create grid_observable
+        it_root = osp.join(f"iteration{args.it}", "production_out")
+        y = np.loadtxt(osp.join(it_root, 'contacts.txt'))
+        y /= np.mean(np.diagonal(y))
+        grid_obs = np.atleast_2d([0, np.mean(np.diagonal(y, 1)) * 100]) # 0 is a filler
+        np.savetxt(osp.join(it_root, 'grid_observable.traj'), grid_obs, delimiter = '\t')
+
+        parameter_files = ["grid_size.txt"]
+        obs_files = ["grid_observable.traj"]
+        goal_files = ["obj_goal_grid.txt"]
+        args.method = 'g' # switch to gradient descent
 
     step(parameter_files, obs_files, 'convergence.txt', goal_files,
                 args.gamma, args.it, args.goal_specified, args.trust_region,
                 args.min_diag_chi, args.method)
 
+def test():
+    dir = '/home/erschultz/dataset_02_04_23/samples/sample201/PCA-normalize-E/k4/replicate1/iteration16/production_out/'
+    f = osp.join(dir, 'grid_observable.traj')
+
+
+    y = np.loadtxt(osp.join(dir, 'contacts.txt'))
+    np.savetxt(f, np.atleast_2d([np.NaN, np.mean(np.diagonal(y, 1))]), delimiter = '\t')
+
+
+    obs = pd.DataFrame()
+    df = pd.read_csv(f, sep='\t', header=None)
+    print(df)
+    print(df.columns[0])
+    df = df.drop(df.columns[0], axis=1)
+    print(df)
+    obs = pd.concat((obs, df), axis=1)
+    obj_goal = obs.mean().values
+    print(obj_goal)
+
 if __name__ == '__main__':
     main()
+    # test()

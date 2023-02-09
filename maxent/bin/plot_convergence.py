@@ -20,11 +20,14 @@ def getArgs():
 def main():
     args = getArgs()
     print(args)
-    assert args.mode in {'plaid', 'diag', 'both', 'all'}, 'invalid mode'
+    assert args.mode in {'plaid', 'diag', 'both', 'all', 'grid_size'}, 'invalid mode'
 
     # convergence plot
-    convergence = np.loadtxt('convergence.txt')
+    convergence = np.atleast_1d(np.loadtxt('convergence.txt'))
     print(convergence)
+    if len(convergence) < 2:
+        return
+
     converged_it = None
     for i in range(1, len(convergence)):
         diff = convergence[i] - convergence[i-1]
@@ -93,6 +96,16 @@ def main():
         plt.ylabel("chi_constant value", fontsize=16)
         plt.tight_layout()
         plt.savefig("pchi_constant.png")
+        plt.close()
+
+    if args.mode == 'grid_size':
+        # constant chi plot
+        constant_chi = np.loadtxt('grid_size.txt')
+        plt.plot(constant_chi)
+        plt.xlabel("Iteration", fontsize=16)
+        plt.ylabel("grid_size value", fontsize=16)
+        plt.tight_layout()
+        plt.savefig("pgrid_size.png")
         plt.close()
 
 

@@ -38,7 +38,8 @@ bondType='gaussian'
 chiMethod='random'
 phiChromatin=0.06
 boundaryType='spherical'
-bondLength=16.5
+
+
 gridSize=28.7
 beadVol=520
 constantChi=0

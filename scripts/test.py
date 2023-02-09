@@ -437,74 +437,74 @@ def plot_sc_p_s():
     plt.savefig(osp.join(data_dir, 'sc_contacts_time', 'meanDist_log2.png'))
     plt.close()
 
-def plot_p_s(params = False):
+def plot_p_s(dataset, experimental=False, params=False):
     # plot different p(s) curves
     dir = '/home/erschultz/'
-    data_dir = osp.join(dir, 'dataset_11_14_22/samples/sample1') # experimental data sample
-    file = osp.join(data_dir, 'y.npy')
-    y_exp = np.load(file)
-    meanDist_ref = DiagonalPreprocessing.genomic_distance_statistics(y_exp, 'prob')
+    if experimental:
+        data_dir = osp.join(dir, 'dataset_11_14_22/samples/sample1') # experimental data sample
+        file = osp.join(data_dir, 'y.npy')
+        y_exp = np.load(file)
+        meanDist_ref = DiagonalPreprocessing.genomic_distance_statistics(y_exp, 'prob')
 
-    dataset = 'dataset_test_vbead'
-    dir = osp.join(dir, dataset, 'samples')
-    fig, ax = plt.subplots()
-    if params:
-        ax2 = ax.twinx()
+    data_dir = osp.join(dir, dataset)
 
-    s_dir = osp.join(dir, f'sample100')
-    reps = [s_dir, osp.join(s_dir, 'PCA-normalize/k4/replicate1'),
-            osp.join(s_dir, 'GNN-177-S-diagMLP-79/k0/replicate1')]
-    labels = ['Original Simulation', 'Maximum Entropy', 'Machine Learning']
-    for rep, label in zip(reps, labels):
-        ifile = osp.join(rep, 'y.npy')
-        if osp.exists(ifile):
-            y = np.load(ifile)
-            plot_matrix(y, osp.join(rep, 'y.png'), vmax = 20)
-            meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
-            ax.plot(meanDist, label = label)
-        else:
-            print(ifile)
-
-    for sample in range(200, 1000):
-        sample_dir = osp.join(dir, f'sample{sample}')
+    data = defaultdict(dict) # sample : {meanDist, diag_chis_step} : vals
+    for sample in [3001, 3002, 3003]:
+        sample_dir = osp.join(data_dir, 'samples', f'sample{sample}')
         ifile = osp.join(sample_dir, 'y.npy')
         if osp.exists(ifile):
             y = np.load(ifile)
             meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+            data[sample]['meanDist'] = meanDist
 
-            # get config
-            # with open(osp.join(sample_dir, 'config.json')) as f:
-            #     config = json.load(f)
-            #     key = 'bond_length'
-            #     label = config[key]
-            key = 'sample'
-            label = sample
-
-            ax.plot(meanDist, label = label)
 
             if params:
                 with open(osp.join(sample_dir, 'config.json')) as f:
                     config = json.load(f)
                 diag_chis_step = calculate_diag_chi_step(config)
-                ax2.plot(diag_chis_step, ls = '--', label = 'Parameters')
+                data[sample]['diag_chis_step'] = np.array(diag_chis_step)
 
-    ax.plot(meanDist_ref, label = 'Experiment', color = 'k')
 
-    ax.set_yscale('log')
-    ax.set_xscale('log')
-    ax.set_ylabel('Contact Probability', fontsize = 16)
-    ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
+    for norm in [True, False]:
+        fig, ax = plt.subplots()
+        if params:
+            ax2 = ax.twinx()
+        if experimental:
+            if norm:
+                X = np.arange(0, 1, len(meanDist_ref))
+            else:
+                X = np.arange(0, len(meanDist_ref), 1)
+            ax.plot(meanDist_ref, label = 'Experiment', color = 'k')
 
-    if params:
-        ax.legend(loc='upper left', title = key)
-        ax2.set_xscale('log')
-        ax2.set_ylabel('Diagonal Parameter', fontsize = 16)
-        ax2.legend(loc='upper right')
-    else:
-        ax.legend(loc='upper right', title = key)
-    plt.tight_layout()
-    plt.savefig(osp.join(dir, 'meanDist_log.png'))
-    plt.close()
+        for sample in data.keys():
+            label = sample
+            meanDist = data[sample]['meanDist']
+            if norm:
+                X = np.linspace(0, 1, len(meanDist))
+            else:
+                X = np.arange(0, len(meanDist), 1)
+            ax.plot(X, meanDist, label = label)
+
+            if params:
+                diag_chis_step = data[sample]['diag_chis_step']
+                print(X.shape, diag_chis_step.shape)
+                ax2.plot(X, diag_chis_step, ls = '--', label = 'Parameters')
+
+        ax.set_yscale('log')
+        ax.set_xscale('log')
+        ax.set_ylabel('Contact Probability', fontsize = 16)
+        ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
+
+        if params:
+            ax.legend(loc='upper left', title = 'Sample')
+            ax2.set_xscale('log')
+            ax2.set_ylabel('Diagonal Parameter', fontsize = 16)
+            ax2.legend(loc='upper right')
+        else:
+            ax.legend(loc='upper right', title = 'Sample')
+        plt.tight_layout()
+        plt.savefig(osp.join(data_dir, f'meanDist_norm_{norm}.png'))
+        plt.close()
 
 def plot_sd():
     # plot sd matrix at every max ent iteration
@@ -1263,4 +1263,5 @@ if __name__ == '__main__':
     # plot_sd()
     # max_ent_loss_for_gnn('dataset_11_14_22', 2201)
     # temp_p_s()
-    meanDist_comparison()
+    # meanDist_comparison()
+    plot_p_s('dataset_test', params=True)
