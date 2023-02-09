@@ -222,6 +222,21 @@ class Maxent:
 
             return loaded_maxent
     
+    @classmethod
+    def from_directory(cls, filename: str)
+        """ loads maxent optimization from a directory
+        reloads gthic, which is not included in pickle to save disk space
+        """
+        with open(Path(filename/"backup.pickle"), "rb") as f:
+            loaded_maxent = pickle.load(f)
+
+            if loaded_maxent.resources.exists():
+                loaded_maxent.gthic = np.load(loaded_maxent.resources/"experimental_hic.npy")
+            else:
+                loaded_maxent.gthic = np.load("experimental_hic.npy")
+
+            return loaded_maxent
+    
     def set_config(self, path):
         """ load config from path """
         self.config = utils.load_json(path)

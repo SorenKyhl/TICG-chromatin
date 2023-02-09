@@ -50,7 +50,7 @@ class Sim:
 this module implements the pysim class, a wrapper around the pyticg engine with much more functionality. 
 This class is the main interface to the user performing simulations. 
 
-#### pysim usage:
+#### usage:
 to set up a simulation, all that is needed are polymer sequences, and a config file.
 the config file contains physical constants (number of beads)  and parameters for the 
 monte carlo simulation (number of sweeps, etc)
@@ -93,7 +93,7 @@ from experimental data, or deriving polymer sequences. These are provided as inp
 as such the maxent module is regarded as "low level" in the context of maximum entropy optimization features. 
 Higher level features are exposed through the pipeline module
 
-#### maxent usage:
+#### usage:
 maxent optimization parameters (number of iterations, initial state, etc) are specified in params. 
 a default parameter file is available in maxent/defaults/params.json
 ```python
@@ -102,11 +102,38 @@ a default parameter file is available in maxent/defaults/params.json
 me = Maxent(root="output_goes_here", params, config, sequences, gthic)
 me.fit()
 ```
+a variation of this is shown in examples/chipseq_maxent, although it loads from data files 
+not included in the github repo, so it won't work right out of the box.
+
+similarly to pysim objects, maxent objects can also be constructed from directories. This is often 
+useful if an already finished or prematurely killed maxent run needs to be extened for further iterations.
+```python
+
+me = Maxent.from_directory(original_directory)
+me.set_root(new_output_directory) # so as not to overwrite
+me.fit()
+```
+a code snippet of exists at /examples/snippets/load_maxent
 
 ### pipeline module
 this module provides a high-level interface for executing maximum entropy optimization runs for genome folding.
 it can be viewed as a wrapper around a maxent instance, combined with methods that derive all necessary
-inputs to the maxent procedure (polymer sequences, physical observables used as maxent goals).
+inputs to the maxent procedure (polymer sequences, physical observables used as maxent goals). This is also frequently
+useful when sweeping over a parameter value.
+
+a callable can be supplied, which calculates sequences from an experimental contactmap.
+```python
+# sweep over the number of sequences k and optimize for each
+for k in range(10):
+	seqs_method = functools.partial(ep.get_sequences, k=k)
+	pipe = Pipeline(name, gthic, config, params, seqs_method=seqs_method, load_first=False)
+	pipe.fit()
+```
+a variation of this is shown in examples/sweep_pcs
+
+
+	
+
 
 
 
