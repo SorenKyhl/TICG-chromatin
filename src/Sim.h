@@ -22,6 +22,11 @@
 
 class Sim {
 public:
+	Sim();
+	Sim(std::string);
+	~Sim();
+	
+	// members
 	std::vector<Bead> beads;
 	std::vector<std::unique_ptr<Bond>> bonds; // pointers because Bond class is virtual
 	std::vector<std::unique_ptr<Angle>> angles; // pointers because Angle class is virtual
@@ -46,6 +51,8 @@ public:
 
 	// output files
 	bool redirect_stdout = false;
+	std::streambuf* cout_stream_buffer; // see: redirectStdout
+	std::fstream logfile;
 	FILE *xyz_out;
 	FILE *energy_out;
 	FILE *obs_out;
@@ -151,8 +158,6 @@ public:
 	std::string dmatrix_filename;
 
 	// methods
-	Sim();
-	Sim(std::string);
 	void run();
 	void xyzToContact();
  
@@ -206,6 +211,8 @@ public:
 	void saveObservables(int sweep);
 	void saveContacts(int sweep);
 	void makeDataAndLogFiles();
+	void redirectStdout();
+	void returnStdout();
 	void makeOutputFiles();
 	void setupSmatrix();
 	void setupEmatrix();

@@ -29,16 +29,18 @@ class Pysim:
             root : str, 
             config : dict, 
             seqs : list[list],
+            gthic = None,
             randomize_seed : bool = False, 
             mkdir : bool = True, 
             setup_needed : bool = True):
-
         
         self.set_root(root, mkdir)
         self.set_config(config)
         self.seqs = seqs
-
         self.setup_needed = setup_needed # should be true unless instantiated using from_directory
+
+        if gthic is not None:
+            np.save(self.root/"experimental_hic.npy", gthic)
 
         if randomize_seed:
             self.randomize_seed()            
@@ -73,21 +75,28 @@ class Pysim:
         if mkdir:
             self.root.mkdir(exist_ok=False)
 
+
     def set_config(self, config : Union[dict, str]):
         """ set the config, either by assignment or by loading from a json file"""
         if isinstance(config, dict):
             self.config = config
         else:
             self.config = utils.load_json(path)  
+
             
     def randomize_seed(self):
         """ sets seed for random number generator used in Monte Carlo simulation """
         self.config["seed"] = np.random.randint(1e5)
         
+
     def setup(self):
         """ write simulation inputs in simulation root directory, but only if setup_needed flag is on """
         if self.setup_needed:
             utils.write_json(self.config, Path(self.root, "config.json"))       
+
+            if self.seqs is None:
+                return 
+
             if self.seqs.ndim > 1:
                 for i, seq in enumerate(self.seqs):
                     self.write_sequence(seq, Path(self.root, f"pcf{i+1}.txt"))

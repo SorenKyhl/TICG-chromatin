@@ -17,11 +17,11 @@ import json
 from scipy.sparse import coo_matrix
 from numba import njit
 from tqdm import tqdm
+from pathlib import Path
 #import kmeans
 
 #import palettable
 #from palettable.colorbrewer.sequential import Reds_3
-
 
 from pylib import utils
 
@@ -29,18 +29,12 @@ mycmap = mpl.colors.LinearSegmentedColormap.from_list('custom',
                                              [(0,    'white'),
                                               (0.3,  'white'),
                                               (1,    '#ff0000')], N=126)
-
-
-#%config InlineBackend.figure_format='retina'
-#plt.rcParams['figure.figsize'] = [8,6]
-#plt.rcParams.update({'font.size':14})    
         
-
 class Sim:
     def __init__(self, path, maxent_analysis=True):
-        self.path = path
+        self.path = Path(path)
         self.metrics = {}
-        self.maxent_analysis = maxent_analysis
+        self.maxent_analysis = maxent_analysis # if false, don't try to load stuff related to maxent
         
         try:
             self.config = self.load_config()
@@ -51,14 +45,13 @@ class Sim:
         self.chi = self.load_chis()
 
         try:
-            self.hic = get_contactmap(osp.join(path,"contacts.txt"))
-            self.raw = get_contactmap(osp.join(path,"contacts.txt"), rawcounts=True)
+            self.hic = get_contactmap(self.path/"contacts.txt")
             self.d = get_diagonal(self.hic)
         except:
             print("error loading contactmap.")
         
         try:
-            self.energy = pd.read_csv(path+"/energy.traj", sep='\t', names=["step", "bonded", "nonbonded", "diagonal", "y"])
+            self.energy = pd.read_csv(self.path/"energy.traj", sep='\t', names=["step", "bonded", "nonbonded", "diagonal", "y"])
         except:
             print("no energy.traj") 
         
@@ -69,27 +62,27 @@ class Sim:
             print("no seqs")
             
         try:
-            self.obs_full = pd.read_csv(osp.join(path,"observables.traj"), sep ='\t', header=None)
+            self.obs_full = pd.read_csv(self.path/"observables.traj", sep ='\t', header=None)
             self.obs = self.obs_full.mean().values[1:]
         except:
             print("no plaid observables")
         
         try:
-            self.diag_obs_full = pd.read_csv(osp.join(path,"diag_observables.traj"), sep ='\t', header=None)
+            self.diag_obs_full = pd.read_csv(self.path/"diag_observables.traj", sep ='\t', header=None)
             self.diag_obs = self.diag_obs_full.mean().values[1:]
         except:
             print("no diag observables")
         
         try:
             self.obs_tot = np.hstack((self.obs, self.diag_obs))
-            self.extra = np.loadtxt(osp.join(path, "extra.traj"))
+            self.extra = np.loadtxt(self.path/"extra.traj")
             self.beadvol = self.config["beadvol"]
             self.nbeads = self.config["nbeads"]
         except:
             print("something wrong")
             
-        resources_path = osp.join(path, "../../resources/")
-        if os.path.exists(resources_path):
+        resources_path = self.path/"../../resources/"
+        if resources_path.exists():
             self.resources_path = resources_path
         
         if self.maxent_analysis:
@@ -97,7 +90,7 @@ class Sim:
             gthic_possibilites = [".", "..", "../../resources"]
             gthic_loaded = False
             for gtp in gthic_possibilites:
-                gthic_path = osp.join(self.path, gtp, "experimental_hic.npy")
+                gthic_path = self.path/gtp/"experimental_hic.npy"
                 print("looking in, ", gthic_path)
                 if os.path.exists(gthic_path) and not gthic_loaded:
                     self.gthic = np.load(gthic_path)
@@ -106,15 +99,15 @@ class Sim:
             if not gthic_loaded:
                 print("no ground truth hic found")
             
-            obj_goal_path = osp.join(resources_path, "obj_goal.txt")
-            if os.path.exists(obj_goal_path):
+            obj_goal_path = resources_path/"obj_goal.txt"
+            if obj_goal_path.exists():
                 self.obj_goal = np.loadtxt(obj_goal_path)
             else:
                 print("no path to obj_goal.txt")
                 print("looking in obj_goal_path: ", obj_goal_path)
             
-            obj_goal_diag_path = osp.join(resources_path, "obj_goal_diag.txt")
-            if os.path.exists(obj_goal_diag_path):
+            obj_goal_diag_path = resources_path/"obj_goal_diag.txt"
+            if obj_goal_diag_path.exists():
                 self.obj_goal_diag = np.loadtxt(obj_goal_diag_path)
             else:
                 print("no path to obj_goal_diag.txt")
@@ -124,7 +117,7 @@ class Sim:
                 self.obj_goal_tot = np.hstack((self.obj_goal, self.obj_goal_diag))
             except:
                 try:
-                    params_path = osp.join(resources_path, "params.json")
+                    params_path = resources_path/"params.json"
                     params = utils.load_json(params_path)
                     self.obj_goal_tot = params["goals"]
                     print("looking for goals in params")
@@ -202,9 +195,8 @@ class Sim:
             return get_RMSLE(self.hic, self.gthic)
 
     def load_config(self):
-        with open(self.path + "/config.json") as f:
+        with open(self.path/"config.json") as f:
             config = json.load(f)
-            
         return config
     
     def load_chis(self):
@@ -238,7 +230,7 @@ class Sim:
     def load_seqs(self):
         seqs = []
         for file in self.config["bead_type_files"]:
-            seqs.append( np.loadtxt(self.path + "/" + file) )
+            seqs.append(np.loadtxt(self.path/file))
         seqs = np.array(seqs)
         return seqs
     
@@ -398,13 +390,7 @@ class SCC():
 def get_contactmap(filename, norm=True, log=False, rawcounts=False, normtype="mean"):
     """Loads contact map from file, returns array."""
     
-    if type(filename) is str:
-        contactmap = np.loadtxt(filename)
-    elif type(filename) is np.ndarray:
-        contactmap = copy.deepcopy(filename)
-    else:
-        print("usage: get_contactmap filename:[str, np.ndarray], norm:bool, log:bool, rawcounts:bool")
-        raise ValueError
+    contactmap = np.loadtxt(filename)
     
     if rawcounts:     
         return contactmap

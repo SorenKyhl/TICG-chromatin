@@ -30,7 +30,7 @@
   "seed": 82353,
   "decay_length": 100,
   "nSweeps": 50000,
-  "dump_frequency": 100000,
+  "dump_frequency": 50000,
   "dump_stats_frequency": 100,
   "nEquilibSweeps": 1,
   "bonded_on": true,

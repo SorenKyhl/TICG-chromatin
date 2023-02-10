@@ -182,3 +182,18 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method):
     howfar = np.sqrt(difference@difference)/np.sqrt(obj_goal@obj_goal)
 
     return new_chis, howfar
+
+
+def get_last_iteration(directory):
+    """get path to final iteration of optimization directory
+
+    Args:
+        directory (str or path): directory containing iterations
+
+    Returns:
+        path to final iteration in ``directory``
+    """
+    iterations = Path(directory).glob("iteration*")
+    iterations = list(iterations)
+    iterations = sorted(iterations, key=lambda path: path.name[-1])
+    return iterations[-1]

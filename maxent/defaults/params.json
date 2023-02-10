@@ -1,9 +1,9 @@
 {
-	"iterations": 100,
+	"iterations": 10,
 	"gamma": 1,
-	"trust_region": 25,
-	"equilib_sweeps": 2000,
-	"production_sweeps": 2500,
+	"trust_region": 1000,
+	"equilib_sweeps": 10000,
+	"production_sweeps": 50000,
 	"goal_specified": 1,
 	"overwrite": 0,
 	"parallel": 7,

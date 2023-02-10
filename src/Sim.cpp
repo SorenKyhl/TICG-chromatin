@@ -30,6 +30,12 @@ Sim::Sim(std::string filename)
 	makeDataAndLogFiles();
 }
 
+// return stdout to original stream, if redirected
+Sim::~Sim()
+{
+	if (redirect_stdout) returnStdout();
+}
+
 // Run TICG simulation
 void Sim::run() 
 {
@@ -389,9 +395,26 @@ void Sim::makeDataAndLogFiles()
 	}
 
 	if (redirect_stdout) { 
-		std::freopen(log_filename.c_str(), "w", stdout);
+		redirectStdout();
 	}
 }
+
+void Sim::redirectStdout()
+{
+	cout_stream_buffer = std::cout.rdbuf(); // save original std::cout stream buffer for later, to un-redirect
+	logfile.open(log_filename, std::ios::out);
+	auto cout_buf = std::cout.rdbuf(logfile.rdbuf()); // redirect stdout to log
+}
+
+
+// return std::cout to original stream buffer 
+// typically done after after done redirecting to log file.
+// see: deconstructor 
+void Sim::returnStdout()
+{
+	std::cout.rdbuf(cout_stream_buffer);
+}
+
 
 void Sim::makeOutputFiles() {
 	std::cout << " making output files ... ";

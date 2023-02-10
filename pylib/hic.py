@@ -11,7 +11,7 @@ from pylib import epilib
 collection of functions for manipulating hic maps
 """
 
-def pool(inp, factor, fn=np.nansum, normalize=False):
+def pool(inp, factor, fn=np.nansum, normalize=True):
     """
     Resizes input matrix by factor using fn.
     if inp is 1024x1024 and factor=2, out is 512x512
@@ -32,14 +32,14 @@ def pool(inp, factor, fn=np.nansum, normalize=False):
 
     return out
 
-def pool_sum(inp, factor, normalize=False): 
+def pool_sum(inp, factor, normalize=True): 
     pooled = block_reduce(inp, (factor,factor), np.nansum)
     if normalize:
         pooled = normalize_hic(pooled)
     return pooled
 
 
-def pool_diagonal(HiC, normalize=False):
+def pool_diagonal(HiC, normalize=True):
     """
     reduce size of matrix by factor,
     only include every factor'th bead
