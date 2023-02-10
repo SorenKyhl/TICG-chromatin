@@ -155,7 +155,7 @@ def optimize_stiffness(config, gthic, low_bound=0, high_bound=1):
     config['load_bead_types'] = False
 
     root = "optimize-stiffness"
-    sim_engine = Pysim(root, config, seqs=None)
+    sim_engine = Pysim(root, config, seqs=None, gthic=gthic)
 
     result = optimize.brentq(stiffness_sim_error, low_bound, high_bound, 
                             args=(sim_engine, gthic), xtol=1e-2, maxiter=10)

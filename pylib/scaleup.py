@@ -7,19 +7,20 @@ from pylib.maxent import Maxent
 from pylib.config import Config
 from pylib.pysim import Pysim
 
-def tune_stiffness(nbeads_large, nbeads_small, pool_fn):
+def tune_stiffness(nbeads_large, nbeads_small, pool_fn, grid_bond_ratio):
     """
     simualte ideal chain at large scale,
     pool large ideal hic down to small scale,
     tune stiffness of ideal chain at small scale so that
     diagonal probability of small simulation matches that of the
     pooled large simulation. 
+
     """
     factor = int(nbeads_large/nbeads_small)
     data_out = "data_out"
 
     try:
-        ideal_chain_large = ideal_chain_simulation(nbeads_large)
+        ideal_chain_large = ideal_chain_simulation(nbeads_large, grid_bond_ratio)
         ideal_chain_large.run(data_out)
         sim_analysis = epilib.Sim(ideal_chain_large.root/data_out)
     except FileExistsError:
@@ -27,7 +28,7 @@ def tune_stiffness(nbeads_large, nbeads_small, pool_fn):
         sim_analysis = epilib.Sim(large_out)
 
     try:
-        ideal_chain_small = ideal_chain_simulation(nbeads_small)
+        ideal_chain_small = ideal_chain_simulation(nbeads_small, grid_bond_ratio)
         ideal_chain_small.run(data_out)
         small_config = ideal_chain_small.config
     except FileExistsError:
@@ -49,13 +50,12 @@ def scaleup(nbeads_large, nbeads_small, pool_fn):
 
     factor = int(nbeads_large/nbeads_small)
     config_small = parameters.get_config(nbeads_small)
-    pipe = default.data_pipeline.resize(nbeads_large)
 
-    gthic_large = pipe.load_hic(default.HCT116_hic)
-    seqs_large = epilib.get_sequences(gthic_large, 10)
+    gthic_large = hic.load_hic(nbeads_large)
+    gthic_small = hic.load_hic(nbeads_small)
 
-    gthic_small = pool_fn(gthic_large, factor)
-    seqs_small = hic.pool_seqs(seqs_large, factor)
+    seqs_large = hic.load_seqs(nbeads_large, 10)
+    seqs_small = hic.load_seqs(nbeads_small, 10)
 
     # tune grid size
     try:
@@ -63,16 +63,18 @@ def scaleup(nbeads_large, nbeads_small, pool_fn):
     except FileExistsError:
         optimal_grid_size = utils.load_json("optimize-grid-size/config.json")['grid_size']
 
+    config_small['grid_size'] = optimal_grid_size
     grid_bond_ratio = optimal_grid_size/config_small['bond_length'] # for later, when getting large sim config
 
     # tune grid size
     try:
-        k_angle_opt = tune_stiffness(nbeads_large, nbeads_small, pool_fn)
+        k_angle_opt = tune_stiffness(nbeads_large, nbeads_small, pool_fn, grid_bond_ratio)
     except FileExistsError:
         k_angle_opt  = utils.load_json("optimize-stiffness/config.json")['k_angle']
+
+    config_small['k_angle'] = k_angle_opt
     
     # maxent at small size
-    config_small['k_angle'] = k_angle_opt
     goals = epilib.get_goals(gthic_small, seqs_small, config_small)
     params = default.params
     params["goals"] = goals

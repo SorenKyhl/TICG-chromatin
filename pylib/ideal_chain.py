@@ -7,8 +7,12 @@ from pylib.pysim import Pysim
 module for running ideal chain simulations
 """
 
-def ideal_chain_simulation(nbeads, output_file="data_out"):
-    config = parameters.get_config(nbeads)
+def ideal_chain_simulation(nbeads, grid_bond_ratio=None):
+    if grid_bond_ratio is None:
+        config = parameters.get_config(nbeads)
+    else:
+        config = parameters.get_config(nbeads, grid_bond_ratio=grid_bond_ratio)
+
     config['nonbonded_on'] = False
     config['load_bead_types'] = False
     sim = Pysim(root=f"ideal-chain-{nbeads}", config=config, seqs=None)
