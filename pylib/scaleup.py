@@ -46,36 +46,40 @@ def scaleup(nbeads_large, nbeads_small, pool_fn):
     requires tuning the grid size and stiffness at small scale 
     in order for the chi parameters to be transferrable
     """
-    config = parameters.get_config(nbeads_small)
-    pipe = default.data_pipeline.resize(nbeads_small)
-    gthic = pipe.load_hic(default.HCT116_hic)
+
+    factor = int(nbeads_large/nbeads_small)
+    config_small = parameters.get_config(nbeads_small)
+    pipe = default.data_pipeline.resize(nbeads_large)
+
+    gthic_large = pipe.load_hic(default.HCT116_hic)
+    seqs_large = epilib.get_sequences(gthic_large, 10)
+
+    gthic_small = pool_fn(gthic_large, factor)
+    seqs_small = hic.pool_seqs(seqs_large, factor)
 
     # tune grid size
     try:
-        optimal_grid_size = optimize_grid_size(config, gthic)
-    except:
-        tmp_config = utils.load_json("optimize-grid-size/iteration5/config.json")
-        optimal_grid_size = tmp_config['grid_size']
+        optimal_grid_size = optimize_grid_size(config_small, gthic_small)
+    except FileExistsError:
+        optimal_grid_size = utils.load_json("optimize-grid-size/config.json")['grid_size']
 
-    grid_bond_ratio = optimal_grid_size/config['bond_length'] # for later, when getting large sim config
+    grid_bond_ratio = optimal_grid_size/config_small['bond_length'] # for later, when getting large sim config
 
     # tune grid size
     try:
         k_angle_opt = tune_stiffness(nbeads_large, nbeads_small, pool_fn)
     except FileExistsError:
-        config_opt = utils.load_json("optimize-stiffness/iteration5/config.json")
-        k_angle_opt = config_opt['k_angle']
+        k_angle_opt  = utils.load_json("optimize-stiffness/config.json")['k_angle']
     
     # maxent at small size
-    config['k_angle'] = k_angle_opt
-    seqs = epilib.get_sequences(gthic, 10)
-    goals = epilib.get_goals(gthic, seqs, config)
+    config_small['k_angle'] = k_angle_opt
+    goals = epilib.get_goals(gthic_small, seqs_small, config_small)
     params = default.params
     params["goals"] = goals
 
     me_root = "me-"+str(nbeads_small)
     try:
-        me = Maxent(me_root,params, config, seqs, gthic)
+        me = Maxent(me_root,params, config_small, seqs_small, gthic_small)
         me.fit()
     except FileExistsError:
         pass
@@ -84,10 +88,9 @@ def scaleup(nbeads_large, nbeads_small, pool_fn):
     final_it = utils.get_last_iteration(me_root)
     config_opt = Config(final_it/"config.json")
 
-    config_large = parameters.get_config(nbeads_large, config_opt.config)
-
-    gthic_large = pipe.resize(nbeads_large).load_hic(default.HCT116_hic)
-    seqs_large = epilib.get_sequences(gthic_large, 10)
+    config_large = parameters.get_config(nbeads_large, config_opt.config, grid_bond_ratio=grid_bond_ratio)
+    config_large['k_angle'] = 0
+    config_large['angles_on'] = False
 
     sim_large_root = f"final-{nbeads_large}"
     sim_large = Pysim(sim_large_root, config_large, seqs_large, gthic=gthic_large)

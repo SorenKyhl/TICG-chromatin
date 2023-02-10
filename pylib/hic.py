@@ -3,8 +3,7 @@ import copy
 from skimage.measure import block_reduce
 import scipy.ndimage as ndimage
 
-
-from pylib import epilib
+from pylib import epilib, default
 
 
 """
@@ -102,6 +101,7 @@ def unpool(inp, factor):
                 out[i*factor:i*factor+factor, j*factor:j*factor+factor] = e / factor**2
     return out
 
+
 def pool_d(hic, factor):
     """
     pools hic matrix, returns pooled diagonal
@@ -111,8 +111,50 @@ def pool_d(hic, factor):
     x /= max(diag)
     return ep.get_diagonal(x)
 
+
 def sparsity(x):
     return np.sum(x==0)/len(x)**2
 
+
 def smooth_hic(x, smooth_size=10):
     return ndimage.gaussian_filter(x,(smooth_size,smooth_size))
+
+
+def load_hic(nbeads, pool_fn=pool_sum):
+    if not default.data_dir.exists():
+        default.data_dir.mkdir()
+
+    if not default.HCT116_hic_20k.exists():
+        nbeads_large = 20480
+        pipe = copy.deepcopy(default.data_pipeline)
+        pipe.resize(nbeads_large)
+        gthic = pipe.load_hic(default.HCT116_hic)
+        np.save(default.HCT116_hic_20k, gthic)
+    else:
+        gthic = np.load(default.HCT116_hic_20k)
+
+    factor = int(len(gthic)/nbeads)
+    return pool_fn(gthic, factor)
+
+def load_seqs(nbeads, k):
+    if not default.HCT116_seqs_20k.exists():
+        nbeads_large = 20480
+        gthic = load_hic(nbeads_large)
+        gthic = smooth_hic(gthic)     # this step is very important
+        seqs = epilib.get_sequences(gthic, k, randomized=True)
+        np.save(default.HCT116_seqs_20k, seqs)
+    else:
+        seqs = np.load(default.HCT116_seqs_20k)
+
+    factor = int(seqs.shape[1]/nbeads)
+    seqs_pooled = pool_seqs(seqs, factor)
+    return seqs_pooled
+
+
+
+
+    
+
+
+
+

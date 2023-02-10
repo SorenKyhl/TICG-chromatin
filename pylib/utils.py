@@ -15,6 +15,7 @@ def load_json(path):
         myjson = json.load(f)
     return myjson
 
+
 def write_json(data, path):
     """
     warning: this mutates the original json... 
@@ -31,6 +32,7 @@ def write_json(data, path):
         f.write(jsbeautifier.beautify(json.dumps(data), opts))
         #json.dump(data, f, indent=4)
 
+
 def cat(outfilename, infilenames):
     """python implementation of linux cat command, concatenates ``infilenames`` into ``outfilename``
 
@@ -44,6 +46,7 @@ def cat(outfilename, infilenames):
                 for line in infile:
                     if line.strip():
                         outfile.write(line)    
+
 
 import subprocess
 def copy_last_snapshot(xyz_in, xyz_out, nbeads):
@@ -61,6 +64,7 @@ def process_parallel(tasks, args):
     for running_task in running_tasks:
         running_task.join()
         
+
 def process_parallel_xargs(self, tasks, args):
     """process multiple tasks, each with different arguments (list of tuples)"""
     running_tasks = [Process(target=task, args=(arg,)) for task, arg in zip(tasks, args)]
@@ -68,6 +72,7 @@ def process_parallel_xargs(self, tasks, args):
         running_task.start()
     for running_task in running_tasks:
         running_task.join()   
+
 
 @contextmanager
 def cd(newdir):
@@ -88,10 +93,12 @@ def load_sequences(config):
     sequences  = np.array(sequences )
     return sequences 
 
+
 def write_sequences(sequences, config):
     assert(len(sequences) == len(config["bead_type_files"]))
     for seq, file in zip(sequences, config["bead_type_files"]):
         np.savetxt(file, seq)
+
 
 def load_sequences_from_dir(dirname):
     dirname = Path(dirname)
@@ -99,6 +106,7 @@ def load_sequences_from_dir(dirname):
     with cd(dirname):
         sequences = load_sequences(config)
     return sequences
+
 
 def uncorrelate_seqs(seqs):
     """
@@ -110,6 +118,7 @@ def uncorrelate_seqs(seqs):
     L = np.linalg.cholesky(sigma)
     seqs_uncorrelated = np.linalg.solve(L, seqs)
     return seqs_uncorrelated
+
 
 def load_chis(config):
     try:
@@ -127,6 +136,7 @@ def load_chis(config):
         chi = np.array(config["chis"])[indices]
 
     return chi
+
 
 def plot_image(x):
     x = np.array(x)
