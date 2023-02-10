@@ -31,6 +31,9 @@ def get_config(nbeads=None, config=default.config, grid_bond_ratio=0.95, base="g
 
     config = copy.deepcopy(config)
 
+    #if nbeads > 10241:
+    #    config['contact_resolution'] = 5
+
     assert(base in ["gaussian", "gaussian-5k", "persistent", "persistent-5k"])
     if base == "gaussian":
         baseb = 16.5

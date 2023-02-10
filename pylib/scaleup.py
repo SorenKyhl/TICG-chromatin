@@ -19,8 +19,14 @@ def tune_stiffness(nbeads_large, nbeads_small, pool_fn, grid_bond_ratio):
     factor = int(nbeads_large/nbeads_small)
     data_out = "data_out"
 
+    if nbeads_large >= 10240:
+        sweeps = 10000
+    else:
+        sweeps = 50000
+
     try:
         ideal_chain_large = ideal_chain_simulation(nbeads_large, grid_bond_ratio)
+        ideal_chain_large.config['nSweeps'] = sweeps
         ideal_chain_large.run(data_out)
         sim_analysis = epilib.Sim(ideal_chain_large.root/data_out)
     except FileExistsError:
