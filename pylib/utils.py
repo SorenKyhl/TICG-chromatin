@@ -207,3 +207,17 @@ def get_last_iteration(directory):
     iterations = list(iterations)
     iterations = sorted(iterations, key=lambda path: path.name[-1])
     return iterations[-1]
+
+def clean_diag_chis(config):
+    """ set beginning diagonal chis to zero"""
+    diag_chis = np.array(config['diag_chis'])
+    diag_chis = np.clip(diag_chis, 0, 1e6)
+
+    for i, chi in enumerate(diag_chis):
+        if chi > 0:
+            diag_chis[i] = 0
+        else:
+            break
+
+    config['diag_chis'] = diag_chis.tolist()
+    return config

@@ -43,7 +43,7 @@ def tune_stiffness(nbeads_large, nbeads_small, pool_fn, grid_bond_ratio):
 
     hic_pooled = pool_fn(sim_analysis.hic, factor)
 
-    k_angle_opt =  optimize_stiffness(small_config, hic_pooled, low_bound=0, high_bound=1)
+    k_angle_opt =  optimize_stiffness(small_config, hic_pooled, low_bound=0, high_bound=2)
     return k_angle_opt
 
 def scaleup(nbeads_large, nbeads_small, pool_fn):

@@ -30,7 +30,7 @@ class Pysim:
             config : dict, 
             seqs : list[list],
             gthic = None,
-            randomize_seed : bool = False, 
+            randomize_seed : bool = True, 
             mkdir : bool = True, 
             setup_needed : bool = True):
         
@@ -52,9 +52,9 @@ class Pysim:
         dir: simulation directory from which to initialize
         root: new simulation root directory
         """
-        sim_dir  = Path(sim_dir ).absolute()
-        config = utils.load_json(sim_dir /"config.json")
-        with utils.cd(sim_dir ):
+        sim_dir = Path(sim_dir).absolute()
+        config = utils.load_json(sim_dir/"config.json")
+        with utils.cd(sim_dir):
             seqs = utils.load_sequences(config)
 
         if new_root == None:
@@ -91,9 +91,11 @@ class Pysim:
 
     def setup(self):
         """ write simulation inputs in simulation root directory, but only if setup_needed flag is on """
-        if self.setup_needed:
-            utils.write_json(self.config, Path(self.root, "config.json"))       
+        # needs to happen regardless of setup_needed setting, because seed is randomized
+        utils.write_json(self.config, Path(self.root, "config.json")) 
 
+        # further setup needed - write seuences to directory, where they are read by simulation engine
+        if self.setup_needed:
             if self.seqs is None:
                 return 
 
