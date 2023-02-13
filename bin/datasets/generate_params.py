@@ -164,6 +164,15 @@ class DatasetGenerator():
                         dict_j = pickle.load(f)
                     chi_ii[j] =  skewnorm.rvs(dict_j['alpha'], dict_j['mu'], dict_j['sigma'])
                 chi_ij = np.zeros(int(self.k*(self.k-1)/2))
+            elif self.chi_param_version == 'v13':
+                # eignorm approach
+                chi_ii = np.zeros(self.k)
+                for j, l in enumerate('ABCD'):
+                    assert self.m == 512
+                    with open(osp.join(f'/home/erschultz/dataset_02_04_23/plaid_param_distributions_eig_norm/k{self.k}_chi{l}{l}.pickle'), 'rb') as f:
+                        dict_j = pickle.load(f)
+                    chi_ii[j] =  skewnorm.rvs(dict_j['alpha'], dict_j['mu'], dict_j['sigma'])
+                chi_ij = np.zeros(int(self.k*(self.k-1)/2))
 
             if self.chi_param_version not in {'v4', 'v5'}:
                 chi = np.zeros((self.k, self.k))
@@ -252,7 +261,11 @@ class DatasetGenerator():
 
     def linear_params(self):
         if self.m == 512:
-            dir = osp.join(self.dir, 'dataset_01_26_23/diagonal_param_distributions')
+            if self.diag_mode == 'linear_v2':
+                dir = osp.join(self.dir, 'dataset_02_04_23/diagonal_param_distributions')
+            else:
+                dir = osp.join(self.dir, 'dataset_01_26_23/diagonal_param_distributions')
+
             with open(osp.join(dir, f'k{self.k}_linear_intercept.pickle'), 'rb') as f:
                 dict_intercept = pickle.load(f)
             with open(osp.join(dir, f'k{self.k}_linear_slope.pickle'), 'rb') as f:
@@ -303,10 +316,9 @@ class DatasetGenerator():
                     dict_grid = pickle.load(f)
                 grid_size = skewnorm.rvs(dict_grid['alpha'], dict_grid['mu'], dict_grid['sigma'])
             self.sample_dict[i]['grid_size'] = grid_size
-        print(self.sample_dict)
 
     def get_dataset(self):
-        if self.diag_mode == 'linear':
+        if self.diag_mode.startswith('linear'):
             self.linear_params()
         elif self.diag_mode == 'logistic':
             self.logistic_params()
@@ -336,7 +348,6 @@ class DatasetGenerator():
                 self.sample_dict[i]['method'] = L_file + '-L'
                 self.sample_dict[i]['chi_method'] = None
 
-        print(self.grid_mode)
         if self.grid_mode is not None:
             self.grid_params()
 

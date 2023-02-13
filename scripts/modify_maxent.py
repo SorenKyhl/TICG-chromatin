@@ -141,122 +141,124 @@ def modify_plaid_chis(dataset, k):
         assert np.allclose(L, L_eig), L - L_eig
 
 
-def modify_maxent_diag_chi(dataset, sample, k = 8, edit = True):
+def modify_maxent_diag_chi(dataset, k = 8, edit = True):
     '''
     Inputs:
-        sample: sample id
         k: number of marks
         edit: True to modify maxent result so that is is flat at start
     '''
-    print(f'sample{sample}, k{k}')
-    # try different modifications to diag chis learned by max ent
-    dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
-    max_ent_dir = osp.join(dir, f'none/k{k}/replicate1')
-    if not osp.exists(max_ent_dir):
-        return
-    if edit:
-        odir = osp.join(max_ent_dir, 'fitting')
-    else:
-        odir = osp.join(max_ent_dir, 'fitting2')
-    if not osp.exists(odir):
-        os.mkdir(odir, mode = 0o755)
-
-    diag_chis = np.loadtxt(osp.join(max_ent_dir, 'chis_diag.txt'))[-1]
-
-    if edit:
-        # make version that is flat at start
-        min_val = np.min(diag_chis)
-        min_ind = np.argmin(diag_chis)
-        diag_chis[0:min_ind] = min_val
-        np.savetxt(osp.join(odir, 'chis_diag_edit.txt'), diag_chis)
-
-        # make version with intercept 0
-        diag_chis_zero = np.copy(diag_chis)
-        diag_chis_zero -= np.min(diag_chis_zero)
-        np.savetxt(osp.join(odir, 'chis_diag_edit_zero.txt'), diag_chis_zero)
-
-
-    ifile = osp.join(max_ent_dir, 'resources/config.json')
-    with open(ifile, 'r') as f:
-        config = json.load(f)
-
-    diag_chi_step = calculate_diag_chi_step(config, diag_chis)
-
-    m = len(diag_chi_step)
-    x = np.arange(0, 2*m)
-
-    if edit:
-        piecewise_linear_fit = None
-        piecewise_poly2_fit = None
-        piecewise_poly3_fit = None
-        log_fit = curve_fit_helper(Curves.log_curve, x[:64], diag_chi_step[:64],
-                                        'log', odir)
-        log_max_fit = curve_fit_helper(Curves.log_max_curve, x[:64], diag_chi_step[:64],
-                                        'log_max', odir)
-        logistic_fit = curve_fit_helper(Curves.logistic_curve, x[:m], diag_chi_step,
-                                        'logistic', odir, [10, 1, 100])
-        poly2_fit = curve_fit_helper(Curves.poly2_curve, x[:m], diag_chi_step,
-                                        'poly2', odir, [1, 1, 1])
-        poly3_fit = curve_fit_helper(Curves.poly3_curve, x[:m], diag_chi_step,
-                                        'poly3', odir, [1, 1, 1, 1])
-        linear_max_fit = curve_fit_helper(Curves.linear_max_curve, x[:m], diag_chi_step,
-                                        'linear_max', odir)
-        linear_fit = curve_fit_helper(Curves.linear_curve, x[:m], diag_chi_step,
-                                        'linear', odir)
-    else:
-        log_fit = None
-        log_max_fit = None
-        logistic_fit = None
-        poly2_fit = curve_fit_helper(Curves.poly2_curve, x[:m], diag_chi_step,
-                                        'poly2', odir, [1, 1, 1],
-                                        start = 2)
-        poly3_fit = curve_fit_helper(Curves.poly3_curve, x[:m], diag_chi_step,
-                                        'poly3', odir, [1, 1, 1, 1],
-                                        start = 2)
-        piecewise_linear_fit = curve_fit_helper(Curves.piecewise_linear_curve, x[:m],
-                                diag_chi_step, 'piecewise_linear', odir,
-                                [1, 1, 1, 1, 10], start = 2)
-        piecewise_poly2_fit = curve_fit_helper(Curves.piecewise_poly2_curve, x[:m],
-                                diag_chi_step, 'piecewise_poly2', odir,
-                                [1, 1, 1, 1, 1, 1, 10], start = 2)
-        piecewise_poly3_fit = curve_fit_helper(Curves.piecewise_poly3_curve, x[:m],
-                                diag_chi_step, 'piecewise_poly3', odir,
-                                [1, 1, 1, 1, 1, 1, 1, 1, 20], start = 2)
-        linear_max_fit = None
-        linear_fit = None
-
-
-    for log in [True, False]:
-        plt.plot(diag_chi_step, label = 'Max Ent Edit', color = 'lightblue')
-        if log_fit is not None:
-            plt.plot(log_fit, label = 'log', color = 'orange')
-        # if log_max_fit is not None:
-        #     plt.plot(log_max_fit, label = 'log_max', color = 'yellow')
-        if logistic_fit is not None:
-            plt.plot(logistic_fit, label = 'logistic', color = 'purple')
-        # if linear_max_fit is not None:
-        #     plt.plot(linear_max_fit, label = 'linear_max', color = 'brown')
-        if linear_fit is not None:
-            plt.plot(linear_fit, label = 'linear', color = 'teal')
-        if piecewise_linear_fit is not None:
-            plt.plot(piecewise_linear_fit, label = 'piecewise_linear', color = 'teal', ls='--')
-        if poly2_fit is not None:
-            plt.plot(poly2_fit, label = 'poly2', color = 'pink')
-        if piecewise_poly2_fit is not None:
-            plt.plot(piecewise_poly2_fit, label = 'piecewise_poly2', color = 'pink', ls='--')
-        if poly3_fit is not None:
-            plt.plot(poly3_fit, label = 'poly3', color = 'red')
-        if piecewise_poly3_fit is not None:
-            plt.plot(piecewise_poly3_fit, label = 'piecewise_poly3', color = 'red', ls='--')
-        plt.legend()
-        plt.ylim(None, 2 * np.max(diag_chi_step))
-        if log:
-            plt.xscale('log')
-            plt.savefig(osp.join(odir, 'meanDist_fit_log.png'))
+    samples, _ = get_samples(dataset)
+    for sample in samples:
+        print(f'sample{sample}, k{k}')
+        # try different modifications to diag chis learned by max ent
+        dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
+        max_ent_dir = osp.join(dir, f'PCA-normalize-E/k{k}/replicate1')
+        if not osp.exists(max_ent_dir):
+            print(f'{max_ent_dir} does not exist')
+            continye
+        if edit:
+            odir = osp.join(max_ent_dir, 'fitting')
         else:
-            plt.xlim(0, 50)
-            plt.savefig(osp.join(odir, 'meanDist_fit.png'))
-        plt.close()
+            odir = osp.join(max_ent_dir, 'fitting2')
+        if not osp.exists(odir):
+            os.mkdir(odir, mode = 0o755)
+
+        diag_chis = np.loadtxt(osp.join(max_ent_dir, 'chis_diag.txt'))[-1]
+
+        if edit:
+            # make version that is flat at start
+            min_val = np.min(diag_chis)
+            min_ind = np.argmin(diag_chis)
+            diag_chis[0:min_ind] = min_val
+            np.savetxt(osp.join(odir, 'chis_diag_edit.txt'), diag_chis)
+
+            # make version with intercept 0
+            diag_chis_zero = np.copy(diag_chis)
+            diag_chis_zero -= np.min(diag_chis_zero)
+            np.savetxt(osp.join(odir, 'chis_diag_edit_zero.txt'), diag_chis_zero)
+
+
+        ifile = osp.join(max_ent_dir, 'resources/config.json')
+        with open(ifile, 'r') as f:
+            config = json.load(f)
+
+        diag_chi_step = calculate_diag_chi_step(config, diag_chis)
+
+        m = len(diag_chi_step)
+        x = np.arange(0, 2*m)
+
+        if edit:
+            piecewise_linear_fit = None
+            piecewise_poly2_fit = None
+            piecewise_poly3_fit = None
+            log_fit = curve_fit_helper(Curves.log_curve, x[:64], diag_chi_step[:64],
+                                            'log', odir)
+            log_max_fit = curve_fit_helper(Curves.log_max_curve, x[:64], diag_chi_step[:64],
+                                            'log_max', odir)
+            logistic_fit = curve_fit_helper(Curves.logistic_curve, x[:m], diag_chi_step,
+                                            'logistic', odir, [10, 1, 100])
+            poly2_fit = curve_fit_helper(Curves.poly2_curve, x[:m], diag_chi_step,
+                                            'poly2', odir, [1, 1, 1])
+            poly3_fit = curve_fit_helper(Curves.poly3_curve, x[:m], diag_chi_step,
+                                            'poly3', odir, [1, 1, 1, 1])
+            linear_max_fit = curve_fit_helper(Curves.linear_max_curve, x[:m], diag_chi_step,
+                                            'linear_max', odir)
+            linear_fit = curve_fit_helper(Curves.linear_curve, x[:m], diag_chi_step,
+                                            'linear', odir)
+        else:
+            log_fit = None
+            log_max_fit = None
+            logistic_fit = None
+            poly2_fit = curve_fit_helper(Curves.poly2_curve, x[:m], diag_chi_step,
+                                            'poly2', odir, [1, 1, 1],
+                                            start = 2)
+            poly3_fit = curve_fit_helper(Curves.poly3_curve, x[:m], diag_chi_step,
+                                            'poly3', odir, [1, 1, 1, 1],
+                                            start = 2)
+            piecewise_linear_fit = curve_fit_helper(Curves.piecewise_linear_curve, x[:m],
+                                    diag_chi_step, 'piecewise_linear', odir,
+                                    [1, 1, 1, 1, 10], start = 2)
+            piecewise_poly2_fit = curve_fit_helper(Curves.piecewise_poly2_curve, x[:m],
+                                    diag_chi_step, 'piecewise_poly2', odir,
+                                    [1, 1, 1, 1, 1, 1, 10], start = 2)
+            piecewise_poly3_fit = curve_fit_helper(Curves.piecewise_poly3_curve, x[:m],
+                                    diag_chi_step, 'piecewise_poly3', odir,
+                                    [1, 1, 1, 1, 1, 1, 1, 1, 20], start = 2)
+            linear_max_fit = None
+            linear_fit = None
+
+
+        for log in [True, False]:
+            plt.plot(diag_chi_step, label = 'Max Ent Edit', color = 'lightblue')
+            if log_fit is not None:
+                plt.plot(log_fit, label = 'log', color = 'orange')
+            # if log_max_fit is not None:
+            #     plt.plot(log_max_fit, label = 'log_max', color = 'yellow')
+            if logistic_fit is not None:
+                plt.plot(logistic_fit, label = 'logistic', color = 'purple')
+            # if linear_max_fit is not None:
+            #     plt.plot(linear_max_fit, label = 'linear_max', color = 'brown')
+            if linear_fit is not None:
+                plt.plot(linear_fit, label = 'linear', color = 'teal')
+            if piecewise_linear_fit is not None:
+                plt.plot(piecewise_linear_fit, label = 'piecewise_linear', color = 'teal', ls='--')
+            if poly2_fit is not None:
+                plt.plot(poly2_fit, label = 'poly2', color = 'pink')
+            if piecewise_poly2_fit is not None:
+                plt.plot(piecewise_poly2_fit, label = 'piecewise_poly2', color = 'pink', ls='--')
+            if poly3_fit is not None:
+                plt.plot(poly3_fit, label = 'poly3', color = 'red')
+            if piecewise_poly3_fit is not None:
+                plt.plot(piecewise_poly3_fit, label = 'piecewise_poly3', color = 'red', ls='--')
+            plt.legend()
+            plt.ylim(None, 2 * np.max(diag_chi_step))
+            if log:
+                plt.xscale('log')
+                plt.savefig(osp.join(odir, 'meanDist_fit_log.png'))
+            else:
+                plt.xlim(0, 50)
+                plt.savefig(osp.join(odir, 'meanDist_fit.png'))
+            plt.close()
 
 def curve_fit_helper(fn, x, y, label, odir, init = [1,1], start = 0):
     try:
@@ -535,10 +537,15 @@ def diagonal_dist(dataset, k, plot=True):
             # 'diag_logistic_max', 'diag_logistic_slope', 'diag_logistic_midpoint']
     dist = skewnorm
     for arr, label in zip(arrs, labels):
-        if np.min(arr) < 0.001 * np.median(arr):
-            print(label, np.min(arr))
-            arr = np.delete(arr, np.argmin(arr), axis = None)
-            print(arr)
+        # remove outliers
+        iqr = np.percentile(arr, 75) - np.percentile(arr, 25)
+        l_cutoff = np.percentile(arr, 25) - 1.5 * iqr
+        u_cutoff = np.percentile(arr, 75) + 1.5 * iqr
+
+        delete_arr = np.logical_or(arr < l_cutoff, arr > u_cutoff)
+        print(label, iqr, (l_cutoff, u_cutoff))
+        arr = np.delete(arr, delete_arr, axis = None)
+
         n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
                                     bins = 20, color = 'blue', alpha = 0.5)
         bin_width = bins[1] - bins[0]
@@ -1105,12 +1112,13 @@ def compare_maxent_simulation():
 
 
 if __name__ == '__main__':
-    # for i in range(201, 202):
-        # modify_maxent_diag_chi('dataset_02_04_23', i, k = 1)
+    # modify_plaid_chis('dataset_02_04_23', k = 4)
+    # modify_maxent_diag_chi('dataset_02_04_23', k = 4)
+    # for i in range(201, 283):
         # plot_modified_max_ent(i, k = 1)
-    # diagonal_dist('dataset_01_26_23', 12)
-    grid_dist('dataset_01_26_23')
-    # plaid_dist('dataset_11_14_22', 4, True, False, True)
+    diagonal_dist('dataset_02_04_23', 4)
+    # grid_dist('dataset_01_26_23')
+    # plaid_dist('dataset_02_04_23', 4, True, False, True)
     # seq_dist('dataset_01_26_23', 4, True, False, True)
     # compare_maxent_simulation()
     # modify_plaid_chis('dataset_11_14_22', 8)

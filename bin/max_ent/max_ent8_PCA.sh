@@ -47,13 +47,13 @@ diagCutoff=512
 method='PCA-normalize'
 jobs=0
 waitCount=0
-for k in 4 8 12
+for k in 4 8
 do
   for sample in {201..282}
   do
     gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
     echo $sample $m
-    max_ent
+    # max_ent
     jobs=$(( $jobs + 1 ))
     if [ $jobs -gt 18 ]
     then
