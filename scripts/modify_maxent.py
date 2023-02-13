@@ -44,6 +44,8 @@ def get_samples(dataset):
         samples = [1, 2, 3, 410, 653, 1462, 1801, 2290]
     elif dataset.startswith('dataset_01_27_23'):
         samples = range(1, 16)
+    elif dataset.startswith('dataset_02_06_23'):
+        samples= [324, 981, 1936, 2834, 3464]
     else:
         samples = range(1, 11)
 
@@ -477,27 +479,27 @@ def test_shuffle():
 def simple_histogram(arr, xlabel='X', odir=None, ofname=None, dist=skewnorm,
                     label=None, legend_title=''):
     title = []
-    arr = np.array(arr).reshape(-1)
-    n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
-                                bins = 50, alpha = 0.5, label = label)
-    bin_width = bins[1] - bins[0]
-    params = dist.fit(arr)
-    y = dist.pdf(bins, *params) * bin_width
-    params = [np.round(p, 3) for p in params]
-    print(ofname, params)
-    if dist == skewnorm:
-        with open(osp.join(odir, ofname[:-9]+'.pickle'), 'wb') as f:
-            dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
-            pickle.dump(dict, f)
-
-    plt.plot(bins, y, ls = '--', color = 'k')
+    if arr is not None:
+        arr = np.array(arr).reshape(-1)
+        n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
+                                    bins = 50, alpha = 0.5, label = label)
+        bin_width = bins[1] - bins[0]
+        params = dist.fit(arr)
+        y = dist.pdf(bins, *params) * bin_width
+        params = [np.round(p, 3) for p in params]
+        print(ofname, params)
+        if dist == skewnorm and ofname is not None:
+            with open(osp.join(odir, ofname[:-9]+'.pickle'), 'wb') as f:
+                dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
+                pickle.dump(dict, f)
+        plt.plot(bins, y, ls = '--', color = 'k')
     if not (odir is None or ofname is None):
         if label is not None:
             plt.legend(title = legend_title)
         plt.ylabel('probability', fontsize=16)
         plt.xlabel(xlabel, fontsize=16)
         # plt.xlim(-20, 20)
-        if dist == skewnorm:
+        if dist == skewnorm and arr is not None:
             plt.title(r'$\alpha=$' + f'{params[0]}\n' + r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
         plt.savefig(osp.join(odir, ofname))
         plt.close()
@@ -874,9 +876,19 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
             data = []
             for chi in chi_list:
                 data.append(chi[i,i])
+            arr = np.array(data).reshape(-1)
+
+            # remove outliers
+            iqr = np.percentile(arr, 75) - np.percentile(arr, 25)
+            l_cutoff = np.percentile(arr, 25) - 1.5 * iqr
+            u_cutoff = np.percentile(arr, 75) + 1.5 * iqr
+
+            delete_arr = np.logical_or(arr < l_cutoff, arr > u_cutoff)
+            print(i, iqr, (l_cutoff, u_cutoff))
+            arr = np.delete(arr, delete_arr, axis = None)
 
             dist = skewnorm
-            arr = np.array(data).reshape(-1)
+
             bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width)
             n, bins, patches = ax[row][col].hist(arr, weights = np.ones_like(arr) / len(arr),
                                         bins = bins, alpha = 0.5, color = colors[c])
@@ -1125,9 +1137,9 @@ if __name__ == '__main__':
     # modify_maxent_diag_chi('dataset_02_04_23', k = 4)
     # for i in range(201, 283):
         # plot_modified_max_ent(i, k = 1)
-    diagonal_dist('dataset_02_04_23', 4)
+    # diagonal_dist('dataset_02_04_23', 4)
     # grid_dist('dataset_01_26_23')
-    # plaid_dist('dataset_02_04_23', 4, True, False, True)
+    plaid_dist('dataset_01_26_23', 8, True, False, True)
     # seq_dist('dataset_01_26_23', 4, True, False, True)
     # compare_maxent_simulation()
     # modify_plaid_chis('dataset_11_14_22', 8)

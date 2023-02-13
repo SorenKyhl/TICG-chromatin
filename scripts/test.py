@@ -14,7 +14,7 @@ import scipy.stats as ss
 import seaborn as sns
 import torch
 import torch_geometric
-from modify_maxent import get_samples, plaid_dist
+from modify_maxent import get_samples, plaid_dist, simple_histogram
 from scipy.ndimage import uniform_filter
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
@@ -961,21 +961,21 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
         np.save(osp.join(odir, 'mse.npy'), mse_list)
 
         # make table
-        # with open(osp.join(odir, 'plaid_score_table.txt'), 'w') as o:
-        #     o.write("\\begin{center}\n")
-        #     o.write("\\begin{tabular}{|" + "c|"*5 + "}\n")
-        #     o.write("\\hline\n")
-        #     o.write("\\multicolumn{5}{|c|}{" + dataset.replace('_', "\_") + "} \\\ \n")
-        #     o.write("\\hline\n")
-        #     o.write('Sample & K\_means R(a,b) & PCA R(a,b) & PCA \% Var & MSE \\\ \n')
-        #     o.write("\\hline\\hline\n")
-        #     for i, mse in enumerate(mse_list):
-        #         vals = [k_means_rab[i], pca_rab[i], pca_var[i]]
-        #         vals = np.round(vals, 4)
-        #         o.write(f'{s} & {vals[0]} & {vals[1]} & {vals[2]} & {mse}\\\ \n')
-        #     o.write("\\hline\n")
-        #     o.write("\\end{tabular}\n")
-        #     o.write("\\end{center}\n\n")
+        with open(osp.join(odir, 'plaid_score_table.txt'), 'w') as o:
+            o.write("\\begin{center}\n")
+            o.write("\\begin{tabular}{|" + "c|"*5 + "}\n")
+            o.write("\\hline\n")
+            o.write("\\multicolumn{5}{|c|}{" + dataset.replace('_', "\_") + "} \\\ \n")
+            o.write("\\hline\n")
+            o.write('Sample & K\_means R(a,b) & PCA R(a,b) & PCA \% Var & MSE \\\ \n')
+            o.write("\\hline\\hline\n")
+            for i, mse in enumerate(mse_list):
+                vals = [k_means_rab[i], pca_rab[i], pca_var[i]]
+                vals = np.round(vals, 4)
+                o.write(f'{samples[i]} & {vals[0]} & {vals[1]} & {vals[2]} & {mse}\\\ \n')
+            o.write("\\hline\n")
+            o.write("\\end{tabular}\n")
+            o.write("\\end{center}\n\n")
 
     # plot distributions
     if plot:
@@ -1183,6 +1183,32 @@ def main():
     plt.savefig(osp.join(dir, f'kmeans_vs_exp_distribution.png'))
     plt.close()
 
+def l_comparison():
+    count = 20
+    dir = '/home/erschultz'
+    for k in [12]:
+        L_list_exp, _ = plaid_dist('dataset_01_26_23', k, False)
+        L_list_exp = L_list_exp[:count]
+        L_arr_exp = np.array(L_list_exp).reshape(-1)
+        simple_histogram(L_arr_exp, label = k)
+
+    dataset = 'dataset_02_06_23'
+    data_dir = osp.join(dir, dataset)
+    L_list = []
+    for i in range(1, count+1):
+        seq = np.load(osp.join(data_dir, 'setup', f'x_{i}.npy'))
+        chi = np.load(osp.join(data_dir, 'setup', f'chi_{i}.npy'))
+        L = seq @ chi @ seq.T
+        L = (L + L.T) / 2
+        L_list.append(L)
+    L_arr = np.array(L_list).reshape(-1)
+    simple_histogram(L_arr, label = dataset)
+
+
+    simple_histogram(None, r'$L_{ij}$', osp.join(dir, 'dataset_01_26_23'), 'L_ij_comparison.png', label = 12)
+
+
+
 
 if __name__ == '__main__':
     # compare_y_diag()
@@ -1198,9 +1224,10 @@ if __name__ == '__main__':
     # molar_contact_ratio('dataset_01_27_23_v5', True)
     # molar_contact_ratio('dataset_01_26_23', True)
     molar_contact_ratio('dataset_02_06_23', 363)
-    molar_contact_ratio('dataset_02_01_23', 362)
+    # molar_contact_ratio('dataset_02_01_23', 362)
     # compare_scc_bio_replicates()
     # plot_sd()
     # max_ent_loss_for_gnn('dataset_11_14_22', 2201)
     # meanDist_comparison()
     # plot_p_s('dataset_test', params=True)
+    # l_comparison()

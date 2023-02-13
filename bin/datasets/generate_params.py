@@ -17,6 +17,7 @@ sys.path.insert(0, '/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import load_Y
 from sequences_to_contact_maps.scripts.utils import pearson_round, triu_to_full
 
+LETTERS='ABCDEFGHIJKLMN'
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser', allow_abbrev = False)
@@ -158,7 +159,9 @@ class DatasetGenerator():
             elif self.chi_param_version == 'v12':
                 # eignorm approach
                 chi_ii = np.zeros(self.k)
-                for j, l in enumerate('ABCD'):
+
+                for j in range(self.k):
+                    l = LETTERS[j]
                     assert self.m == 512
                     with open(osp.join(f'/home/erschultz/dataset_01_26_23/plaid_param_distributions_eig_norm/k{self.k}_chi{l}{l}.pickle'), 'rb') as f:
                         dict_j = pickle.load(f)
