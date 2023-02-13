@@ -921,7 +921,7 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
     pca_var = np.zeros(N)
     y_list = []
     L_list, _ = plaid_dist(dataset, 4, False)
-    L_list_exp, _ = plaid_dist('dataset_01_26_23', 4, False)
+    # L_list_exp, _ = plaid_dist('dataset_01_26_23', 4, False)
     meanDist_list = []
     for i, sample in enumerate(samples):
         sample_dir = osp.join(data_dir, f'samples/sample{sample}')
@@ -1047,13 +1047,13 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
         fig.set_figwidth(6*3)
         row = 0; col=0
         bin_width = 1
-        arr_exp = np.array(L_list_exp).reshape(-1)
+        # arr_exp = np.array(L_list_exp).reshape(-1)
         for L, val, sample in zip(L_arr[ind], k_means_rab[ind], samples[ind]):
             arr = L.reshape(-1)
-            bins = range(math.floor(min(arr_exp)), math.ceil(max(arr_exp)) + bin_width, bin_width)
-            ax[row][col].hist(arr_exp, weights = np.ones_like(arr_exp) / len(arr_exp),
-                                        bins = bins,
-                                        alpha = 0.5, label = 'Experiment')
+            # bins = range(math.floor(min(arr_exp)), math.ceil(max(arr_exp)) + bin_width, bin_width)
+            # ax[row][col].hist(arr_exp, weights = np.ones_like(arr_exp) / len(arr_exp),
+            #                             bins = bins,
+            #                             alpha = 0.5, label = 'Experiment')
             bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width)
             ax[row][col].hist(arr, weights = np.ones_like(arr) / len(arr),
                                         bins = bins,
