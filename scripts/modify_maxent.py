@@ -505,7 +505,10 @@ def simple_histogram(arr, xlabel='X', odir=None, ofname=None, dist=skewnorm,
 def diagonal_dist(dataset, k, plot=True):
     # distribution of diagonal params
     samples, experimental = get_samples(dataset)
-    data_dir = osp.join('/home/erschultz', dataset)
+    dir = '/project2/depablo/erschultz/'
+    if not osp.exists(dir):
+        dir = '/home/erschultz'
+    data_dir = osp.join(dir, dataset)
 
 
     linear_popt_list = []
@@ -568,7 +571,10 @@ def diagonal_dist(dataset, k, plot=True):
 def seq_dist(dataset, k, plot=True, eig=False, eig_norm=False):
     # distribution of seq params
     samples, experimental = get_samples(dataset)
-    data_dir = osp.join('/home/erschultz', dataset)
+    dir = '/project2/depablo/erschultz/'
+    if not osp.exists(dir):
+        dir = '/home/erschultz'
+    data_dir = osp.join(dir, dataset)
     if eig:
         odir = osp.join(data_dir, 'seq_param_distributions_eig')
     elif eig_norm:
