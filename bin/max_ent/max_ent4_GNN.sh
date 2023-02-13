@@ -1,6 +1,6 @@
 #! /bin/bash
-#SBATCH --job-name=maxent2
-#SBATCH --output=logFiles/maxent2.out
+#SBATCH --job-name=maxent4
+#SBATCH --output=logFiles/maxent4.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20
@@ -17,19 +17,17 @@ then
   scratchDir='/home/erschultz/scratch'
   numIterations=1
   finalSimProductionSweeps=500000
-  productionSweeps=1
-  equilibSweeps=1
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
-i=1001
-dataset='dataset_11_21_22'
+i=3010
+dataset='dataset_01_26_23'
 useL='false'
 useS='false'
 useE='true'
 useD='false'
-m=1024
+m=512
 chiMethod='none'
 mode='none'
 
@@ -38,24 +36,33 @@ bondLength=28
 
 diagChiMethod='none'
 dense='false'
-diagBins=1
-nSmallBins=16
-smallBinSize=4
-diagCutoff=1024
 
 k=0
 method='GNN'
-for sample in 410 653 1462 1801 2290
+jobs=0
+waitCount=0
+for sample in {283..292}
 do
-  for GNNModelID in 360
-  # 271
+  # bondLength=16.5
+  # gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
+  for GNNModelID in 367
    # 243 254 262 265 267 271 276
   do
     echo $sample $m
     max_ent
+    jobs=$(( $jobs + 1 ))
+    if [ $jobs -gt 15 ]
+    then
+      echo 'Waiting'
+      waitCount=$(( $waitCount + 1 ))
+      wait
+      jobs=0
+    fi
   done
 done
 
+
+echo $waitCount
 wait
 
 ENDTIME=$(date +%s)

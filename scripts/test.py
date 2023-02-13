@@ -14,7 +14,7 @@ import scipy.stats as ss
 import seaborn as sns
 import torch
 import torch_geometric
-from modify_maxent import plaid_dist
+from modify_maxent import get_samples, plaid_dist
 from scipy.ndimage import uniform_filter
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
@@ -449,7 +449,7 @@ def plot_p_s(dataset, experimental=False, params=False):
     data_dir = osp.join(dir, dataset)
 
     data = defaultdict(dict) # sample : {meanDist, diag_chis_step} : vals
-    for sample in [3001, 3002, 3003]:
+    for sample in [4001, 4002, 4003, 4006]:
         sample_dir = osp.join(data_dir, 'samples', f'sample{sample}')
         ifile = osp.join(sample_dir, 'y.npy')
         if osp.exists(ifile):
@@ -487,7 +487,6 @@ def plot_p_s(dataset, experimental=False, params=False):
 
             if params:
                 diag_chis_step = data[sample]['diag_chis_step']
-                print(X.shape, diag_chis_step.shape)
                 ax2.plot(X, diag_chis_step, ls = '--', label = 'Parameters')
 
         ax.set_yscale('log')
@@ -496,7 +495,7 @@ def plot_p_s(dataset, experimental=False, params=False):
         ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
 
         if params:
-            ax.legend(loc='upper left', title = 'Sample')
+            ax.legend(loc='lower left', title = 'Sample')
             ax2.set_xscale('log')
             ax2.set_ylabel('Diagonal Parameter', fontsize = 16)
             ax2.legend(loc='upper right')
@@ -809,7 +808,7 @@ def max_ent_loss_for_gnn(dataset, sample):
     sim.obs_tot = np.hstack((plaid, diag))
     sim.plot_obs_vs_goal('test2.png')
 
-def molar_contact_ratio(dataset, plot=True):
+def molar_contact_ratio(dataset, model_ID=None, plot=True):
     dir = '/project2/depablo/erschultz/'
     if not osp.exists(dir):
         dir = '/home/erschultz'
@@ -860,8 +859,7 @@ def molar_contact_ratio(dataset, plot=True):
 
         return seq
 
-    def get_gnn_mse():
-        model_ID=341
+    def get_gnn_mse(model_ID):
         model_path = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{model_ID}'
         argparse_path = osp.join(model_path, 'argparse.txt')
 
@@ -913,25 +911,8 @@ def molar_contact_ratio(dataset, plot=True):
 
         return mse_dict
 
-    experimental = False
-    if dataset == 'dataset_12_20_22':
-        samples = [324, 981, 1936, 2834, 3464]
-    elif dataset == 'dataset_11_21_22':
-        samples = [1, 2, 3, 410, 653, 1462, 1801, 2290]
-        # samples = list(range(1,1000))
-        # samples.extend(range(1021, 2401))
-    elif dataset == 'dataset_11_14_22':
-        samples = range(2201, 2222)
-        experimental = True
-    elif dataset == 'dataset_01_26_23':
-        samples = range(201, 283)
-        experimental = True
-    elif dataset.startswith('dataset_01_27_23'):
-        samples = range(1, 15)
-        experimental = True
-    else:
-        samples = range(1, 11)
-    samples = np.array(samples)
+    samples, experimental = get_samples(dataset)
+    samples = np.array(samples)[:500] # cap at 500
 
     N = len(samples)
     k_means_rab = np.zeros(N)
@@ -971,8 +952,8 @@ def molar_contact_ratio(dataset, plot=True):
         pca_b_rab[i] = rab
 
     # GNN MSE
-    if not experimental:
-        mse_dict = get_gnn_mse()
+    if not experimental and model_ID is not None:
+        mse_dict = get_gnn_mse(model_ID)
         mse_list = []
         for i, s in enumerate(samples):
             mse = mse_dict[s]
@@ -996,21 +977,6 @@ def molar_contact_ratio(dataset, plot=True):
         #     o.write("\\end{tabular}\n")
         #     o.write("\\end{center}\n\n")
 
-        # make new dataset with samples < cutoff
-        new_data_dir = osp.join(dir, f'{dataset}_plaid_cutoff')
-        if osp.exists(new_data_dir):
-            shutil.rmtree(new_data_dir)
-        os.mkdir(new_data_dir, mode=0o755)
-        os.mkdir(osp.join(new_data_dir, 'samples'), mode=0o755)
-        cutoff = 50
-        for i, s in enumerate(samples):
-            if k_means_rab[i] < cutoff:
-                shutil.copytree(osp.join(data_dir, f'samples/sample{s}'),
-                            osp.join(new_data_dir, f'samples/sample{s}'))
-
-
-
-
     # plot distributions
     if plot:
         # plot histograms
@@ -1018,7 +984,7 @@ def molar_contact_ratio(dataset, plot=True):
                                 ['kmeans_Rab', 'PCA_Rab', 'PCA_binary_Rab','PCA_var']):
             np.save(osp.join(odir, label + '.npy'), arr)
             print(label)
-            if not experimental:
+            if not experimental and model_ID is not None:
                 p = pearson_round(arr, mse_list)
                 print(p)
             arr = np.array(arr).reshape(-1)
@@ -1116,26 +1082,31 @@ def molar_contact_ratio(dataset, plot=True):
     return meanDist_list
 
 def meanDist_comparison():
-    data_dir = '/home/erschultz/dataset_01_26_23'
-    meanDist_exp_list = molar_contact_ratio('dataset_01_26_23', False)
-    meanDist_max_ent_list = molar_contact_ratio('dataset_01_27_23_v9', False)
+    datasets = ['dataset_01_26_23', 'dataset_01_27_23_v9']
+    datasets = ['dataset_01_26_23', 'dataset_02_04_23']
 
+    cmap = matplotlib.cm.get_cmap('tab10')
+    ind = np.arange(2) % cmap.N
+    colors = cmap(ind)
     fig, ax = plt.subplots()
-    for meanDist in meanDist_exp_list:
-        ax.plot(meanDist, c = 'k')
-    for meanDist in meanDist_max_ent_list:
-        ax.plot(meanDist,c = 'b')
+    ax2 = ax.twinx()
+    ax2.get_yaxis().set_visible(False)
+
+    for i, dataset in enumerate(datasets):
+        meanDist_list = molar_contact_ratio(dataset, False)
+        for meanDist in meanDist_list:
+            ax.plot(meanDist, c = colors[i])
+        ax2.plot(np.NaN, np.NaN, label = dataset, c = colors[i])
+
     ax.set_yscale('log')
     ax.set_xscale('log')
+    ax.set_ylabel('Contact Probability', fontsize = 16)
+    ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
 
-    ax2 = ax.twinx()
-    ax2.plot(np.NaN, np.NaN, label = 'Experiment', c = 'k')
-    ax2.plot(np.NaN, np.NaN, label = 'Max Ent', c = 'b')
-    ax2.get_yaxis().set_visible(False)
     ax2.legend(loc='upper right')
-
     plt.tight_layout()
-    plt.savefig(osp.join(data_dir, 'meanDist_comparison.png'))
+    # plt.savefig(osp.join(data_dir, 'meanDist_comparison.png'))
+    plt.show()
     plt.close()
 
 def compare_scc_bio_replicates():
@@ -1212,38 +1183,6 @@ def main():
     plt.savefig(osp.join(dir, f'kmeans_vs_exp_distribution.png'))
     plt.close()
 
-def temp_p_s():
-    dir = '/home/erschultz/dataset_01_26_23/samples/sample265'
-    y_exp = np.load(osp.join(dir, 'y.npy'))
-    y_g = np.load(osp.join(dir, 'none/k1/replicate1/y.npy'))
-    y_me = np.load(osp.join(dir, 'PCA-normalize-E/k4/replicate1/y.npy'))
-    max_it = get_final_max_ent_folder(osp.join(dir, 'PCA-normalize-E/k4/replicate1'))
-    with open(osp.join(max_it, 'config.json')) as f:
-        config = json.load(f)
-        diag_chis_step = calculate_diag_chi_step(config)
-
-    fig, ax = plt.subplots()
-    for y, label, c in zip([y_exp, y_me, y_g], ['Experiment', 'Max Ent', 'Gaussian Chain'], ['black', 'blue', 'grey']):
-        meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
-        ax.plot(meanDist, label = label, color = c)
-
-    ax.legend(loc='upper left')
-    ax.set_yscale('log')
-    ax.set_xscale('log')
-
-    if diag_chis_step is not None:
-        ax2 = ax.twinx()
-        ax2.plot(diag_chis_step, ls = '--', label = 'Parameters', color = 'blue')
-        ax2.set_ylabel('Diagonal Parameter', fontsize = 16)
-        ax2.set_xscale('log')
-        ax2.legend(loc='upper right')
-
-    ax.set_ylabel('Contact Probability', fontsize = 16)
-    ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
-    plt.tight_layout()
-    plt.savefig(osp.join(dir, 'meanDist_comparison.png'))
-    plt.close()
-
 
 if __name__ == '__main__':
     # compare_y_diag()
@@ -1258,10 +1197,10 @@ if __name__ == '__main__':
     # plot_p_s()
     # molar_contact_ratio('dataset_01_27_23_v5', True)
     # molar_contact_ratio('dataset_01_26_23', True)
-    # molar_contact_ratio('dataset_01_27_23_v9', True)
+    molar_contact_ratio('dataset_02_06_23', 363)
+    molar_contact_ratio('dataset_02_01_23', 362)
     # compare_scc_bio_replicates()
     # plot_sd()
     # max_ent_loss_for_gnn('dataset_11_14_22', 2201)
-    # temp_p_s()
     # meanDist_comparison()
-    plot_p_s('dataset_test', params=True)
+    # plot_p_s('dataset_test', params=True)

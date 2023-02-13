@@ -36,6 +36,7 @@ def get_samples(dataset):
         experimental = True
     elif dataset == 'dataset_01_26_23' or dataset == 'dataset_02_04_23':
         samples = range(201, 283)
+        # samples = range(201, 210)
         experimental = True
     elif dataset == 'dataset_12_20_22':
         samples = [324, 981, 1936, 2834, 3464]
@@ -150,7 +151,7 @@ def modify_maxent_diag_chi(dataset, sample, k = 8, edit = True):
     print(f'sample{sample}, k{k}')
     # try different modifications to diag chis learned by max ent
     dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
-    max_ent_dir = osp.join(dir, f'PCA-normalize-E/k{k}/replicate1')
+    max_ent_dir = osp.join(dir, f'none/k{k}/replicate1')
     if not osp.exists(max_ent_dir):
         return
     if edit:
@@ -329,9 +330,9 @@ class Curves():
 def plot_modified_max_ent(sample, params = True, k = 8):
     # plot different p(s) curves
     print(f'sample{sample}, k{k}')
-    dataset = 'dataset_11_14_22'
+    dataset = 'dataset_02_04_23'
     dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
-    max_ent_dir = osp.join(dir, f'PCA-normalize-E/k{k}/replicate1')
+    max_ent_dir = osp.join(dir, f'none/k{k}/replicate1')
     fig, ax = plt.subplots()
     if params:
         ax2 = ax.twinx()
@@ -438,7 +439,7 @@ def plot_modified_max_ent(sample, params = True, k = 8):
     else:
         ax.legend(loc='upper right')
     plt.tight_layout()
-    plt.savefig(osp.join(max_ent_dir, 'fitting2/meanDist_edit.png'))
+    plt.savefig(osp.join(max_ent_dir, 'fitting/meanDist_edit.png'))
     plt.close()
 
 def test_shuffle():
@@ -980,7 +981,7 @@ def grid_dist(dataset, plot=True):
     grid_size_arr = np.zeros(len(samples))
     for i, sample in enumerate(samples):
         dir = osp.join(data_dir, f'samples/sample{sample}/none/k0/replicate1')
-        if not osp.exists(dir):
+        if not osp.exists(dir) or len(os.listdir(dir)) == 0:
             continue
 
         # get grid_size
@@ -1104,11 +1105,11 @@ def compare_maxent_simulation():
 
 
 if __name__ == '__main__':
-    # for i in range(201, 283):
-        # modify_maxent_diag_chi('dataset_01_26_23', i, k = 12)
-        # plot_modified_max_ent(i, k = 8)
+    # for i in range(201, 202):
+        # modify_maxent_diag_chi('dataset_02_04_23', i, k = 1)
+        # plot_modified_max_ent(i, k = 1)
     # diagonal_dist('dataset_01_26_23', 12)
-    grid_dist('dataset_02_04_23')
+    grid_dist('dataset_01_26_23')
     # plaid_dist('dataset_11_14_22', 4, True, False, True)
     # seq_dist('dataset_01_26_23', 4, True, False, True)
     # compare_maxent_simulation()

@@ -20,13 +20,20 @@ def getArgs():
     parser.add_argument('--verbose', action='store_true',
                         help='true for verbose mode')
     parser.add_argument('--mode', type=str,
-                        help='{"plaid", "diag", "both"}')
+                        help='{"plaid", "diag", "both", "grid_size"}')
     parser.add_argument('--v_bead', type=int, default=520,
                         help='volume of bead')
-    parser.add_argument('--grid_size', type=float, default=28.7,
+    parser.add_argument('--grid_size', default=28.7,
                         help='side length of grid cell')
 
     args = parser.parse_args()
+    if isinstance(args.grid_size, float):
+        args.grid_size = args.grid_size
+    elif osp.exists(args.grid_size):
+        args.grid_size = np.loadtxt(args.grid_size)[-1]
+    else:
+        args.grid_size = float(args.grid_size)
+
     return args
 
 def get_diag_goal(y, args, return_correction = False):

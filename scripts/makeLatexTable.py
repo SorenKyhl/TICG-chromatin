@@ -355,12 +355,12 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                         'converged_time':'Converged Time', 'final_time':'Final Time'}
         if small:
             metrics = ['scc', 'rmse-E+D', 'avg_dist_pearson', 'rmse-diag', 'total_time']
-            # metrics = ['scc', 'rmse-diag']
+            metrics = ['scc', 'rmse-diag']
         else:
             metrics = ['scc', 'avg_dist_pearson', 'rmse-E+D', 'rmse-y', 'rmse-diag',
                         'converged_it', 'converged_time', 'final_time']
-        if experimental:
-            metrics.pop(1)
+        if experimental and 'rmse-E+D' in metrics:
+            metrics.remove('rmse-E+D')
         num_cols = len(metrics) + 2
         num_cols_str = str(num_cols)
 

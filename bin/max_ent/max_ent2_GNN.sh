@@ -1,6 +1,6 @@
 #! /bin/bash
-#SBATCH --job-name=maxent5
-#SBATCH --output=logFiles/maxent5.out
+#SBATCH --job-name=maxent2
+#SBATCH --output=logFiles/maxent2.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20
@@ -17,19 +17,17 @@ then
   scratchDir='/home/erschultz/scratch'
   numIterations=1
   finalSimProductionSweeps=500000
-  equilibSweeps=500
-  productionSweeps=5000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
-i=4003
-dataset='dataset_11_14_22/samples/sample2201/PCA-normalize-E/k8/replicate1'
+i=1001
+dataset='dataset_11_21_22'
+useL='false'
 useS='false'
 useE='true'
 useD='false'
 m=1024
-GNNModelID=341
 chiMethod='none'
 mode='none'
 
@@ -38,18 +36,20 @@ bondLength=28
 
 diagChiMethod='none'
 dense='false'
-diagBins=1
-nSmallBins=16
-smallBinSize=4
-diagCutoff=1024
 
 k=0
 method='GNN'
-for sample in 2201_copy 2201_neg_chi 2201_other_pcs 2201_rand_chi 2201_rand_seq 2201_shuffle_chi 2201_shuffle_seq
+for sample in 410 653 1462 1801 2290
 do
-  echo $sample $m
-  max_ent
+  for GNNModelID in 360
+  # 271
+   # 243 254 262 265 267 271 276
+  do
+    echo $sample $m
+    max_ent
+  done
 done
+
 wait
 
 ENDTIME=$(date +%s)

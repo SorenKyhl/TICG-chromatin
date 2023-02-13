@@ -23,8 +23,8 @@ then
 fi
 
 STARTTIME=$(date +%s)
-i=8001
-dataset='dataset_02_04_23'
+i=8002
+dataset='dataset_01_26_23'
 useL='false'
 useS='false'
 useE='false'
@@ -36,18 +36,18 @@ mode='grid_size'
 bondtype='gaussian'
 phiChromatin=0.06
 bondLength=16.5
+gridSize=17.5
 
 diagChiMethod="none"
 dense='false'
 method='none'
 
 trust_region=5
-gamma=0.1
-gamma=1
+gamma=0.2
 jobs=0
 waitCount=0
 k=0
-for sample in {249..282}
+for sample in {201..292}
 do
   echo $sample $m
   max_ent

@@ -21,23 +21,23 @@ run()  {
 
 param_setup
 m=512
-dataset=dataset_01_26_23
+dataset=dataset_02_04_23
 baseDataFolder="/home/erschultz/${dataset}"
 scratchDir='/home/erschultz/scratch'
 overwrite=1
 
-k=4
-nSweeps=500000
+k=1
+nSweeps=50000
 dumpFrequency=10000
 TICGSeed=10
 diag='true'
 dense='true'
-diagBins=96
-nSmallBins=64
+diagBins=64
+nSmallBins=32
 smallBinSize=1
 bigBinSize=-1
 nBigBins=-1
-bondLength=28
+bondLength=16.5
 useL='true'
 useD='true'
 useE='true'
@@ -46,7 +46,7 @@ jobs=0
 waitCount=0
 for sample in 201
 do
-	dataFolder="${baseDataFolder}/samples/sample${sample}/PCA-normalize-E/k${k}/replicate1"
+	dataFolder="${baseDataFolder}/samples/sample${sample}/none/k${k}/replicate1"
 	chiDiagMethod="${dataFolder}/chis_diag.txt"
 
 	# chiMethod="${dataFolder}/chis.txt"
@@ -79,10 +79,10 @@ do
 	# i="${sample}_zero_chi"
 	# run &
 
-	chiMethod="${dataFolder}/chis_eig.npy"
-	seqMethod="${dataFolder}/resources/x_eig.npy"
-	i="${sample}_eig"
-	run &
+	# chiMethod="${dataFolder}/chis_eig.npy"
+	# seqMethod="${dataFolder}/resources/x_eig.npy"
+	# i="${sample}_eig"
+	# run &
 	#
 	# chiMethod="/home/erschultz/dataset_11_21_22/samples/sample1462/chis.npy"
 	# seqMethod="${dataFolder}/resources/x.npy"
@@ -99,9 +99,10 @@ do
 	# i="${sample}_copy"
 	# run &
 
-	# chiDiagMethod="${dataFolder}/fitting/chis_diag_edit.txt"
-	# i="${sample}_edit"
-	# run &
+	seqMethod="none"
+	chiDiagMethod="${dataFolder}/fitting/chis_diag_edit.txt"
+	i="${sample}_edit"
+	run &
 
 	# chiDiagMethod="${dataFolder}/chis_diag_edit_zero.txt"
 	# i="${sample}_edit_zero"

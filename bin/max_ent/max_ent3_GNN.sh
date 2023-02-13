@@ -17,8 +17,6 @@ then
   scratchDir='/home/erschultz/scratch'
   numIterations=1
   finalSimProductionSweeps=500000
-  productionSweeps=1000
-  equilibSweeps=1000
   source activate python3.9_pytorch1.9
 fi
 
@@ -43,16 +41,16 @@ k=0
 method='GNN'
 jobs=0
 waitCount=0
-for sample in {201..282}
+for sample in {201..210}
 do
   gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
-  for GNNModelID in 362
+  for GNNModelID in 367
    # 243 254 262 265 267 271 276
   do
     echo $sample $m
     max_ent
     jobs=$(( $jobs + 1 ))
-    if [ $jobs -gt 16 ]
+    if [ $jobs -gt 15 ]
     then
       echo 'Waiting'
       waitCount=$(( $waitCount + 1 ))

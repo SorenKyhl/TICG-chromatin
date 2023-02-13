@@ -15,7 +15,7 @@ if [ $local = 'true' ]
 then
   dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
-  numIterations=15
+  numIterations=12
   finalSimProductionSweeps=500000
   equilibSweeps=100000
   productionSweeps=500000

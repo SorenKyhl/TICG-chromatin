@@ -16,45 +16,54 @@ then
   dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
   numIterations=5
-  finalSimProductionSweeps=500000
-  equilibSweeps=100000
-  productionSweeps=500000
+  finalSimProductionSweeps=50000
+  equilibSweeps=10000
+  productionSweeps=50000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
 i=6010
-dataset='dataset_11_14_22'
+dataset='dataset_02_04_23'
+useL='false'
 useS='false'
-useE='true'
+useE='false'
 useD='true'
-m=1024
-chiMethod='zeros'
-mode='plaid'
+m=512
+chiMethod='none'
+mode='diag'
 
 bondtype='gaussian'
-bondLength=28
+bondLength=16.5
 phiChromatin=0.06
 
-diagChiMethod='/home/erschultz/dataset_11_14_22/samples/sample2201/none/k0/replicate1/chis_diag.txt'
+diagChiMethod="zeros"
 dense='true'
-diagBins=32
-nSmallBins=16
-smallBinSize=4
-diagCutoff=1024
-constantChi=10
+diagBins=64
+nSmallBins=32
+smallBinSize=1
+diagCutoff=512
 
-method='k_means'
-for k in 12
+method='none'
+jobs=0
+waitCount=0
+k=1
+for sample in 201
 do
-  for sample in 2201
-  # 2201 2202 2203 2204 2205 2206 2207 2208
-  do
-    echo $sample $m
-    max_ent
-  done
+  gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
+  echo $sample $m
+  max_ent
+  jobs=$(( $jobs + 1 ))
+  if [ $jobs -gt 18 ]
+  then
+    echo 'Waiting'
+    waitCount=$(( $waitCount + 1 ))
+    wait
+    jobs=0
+  fi
 done
 
+echo $waitCount
 wait
 
 ENDTIME=$(date +%s)

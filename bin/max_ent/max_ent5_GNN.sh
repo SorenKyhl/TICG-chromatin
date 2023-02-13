@@ -1,6 +1,6 @@
 #! /bin/bash
-#SBATCH --job-name=maxent4
-#SBATCH --output=logFiles/maxent4.out
+#SBATCH --job-name=maxent5
+#SBATCH --output=logFiles/maxent5.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20
@@ -17,14 +17,13 @@ then
   scratchDir='/home/erschultz/scratch'
   numIterations=1
   finalSimProductionSweeps=500000
-  productionSweeps=500000
-  equilibSweeps=100000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
-i=3010
-dataset='dataset_01_17_22'
+i=4010
+dataset='dataset_11_14_22'
+useL='false'
 useS='false'
 useE='true'
 useD='false'
@@ -37,21 +36,14 @@ bondLength=28
 
 diagChiMethod='none'
 dense='false'
-diagBins=1
-nSmallBins=16
-smallBinSize=4
-diagCutoff=1024
 
 k=0
 method='GNN'
-for sample in 201 202 203 204 205
+GNNModelID=360
+for sample in {2217..2221}
 do
-  for GNNModelID in 341
-   # 243 254 262 265 267 271 276
-  do
-    echo $sample $m
-    max_ent
-  done
+  echo $sample $m
+  max_ent
 done
 wait
 

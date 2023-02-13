@@ -174,11 +174,12 @@ def dataset_01_26():
     filename="https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-treated_6hr_combined_30.hic"
     m = 512*5
 
-    slices = [(1, 15), (1, 166), (2, 110), (3, 130), (4, 140), (7, 89)]
+    # slices = [(1, 15), (1, 166), (2, 110), (3, 130), (4, 140), (7, 89)]
+    slices = [(5, 137), (6, 80), (10, 63), (13, 30)]
 
     # set up for multiprocessing
     mapping = []
-    start_sample=83
+    start_sample=89
     for i, (chromosome, start_mb) in enumerate(slices):
         start = start_mb * 1000000
         end = start + resolution * m
@@ -355,4 +356,4 @@ def pool():
 
 
 if __name__ == '__main__':
-    dataset_02_04()
+    dataset_01_26()

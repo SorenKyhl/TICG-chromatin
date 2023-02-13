@@ -27,7 +27,7 @@ dataFolder=$baseDataFolder
 scratchDir='/home/erschultz/scratch'
 overwrite=1
 
-k=3
+k=0
 nSweeps=5000
 dumpFrequency=100
 TICGSeed=10
@@ -49,8 +49,8 @@ useE='true'
 sample=3001
 chiDiagMethod="zeros"
 maxDiagChi=10
-chiMethod="random"
-seqMethod="random"
+chiMethod="none"
+seqMethod="none"
 lmbda=0.85
 i="${sample}"
 # run
@@ -59,22 +59,115 @@ sample=3002
 m=512
 diagBins=512
 maxDiagChi=5
-chiMethod="random"
-seqMethod="${dataFolder}/samples/sample3001/x.npy"
+# seqMethod="${dataFolder}/samples/sample3001/x.npy"
 i="${sample}"
-run &
+# run &
 
 # gaussian renorm
 sample=3003
 seqMethod="random"
 scaleResolution=2
-m=512
+maxDiagChi=20
 beadVol=1040
 bondLength=39.598
-diagBins=512
+i="${sample}"
+# run &
+
+# reset
+beadVol=520
+bondLength=28
+scaleResolution=1
+
+sample=3004
 maxDiagChi=5
-chiMethod="random"
+# seqMethod="${dataFolder}/samples/sample3001/x.npy"
+gridSize=28.5
+i="${sample}"
+# run &
+
+sample=3005
+# seqMethod="${dataFolder}/samples/sample3001/x.npy"
+gridSize=28
+i="${sample}"
+# run &
+
+sample=3006
+# seqMethod="${dataFolder}/samples/sample3001/x.npy"
+gridSize=27.5
+i="${sample}"
+# run &
+
+sample=3007
+# seqMethod="${dataFolder}/samples/sample3001/x.npy"
+gridSize=27
+i="${sample}"
+# run &
+
+sample=3008
+# seqMethod="${dataFolder}/samples/sample3001/x.npy"
+gridSize=27
+phiChromatin=0.03
+i="${sample}"
+# run &
+
+# reset
+gridSize=28.7
+phiChromatin=0.06
+
+
+# attempt with diag params
+sample=4001
+m=1024
+chiDiagMethod="linear"
+maxDiagChi=10
+# seqMethod="random"
+lmbda=0.85
 i="${sample}"
 run &
+
+sample=4002
+m=512
+diagBins=512
+maxDiagChi=5
+# seqMethod="${dataFolder}/samples/sample3001/x.npy"
+i="${sample}"
+run &
+
+# gaussian renorm
+sample=4003
+# seqMethod="random"
+scaleResolution=2
+maxDiagChi=20
+beadVol=1040
+bondLength=39.598
+i="${sample}"
+run &
+
+# reset
+beadVol=520
+bondLength=28
+scaleResolution=1
+
+sample=4006
+maxDiagChi=5
+# seqMethod="${dataFolder}/samples/sample3001/x.npy"
+gridSize=27.5
+i="${sample}"
+run &
+
+sample=4007
+maxDiagChi=5
+# seqMethod="${dataFolder}/samples/sample3001/x.npy"
+gridSize=27
+i="${sample}"
+run &
+
+sample=4008
+# seqMethod="${dataFolder}/samples/sample3001/x.npy"
+gridSize=27
+phiChromatin=0.03
+i="${sample}"
+run &
+
 
 wait

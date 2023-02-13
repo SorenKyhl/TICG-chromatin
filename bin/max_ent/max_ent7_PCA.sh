@@ -15,7 +15,7 @@ if [ $local = 'true' ]
 then
   dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
-  numIterations=15
+  numIterations=12
   finalSimProductionSweeps=500000
   equilibSweeps=100000
   productionSweeps=500000
@@ -24,34 +24,50 @@ fi
 
 STARTTIME=$(date +%s)
 i=5001
-dataset='dataset_test'
+dataset='dataset_01_26_23'
+useL='true'
 useS='false'
 useE='true'
 useD='true'
-m=1024
+m=512
 chiMethod='zeros'
 mode='both'
 
 bondtype='gaussian'
+gridSize=28.7
 bondLength=28
+phiChromatin=0.06
 
-diagChiMethod='zeros'
+diagChiMethod="zeros"
 dense='true'
 diagBins=96
 nSmallBins=64
 smallBinSize=1
-diagCutoff=1024
+diagCutoff=512
 
-k=8
 method='PCA-normalize'
-for sample in 2201 2202
+jobs=0
+waitCount=0
+for k in 12
 do
-  echo $sample $m
-  max_ent
+  for sample in {283..288}
+  do
+    echo $sample $m
+    max_ent
+    jobs=$(( $jobs + 1 ))
+    if [ $jobs -gt 18 ]
+    then
+      echo 'Waiting'
+      waitCount=$(( $waitCount + 1 ))
+      wait
+      jobs=0
+    fi
+  done
 done
+
+echo $waitCount
 wait
 
-wait
 
 ENDTIME=$(date +%s)
 echo "total time:$(( $(( $ENDTIME - $STARTTIME )) / 60 )) minutes"

@@ -150,7 +150,7 @@ max_ent_inner () {
   if [ $goalSpecifiedCopy -eq 1 ]
   then
     echo "starting goal_specified"
-    python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --contact_map "${sampleFolder}/y.npy" --mode $mode --verbose > goal.log
+    python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --contact_map "${sampleFolder}/y.npy" --mode $mode --verbose --grid_size $gridSize > goal.log
   else
     echo "goal_specified is false"
   fi

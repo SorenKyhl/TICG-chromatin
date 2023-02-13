@@ -5,7 +5,7 @@
 #SBATCH --account=pi-depablo
 #SBATCH --partition=depablo
 #SBATCH --ntasks=10
-#SBATCH --mem-per-cpu=1000
+#SBATCH --mem-per-cpu=2000
 #SBATCH --mail-type=END
 #SBATCH --mail-user=erschultz@uchicago.edu
 

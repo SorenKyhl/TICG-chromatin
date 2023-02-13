@@ -96,11 +96,7 @@ def main():
         plot_matrix(p, ofile = osp.join(args.save_folder, 'p.png'), vmax = 'mean')
 
     if args.random_mode:
-        if args.k == 0:
-            throw = False
-        else:
-            throw = True
-        e, s = load_E_S(args.sample_folder, throw_exception = throw)
+        e, s = load_E_S(args.sample_folder, throw_exception = False)
     else:
         s = load_final_max_ent_S(args.replicate_folder, args.final_folder)
         e = s_to_E(s)
