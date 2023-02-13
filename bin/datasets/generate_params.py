@@ -183,7 +183,7 @@ class DatasetGenerator():
             chi_file = osp.join(self.odir, f'chi_{i+1}.npy')
             np.save(chi_file, chi)
 
-            chi_file = osp.join('/project2/depablo/erschultz', self.dataset, f'setup/chi_{i+1}.npy')
+            chi_file = osp.join('/project/depablo/erschultz', self.dataset, f'setup/chi_{i+1}.npy')
             self.sample_dict[i]['chi_method'] = chi_file
 
     def seq_markov_params(self):
@@ -256,7 +256,7 @@ class DatasetGenerator():
             seq_file = osp.join(self.odir, f'x_{i+1}.npy')
             np.save(seq_file, x)
 
-            seq_file = osp.join('/project2/depablo/erschultz', self.dataset, f'setup/x_{i+1}.npy')
+            seq_file = osp.join('/project/depablo/erschultz', self.dataset, f'setup/x_{i+1}.npy')
             self.sample_dict[i]['method'] = seq_file
 
     def linear_params(self):

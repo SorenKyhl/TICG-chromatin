@@ -660,7 +660,10 @@ def seq_dist(dataset, k, plot=True, eig=False, eig_norm=False):
 def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
     # distribution of plaid params
     samples, experimental = get_samples(dataset)
-    data_dir = osp.join('/home/erschultz', dataset)
+    dir = '/project2/depablo/erschultz/'
+    if not osp.exists(dir):
+        dir = '/home/erschultz'
+    data_dir = osp.join(dir, dataset)
     if eig:
         odir = osp.join(data_dir, 'plaid_param_distributions_eig')
     elif eig_norm:
