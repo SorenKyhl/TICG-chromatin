@@ -45,7 +45,8 @@ def get_samples(dataset):
     elif dataset.startswith('dataset_01_27_23'):
         samples = range(1, 16)
     elif dataset.startswith('dataset_02_06_23'):
-        samples= [324, 981, 1936, 2834, 3464]
+        samples = [324, 981, 1936, 2834, 3464]
+        samples = range(1, 500)
     else:
         samples = range(1, 11)
 
