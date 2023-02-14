@@ -1145,11 +1145,10 @@ def compare_scc_bio_replicates():
     print(corr_scc, corr_scc_var)
 
 def main():
-    dir = '/home/erschultz/dataset_11_21_22/molar_contact_ratio_cluster'
-    def simple_plot(arr, fname):
-        print(np.min(arr), np.max(arr))
+    dir = '/home/erschultz/dataset_02_06_23/molar_contact_ratio'
+    def simple_plot(arr, fname, bins=np.logspace(np.log10(1),np.log10(1000), 50)):
         n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
-                                    bins = np.logspace(np.log10(1),np.log10(1000), 50),
+                                    bins = bins,
                                     alpha = 0.5)
         plt.ylabel('probability', fontsize=16)
         plt.xscale('log')
@@ -1158,16 +1157,12 @@ def main():
 
 
     mse_arr = np.load(osp.join(dir, 'mse.npy'))
-    simple_plot(mse_arr, 'mse_distribution.png')
+    simple_plot(mse_arr, 'mse_distribution.png', np.logspace(np.log10(0.01),np.log10(1), 50))
 
     kmeans_arr = np.load(osp.join(dir, 'kmeans_Rab.npy'))
     simple_plot(kmeans_arr, 'kmeans_distribution.png')
     result = pearson_round(kmeans_arr, mse_arr, stat = 'spearman')
     print(result)
-
-    # plt.scatter(kmeans_arr, mse_arr)
-    # plt.xlim(0, 100)
-    # plt.show()
 
     kmeans_exp = np.load('/home/erschultz/dataset_01_26_23/molar_contact_ratio/kmeans_Rab.npy')
     for arr, label in zip([kmeans_arr, kmeans_exp], ['Synthetic', 'Experiment']):
@@ -1183,7 +1178,7 @@ def main():
     plt.savefig(osp.join(dir, f'kmeans_vs_exp_distribution.png'))
     plt.close()
 
-def l_comparison():
+def l_ij_comparison():
     count = 20
     dir = '/home/erschultz'
     for k in [12]:
@@ -1223,8 +1218,8 @@ if __name__ == '__main__':
     # plot_p_s()
     # molar_contact_ratio('dataset_01_27_23_v5', True)
     # molar_contact_ratio('dataset_01_26_23', True)
-    molar_contact_ratio('dataset_02_06_23', 363)
-    # molar_contact_ratio('dataset_02_01_23', 362)
+    # molar_contact_ratio('dataset_02_06_23', 363)
+    molar_contact_ratio('dataset_02_01_23', 362)
     # compare_scc_bio_replicates()
     # plot_sd()
     # max_ent_loss_for_gnn('dataset_11_14_22', 2201)

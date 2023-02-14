@@ -44,7 +44,7 @@ def get_samples(dataset):
         samples = [1, 2, 3, 410, 653, 1462, 1801, 2290]
     elif dataset.startswith('dataset_01_27_23'):
         samples = range(1, 16)
-    elif dataset.startswith('dataset_02_06_23'):
+    elif dataset == 'dataset_02_06_23' or dataset == 'dataset_02_01_23':
         samples = [324, 981, 1936, 2834, 3464]
         samples = range(1, 500)
     else:
@@ -613,12 +613,7 @@ def seq_dist(dataset, k, plot=True, eig=False, eig_norm=False):
         lmbda_i_list = []
         f_i_list = []
         for j in range(k):
-            # first binarize
-            xj = np.copy(x[:, j])
-            xj[xj>0] = 1
-            xj[xj<0] = 0
-
-            f, lmbda = Tester.infer_lambda(xj)
+            f, lmbda = Tester.infer_lambda(x[:, j], True)
             if np.isnan(lmbda):
                 lmbda = 0
             f_arr[i,j] = f
@@ -689,8 +684,7 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
     chi_ii_list = []
     chi_list = []
     chi_flat_list = []
-    if not (eig or eig_norm):
-        x_list = seq_dist(dataset, k, plot)
+    x_list = seq_dist(dataset, k, plot, eig, eig_norm)
     for sample in samples:
         dir = osp.join(data_dir, f'samples/sample{sample}')
         if experimental:
@@ -762,8 +756,9 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
 
     if plot:
         # plot plaid chi parameters
-        simple_histogram(chi_ij_list, r'$\chi_{ij}$', odir,
-                            f'k{k}_chi_ij_dist.png', dist = laplace)
+        if not (eig or eig_norm):
+            simple_histogram(chi_ij_list, r'$\chi_{ij}$', odir,
+                                f'k{k}_chi_ij_dist.png', dist = laplace)
 
         # plaid chi_ii parameters
         simple_histogram(chi_ii_list, r'$\chi_{ii}$', odir,
@@ -856,7 +851,52 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
             plt.tight_layout()
             plt.savefig(osp.join(odir, f'chi_AB_bivariates.png'))
             plt.close()
+        else:
+            log = False
+            X = []
+            Y_mean = []
+            Y_f = []
+            Y_lambda = []
+            # for i in range(k):
+            i = 5
+            for s in range(len(samples)):
+                chi = chi_list[s]
+                chi_ij = chi[i,i]
+                if log:
+                    chi_ij = np.sign(chi_ij) * np.log(np.abs(chi_ij)+1)
+                X.append(chi_ij)
 
+                Y_mean.append(np.mean(x_list[s][:, i]))
+                f, lmbda = Tester.infer_lambda(x_list[s][:, i], True)
+                if np.isnan(lmbda):
+                    lmbda = 0
+                Y_f.append(f)
+                Y_lambda.append(lmbda)
+
+            for Y, label in zip([Y_mean, Y_f, Y_lambda], ['mean', 'f', 'lambda']):
+                print(len(X), len(Y))
+                est = sm.OLS(Y, X)
+                est = est.fit()
+                params = np.round(est.params, 3)
+                plt.plot(X, est.predict(X), ls='--', c = 'k')
+                plt.axhline(0, c = 'gray')
+                plt.axvline(0, c = 'gray')
+
+                # plt.title(f'y={params[0]}x\n'+r'$R^2=$'+f'{np.round(est.rsquared, 2)}')
+                print(len(X), len(Y), X[:2], Y[:2])
+                plt.scatter(X, Y)
+                plt.ylabel(label, fontsize=16)
+                if log:
+                    plt.xlabel(r'sign$(\chi_{ii})$*ln(|$\chi_{ii}$|+1)', fontsize=16)
+                else:
+                    plt.xlabel(r'$\chi_{ii}$', fontsize=16)
+                # plt.xlim(-5 ,5)
+                plt.tight_layout()
+                if log:
+                    plt.savefig(osp.join(odir, f'k{k}_chi_ii_ln_vs_{label}.png'))
+                else:
+                    plt.savefig(osp.join(odir, f'k{k}_chi_ii_vs_{label}.png'))
+                plt.close()
 
 
         # plaid per chi
@@ -1140,7 +1180,7 @@ if __name__ == '__main__':
         # plot_modified_max_ent(i, k = 1)
     # diagonal_dist('dataset_02_04_23', 4)
     # grid_dist('dataset_01_26_23')
-    plaid_dist('dataset_01_26_23', 8, True, False, True)
+    plaid_dist('dataset_01_26_23', 12, True, False, True)
     # seq_dist('dataset_01_26_23', 4, True, False, True)
     # compare_maxent_simulation()
     # modify_plaid_chis('dataset_11_14_22', 8)

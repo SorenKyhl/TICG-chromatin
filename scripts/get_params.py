@@ -1781,16 +1781,20 @@ class Tester():
         self.infer_lambda(seq[:, 0])
 
     @staticmethod
-    def infer_lambda(seq):
+    def infer_lambda(seq, binarize=False):
         # seq is 1d array
         assert len(seq.shape) == 1, f'{seq.shape}'
-        assert len(np.unique(seq)) <= 2, f'{np.unique(seq)}'
+        if binarize:
+            seq = np.copy(seq)
+            seq[seq < 0] = 0
+            seq[seq > 0] = 1
+        assert len(np.unique(seq)) <= 2, f'{np.unique(seq)[:10]}'
         seq = seq.astype(np.int64)
 
         # estimate f
         f = np.sum(seq) / len(seq)
 
-        # estimat transition probabilities
+        # estimate transition probabilities
         transition_counts = np.zeros((2,2))
         prev_val = seq[0]
         i=1
