@@ -4,7 +4,7 @@ source ~/TICG-chromatin/bin/random/random_fns.sh
 
 param_setup
 dataset=dataset_02_14_23
-dataFolder="/project2/depablo/erschultz/${dataset}"
+dataFolder="/project/depablo/erschultz/${dataset}"
 scratchDir='/home/erschultz/scratch'
 #
 # dataFolder="/home/erschultz/${dataset}"
