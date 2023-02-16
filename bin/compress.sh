@@ -34,7 +34,9 @@ compress(){
   rm -r $dataset
 }
 
-compress dataset_01_02_23
-compress dataset_12_18_22
-compress dataset_12_20_22
-compress dataset_01_06_23
+compress dataset_02_06_23
+compress dataset_02_07_23
+compress dataset_02_08_23
+
+cd $dir
+rm -r *plaid_cutoff
