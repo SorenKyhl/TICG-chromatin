@@ -4,7 +4,7 @@
 #SBATCH --time=24:00:00
 #SBATCH --account=pi-depablo
 #SBATCH --partition=depablo
-#SBATCH --ntasks=20
+#SBATCH --ntasks=24
 #SBATCH --nodes=1
 #SBATCH --mem-per-cpu=2000
 
@@ -22,7 +22,7 @@ do
 	run &
 
 	jobs=$(( $jobs + 1 ))
-	if [ $jobs -gt 19 ]
+	if [ $jobs -gt 23 ]
 	then
 		echo 'Waiting'
 		waitCount=$(( $waitCount + 1 ))
