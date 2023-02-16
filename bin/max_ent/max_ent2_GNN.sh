@@ -22,7 +22,7 @@ fi
 
 STARTTIME=$(date +%s)
 i=1001
-dataset='dataset_11_21_22'
+dataset='dataset_02_23_23'
 useL='false'
 useS='false'
 useE='true'
@@ -32,16 +32,16 @@ chiMethod='none'
 mode='none'
 
 bondtype='gaussian'
-bondLength=28
+bondLength=16.5
 
 diagChiMethod='none'
 dense='false'
 
 k=0
 method='GNN'
-for sample in 410 653 1462 1801 2290
+for sample in 324 981 1936 2834 3464
 do
-  for GNNModelID in 360
+  for GNNModelID in 371 372
   # 271
    # 243 254 262 265 267 271 276
   do

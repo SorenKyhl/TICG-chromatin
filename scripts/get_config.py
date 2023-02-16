@@ -16,13 +16,16 @@ from sequences_to_contact_maps.scripts.utils import LETTERS, crop
 
 
 def getArgs():
-    parser = argparse.ArgumentParser(description='Base parser')
+    parser = argparse.ArgumentParser(description='Base parser', fromfile_prefix_chars='@',
+                                allow_abbrev = False)
     AC = ArgparserConverter()
 
     parser.add_argument('--config_ifile', type=str, default='config.json',
                         help='path to default config file')
     parser.add_argument('--config_ofile', type=str, default='config.json',
                             help='path to output config file')
+    parser.add_argument('--args_file', type=AC.str2None,
+                        help='file with more args to load')
 
     # config params
     parser.add_argument('--m', type=int, default=-1,
@@ -101,6 +104,15 @@ def getArgs():
 
 
     args = parser.parse_args()
+    if args.args_file is not None:
+        assert osp.exists(args.args_file), f'{args.args_file} does not exist'
+        print(f'parsing {args.args_file}')
+        argv = sys.argv
+        argv.append(f'@{args.args_file}') # appending means args_file will override other args
+        argv.pop(0) # remove program name
+        args, unknown = parser.parse_known_args(argv)
+        print(unknown)
+
     return args
 
 #### x, psi functions ####
