@@ -45,7 +45,7 @@ for sample in {283..292}
 do
   # bondLength=16.5
   # gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
-  for GNNModelID in 367
+  for GNNModelID in 373 374 375
    # 243 254 262 265 267 271 276
   do
     echo $sample $m

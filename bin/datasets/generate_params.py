@@ -278,7 +278,7 @@ class DatasetGenerator():
                 self.sample_dict[i]['diag_chi_method'] = 'linear'
 
                 slope = skewnorm.rvs(dict_slope['alpha'], dict_slope['mu'], dict_slope['sigma'])
-                self.sample_dict[i]['diag_chi_slope'] = slope
+                self.sample_dict[i]['diag_chi_slope'] = slope * 1000
 
                 intercept = skewnorm.rvs(dict_intercept['alpha'], dict_intercept['mu'], dict_intercept['sigma'])
                 self.sample_dict[i]['diag_chi_constant'] = intercept

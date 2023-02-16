@@ -1109,6 +1109,41 @@ def meanDist_comparison():
     plt.show()
     plt.close()
 
+def meanDist_vs_params(dataset):
+    samples, experimental = get_samples(dataset)
+    data_dir = osp.join('/home/erschultz', dataset)
+    samples = np.array(samples)[:10] # cap at 10
+
+    N = len(samples)
+    meanDist_list = []
+    params_list = []
+    for i, sample in enumerate(samples):
+        sample_dir = osp.join(data_dir, f'samples/sample{sample}')
+
+        y, y_diag = load_Y(sample_dir)
+        y /= np.mean(np.diagonal(y))
+
+        meanDist_list.append(DiagonalPreprocessing.genomic_distance_statistics(y))
+
+        params = np.load(osp.join(sample_dir, 'diag_chis_continuous.npy'))
+        params_list.append(params)
+
+    # plot meanDist with params
+    fig, ax = plt.subplots()
+    ax2 = ax.twinx()
+    ax.set_yscale('log')
+    ax.set_xscale('log')
+    ax2.set_ylabel('Diagonal Parameter', fontsize = 16)
+    ax2.set_xscale('log')
+    for meanDist, params, sample in zip(meanDist_list, params_list, samples):
+        ax.plot(meanDist, label = sample)
+        ax2.plot(params, ls = '--')
+
+    ax.legend(loc='upper right')
+    plt.tight_layout()
+    plt.savefig(osp.join(data_dir, 'meanDist.png'))
+    plt.close()
+
 def compare_scc_bio_replicates():
     dir = '/home/erschultz/dataset_test/samples'
     y_a = np.load(osp.join(dir, 'sample2201/y.npy'))
@@ -1219,7 +1254,8 @@ if __name__ == '__main__':
     # molar_contact_ratio('dataset_01_27_23_v5', True)
     # molar_contact_ratio('dataset_01_26_23', True)
     # molar_contact_ratio('dataset_02_06_23', 363)
-    molar_contact_ratio('dataset_02_01_23', 362)
+    # molar_contact_ratio('dataset_02_01_23', 362)
+    meanDist_vs_params('dataset_02_06_23')
     # compare_scc_bio_replicates()
     # plot_sd()
     # max_ent_loss_for_gnn('dataset_11_14_22', 2201)
