@@ -22,12 +22,12 @@ fi
 
 STARTTIME=$(date +%s)
 i=1001
-dataset='dataset_02_23_23'
+dataset='dataset_02_13_23'
 useL='false'
 useS='false'
 useE='true'
 useD='false'
-m=1024
+m=512
 chiMethod='none'
 mode='none'
 

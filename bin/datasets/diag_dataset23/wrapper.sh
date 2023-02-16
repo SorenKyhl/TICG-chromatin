@@ -36,5 +36,5 @@ sourceFile=~/TICG-chromatin/bin/datasets/diag_dataset23/diag_dataset_fns.sh
 for i in 1 2 3 4 5 6 7 8 9 10
 do
   echo $i
-  bash ~/TICG-chromatin/bin/datasets/diag_dataset${i}.sh $sourceFile
+  sbatch ~/TICG-chromatin/bin/datasets/diag_dataset${i}.sh $sourceFile
 done
