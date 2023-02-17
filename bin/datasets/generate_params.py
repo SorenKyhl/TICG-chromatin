@@ -106,41 +106,48 @@ class DatasetGenerator():
                 chi_ij = skewnorm.rvs(-1.722, 6.908, 12.136, size = int(self.k*(self.k-1)/2))
             elif self.chi_param_version == 'v7':
                 chi_ii = np.zeros(self.k)
-                for j, l in enumerate('ABCD'):
+                for j in range(self.k):
+                    l = LETTERS[j]
                     with open(osp.join(f'/home/erschultz/dataset_01_26_23/plaid_param_distributions/k{self.k}_chi{l}{l}.pickle'), 'rb') as f:
                         dict_j = pickle.load(f)
                     chi_ii[j] =  skewnorm.rvs(dict_j['alpha'], dict_j['mu'], dict_j['sigma'])
                 chi_ij = skewnorm.rvs(-1.722, 6.908, 12.136, size = int(self.k*(self.k-1)/2))
             elif self.chi_param_version == 'v8':
                 chi_ii = np.zeros(self.k)
-                for j, l in enumerate('ABCD'):
+                for j in range(self.k):
+                    l = LETTERS[j]
                     with open(osp.join(f'/home/erschultz/dataset_01_26_23/plaid_param_distributions/k{self.k}_chi{l}{l}.pickle'), 'rb') as f:
                         dict_j = pickle.load(f)
                     chi_ii[j] =  skewnorm.rvs(dict_j['alpha'], dict_j['mu'], dict_j['sigma'])
                 chi_ij = []
-                for j, l1 in enumerate('ABCD'):
-                    for k, l2 in enumerate('ABCD'):
-                        if k > j:
+                for j in range(self.k):
+                    l1 = LETTERS[j]
+                    for j2 in range(self.k):
+                        l2 = LETTERS[j2]
+                        if j2 > j:
                             with open(osp.join(f'/home/erschultz/dataset_01_26_23/plaid_param_distributions/k4_chi{l1}{l2}.pickle'), 'rb') as f:
                                 dict_j = pickle.load(f)
                             chi_ij.append(skewnorm.rvs(dict_j['alpha'], dict_j['mu'], dict_j['sigma']))
             elif self.chi_param_version == 'v9':
                 chi_ii = np.zeros(self.k)
-                for j, l in enumerate('ABCD'):
+                for j in range(self.k):
+                    l = LETTERS[j]
                     with open(osp.join(f'/home/erschultz/dataset_01_26_23/plaid_param_distributions/k{self.k}_chi{l}{l}.pickle'), 'rb') as f:
                         dict_j = pickle.load(f)
                     chi_ii[j] =  skewnorm.rvs(dict_j['alpha'], dict_j['mu'], dict_j['sigma'])
                 chi_ij = np.zeros(int(self.k*(self.k-1)/2))
             elif self.chi_param_version == 'v10':
                 chi_ii = np.zeros(self.k)
-                for j, l in enumerate('ABCD'):
+                for j in range(self.k):
+                    l = LETTERS[j]
                     with open(osp.join(f'/home/erschultz/dataset_01_26_23/plaid_param_distributions/k{self.k}_chi{l}{l}.pickle'), 'rb') as f:
                         dict_j = pickle.load(f)
                     chi_ii[j] =  skewnorm.rvs(dict_j['alpha'], dict_j['mu'], dict_j['sigma'])
                 chi_ij = laplace.rvs(-0.109, 5.631, size = int(self.k*(self.k-1)/2))
             elif self.chi_param_version == 'v11':
                 chi_ii = np.zeros(self.k)
-                for j, l in enumerate('ABCD'):
+                for j in range(self.k):
+                    l = LETTERS[j]
                     with open(osp.join(f'/home/erschultz/dataset_01_26_23/plaid_param_distributions/k4_chi{l}{l}.pickle'), 'rb') as f:
                         dict_j = pickle.load(f)
                     chi_ii[j] =  skewnorm.rvs(dict_j['alpha'], dict_j['mu'], dict_j['sigma'])
@@ -148,10 +155,12 @@ class DatasetGenerator():
                 # grab x.npy to check corr(seq_A, seq_B)
                 x = np.load(osp.join('/home/erschultz', self.dataset, f'setup/x_{i+1}.npy'))
                 chi_ij = []
-                for j, l1 in enumerate('ABCD'):
-                    for k, l2 in enumerate('ABCD'):
-                        if k > j:
-                            corr = pearson_round(x[:, j], x[:, k])
+                for j1 in range(self.k):
+                    l1 = LETTERS[j1]
+                    for j2 in range(self.k):
+                        l2 = LETTERS[j2]
+                        if j2 > j1:
+                            corr = pearson_round(x[:, j1], x[:, j2])
                             val = np.abs(skewnorm.rvs(-1.722, 6.908, 12.136))
                             if corr < 0:
                                 val *= -1
@@ -161,7 +170,7 @@ class DatasetGenerator():
                 chi_ii = np.zeros(self.k)
 
                 for j in range(self.k):
-                    l = LETTERS[j]
+
                     assert self.m == 512
                     with open(osp.join(f'/home/erschultz/dataset_01_26_23/plaid_param_distributions_eig_norm/k{self.k}_chi{l}{l}.pickle'), 'rb') as f:
                         dict_j = pickle.load(f)
@@ -170,7 +179,8 @@ class DatasetGenerator():
             elif self.chi_param_version == 'v13':
                 # eignorm approach
                 chi_ii = np.zeros(self.k)
-                for j, l in enumerate('ABCD'):
+                for j in range(self.k):
+                    l = LETTERS[j]
                     assert self.m == 512
                     with open(osp.join(f'/home/erschultz/dataset_02_04_23/plaid_param_distributions_eig_norm/k{self.k}_chi{l}{l}.pickle'), 'rb') as f:
                         dict_j = pickle.load(f)

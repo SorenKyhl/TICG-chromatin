@@ -857,21 +857,20 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
             Y_mean = []
             Y_f = []
             Y_lambda = []
-            # for i in range(k):
-            i = 5
-            for s in range(len(samples)):
-                chi = chi_list[s]
-                chi_ij = chi[i,i]
-                if log:
-                    chi_ij = np.sign(chi_ij) * np.log(np.abs(chi_ij)+1)
-                X.append(chi_ij)
+            for i in range(k):
+                for s in range(len(samples)):
+                    chi = chi_list[s]
+                    chi_ij = chi[i,i]
+                    if log:
+                        chi_ij = np.sign(chi_ij) * np.log(np.abs(chi_ij)+1)
+                    X.append(chi_ij)
 
-                Y_mean.append(np.mean(x_list[s][:, i]))
-                f, lmbda = Tester.infer_lambda(x_list[s][:, i], True)
-                if np.isnan(lmbda):
-                    lmbda = 0
-                Y_f.append(f)
-                Y_lambda.append(lmbda)
+                    Y_mean.append(np.mean(x_list[s][:, i]))
+                    f, lmbda = Tester.infer_lambda(x_list[s][:, i], True)
+                    if np.isnan(lmbda):
+                        lmbda = 0
+                    Y_f.append(f)
+                    Y_lambda.append(lmbda)
 
             for Y, label in zip([Y_mean, Y_f, Y_lambda], ['mean', 'f', 'lambda']):
                 print(len(X), len(Y))
@@ -921,8 +920,9 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
 
             # remove outliers
             iqr = np.percentile(arr, 75) - np.percentile(arr, 25)
-            l_cutoff = np.percentile(arr, 25) - 1.5 * iqr
-            u_cutoff = np.percentile(arr, 75) + 1.5 * iqr
+            width = 1.5
+            l_cutoff = np.percentile(arr, 25) - width * iqr
+            u_cutoff = np.percentile(arr, 75) + width * iqr
 
             delete_arr = np.logical_or(arr < l_cutoff, arr > u_cutoff)
             print(i, iqr, (l_cutoff, u_cutoff))
@@ -1174,13 +1174,13 @@ def compare_maxent_simulation():
 
 
 if __name__ == '__main__':
-    # modify_plaid_chis('dataset_02_04_23', k = 4)
-    # modify_maxent_diag_chi('dataset_02_04_23', k = 4)
+    # modify_plaid_chis('dataset_02_04_23', k = 8)
+    modify_maxent_diag_chi('dataset_02_04_23', k = 8)
     # for i in range(201, 283):
         # plot_modified_max_ent(i, k = 1)
-    # diagonal_dist('dataset_02_04_23', 4)
+    diagonal_dist('dataset_02_04_23', 8)
     # grid_dist('dataset_01_26_23')
-    plaid_dist('dataset_01_26_23', 12, True, False, True)
+    # plaid_dist('dataset_02_04_23', 8, True, False, True)
     # seq_dist('dataset_01_26_23', 4, True, False, True)
     # compare_maxent_simulation()
     # modify_plaid_chis('dataset_11_14_22', 8)
