@@ -5,15 +5,16 @@ import scipy.ndimage as ndimage
 
 from pylib import epilib, default
 
-
 """
 collection of functions for manipulating hic maps
 """
 
 def pool(inp, factor, fn=np.nansum, normalize=True):
-    """
-    Resizes input matrix by factor using fn.
-    if inp is 1024x1024 and factor=2, out is 512x512
+    """Resizes input matrix by factor using fn using modified sum pooling
+
+    in modified sum pooling, the sum along the diagonal only includes
+    the upper triangle of the pool window. this operation conserves the 
+    total number of contacts in the contact map
     """
     inp = copy.deepcopy(inp)
     assert len(inp.shape) == 2, f'must be 2d array not {inp.shape}'
@@ -32,6 +33,7 @@ def pool(inp, factor, fn=np.nansum, normalize=True):
     return out
 
 def pool_sum(inp, factor, normalize=True): 
+    """resizes input matrix by a factor using sum pooling"""
     pooled = block_reduce(inp, (factor,factor), np.nansum)
     if normalize:
         pooled = normalize_hic(pooled)
@@ -39,8 +41,8 @@ def pool_sum(inp, factor, normalize=True):
 
 
 def pool_diagonal(HiC, normalize=True):
-    """
-    reduce size of matrix by factor,
+    """downsize matrix by factor using diagonal pooling operation
+
     only include every factor'th bead
     called "diagonal pooling" because the block_reduce kernel is the identity function
     """
@@ -63,6 +65,7 @@ def pool_double_count(inp, factor, fn=np.nansum):
     return processed
 
 def pool_seqs(seqs, factor):
+    """downsize sequences by a factor using a mean pooling operation"""
     def pool_seq(seq, factor):
         return block_reduce(seq, (factor), np.mean) 
 
@@ -72,6 +75,7 @@ def pool_seqs(seqs, factor):
         return np.array([pool_seq(seq, factor) for seq in seqs])
 
 def unpool_seqs(seqs, factor):
+    """upsize sequences by a factor using mean unpooling operation"""
     newseqs = []
     for seq in seqs:
         newseq = []
@@ -82,12 +86,11 @@ def unpool_seqs(seqs, factor):
     return np.array(newseqs)
 
 def normalize_hic(hic):
+    """divide hic matrix so the mean of the main diagonal is equal to 1"""
     return hic / np.mean(np.diagonal(hic))
 
 def unpool(inp, factor):
-    """
-    Increases input matrix by a factor
-    """
+    """upsize matrix by a factor"""
     m, _ = inp.shape
     
     out = np.zeros((m*factor, m*factor))
@@ -103,9 +106,7 @@ def unpool(inp, factor):
 
 
 def pool_d(hic, factor):
-    """
-    pools hic matrix, returns pooled diagonal
-    """
+    """downsize hic matrix and return downsized diagonal"""
     x = pool(hic, factor, np.nansum)
     diag = ep.get_diagonal(x)
     x /= max(diag)
@@ -113,14 +114,18 @@ def pool_d(hic, factor):
 
 
 def sparsity(x):
+    """percent of elements which are zero"""
     return np.sum(x==0)/len(x)**2
 
 
 def smooth_hic(x, smooth_size=10):
+    """gaussian smooth"""
     return ndimage.gaussian_filter(x,(smooth_size,smooth_size))
 
 
 def load_hic(nbeads, pool_fn=pool_sum):
+    """load hic by pooling preloaded high resolution map"""
+
     if not default.data_dir.exists():
         default.data_dir.mkdir()
 
@@ -137,6 +142,8 @@ def load_hic(nbeads, pool_fn=pool_sum):
     return pool_fn(gthic, factor)
 
 def load_seqs(nbeads, k):
+    """load sequences by pooling preloaded high resolution sequences"""
+
     if not default.HCT116_seqs_20k.exists():
         nbeads_large = 20480
         gthic = load_hic(nbeads_large)

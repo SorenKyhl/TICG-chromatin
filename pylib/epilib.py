@@ -31,6 +31,7 @@ mycmap = mpl.colors.LinearSegmentedColormap.from_list('custom',
                                               (1,    '#ff0000')], N=126)
         
 class Sim:
+    """analyze simulations"""
     def __init__(self, path, maxent_analysis=True):
         self.path = Path(path)
         self.metrics = {}
@@ -321,19 +322,19 @@ class Sim:
         plt.axis([0,1,lower_bound, 1])
         
 class SCC():
-    '''
-    Class for calculation of SCC as defined by https://pubmed.ncbi.nlm.nih.gov/28855260/
-    '''
+    """calculate Stratified Correlation Coefficient (SCC)
+    as defined by https://pubmed.ncbi.nlm.nih.gov/28855260/
+    """
     def __init__(self):
         self.r_2k_dict = {} # memoized solution for var_stabilized r_2k
     def r_2k(self, x_k, y_k, var_stabilized):
-        '''
-        Compute r_2k (numerator of pearson correlation)
-        Inputs:
+        """Compute r_2k (numerator of pearson correlation)
+
+        Args:
             x: contact map
             y: contact map of same shape as x
             var_stabilized: True to use var_stabilized version
-        '''
+        """
         # x and y are stratums
         if var_stabilized:
             N_k = len(x_k)
@@ -348,16 +349,16 @@ class SCC():
     def mean_filter(x, size):
         return scipy.ndimage.uniform_filter(x, size, mode = 'constant') / (size)**2
     def scc(self, x, y, h = 3, K = None, var_stabilized = False, verbose = False):
-        '''
-        Compute scc between contact map x and y.
-        Inputs:
+        """Compute scc between contact map x and y.
+
+        Args:
             x: contact map
             y: contact map of same shape as x
             h: span of convolutional kernel (width = (1+2h))
             K: maximum stratum (diagonal) to consider (None for all)
             var_stabilized: True to use var_stabilized r_2k
             verbose: True to print when nan found
-        '''
+        """
         x = SCC.mean_filter(x.astype(np.float64), 1+2*h)
         y = SCC.mean_filter(y.astype(np.float64), 1+2*h)
         if K is None:
@@ -388,7 +389,7 @@ class SCC():
         return num / denom           
 
 def get_contactmap(filename, norm=True, log=False, rawcounts=False, normtype="mean"):
-    """Loads contact map from file, returns array."""
+    """Load contact map from file"""
     
     contactmap = np.loadtxt(filename)
     
@@ -396,7 +397,6 @@ def get_contactmap(filename, norm=True, log=False, rawcounts=False, normtype="me
         return contactmap
     else:  
         if norm:
-            # rescale_contactmap(contactmap, method=normtype)
             if normtype == "max":
                 contactmap /= np.max(np.diagonal(contactmap))
             elif normtype == "mean":
@@ -407,28 +407,6 @@ def get_contactmap(filename, norm=True, log=False, rawcounts=False, normtype="me
             contactmap = np.log(contactmap)
     
         return contactmap
-
-def rescale_contactmap(contactmap, method="mean"):
-    """rescale contact map so that the entries are probabilities rather than frequencies"""
-    if method == "max":
-        contactmap /= np.max(np.diagonal(contactmap))
-    elif method == "mean":
-        contactmap /= np.mean(np.diagonal(contactmap))
-        np.fill_diagonal(contactmap, 1)
-    return contactmap
-
-'''
-def get_contactmap_matrix(contactmap, norm=True, log=False):
-    """Loads contact map from contacts.txt matrix, returns array."""
-    if norm:
-        contactmap /= max(np.array(contactmap).diagonal())
-        #df /= df[0][0]
-
-    if log:
-        contactmap = np.log(contactmap)
-        
-    return contactmap
-'''
 
 @njit
 def get_diagonal(contact):
@@ -441,7 +419,7 @@ def get_diagonal(contact):
 
 @njit
 def get_oe(contact, diagonal=None):
-    """Returns observed over expected matrix.
+    """calculate observed over expected matrix.
     (normalize contact map by the mean of the sub-diagonal)
     """
     
@@ -1149,8 +1127,8 @@ def maxent_setup(dirname, k, hic_full, seqs_full=None, start=None, size=None, pl
     goals_diag = get_goal_diag(hic, nchis_diag)
     
     if adjust:
-        goals_plaid = goals_plaid * nbeads**2 # change_goals(goals_plaid, nbeads, ncells)
-        goals_diag = goals_diag * nbeads**2 #change_goals(goals_diag, nbeads, ncells)
+        goals_plaid = goals_plaid * nbeads**2
+        goals_diag = goals_diag * nbeads**2 
 
     # set up new directory
     newdir = dirname
@@ -1247,10 +1225,9 @@ def fill_subdiagonal(a, offset, fn):
     a[inds+offset, inds] = new_subdiag
     return a
 
-def change_goals(goals, nbeads, ncells, vbead):
-    return goals * nbeads**2 / (2 * vbead * 2 * ncells)
 
 def get_goals(hic, seqs, config, save_path=None, double_diagonal=False):
+    """get maximum entropy goals for simulation observables"""
     plaid = get_goal_plaid(hic, seqs, config)
     diag = get_goal_diag(hic, config, double_diagonal=double_diagonal)
     
@@ -1260,166 +1237,12 @@ def get_goals(hic, seqs, config, save_path=None, double_diagonal=False):
         
     return np.hstack((plaid, diag))    
 
-@njit
-def reduce(hic, newrows, newcols):
-    rows, cols = hic.shape
 
-    sfx = int(rows/newrows) # shrink factor
-    sfy = int(cols/newcols) # shrink factor
-
-    newhic = np.zeros((newrows, newcols))
-
-    for r in range(newrows):
-        for c in range(newcols):
-            x = r*sfx
-            y = c*sfy
-            newhic[r,c] = np.sum(hic[ x:x+sfx, y:y+sfy ])
-    return newhic
-
-
-@njit
-def reduce_mean(hic, newrows, newcols):
-    rows, cols = hic.shape
-
-    sfx = int(rows/newrows) # shrink factor
-    sfy = int(cols/newcols) # shrink factor
-
-    newhic = np.zeros((newrows, newcols))
-
-    for r in range(newrows):
-        for c in range(newcols):
-            x = r*sfx
-            y = c*sfy
-            newhic[r,c] = np.mean(hic[ x:x+sfx, y:y+sfy ])
-    return newhic
-
-@njit
-def resize_contactmap(hic, newrows, newcols=None):
-    rows, cols = hic.shape
-    
-    if newcols is None:
-        newrows = newcols
-        
-    newhic = np.zeros((newrows, newcols))
-        
-    # increase the size of the contactmap
-    if newrows > rows and newcols > cols:
-        sfx = int(newrows/rows) # scale factor
-        sfy = int(newcols/rows) # scale factor
-        
-        for x in range(rows):
-            for y in range(cols):
-                r = x*sfx
-                c = y*sfy
-                newhic[r:r+sfx, c:c+sfy] = hic[x,y] / np.sqrt(sfx)
-        
-        diag = np.zeros(newrows)
-        for i in range(newrows):
-            diag[i] = newhic[i, i]
-            
-        #newhic /= np.mean(diag)
-        newhic /= np.max(newhic)
-    
-    # decrease the size of the contactmap
-    if newrows < rows and newcols < cols:
-        sfx = int(rows/newrows) # shrink factor
-        sfy = int(cols/newcols) # shrink factor
-        
-        for r in range(newrows):
-            for c in range(newcols):
-                x = r*sfx
-                y = c*sfy
-                newhic[r,c] = np.sqrt(sfx)*np.mean(hic[ x:x+sfx, y:y+sfy ])
-      
-        diag = np.zeros(newrows)
-        for i in range(newrows):
-            diag[i] = newhic[i, i]
-            
-        #newhic /= np.mean(diag)        
-        #diag = np.zeros(rows)
-        #for i in range(rows):
-            #diag[i] = newhic[i, i]        
-        
-        #newhic /= np.mean(diag)
-        
-        # I think dividing by the max is the exact correct method
-        # but outliers in the experimental data are screwing things up, 
-        # so try dividing by the diagonal (above)
-        newhic /= np.max(newhic)
-        
-    # no change to size of contact map          
-    if newrows == rows and newcols == cols:
-        newhic = hic
- 
-    return newhic
-
-@njit
-def reduce_sqrt(hic, newrows, newcols):
-    rows, cols = hic.shape
-
-    sfx = int(rows/newrows) # shrink factor
-    sfy = int(cols/newcols) # shrink factor
-
-    newhic = np.zeros((newrows, newcols))
-
-    for r in range(newrows):
-        for c in range(newcols):
-            x = r*sfx
-            y = c*sfy
-            newhic[r,c] = np.sqrt(sfx)*np.mean(hic[ x:x+sfx, y:y+sfy ])
-    return newhic
-
-@njit
-def amplify_sqrt(hic, newrows, newcols):
-    rows, cols = hic.shape
-
-    sfx = int(newrows/rows) # scale factor
-    sfy = int(newcols/rows) # scale factor
-
-    newhic = np.zeros((newrows, newcols))
-
-    for x in range(rows):
-        for y in range(cols):
-            r = x*sfx
-            c = y*sfy
-            newhic[r:r+sfx, c:c+sfy] = hic[x,y] / np.sqrt(sfx)
-            
-    return newhic
-   
-
-@njit
-def reduce2(hic, newrows, newcols, fn=np.sum):
-    rows, cols = hic.shape
-
-    sfx = int(rows/newrows) # shrink factor
-    sfy = int(cols/newcols) # shrink factor
-
-    newhic = np.zeros((newrows, newcols))
-
-    for r in range(newrows):
-        for c in range(newcols):
-            x = r*sfx
-            y = c*sfy
-            newhic[r,c] = fn(hic[ x:x+sfx, y:y+sfy ])
-    return newhic
-
-def vacancy(hic, plot=True):
-    '''what percentage of the input image pixels are zero?'''
-    
-    sz = np.shape(hic)[0]
-    x = np.zeros_like(hic)
-    x[np.where(hic==0)] = 1
-
-    vacancy = np.sum(x)/sz**2
-    
-    if plot:
-        plt.figure(figsize=(12,10))
-        plt.imshow(x, cmap='binary', vmin = 0, vmax= 1)
-        plt.colorbar()
-        plt.title("Vacancy: {:.1f} %".format(vacancy*100))
-    return vacancy
 
 def plot_consistency(sim):
+    """ensure simulation observables are consistent with goals
+    computed from simulation contact map"""
+
     if np.shape(sim.hic) != np.shape(sim.seqs):
         size = np.shape(sim.seqs[0])[0]
         hic = resize_contactmap(sim.hic, size, size)
@@ -1441,17 +1264,22 @@ def plot_consistency(sim):
     plt.legend()
     return error
         
+
 def get_symmetry_score(A, order='fro'):
     symmetric = np.linalg.norm(1/2*(A + A.T), order)
     skew_symmetric = np.linalg.norm(1/2*(A - A.T), order)
     
     return symmetric / (symmetric + skew_symmetric)    
 
+
 def get_symmetry_score_2(first, second, order='fro'):
     composite = make_tri_composite(first, second)
     return get_symmetry_score(composite, order)
 
+
 def make_tri_composite(first, second):
+    """make composite matrix with upper triangle taken from first
+    and lower triangle taken from second"""
     npixels = np.shape(first)[0]
     indu = np.triu_indices(npixels)
     indl = np.tril_indices(npixels)
@@ -1462,8 +1290,9 @@ def make_tri_composite(first, second):
     composite[indl] = second[indl]
     return composite
     
+
 def plot_tri(first, second, vmaxp=None, oe=False, title="", dark=False, log=False):
-    
+    """compare two contact maps in upper and lower triangles"""
     if dark:
         vmaxp=np.mean(first)/2
         absolute = True
@@ -1487,7 +1316,9 @@ def plot_tri(first, second, vmaxp=None, oe=False, title="", dark=False, log=Fals
 
     plt.title("symmetry score: {%.2f}"%(symmetry_score))
 
+
 def plot_obs_vs_goal(sim):
+    """compare observables versus maxent goals"""
     fig, axs = plt.subplots(2, figsize=(12,14))
     obs = sim.obs_tot
     goal = sim.obj_goal_tot
@@ -1534,6 +1365,7 @@ class parameters():
         nint = self.N / nsites
         return nint
 
+
 def load_contactmap_hicstraw(hicfile, res, chrom, start, end, clean=False, KR=True):
     assert(res in hicfile.getResolutions())
     
@@ -1551,6 +1383,7 @@ def load_contactmap_hicstraw(hicfile, res, chrom, start, end, clean=False, KR=Tr
         contact, dropped_indices = clean_contactmap(contact)
 
     return contact
+
 
 def initialize(hicfile, res, size, randomized=False, chrom='2'):
     start = 0
@@ -1603,6 +1436,7 @@ def load_contactmap_with_buffers(mzd, start, end, res):
             out[imin:imax, jmin:jmax] = buffer
             
     return out
+
 
 def make_clean_mask(inds, N):
     mask = np.full((N,N), True)
@@ -1657,25 +1491,3 @@ def scale_sim(orig, factor, overwrite=False):
 
     newsim.init_sim(overwrite = overwrite, getgoals = False)
 
-def rescale_matrix(inp, factor, method="sum"):
-    '''
-    Rescales input matrix by factor.
-    if inp is 1024x1024 and factor=2, out is 512x512
-    '''
-
-    assert len(inp.shape) == 2, f'must be 2d array not {inp.shape}'
-    m, _ = inp.shape
-    assert m % factor == 0, f'factor must evenly divide m {m}%{factor}={m%factor}'
-    inp = np.triu(inp) # need triu to not double count entries
-
-    if method=="sum":
-        fn = np.sum
-    if method=="mean":
-        fn = np.mean
-
-    processed = skimage.measure.block_reduce(inp, (factor, factor), fn)
-    # need to make symmetric again
-    processed = np.triu(processed)
-    out = processed + np.triu(processed, 1).T 
-    
-    return out

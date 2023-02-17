@@ -32,12 +32,12 @@ public:
 		*/
 
 		// DELTA = 0.33 
-		double delta = 16.5;       // dimless (is it 16.5 or 0.33?)
+		double delta = 16.5;       // nm
 		double ata = 0.152;        // nm-1
 		double gamma = 0.938;      // dimless
 		double eps_bend = 78.309;  // kT nm
-		double eps_parl = 2.665;   // kT/nm
-		double eps_perp = 1.942;   // kT/nm
+		double eps_parl = 2.665;   // kT nm-1
+		double eps_perp = 1.942;   // kT nm-1
 
 		double U = 0;
 

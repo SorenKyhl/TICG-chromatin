@@ -57,6 +57,9 @@ class Maxent:
         self.gthic = gthic
         self.overwrite = overwrite
 
+        if "goals" not in self.params:
+            raise ValueError("goals are not specified in parameters")
+
         self.update_default_config()
         self.defaultsim = Pysim(self.resources, self.config, self.seqs, mkdir=False)
         if initial_chis is None:

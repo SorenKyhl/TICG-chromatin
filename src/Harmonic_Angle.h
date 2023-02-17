@@ -16,9 +16,6 @@ public:
 		Eigen::RowVector3d displacement2 = pbead3->r - pbead2->r; 
 		displacement1 /= displacement1.norm();
 		displacement2 /= displacement2.norm();
-
-		//double theta = std::acos(displacement1.dot(displacement2));
-		//return k*std::pow(theta,2);
 		return k*(1-displacement1.dot(displacement2));
 	}
 };

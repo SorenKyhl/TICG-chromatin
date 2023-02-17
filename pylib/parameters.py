@@ -66,9 +66,5 @@ def get_config(nbeads=None, config=default.config, grid_bond_ratio=0.95, base="g
     
     return config
 
-def interpolate(delta):
-    data = np.loadtxt("data/dssWLCparams.txt")
-    print(data)
-
 if __name__ == "__main__":
     interpolate(3)

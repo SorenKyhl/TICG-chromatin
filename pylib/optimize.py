@@ -1,14 +1,18 @@
 import numpy as np
 import os.path as osp
 import copy
+import functools
 from multiprocessing import Process
 from scipy import optimize
+from sklearn.metrics import mean_squared_error
+from bayes_opt import BayesianOptimization
+
 
 from pylib import epilib, utils, default
 from pylib.pysim import Pysim
 
 """ 
-module for optimizing grid size.
+module for optimizing simulation parameters
 
 Context:
     The diagonal interactions determined by maximum entropy optimization are sensitive
@@ -34,8 +38,7 @@ Context:
 
 def nearest_neighbor_contact_error(grid_bond_ratio, sim_engine, gthic):
     """ calculate the difference between simulated and experimental nearest-neighbor contact
-    probability. nearest neighbor contact probability is equal to p(s) evalulated at s=1,
-    for s defined as the contour length in units of monomer units: s $\in$ [0,nbeads]
+    probability. 
     
     Args: 
         grid_bond_ratio [float]: grid size expressed as a ratio of the bond length.
@@ -68,9 +71,7 @@ def nearest_neighbor_contact_error(grid_bond_ratio, sim_engine, gthic):
 
 def optimize_grid_size(config, gthic, low_bound=0.75, high_bound=1.25):
     """ tune grid size until simulated nearest neighbor contact probability
-    is equal to the same probability derived from the ground truth hic matrix
-    nearest neighbor contact probability is equal to p(s) evalulated at s=1,
-    for s defined as the contour length in units of monomer units: s $\in$ [0,nbeads]
+    is equal to the same probability derived from the ground truth hic matrix.
 
     args:
         config [json]: simulation config file. grid_size will be overwritten,
@@ -95,23 +96,26 @@ def optimize_grid_size(config, gthic, low_bound=0.75, high_bound=1.25):
     return optimal_grid_size
 
 
-def stiffness_analytic_error(hic, gthic):
-    """ calculate error for the purposes of optimizing stiffness 
-    the natural thing to do would be to minimize the MSE between
-    the p(s) curves for simulation and experiment, but minimization
-    routines call the objective too much.
+def stiffness_root_error(hic, gthic):
+    """ calculate error for the purposes of optimizing stiffness.
  
-    Using rootfinding requires an error function that can in principle
-    be zero, positive, or negative. for lack of a better option,
-    just try to match the 4th bead for N=1024, which is right about
-    on the inflection point in the p(s) curve when viewed in log-log scale
+    for lack of a better option, just try to match the p(s) 
+    at the  4th bead for N=1024
     """
-    return epilib.get_diagonal(hic)[4] - epilib.get_diagonal(gthic)[4]
+    return epilib.get_diagonal(hic)[3] - epilib.get_diagonal(gthic)[3]
+    #return np.mean(epilib.get_diagonal(hic) - epilib.get_diagonal(gthic))
 
 
-def stiffness_sim_error(k_angle, sim_engine, gthic):
+def stiffness_bayes_error(hic, gthic):
+    """ error used for bayesian optimization """
+    sim = epilib.get_diagonal(hic)
+    exp = epilib.get_diagonal(gthic)
+    return mean_squared_error(sim, exp, squared=False)
+
+
+def simulate_stiffness_error(k_angle, sim_engine, gthic, method):
     """ simulate and calculate the difference between simulated and experimental p(s) 
-    diagonal probability.  as a function of the chain stiffness defined by the angle potential
+    diagonal probability as a function of the chain stiffness defined by the angle potential.
     
     Args: 
         k_angle [float]: grid size expressed as a ratio of the bond length.
@@ -122,11 +126,11 @@ def stiffness_sim_error(k_angle, sim_engine, gthic):
         error [float]: difference between simulated and experimental p(s) diagonal probability
     """
     try:
-        stiffness_sim_error.counter += 1
+        simulate_stiffness_error.counter += 1
     except AttributeError:
-        stiffness_sim_error.counter = 1
+        simulate_stiffness_error.counter = 1
 
-    output = f"iteration{stiffness_sim_error.counter}"
+    output = f"iteration{simulate_stiffness_error.counter}"
     print(f"optimizing chain stiffness, {output}")
     sim_engine.config['k_angle'] = k_angle
 
@@ -134,11 +138,17 @@ def stiffness_sim_error(k_angle, sim_engine, gthic):
 
     output_dir = osp.join(sim_engine.root,output)
     sim_analysis = epilib.Sim(output_dir, maxent_analysis=False)
-    error = stiffness_analytic_error(sim_analysis.hic, gthic)
-    print(f"error, {error}")
+
+    if method == "bayes":
+        # bayes method maximizes, so return negative of error 
+        error = -stiffness_bayes_error(sim_analysis.hic, gthic)
+        print(f"bayes error, {error}")
+    else:
+        error = stiffness_root_error(sim_analysis.hic, gthic)
+        print(f"root error, {error}")
     return error
 
-def optimize_stiffness(config, gthic, low_bound=0, high_bound=1):
+def optimize_stiffness(config, gthic, low_bound=0, high_bound=1, method = "bayes"):
     """ tune angle stiffness until simulated p(s) diagonal probabity 
     is equal to the same probability derived from the ground truth hic matrix.
 
@@ -157,9 +167,33 @@ def optimize_stiffness(config, gthic, low_bound=0, high_bound=1):
     root = "optimize-stiffness"
     sim_engine = Pysim(root, config, seqs=None, gthic=gthic)
 
-    result = optimize.brentq(stiffness_sim_error, low_bound, high_bound, 
-                            args=(sim_engine, gthic), xtol=1e-2, maxiter=10)
-    return result
+    if method == "bayes":
+        pbounds = {'k_angle': (low_bound, high_bound)}
+
+        black_box = functools.partial(simulate_stiffness_error,
+                                        sim_engine=sim_engine,
+                                        gthic=gthic,
+                                        method="bayes")
+                                        
+        optimizer = BayesianOptimization(
+            f = black_box,
+            pbounds=pbounds,
+            verbose=2,
+            random_state=1,
+        )
+
+        optimizer.maximize(
+            init_points=2,
+            n_iter=20,
+        )
+
+        return optimizer.max['params']['k_angle']
+    else:
+        # use rootfinding
+        method = "notbayes"
+        result = optimize.brentq(simulate_stiffness_error, low_bound, high_bound, 
+                                args=(sim_engine, gthic, method), xtol=1e-2, maxiter=10)
+        return result
 
 if __name__ == "__main__":
     """directory set up:

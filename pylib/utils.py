@@ -7,7 +7,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 
 """ 
-utils 
+utility functions
 """
 
 def load_json(path):
@@ -34,7 +34,7 @@ def write_json(data, path):
 
 
 def cat(outfilename, infilenames):
-    """python implementation of linux cat command, concatenates ``infilenames`` into ``outfilename``
+    """implementation of linux cat command, concatenates ``infilenames`` into ``outfilename``
 
     Args:
         outfilename (str): destination for concatenated contents of ``infilenames``
@@ -76,6 +76,7 @@ def process_parallel_xargs(self, tasks, args):
 
 @contextmanager
 def cd(newdir):
+    """implementation of linux cd command using context manager"""
     prevdir = os.getcwd()
     os.chdir(os.path.expanduser(newdir))
     try:
@@ -109,8 +110,7 @@ def load_sequences_from_dir(dirname):
 
 
 def uncorrelate_seqs(seqs):
-    """
-    transform sequences so that they are uncorrelated using cholesky transformation.
+    """ transform sequences so that they are uncorrelated using cholesky transformation.
     following this blog post:
         https://blogs.sas.com/content/iml/2012/02/08/use-the-cholesky-transformation-to-correlate-and-uncorrelate-variables.html
     """
@@ -207,6 +207,7 @@ def get_last_iteration(directory):
     iterations = list(iterations)
     iterations = sorted(iterations, key=lambda path: path.name[-1])
     return iterations[-1]
+
 
 def clean_diag_chis(config):
     """ set beginning diagonal chis to zero"""
