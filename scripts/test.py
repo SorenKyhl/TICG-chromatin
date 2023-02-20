@@ -437,7 +437,7 @@ def plot_sc_p_s():
     plt.savefig(osp.join(data_dir, 'sc_contacts_time', 'meanDist_log2.png'))
     plt.close()
 
-def plot_p_s(dataset, experimental=False, params=False):
+def plot_p_s(dataset, experimental=False, params=False, grid_size=False):
     # plot different p(s) curves
     dir = '/home/erschultz/'
     if experimental:
@@ -449,7 +449,7 @@ def plot_p_s(dataset, experimental=False, params=False):
     data_dir = osp.join(dir, dataset)
 
     data = defaultdict(dict) # sample : {meanDist, diag_chis_step} : vals
-    for sample in [4001, 4002, 4003, 4006]:
+    for sample in range(1, 10):
         sample_dir = osp.join(data_dir, 'samples', f'sample{sample}')
         ifile = osp.join(sample_dir, 'y.npy')
         if osp.exists(ifile):
@@ -457,12 +457,13 @@ def plot_p_s(dataset, experimental=False, params=False):
             meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
             data[sample]['meanDist'] = meanDist
 
-
+            with open(osp.join(sample_dir, 'config.json')) as f:
+                config = json.load(f)
             if params:
-                with open(osp.join(sample_dir, 'config.json')) as f:
-                    config = json.load(f)
                 diag_chis_step = calculate_diag_chi_step(config)
                 data[sample]['diag_chis_step'] = np.array(diag_chis_step)
+            if grid_size:
+                data[sample]['grid_size'] = config['grid_size']
 
 
     for norm in [True, False]:
@@ -483,7 +484,10 @@ def plot_p_s(dataset, experimental=False, params=False):
                 X = np.linspace(0, 1, len(meanDist))
             else:
                 X = np.arange(0, len(meanDist), 1)
-            ax.plot(X, meanDist, label = label)
+            if grid_size:
+                ax.plot(X, meanDist, c = data[sample]['grid_size'], label = data[sample]['grid_size'])
+            else:
+                ax.plot(X, meanDist, label = label)
 
             if params:
                 diag_chis_step = data[sample]['diag_chis_step']
@@ -500,7 +504,10 @@ def plot_p_s(dataset, experimental=False, params=False):
             ax2.set_ylabel('Diagonal Parameter', fontsize = 16)
             ax2.legend(loc='upper right')
         else:
-            ax.legend(loc='upper right', title = 'Sample')
+            if grid_size:
+                ax.legend(loc='upper right', title = 'Grid Size')
+            else:
+                ax.legend(loc='upper right', title = 'Sample')
         plt.tight_layout()
         plt.savefig(osp.join(data_dir, f'meanDist_norm_{norm}.png'))
         plt.close()
@@ -1260,6 +1267,6 @@ if __name__ == '__main__':
     # compare_scc_bio_replicates()
     # plot_sd()
     # max_ent_loss_for_gnn('dataset_11_14_22', 2201)
-    meanDist_comparison()
-    # plot_p_s('dataset_test', params=True)
+    # meanDist_comparison()
+    plot_p_s('dataset_bond_grid', params = False, grid_size = True)
     # l_comparison()

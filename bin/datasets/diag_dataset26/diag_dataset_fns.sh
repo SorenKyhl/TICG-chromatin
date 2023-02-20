@@ -4,11 +4,11 @@ source ~/TICG-chromatin/bin/random/random_fns.sh
 
 param_setup
 dataset=dataset_02_20_23
-# dataFolder="/project/depablo/erschultz/${dataset}"
-# scratchDir='/home/erschultz/scratch'
-#
-dataFolder="/home/erschultz/${dataset}"
+dataFolder="/project/depablo/erschultz/${dataset}"
 scratchDir='/home/erschultz/scratch'
+#
+# dataFolder="/home/erschultz/${dataset}"
+# scratchDir='/home/erschultz/scratch'
 
 m=512
 overwrite=1

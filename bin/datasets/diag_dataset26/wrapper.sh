@@ -22,7 +22,7 @@ cd ~/TICG-chromatin
 
 dataset="dataset_02_20_23"
 echo "generate_params for ${dataset}"
-# python  ~/TICG-chromatin/bin/datasets/generate_params.py --samples 5000 --k 8 --m 512 --dataset $dataset --seq_mode 'eig_norm_v2' --chi_param_version 'v13' --diag_mode 'linear_v2' --grid_mode 'v1' --data_dir '/home/erschultz'
+# python  ~/TICG-chromatin/bin/datasets/generate_params.py --samples 5000 --k 8 --m 512 --dataset $dataset --seq_mode 'eig_norm_v2' --chi_param_version 'v13' --diag_mode 'linear_v2' --grid_mode 'v1' --data_dir '/project/depablo/erschultz'
 #
 # cd "/home/erschultz/${dataset}"
 # tar -czvf setup.tar.gz setup

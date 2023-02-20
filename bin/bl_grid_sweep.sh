@@ -51,12 +51,12 @@ chiDiagMethod='none'
 i=1
 jobs=0
 waitCount=0
-for bondLength in 18 19 20 21 22 23 24 25 26 27 28
+for bondLength in 16.5
 do
 	for gridSize in 20 22 24 26 28 30 32 34 36
 	do
 		echo $i bondLength $bondLength gridSize $gridSize
-		# run &
+		run &
 		i=$(( $i + 1 ))
 		jobs=$(( $jobs + 1 ))
 		if [ $jobs -gt 16 ]
