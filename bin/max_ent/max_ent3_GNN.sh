@@ -44,13 +44,13 @@ waitCount=0
 for sample in {201..210}
 do
   gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
-  for GNNModelID in 371 372 373 374 375
+  for GNNModelID in 371 372 376 377
    # 243 254 262 265 267 271 276
   do
     echo $sample $m
     max_ent
     jobs=$(( $jobs + 1 ))
-    if [ $jobs -gt 15 ]
+    if [ $jobs -gt 14 ]
     then
       echo 'Waiting'
       waitCount=$(( $waitCount + 1 ))

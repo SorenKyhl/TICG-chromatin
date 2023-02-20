@@ -217,7 +217,7 @@ def main():
                 title = None
 
             if args.final_it == 1:
-                sim_label = 'MLP'
+                sim_label = 'GNN'
                 color = 'green'
             else:
                 sim_label = 'Max Ent'

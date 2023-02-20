@@ -920,7 +920,6 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
     pca_b_rab = np.zeros(N)
     pca_var = np.zeros(N)
     y_list = []
-    L_list, _ = plaid_dist(dataset, 4, False)
     # L_list_exp, _ = plaid_dist('dataset_01_26_23', 4, False)
     meanDist_list = []
     for i, sample in enumerate(samples):
@@ -979,6 +978,7 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
 
     # plot distributions
     if plot:
+        L_list, _ = plaid_dist(dataset, 4, False)
         # plot histograms
         for arr, label in zip([k_means_rab, pca_rab, pca_b_rab, pca_var],
                                 ['kmeans_Rab', 'PCA_Rab', 'PCA_binary_Rab','PCA_var']):
@@ -1082,18 +1082,20 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
     return meanDist_list
 
 def meanDist_comparison():
-    datasets = ['dataset_01_26_23', 'dataset_01_27_23_v9']
-    datasets = ['dataset_01_26_23', 'dataset_02_04_23']
+    # datasets = ['dataset_01_26_23', 'dataset_02_16_23']
+    datasets = ['dataset_01_26_23', 'dataset_02_04_23', 'dataset_02_16_23']
+    # datasets = ['dataset_02_04_23', 'dataset_02_20_23']
+    data_dir = osp.join('/home/erschultz', datasets[0])
 
     cmap = matplotlib.cm.get_cmap('tab10')
-    ind = np.arange(2) % cmap.N
+    ind = np.arange(len(datasets)) % cmap.N
     colors = cmap(ind)
     fig, ax = plt.subplots()
     ax2 = ax.twinx()
     ax2.get_yaxis().set_visible(False)
 
     for i, dataset in enumerate(datasets):
-        meanDist_list = molar_contact_ratio(dataset, False)
+        meanDist_list = molar_contact_ratio(dataset, None, False)
         for meanDist in meanDist_list:
             ax.plot(meanDist, c = colors[i])
         ax2.plot(np.NaN, np.NaN, label = dataset, c = colors[i])
@@ -1105,8 +1107,7 @@ def meanDist_comparison():
 
     ax2.legend(loc='upper right')
     plt.tight_layout()
-    # plt.savefig(osp.join(data_dir, 'meanDist_comparison.png'))
-    plt.show()
+    plt.savefig(osp.join(data_dir, 'meanDist_comparison.png'))
     plt.close()
 
 def meanDist_vs_params(dataset):
@@ -1254,11 +1255,11 @@ if __name__ == '__main__':
     # molar_contact_ratio('dataset_01_27_23_v5', True)
     # molar_contact_ratio('dataset_01_26_23', True)
     # molar_contact_ratio('dataset_02_06_23', 363)
-    # molar_contact_ratio('dataset_02_01_23', 362)
-    meanDist_vs_params('dataset_02_06_23')
+    # molar_contact_ratio('dataset_02_13_23', 372)
+    # meanDist_vs_params('dataset_02_06_23')
     # compare_scc_bio_replicates()
     # plot_sd()
     # max_ent_loss_for_gnn('dataset_11_14_22', 2201)
-    # meanDist_comparison()
+    meanDist_comparison()
     # plot_p_s('dataset_test', params=True)
     # l_comparison()

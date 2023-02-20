@@ -30,7 +30,12 @@ def getArgs():
     if isinstance(args.grid_size, float):
         args.grid_size = args.grid_size
     elif osp.exists(args.grid_size):
-        args.grid_size = np.loadtxt(args.grid_size)[-1]
+        if args.grid_size.endswith('json'):
+            with open(args.grid_size, 'r') as f:
+                tmp = json.load(f)
+                args.grid_size = tmp['grid_size']
+        else:
+            args.grid_size = np.loadtxt(args.grid_size)[-1]
     else:
         args.grid_size = float(args.grid_size)
 

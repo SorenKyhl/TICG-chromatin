@@ -21,19 +21,19 @@ run()  {
 
 param_setup
 m=512
-dataset=dataset_02_04_23
+dataset=dataset_02_13_23
 baseDataFolder="/home/erschultz/${dataset}"
 scratchDir='/home/erschultz/scratch'
 overwrite=1
 
-k=1
+k=0
 nSweeps=50000
 dumpFrequency=10000
 TICGSeed=10
 diag='true'
-dense='true'
-diagBins=64
-nSmallBins=32
+dense='false'
+diagBins=512
+nSmallBins=64
 smallBinSize=1
 bigBinSize=-1
 nBigBins=-1
@@ -44,15 +44,26 @@ useE='true'
 
 jobs=0
 waitCount=0
-for sample in 201
+for sample in 324
 do
-	dataFolder="${baseDataFolder}/samples/sample${sample}/none/k${k}/replicate1"
-	chiDiagMethod="${dataFolder}/chis_diag.txt"
+	sampleFolder="${baseDataFolder}/samples/sample${sample}"
+	gridSize="${sampleFolder}/none/k0/replicate1/grid_size.txt"
+	gridSize="${sampleFolder}/config.json"
+
+	dataFolder="${sampleFolder}"
+	chiDiagMethod="${dataFolder}/diag_chis_continuous.npy"
+	chiMethod="${dataFolder}/chis.txt"
+	seqMethod="${dataFolder}/resources/x.npy"
 
 	# chiMethod="${dataFolder}/chis.txt"
 	# seqMethod="${dataFolder}/resources/x_shuffle.npy"
 	# i="${sample}_shuffle_seq"
 	# run &
+
+	chiMethod="none"
+	seqMethod="none"
+	i="${sample}_diag"
+	run &
 	#
 	# chiMethod="${dataFolder}/chis.txt"
 	# seqMethod="${baseDataFolder}/samples/sample2202/PCA-normalize-E/k${k}/replicate1/resources/x.npy"
@@ -99,12 +110,11 @@ do
 	# i="${sample}_copy"
 	# run &
 
-	seqMethod="none"
-	chiDiagMethod="${dataFolder}/fitting/chis_diag_edit.txt"
-	i="${sample}_edit"
-	run &
+	# chiDiagMethod="${dataFolder}/fitting/chis_diag_edit.txt"
+	# i="${sample}_edit"
+	# run &
 
-	# chiDiagMethod="${dataFolder}/chis_diag_edit_zero.txt"
+	# chiDiagMethod="${dataFolder}/fitting/chis_diag_edit_zero.txt"
 	# i="${sample}_edit_zero"
 	# run &
 
@@ -121,7 +131,7 @@ do
 	# run &
 	#
 	# chiDiagMethod="${dataFolder}/fitting/linear_fit.txt"
-	# i="${sample}_linear_rand_seq"
+	# i="${sample}_linear"
 	# run &
 	# #
 	# # chiDiagMethod="${dataFolder}/log_fit.txt"
@@ -136,7 +146,7 @@ do
 	# i="${sample}_poly3"
 	# run &
 
-	jobs=$(( $jobs + 6 ))
+	jobs=$(( $jobs + 4 ))
 	if [ $jobs -gt 15 ]
 	then
 		echo 'Waiting'

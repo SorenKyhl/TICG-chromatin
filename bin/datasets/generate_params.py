@@ -41,6 +41,8 @@ def getArgs():
                     help='Any S_ij > max will be cropped to max')
     parser.add_argument('--grid_mode', type=str,
                     help='How to determine grid size')
+    parser.add_argument('--data_dir', type=str, default='/project/depablo/erschultz',
+                    help='where data will be found when running simulation')
 
     args = parser.parse_args()
     return args
@@ -57,12 +59,13 @@ class DatasetGenerator():
         self.grid_mode = args.grid_mode
         self.chi_param_version = args.chi_param_version
         self.max_L = args.max_L
+        self.data_dir = args.data_dir
 
         self.dir = '/home/erschultz'
-        data_dir = osp.join(self.dir, self.dataset)
-        if not osp.exists(data_dir):
-            os.mkdir(data_dir, mode = 0o755)
-        self.odir = osp.join(data_dir, 'setup')
+        odir = osp.join(self.dir, self.dataset)
+        if not osp.exists(odir):
+            os.mkdir(odir, mode = 0o755)
+        self.odir = osp.join(odir, 'setup')
         if not osp.exists(self.odir):
             os.mkdir(self.odir, mode = 0o755)
 
@@ -89,6 +92,10 @@ class DatasetGenerator():
 
         for i in range(self.N):
             self.sample_dict[i]['k'] = self.k
+            if self.k == 0:
+                self.sample_dict[i]['chi_method'] = 'none'
+                continue
+
             if self.chi_param_version == 'v1':
                 chi_ii = skewnorm.rvs(0.83, -2.459, 2.594, size = self.k)
                 chi_ij = skewnorm.rvs(-1.566, 1.815, 2.892, size = int(self.k*(self.k-1)/2))
@@ -196,7 +203,7 @@ class DatasetGenerator():
             chi_file = osp.join(self.odir, f'chi_{i+1}.npy')
             np.save(chi_file, chi)
 
-            chi_file = osp.join('/project/depablo/erschultz', self.dataset, f'setup/chi_{i+1}.npy')
+            chi_file = osp.join(self.data_dir, self.dataset, f'setup/chi_{i+1}.npy')
             self.sample_dict[i]['chi_method'] = chi_file
 
     def seq_markov_params(self):
@@ -250,8 +257,12 @@ class DatasetGenerator():
             dataset = '/home/erschultz/dataset_11_14_22/samples'
             samples = range(2201, 2216)
         elif self.m == 512:
-            dataset = f'/home/erschultz/dataset_01_26_23/samples'
-            samples = range(201, 250)
+            if 'v2' in self.seq_mode:
+                dataset = '/home/erschultz/dataset_02_04_23/samples'
+                samples = range(201, 283)
+            else:
+                dataset = '/home/erschultz/dataset_01_26_23/samples'
+                samples = range(201, 250)
 
         for j in samples:
             sample_folder = osp.join(dataset, f'sample{j}')
@@ -269,7 +280,7 @@ class DatasetGenerator():
             seq_file = osp.join(self.odir, f'x_{i+1}.npy')
             np.save(seq_file, x)
 
-            seq_file = osp.join('/project/depablo/erschultz', self.dataset, f'setup/x_{i+1}.npy')
+            seq_file = osp.join(self.data_dir, self.dataset, f'setup/x_{i+1}.npy')
             self.sample_dict[i]['method'] = seq_file
 
     def linear_params(self):
@@ -279,9 +290,13 @@ class DatasetGenerator():
             else:
                 dir = osp.join(self.dir, 'dataset_01_26_23/diagonal_param_distributions')
 
-            with open(osp.join(dir, f'k{self.k}_linear_intercept.pickle'), 'rb') as f:
+            if self.k == 0:
+                k = 8
+            else:
+                k = self.k
+            with open(osp.join(dir, f'k{k}_linear_intercept.pickle'), 'rb') as f:
                 dict_intercept = pickle.load(f)
-            with open(osp.join(dir, f'k{self.k}_linear_slope.pickle'), 'rb') as f:
+            with open(osp.join(dir, f'k{k}_linear_slope.pickle'), 'rb') as f:
                 dict_slope = pickle.load(f)
 
             for i in range(self.N):
@@ -342,7 +357,7 @@ class DatasetGenerator():
             self.seq_pc_params()
         elif self.seq_mode == 'norm':
             self.seq_eig_params()
-        elif self.seq_mode == 'eig_norm':
+        elif self.seq_mode.startswith('eig_norm'):
             self.seq_eig_params(True)
         elif self.seq_mode == 'pcs_shuffle':
             self.seq_pc_params(True)
@@ -366,6 +381,7 @@ class DatasetGenerator():
 
 
         # write to odir
+        print(f'Writing to {self.odir}')
         for i in range(self.N):
             ofile = osp.join(self.odir, f'sample_{i+1}.txt')
             with open(ofile, 'w') as f:

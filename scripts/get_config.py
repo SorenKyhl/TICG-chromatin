@@ -382,7 +382,12 @@ def main():
     if isinstance(args.grid_size, float):
         grid_size = args.grid_size
     elif osp.exists(args.grid_size):
-        grid_size = np.loadtxt(args.grid_size)[-1]
+        if args.grid_size.endswith('json'):
+            with open(args.grid_size, 'r') as f:
+                tmp = json.load(f)
+                grid_size = tmp['grid_size']
+        else:
+            grid_size = np.loadtxt(args.grid_size)[-1]
     else:
         grid_size = float(args.grid_size)
     config['grid_size'] = grid_size
