@@ -1,5 +1,5 @@
 from pathlib import Path
-from pylib import utils, hic
+from pylib import utils
 from pylib.chipseqPipeline import ChipseqPipeline, Smooth, Normalize, Sigmoid
 from pylib.datapipeline import DataPipeline
 
