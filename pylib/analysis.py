@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+import logging
 
 from pylib import epilib as ep
 from pylib import utils, energy_utils
@@ -14,7 +14,7 @@ def sim_analysis(sim):
     plt.savefig("consistency.png")
     plt.close()
     if error > 0.01:
-        print("SIMULATION IS NOT CONSISTENT")
+        logging.error("SIMULATION IS NOT CONSISTENT")
 
     plt.figure()
     sim.plot_contactmap()
@@ -173,13 +173,13 @@ def plot_energy_matrices(sim):
 
 def main():
     sim = ep.Sim("production_out")
-    print("sim created")
+    logging.info("sim created")
     sim_analysis(sim)
-    print("sim analysis done")
+    logging.info("sim analysis done")
     compare_analysis(sim)
-    print("compare analysis done")
+    logging.info("compare analysis done")
     maxent_analysis(sim)
-    print("maxent analysis done")
+    logging.info("maxent analysis done")
 
 if __name__ == "__main__":
     main()

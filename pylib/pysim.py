@@ -1,34 +1,28 @@
 from pathlib import Path
-import shutil
-import json
 import numpy as np
-import hicstraw
-import matplotlib.pyplot as plt
 import pandas as pd
-import jsbeautifier
-import os
 from multiprocessing import Process 
 import time
-from typing import Union
+from typing import Union, Optional
 
 from pylib.pyticg import Sim
-from pylib import analysis
-from pylib.utils import cd, cat, copy_last_snapshot, newton
+from pylib.utils import cd, cat, copy_last_snapshot
 from pylib import utils
-from pylib import epilib as ep
+
+PathLike = Union[str, Path]
+ArrayLike = Union[list, np.ndarray]
 
 """
 pysim
 """
-from contextlib import redirect_stdout
-import subprocess
 
 class Pysim:
+    """wrapper around pyticg"""
     
     def __init__(self, 
-            root : str, 
+            root : PathLike, 
             config : dict, 
-            seqs : list[list],
+            seqs : ArrayLike,
             gthic = None,
             randomize_seed : bool = True, 
             mkdir : bool = True, 
@@ -46,7 +40,7 @@ class Pysim:
             self.randomize_seed()            
 
     @classmethod
-    def from_directory(cls, sim_dir : str, new_root : str = None):
+    def from_directory(cls, sim_dir : PathLike, new_root : Optional[PathLike] = None):
         """ construct a simulation object from a directory that's already set up (i.e. contains config and sequence files)
 
         dir: simulation directory from which to initialize
@@ -60,10 +54,10 @@ class Pysim:
         if new_root == None:
             return cls(sim_dir, config, seqs, mkdir=False, setup_needed=False)
         else:
-            return cls(new_dir, config, seqs, mkdir=True, setup_needed=True)
+            return cls(new_root, config, seqs, mkdir=True, setup_needed=True)
 
 
-    def set_root(self, root : str, mkdir : bool):
+    def set_root(self, root : PathLike, mkdir : bool):
         """ set the root of the simulation. and (optionally) create a directory at that path
 
         args:
@@ -81,7 +75,7 @@ class Pysim:
         if isinstance(config, dict):
             self.config = config
         else:
-            self.config = utils.load_json(path)  
+            self.config = utils.load_json(config)  
 
             
     def randomize_seed(self):
@@ -99,6 +93,7 @@ class Pysim:
             if self.seqs is None:
                 return 
 
+            self.seqs = np.array(self.seqs)
             if self.seqs.ndim > 1:
                 for i, seq in enumerate(self.seqs):
                     self.write_sequence(seq, Path(self.root, f"pcf{i+1}.txt"))
@@ -217,7 +212,6 @@ class Pysim:
             cores: number of parallel simulations to execute
         """
         self.data_out = name
-        print("reading from:", self.data_out)
         processes = []
         # create processes
         for i in range(cores):
@@ -263,7 +257,7 @@ class Pysim:
         
         #TODO: add delete old files option
            
-    def combine_contactmaps(self, contact_files: list, output_file : str = None):
+    def combine_contactmaps(self, contact_files: list[PathLike], output_file : Optional[PathLike] = None):
         """ combines (sums) multiple contact maps from separate parallel simulations into one contactmap
 
         args:
@@ -282,7 +276,7 @@ class Pysim:
         else:
             return combined  
     
-    def write_sequence(self, sequence: list, path: str):
+    def write_sequence(self, sequence: ArrayLike, path: PathLike):
         """ write sequence of polymer bead types to disk at specified path """
         np.savetxt(path, sequence, fmt="%.8f", delimiter=" ")
     
