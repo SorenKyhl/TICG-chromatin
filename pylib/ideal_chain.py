@@ -1,4 +1,5 @@
 import sys
+from typing import Optional
 
 from pylib import parameters
 from pylib.pysim import Pysim
@@ -7,7 +8,16 @@ from pylib.pysim import Pysim
 module for running ideal chain simulations
 """
 
-def ideal_chain_simulation(nbeads, grid_bond_ratio=None):
+def ideal_chain_simulation(nbeads : int, grid_bond_ratio : Optional[float] = None):
+    """return simulation object with only bonded interactions
+
+    Args:
+        nbeads: number of beads in simulation
+        grid_bond_ratio: ratio between grid size and polymer bond length
+
+    Returns:
+        Pysim object for simulating ideal chain
+    """
     if grid_bond_ratio is None:
         config = parameters.get_config(nbeads)
     else:
@@ -22,8 +32,8 @@ if __name__ == "__main__":
     if len(sys.argv)>1:
         nbeads = int(sys.argv[1])
     else: 
-        print("nbeads not specified,")
-        print("usage: bonded_only_simulation nbeads")
+        raise ValueError("usage: ideal_chain.py nbeads")
+
     sim = ideal_chain_simulation(nbeads)
     sim.run()
 
