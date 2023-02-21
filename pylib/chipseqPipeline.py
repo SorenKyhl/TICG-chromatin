@@ -1,9 +1,11 @@
-import scipy
+import scipy.ndimage
 import numpy as np
 from pylib import epilib
 
 
 class ChipseqPipeline():
+    """data processing pipeline for chipseq data"""
+
     def __init__(self, operations):
         self.operations = operations
 
@@ -13,6 +15,7 @@ class ChipseqPipeline():
         return x
 
 class Smooth:
+    """gaussian smoothing"""
     def __init__(self, size=2):
         self.size = size
 
@@ -20,6 +23,7 @@ class Smooth:
         return scipy.ndimage.gaussian_filter(x, self.size)
 
 class Normalize:
+    """map sequence to the range [0,1]"""
     def __init__(self):
         pass
 
@@ -30,6 +34,7 @@ class Normalize:
         return centered
 
 class Sigmoid:
+    """sigmoid transformation"""
     def __init__(self, w=20, b=10):
         self.w = w
         self.b = b
