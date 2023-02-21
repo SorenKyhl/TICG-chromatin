@@ -58,7 +58,8 @@ class DataPipeline:
             contactmap, self.dropped_inds = epilib.clean_contactmap(contactmap)
 
         if rescale_method:
-            contactmap = epilib.rescale_contactmap(contactmap, method=rescale_method) 
+            raise ValueError("deprecated")
+            #contactmap = epilib.rescale_contactmap(contactmap, method=rescale_method) 
 
         return contactmap[0:self.size,0:self.size]
         

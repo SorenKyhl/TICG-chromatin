@@ -1,7 +1,5 @@
-from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
-
 
 from pylib import default, epilib, parameters, hic, utils
 from pylib.optimize import optimize_stiffness, optimize_grid_size
@@ -83,10 +81,9 @@ def scaleup(nbeads_large, nbeads_small, pool_fn, method="bayes"):
     requires tuning the grid size and stiffness at small scale,
     in order for the chi parameters to be transferrable
     """
-    factor = int(nbeads_large/nbeads_small)
     config_small = parameters.get_config(nbeads_small)
 
-    gthic_large = hic.load_hic(nbeads_large, pool_fn
+    gthic_large = hic.load_hic(nbeads_large, pool_fn)
     gthic_small = hic.load_hic(nbeads_small, pool_fn)
 
     seqs_large = hic.load_seqs(nbeads_large, 10)

@@ -1,28 +1,21 @@
 from pathlib import Path
 import copy
-import shutil
-import json
 import numpy as np
-import hicstraw
 import matplotlib.pyplot as plt
-import pandas as pd
-import jsbeautifier
 import os
-from multiprocessing import Process 
-import time
 import pickle
+from typing import Union, Optional
 
 from pylib import analysis
 from pylib.utils import cd, newton
 from pylib.pysim import Pysim
 from pylib import utils
-from pylib import epilib as ep
 
 import matplotlib.pyplot as plt
 plt.rcParams['figure.figsize'] = [8,6]
 plt.rcParams.update({'font.size':18})
 
-from pylib.config import Config
+PathLike = Union[str, Path]
 
 """
 Maxent
@@ -33,12 +26,12 @@ class Maxent:
             root : str, 
             params : dict, 
             config : dict, 
-            seqs : list[list[float]], 
+            seqs : np.ndarray, 
             gthic : list[list[int]], 
             overwrite : bool = False, 
             lengthen_iterations : bool = False, 
             analysis_on : bool = True, 
-            initial_chis : bool = None, 
+            initial_chis : Optional[bool] = None, 
             dampen_first_step : bool = True):
         """
         root: root of maxent filesystem
@@ -226,11 +219,12 @@ class Maxent:
             return loaded_maxent
     
     @classmethod
-    def from_directory(cls, filename: str):
+    def from_directory(cls, filename: PathLike):
         """ loads maxent optimization from a directory
         reloads gthic, which is not included in pickle to save disk space
         """
-        with open(Path(filename/"backup.pickle"), "rb") as f:
+        filename = Path(filename)
+        with open(filename/"backup.pickle", "rb") as f:
             loaded_maxent = pickle.load(f)
 
             if loaded_maxent.resources.exists():

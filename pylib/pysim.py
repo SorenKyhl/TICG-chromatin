@@ -3,13 +3,13 @@ import numpy as np
 import pandas as pd
 from multiprocessing import Process 
 import time
-from typing import Union, Optional
+from typing import Sequence, Union, Optional
 
 from pylib.pyticg import Sim
 from pylib.utils import cd, cat, copy_last_snapshot
 from pylib import utils
 
-PathLike = Union[str, Path]
+PathLike = Union[Path, str]
 ArrayLike = Union[list, np.ndarray]
 
 """
@@ -60,7 +60,7 @@ class Pysim:
     def set_root(self, root : PathLike, mkdir : bool):
         """ set the root of the simulation. and (optionally) create a directory at that path
 
-        args:
+        Args:
             root: simulation root, where all simulation outputs will be stored
             mkdir: if true, will make a new directory at the root path
         """
@@ -103,7 +103,7 @@ class Pysim:
             
     def flatten_chis(self):
         """ restructure chi parameters into a 1-dimensional list
-        returns: [1 x n] list = [plaid_chis, diag_chis]
+        Returns: [1 x n] list = [plaid_chis, diag_chis]
         """
         indices = np.triu_indices(self.config["nspecies"])
         plaid_chis = np.array(self.config["chis"])[indices]
@@ -113,7 +113,7 @@ class Pysim:
     
     def chis_to_matrix(self, flat_chis):
         """ restructure 1-D list of plaid chis into matrix 
-        returns: [n x n] chi matrix
+        Returns: [n x n] chi matrix
         """
         nspecies = self.config["nspecies"]
         X = np.zeros((nspecies, nspecies))
@@ -138,6 +138,9 @@ class Pysim:
         return mean of observables throughout the simulation, 
         and (optionally) the jacobian of the observable matrix
         """
+        if self.data_out is None:
+            raise ValueError("data out member variable has not been initialized")
+
         obs_files = []
         obs_files.append(self.root/self.data_out/"observables.traj")
         obs_files.append(self.root/self.data_out/"diag_observables.traj")
@@ -152,7 +155,7 @@ class Pysim:
         self.obs = df_total.mean().values
         
         if jacobian:
-            self.jac = df_total.cov().values
+            self.jac = df_total.cov().values # pyright: ignore
             return self.obs, self.jac
         else:
             return self.obs
@@ -174,7 +177,7 @@ class Pysim:
         """ run equilibration followed by production simulation
         the production run can be executed in parallel, by specifying the parallel_simulations argument
 
-        args:
+        Args:
             equilibrium_sweeps: number of equilibrium simulation sweeps
             production_sweeps: number of production simulation sweeps (per core)
             parallel_simulations: number of parallel production simulations to execute
@@ -207,7 +210,7 @@ class Pysim:
         each parallel core dumps output to their own directory.
         after completion, the individual simulation data are aggregated into a final production directory 
 
-        args:
+        Args:
             name: name of output file for aggregated simulation data
             cores: number of parallel simulations to execute
         """
@@ -235,8 +238,9 @@ class Pysim:
         
     def aggregate_production_files(self):
         """ aggregate simulation data from each core into final production folder.
+
         when simulations are run in parallel, each core dumps its output to a separate folder
-        after all simulations are finished, 
+        after all simulations are finished...
         - concatenate all observables and energies into one trajectory file
         - sum all contact maps to produce one aggregate contact map
         """
@@ -257,13 +261,13 @@ class Pysim:
         
         #TODO: add delete old files option
            
-    def combine_contactmaps(self, contact_files: list[PathLike], output_file : Optional[PathLike] = None):
+    def combine_contactmaps(self, contact_files: Sequence[PathLike], output_file : Optional[PathLike] = None):
         """ combines (sums) multiple contact maps from separate parallel simulations into one contactmap
 
-        args:
+        Args:
             contact_files: list of files containing contact maps to be combined
             output_file (optional): name for output combined contact map. if specified, return type is None
-        returns:
+        Returns:
             aggregate contact map (if output_file is None) otherwise, saves contact map to file and returns None
         """
         combined = np.loadtxt(contact_files[0])

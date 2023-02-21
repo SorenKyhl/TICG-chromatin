@@ -1,34 +1,27 @@
 import numpy as np
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pandas as pd
 import scipy
-import skimage
-from statsmodels.graphics.tsaplots import plot_acf
 import seaborn as sns
 import sklearn.metrics
-#import straw
-#import strawC
-from os import system
 import os
 import os.path as osp
 import copy
 import json
-from scipy.sparse import coo_matrix
+import matplotlib.colors
 from numba import njit
 from tqdm import tqdm
 from pathlib import Path
-#import kmeans
 
 #import palettable
 #from palettable.colorbrewer.sequential import Reds_3
 
 from pylib import utils
 
-mycmap = mpl.colors.LinearSegmentedColormap.from_list('custom',
-                                             [(0,    'white'),
-                                              (0.3,  'white'),
-                                              (1,    '#ff0000')], N=126)
+mycmap = matplotlib.colors.LinearSegmentedColormap.from_list('custom',
+                                                     [(0,    'white'),
+                                                      (0.3,  'white'),
+                                                      (1,    '#ff0000')], N=126)
         
 class Sim:
     """analyze simulations"""
@@ -221,7 +214,6 @@ class Sim:
         nspecies = self.config['nspecies']
         letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
         
-        chi = np.zeros((nspecies, nspecies))
         for i in range(nspecies):
             for j in range(nspecies):
                 if j >= i:
@@ -252,8 +244,8 @@ class Sim:
     def plot_contactmap(self, vmaxp=0.1, absolute=False, dark=False, title="",log=False):
         plot_contactmap(self.hic, vmaxp, absolute, dark=dark, title=title)
     
-    def plot_diag(self, scale="semilogy", label=None):
-        plot_diag(self.hic, scale, label=label)
+    def plot_diagonal(self, scale="semilogy", label=None):
+        plot_diagonal(self.hic, scale, label=label)
     
     def plot_energy(self):
         plot_energy(self)
@@ -270,31 +262,18 @@ class Sim:
     def plot_diff(self):
         plot_diff(self.hic, self.gthic)
 
-    def process(self):
-        diag_sim = np.mean(self.diag_obs)[1:]
-        diag_sim = np.array(diag_sim)
-
-        nbeads = self.config['nbeads']
-        bins = len(self.config['diag_chis'])
-        assert(bins == len(diag_sim))
-        
-        diag_exp = downsample(self.d, int(nbeads/bins))
-        diag_mask, correction = mask_diagonal(self.hic, bins)
-        
-        return diag_sim, diag_exp, diag_mask, correction
-
     def plot_obs_vs_goal(self):
         plot_obs_vs_goal(self)
     
     def plot_oe(self,log=False):
-        plot_oe(get_oe(self.hic))
+        plot_oe(get_oe(self.hic, log))
         
     def plot_consistency(self):
         return plot_consistency(self)
     
     def calc_goals(self):
         plaid = get_goal_plaid(self.gthic, self.seqs,  self.config)
-        diag = get_goal_diag(self.gthic, self.config, ndiag_bins=self.diag_bins, adj=True, dense_diagonal_on=self.config['dense_diagonal_on'])
+        diag = get_goal_diag(self.gthic, self.config, adj=True, dense_diagonal_on=self.config['dense_diagonal_on'])
    
         np.savetxt("obj_goal.txt", plaid, newline=" ", fmt="%.8f")
         np.savetxt("obj_goal_diag.txt", diag, newline=" ", fmt="%.8f")
@@ -305,6 +284,8 @@ class Sim:
             plot_fn = plt.semilogy
         elif scale == "log" or scale == "loglog":
             plot_fn = plt.loglog
+        else:
+            raise ValueError("usage: scale: ['semilogy' | 'log']")
         
         diag = self.d
         plot_fn(np.linspace(1/len(diag),1,len(diag)), diag, *args, label="sim")
@@ -346,8 +327,10 @@ class SCC():
             return result
         else:
             return np.sqrt(np.var(x_k) * np.var(y_k))
-    def mean_filter(x, size):
+
+    def mean_filter(self, x, size):
         return scipy.ndimage.uniform_filter(x, size, mode = 'constant') / (size)**2
+
     def scc(self, x, y, h = 3, K = None, var_stabilized = False, verbose = False):
         """Compute scc between contact map x and y.
 

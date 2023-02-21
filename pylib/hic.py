@@ -67,7 +67,7 @@ def pool_double_count(inp, factor, fn=np.nansum):
 def pool_seqs(seqs, factor):
     """downsize sequences by a factor using a mean pooling operation"""
     def pool_seq(seq, factor):
-        return block_reduce(seq, (factor), np.mean) 
+        return block_reduce(seq, (factor), np.mean) # pyright: ignore 
 
     if seqs.ndim == 1:
         return pool_seq(seqs, factor)
@@ -108,9 +108,9 @@ def unpool(inp, factor):
 def pool_d(hic, factor):
     """downsize hic matrix and return downsized diagonal"""
     x = pool(hic, factor, np.nansum)
-    diag = ep.get_diagonal(x)
+    diag = epilib.get_diagonal(x)
     x /= max(diag)
-    return ep.get_diagonal(x)
+    return epilib.get_diagonal(x)
 
 
 def sparsity(x):
