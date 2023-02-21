@@ -1,10 +1,12 @@
 import numpy as np   
 import json
-from contextlib import contextmanager
 import os
 import jsbeautifier
-from pathlib import Path
 import matplotlib.pyplot as plt
+import logging
+from pathlib import Path
+from multiprocessing import Process
+from contextlib import contextmanager
 
 """ 
 utility functions
@@ -65,7 +67,7 @@ def process_parallel(tasks, args):
         running_task.join()
         
 
-def process_parallel_xargs(self, tasks, args):
+def process_parallel_xargs(tasks, args):
     """process multiple tasks, each with different arguments (list of tuples)"""
     running_tasks = [Process(target=task, args=(arg,)) for task, arg in zip(tasks, args)]
     for running_task in running_tasks:
@@ -89,7 +91,7 @@ def load_sequences(config):
     """load sequences from files specified in config file"""
     sequences  = []
     for file in config["bead_type_files"]:
-        print("loading", file)
+        logging.info("loading", file)
         sequences.append(np.loadtxt(file) )
     sequences  = np.array(sequences )
     return sequences 
@@ -159,35 +161,37 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method):
         step = Binv@difference
     elif method == "g":
         step = difference
+    else:
+        raise ValueError("specify method: n (newton), g (gradient descent)")
 
     steplength = np.sqrt(step@step)
     
-    print("========= step before gamma: ", steplength)
-    print('obj goal', obj_goal)
-    print('lam: ', lam)
-    print('difference: ', difference)
-    print('step: ', step)
-    print('B: ', B)
+    logging.debug("========= step before gamma: ", steplength)
+    logging.debug('obj goal', obj_goal)
+    logging.debug('lam: ', lam)
+    logging.debug('difference: ', difference)
+    logging.debug('step: ', step)
+    logging.debug('B: ', B)
 
     step *= gamma
     steplength = np.sqrt(step@step)
     
-    print("========= step after gamma: ", steplength)
-    print('step: ', step)
+    logging.debug("========= step after gamma: ", steplength)
+    logging.debug('step: ', step)
     
     if steplength > trust_region:
         step /= steplength
         step *= trust_region
         steplength = np.sqrt(step@step)     
         
-        print("======= OUTSIDE TRUST REGION =========")
-        print("========= steplength: ", steplength)
-        print("========= trust_region: ", trust_region)
-        print('step: ', step)
-        print('lam: ', lam)
+        logging.debug("======= OUTSIDE TRUST REGION =========")
+        logging.debug("========= steplength: ", steplength)
+        logging.debug("========= trust_region: ", trust_region)
+        logging.debug('step: ', step)
+        logging.debug('lam: ', lam)
         
     new_chis = current_chis - step
-    # print(f"new chi values: {new_chis}\n")
+    # logging.debug(f"new chi values: {new_chis}\n")
 
     howfar = np.sqrt(difference@difference)/np.sqrt(obj_goal@obj_goal)
 
