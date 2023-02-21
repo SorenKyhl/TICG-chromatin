@@ -16,8 +16,10 @@ class Config:
         """
         if isinstance(config, dict):
             self.config = config
-        else:
+        elif isinstance(config, str):
             self.config = utils.load_json(config)  
+        else:
+            raise ValueError("usage: Config( dict | str )")
 
     def flatten_chis(self):
         """returns 1-D list: [plaid_chis, diag_chis]"""
