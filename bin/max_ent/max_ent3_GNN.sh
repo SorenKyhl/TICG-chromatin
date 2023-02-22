@@ -43,10 +43,10 @@ jobs=0
 waitCount=0
 for sample in {201..210}
 do
-  # gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
-  bondLength=28.0
-  gridSize=28.7
-  for GNNModelID in 376 377
+  gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
+  # bondLength=28.0
+  # gridSize=28.7
+  for GNNModelID in 378 379
    # 243 254 262 265 267 271 276
   do
     echo $sample $m

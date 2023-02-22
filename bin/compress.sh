@@ -7,7 +7,6 @@
 #SBATCH --ntasks=10
 #SBATCH --mem-per-cpu=1000
 
-dir='/project2/depablo/erschultz'
 compress(){
   dataset=$1
   for i in {1..5000}
@@ -34,9 +33,10 @@ compress(){
   rm -r $dataset
 }
 
+dir='/project/depablo/erschultz'
+compress dataset_02_13_23
+
+dir='/project2/depablo/erschultz'
 compress dataset_02_06_23
 compress dataset_02_07_23
 compress dataset_02_08_23
-
-cd $dir
-rm -r *plaid_cutoff

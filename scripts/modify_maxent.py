@@ -34,7 +34,7 @@ def get_samples(dataset):
     if dataset == 'dataset_11_14_22':
         samples = range(2201, 2214)
         experimental = True
-    elif dataset in {'dataset_01_26_23', 'dataset_02_04_23'}:
+    elif dataset in {'dataset_01_26_23', 'dataset_02_04_23', 'dataset_02_21_23'}:
         samples = range(201, 283)
         # samples = range(201, 210)
         experimental = True
@@ -1268,13 +1268,13 @@ def compare_maxent_simulation():
 
 
 if __name__ == '__main__':
-    # modify_plaid_chis('dataset_02_04_23', k = 8)
-    # modify_maxent_diag_chi('dataset_02_04_23', k = 8)
+    # modify_plaid_chis('dataset_02_04_23', k = 12)
+    modify_maxent_diag_chi('dataset_02_04_23', k = 12)
     # for i in range(201, 210):
         # plot_modified_max_ent(i, k = 8)
-    # diagonal_dist('dataset_02_04_23', 4)
+    diagonal_dist('dataset_02_04_23', 12)
     # grid_dist('dataset_01_26_23')
-    # plaid_dist('dataset_02_04_23', 4, True, False, True)
+    # plaid_dist('dataset_02_04_23', 12, True, False, True)
     # seq_dist('dataset_01_26_23', 4, True, False, True)
-    compare_maxent_simulation()
+    # compare_maxent_simulation()
     # modify_plaid_chis('dataset_11_14_22', 8)
