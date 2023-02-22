@@ -15,20 +15,19 @@
 #define RANMARS_H
 
 class RanMars {
- public:
-  RanMars(int);
-  ~RanMars();
-  double uniform();
-  double gaussian();
+public:
+    RanMars(int);
+    ~RanMars();
+    double uniform();
+    double gaussian();
 
- private:
-  int save;
-  double second;
-  double *u;
-  int i97,j97;
-  double c,cd,cm;
+private:
+    int save;
+    double second;
+    double *u;
+    int i97, j97;
+    double c, cd, cm;
 };
-
 
 #endif
 

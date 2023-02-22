@@ -22,25 +22,24 @@
 #include "Grid.h"
 #include "Sim.h"
 
-int main(int argc, char* argv[])
-{
-	auto start = std::chrono::high_resolution_clock::now();
+int main(int argc, char *argv[]) {
+    auto start = std::chrono::high_resolution_clock::now();
 
-	Sim mySim;
+    Sim mySim;
 
-	if (argc == 1) {
-		mySim.data_out_filename = "data_out";
-		std::cout << "data out:" << mySim.data_out_filename << std::endl;
-	}
-	else {
-		mySim.data_out_filename = argv[1];
-		std::cout << "data out:" << mySim.data_out_filename << std::endl;
-	}
-	mySim.xyzToContact();
+    if (argc == 1) {
+        mySim.data_out_filename = "data_out";
+        std::cout << "data out:" << mySim.data_out_filename << std::endl;
+    } else {
+        mySim.data_out_filename = argv[1];
+        std::cout << "data out:" << mySim.data_out_filename << std::endl;
+    }
+    mySim.xyzToContact();
 
-	auto stop = std::chrono::high_resolution_clock::now();
-	auto duration = std::chrono::duration_cast<std::chrono::seconds>(stop-start);
-	std::cout << "Took " << duration.count() << "seconds "<< std::endl;
-	std::cout << "Moved " << mySim.nbeads_moved << " beads " << std::endl;
-	return 0;
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration =
+        std::chrono::duration_cast<std::chrono::seconds>(stop - start);
+    std::cout << "Took " << duration.count() << "seconds " << std::endl;
+    std::cout << "Moved " << mySim.nbeads_moved << " beads " << std::endl;
+    return 0;
 }

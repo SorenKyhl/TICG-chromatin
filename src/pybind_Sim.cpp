@@ -13,15 +13,13 @@
 #include "Grid.h"
 #include "Sim.h"
 
-
 #include "Sim.cpp"
 #include "Grid.cpp"
 #include "random_mars.cpp"
 
-
 /*
  * crude implementation for pybind
- * usage: create python module in command line: 
+ * usage: create python module in command line:
  *		>make pybind
  *
  * ...will generate pyticg.cpythonxxx.so file that can be imported in python as:
@@ -36,7 +34,7 @@ namespace py = pybind11;
 
 PYBIND11_MODULE(pyticg, m) {
     py::class_<Sim>(m, "Sim")
-		.def(py::init<>()) 
-		.def(py::init<const std::string &>())
-		.def("run", &Sim::run);
+        .def(py::init<>())
+        .def(py::init<const std::string &>())
+        .def("run", &Sim::run);
 }
