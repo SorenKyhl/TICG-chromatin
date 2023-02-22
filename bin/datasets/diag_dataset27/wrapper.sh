@@ -22,18 +22,18 @@ cd ~/TICG-chromatin
 
 dataset="dataset_02_22_23"
 echo "generate_params for ${dataset}"
-python  ~/TICG-chromatin/bin/datasets/generate_params.py --samples 5000 --k 12 --m 512 --dataset $dataset --seq_mode 'eig_norm_v2' --chi_param_version 'v13' --diag_mode 'linear_v2' --grid_mode 'v1' --data_dir '/project/depablo/erschultz'
+# python  ~/TICG-chromatin/bin/datasets/generate_params.py --samples 5000 --k 12 --m 512 --dataset $dataset --seq_mode 'eig_norm_v2' --chi_param_version 'v13' --diag_mode 'linear_v2' --grid_mode 'v1' --data_dir '/project/depablo/erschultz'
 #
-cd "/home/erschultz/${dataset}"
-tar -czvf setup.tar.gz setup
+# cd "/home/erschultz/${dataset}"
+# tar -czvf setup.tar.gz setup
 #
 # cd /project2/depablo/erschultz/dataset_01_06_23
 # tar -xzf setup.tar.gz
 # rm -r samples
 
-# sourceFile=~/TICG-chromatin/bin/datasets/diag_dataset26/diag_dataset_fns.sh
-# for i in 1 2 3 4 5 6 7 8 9 10
-# do
-#   echo $i
-#   sbatch ~/TICG-chromatin/bin/datasets/diag_dataset${i}.sh $sourceFile
-# done
+sourceFile=~/TICG-chromatin/bin/datasets/diag_dataset27/diag_dataset_fns.sh
+for i in 1 2 3 4 5 6 7 8 9 10
+do
+  echo $i
+  sbatch ~/TICG-chromatin/bin/datasets/diag_dataset${i}.sh $sourceFile
+done
