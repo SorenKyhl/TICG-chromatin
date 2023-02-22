@@ -1,5 +1,9 @@
 #pragma once
 
+#include <iostream>
+#include <vector>
+#include "Eigen/Dense"
+
 class Bead {
 public:
 	Bead(int i, double x=0, double y=0, double z=0, int ntypes=1)

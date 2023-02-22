@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Bead.h"
+
 class Angle {
 public:
 	Angle(Bead* b1, Bead* b2, Bead* b3)

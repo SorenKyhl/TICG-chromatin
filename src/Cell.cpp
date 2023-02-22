@@ -71,7 +71,7 @@ double Cell::getDensityCapEnergy() {
 		if (phi_solvent < phi_solvent_max)
 		{
 			// high volume fraction occurs when more than 50% of the volume is occupied by beads
-			U = 99999999999*phi_beads;
+			U = 99999999*phi_beads;
 		}
 	}
 	else if (compressibility_on)

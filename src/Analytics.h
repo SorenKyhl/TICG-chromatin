@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <iostream>
 
 // keep track of total time elapsed,
 // time of last block,

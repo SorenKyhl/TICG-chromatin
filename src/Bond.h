@@ -1,6 +1,8 @@
 #pragma once
 
-// abstract class
+#include <iostream>
+#include "Bead.h"
+
 class Bond {
 public:
 	Bond(Bead* b1, Bead* b2)

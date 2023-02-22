@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Bead.h"
+
 class Dihedral {
 public:
 	Dihedral (Bead* b1, Bead* b2, Bead* b3, Bead* b4)
