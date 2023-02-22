@@ -155,7 +155,7 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method):
     obj_goal = np.array(obj_goal)
     lam = np.array(lam)
     
-    difference = obj_goal - lam
+    difference = obj_goal - lam # pyright: ignore
     Binv = np.linalg.pinv(B)
     if method == "n":
         step = Binv@difference

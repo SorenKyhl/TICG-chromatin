@@ -23,11 +23,11 @@ TODO - move most recent iteration to "best" directory for easy access.
 """
 class Maxent:
     def __init__(self, 
-            root : str, 
+            root : PathLike, 
             params : dict, 
             config : dict, 
             seqs : np.ndarray, 
-            gthic : list[list[int]], 
+            gthic : np.ndarray, 
             overwrite : bool = False, 
             lengthen_iterations : bool = False, 
             analysis_on : bool = True, 
@@ -71,7 +71,7 @@ class Maxent:
         self.lengthen_iterations = lengthen_iterations
         self.analysis_on = analysis_on
 
-    def set_root(self, root : str):
+    def set_root(self, root : PathLike):
         """
         sets the root directory and other directories in the file tree
         """

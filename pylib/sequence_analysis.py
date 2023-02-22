@@ -1,4 +1,9 @@
+import numpy as np
+import scipy
+import matplotlib.pyplot as plt
+
 from sklearn.metrics import log_loss
+
 
 def get_entropy(s, factor, plot=False, method="relative"):
     """

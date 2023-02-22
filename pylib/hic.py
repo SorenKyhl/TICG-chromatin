@@ -1,7 +1,8 @@
 import numpy as np
 import copy
-from skimage.measure import block_reduce
 import scipy.ndimage as ndimage
+from typing import Callable
+from skimage.measure import block_reduce
 
 from pylib import epilib, default
 
@@ -22,7 +23,7 @@ def pool(inp, factor, fn=np.nansum, normalize=True):
     assert m % factor == 0, f'factor must evenly divide m {m}%{factor}={m%factor}'
     # set lower triangle to nan to avoid double counting
     inp[np.tril_indices(m, -1)] = np.nan
-    processed = block_reduce(inp, (factor, factor), fn)
+    processed = block_reduce(inp, (factor, factor), fn) # pyright: ignore
     # need to make symmetric again
     processed = np.triu(processed)
     out = processed + np.triu(processed, 1).T
@@ -34,7 +35,7 @@ def pool(inp, factor, fn=np.nansum, normalize=True):
 
 def pool_sum(inp, factor, normalize=True): 
     """resizes input matrix by a factor using sum pooling"""
-    pooled = block_reduce(inp, (factor,factor), np.nansum)
+    pooled = block_reduce(inp, (factor,factor), np.nansum) # pyright: ignore
     if normalize:
         pooled = normalize_hic(pooled)
     return pooled
@@ -55,13 +56,13 @@ def pool_diagonal(HiC, normalize=True):
         HiC_new = normalize_hic(HiC_new)
     return HiC_new
 
-def pool_double_count(inp, factor, fn=np.nansum):
+def pool_double_count(inp, factor : int, fn : Callable = np.nansum):
     inp = copy.deepcopy(inp)
     assert len(inp.shape) == 2, f'must be 2d array not {inp.shape}'
     m, _ = inp.shape
     assert m % factor == 0, f'factor must evenly divide m {m}%{factor}={m%factor}'
     # set lower triangle to nan to avoid double counting
-    processed = block_reduce(inp, (factor, factor), fn)
+    processed = block_reduce(inp, (factor, factor), fn) # pyright: ignore
     return processed
 
 def pool_seqs(seqs, factor):

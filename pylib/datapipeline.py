@@ -8,11 +8,11 @@ from pylib import epilib
 
 def get_experiment_marks(directory):
     """
-    gets the mapping between experiement codes and epigenetic marks 
+    make mapping between experimental codes and epigenetic marks in specified directory
 
-    args:
+    Args:
         (str) directory: directory containing .bigwig files
-    returns: 
+    Returns: 
         (dict) lookup_table[str, str] maps experiment codes to epigenetic marks
     """
     
@@ -24,6 +24,13 @@ def get_experiment_marks(directory):
 
 class DataPipeline:
     """ class for loading and manipulating hic and chipseq files
+
+    Args:
+        res: resolution of contact map in base pairs per bin
+        chrom: chromosome 
+        start: lower bound in base pairs
+        end: upper bound in base pairs
+        size: desired number of bins along one dimension of contactmap
     """
     def __init__(self, res, chrom, start, end, size):
         self.res = int(res)
@@ -81,7 +88,7 @@ class DataPipeline:
         """
         assert(method in ["mean", "max"])
         df = pd.read_csv(filename, sep='\t', names=['start','end','value'], skiprows=1)
-        chip = epilib.bin_chipseq(df, res, method=method) # this also sets the baseline for "low signal"
+        chip = epilib.bin_chipseq(df, self.res, method=method) # this also sets the baseline for "low signal"
         chip = np.nan_to_num(chip)
         return chip
     

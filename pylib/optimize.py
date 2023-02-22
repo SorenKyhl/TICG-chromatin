@@ -2,7 +2,6 @@ import numpy as np
 import os.path as osp
 import copy
 import functools
-from multiprocessing import Process
 from scipy import optimize
 from sklearn.metrics import mean_squared_error
 from bayes_opt import BayesianOptimization
@@ -73,11 +72,11 @@ def optimize_grid_size(config, gthic, low_bound=0.75, high_bound=1.25):
     """ tune grid size until simulated nearest neighbor contact probability
     is equal to the same probability derived from the ground truth hic matrix.
 
-    args:
+    Args:
         config [json]: simulation config file. grid_size will be overwritten,
                             so it's initial value doesn't matter
         gthic [ndarray]: ground truth hic map. used as the target for optimization
-    returns:
+    Returns:
         optimal_grid_size [float]: size of grid cell that matches first neighbor contact probability
     """
     config = copy.deepcopy(config)
@@ -152,11 +151,11 @@ def optimize_stiffness(config, gthic, low_bound=0, high_bound=1, method = "bayes
     """ tune angle stiffness until simulated p(s) diagonal probabity 
     is equal to the same probability derived from the ground truth hic matrix.
 
-    args:
+    Args:
         config [json]: simulation config file. grid_size will be overwritten,
                             so it's initial value doesn't matter
         gthic [ndarray]: ground truth hic map. used as the target for optimization
-    returns:
+    Returns:
         optimal_k_angle[float]: angle stiffness 
     """
     config = copy.deepcopy(config)
@@ -187,7 +186,8 @@ def optimize_stiffness(config, gthic, low_bound=0, high_bound=1, method = "bayes
             n_iter=20,
         )
 
-        return optimizer.max['params']['k_angle']
+        return optimizer.max['params']['k_angle'] # pyright: ignore
+
     else:
         # use rootfinding
         method = "notbayes"

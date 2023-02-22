@@ -22,7 +22,7 @@ class Pysim:
     def __init__(self, 
             root : PathLike, 
             config : dict, 
-            seqs : ArrayLike,
+            seqs : Optional[ArrayLike],
             gthic = None,
             randomize_seed : bool = True, 
             mkdir : bool = True, 
@@ -80,7 +80,7 @@ class Pysim:
             
     def randomize_seed(self):
         """ sets seed for random number generator used in Monte Carlo simulation """
-        self.config["seed"] = np.random.randint(1e5)
+        self.config["seed"] = np.random.randint(10000)
         
 
     def setup(self):

@@ -86,6 +86,8 @@ def calculate_diag_chi_step(config, diag_chi = None):
             dividing_line = m_eff * config['dense_diagonal_cutoff']
             small_binsize = int(dividing_line / (n_small_bins))
             big_binsize = int((m_eff - dividing_line) / n_big_bins)
+    else:
+        raise NotImplementedError("non-dense diagonal chis not implemented")
 
     diag_chi_step = np.zeros(m)
     for d in range(diag_cutoff):

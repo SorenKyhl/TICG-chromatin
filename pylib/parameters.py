@@ -3,12 +3,6 @@ import copy
 
 from pylib import default
 
-def renormalize_gaussian(config, nbeads):
-    """ 
-    """
-    pass
-
-
 def get_config(nbeads=None, config=default.config, grid_bond_ratio=0.95, base="gaussian-5k"):
     """
     calculates physical parameters for a simulation with nbeads beads,
@@ -55,6 +49,8 @@ def get_config(nbeads=None, config=default.config, grid_bond_ratio=0.95, base="g
         baseg = grid_bond_ratio*baseb
         baseN = 20480
         basev = 13000
+    else:
+        raise ValueError("base must be: ['gaussian' | 'gaussian-5k' | 'persistent' | 'persistent-5k]")
     
     factor = (nbeads/baseN)**(-1/3)
     config["nbeads"] = nbeads
@@ -66,5 +62,3 @@ def get_config(nbeads=None, config=default.config, grid_bond_ratio=0.95, base="g
     
     return config
 
-if __name__ == "__main__":
-    interpolate(3)

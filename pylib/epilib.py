@@ -5,10 +5,11 @@ import scipy
 import seaborn as sns
 import sklearn.metrics
 import os
-import os.path as osp
 import copy
 import json
 import matplotlib.colors
+import logging
+
 from numba import njit
 from tqdm import tqdm
 from pathlib import Path
@@ -24,7 +25,7 @@ mycmap = matplotlib.colors.LinearSegmentedColormap.from_list('custom',
                                                       (1,    '#ff0000')], N=126)
         
 class Sim:
-    """analyze simulations"""
+    """simulation analysis"""
     def __init__(self, path, maxent_analysis=True):
         self.path = Path(path)
         self.metrics = {}
@@ -33,7 +34,7 @@ class Sim:
         try:
             self.config = self.load_config()
         except:
-            print("no config.json")
+            logging.error("error loading config.json")
         
         self.diag_bins = np.shape(self.config['diag_chis'])[0]
         self.chi = self.load_chis()
@@ -42,30 +43,30 @@ class Sim:
             self.hic = get_contactmap(self.path/"contacts.txt")
             self.d = get_diagonal(self.hic)
         except:
-            print("error loading contactmap.")
+            logging.error("error loading contactmap.")
         
         try:
             self.energy = pd.read_csv(self.path/"energy.traj", sep='\t', names=["step", "bonded", "nonbonded", "diagonal", "y"])
         except:
-            print("no energy.traj") 
+            logging.error("error loading energy.traj") 
         
         try:
             self.seqs = self.load_seqs()
             self.k = np.shape(self.seqs)[0]
         except:
-            print("no seqs")
+            logging.error("error loading sequences")
             
         try:
             self.obs_full = pd.read_csv(self.path/"observables.traj", sep ='\t', header=None)
-            self.obs = self.obs_full.mean().values[1:]
+            self.obs = np.array(self.obs_full.mean().values[1:])
         except:
-            print("no plaid observables")
+            logging.error("error loading plaid observables")
         
         try:
             self.diag_obs_full = pd.read_csv(self.path/"diag_observables.traj", sep ='\t', header=None)
-            self.diag_obs = self.diag_obs_full.mean().values[1:]
+            self.diag_obs = np.array(self.diag_obs_full.mean().values[1:])
         except:
-            print("no diag observables")
+            logging.error("error loading diag observables")
         
         try:
             self.obs_tot = np.hstack((self.obs, self.diag_obs))
@@ -73,7 +74,7 @@ class Sim:
             self.beadvol = self.config["beadvol"]
             self.nbeads = self.config["nbeads"]
         except:
-            print("something wrong")
+            logging.error("error loading extra observables")
             
         resources_path = self.path/"../../resources/"
         if resources_path.exists():
@@ -85,27 +86,26 @@ class Sim:
             gthic_loaded = False
             for gtp in gthic_possibilites:
                 gthic_path = self.path/gtp/"experimental_hic.npy"
-                print("looking in, ", gthic_path)
                 if os.path.exists(gthic_path) and not gthic_loaded:
                     self.gthic = np.load(gthic_path)
                     gthic_loaded = True
                     
             if not gthic_loaded:
-                print("no ground truth hic found")
+                logging.error("no ground truth hic found")
             
             obj_goal_path = resources_path/"obj_goal.txt"
             if obj_goal_path.exists():
                 self.obj_goal = np.loadtxt(obj_goal_path)
             else:
-                print("no path to obj_goal.txt")
-                print("looking in obj_goal_path: ", obj_goal_path)
+                logging.error("no path to obj_goal.txt")
+                logging.error("looking in obj_goal_path: ", obj_goal_path)
             
             obj_goal_diag_path = resources_path/"obj_goal_diag.txt"
             if obj_goal_diag_path.exists():
                 self.obj_goal_diag = np.loadtxt(obj_goal_diag_path)
             else:
-                print("no path to obj_goal_diag.txt")
-                print("looking in obj_goal_diag_path: ", obj_goal_path)
+                logging.error("no path to obj_goal_diag.txt")
+                logging.error("looking in obj_goal_diag_path: ", obj_goal_path)
             
             try:
                 self.obj_goal_tot = np.hstack((self.obj_goal, self.obj_goal_diag))
@@ -114,48 +114,8 @@ class Sim:
                     params_path = resources_path/"params.json"
                     params = utils.load_json(params_path)
                     self.obj_goal_tot = params["goals"]
-                    print("looking for goals in params")
                 except:
-                    print("no params found")
-           
-    def init_sim(self, overwrite=True, getgoals=False):
-        if os.path.exists(self.path):
-            if not overwrite:
-                print("path already exists, exiting. to overwrite, set overwrite=True")
-                return 
-        else:
-            os.makedirs(self.path)
-        
-        self.save_chis()
-        k = len(self.seqs)
-
-        with open(osp.join(self.path, "config.json"), 'w') as f:
-            json.dump(self.config, f, indent=4)
-        
-        if not os.path.exists(osp.join(self.path, "TICG-engine")):
-            os.system("ln -s ~/Documents/TICG-chromatin/src/TICG-engine " + str(self.path))
-        
-        self.config['nbeads'] = np.shape(self.gthic)[0]
-                
-        if getgoals:
-            ndiag_bins = 32
-            nchis =  k*(k+1)/2
-            goals_plaid = get_goal_plaid(self.gthic, self.seqs, self.config)
-            goals_diag = get_goal_diag(self.gthic, self.config, ndiag_bins=ndiag_bins, dense_diagonal_on=True)
-
-            np.savetxt(osp.join(self.path,"chis.txt"), np.zeros((2,nchis)), fmt="%.8f")
-            np.savetxt(osp.join(self.path,"chis_diag.txt"), np.zeros((2,ndiag_bins)), fmt="%.8f")
-
-            np.savetxt(osp.join(self.path,"obj_goal.txt"), goals_plaid, newline=" ", fmt="%.8f")
-            np.savetxt(osp.join(self.path,"obj_goal_diag.txt"), goals_diag, newline=" ", fmt="%.8f")
-
-        # TODO: also save bead type names into config, if different.
-        for i, seq in enumerate(self.seqs):
-            pcfname = "pcf"+str(i+1)+".txt"
-            #chipseq_files.append(pcfname)
-            np.savetxt(osp.join(self.path, pcfname), seq, newline="\n", fmt="%.8f")
-            
-        np.save(osp.join(self.path,"experimental_hic.npy"), self.gthic)
+                    logging.error("no maximum entropy parameters found")
 
 
     def pearson(self):
@@ -195,6 +155,7 @@ class Sim:
     
     def load_chis(self):
         try:
+            # old version of chis, each stored with their own key
             nspecies = self.config['nspecies']
             letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -205,12 +166,13 @@ class Sim:
                         chi[i,j] = self.config["chi" + letters[i] + letters[j]]
                         chi[j,i] = self.config["chi" + letters[i] + letters[j]]
         except KeyError:
+            # new version of chis, stored in a matrix
             indices = np.triu_indices(self.config["nspecies"])
             chi = np.array(self.config["chis"])[indices]
-            
         return chi
     
     def save_chis(self):
+        """old format of storing chis, deprecated"""
         nspecies = self.config['nspecies']
         letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
         
@@ -237,15 +199,12 @@ class Sim:
         d = copy.deepcopy(chimatrix.diagonal())
         chimatrix *= 0.5
         np.fill_diagonal(chimatrix, d)
-        smatrix = seqs.T @ chimatrix @ seqs
+        smatrix = self.seqs.T @ chimatrix @ self.seqs
         
         return smatrix
     
     def plot_contactmap(self, vmaxp=0.1, absolute=False, dark=False, title="",log=False):
-        plot_contactmap(self.hic, vmaxp, absolute, dark=dark, title=title)
-    
-    def plot_diagonal(self, scale="semilogy", label=None):
-        plot_diagonal(self.hic, scale, label=label)
+        plot_contactmap(self.hic, vmaxp, absolute, dark=dark, title=title, log=log)
     
     def plot_energy(self):
         plot_energy(self)
@@ -279,7 +238,6 @@ class Sim:
         np.savetxt("obj_goal_diag.txt", diag, newline=" ", fmt="%.8f")
     
     def plot_diagonal(self, *args, scale="semilogy"):
-        
         if scale == "semilogy":
             plot_fn = plt.semilogy
         elif scale == "log" or scale == "loglog":
@@ -342,8 +300,8 @@ class SCC():
             var_stabilized: True to use var_stabilized r_2k
             verbose: True to print when nan found
         """
-        x = SCC.mean_filter(x.astype(np.float64), 1+2*h)
-        y = SCC.mean_filter(y.astype(np.float64), 1+2*h)
+        x = SCC.mean_filter(x.astype(np.float64), 1+2*h) #pyright: ignore
+        y = SCC.mean_filter(y.astype(np.float64), 1+2*h) #pyright: ignore
         if K is None:
             K = len(y) - 2
         num = 0
@@ -501,8 +459,11 @@ def plot_obs(sim, diag=True):
         plt.semilogy(d[1:].T);
 
 def plot_diff(first, second, c=None, log=False, oe=False, title=""):
-    if c is None and log is False:
-        c = first.mean() + 0.1*first.std()
+    if c is None:
+        if log is False:
+            c = first.mean() + 0.1*first.std()
+        else:
+            raise NotImplementedError
     
     if log:
         print("log is true")
@@ -519,6 +480,7 @@ def plot_diff(first, second, c=None, log=False, oe=False, title=""):
     else:
         vmin = -c
         vmax = c
+
     scc = get_SCC(first, second)
     pearson = get_pearson(first, second)
     rmse = get_RMSE(first, second)
@@ -684,7 +646,7 @@ def plot_smooth(data, n_steps=20, llabel="none", fmt='o', norm=True):
     else:
         s = np.array(range(len(data)))
     plt.plot(s, smooth_path, fmt, linewidth=2, label=llabel) #mean curve.
-    plt.fill_between(s, under_line, over_line, color='b', alpha=.1) #std curves
+    plt.fill_between(s, under_line, over_line, color='b', alpha=.1) #pyright: ignore
 
 
 def half_sample(contact):
@@ -764,23 +726,9 @@ def process2(folder, ignore=100):
     print("calculated as mean of observables")
     print(goal_sim)
 
-def get_diag_obs(filename):
-    goal_sim[0,0] = np.mean(obs[1][ignorefirst:])
-    goal_sim[1,0] = np.mean(obs[2][ignorefirst:])
-    goal_sim[1,1] = np.mean(obs[3][ignorefirst:])
-
-    print("goals from experiment:")
-    print(goal_exp)
-    print("goals from simulation:")
-    print(goal_sim)
-
-def compare_diagonal(filename, gridsize, plot=True, getgoal=True):
-    df = pd.read_csv(filename + "/data_out/diag_observables.traj", sep="\t", header=None)
-    diag_sim = df.mean()[1:]
-    diag_sim = np.array(diag_sim)
-    return diag_sim
 
 def mask_vs_diagonal(contact, nbeads=1024, bins=16):
+    raise NotImplementedError("deprecated")
     diag_exp = get_diagonal(contact)
     diag_exp = downsample(diag_exp, int(nbeads/bins))
     
@@ -790,6 +738,7 @@ def mask_vs_diagonal(contact, nbeads=1024, bins=16):
     plt.plot(np.log10(diag_mask/correction), '--o')
 
 def compare_diagonal(filename, nbeads=1024, bins=16, plot=True, getgoal=False, fudge_factor=1):
+    raise NotImplementedError("deprecated")
     print("diag_sim is volume fraction, average of diag_observables.traj")
     print("diag_exp is p(s), average of each subdiagonal which is then downsapled to match resolution of diagonal bins")
     print("diag_mask is mask, weighted average of contact map")
@@ -1052,12 +1001,6 @@ def mask_diagonal2(contact, bins=16):
     correction = np.array(correction)
     return measure, correction
 
-def get_seq_kmeans(hic, k):
-    meanDist = kmeans.genomic_distance_statistics(hic)
-    y_diag = kmeans.diagonal_preprocessing(hic, meanDist)
-    seqs, labels = kmeans.get_k_means_seq(y_diag, k)
-    seqs = seqs.T
-    return seqs
 
 def bin_chipseq(df, resolution, method="max"):
     step = resolution
@@ -1072,83 +1015,6 @@ def bin_chipseq(df, resolution, method="max"):
             areas.append(sliced['value'].mean())
     return areas
 
-def maxent_setup(dirname, k, hic_full, seqs_full=None, start=None, size=None, plot=True, nchis_diag=32, adjust=True, ncells=0):
-    print("nchis_diag:", nchis_diag)
-    seqs_full = np.array(seqs_full)
-    print(np.shape(seqs_full))
-    hic = hic_full
-    if seqs_full is None:
-        print("getting sequences")
-        seqs = ep.get_sequences(hic, k, dtype="float", map11=True, map01=False, split=False)
-        hic = hic_full
-    
-    if start is not None and size is not None:
-        print("setting endpoints")
-        end = start + size
-        seqs = seqs_full[0:k, start:end]
-        hic = hic_full[start:end, start:end]
-        print("slicing")
-        print("start: ", start)
-        print("end: ", end)
-    else:
-        print(np.shape(seqs_full))
-        seqs = seqs_full[0:k]
-    
-    if plot:
-        print(np.shape(seqs))
-        print(np.shape(hic))
-        plot_contactmap(hic)
-        plt.figure()
-        plt.plot(seqs[0])
-    
-    defaults = "~/Documents/TICG-chromatin/maxent/defaults"
-
-    nchis = int(k*(k+1)/2) # plaid chis
-    nbeads = len(seqs[0])
-
-    goals_plaid = get_goal_plaid(hic, seqs, k)
-    goals_diag = get_goal_diag(hic, nchis_diag)
-    
-    if adjust:
-        goals_plaid = goals_plaid * nbeads**2
-        goals_diag = goals_diag * nbeads**2 
-
-    # set up new directory
-    newdir = dirname
-    newdir_res = osp.join(newdir, "resources")
-    os.system(" ".join(("mkdir", newdir)))
-    os.system(" ".join(("cp -r", defaults, newdir_res)))
-
-    np.savetxt(osp.join(newdir_res,"chis.txt"), np.zeros((2,nchis)), fmt="%.8f")
-    np.savetxt(osp.join(newdir_res,"chis_diag.txt"), np.zeros((2,nchis_diag)), fmt="%.8f")
-    np.savetxt(osp.join(newdir_res,"obj_goal.txt"), goals_plaid, newline=" ", fmt="%.8f")
-    np.savetxt(osp.join(newdir_res,"obj_goal_diag.txt"), goals_diag, newline=" ", fmt="%.8f")
-
-    chipseq_files = []
-    for i in range(k):
-        pcfname = "pcf"+str(i+1)+".txt"
-        chipseq_files.append(pcfname)
-        np.savetxt(osp.join(newdir_res, pcfname), seqs[i], newline="\n", fmt="%.8f")
-
-    with open(osp.join(newdir_res, "config.json")) as f:
-        config = json.load(f)
-
-    with open(osp.join(newdir_res, "config.json"), "w") as f:
-        config["nspecies"] = k
-        config["bead_type_files"] = chipseq_files
-        config["load_bead_types"] = True
-        config["nbeads"] = nbeads
-        config["load_configuration"] = False
-        
-        LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        for i in range(k):
-            for j in range(k):
-                if j < i:
-                    continue
-                key = 'chi{}{}'.format(LETTERS[i], LETTERS[j])
-                config[key] = 0  
-                
-        json.dump(config, f, indent=4)
     
 def plot_scatter(hic1, hic2, label1="first", label2="second"):    
     plt.figure(figsize=(12,10))
@@ -1165,6 +1031,7 @@ def plot_scatter(hic1, hic2, label1="first", label2="second"):
     plt.ylabel(label2)
     plt.axis([-4,0.5,-5, 0.5])
     
+
 def plot_scatter_oe(hic1, hic2):    
     scc = get_SCC(hic1, hic2)
     pearson = get_pearson(hic1, hic2)
@@ -1221,6 +1088,8 @@ def get_goals(hic, seqs, config, save_path=None, double_diagonal=False):
     return np.hstack((plaid, diag))    
 
 
+def resize_contactmap(hic, sizex, sizey):
+    raise NotImplementedError
 
 def plot_consistency(sim):
     """ensure simulation observables are consistent with goals
@@ -1295,7 +1164,7 @@ def plot_tri(first, second, vmaxp=None, oe=False, title="", dark=False, log=Fals
     if vmaxp is None:
         plot_fn(composite, title=title, log=log)
     else:
-        plot_fn(composite, vmaxp=vmaxp, absolute=True, title=title, log=log)
+        plot_fn(composite, vmaxp=vmaxp, absolute=True, title=title, log=log) #pyright: ignore
 
     plt.title("symmetry score: {%.2f}"%(symmetry_score))
 
@@ -1368,25 +1237,8 @@ def load_contactmap_hicstraw(hicfile, res, chrom, start, end, clean=False, KR=Tr
     return contact
 
 
-def initialize(hicfile, res, size, randomized=False, chrom='2'):
-    start = 0
-    end = 120_000_000
-
-    contact = load_contact_hicstraw(hicfile, res, chrom)
-    print("loaded contactmap, shape: ", np.shape(contact))
-    
-    clean_contact, inds = clean_contactmap(contact)
-    print("cleaned contactmap, shape: ", np.shape(clean_contact))
-    
-    seqs = get_sequences(clean_contact, 5, dtype="float", randomized=randomized)
-    
-    contact_out = get_contactmap(clean_contact, normtype="mean") # normalizes
-    
-    return contact_out[0:size,0:size], seqs[:,0:size], inds 
-    #return contact_out, seqs, inds
-        
-
 def load_contactmap_with_buffers(mzd, start, end, res):
+    """have to buffer getRecordsAsMatrix otherwise bad things happen"""
     bufsize = 5_000_000 #increment
     width = end-start
     
@@ -1428,9 +1280,10 @@ def make_clean_mask(inds, N):
         mask[:, i] = False
         
     return mask
-    
+
 
 def clean_contactmap(contact):
+    """if the main diagonal entry is zero, remove the entire row and column"""
     N, _  = np.shape(contact)
     d  = np.diagonal(contact)
     inds = np.where(d == 0)[0] 
@@ -1439,38 +1292,4 @@ def clean_contactmap(contact):
                 
     return contact[mask].reshape(N-deleted, N-deleted), inds
 
-def scale_sim(orig, factor, overwrite=False):
-    '''
-    orig: ep.Sim object of original simulation
-    factor: factor by which to scale to new simulation
-    '''
-    newsim = copy.deepcopy(orig)
-    #newbeads = 32768*2*2*2*2
-    newbeads = orig.config['nbeads']*factor
-    newsim.config['nbeads'] = newbeads
-    #factor = newbeads/orig.config['nbeads']
-    newsim.config['bond_length'] = orig.config['bond_length'] / np.sqrt(factor)
-    newsim.config['beadvol'] = orig.config['beadvol'] / factor
-    newsim.config['diag_chis'] = list(np.array(orig.config['diag_chis']) / factor)
-    newsim.config['load_configuration'] = False
-
-    newsim.chi /= factor
-    newsim.save_chis()
-
-    k, n = newsim.seqs.shape
-    factor = newbeads/orig.config['nbeads']
-    # assert facttor is an integer!
-    factor = int(factor)
-    newseqs = np.zeros((k, newsim.config['nbeads']))
-    for s, seq in enumerate(newsim.seqs):
-        for e, ele in enumerate(seq):
-            for i in range(factor):
-                newseqs[s, factor*e+i] = seq[e]
-
-    newsim.seqs = newseqs
-    newsim.config['nSweeps'] = 100000
-
-    newsim.path = str(newbeads)
-
-    newsim.init_sim(overwrite = overwrite, getgoals = False)
 

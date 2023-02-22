@@ -7,7 +7,6 @@ plt.rcParams.update({'font.size':18})
 
 import pylib.maxent as me
 from pylib import epilib as ep
-import pylib.utils
 
 class Pipeline:
     """
@@ -47,7 +46,8 @@ class Pipeline:
         if self.load_first:
             self.seqs = self.load_sequences()
         else:
-            self.seqs = self.seqs_method(self.gthic)
+            n_seqs = 10
+            self.seqs = self.seqs_method(self.gthic, n_seqs)
 
     def get_goals(self):
         if self.load_first:
