@@ -18,9 +18,12 @@ end = 120_000_000
 size = 1024
 data_pipeline = DataPipeline(res, chrom, start, end, size)
 
-HCT116_hic = Path("/home/skyhl/Documents/chromatin/hic-data",
-                  "HCT116_auxin/HIC-GSE104333_Rao-2017-treated_6hr_combined_30.hic")
-HCT116_chipseq = "/home/skyhl/Documents/chromatin/maxent-analysis/HCT116_chipseq_hg19/"
+HCT116_hic = Path(
+    "/home/skyhl/Documents/chromatin/hic-data/HCT116_auxin/HIC-GSE104333_Rao-2017-treated_6hr_combined_30.hic"
+)
+HCT116_chipseq = Path(
+    "/home/skyhl/Documents/chromatin/maxent-analysis/HCT116_chipseq_hg19/"
+)
 
 data_dir = proj_root / "data"
 HCT116_hic_20k = data_dir / "HCT116_chr2_20k.npy"
