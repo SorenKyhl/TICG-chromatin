@@ -3,10 +3,12 @@ import sys
 
 from pylib import epilib
 
+
 def plot_contactmap(sim_dir):
     sim = epilib.Sim(sim_dir)
     sim.plot_contactmap()
     plt.savefig("contactmap.png")
+
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:

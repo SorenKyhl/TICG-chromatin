@@ -3,11 +3,14 @@ import copy
 
 from pylib import default
 
-def get_config(nbeads=None, config=default.config, grid_bond_ratio=0.95, base="gaussian-5k"):
+
+def get_config(
+    nbeads=None, config=default.config, grid_bond_ratio=0.95, base="gaussian-5k"
+):
     """
     calculates physical parameters for a simulation with nbeads beads,
     if nbeads is not specified, take from config
-    
+
     nbeads (int): number of beads in simulation
     config (optional):  default config file.
     grid_bond_ratio (float): grid size is defined by this ratio: bond_length / grid_size
@@ -21,44 +24,47 @@ def get_config(nbeads=None, config=default.config, grid_bond_ratio=0.95, base="g
         nbeads = config["nbeads"]
     else:
         config["chis"] = (config["nbeads"] / nbeads * np.array(config["chis"])).tolist()
-        config["diag_chis"] = (config["nbeads"] / nbeads * np.array(config["diag_chis"])).tolist()
+        config["diag_chis"] = (
+            config["nbeads"] / nbeads * np.array(config["diag_chis"])
+        ).tolist()
 
     config = copy.deepcopy(config)
 
-    #if nbeads > 10241:
+    # if nbeads > 10241:
     #    config['contact_resolution'] = 5
 
-    assert(base in ["gaussian", "gaussian-5k", "persistent", "persistent-5k"])
+    assert base in ["gaussian", "gaussian-5k", "persistent", "persistent-5k"]
     if base == "gaussian":
         baseb = 16.5
-        baseg = grid_bond_ratio*baseb
+        baseg = grid_bond_ratio * baseb
         baseN = 512000
         basev = 520
     elif base == "persistent":
         baseb = 100
-        baseg = grid_bond_ratio*baseb
+        baseg = grid_bond_ratio * baseb
         baseN = 84480
         basev = 3151.52
     elif base == "gaussian-5k":
         baseb = 82.5
-        baseg = grid_bond_ratio*baseb
+        baseg = grid_bond_ratio * baseb
         baseN = 20480
         basev = 13000
     elif base == "persistent-5k":
         baseb = 203.10
-        baseg = grid_bond_ratio*baseb
+        baseg = grid_bond_ratio * baseb
         baseN = 20480
         basev = 13000
     else:
-        raise ValueError("base must be: ['gaussian' | 'gaussian-5k' | 'persistent' | 'persistent-5k]")
-    
-    factor = (nbeads/baseN)**(-1/3)
+        raise ValueError(
+            "base must be: ['gaussian' | 'gaussian-5k' | 'persistent' | 'persistent-5k]"
+        )
+
+    factor = (nbeads / baseN) ** (-1 / 3)
     config["nbeads"] = nbeads
     config["bond_length"] = baseb * factor
     config["grid_size"] = baseg * factor
-    config["beadvol"] = basev * baseN/nbeads
-    
-    config["diag_cutoff"] = nbeads
-    
-    return config
+    config["beadvol"] = basev * baseN / nbeads
 
+    config["diag_cutoff"] = nbeads
+
+    return config

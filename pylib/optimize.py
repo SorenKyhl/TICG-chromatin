@@ -36,10 +36,10 @@ Context:
 
 
 def nearest_neighbor_contact_error(grid_bond_ratio, sim_engine, gthic):
-    """ calculate the difference between simulated and experimental nearest-neighbor contact
-    probability. 
-    
-    Args: 
+    """calculate the difference between simulated and experimental nearest-neighbor contact
+    probability.
+
+    Args:
         grid_bond_ratio [float]: grid size expressed as a ratio of the bond length.
         sim_engine [Pysim]: object to call simulation runs
         gthic [ndarray]: ground truth hic
@@ -55,11 +55,11 @@ def nearest_neighbor_contact_error(grid_bond_ratio, sim_engine, gthic):
 
     output = f"iteration{nearest_neighbor_contact_error.counter}"
     print(f"optimizing grid size, {output}")
-    sim_engine.config['grid_size'] = sim_engine.config['bond_length']*grid_bond_ratio
+    sim_engine.config["grid_size"] = sim_engine.config["bond_length"] * grid_bond_ratio
 
     sim_engine.run(output)
 
-    output_dir = osp.join(sim_engine.root,output)
+    output_dir = osp.join(sim_engine.root, output)
     sim_analysis = epilib.Sim(output_dir, maxent_analysis=False)
     p1_sim = sim_analysis.d[1]
     p1_exp = epilib.get_diagonal(gthic)[1]
@@ -69,7 +69,7 @@ def nearest_neighbor_contact_error(grid_bond_ratio, sim_engine, gthic):
 
 
 def optimize_grid_size(config, gthic, low_bound=0.75, high_bound=1.25):
-    """ tune grid size until simulated nearest neighbor contact probability
+    """tune grid size until simulated nearest neighbor contact probability
     is equal to the same probability derived from the ground truth hic matrix.
 
     Args:
@@ -81,42 +81,48 @@ def optimize_grid_size(config, gthic, low_bound=0.75, high_bound=1.25):
     """
     config = copy.deepcopy(config)
 
-    config['load_configuration'] = False
-    config['nonbonded_on'] = False
-    config['load_bead_types'] = False
+    config["load_configuration"] = False
+    config["nonbonded_on"] = False
+    config["load_bead_types"] = False
 
     root = "optimize-grid-size"
     sim_engine = Pysim(root, config, seqs=None)
 
-    result = optimize.brentq(nearest_neighbor_contact_error, low_bound, high_bound, 
-                            args=(sim_engine, gthic), xtol=1e-3, maxiter=10)
+    result = optimize.brentq(
+        nearest_neighbor_contact_error,
+        low_bound,
+        high_bound,
+        args=(sim_engine, gthic),
+        xtol=1e-3,
+        maxiter=10,
+    )
     # optimizer returns the grid_to_bond ratio... have to convert to real units.
-    optimal_grid_size = result * config['bond_length'] 
+    optimal_grid_size = result * config["bond_length"]
     return optimal_grid_size
 
 
 def stiffness_root_error(hic, gthic):
-    """ calculate error for the purposes of optimizing stiffness.
- 
-    for lack of a better option, just try to match the p(s) 
+    """calculate error for the purposes of optimizing stiffness.
+
+    for lack of a better option, just try to match the p(s)
     at the  4th bead for N=1024
     """
     return epilib.get_diagonal(hic)[3] - epilib.get_diagonal(gthic)[3]
-    #return np.mean(epilib.get_diagonal(hic) - epilib.get_diagonal(gthic))
+    # return np.mean(epilib.get_diagonal(hic) - epilib.get_diagonal(gthic))
 
 
 def stiffness_bayes_error(hic, gthic):
-    """ error used for bayesian optimization """
+    """error used for bayesian optimization"""
     sim = epilib.get_diagonal(hic)
     exp = epilib.get_diagonal(gthic)
     return mean_squared_error(sim, exp, squared=False)
 
 
 def simulate_stiffness_error(k_angle, sim_engine, gthic, method):
-    """ simulate and calculate the difference between simulated and experimental p(s) 
+    """simulate and calculate the difference between simulated and experimental p(s)
     diagonal probability as a function of the chain stiffness defined by the angle potential.
-    
-    Args: 
+
+    Args:
         k_angle [float]: grid size expressed as a ratio of the bond length.
         sim_engine [Pysim]: object to call simulation runs
         gthic [ndarray]: ground truth hic
@@ -131,15 +137,15 @@ def simulate_stiffness_error(k_angle, sim_engine, gthic, method):
 
     output = f"iteration{simulate_stiffness_error.counter}"
     print(f"optimizing chain stiffness, {output}")
-    sim_engine.config['k_angle'] = k_angle
+    sim_engine.config["k_angle"] = k_angle
 
     sim_engine.run(output)
 
-    output_dir = osp.join(sim_engine.root,output)
+    output_dir = osp.join(sim_engine.root, output)
     sim_analysis = epilib.Sim(output_dir, maxent_analysis=False)
 
     if method == "bayes":
-        # bayes method maximizes, so return negative of error 
+        # bayes method maximizes, so return negative of error
         error = -stiffness_bayes_error(sim_analysis.hic, gthic)
         print(f"bayes error, {error}")
     else:
@@ -147,8 +153,9 @@ def simulate_stiffness_error(k_angle, sim_engine, gthic, method):
         print(f"root error, {error}")
     return error
 
-def optimize_stiffness(config, gthic, low_bound=0, high_bound=1, method = "bayes"):
-    """ tune angle stiffness until simulated p(s) diagonal probabity 
+
+def optimize_stiffness(config, gthic, low_bound=0, high_bound=1, method="bayes"):
+    """tune angle stiffness until simulated p(s) diagonal probabity
     is equal to the same probability derived from the ground truth hic matrix.
 
     Args:
@@ -156,26 +163,25 @@ def optimize_stiffness(config, gthic, low_bound=0, high_bound=1, method = "bayes
                             so it's initial value doesn't matter
         gthic [ndarray]: ground truth hic map. used as the target for optimization
     Returns:
-        optimal_k_angle[float]: angle stiffness 
+        optimal_k_angle[float]: angle stiffness
     """
     config = copy.deepcopy(config)
-    config['load_configuration'] = False
-    config['nonbonded_on'] = False
-    config['load_bead_types'] = False
+    config["load_configuration"] = False
+    config["nonbonded_on"] = False
+    config["load_bead_types"] = False
 
     root = "optimize-stiffness"
     sim_engine = Pysim(root, config, seqs=None, gthic=gthic)
 
     if method == "bayes":
-        pbounds = {'k_angle': (low_bound, high_bound)}
+        pbounds = {"k_angle": (low_bound, high_bound)}
 
-        black_box = functools.partial(simulate_stiffness_error,
-                                        sim_engine=sim_engine,
-                                        gthic=gthic,
-                                        method="bayes")
-                                        
+        black_box = functools.partial(
+            simulate_stiffness_error, sim_engine=sim_engine, gthic=gthic, method="bayes"
+        )
+
         optimizer = BayesianOptimization(
-            f = black_box,
+            f=black_box,
             pbounds=pbounds,
             verbose=2,
             random_state=1,
@@ -186,34 +192,36 @@ def optimize_stiffness(config, gthic, low_bound=0, high_bound=1, method = "bayes
             n_iter=20,
         )
 
-        return optimizer.max['params']['k_angle'] # pyright: ignore
+        return optimizer.max["params"]["k_angle"]  # pyright: ignore
 
     else:
         # use rootfinding
         method = "notbayes"
-        result = optimize.brentq(simulate_stiffness_error, low_bound, high_bound, 
-                                args=(sim_engine, gthic, method), xtol=1e-2, maxiter=10)
+        result = optimize.brentq(
+            simulate_stiffness_error,
+            low_bound,
+            high_bound,
+            args=(sim_engine, gthic, method),
+            xtol=1e-2,
+            maxiter=10,
+        )
         return result
+
 
 if __name__ == "__main__":
     """directory set up:
     config.json
-    experimental_hic.npy [optional - if doesn't exist, will load from default pipeline. 
+    experimental_hic.npy [optional - if doesn't exist, will load from default pipeline.
     """
     config = utils.load_json("config.json")
-    config['nSweeps'] = 10000
+    config["nSweeps"] = 10000
 
     gthic_path = "experimental_hic.npy"
     if osp.exists(gthic_path):
         gthic = np.load(gthic_path)
     else:
-        pipe = default.data_pipeline.resize(config['nbeads'])
+        pipe = default.data_pipeline.resize(config["nbeads"])
         gthic = pipe.load_hic(default.HCT116_hic)
 
     optimal_grid_size = optimize_grid_size(config, gthic)
     print("optimal grid size is:", optimal_grid_size)
-
-
-
-
-

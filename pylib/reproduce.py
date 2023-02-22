@@ -1,5 +1,6 @@
 from pylib.pysim import Pysim
 
+
 def reproduce():
     """
     used to reproduce simulation results.
@@ -10,6 +11,7 @@ def reproduce():
 
     sim = Pysim.from_directory(".")
     sim.run("reproduce-simulation")
+
 
 if __name__ == "__main__":
     reproduce()

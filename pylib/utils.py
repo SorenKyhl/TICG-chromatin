@@ -1,4 +1,4 @@
-import numpy as np   
+import numpy as np
 import json
 import os
 import jsbeautifier
@@ -12,6 +12,7 @@ from contextlib import contextmanager
 utility functions
 """
 
+
 def load_json(path):
     with open(path) as f:
         myjson = json.load(f)
@@ -20,19 +21,18 @@ def load_json(path):
 
 def write_json(data, path):
     """
-    warning: this mutates the original json... 
+    warning: this mutates the original json...
     converts any numpy arrays into lists so that the parser can write them out.
     """
-    with open(path, 'w') as f:
-        
+    with open(path, "w") as f:
         for key in data:
             if isinstance(data[key], np.ndarray):
                 data[key] = data[key].tolist()
-        
+
         opts = jsbeautifier.default_options()
         opts.indent_size = 2
         f.write(jsbeautifier.beautify(json.dumps(data), opts))
-        #json.dump(data, f, indent=4)
+        # json.dump(data, f, indent=4)
 
 
 def cat(outfilename, infilenames):
@@ -42,19 +42,21 @@ def cat(outfilename, infilenames):
         outfilename (str): destination for concatenated contents of ``infilenames``
         infilenames (List[str]): name of files to concatenate into ``outfilename``
     """
-    with open(outfilename, 'w') as outfile:
+    with open(outfilename, "w") as outfile:
         for infilename in infilenames:
             with open(infilename) as infile:
                 for line in infile:
                     if line.strip():
-                        outfile.write(line)    
+                        outfile.write(line)
 
 
 import subprocess
+
+
 def copy_last_snapshot(xyz_in, xyz_out, nbeads):
     """copies final snapshot from xyz_in to xyz_out"""
     fout = open(xyz_out, "w")
-    nlines = nbeads+2
+    nlines = nbeads + 2
     subprocess.run(["tail", f"-{nlines}", xyz_in], stdout=fout)
 
 
@@ -65,15 +67,17 @@ def process_parallel(tasks, args):
         running_task.start()
     for running_task in running_tasks:
         running_task.join()
-        
+
 
 def process_parallel_xargs(tasks, args):
     """process multiple tasks, each with different arguments (list of tuples)"""
-    running_tasks = [Process(target=task, args=(arg,)) for task, arg in zip(tasks, args)]
+    running_tasks = [
+        Process(target=task, args=(arg,)) for task, arg in zip(tasks, args)
+    ]
     for running_task in running_tasks:
         running_task.start()
     for running_task in running_tasks:
-        running_task.join()   
+        running_task.join()
 
 
 @contextmanager
@@ -85,34 +89,34 @@ def cd(newdir):
         yield
     finally:
         os.chdir(prevdir)
-        
-    
+
+
 def load_sequences(config):
     """load sequences from files specified in config file"""
-    sequences  = []
+    sequences = []
     for file in config["bead_type_files"]:
         logging.info("loading", file)
-        sequences.append(np.loadtxt(file) )
-    sequences  = np.array(sequences )
-    return sequences 
+        sequences.append(np.loadtxt(file))
+    sequences = np.array(sequences)
+    return sequences
 
 
 def write_sequences(sequences, config):
-    assert(len(sequences) == len(config["bead_type_files"]))
+    assert len(sequences) == len(config["bead_type_files"])
     for seq, file in zip(sequences, config["bead_type_files"]):
         np.savetxt(file, seq)
 
 
 def load_sequences_from_dir(dirname):
     dirname = Path(dirname)
-    config = load_json(dirname/"config.json")
+    config = load_json(dirname / "config.json")
     with cd(dirname):
         sequences = load_sequences(config)
     return sequences
 
 
 def uncorrelate_seqs(seqs):
-    """ transform sequences so that they are uncorrelated using cholesky transformation.
+    """transform sequences so that they are uncorrelated using cholesky transformation.
     following this blog post:
         https://blogs.sas.com/content/iml/2012/02/08/use-the-cholesky-transformation-to-correlate-and-uncorrelate-variables.html
     """
@@ -124,15 +128,15 @@ def uncorrelate_seqs(seqs):
 
 def load_chis(config):
     try:
-        nspecies = config['nspecies']
-        letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        nspecies = config["nspecies"]
+        letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
         chi = np.zeros((nspecies, nspecies))
         for i in range(nspecies):
             for j in range(nspecies):
                 if j >= i:
-                    chi[i,j] = config["chi" + letters[i] + letters[j]]
-                    chi[j,i] = config["chi" + letters[i] + letters[j]]
+                    chi[i, j] = config["chi" + letters[i] + letters[j]]
+                    chi[j, i] = config["chi" + letters[i] + letters[j]]
     except KeyError:
         indices = np.triu_indices(config["nspecies"])
         chi = np.array(config["chis"])[indices]
@@ -144,56 +148,58 @@ def plot_image(x):
     x = np.array(x)
     v = x.flatten()
     lim = np.max([np.abs(np.min(v)), np.max(v)])
-    plt.imshow(x, vmin=-lim, vmax=lim, cmap='bwr')
+    plt.imshow(x, vmin=-lim, vmax=lim, cmap="bwr")
     plt.colorbar()
+
 
 """ 
 newton's method
 """
 
+
 def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method):
     obj_goal = np.array(obj_goal)
     lam = np.array(lam)
-    
-    difference = obj_goal - lam # pyright: ignore
+
+    difference = obj_goal - lam  # pyright: ignore
     Binv = np.linalg.pinv(B)
     if method == "n":
-        step = Binv@difference
+        step = Binv @ difference
     elif method == "g":
         step = difference
     else:
         raise ValueError("specify method: n (newton), g (gradient descent)")
 
-    steplength = np.sqrt(step@step)
-    
+    steplength = np.sqrt(step @ step)
+
     logging.debug("========= step before gamma: ", steplength)
-    logging.debug('obj goal', obj_goal)
-    logging.debug('lam: ', lam)
-    logging.debug('difference: ', difference)
-    logging.debug('step: ', step)
-    logging.debug('B: ', B)
+    logging.debug("obj goal", obj_goal)
+    logging.debug("lam: ", lam)
+    logging.debug("difference: ", difference)
+    logging.debug("step: ", step)
+    logging.debug("B: ", B)
 
     step *= gamma
-    steplength = np.sqrt(step@step)
-    
+    steplength = np.sqrt(step @ step)
+
     logging.debug("========= step after gamma: ", steplength)
-    logging.debug('step: ', step)
-    
+    logging.debug("step: ", step)
+
     if steplength > trust_region:
         step /= steplength
         step *= trust_region
-        steplength = np.sqrt(step@step)     
-        
+        steplength = np.sqrt(step @ step)
+
         logging.debug("======= OUTSIDE TRUST REGION =========")
         logging.debug("========= steplength: ", steplength)
         logging.debug("========= trust_region: ", trust_region)
-        logging.debug('step: ', step)
-        logging.debug('lam: ', lam)
-        
+        logging.debug("step: ", step)
+        logging.debug("lam: ", lam)
+
     new_chis = current_chis - step
     # logging.debug(f"new chi values: {new_chis}\n")
 
-    howfar = np.sqrt(difference@difference)/np.sqrt(obj_goal@obj_goal)
+    howfar = np.sqrt(difference @ difference) / np.sqrt(obj_goal @ obj_goal)
 
     return new_chis, howfar
 
@@ -214,8 +220,8 @@ def get_last_iteration(directory):
 
 
 def clean_diag_chis(config):
-    """ set beginning diagonal chis to zero"""
-    diag_chis = np.array(config['diag_chis'])
+    """set beginning diagonal chis to zero"""
+    diag_chis = np.array(config["diag_chis"])
     diag_chis = np.clip(diag_chis, 0, 1e6)
 
     for i, chi in enumerate(diag_chis):
@@ -224,5 +230,5 @@ def clean_diag_chis(config):
         else:
             break
 
-    config['diag_chis'] = diag_chis.tolist()
+    config["diag_chis"] = diag_chis.tolist()
     return config
