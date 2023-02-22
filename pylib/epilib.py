@@ -36,7 +36,7 @@ class Sim:
 
         try:
             self.config = self.load_config()
-        except:
+        except FileNotFoundError:
             logging.error("error loading config.json")
 
         self.diag_bins = np.shape(self.config["diag_chis"])[0]
@@ -45,7 +45,7 @@ class Sim:
         try:
             self.hic = get_contactmap(self.path / "contacts.txt")
             self.d = get_diagonal(self.hic)
-        except:
+        except FileNotFoundError:
             logging.error("error loading contactmap.")
 
         try:
@@ -54,13 +54,13 @@ class Sim:
                 sep="\t",
                 names=["step", "bonded", "nonbonded", "diagonal", "y"],
             )
-        except:
+        except FileNotFoundError:
             logging.error("error loading energy.traj")
 
         try:
             self.seqs = self.load_seqs()
             self.k = np.shape(self.seqs)[0]
-        except:
+        except FileNotFoundError:
             logging.error("error loading sequences")
 
         try:
@@ -68,7 +68,7 @@ class Sim:
                 self.path / "observables.traj", sep="\t", header=None
             )
             self.obs = np.array(self.obs_full.mean().values[1:])
-        except:
+        except FileNotFoundError:
             logging.error("error loading plaid observables")
 
         try:
@@ -76,7 +76,7 @@ class Sim:
                 self.path / "diag_observables.traj", sep="\t", header=None
             )
             self.diag_obs = np.array(self.diag_obs_full.mean().values[1:])
-        except:
+        except FileNotFoundError:
             logging.error("error loading diag observables")
 
         try:
@@ -84,7 +84,7 @@ class Sim:
             self.extra = np.loadtxt(self.path / "extra.traj")
             self.beadvol = self.config["beadvol"]
             self.nbeads = self.config["nbeads"]
-        except:
+        except FileNotFoundError:
             logging.error("error loading extra observables")
 
         resources_path = self.path / "../../resources/"
@@ -120,12 +120,12 @@ class Sim:
 
             try:
                 self.obj_goal_tot = np.hstack((self.obj_goal, self.obj_goal_diag))
-            except:
+            except FileNotFoundError:
                 try:
                     params_path = resources_path / "params.json"
                     params = utils.load_json(params_path)
                     self.obj_goal_tot = params["goals"]
-                except:
+                except FileNotFoundError:
                     logging.error("no maximum entropy parameters found")
 
     def pearson(self):
@@ -267,8 +267,8 @@ class Sim:
         try:
             diag = get_diagonal(self.gthic)
             plot_fn(np.linspace(1 / len(diag), 1, len(diag)), diag, "k", label="exp")
-        except:
-            print("no ground truth hi-c for plot_diagonal")
+        except FileNotFoundError:
+            logging.error("no ground truth hi-c for plot_diagonal")
 
         plt.xlabel("genomic distance")
         plt.ylabel("probability")
@@ -590,12 +590,12 @@ def get_sequences(
                     pcs[i] = pc / max(abs(pc))
 
     if scaleby_singular_values:
-        assert split == False
+        assert split is False
         for i, pc in enumerate(pcs):
             pc *= S[i]
 
     if scaleby_sqrt_singular_values:
-        assert split == False
+        assert split is False
         for i, pc in enumerate(pcs):
             pc *= np.sqrt(S[i])
 
@@ -612,7 +612,8 @@ def get_sequences(
 def map_0_1(signal, backfrom=0):
     """Returns signal data mapped to the interval [0,1]"""
     signal = signal.real
-    # signal = (signal - np.min(signal[:-backfrom]))/(np.max(signal) - np.min(signal[:-backfrom]))
+    # signal = (signal - np.min(signal[:-backfrom]))
+    # /(np.max(signal) - np.min(signal[:-backfrom]))
     signal = (signal - np.min(signal)) / (np.max(signal) - np.min(signal))
 
     # signal[signal<0] = 0
@@ -709,25 +710,6 @@ def plot_smooth(data, n_steps=20, llabel="none", fmt="o", norm=True):
     plt.fill_between(s, under_line, over_line, color="b", alpha=0.1)  # pyright: ignore
 
 
-def half_sample(contact):
-    rows, cols = contact.shape
-    i_vals = np.arange(0, int(rows / 2), 2)
-    j_vals = np.arange(0, int(cols / 2), 2)
-
-    x = np.zeros((int(rows / 2), int(cols / 2)))
-
-    for i in range(int(rows / 2)):
-        for j in range(int(cols / 2)):
-            x[i][j] = 0.25 * (
-                contact[i * 2][j * 2]
-                + contact[i * 2 + 1][j * 2]
-                + contact[i * 2][j * 2 + 1]
-                + contact[i * 2 + 1][j * 2 + 1]
-            )
-
-    return x
-
-
 def process(folder, ignore=100):
     data_out_filename = "data_out"
     contact = get_contactmap("./" + folder + "/" + data_out_filename + "/contacts.txt")
@@ -814,7 +796,8 @@ def compare_diagonal(
     raise NotImplementedError("deprecated")
     print("diag_sim is volume fraction, average of diag_observables.traj")
     print(
-        "diag_exp is p(s), average of each subdiagonal which is then downsapled to match resolution of diagonal bins"
+        "diag_exp is p(s), average of each subdiagonal which is then",
+        "downsapled to match resolution of diagonal bins",
     )
     print("diag_mask is mask, weighted average of contact map")
     print("corrected is mask, with correction factor to match p(s)")
@@ -839,10 +822,6 @@ def compare_diagonal(
 
     diag_mask, correction = mask_diagonal(contact, bins)
 
-    # print(np.mean(diag_sim/diag_mask))
-
-    # plt.errorbar(np.asarray(range(len(diag_sim))), np.log10(diag_sim), diag_std, '--o', label="sim")
-    # plt.plot(np.log10(diag_sim/correction/22), '--o', label="volume_fraction")
     if plot:
         plt.figure(figsize=(12, 10))
         plt.plot(np.log10(diag_sim), "--o", label="volume_fraction")
@@ -937,7 +916,7 @@ def mask_diagonal(
         correction.append(np.sum(mask))
     """
 
-    for b in range(bins):            
+    for b in range(bins):
         mask = make_mask_fast(rows, cols, binsize, b)
         measure.append(np.mean((mask*contact).flatten()))
         correction.append(np.sum(mask)/nbeads**2)
@@ -1003,7 +982,6 @@ def get_goal_plaid(hic, seqs, config, flat=True, norm=False, adj=True):
                 goal_exp[i, j] *= vbead / vcell
 
             if norm == "abs":
-                # goal_exp[i,j] /= np.sum(np.outer(np.abs(seqi), np.abs(seqj)))/np.shape(hic)[0]**2
                 goal_exp[i, j] /= np.sum(np.outer(np.abs(seqi), np.abs(seqj)))
 
             if norm == "n2":
@@ -1139,8 +1117,6 @@ def plot_scatter(hic1, hic2, label1="first", label2="second"):
 
 def plot_scatter_oe(hic1, hic2):
     scc = get_SCC(hic1, hic2)
-    pearson = get_pearson(hic1, hic2)
-    rmse = get_RMSE(hic1, hic2)
 
     hic1 = get_oe(hic1)
     hic2 = get_oe(hic2)
@@ -1217,9 +1193,6 @@ def plot_consistency(sim):
         hic = sim.hic
 
     goal = get_goals(hic, sim.seqs, sim.config)
-    # plaid = get_goal_plaid(hic, sim.seqs, sim.config)
-    # diag = get_goal_diag(hic, sim.config, sim.diag_bins, dense_diagonal_on=sim.config["dense_diagonal_on"])
-    # goal = np.hstack((plaid,diag))
 
     diff = sim.obs_tot - goal
     error = np.sqrt(diff @ diff / (goal @ goal))
@@ -1279,7 +1252,13 @@ def plot_tri(first, second, vmaxp=None, oe=False, title="", dark=False, log=Fals
     if vmaxp is None:
         plot_fn(composite, title=title, log=log)
     else:
-        plot_fn(composite, vmaxp=vmaxp, absolute=True, title=title, log=log)  # pyright: ignore
+        plot_fn(
+            composite,
+            vmaxp=vmaxp,  # pyright: ignore
+            absolute=True,  # pyright: ignore
+            title=title,
+            log=log,
+        )
 
     plt.title("symmetry score: {%.2f}" % (symmetry_score))
 

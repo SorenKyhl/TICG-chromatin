@@ -55,7 +55,7 @@ class DataPipeline:
     def load_hic(self, filename, KR=True, clean=True, rescale_method="mean"):
         """load hic from .hic file
         KR: bool, knight-rubin normalization.
-        rescale_method: str ["mean", "max"], rescale contactmap so entries are probabilities, rather than frequencies
+        rescale_method: str ["mean", "max"], rescale contactmap to valid probabilities
         clean: remove rows and colums for which the main diagonal is zero
         """
         filename = str(filename)  # hicstraw doesn't accept pathlib objects

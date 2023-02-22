@@ -11,8 +11,6 @@ from pylib.utils import cd, newton
 from pylib.pysim import Pysim
 from pylib import utils
 
-import matplotlib.pyplot as plt
-
 plt.rcParams["figure.figsize"] = [8, 6]
 plt.rcParams.update({"font.size": 18})
 
@@ -214,7 +212,7 @@ class Maxent:
         try:
             with open(self_copy.root / "backup.pickle", "wb") as f:
                 pickle.dump(self_copy, f)
-        except:
+        except FileNotFoundError:
             with open("backup.pickle", "wb") as f:
                 pickle.dump(self_copy, f)
 

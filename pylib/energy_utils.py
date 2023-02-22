@@ -48,7 +48,7 @@ def calculate_S(x, chi):
 
     try:
         S = x @ chi @ x.T
-    except ValueError as e:
+    except ValueError:
         print("x", x, x.shape)
         print("chi", chi, chi.shape)
         raise

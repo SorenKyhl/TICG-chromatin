@@ -3,8 +3,8 @@ from pylib import utils
 from pylib.chipseqPipeline import ChipseqPipeline, Smooth, Normalize, Sigmoid
 from pylib.datapipeline import DataPipeline
 
-""" 
-contains default config and params files 
+"""
+contains default config and params files
 """
 
 proj_root = Path("/home/skyhl/Documents/TICG-chromatin")
@@ -18,7 +18,8 @@ end = 120_000_000
 size = 1024
 data_pipeline = DataPipeline(res, chrom, start, end, size)
 
-HCT116_hic = "/home/skyhl/Documents/chromatin/hic-data/HCT116_auxin/HIC-GSE104333_Rao-2017-treated_6hr_combined_30.hic"
+HCT116_hic = Path("/home/skyhl/Documents/chromatin/hic-data",
+                  "HCT116_auxin/HIC-GSE104333_Rao-2017-treated_6hr_combined_30.hic")
 HCT116_chipseq = "/home/skyhl/Documents/chromatin/maxent-analysis/HCT116_chipseq_hg19/"
 
 data_dir = proj_root / "data"

@@ -45,7 +45,8 @@ class Pysim:
 
     @classmethod
     def from_directory(cls, sim_dir: PathLike, new_root: Optional[PathLike] = None):
-        """construct a simulation object from a directory that's already set up (i.e. contains config and sequence files)
+        """construct a simulation object from a directory that's already set up
+        (i.e. contains config and sequence files)
 
         dir: simulation directory from which to initialize
         root: new simulation root directory
@@ -55,13 +56,13 @@ class Pysim:
         with utils.cd(sim_dir):
             seqs = utils.load_sequences(config)
 
-        if new_root == None:
+        if new_root is None:
             return cls(sim_dir, config, seqs, mkdir=False, setup_needed=False)
         else:
             return cls(new_root, config, seqs, mkdir=True, setup_needed=True)
 
     def set_root(self, root: PathLike, mkdir: bool):
-        """set the root of the simulation. and (optionally) create a directory at that path
+        """set the root of the simulation. and (optionally) create the directory
 
         Args:
             root: simulation root, where all simulation outputs will be stored
@@ -84,11 +85,11 @@ class Pysim:
         self.config["seed"] = np.random.randint(10000)
 
     def setup(self):
-        """write simulation inputs in simulation root directory, but only if setup_needed flag is on"""
+        """write simulation inputs in simulation root directory, if setup_needed"""
         # needs to happen regardless of setup_needed setting, because seed is randomized
         utils.write_json(self.config, Path(self.root, "config.json"))
 
-        # further setup needed - write seuences to directory, where they are read by simulation engine
+        # further setup needed - write seuences to directory
         if self.setup_needed:
             if self.seqs is None:
                 return
@@ -98,7 +99,7 @@ class Pysim:
                 for i, seq in enumerate(self.seqs):
                     self.write_sequence(seq, Path(self.root, f"pcf{i+1}.txt"))
             else:
-                self.write_sequence(self.seqs, Path(self.root, f"pcf1.txt"))
+                self.write_sequence(self.seqs, Path(self.root, "pcf1.txt"))
 
     def flatten_chis(self):
         """restructure chi parameters into a 1-dimensional list
@@ -179,7 +180,7 @@ class Pysim:
         parallel_simulations: int = 1,
     ):
         """run equilibration followed by production simulation
-        the production run can be executed in parallel, by specifying the parallel_simulations argument
+        the production run can be executed in parallel.
 
         Args:
             equilibrium_sweeps: number of equilibrium simulation sweeps
@@ -194,7 +195,7 @@ class Pysim:
         self.config["load_configuration"] = False
         self.run(equilibration_dir)
 
-        # production. copy the last structure from equilibration to initialize production simulations
+        # production. copy the last structure to initialize production simulations
         equilibrated_structure = "equilibrated.xyz"
         copy_last_snapshot(
             xyz_in=(self.root / equilibration_dir / "output.xyz"),
@@ -212,10 +213,10 @@ class Pysim:
             self.run_parallel(production_dir, parallel_simulations)
 
     def run_parallel(self, name: str, cores: int):
-        """run production run, using several parallel simulations with different initial seeds
+        """run production, using parallel simulations with different initial seeds
 
-        each parallel core dumps output to their own directory.
-        after completion, the individual simulation data are aggregated into a final production directory
+        each parallel core dumps output to their own directory. after completion,
+        the individual simulation data are aggregated into a final production directory
 
         Args:
             name: name of output file for aggregated simulation data
@@ -249,7 +250,7 @@ class Pysim:
     def aggregate_production_files(self):
         """aggregate simulation data from each core into final production folder.
 
-        when simulations are run in parallel, each core dumps its output to a separate folder
+        each parallel core dumps its output to a separate folder
         after all simulations are finished...
         - concatenate all observables and energies into one trajectory file
         - sum all contact maps to produce one aggregate contact map
@@ -278,20 +279,20 @@ class Pysim:
         production = Pysim(
             self.root / "production_out", self.config, self.seqs, mkdir=False
         )
-        production.setup()  # save config, seqs to production_out #TODO is this necessary?
+        production.setup()  # save config, seqs to production_out
 
         # TODO: add delete old files option
 
     def combine_contactmaps(
         self, contact_files: Sequence[PathLike], output_file: Optional[PathLike] = None
     ):
-        """combines (sums) multiple contact maps from separate parallel simulations into one contactmap
+        """combines (sums) multiple contact maps from separate parallel simulations
 
         Args:
             contact_files: list of files containing contact maps to be combined
-            output_file (optional): name for output combined contact map. if specified, return type is None
+            output_file: name for output combined contact map.
         Returns:
-            aggregate contact map (if output_file is None) otherwise, saves contact map to file and returns None
+            contact map, or saves contact map to file if specified
         """
         combined = np.loadtxt(contact_files[0])
         for file in contact_files[1:]:
