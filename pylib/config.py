@@ -1,4 +1,5 @@
 import numpy as np
+from os import PathLike
 from pylib import utils
 
 
@@ -16,7 +17,7 @@ class Config:
         """
         if isinstance(config, dict):
             self.config = config
-        elif isinstance(config, str):
+        elif isinstance(config, PathLike):
             self.config = utils.load_json(config)
         else:
             raise ValueError("usage: Config( dict | str )")

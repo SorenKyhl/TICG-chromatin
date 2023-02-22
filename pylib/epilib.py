@@ -25,14 +25,21 @@ mycmap = matplotlib.colors.LinearSegmentedColormap.from_list(
 
 
 class Sim:
-    """simulation analysis"""
+    """simulation analysis
+
+    Attributes:
+        metrics: cache for expensive metrics
+    """
 
     def __init__(self, path, maxent_analysis=True):
+        """
+        Args:
+            path: directory containing simulation output
+            maxent_analysis: if false, won't try to load things related to maxent
+        """
         self.path = Path(path)
         self.metrics = {}
-        self.maxent_analysis = (
-            maxent_analysis  # if false, don't try to load stuff related to maxent
-        )
+        self.maxent_analysis = maxent_analysis
 
         try:
             self.config = self.load_config()
@@ -60,7 +67,7 @@ class Sim:
         try:
             self.seqs = self.load_seqs()
             self.k = np.shape(self.seqs)[0]
-        except FileNotFoundError:
+        except OSError:
             logging.error("error loading sequences")
 
         try:
@@ -81,10 +88,14 @@ class Sim:
 
         try:
             self.obs_tot = np.hstack((self.obs, self.diag_obs))
+        except AttributeError:
+            logging.error("observables not loaded")
+
+        try:
             self.extra = np.loadtxt(self.path / "extra.traj")
             self.beadvol = self.config["beadvol"]
             self.nbeads = self.config["nbeads"]
-        except FileNotFoundError:
+        except:
             logging.error("error loading extra observables")
 
         resources_path = self.path / "../../resources/"
@@ -109,24 +120,24 @@ class Sim:
                 self.obj_goal = np.loadtxt(obj_goal_path)
             else:
                 logging.error("no path to obj_goal.txt")
-                logging.error("looking in obj_goal_path: ", obj_goal_path)
+                logging.error(f"looking in obj_goal_path: {obj_goal_path}")
 
             obj_goal_diag_path = resources_path / "obj_goal_diag.txt"
             if obj_goal_diag_path.exists():
                 self.obj_goal_diag = np.loadtxt(obj_goal_diag_path)
             else:
                 logging.error("no path to obj_goal_diag.txt")
-                logging.error("looking in obj_goal_diag_path: ", obj_goal_path)
+                logging.error(f"looking in obj_goal_diag_path: {obj_goal_path}")
 
             try:
                 self.obj_goal_tot = np.hstack((self.obj_goal, self.obj_goal_diag))
-            except FileNotFoundError:
+            except AttributeError:
                 try:
                     params_path = resources_path / "params.json"
                     params = utils.load_json(params_path)
                     self.obj_goal_tot = params["goals"]
                 except FileNotFoundError:
-                    logging.error("no maximum entropy parameters found")
+                    logging.error("no maximum entropy goals found")
 
     def pearson(self):
         if "pearson" in self.metrics:
@@ -237,7 +248,7 @@ class Sim:
         plot_obs_vs_goal(self)
 
     def plot_oe(self, log=False):
-        plot_oe(get_oe(self.hic, log))
+        plot_oe(get_oe(self.hic), log=log)
 
     def plot_consistency(self):
         return plot_consistency(self)
@@ -320,8 +331,8 @@ class SCC:
             var_stabilized: True to use var_stabilized r_2k
             verbose: True to print when nan found
         """
-        x = SCC.mean_filter(x.astype(np.float64), 1 + 2 * h)  # pyright: ignore
-        y = SCC.mean_filter(y.astype(np.float64), 1 + 2 * h)  # pyright: ignore
+        x = self.mean_filter(x.astype(np.float64), 1 + 2 * h)
+        y = self.mean_filter(y.astype(np.float64), 1 + 2 * h)
         if K is None:
             K = len(y) - 2
         num = 0
@@ -1186,7 +1197,7 @@ def plot_consistency(sim):
     """ensure simulation observables are consistent with goals
     computed from simulation contact map"""
 
-    if np.shape(sim.hic) != np.shape(sim.seqs):
+    if len(sim.hic) != len(sim.seqs[0]):
         size = np.shape(sim.seqs[0])[0]
         hic = resize_contactmap(sim.hic, size, size)
     else:
