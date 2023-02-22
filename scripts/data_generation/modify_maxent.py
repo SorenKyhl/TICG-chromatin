@@ -10,13 +10,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import statsmodels.api as sm
 from ECDF import Ecdf
-from get_params import Tester
 from MultivariateSkewNormal import multivariate_skewnorm
 from scipy.optimize import curve_fit
 from scipy.stats import (beta, gamma, laplace, multivariate_normal, norm,
                          skewnorm, weibull_max, weibull_min)
 from sklearn.decomposition import PCA
-from sklearn.metrics import mean_squared_error
+
+sys.path.append('/home/erschultz/TICG-chromatin')
+from scripts.get_params import Tester
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.energy_utils import (
@@ -38,7 +39,7 @@ def get_samples(dataset):
         samples = range(201, 283)
         # samples = range(201, 210)
         experimental = True
-    elif dataset in {'dataset_12_20_22', 'dataset_02_13_23', 'dataset_02_06_23', 'dataset_02_01_23', 'dataset_02_16_23'}:
+    elif dataset in {'dataset_12_20_22', 'dataset_02_13_23', 'dataset_02_06_23', 'dataset_02_01_23', 'dataset_02_16_23', 'dataset_02_20_23'}:
         samples = [324, 981, 1936, 2834, 3464]
     elif dataset == 'dataset_11_21_22':
         samples = [1, 2, 3, 410, 653, 1462, 1801, 2290]
@@ -1152,121 +1153,6 @@ def grid_dist(dataset, plot=True):
     return grid_size_arr
 
 
-def compare_maxent_simulation():
-    dataset = 'dataset_02_04_23'
-    data_dir = osp.join('/home/erschultz', dataset)
-
-    L_list = []
-    chi_list = []
-    label_list = []
-    L_max_ent, chi_max_ent = plaid_dist(dataset, 4, False)
-    L_list.append(L_max_ent)
-    # chi_list.append(chi_max_ent)
-    label_list.append('Max Ent')
-
-    # L_list.append(simulated_dist('dataset_11_21_22', False))
-    # label_list.append('Sim Markov')
-
-    # s_sim, chi_sim = simulated_dist('dataset_12_20_22', False)
-    # L_list.append(s_sim)
-    # chi_list.append(chi_sim)
-    # label_list.append('Sim PCs')
-
-    # s_sim, chi_sim = plaid_dist('dataset_01_23_23', None, False)
-    # L_list.append(s_sim)
-    # # chi_list.append(chi_sim)
-    # label_list.append('Sim PCs + chi ecdf')
-
-    # s_sim, chi_sim = plaid_dist('dataset_01_27_23', None, False)
-    # L_list.append(s_sim)
-    # chi_list.append(chi_sim)
-    # label_list.append('Multivariate gaussian')
-
-    # s_sim, chi_sim = plaid_dist('dataset_01_27_23_v2', None, False)
-    # L_list.append(s_sim)
-    # # chi_list.append(chi_sim)
-    # label_list.append('Pooled ii and Pooled ij')
-
-    # s_sim, chi_sim = plaid_dist('dataset_01_27_23_v3', None, False)
-    # L_list.append(s_sim)
-    # chi_list.append(chi_sim)
-    # label_list.append('Univariate ii and Pooled ij')
-
-    # s_sim, chi_sim = plaid_dist('dataset_01_27_23_v4', None, False)
-    # L_list.append(s_sim)
-    # # chi_list.append(chi_sim)
-    # label_list.append('Univariate skewed gaussian')
-
-    # s_sim, chi_sim = plaid_dist('dataset_01_27_23_v5', None, False)
-    # L_list.append(s_sim)
-    # # chi_list.append(chi_sim)
-    # label_list.append('Only ii')
-
-    # s_sim, chi_sim = plaid_dist('dataset_01_27_23_v6', None, False)
-    # L_list.append(s_sim)
-    # # chi_list.append(chi_sim)
-    # label_list.append('Max S')
-
-    # s_sim, chi_sim = plaid_dist('dataset_01_27_23_v7', None, False)
-    # L_list.append(s_sim)
-    # # chi_list.append(chi_sim)
-    # label_list.append('Laplace ij')
-
-    # s_sim, chi_sim = plaid_dist('dataset_01_27_23_v8', None, False)
-    # L_list.append(s_sim)
-    # # chi_list.append(chi_sim)
-    # label_list.append('Sign Conditioned')
-
-    # s_sim, chi_sim = plaid_dist('dataset_01_27_23_v9', None, False)
-    # L_list.append(s_sim)
-    # # chi_list.append(chi_sim)
-    # label_list.append(r'Synthetic $\tilde{\chi}$')
-
-    s_sim, chi_sim = plaid_dist('dataset_02_20_23', None, False)
-    L_list.append(s_sim)
-    # chi_list.append(chi_sim)
-    label_list.append(r'Synthetic $\tilde{\chi}$')
-
-    # plot plaid L_ij parameters
-    cmap = matplotlib.cm.get_cmap('tab10')
-    ind = np.arange(len(L_list)) % cmap.N
-    colors = cmap(ind)
-    dist = norm
-    bin_width = 1
-    for i, (arr, label) in enumerate(zip(L_list, label_list)):
-        arr = np.array(arr).reshape(-1)
-        print(arr)
-        print(np.min(arr), np.max(arr))
-        _, bins, _ = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
-                                    bins=range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width),
-                                    alpha = 0.5, label = label, color = colors[i])
-        params = dist.fit(arr)
-        y = dist.pdf(bins, *params) * bin_width
-        plt.plot(bins, y, ls = '--', color = colors[i])
-
-    plt.legend()
-    plt.ylabel('probability', fontsize=16)
-    plt.xlabel(r'$L_{ij}$', fontsize=16)
-    plt.xlim(-20, 20)
-    plt.savefig(osp.join(data_dir, 'L_dist_comparison.png'))
-    plt.close()
-
-    # plot plaid chi parameters
-    # bin_width = 1
-    # for i, (arr, label) in enumerate(zip(chi_list, l_list)):
-    #     arr = np.array(arr).reshape(-1)
-    #     print(np.min(arr), np.max(arr))
-    #     n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
-    #                                 bins=range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width),
-    #                                 alpha = 0.5, label = label, color = colors[i])
-    # plt.legend()
-    # plt.ylabel('probability', fontsize=16)
-    # plt.xlabel(r'$\chi_{ij}$', fontsize=16)
-    # plt.xlim(-20, 20)
-    # plt.savefig(osp.join(data_dir, 'chi_dist_comparison.png'))
-    # plt.close()
-
-
 if __name__ == '__main__':
     # modify_plaid_chis('dataset_02_04_23', k = 12)
     modify_maxent_diag_chi('dataset_02_04_23', k = 12)
@@ -1276,5 +1162,4 @@ if __name__ == '__main__':
     # grid_dist('dataset_01_26_23')
     # plaid_dist('dataset_02_04_23', 12, True, False, True)
     # seq_dist('dataset_01_26_23', 4, True, False, True)
-    # compare_maxent_simulation()
     # modify_plaid_chis('dataset_11_14_22', 8)

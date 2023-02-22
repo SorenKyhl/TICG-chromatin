@@ -5,6 +5,7 @@ import numpy as np
 
 
 class Ecdf():
+    '''Class to fit empirical cumulative density function.'''
     def __init__(self, cdf=None, values=None, fname=None):
         self._cdf = cdf
         self._values = values

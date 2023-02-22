@@ -17,7 +17,7 @@ else
   source activate python3.9_pytorch1.9_cuda10.2
 fi
 
-dataset='dataset_02_13_23'
+dataset='dataset_02_20_23'
 samples='324-981-1936-2834-3464'
 dataFolder="${dataDir}/${dataset}"
 convergenceDefinition='strict'

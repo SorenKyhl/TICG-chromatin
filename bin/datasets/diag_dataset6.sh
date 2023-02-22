@@ -16,7 +16,7 @@ source $sourceFile
 
 jobs=0
 waitCount=0
-for i in {2501..3000}
+for i in {2842..2884}
 do
 	echo $i
 	run &
