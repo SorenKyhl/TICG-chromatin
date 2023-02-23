@@ -1017,12 +1017,18 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
             ind = np.arange(k*(k-1)/2 + k) % cmap.N
             colors = cmap(ind.astype(int))
 
-            fig, ax = plt.subplots(k, k, sharey = True, sharex = True)
+            fig, axes = plt.subplots(k, k, sharey = True, sharex = True)
             row = 0
             col = 0
             c = 0
             for i in range(k):
-                for j in range(i,k):
+                for j in range(k):
+                    ax = axes[i][j]
+                    if j < i:
+                        # ax.get_xaxis().set_visible(False)
+                        # ax.get_yaxis().set_visible(False)
+                        continue
+
                     data = []
                     for chi in chi_list:
                         data.append(chi[i,j])
@@ -1030,7 +1036,7 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
                     dist = skewnorm
                     arr = np.array(data).reshape(-1)
                     bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width)
-                    n, bins, patches = ax[i][j].hist(arr, weights = np.ones_like(arr) / len(arr),
+                    n, bins, patches = ax.hist(arr, weights = np.ones_like(arr) / len(arr),
                                                 bins = bins, alpha = 0.5, color = colors[c])
 
                     params = dist.fit(arr)
@@ -1040,12 +1046,12 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
                         dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
                         pickle.dump(dict, f)
 
-                    ax[i][j].plot(bins, y, ls = '--', color = 'k')
-                    ax[i][j].set_title(r'$\alpha=$' + f'{params[0]}\n' + r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
+                    ax.plot(bins, y, ls = '--', color = 'k')
+                    # ax.set_title(r'$\alpha=$' + f'{params[0]}\n' + r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
                     c += 1
 
             fig.supxlabel(r'$\chi_{ij}$', fontsize=16)
-            fig.supylabel('probability', fontsize=16)
+            fig.supylabel('Probability', fontsize=16)
             plt.xlim(-20, 20)
             plt.tight_layout()
             plt.savefig(osp.join(odir, f'k{k}_chi_per_dist.png'))
@@ -1155,11 +1161,11 @@ def grid_dist(dataset, plot=True):
 
 if __name__ == '__main__':
     # modify_plaid_chis('dataset_02_04_23', k = 12)
-    modify_maxent_diag_chi('dataset_02_04_23', k = 12)
+    # modify_maxent_diag_chi('dataset_02_04_23', k = 12)
     # for i in range(201, 210):
         # plot_modified_max_ent(i, k = 8)
-    diagonal_dist('dataset_02_04_23', 12)
+    # diagonal_dist('dataset_02_04_23', 12)
     # grid_dist('dataset_01_26_23')
-    # plaid_dist('dataset_02_04_23', 12, True, False, True)
+    plaid_dist('dataset_01_26_23', 4, True, False, False)
     # seq_dist('dataset_01_26_23', 4, True, False, True)
     # modify_plaid_chis('dataset_11_14_22', 8)

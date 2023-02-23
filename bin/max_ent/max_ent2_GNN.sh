@@ -42,7 +42,7 @@ method='GNN'
 for sample in 324 981 1936 2834 3464
 do
   gridSize="${dir}/${dataset}/samples/sample${sample}/config.json"
-  for GNNModelID in 378
+  for GNNModelID in 380
   # 271
    # 243 254 262 265 267 271 276
   do
