@@ -39,8 +39,15 @@ def get_samples(dataset):
         samples = range(201, 283)
         # samples = range(201, 210)
         experimental = True
-    elif dataset in {'dataset_12_20_22', 'dataset_02_13_23', 'dataset_02_06_23', 'dataset_02_01_23', 'dataset_02_16_23', 'dataset_02_20_23'}:
+    elif dataset in {'dataset_12_20_22', 'dataset_02_13_23', 'dataset_02_06_23',
+                    'dataset_02_01_23', 'dataset_02_22_23'}:
         samples = [324, 981, 1936, 2834, 3464]
+    elif dataset == 'dataset_02_20_23':
+        samples = [1, 2, 3, 4, 5]
+        samples.extend([324, 981, 1936, 2834, 3464])
+    elif dataset == 'dataset_02_16_23':
+        samples = [1, 2, 3, 4, 5]
+        samples.extend([324, 981, 1936, 2834, 3123, 3464, 3554])
     elif dataset == 'dataset_11_21_22':
         samples = [1, 2, 3, 410, 653, 1462, 1801, 2290]
     elif dataset.startswith('dataset_01_27_23'):
@@ -149,6 +156,7 @@ def modify_maxent_diag_chi(dataset, k = 8, edit = True):
         edit: True to modify maxent result so that is is flat at start
     '''
     samples, _ = get_samples(dataset)
+    samples = [207]
     for sample in samples:
         print(f'sample{sample}, k{k}')
         # try different modifications to diag chis learned by max ent
@@ -189,7 +197,9 @@ def modify_maxent_diag_chi(dataset, k = 8, edit = True):
         x = np.arange(0, 2*m)
 
         if edit:
-            piecewise_linear_fit = None
+            piecewise_linear_fit = curve_fit_helper(Curves.piecewise_linear_curve, x[:m],
+                                    diag_chi_step, 'piecewise_linear', odir,
+                                    [1, 1, 1, 1, 10], start = 2)
             piecewise_poly2_fit = None
             piecewise_poly3_fit = None
             log_fit = curve_fit_helper(Curves.log_curve, x[:64], diag_chi_step[:64],
@@ -257,7 +267,7 @@ def modify_maxent_diag_chi(dataset, k = 8, edit = True):
                 plt.xscale('log')
                 plt.savefig(osp.join(odir, 'meanDist_fit_log.png'))
             else:
-                plt.xlim(0, 50)
+                # plt.xlim(0, 50)
                 plt.savefig(osp.join(odir, 'meanDist_fit.png'))
             plt.close()
 
@@ -713,7 +723,6 @@ def seq_dist(dataset, k, plot=True, eig=False, eig_norm=False):
 
     return x_list
 
-
 def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
     # distribution of plaid params
     samples, experimental = get_samples(dataset)
@@ -1042,7 +1051,8 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
                     params = dist.fit(arr)
                     y = dist.pdf(bins, *params) * bin_width
                     params = np.round(params, 1)
-                    with open(osp.join(odir, f'k{k}_chi{LETTERS[i]}{LETTERS[j]}.pickle'), 'wb') as f:
+                    pair = LETTERS[i] + LETTERS[j]
+                    with open(osp.join(odir, f'k{k}_chi{pair}.pickle'), 'wb') as f:
                         dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
                         pickle.dump(dict, f)
 
@@ -1160,12 +1170,12 @@ def grid_dist(dataset, plot=True):
 
 
 if __name__ == '__main__':
-    # modify_plaid_chis('dataset_02_04_23', k = 12)
-    # modify_maxent_diag_chi('dataset_02_04_23', k = 12)
+    # modify_plaid_chis('dataset_02_04_23', k = 7)
+    modify_maxent_diag_chi('dataset_02_04_23', k = 7)
     # for i in range(201, 210):
         # plot_modified_max_ent(i, k = 8)
-    # diagonal_dist('dataset_02_04_23', 12)
+    # diagonal_dist('dataset_02_04_23', 7)
     # grid_dist('dataset_01_26_23')
-    plaid_dist('dataset_01_26_23', 4, True, False, False)
+    plaid_dist('dataset_02_04_23', 7, True, False, True)
     # seq_dist('dataset_01_26_23', 4, True, False, True)
     # modify_plaid_chis('dataset_11_14_22', 8)

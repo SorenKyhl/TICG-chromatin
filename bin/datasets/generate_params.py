@@ -10,10 +10,12 @@ import numpy as np
 from scipy.stats import laplace, multivariate_normal, norm, qmc, skewnorm
 
 sys.path.insert(0, '/home/erschultz/TICG-chromatin')
-from scripts.ECDF import Ecdf
+from scripts.data_generation.ECDF import Ecdf
 from scripts.get_params import GetSeq
 
 sys.path.insert(0, '/home/erschultz')
+from sequences_to_contact_maps.scripts.energy_utils import \
+    calculate_diag_chi_step
 from sequences_to_contact_maps.scripts.load_utils import load_Y
 from sequences_to_contact_maps.scripts.utils import pearson_round, triu_to_full
 
@@ -248,7 +250,7 @@ class DatasetGenerator():
             seq_file = osp.join(self.odir, f'x_{i+1}.npy')
             np.save(seq_file, x)
 
-            seq_file = osp.join('/home/erschultz', self.dataset, f'setup/x_{i+1}.npy')
+            seq_file = osp.join(self.data_dir, self.dataset, f'setup/x_{i+1}.npy')
             self.sample_dict[i]['method'] = seq_file
 
     def seq_eig_params(self, norm=False):
@@ -337,6 +339,39 @@ class DatasetGenerator():
             self.sample_dict[i]['max_diag_chi'] = vals[2]
             self.sample_dict[i]['min_diag_chi'] = 0
 
+    def max_ent_params(self):
+        diag_dict = {} # id : diag_params
+        if self.m == 1024:
+            dataset = '/home/erschultz/dataset_11_14_22/samples'
+            samples = range(2201, 2216)
+        elif self.m == 512:
+            if 'v2' in self.seq_mode:
+                dataset = '/home/erschultz/dataset_02_04_23/samples'
+                samples = range(201, 283)
+            else:
+                dataset = '/home/erschultz/dataset_01_26_23/samples'
+                samples = range(201, 250)
+
+        for j in samples:
+            sample_folder = osp.join(dataset, f'sample{j}', f'PCA-normalize-E/k{self.k}/replicate1')
+            diag_chis = np.loadtxt(osp.join(sample_folder, 'chis_diag.txt'))[-1]
+            with open(osp.join(sample_folder, 'resources/config.json'), 'r') as f:
+                config = json.load(f)
+            diag_chi_step = calculate_diag_chi_step(config, diag_chis)
+            diag_dict[j] = diag_chi_step
+
+        for i in range(self.N):
+            j = np.random.choice(samples)
+            diag_chis = diag_dict[j]
+
+            diag_file = osp.join(self.odir, f'diag_chis_{i+1}.npy')
+            np.save(diag_file, diag_chis)
+
+            diag_file = osp.join(self.data_dir, self.dataset, f'setup/diag_chis_{i+1}.npy')
+
+            self.sample_dict[i]['diag_chi_method'] = diag_file
+
+
     def grid_params(self):
         for i in range(self.N):
             if self.grid_mode == 'v1':
@@ -350,6 +385,8 @@ class DatasetGenerator():
             self.linear_params()
         elif self.diag_mode == 'logistic':
             self.logistic_params()
+        elif self.diag_mode.startswith('max_ent'):
+            self.max_ent_params()
 
         if self.seq_mode == 'markov':
             self.seq_markov_params()

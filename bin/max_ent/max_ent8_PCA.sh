@@ -50,7 +50,7 @@ jobs=0
 waitCount=0
 for k in 7
 do
-  for sample in {201..282}
+  for sample in {218..282}
   do
     # gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
     echo $sample $m
