@@ -36,6 +36,7 @@ mode='both'
 bondtype='gaussian'
 bondLength=16.5
 phiChromatin=0.06
+gridSize=24
 
 diagChiMethod="zeros"
 dense='true'
@@ -47,15 +48,15 @@ diagCutoff=512
 method='PCA-normalize'
 jobs=0
 waitCount=0
-for k in 4 8
+for k in 7
 do
   for sample in {201..282}
   do
-    gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
+    # gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
     echo $sample $m
-    # max_ent
+    max_ent
     jobs=$(( $jobs + 1 ))
-    if [ $jobs -gt 18 ]
+    if [ $jobs -gt 16 ]
     then
       echo 'Waiting'
       waitCount=$(( $waitCount + 1 ))

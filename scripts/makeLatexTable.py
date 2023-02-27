@@ -355,7 +355,7 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                         'converged_time':'Converged Time', 'final_time':'Final Time'}
         if small:
             metrics = ['scc', 'rmse-E+D', 'avg_dist_pearson', 'rmse-diag', 'total_time']
-            metrics = ['scc', 'rmse-diag']
+            metrics = ['scc', 'rmse-y', 'total_time']
         else:
             metrics = ['scc', 'avg_dist_pearson', 'rmse-E+D', 'rmse-y', 'rmse-diag',
                         'converged_it', 'converged_time', 'final_time']

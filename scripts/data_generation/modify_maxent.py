@@ -10,13 +10,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import statsmodels.api as sm
 from ECDF import Ecdf
-from get_params import Tester
 from MultivariateSkewNormal import multivariate_skewnorm
 from scipy.optimize import curve_fit
 from scipy.stats import (beta, gamma, laplace, multivariate_normal, norm,
                          skewnorm, weibull_max, weibull_min)
 from sklearn.decomposition import PCA
-from sklearn.metrics import mean_squared_error
+
+sys.path.append('/home/erschultz/TICG-chromatin')
+from scripts.get_params import Tester
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.energy_utils import (
@@ -34,19 +35,16 @@ def get_samples(dataset):
     if dataset == 'dataset_11_14_22':
         samples = range(2201, 2214)
         experimental = True
-    elif dataset == 'dataset_01_26_23' or dataset == 'dataset_02_04_23':
+    elif dataset in {'dataset_01_26_23', 'dataset_02_04_23', 'dataset_02_21_23'}:
         samples = range(201, 283)
         # samples = range(201, 210)
         experimental = True
-    elif dataset == 'dataset_12_20_22':
+    elif dataset in {'dataset_12_20_22', 'dataset_02_13_23', 'dataset_02_06_23', 'dataset_02_01_23', 'dataset_02_16_23', 'dataset_02_20_23'}:
         samples = [324, 981, 1936, 2834, 3464]
     elif dataset == 'dataset_11_21_22':
         samples = [1, 2, 3, 410, 653, 1462, 1801, 2290]
     elif dataset.startswith('dataset_01_27_23'):
         samples = range(1, 16)
-    elif dataset == 'dataset_02_06_23' or dataset == 'dataset_02_01_23':
-        samples = [324, 981, 1936, 2834, 3464]
-        # samples = range(1, 500)
     else:
         samples = range(1, 11)
 
@@ -337,7 +335,7 @@ def plot_modified_max_ent(sample, params = True, k = 8):
     print(f'sample{sample}, k{k}')
     dataset = 'dataset_02_04_23'
     dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
-    max_ent_dir = osp.join(dir, f'none/k{k}/replicate1')
+    max_ent_dir = osp.join(dir, f'PCA-normalize-E/k{k}/replicate1')
     fig, ax = plt.subplots()
     if params:
         ax2 = ax.twinx()
@@ -505,6 +503,31 @@ def simple_histogram(arr, xlabel='X', odir=None, ofname=None, dist=skewnorm,
         plt.savefig(osp.join(odir, ofname))
         plt.close()
 
+def simple_scatter(arr_x, arr_y, label_x, label_y, color=None, odir=None, ofname=None):
+    X = arr_x
+    X = sm.add_constant(X)
+    Y = arr_y
+    est = sm.OLS(Y, X)
+    est = est.fit()
+    params = np.round(est.params, 3)
+    X = np.linspace(min(arr_x), max(arr_x), 100)
+    plt.plot(X, est.predict(sm.add_constant(X)), ls='--', c = 'k')
+
+    plt.title(f'y={params[0]}x+{params[1]}\n'+r'$R^2=$'+f'{np.round(est.rsquared, 2)}')
+    if color is None:
+        plt.scatter(arr_x, arr_y)
+    else:
+        plt.scatter(arr_x, arr_y, c = color, cmap = 'RdPu')
+    plt.xlabel(label_x, fontsize=16)
+    plt.ylabel(label_y, fontsize=16)
+    plt.tight_layout()
+    if odir is not None and ofname is not None:
+        plt.savefig(osp.join(odir, ofname))
+    else:
+        plt.show()
+    plt.close()
+
+
 def diagonal_dist(dataset, k, plot=True):
     # distribution of diagonal params
     samples, experimental = get_samples(dataset)
@@ -513,7 +536,7 @@ def diagonal_dist(dataset, k, plot=True):
         dir = '/home/erschultz'
     data_dir = osp.join(dir, dataset)
 
-
+    grid_size_arr = grid_dist(dataset, False)
     linear_popt_list = []
     # logistic_popt_list = []
     for sample in samples:
@@ -532,26 +555,35 @@ def diagonal_dist(dataset, k, plot=True):
     linear_popt_arr = np.array(linear_popt_list)
     # logistic_popt_arr = np.array(logistic_popt_list)
 
+    delete_arr = np.zeros(len(linear_popt_arr), dtype=bool)
+    for col in [0,1]:
+        arr = linear_popt_arr[:, col]
+        # remove outliers
+        iqr = np.percentile(arr, 75) - np.percentile(arr, 25)
+        l_cutoff = np.percentile(arr, 25) - 1.5 * iqr
+        u_cutoff = np.percentile(arr, 75) + 1.5 * iqr
+        print(col, iqr, (l_cutoff, u_cutoff))
+
+        tmp_delete_arr = np.logical_or(arr < l_cutoff, arr > u_cutoff)
+        delete_arr = np.logical_or(delete_arr, tmp_delete_arr)
+
+    linear_popt_arr = np.delete(linear_popt_arr, delete_arr, axis = 0)
+    grid_size_arr = np.delete(grid_size_arr, delete_arr, axis = 0)
+
+
 
     odir = osp.join(data_dir, 'diagonal_param_distributions')
     if not osp.exists(odir):
         os.mkdir(odir, mode = 0o755)
 
-    arrs = [linear_popt_arr[:, 0], linear_popt_arr[:, 1]]
+    slope = linear_popt_arr[:, 0]
+    intercept = linear_popt_arr[:, 1]
+    arrs = [slope, intercept]
             # logistic_popt_arr[:, 0], logistic_popt_arr[:, 1], logistic_popt_arr[:, 2]]
     labels = ['linear_slope', 'linear_intercept']
             # 'diag_logistic_max', 'diag_logistic_slope', 'diag_logistic_midpoint']
     dist = skewnorm
     for arr, label in zip(arrs, labels):
-        # remove outliers
-        iqr = np.percentile(arr, 75) - np.percentile(arr, 25)
-        l_cutoff = np.percentile(arr, 25) - 1.5 * iqr
-        u_cutoff = np.percentile(arr, 75) + 1.5 * iqr
-
-        delete_arr = np.logical_or(arr < l_cutoff, arr > u_cutoff)
-        print(label, iqr, (l_cutoff, u_cutoff))
-        arr = np.delete(arr, delete_arr, axis = None)
-
         n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
                                     bins = 20, color = 'blue', alpha = 0.5)
         bin_width = bins[1] - bins[0]
@@ -570,6 +602,27 @@ def diagonal_dist(dataset, k, plot=True):
         with open(osp.join(odir, f'k{k}_{label}.pickle'), 'wb') as f:
             dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
             pickle.dump(dict, f)
+
+
+    # scatter of slope vs intercept
+    simple_scatter(slope, intercept, 'slope', 'intercept', grid_size_arr, odir, 'slope_vs_intercept.png')
+
+    # scatter of slope vs grid_size
+    simple_scatter(slope, grid_size_arr, 'slope', 'grid_size', intercept, odir, 'slope_vs_grid_size.png')
+
+    # scatter of slope vs grid_size
+    simple_scatter(intercept, grid_size_arr, 'intercept', 'grid_size', slope, odir, 'intercept_vs_grid_size.png')
+
+    # 3d scatter
+    fig = plt.figure()
+    ax = plt.axes(projection = '3d')
+    ax.scatter(slope, grid_size_arr, intercept)
+    ax.set_xlabel('slope')
+    ax.set_ylabel('grid_size')
+    ax.set_zlabel('intercept')
+    plt.savefig(osp.join(odir, 'slope_vs_intercept_vs_grid_size.png'))
+    plt.close()
+
 
 def seq_dist(dataset, k, plot=True, eig=False, eig_norm=False):
     # distribution of seq params
@@ -684,7 +737,7 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
     chi_ii_list = []
     chi_list = []
     chi_flat_list = []
-    x_list = seq_dist(dataset, k, plot, eig, eig_norm)
+    grid_size_arr = grid_dist(dataset, False)
     for sample in samples:
         dir = osp.join(data_dir, f'samples/sample{sample}')
         if experimental:
@@ -755,6 +808,7 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
         #     print(hat)
 
     if plot:
+        x_list = seq_dist(dataset, k, plot, eig, eig_norm)
         # plot plaid chi parameters
         if not (eig or eig_norm):
             simple_histogram(chi_ij_list, r'$\chi_{ij}$', odir,
@@ -963,12 +1017,18 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
             ind = np.arange(k*(k-1)/2 + k) % cmap.N
             colors = cmap(ind.astype(int))
 
-            fig, ax = plt.subplots(k, k, sharey = True, sharex = True)
+            fig, axes = plt.subplots(k, k, sharey = True, sharex = True)
             row = 0
             col = 0
             c = 0
             for i in range(k):
-                for j in range(i,k):
+                for j in range(k):
+                    ax = axes[i][j]
+                    if j < i:
+                        # ax.get_xaxis().set_visible(False)
+                        # ax.get_yaxis().set_visible(False)
+                        continue
+
                     data = []
                     for chi in chi_list:
                         data.append(chi[i,j])
@@ -976,7 +1036,7 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
                     dist = skewnorm
                     arr = np.array(data).reshape(-1)
                     bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width)
-                    n, bins, patches = ax[i][j].hist(arr, weights = np.ones_like(arr) / len(arr),
+                    n, bins, patches = ax.hist(arr, weights = np.ones_like(arr) / len(arr),
                                                 bins = bins, alpha = 0.5, color = colors[c])
 
                     params = dist.fit(arr)
@@ -986,12 +1046,12 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
                         dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
                         pickle.dump(dict, f)
 
-                    ax[i][j].plot(bins, y, ls = '--', color = 'k')
-                    ax[i][j].set_title(r'$\alpha=$' + f'{params[0]}\n' + r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
+                    ax.plot(bins, y, ls = '--', color = 'k')
+                    # ax.set_title(r'$\alpha=$' + f'{params[0]}\n' + r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
                     c += 1
 
             fig.supxlabel(r'$\chi_{ij}$', fontsize=16)
-            fig.supylabel('probability', fontsize=16)
+            fig.supylabel('Probability', fontsize=16)
             plt.xlim(-20, 20)
             plt.tight_layout()
             plt.savefig(osp.join(odir, f'k{k}_chi_per_dist.png'))
@@ -1035,12 +1095,47 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
         plt.savefig(osp.join(odir, f'k{k}_chi_pc_dist.png'))
         plt.close()
 
+        # grid_size vs chi_aa
+        data = []
+        for chi in chi_list:
+            data.append(chi[0,0])
+
+        # remove outliers
+        iqr = np.percentile(data, 75) - np.percentile(data, 25)
+        width = 1.5
+        l_cutoff = np.percentile(data, 25) - width * iqr
+        u_cutoff = np.percentile(data, 75) + width * iqr
+
+        delete_arr = np.logical_or(data < l_cutoff, data > u_cutoff)
+        data = np.delete(data, delete_arr, axis = None)
+        data2 = np.delete(grid_size_arr, delete_arr, axis = None)
+        simple_scatter(data, data2, r'$\chi_{AA}$', 'grid_size', None, odir, 'chi_AA_vs_grid_size.png')
+
+        # grid_size vs chi_bb
+        data = []
+        for chi in chi_list:
+            data.append(chi[1,1])
+
+        # remove outliers
+        iqr = np.percentile(data, 75) - np.percentile(data, 25)
+        width = 1.5
+        l_cutoff = np.percentile(data, 25) - width * iqr
+        u_cutoff = np.percentile(data, 75) + width * iqr
+
+        delete_arr = np.logical_or(data < l_cutoff, data > u_cutoff)
+        data = np.delete(data, delete_arr, axis = None)
+        data2 = np.delete(grid_size_arr, delete_arr, axis = None)
+        simple_scatter(data, data2, r'$\chi_{BB}$', 'grid_size', None, odir, 'chi_BB_vs_grid_size.png')
+
     return L_list, chi_ij_list
 
 def grid_dist(dataset, plot=True):
     # distribution of plaid params
     samples, experimental = get_samples(dataset)
-    assert experimental
+    if not experimental:
+        if plot:
+            raise Exception('must be experimental')
+        return
     data_dir = osp.join('/home/erschultz', dataset)
     odir = osp.join(data_dir, 'grid_size_distributions')
 
@@ -1061,126 +1156,16 @@ def grid_dist(dataset, plot=True):
         simple_histogram(grid_size_arr, 'grid size', odir,
                             'grid_size_dist.png', dist = skewnorm)
 
-
-
-def compare_maxent_simulation():
-    dataset = 'dataset_01_26_23'
-    data_dir = osp.join('/home/erschultz', dataset)
-
-    L_list = []
-    chi_list = []
-    label_list = []
-    L_max_ent, chi_max_ent = plaid_dist(dataset, 4, False)
-    L_list.append(L_max_ent)
-    # chi_list.append(chi_max_ent)
-    label_list.append('Max Ent')
-
-    # L_list.append(simulated_dist('dataset_11_21_22', False))
-    # label_list.append('Sim Markov')
-
-    # s_sim, chi_sim = simulated_dist('dataset_12_20_22', False)
-    # L_list.append(s_sim)
-    # chi_list.append(chi_sim)
-    # label_list.append('Sim PCs')
-
-    # s_sim, chi_sim = plaid_dist('dataset_01_23_23', None, False)
-    # L_list.append(s_sim)
-    # # chi_list.append(chi_sim)
-    # label_list.append('Sim PCs + chi ecdf')
-
-    # s_sim, chi_sim = plaid_dist('dataset_01_27_23', None, False)
-    # L_list.append(s_sim)
-    # chi_list.append(chi_sim)
-    # label_list.append('Multivariate gaussian')
-
-    # s_sim, chi_sim = plaid_dist('dataset_01_27_23_v2', None, False)
-    # L_list.append(s_sim)
-    # # chi_list.append(chi_sim)
-    # label_list.append('Pooled ii and Pooled ij')
-
-    # s_sim, chi_sim = plaid_dist('dataset_01_27_23_v3', None, False)
-    # L_list.append(s_sim)
-    # chi_list.append(chi_sim)
-    # label_list.append('Univariate ii and Pooled ij')
-
-    # s_sim, chi_sim = plaid_dist('dataset_01_27_23_v4', None, False)
-    # L_list.append(s_sim)
-    # # chi_list.append(chi_sim)
-    # label_list.append('Univariate skewed gaussian')
-
-    # s_sim, chi_sim = plaid_dist('dataset_01_27_23_v5', None, False)
-    # L_list.append(s_sim)
-    # # chi_list.append(chi_sim)
-    # label_list.append('Only ii')
-
-    # s_sim, chi_sim = plaid_dist('dataset_01_27_23_v6', None, False)
-    # L_list.append(s_sim)
-    # # chi_list.append(chi_sim)
-    # label_list.append('Max S')
-
-    # s_sim, chi_sim = plaid_dist('dataset_01_27_23_v7', None, False)
-    # L_list.append(s_sim)
-    # # chi_list.append(chi_sim)
-    # label_list.append('Laplace ij')
-
-    # s_sim, chi_sim = plaid_dist('dataset_01_27_23_v8', None, False)
-    # L_list.append(s_sim)
-    # # chi_list.append(chi_sim)
-    # label_list.append('Sign Conditioned')
-
-    s_sim, chi_sim = plaid_dist('dataset_01_27_23_v9', None, False)
-    L_list.append(s_sim)
-    # chi_list.append(chi_sim)
-    label_list.append(r'Synthetic $\tilde{\chi}$')
-
-    # plot plaid L_ij parameters
-    cmap = matplotlib.cm.get_cmap('tab10')
-    ind = np.arange(len(L_list)) % cmap.N
-    colors = cmap(ind)
-    dist = norm
-    bin_width = 1
-    for i, (arr, label) in enumerate(zip(L_list, label_list)):
-        arr = np.array(arr).reshape(-1)
-        print(arr)
-        print(np.min(arr), np.max(arr))
-        _, bins, _ = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
-                                    bins=range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width),
-                                    alpha = 0.5, label = label, color = colors[i])
-        params = dist.fit(arr)
-        y = dist.pdf(bins, *params) * bin_width
-        plt.plot(bins, y, ls = '--', color = colors[i])
-
-    plt.legend()
-    plt.ylabel('probability', fontsize=16)
-    plt.xlabel(r'$L_{ij}$', fontsize=16)
-    plt.xlim(-20, 20)
-    plt.savefig(osp.join(data_dir, 'L_dist_comparison.png'))
-    plt.close()
-
-    # plot plaid chi parameters
-    # bin_width = 1
-    # for i, (arr, label) in enumerate(zip(chi_list, l_list)):
-    #     arr = np.array(arr).reshape(-1)
-    #     print(np.min(arr), np.max(arr))
-    #     n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
-    #                                 bins=range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width),
-    #                                 alpha = 0.5, label = label, color = colors[i])
-    # plt.legend()
-    # plt.ylabel('probability', fontsize=16)
-    # plt.xlabel(r'$\chi_{ij}$', fontsize=16)
-    # plt.xlim(-20, 20)
-    # plt.savefig(osp.join(data_dir, 'chi_dist_comparison.png'))
-    # plt.close()
+    return grid_size_arr
 
 
 if __name__ == '__main__':
-    # modify_plaid_chis('dataset_02_04_23', k = 8)
-    modify_maxent_diag_chi('dataset_02_04_23', k = 8)
-    # for i in range(201, 283):
-        # plot_modified_max_ent(i, k = 1)
-    diagonal_dist('dataset_02_04_23', 8)
+    # modify_plaid_chis('dataset_02_04_23', k = 12)
+    # modify_maxent_diag_chi('dataset_02_04_23', k = 12)
+    # for i in range(201, 210):
+        # plot_modified_max_ent(i, k = 8)
+    # diagonal_dist('dataset_02_04_23', 12)
     # grid_dist('dataset_01_26_23')
-    # plaid_dist('dataset_02_04_23', 8, True, False, True)
+    plaid_dist('dataset_01_26_23', 4, True, False, False)
     # seq_dist('dataset_01_26_23', 4, True, False, True)
-    # compare_maxent_simulation()
     # modify_plaid_chis('dataset_11_14_22', 8)

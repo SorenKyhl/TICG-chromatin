@@ -226,9 +226,9 @@ def dataset_11_14():
     with multiprocessing.Pool(10) as p:
         p.starmap(import_contactmap_straw, mapping)
 
-def dataset_02_04():
+def dataset_02_21():
     dir = '/home/erschultz'
-    dataset='dataset_02_04_23'
+    dataset='dataset_02_21_23'
     data_folder = osp.join(dir, dataset)
     if not osp.exists(data_folder):
         os.mkdir(data_folder, mode = 0o755)
@@ -237,7 +237,7 @@ def dataset_02_04():
 
     resolution=10000
     norm = 'NONE'
-    filename="https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic"
+    filename="https://hicfiles.s3.amazonaws.com/hiseq/imr90/in-situ/combined.hic"
     m = 512*5
 
     chromsizes = bioframe.fetch_chromsizes('hg19')
@@ -356,4 +356,4 @@ def pool():
 
 
 if __name__ == '__main__':
-    dataset_01_26()
+    dataset_02_21()

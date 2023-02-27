@@ -22,7 +22,7 @@ fi
 
 STARTTIME=$(date +%s)
 i=1001
-dataset='dataset_02_13_23'
+dataset='dataset_02_20_23'
 useL='false'
 useS='false'
 useE='true'
@@ -41,7 +41,8 @@ k=0
 method='GNN'
 for sample in 324 981 1936 2834 3464
 do
-  for GNNModelID in 371 372
+  gridSize="${dir}/${dataset}/samples/sample${sample}/config.json"
+  for GNNModelID in 380
   # 271
    # 243 254 262 265 267 271 276
   do
