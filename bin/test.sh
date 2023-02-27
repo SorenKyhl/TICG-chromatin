@@ -1,6 +1,6 @@
 #! /bin/bash
 #SBATCH --job-name=test
-#SBATCH --output=logFiles/test.out
+
 #SBATCH --time=12:00:00
 #SBATCH --account=pi-depablo
 #SBATCH --partition=broadwl
@@ -9,7 +9,7 @@
 #SBATCH --mail-type=END
 #SBATCH --mail-user=erschultz@uchicago.edu
 
-
+cd ~/TICG-chromatin
 source activate python3.9_pytorch1.9_cuda10.2
 source activate python3.9_pytorch1.9
 

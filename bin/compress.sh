@@ -4,8 +4,8 @@
 #SBATCH --time=24:00:00
 #SBATCH --account=pi-depablo
 #SBATCH --partition=depablo-csl
-#SBATCH --ntasks=10
-#SBATCH --mem-per-cpu=1000
+#SBATCH --ntasks=5
+
 
 compress(){
   dataset=$1
