@@ -15,56 +15,56 @@ if [ $local = 'true' ]
 then
   dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
-  numIterations=10
+  numIterations=12
   finalSimProductionSweeps=500000
-  productionSweeps=500000
   equilibSweeps=100000
+  productionSweeps=500000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
-i=1
-dataset='dataset_11_21_22'
+i=500
+useL='true'
 useS='false'
 useE='true'
 useD='true'
-m=1024
+m=512
 chiMethod='zeros'
 mode='both'
 
 bondtype='gaussian'
-bondLength=28
+bondLength=16.5
+phiChromatin=0.06
+gridSize=24
 
-diagChiMethod='zeros'
+diagChiMethod="zeros"
 dense='true'
 diagBins=96
 nSmallBins=64
 smallBinSize=1
-diagCutoff=1024
-
-sleep 4h
-
-method='k_means'
-for sample in 1801
- # 653 1462 1801 2290
-do
-  for k in 4 6 8
-  # 4 8 12
-  do
-      echo $sample $m
-      max_ent
-  done
-done
+diagCutoff=512
 
 method='PCA-normalize'
-for sample in 1801
- # 653 1462 1801 2290
+jobs=0
+waitCount=0
+for k in 8
 do
-  for k in 4 6
-  # 4 8 12
+  for sample in {201..210}
   do
-      echo $sample $m
-      max_ent
+    dataset="dataset_02_04_23/samples/sample${sample}/PCA-normalize-E/k8/replicate1"
+    gridSize="${dir}/dataset_02_04_23/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
+    sample="${sample}_linear"
+
+    echo $sample $m
+    max_ent
+    jobs=$(( $jobs + 1 ))
+    if [ $jobs -gt 16 ]
+    then
+      echo 'Waiting'
+      waitCount=$(( $waitCount + 1 ))
+      wait
+      jobs=0
+    fi
   done
 done
 

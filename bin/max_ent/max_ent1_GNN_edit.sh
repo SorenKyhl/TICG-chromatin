@@ -1,6 +1,6 @@
 #! /bin/bash
-#SBATCH --job-name=maxent2
-#SBATCH --output=logFiles/maxent2.out
+#SBATCH --job-name=maxent1
+#SBATCH --output=logFiles/maxent1.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20
@@ -21,8 +21,7 @@ then
 fi
 
 STARTTIME=$(date +%s)
-i=1001
-dataset='dataset_02_22_23'
+i=1
 useL='false'
 useS='false'
 useE='true'
@@ -39,12 +38,13 @@ dense='false'
 
 k=0
 method='GNN'
-for sample in 324 981 1936 2834 3464
+for sample in 204
 do
-  gridSize="${dir}/${dataset}/samples/sample${sample}/config.json"
-  for GNNModelID in 380 382
-  # 271
-   # 243 254 262 265 267 271 276
+  dataset="dataset_02_04_23/samples/sample${sample}/PCA-normalize-E/k8/replicate1"
+  gridSize="${dir}/dataset_02_04_23/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
+  sample="${sample}_edit"
+  for GNNModelID in 380
+   # 382
   do
     echo $sample $m
     max_ent

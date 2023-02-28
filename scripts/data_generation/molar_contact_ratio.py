@@ -138,7 +138,13 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
     pca_var = np.zeros(N)
     y_list = []
     # L_list_exp, _ = plaid_dist('dataset_01_26_23', 4, False)
-    meanDist_list = []
+    meanDist_file = osp.join(odir, 'meanDist.npy')
+    if osp.exists(meanDist_file):
+        meanDist_list = np.load(meanDist_file)
+        found_meanDist = True
+    else:
+        found_meanDist = False
+        meanDist_list = []
     for i, sample in enumerate(samples):
         sample_dir = osp.join(data_dir, f'samples/sample{sample}')
 
@@ -146,26 +152,26 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
         y /= np.mean(np.diagonal(y))
         y_list.append(y)
 
-        meanDist_list.append(DiagonalPreprocessing.genomic_distance_statistics(y))
+        if not found_meanDist:
+            meanDist_list.append(DiagonalPreprocessing.genomic_distance_statistics(y))
 
-        m = len(y)
+        if plot:
+            m = len(y)
 
-        # plot_seq_binary(seq, save = False, show = True)
+            # kmeans
+            seq = get_seq_kmeans()
+            rab = r(y, seq[:, 1], seq[:, 0])
+            k_means_rab[i] = rab
 
-        # kmeans
-        seq = get_seq_kmeans()
-        rab = r(y, seq[:, 1], seq[:, 0])
-        k_means_rab[i] = rab
+            # pca
+            seq = get_seq_pca()
+            rab = r(y, seq[:, 1], seq[:, 0])
+            pca_rab[i] = rab
 
-        # pca
-        seq = get_seq_pca()
-        rab = r(y, seq[:, 1], seq[:, 0])
-        pca_rab[i] = rab
-
-        # pca
-        seq = get_seq_pca(True)
-        rab = r(y, seq[:, 1], seq[:, 0])
-        pca_b_rab[i] = rab
+            # pca
+            seq = get_seq_pca(True)
+            rab = r(y, seq[:, 1], seq[:, 0])
+            pca_b_rab[i] = rab
 
     # GNN MSE
     if not experimental and model_ID is not None:
@@ -223,6 +229,7 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
         L_arr = np.array(L_list[:8])
         k_means_rab = k_means_rab[:8]
         meanDist_arr = np.array(meanDist_list[:8])
+        print(meanDist_arr)
         samples = samples[:8]
 
         # plot contact maps orderd by rab
@@ -296,6 +303,8 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
         plt.savefig(osp.join(data_dir, 'meanDist_plaid_score.png'))
         plt.close()
 
+    np.save(meanDist_file, meanDist_list)
+
     return meanDist_list
 
 if __name__ == '__main__':
@@ -303,4 +312,4 @@ if __name__ == '__main__':
     # molar_contact_ratio('dataset_01_26_23', True)
     # molar_contact_ratio('dataset_02_06_23', 363)
     # molar_contact_ratio('dataset_02_13_23', 372)
-    molar_contact_ratio('dataset_02_20_23', 378)
+    molar_contact_ratio('dataset_02_22_23', 382)

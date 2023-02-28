@@ -3,8 +3,8 @@
 #SBATCH --output=logFiles/fixed_diag_dataset.out
 #SBATCH --time=24:00:00
 #SBATCH --account=pi-depablo
-#SBATCH --partition=depablo
-#SBATCH --ntasks=24
+#SBATCH --partition=depablo-ivyb
+#SBATCH --ntasks=20
 #SBATCH --nodes=1
 #SBATCH --mem-per-cpu=2000
 #SBATCH --mail-type=END
@@ -18,7 +18,7 @@ source $sourceFile
 
 jobs=0
 waitCount=0
-for i in 340 342 345 346 350 814 820 2328 2840 2841
+for i in {1..500}
 do
 	echo $i
 	run &

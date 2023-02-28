@@ -21,13 +21,13 @@ run()  {
 
 param_setup
 m=512
-dataset=dataset_02_13_23
+dataset=dataset_02_04_23
 baseDataFolder="/home/erschultz/${dataset}"
 scratchDir='/home/erschultz/scratch'
 overwrite=1
 
-k=0
-nSweeps=50000
+k=7
+nSweeps=500000
 dumpFrequency=10000
 TICGSeed=10
 diag='true'
@@ -44,75 +44,20 @@ useE='true'
 
 jobs=0
 waitCount=0
-for sample in 324
+for sample in {201..220}
 do
-	sampleFolder="${baseDataFolder}/samples/sample${sample}"
-	gridSize="${sampleFolder}/none/k0/replicate1/grid_size.txt"
-	gridSize="${sampleFolder}/config.json"
+	dataFolder="${baseDataFolder}/samples/sample${sample}/PCA-normalize-E/k${k}/replicate1"
+	# gridSize="${sampleFolder}/none/k0/replicate1/grid_size.txt"
+	gridSize="${dataFolder}/resources/config.json"
 
-	dataFolder="${sampleFolder}"
-	chiDiagMethod="${dataFolder}/diag_chis_continuous.npy"
 	chiMethod="${dataFolder}/chis.txt"
 	seqMethod="${dataFolder}/resources/x.npy"
-
-	# chiMethod="${dataFolder}/chis.txt"
-	# seqMethod="${dataFolder}/resources/x_shuffle.npy"
-	# i="${sample}_shuffle_seq"
-	# run &
-
-	chiMethod="none"
-	seqMethod="none"
-	i="${sample}_diag"
-	run &
-	#
-	# chiMethod="${dataFolder}/chis.txt"
-	# seqMethod="${baseDataFolder}/samples/sample2202/PCA-normalize-E/k${k}/replicate1/resources/x.npy"
-	# i="${sample}_other_pcs"
-	# run &
-	#
-	# chiMethod="${dataFolder}/chis_neg.npy"
-	# seqMethod="${dataFolder}/resources/x.npy"
-	# i="${sample}_neg_chi"
-	# run &
-	# #
-	# chiMethod="${dataFolder}/chis_neg_v2.npy"
-	# seqMethod="${dataFolder}/resources/x.npy"
-	# i="${sample}_neg2_chi"
-	# run &
-	#
-	# chiMethod="${dataFolder}/chis_shuffle.npy"
-	# seqMethod="${dataFolder}/resources/x.npy"
-	# i="${sample}_shuffle_chi"
-	# run &
-	#
-	# chiMethod="${dataFolder}/chis_zero.npy"
-	# seqMethod="${dataFolder}/resources/x.npy"
-	# i="${sample}_zero_chi"
-	# run &
-
-	# chiMethod="${dataFolder}/chis_eig.npy"
-	# seqMethod="${dataFolder}/resources/x_eig.npy"
-	# i="${sample}_eig"
-	# run &
-	#
-	# chiMethod="/home/erschultz/dataset_11_21_22/samples/sample1462/chis.npy"
-	# seqMethod="${dataFolder}/resources/x.npy"
-	# i="${sample}_rand_chi"
-	# run &
-	#
-	# chiMethod="${dataFolder}/chis.txt"
-	# seqMethod="/home/erschultz/dataset_11_21_22/samples/sample1462/x.npy"
-	# i="${sample}_rand_seq"
-	# run &
-
-	# chiMethod="${dataFolder}/chis.txt"
-	# seqMethod="${dataFolder}/resources/x.npy"
 	# i="${sample}_copy"
 	# run &
 
-	# chiDiagMethod="${dataFolder}/fitting/chis_diag_edit.txt"
-	# i="${sample}_edit"
-	# run &
+	chiDiagMethod="${dataFolder}/fitting/chis_diag_edit.txt"
+	i="${sample}_edit"
+	run &
 
 	# chiDiagMethod="${dataFolder}/fitting/chis_diag_edit_zero.txt"
 	# i="${sample}_edit_zero"
@@ -130,9 +75,9 @@ do
 	# i="${sample}_logistic_manual"
 	# run &
 	#
-	# chiDiagMethod="${dataFolder}/fitting/linear_fit.txt"
-	# i="${sample}_linear"
-	# run &
+	chiDiagMethod="${dataFolder}/fitting/linear_fit.txt"
+	i="${sample}_linear"
+	run &
 	# #
 	# # chiDiagMethod="${dataFolder}/log_fit.txt"
 	# # i=log
@@ -146,7 +91,7 @@ do
 	# i="${sample}_poly3"
 	# run &
 
-	jobs=$(( $jobs + 4 ))
+	jobs=$(( $jobs + 2 ))
 	if [ $jobs -gt 15 ]
 	then
 		echo 'Waiting'

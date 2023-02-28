@@ -18,9 +18,9 @@ from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
 
 
 def meanDist_comparison():
-    # datasets = ['dataset_01_26_23', 'dataset_02_16_23']
+    datasets = ['dataset_01_26_23', 'dataset_02_16_23']
     # datasets = ['dataset_01_26_23', 'dataset_02_04_23', 'dataset_02_21_23']
-    datasets = ['dataset_02_04_23', 'dataset_02_20_23']
+    # datasets = ['dataset_02_04_23', 'dataset_02_20_23']
     data_dir = osp.join('/home/erschultz', datasets[0])
 
     cmap = matplotlib.cm.get_cmap('tab10')
@@ -32,6 +32,7 @@ def meanDist_comparison():
 
     for i, dataset in enumerate(datasets):
         meanDist_list = molar_contact_ratio(dataset, None, False)
+        print(f'Retrieved meanDist_list for dataset {dataset}')
         for meanDist in meanDist_list:
             ax.plot(meanDist, c = colors[i], alpha=0.6)
         ax2.plot(np.NaN, np.NaN, label = dataset, c = colors[i])
@@ -88,7 +89,7 @@ def p_s_comparison(dataset, ID):
 
         fig.supylabel('Contact Probability', fontsize = 16)
         fig.supxlabel('Polymer Distance (beads)', fontsize = 16)
-        fig.suptitle(dataset, fontsize=16)
+        fig.suptitle(f'{dataset}\nGNN={ID}', fontsize=16)
         plt.tight_layout()
         if log:
                 plt.savefig(osp.join(data_dir, 'p_s_comparison_log.png'))
@@ -96,7 +97,7 @@ def p_s_comparison(dataset, ID):
             plt.savefig(osp.join(data_dir, 'p_s_comparison.png'))
         plt.close()
 
-def scc_comparison(dataset, ID):
+def scc_comparison(dataset, ID, k=8):
     samples, experimental = get_samples(dataset)
     data_dir = osp.join('/home/erschultz', dataset)
     samples = np.array(samples)[:10] # cap at 10
@@ -118,13 +119,21 @@ def scc_comparison(dataset, ID):
             yhat = np.load(osp.join(data_dir, f'samples/sample{sample}', f'GNN-{ID}-E/k0/replicate1/y.npy'))
             yhat = yhat.astype(float)
 
+            yhat_pca = np.load(osp.join(data_dir, f'samples/sample{sample}', f'PCA-normalize-E/k{k}/replicate1/y.npy'))
+
+            corr_scc_var_pca = scc.scc(y, yhat_pca, var_stabilized = True)
+            _, corr_arr_pca = calc_dist_strat_corr(y, yhat_pca, mode = 'pearson',
+                                                    return_arr = True)
+
+
             corr_scc_var = scc.scc(y, yhat, var_stabilized = True)
             _, corr_arr = calc_dist_strat_corr(y, yhat, mode = 'pearson',
                                                     return_arr = True)
 
             ax = axes[row][col]
-            ax.set_title(f'sample{sample}\nSCC: {np.round(corr_scc_var, 3)}', fontsize=16)
-            ax.plot(corr_arr, color = 'k')
+            ax.set_title(f'sample{sample}\nGNN SCC: {np.round(corr_scc_var, 3)}\nPCA SCC: {np.round(corr_scc_var_pca, 3)}', fontsize=16)
+            ax.plot(corr_arr, color = 'b', label = f'GNN {ID}')
+            ax.plot(corr_arr_pca, color = 'r', label = f'PCA(k={k})')
             if log:
                 ax.set_xscale('log')
                 ax.set_xlim(1, 550)
@@ -137,9 +146,10 @@ def scc_comparison(dataset, ID):
                 col = 0
                 row += 1
 
+        axes[0,0].legend(loc = 'lower left')
         fig.supxlabel('Polymer Distance (beads)', fontsize = 16)
         fig.supylabel('Pearson Correlation Coefficient', fontsize = 16)
-        fig.suptitle(dataset, fontsize=16)
+        fig.suptitle(f'{dataset}', fontsize=16)
         plt.tight_layout()
         if log:
                 plt.savefig(osp.join(data_dir, 'distance_pearson_log.png'))
@@ -148,8 +158,7 @@ def scc_comparison(dataset, ID):
         plt.close()
 
 
-def l_ij_comparison():
-    dataset = 'dataset_02_04_23'
+def l_ij_comparison(dataset):
     data_dir = osp.join('/home/erschultz', dataset)
 
     L_list = []
@@ -160,7 +169,7 @@ def l_ij_comparison():
     # chi_list.append(chi_max_ent)
     label_list.append('Max Ent')
 
-    s_sim, chi_sim = plaid_dist('dataset_02_20_23', None, False)
+    s_sim, chi_sim = plaid_dist('dataset_02_22_23', None, False)
     L_list.append(s_sim)
     # chi_list.append(chi_sim)
     label_list.append(r'Synthetic $\tilde{\chi}$')
@@ -208,8 +217,8 @@ def l_ij_comparison():
 
 if __name__ == '__main__':
     # main()
-    # meanDist_comparison()
+    meanDist_comparison()
     # l_ij_comparison('dataset_02_04_23')
     # l_dist_comparison()
-    # p_s_comparison('dataset_02_04_23', 378)
-    scc_comparison('dataset_02_04_23', 378)
+    # p_s_comparison('dataset_02_04_23', 380)
+    # scc_comparison('dataset_02_04_23', 380)

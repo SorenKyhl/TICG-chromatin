@@ -210,8 +210,8 @@ def main():
                 y_gt = np.load(y_gt_file)
                 meanDist_gt = DiagonalPreprocessing.genomic_distance_statistics(y_gt, 'prob')
                 print('meanDist_gt', meanDist_gt)
-                mse = mean_squared_error(meanDist_max_ent, meanDist_gt)
-                title = f'MSE: {np.round(mse, 9)}'
+                rmse = mean_squared_error(meanDist_max_ent, meanDist_gt, squared = False)
+                title = f'RMSE: {np.round(rmse, 9)}'
             else:
                 meanDist_gt = None
                 title = None
