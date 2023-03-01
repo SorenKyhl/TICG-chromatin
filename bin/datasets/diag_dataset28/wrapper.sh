@@ -27,8 +27,8 @@ echo "generate_params for ${dataset}"
 # cd "/home/erschultz/${dataset}"
 # tar -czvf setup.tar.gz setup
 #
-cd "/project2/depablo/erschultz/${dataset}"
-tar -xzf setup.tar.gz
+# cd "/project2/depablo/erschultz/${dataset}"
+# tar -xzf setup.tar.gz
 # rm -r samples
 
 sourceFile=~/TICG-chromatin/bin/datasets/diag_dataset28/diag_dataset_fns.sh
