@@ -23,6 +23,7 @@ public:
 	std::vector<double> diag_phis = std::vector<double>(diag_nbins);
 	static bool diagonal_linear;
 
+    static bool double_count_main_diagonal;
 	static double phi_solvent_max;
 	static double phi_chromatin;
 	static double kappa;

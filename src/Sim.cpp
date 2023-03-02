@@ -428,6 +428,10 @@ void Sim::readInput() {
         }
     }
     // cellcount_on = config["cellcount_on"];
+
+    assert(config.contains("double_count_main_diagonal"));
+    Cell::double_count_main_diagonal = config["double_count_main_diagonal"];
+
     assert(config.contains("seed"));
     int seed = config["seed"];
     rng = std::make_unique<RanMars>(seed);

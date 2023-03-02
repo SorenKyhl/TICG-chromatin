@@ -2,6 +2,7 @@
 #include "cmath"
 
 // TODO: phase out
+bool Cell::double_count_main_diagonal;
 double Cell::beadvol;
 int Cell::ntypes;
 int Cell::diag_nbins;
@@ -206,7 +207,14 @@ double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
                                  // diag_start
                 d_index = binDiagonal(d);
 
-                int nbonds = d ? 2 : 1;       // count two for all off-diagonal
+                int nbonds;
+                if (Cell::double_count_main_diagonal)
+                {
+                    nbonds = 2;  // both main and off diagonal count twice
+                }
+                else {
+                    nbonds = d ? 2 : 1;       // count two for all off-diagonal
+                }
                 diag_phis[d_index] += nbonds; // diag phis is just a count,
                                               // multiply by volumes later
             }

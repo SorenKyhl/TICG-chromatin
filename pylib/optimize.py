@@ -68,7 +68,7 @@ def nearest_neighbor_contact_error(grid_bond_ratio, sim_engine, gthic):
     return error
 
 
-def optimize_grid_size(config, gthic, low_bound=0.75, high_bound=1.25):
+def optimize_grid_size(config, gthic, low_bound=0.75, high_bound=1.5):
     """tune grid size until simulated nearest neighbor contact probability
     is equal to the same probability derived from the ground truth hic matrix.
 

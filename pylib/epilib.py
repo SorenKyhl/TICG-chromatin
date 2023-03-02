@@ -1045,14 +1045,14 @@ def get_goal_diag(
     config,
     getcorrect=False,
     adj=True,
-    dense_diagonal_on=True,
-    double_diagonal=True,
+    dense_diagonal_on=True
 ):
     # TODO - get dense diagonal on from config
     ndiag_bins = len(config["diag_chis"])
     cutoff = config["dense_diagonal_cutoff"]
     loading = config["dense_diagonal_loading"]
     dense_diagonal_on = config["dense_diagonal_on"]
+    double_diagonal = config["double_count_main_diagonal"]
     diag_mask, correction = mask_diagonal(
         hic, cutoff, loading, ndiag_bins, dense_diagonal_on, double_diagonal
     )
@@ -1177,10 +1177,10 @@ def fill_subdiagonal(a, offset, fn):
     return a
 
 
-def get_goals(hic, seqs, config, save_path=None, double_diagonal=False):
+def get_goals(hic, seqs, config, save_path=None):
     """get maximum entropy goals for simulation observables"""
     plaid = get_goal_plaid(hic, seqs, config)
-    diag = get_goal_diag(hic, config, double_diagonal=double_diagonal)
+    diag = get_goal_diag(hic, config)
 
     if save_path is not None:
         np.savetxt(save_path, plaid, newline=" ", fmt="%.8f")
