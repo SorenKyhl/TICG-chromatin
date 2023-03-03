@@ -70,7 +70,10 @@ void Sim::updateContacts() {
     if (update_contacts_distance) {
         updateContactsDistance();
     } else {
-        updateContactsGrid();
+        if (conservative_contact_pooling)
+            updateContactsGridConservative();
+        else
+            updateContactsGridNonconservative();
     }
 }
 
@@ -84,16 +87,16 @@ void Sim::updateContacts() {
 // - visit_tracking: only count a maximum of one contact per hic-matrix pixel
 // for a
 //		given configuration (only relevant when contact_resolution > 1)
-void Sim::updateContactsGrid() {
+void Sim::updateContactsGridConservative() {
     std::vector<std::vector<bool>> visited(
         contact_map.size(),
         std::vector<bool>(contact_map.size(), false)); // for visit tracking
 
     int pixel1, pixel2;
     for (Cell *cell : grid.active_cells) {
+
         // enumerate pairs of beads - (don't double count!!)
-        for (auto bead1 = cell->contains.begin(); bead1 != cell->contains.end();
-             bead1++) {
+        for (auto bead1 = cell->contains.begin(); bead1 != cell->contains.end(); bead1++) {
             for (auto bead2 = bead1; bead2 != cell->contains.end(); bead2++) {
                 bool ignore = false;
                 pixel1 = (*bead1)->id / contact_resolution;
@@ -121,6 +124,36 @@ void Sim::updateContactsGrid() {
                         visited[pixel1][pixel2] = true;
                 }
             }
+        }
+    }
+}
+
+void Sim::updateContactsGridNonconservative()
+{
+    std::vector<std::vector<bool>> visited(contact_map.size(), std::vector<bool>(contact_map.size(), false));   
+    int pixel1, pixel2;
+	for(Cell* cell : grid.active_cells)
+	{
+		for(Bead* bead1 : cell->contains)
+		{
+			for(Bead* bead2 : cell->contains)
+			{
+				bool ignore = false;
+				pixel1 = bead1->id/contact_resolution;
+				pixel2 = bead2->id/contact_resolution;
+
+				// ignore every other bead for the purposes of contact counting (in the case where contact_resolution=2)
+				if (contact_bead_skipping) {
+					if (bead1->id % contact_resolution != 0 || bead2->id % contact_resolution != 0) {
+						ignore = true;
+					}
+				}
+
+				if (visited[pixel1][pixel2] == false) {
+					if (!ignore) contact_map[pixel1][pixel2] += 1; // increment contacts
+					if (visit_tracking) visited[pixel1][pixel2] = true;
+				}
+			}
         }
     }
 }
@@ -431,6 +464,9 @@ void Sim::readInput() {
 
     assert(config.contains("double_count_main_diagonal"));
     Cell::double_count_main_diagonal = config["double_count_main_diagonal"];
+
+    assert(config.contains("conservative_contact_pooling"));
+    conservative_contact_pooling = config["conservative_contact_pooling"];
 
     assert(config.contains("seed"));
     int seed = config["seed"];
@@ -1032,6 +1068,7 @@ void Sim::MCmove_displace() {
     // copy old info (don't forget orientation, etc)
     Cell *old_cell = grid.getCell(beads[o]);
 
+    // proposed displacement
     Eigen::RowVector3d displacement;
     displacement = step_disp * unit_vec(displacement);
 
@@ -1042,6 +1079,7 @@ void Sim::MCmove_displace() {
         return;
     }
 
+    // update grid
     Cell *new_cell = grid.getCell(new_location);
 
     std::unordered_set<Cell *> flagged_cells;
@@ -1062,12 +1100,12 @@ void Sim::MCmove_displace() {
     double Unew = getTotalEnergy(o, o, flagged_cells);
 
     if (rng->uniform() < exp(Uold - Unew)) {
-        // std::cout << "Accepted"<< std::endl;
+        // move accepted
         acc += 1;
         acc_disp += 1;
         analytics.nbeads_moved += 1;
     } else {
-        // std::cout << "Rejected" << std::endl;
+        // move rejected
         beads[o].r -= displacement;
         new_cell->moveOut(&beads[o]);
         old_cell->moveIn(&beads[o]);

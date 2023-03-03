@@ -982,6 +982,7 @@ def get_goal_plaid(hic, seqs, config, flat=True, norm=False, adj=True):
     """
     k, n = np.shape(seqs)
     goal_exp = np.zeros((k, k))
+    logging.info("getting plaid goals...")
     for i, seqi in tqdm(enumerate(seqs)):
         for j, seqj in enumerate(seqs):
             # goal_exp[i,j] = np.mean((np.outer(seqi,seqj)*hic).flatten())
@@ -1043,11 +1044,17 @@ def get_goal_plaid2(hic, seqs, k, flat=True):
 def get_goal_diag(
     hic,
     config,
-    getcorrect=False,
-    adj=True,
-    dense_diagonal_on=True
+    prefactors=True,
+    get_ps=False
 ):
-    # TODO - get dense diagonal on from config
+    """get goal observables for diagonal interaction
+
+    hic: contact map
+    config: simulation configuration 
+    prefactors: multiply by physical parameters to convert probabilities to simulation observables
+    get_ps: return binned p(s) and s vectors, where s is the center of the diagonal bins
+
+    """
     ndiag_bins = len(config["diag_chis"])
     cutoff = config["dense_diagonal_cutoff"]
     loading = config["dense_diagonal_loading"]
@@ -1057,13 +1064,17 @@ def get_goal_diag(
         hic, cutoff, loading, ndiag_bins, dense_diagonal_on, double_diagonal
     )
 
-    if adj:
+    if get_ps:
+        ps = diag_mask/correction
+        s = diag_bin_centers(config)
+
+    if prefactors:
         vbead = config["beadvol"]
         vcell = config["grid_size"] ** 3
         diag_mask *= vbead / vcell
 
-    if getcorrect:
-        return diag_mask, correction
+    if get_ps:
+        return diag_mask, ps, s
     else:
         return diag_mask
 
@@ -1092,6 +1103,30 @@ def mask_diagonal2(contact, bins=16):
     measure = np.array(measure)
     correction = np.array(correction)
     return measure, correction
+
+
+def diag_bin_centers(config):
+    """return centers of diagonal bins"""
+    
+    nbeads = config["nbeads"]
+    ndiag_bins = len(config["diag_chis"])
+    cutoff = config["dense_diagonal_cutoff"]
+    loading = config["dense_diagonal_loading"]
+
+    dividing_line = nbeads * cutoff
+
+    n_small_bins = int(loading * ndiag_bins)
+    n_big_bins = ndiag_bins - n_small_bins
+    small_binsize = int(dividing_line / (n_small_bins))
+    big_binsize = int((nbeads - dividing_line) / n_big_bins)
+
+
+    if config["dense_diagonal_on"]:
+        s = np.hstack((np.arange(0, n_small_bins)*small_binsize, np.arange(0,n_big_bins)*big_binsize + dividing_line))
+    else:
+        s = np.array(range(ndiag_bins))
+        
+    return s
 
 
 def bin_chipseq(df, resolution, method="max"):
@@ -1190,7 +1225,7 @@ def get_goals(hic, seqs, config, save_path=None):
 
 
 def resize_contactmap(hic, sizex, sizey):
-    raise NotImplementedError
+    pass
 
 
 def plot_consistency(sim):
@@ -1359,6 +1394,7 @@ def load_contactmap_with_buffers(mzd, start, end, res):
 
     out = np.zeros((pixels, pixels))
 
+    logging.info("loading contact map with buffers")
     for i in tqdm(range(steps)):
         for j in range(steps):
             xmin = i * bufsize

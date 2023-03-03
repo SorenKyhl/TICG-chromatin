@@ -5,7 +5,7 @@ from pylib import default
 
 
 def get_config(
-    nbeads=None, config=default.config, grid_bond_ratio=0.95, base="gaussian-5k"
+    nbeads=None, config=default.config, grid_bond_ratio=0.95, base="gaussian-5k", scale="onethird"
 ):
     """
     calculates physical parameters for a simulation with nbeads beads,
@@ -15,10 +15,12 @@ def get_config(
     config (optional):  default config file.
     grid_bond_ratio (float): grid size is defined by this ratio: bond_length / grid_size
     base = ["gaussian", "persistent", "gaussian-5k", "persistent-5k"]
+        base parameters, from which to scale
         if gaussian, chain is lp = 16.5, b = 16.5
         if persistent, chain is lp = 50, b = 16.5
         if gaussian-5k, the gaussian chain is gaussian renormalized up to 5kbp/bead resolution
         if persistent-5k, the persistent chain is gaussian renormalized up to 5kbp/bead resolution
+    scale (str): scaling method. 
     """
     if nbeads is None:
         nbeads = config["nbeads"]
@@ -59,12 +61,15 @@ def get_config(
             "base must be: ['gaussian' | 'gaussian-5k' | 'persistent' | 'persistent-5k]"
         )
 
-    factor = (nbeads / baseN) ** (-1 / 3)
-    config["nbeads"] = nbeads
-    config["bond_length"] = baseb * factor
-    config["grid_size"] = baseg * factor
-    config["beadvol"] = basev * baseN / nbeads
+    if scale == "onethird":
+        factor = (nbeads / baseN) ** (-1 / 3)
+        config["nbeads"] = nbeads
+        config["bond_length"] = baseb * factor
+        config["grid_size"] = baseg * factor
+        config["beadvol"] = basev * baseN / nbeads
 
-    config["diag_cutoff"] = nbeads
+        config["diag_cutoff"] = nbeads
+    else:
+        raise ValueError("scale must be 'onethird'")
 
     return config

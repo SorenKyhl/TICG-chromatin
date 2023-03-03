@@ -68,7 +68,7 @@ def nearest_neighbor_contact_error(grid_bond_ratio, sim_engine, gthic):
     return error
 
 
-def optimize_grid_size(config, gthic, low_bound=0.75, high_bound=1.5):
+def optimize_grid_size(config, gthic, low_bound=0.75, high_bound=1.5, root="optimize-grid-size"):
     """tune grid size until simulated nearest neighbor contact probability
     is equal to the same probability derived from the ground truth hic matrix.
 
@@ -85,7 +85,6 @@ def optimize_grid_size(config, gthic, low_bound=0.75, high_bound=1.5):
     config["nonbonded_on"] = False
     config["load_bead_types"] = False
 
-    root = "optimize-grid-size"
     sim_engine = Pysim(root, config, seqs=None)
 
     result = optimize.brentq(
@@ -107,7 +106,9 @@ def stiffness_root_error(hic, gthic):
     for lack of a better option, just try to match the p(s)
     at the  4th bead for N=1024
     """
-    return epilib.get_diagonal(hic)[3] - epilib.get_diagonal(gthic)[3]
+    nbeads = len(hic)
+    index = int(4*nbeads/1024) - 1
+    return epilib.get_diagonal(hic)[index] - epilib.get_diagonal(gthic)[index]
     # return np.mean(epilib.get_diagonal(hic) - epilib.get_diagonal(gthic))
 
 
@@ -154,7 +155,7 @@ def simulate_stiffness_error(k_angle, sim_engine, gthic, method):
     return error
 
 
-def optimize_stiffness(config, gthic, low_bound=0, high_bound=1, method="bayes"):
+def optimize_stiffness(config, gthic, low_bound=0, high_bound=1, method="bayes", root="optimize-stiffess"):
     """tune angle stiffness until simulated p(s) diagonal probabity
     is equal to the same probability derived from the ground truth hic matrix.
 
@@ -170,7 +171,6 @@ def optimize_stiffness(config, gthic, low_bound=0, high_bound=1, method="bayes")
     config["nonbonded_on"] = False
     config["load_bead_types"] = False
 
-    root = "optimize-stiffness"
     sim_engine = Pysim(root, config, seqs=None, gthic=gthic)
 
     if method == "bayes":

@@ -167,6 +167,11 @@ def load_seqs(nbeads, k):
     else:
         seqs = np.load(default.HCT116_seqs_20k)
 
-    factor = int(seqs.shape[1] / nbeads)
-    seqs_pooled = pool_seqs(seqs, factor)
-    return seqs_pooled
+    if nbeads < 20480:
+        factor = int(seqs.shape[1] / nbeads)
+        seqs_final = pool_seqs(seqs, factor)
+    else:
+        factor = int(nbeads/seqs.shape[1])
+        seqs_final = unpool_seqs(seqs, factor)
+
+    return seqs_final

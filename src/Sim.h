@@ -125,6 +125,7 @@ public:
 
 	bool track_contactmap;
 	bool contact_bead_skipping;
+    bool conservative_contact_pooling;
 
 	bool load_bead_types;
 	bool load_configuration;
@@ -164,7 +165,8 @@ public:
 	// contact maps
 	void initializeContactmap();
 	void updateContacts();
-	void updateContactsGrid();
+	void updateContactsGridConservative();
+	void updateContactsGridNonconservative();
 	void updateContactsDistance();
 
 	Eigen::MatrixXd unit_vec(Eigen::MatrixXd b);

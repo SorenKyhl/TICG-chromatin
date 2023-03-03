@@ -1,9 +1,10 @@
 {
+    "conservative_contact_pooling": false,
   "double_count_main_diagonal": false,
   "angles_on": true,
   "k_angle": 0,
-  "dmatrix_on": true,
-  "emmatrix_on": true,
+  "dmatrix_on": false,
+  "ematrix_on": false,
   "dense_diagonal_cutoff": 0.0625,
   "dense_diagonal_loading": 0.5,
   "diag_start": 0,
