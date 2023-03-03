@@ -21,7 +21,7 @@ then
 fi
 
 STARTTIME=$(date +%s)
-i=2001
+i=2100
 dataset='dataset_02_04_23'
 useL='false'
 useS='false'
@@ -41,13 +41,10 @@ k=0
 method='GNN'
 jobs=0
 waitCount=0
-for sample in {201..210}
+for sample in {201..205}
 do
   gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
-  bondLength=28.0
-  gridSize=28.7
-  for GNNModelID in 376
-   # 243 254 262 265 267 271 276
+  for GNNModelID in 383
   do
     echo $sample $m
     max_ent
@@ -61,6 +58,24 @@ do
     fi
   done
 done
+#
+# for sample in {201..210}
+# do
+#   gridSize=28.7
+#   for GNNModelID in 384
+#   do
+#     echo $sample $m
+#     max_ent
+#     jobs=$(( $jobs + 1 ))
+#     if [ $jobs -gt 19 ]
+#     then
+#       echo 'Waiting'
+#       waitCount=$(( $waitCount + 1 ))
+#       wait
+#       jobs=0
+#     fi
+#   done
+# done
 
 echo $waitCount
 wait

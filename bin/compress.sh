@@ -33,10 +33,6 @@ compress(){
   rm -r $dataset
 }
 
-dir='/project/depablo/erschultz'
-compress dataset_02_13_23
 
 dir='/project2/depablo/erschultz'
-compress dataset_02_06_23
-compress dataset_02_07_23
-compress dataset_02_08_23
+compress dataset_02_27_23

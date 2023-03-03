@@ -217,8 +217,8 @@ def l_ij_comparison(dataset):
 
 if __name__ == '__main__':
     # main()
-    meanDist_comparison()
+    # meanDist_comparison()
     # l_ij_comparison('dataset_02_04_23')
     # l_dist_comparison()
-    # p_s_comparison('dataset_02_04_23', 380)
-    # scc_comparison('dataset_02_04_23', 380)
+    # p_s_comparison('dataset_02_04_23', 386)
+    scc_comparison('dataset_02_04_23', 386)
