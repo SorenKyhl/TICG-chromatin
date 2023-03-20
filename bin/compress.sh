@@ -16,23 +16,27 @@ compress(){
     rm e.npy &
     rm s.npy &
 
-    rm -r data_out &
-    rm chis.tek &
-    rm chis.npy &
-    rm *diag.npy &
+    # rm -r data_out &
+    # rm chis.tek &
+    # rm chis.npy &
+    # rm *diag.npy &
     rm *.png &
 
-    rm *.txt &
+    # rm *.txt &
 
     wait
   done
 
   cd $dir
-  rm -r "${dataset}.tar.gz"
-  tar -czvf "${dataset}.tar.gz" $dataset
-  rm -r $dataset
+  # rm -r "${dataset}.tar.gz"
+  # tar -czvf "${dataset}.tar.gz" $dataset
+  # rm -r $dataset
 }
 
-
 dir='/project2/depablo/erschultz'
-compress dataset_02_27_23
+compress dataset_11_18_22
+compress dataset_11_21_22
+compress dataset_12_05_22
+compress dataset_02_01_23
+compress dataset_03_01_23
+compress dataset_03_03_23

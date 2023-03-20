@@ -73,7 +73,7 @@ class Sim:
 
         energy_file = osp.join(self.path, "energy.traj")
         if osp.exists(energy_file):
-            self.energy = pd.read_csv(energy_file, sep='\t', names=["step", "bonded", "nonbonded", "diagonal", "y"])
+            self.energy = pd.read_csv(energy_file, sep='\t', header=0, names=["step", "bonded", "nonbonded", "diagonal", "y"])
         else:
             print(f"{energy_file} does not exist")
 

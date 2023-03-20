@@ -15,28 +15,25 @@ if [ $local = 'true' ]
 then
   dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
-  numIterations=12
-  finalSimProductionSweeps=500000
-  equilibSweeps=100000
-  productionSweeps=500000
+  numIterations=1
+  finalSimProductionSweeps=5000
+  equilibSweeps=1000
+  productionSweeps=5000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
-i=5001
-dataset='dataset_01_26_23'
+i=6001
+dataset='dataset_03_01_23'
 useL='true'
-useS='false'
-useE='true'
+useS='true'
 useD='true'
 m=512
 chiMethod='zeros'
 mode='both'
 
 bondtype='gaussian'
-gridSize=28.7
-bondLength=28
-phiChromatin=0.06
+bondLength=16.5 # TODO make sure this is correct !!!
 
 diagChiMethod="zeros"
 dense='true'
@@ -48,10 +45,12 @@ diagCutoff=512
 method='PCA-normalize'
 jobs=0
 waitCount=0
-for k in 12
+for k in 13
 do
-  for sample in {283..288}
+  for sample in 1
+   # 2 3 4 5
   do
+    gridSize="${dir}/${dataset}/samples/sample${sample}/config.json"
     echo $sample $m
     max_ent
     jobs=$(( $jobs + 1 ))

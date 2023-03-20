@@ -110,7 +110,11 @@ def loadData(args):
             ground_truth_SD = None
             ground_truth_ED = None
         else:
-            diag_chi_continuous = np.load(osp.join(sample_folder, 'diag_chis_continuous.npy'))
+            diag_chis_file = osp.join(sample_folder, 'diag_chis_continuous.npy')
+            if not osp.exists(diag_chis_file):
+                diag_chi_continuous = np.load(osp.join(sample_folder, 'diag_chis.npy'))
+            else:
+                diag_chi_continuous = np.load(diag_chis_file)
             D = calculate_D(diag_chi_continuous)
             S = np.load(osp.join(sample_folder, 's.npy'))
             ground_truth_SD, ground_truth_ED = calculate_SD_ED(S, D)

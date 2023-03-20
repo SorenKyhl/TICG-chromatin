@@ -53,7 +53,7 @@ do
   do
     dataset="dataset_02_04_23/samples/sample${sample}/PCA-normalize-E/k8/replicate1"
     gridSize="${dir}/dataset_02_04_23/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
-    sample="${sample}_linear"
+    sample="${sample}_copy"
 
     echo $sample $m
     max_ent

@@ -134,15 +134,12 @@ public:
 
 	bool lmatrix_on;
 	bool smatrix_on;
-	bool ematrix_on;
 	bool dmatrix_on;
 
 	Eigen::MatrixXd lmatrix;
 	std::string lmatrix_filename;
 	Eigen::MatrixXd smatrix;
 	std::string smatrix_filename;
-	Eigen::MatrixXd ematrix;
-	std::string ematrix_filename;
 	Eigen::MatrixXd dmatrix;
 	std::string dmatrix_filename;
 

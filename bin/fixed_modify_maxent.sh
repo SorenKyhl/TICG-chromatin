@@ -26,7 +26,7 @@ baseDataFolder="/home/erschultz/${dataset}"
 scratchDir='/home/erschultz/scratch'
 overwrite=1
 
-k=7
+k=8
 nSweeps=500000
 dumpFrequency=10000
 TICGSeed=10
@@ -44,20 +44,23 @@ useE='true'
 
 jobs=0
 waitCount=0
-for sample in {201..220}
+for sample in {201..210}
 do
 	dataFolder="${baseDataFolder}/samples/sample${sample}/PCA-normalize-E/k${k}/replicate1"
 	# gridSize="${sampleFolder}/none/k0/replicate1/grid_size.txt"
 	gridSize="${dataFolder}/resources/config.json"
 
 	chiMethod="${dataFolder}/chis.txt"
+	chiDiagMethod="${dataFolder}/chis_diag.txt"
 	seqMethod="${dataFolder}/resources/x.npy"
-	# i="${sample}_copy"
-	# run &
+	i="${sample}_copy"
+	dense='true'
+	diagBins=96
+	run &
 
 	chiDiagMethod="${dataFolder}/fitting/chis_diag_edit.txt"
 	i="${sample}_edit"
-	run &
+	# run &
 
 	# chiDiagMethod="${dataFolder}/fitting/chis_diag_edit_zero.txt"
 	# i="${sample}_edit_zero"
@@ -77,7 +80,7 @@ do
 	#
 	chiDiagMethod="${dataFolder}/fitting/linear_fit.txt"
 	i="${sample}_linear"
-	run &
+	# run &
 	# #
 	# # chiDiagMethod="${dataFolder}/log_fit.txt"
 	# # i=log
@@ -91,7 +94,7 @@ do
 	# i="${sample}_poly3"
 	# run &
 
-	jobs=$(( $jobs + 2 ))
+	jobs=$(( $jobs + 1 ))
 	if [ $jobs -gt 15 ]
 	then
 		echo 'Waiting'

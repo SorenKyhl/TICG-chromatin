@@ -47,7 +47,7 @@ def meanDist_comparison():
     plt.savefig(osp.join(data_dir, 'meanDist_comparison.png'))
     plt.close()
 
-def p_s_comparison(dataset, ID):
+def p_s_comparison(dataset, ID, k=8, max_ent=False):
     samples, experimental = get_samples(dataset)
     data_dir = osp.join('/home/erschultz', dataset)
     samples = np.array(samples)[:10] # cap at 10
@@ -62,20 +62,34 @@ def p_s_comparison(dataset, ID):
         fig.set_figwidth(6*3)
         row = 0; col=0
         meanDist_list = molar_contact_ratio(dataset, None, False)
+        print(samples, len(meanDist_list))
         for sample, meanDist_exp in zip(samples, meanDist_list):
-            y = np.load(osp.join(data_dir, f'samples/sample{sample}' ,f'GNN-{ID}-E/k0/replicate1/y.npy'))
+            print(sample)
+            dir = osp.join(data_dir, f'samples/sample{sample}')
+            if max_ent:
+                dir = osp.join(dir, f'PCA-normalize-E/k{k}/replicate1/samples/sample{sample}_copy')
+
+            y = np.load(osp.join(dir ,f'GNN-{ID}-S/k0/replicate1/y.npy'))
             y = y.astype(float)
             y /= np.mean(np.diagonal(y))
             meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
             rmse = mean_squared_error(meanDist, meanDist_exp, squared = False)
 
+            y_pca = np.load(osp.join(dir ,f'PCA-normalize-E/k{k}/replicate1/y.npy'))
+            y_pca = y_pca.astype(float)
+            y_pca /= np.mean(np.diagonal(y_pca))
+            meanDist_pca = DiagonalPreprocessing.genomic_distance_statistics(y_pca)
+
             ax = axes[row][col]
-            ax.set_title(f'sample{sample}\nRMSE={np.round(rmse, 5)}', fontsize=16)
+            ax.set_title(f'sample{sample}\nGNN RMSE={np.round(rmse, 5)}', fontsize=16)
+
             if experimental:
                 ax.plot(meanDist_exp, label = 'Experiment', color = 'k')
             else:
                 ax.plot(meanDist_exp, label = 'Simulation', color = 'k')
             ax.plot(meanDist, label = 'GNN', color = 'blue')
+            ax.plot(meanDist_pca, label = 'PCA', color = 'red')
+            ax.set_ylim(np.percentile(meanDist_exp, 1), None)
             ax.legend(loc='upper left')
             ax.set_yscale('log')
             if log:
@@ -89,7 +103,10 @@ def p_s_comparison(dataset, ID):
 
         fig.supylabel('Contact Probability', fontsize = 16)
         fig.supxlabel('Polymer Distance (beads)', fontsize = 16)
-        fig.suptitle(f'{dataset}\nGNN={ID}', fontsize=16)
+        if max_ent:
+            fig.suptitle(f'{dataset}_max_ent\nGNN={ID}', fontsize=16)
+        else:
+            fig.suptitle(f'{dataset}\nGNN={ID}', fontsize=16)
         plt.tight_layout()
         if log:
                 plt.savefig(osp.join(data_dir, 'p_s_comparison_log.png'))
@@ -97,7 +114,7 @@ def p_s_comparison(dataset, ID):
             plt.savefig(osp.join(data_dir, 'p_s_comparison.png'))
         plt.close()
 
-def scc_comparison(dataset, ID, k=8):
+def scc_comparison(dataset, ID, k=8, max_ent=False):
     samples, experimental = get_samples(dataset)
     data_dir = osp.join('/home/erschultz', dataset)
     samples = np.array(samples)[:10] # cap at 10
@@ -113,13 +130,16 @@ def scc_comparison(dataset, ID, k=8):
         fig.set_figwidth(6*3)
         row = 0; col=0
         for sample in samples:
-            y = np.load(osp.join(data_dir, f'samples/sample{sample}', 'y.npy'))
+            dir = osp.join(data_dir, f'samples/sample{sample}')
+            if max_ent:
+                dir = osp.join(dir, f'PCA-normalize-E/k{k}/replicate1/samples/sample{sample}_copy')
+            y = np.load(osp.join(dir, 'y.npy'))
             y = y.astype(float)
 
-            yhat = np.load(osp.join(data_dir, f'samples/sample{sample}', f'GNN-{ID}-E/k0/replicate1/y.npy'))
+            yhat = np.load(osp.join(dir, f'GNN-{ID}-S/k0/replicate1/y.npy'))
             yhat = yhat.astype(float)
 
-            yhat_pca = np.load(osp.join(data_dir, f'samples/sample{sample}', f'PCA-normalize-E/k{k}/replicate1/y.npy'))
+            yhat_pca = np.load(osp.join(dir, f'PCA-normalize-E/k{k}/replicate1/y.npy'))
 
             corr_scc_var_pca = scc.scc(y, yhat_pca, var_stabilized = True)
             _, corr_arr_pca = calc_dist_strat_corr(y, yhat_pca, mode = 'pearson',
@@ -149,7 +169,10 @@ def scc_comparison(dataset, ID, k=8):
         axes[0,0].legend(loc = 'lower left')
         fig.supxlabel('Polymer Distance (beads)', fontsize = 16)
         fig.supylabel('Pearson Correlation Coefficient', fontsize = 16)
-        fig.suptitle(f'{dataset}', fontsize=16)
+        if max_ent:
+            fig.suptitle(f'{dataset}_max_ent\nGNN={ID}', fontsize=16)
+        else:
+            fig.suptitle(f'{dataset}\nGNN={ID}', fontsize=16)
         plt.tight_layout()
         if log:
                 plt.savefig(osp.join(data_dir, 'distance_pearson_log.png'))
@@ -158,19 +181,19 @@ def scc_comparison(dataset, ID, k=8):
         plt.close()
 
 
-def l_ij_comparison(dataset):
+def l_ij_comparison(dataset, dataset_exp, k=8):
     data_dir = osp.join('/home/erschultz', dataset)
 
     L_list = []
     chi_list = []
     label_list = []
-    L_max_ent, chi_max_ent = plaid_dist(dataset, 4, False)
+    L_max_ent, S_max_ent, chi_max_ent = plaid_dist(dataset_exp, k, False)
     L_list.append(L_max_ent)
     # chi_list.append(chi_max_ent)
     label_list.append('Max Ent')
 
-    s_sim, chi_sim = plaid_dist('dataset_02_22_23', None, False)
-    L_list.append(s_sim)
+    L_sim, S_sim, chi_sim = plaid_dist(dataset, None, False)
+    L_list.append(L_sim)
     # chi_list.append(chi_sim)
     label_list.append(r'Synthetic $\tilde{\chi}$')
 
@@ -218,7 +241,6 @@ def l_ij_comparison(dataset):
 if __name__ == '__main__':
     # main()
     # meanDist_comparison()
-    # l_ij_comparison('dataset_02_04_23')
-    # l_dist_comparison()
-    # p_s_comparison('dataset_02_04_23', 386)
-    scc_comparison('dataset_02_04_23', 386)
+    l_ij_comparison('dataset_03_01_23', 'dataset_02_04_23')
+    # p_s_comparison('dataset_03_01_23', 386)
+    # scc_comparison('dataset_03_01_23', 386)

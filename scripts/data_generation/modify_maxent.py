@@ -21,7 +21,8 @@ from scripts.get_params import Tester
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.energy_utils import (
-    calculate_D, calculate_diag_chi_step, calculate_SD)
+    calculate_D, calculate_diag_chi_step, calculate_S)
+from sequences_to_contact_maps.scripts.load_utils import load_L
 from sequences_to_contact_maps.scripts.plotting_utils import (
     plot_matrix, plot_seq_continuous)
 from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
@@ -36,12 +37,16 @@ def get_samples(dataset):
         samples = range(2201, 2214)
         experimental = True
     elif dataset in {'dataset_01_26_23', 'dataset_02_04_23', 'dataset_02_21_23'}:
-        samples = range(201, 283)
-        # samples = range(201, 210)
+        # samples = range(201, 283)
+        # samples = range(284, 293)
+        samples = range(201, 210)
         experimental = True
     elif dataset in {'dataset_12_20_22', 'dataset_02_13_23', 'dataset_02_06_23',
-                    'dataset_02_01_23', 'dataset_02_22_23'}:
+                    'dataset_02_01_23', 'dataset_02_22_23',
+                    'dataset_03_03_23'}:
         samples = [324, 981, 1936, 2834, 3464]
+    elif dataset == 'dataset_03_01_23':
+        samples = [1, 2, 3, 4, 5, 324, 981, 1936, 2834, 3464]
     elif dataset == 'dataset_02_20_23':
         samples = [1, 2, 3, 4, 5]
         samples.extend([324, 981, 1936, 2834, 3464])
@@ -755,11 +760,8 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
             continue
 
         # get L
-        if osp.exists(osp.join(dir, 'L.npy')):
-            L = np.load(osp.join(dir, 'L.npy'))
-        else:
-            L = np.load(osp.join(dir, 's.npy'))
-        L = (L+L.T)/2
+        L = load_L(dir)
+        L = (L+L.T)/2 # ensure L is symmetric
 
         # get D
         if experimental:
@@ -767,9 +769,13 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
                 config = json.load(f)
             D = calculate_D(calculate_diag_chi_step(config))
         else:
-            diag_chis = np.load(osp.join(dir, 'diag_chis_continuous.npy'))
+            diag_chis_file = osp.join(dir, 'diag_chis_continuous.npy')
+            if osp.exists(diag_chis_file):
+                diag_chis = np.load(diag_chis_file)
+            else:
+                diag_chis = np.load(osp.join(dir, 'diag_chis.npy'))
             D = calculate_D(diag_chis)
-        S = calculate_SD(L, D)
+        S = calculate_S(L, D)
 
         m = len(L)
         L_list.append(L[np.triu_indices(m)])
@@ -1105,39 +1111,40 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
         plt.savefig(osp.join(odir, f'k{k}_chi_pc_dist.png'))
         plt.close()
 
-        # grid_size vs chi_aa
-        data = []
-        for chi in chi_list:
-            data.append(chi[0,0])
+        if grid_size_arr is not None:
+            # grid_size vs chi_aa
+            data = []
+            for chi in chi_list:
+                data.append(chi[0,0])
 
-        # remove outliers
-        iqr = np.percentile(data, 75) - np.percentile(data, 25)
-        width = 1.5
-        l_cutoff = np.percentile(data, 25) - width * iqr
-        u_cutoff = np.percentile(data, 75) + width * iqr
+            # remove outliers
+            iqr = np.percentile(data, 75) - np.percentile(data, 25)
+            width = 1.5
+            l_cutoff = np.percentile(data, 25) - width * iqr
+            u_cutoff = np.percentile(data, 75) + width * iqr
 
-        delete_arr = np.logical_or(data < l_cutoff, data > u_cutoff)
-        data = np.delete(data, delete_arr, axis = None)
-        data2 = np.delete(grid_size_arr, delete_arr, axis = None)
-        simple_scatter(data, data2, r'$\chi_{AA}$', 'grid_size', None, odir, 'chi_AA_vs_grid_size.png')
+            delete_arr = np.logical_or(data < l_cutoff, data > u_cutoff) # ind to delete
+            data = np.delete(data, delete_arr, axis = None)
+            data2 = np.delete(grid_size_arr, delete_arr, axis = None)
+            simple_scatter(data, data2, r'$\chi_{AA}$', 'grid_size', None, odir, 'chi_AA_vs_grid_size.png')
 
-        # grid_size vs chi_bb
-        data = []
-        for chi in chi_list:
-            data.append(chi[1,1])
+            # grid_size vs chi_bb
+            data = []
+            for chi in chi_list:
+                data.append(chi[1,1])
 
-        # remove outliers
-        iqr = np.percentile(data, 75) - np.percentile(data, 25)
-        width = 1.5
-        l_cutoff = np.percentile(data, 25) - width * iqr
-        u_cutoff = np.percentile(data, 75) + width * iqr
+            # remove outliers
+            iqr = np.percentile(data, 75) - np.percentile(data, 25)
+            width = 1.5
+            l_cutoff = np.percentile(data, 25) - width * iqr
+            u_cutoff = np.percentile(data, 75) + width * iqr
 
-        delete_arr = np.logical_or(data < l_cutoff, data > u_cutoff)
-        data = np.delete(data, delete_arr, axis = None)
-        data2 = np.delete(grid_size_arr, delete_arr, axis = None)
-        simple_scatter(data, data2, r'$\chi_{BB}$', 'grid_size', None, odir, 'chi_BB_vs_grid_size.png')
+            delete_arr = np.logical_or(data < l_cutoff, data > u_cutoff)
+            data = np.delete(data, delete_arr, axis = None)
+            data2 = np.delete(grid_size_arr, delete_arr, axis = None)
+            simple_scatter(data, data2, r'$\chi_{BB}$', 'grid_size', None, odir, 'chi_BB_vs_grid_size.png')
 
-    return L_list, chi_ij_list
+    return L_list, S_list, chi_ij_list
 
 def grid_dist(dataset, plot=True):
     # distribution of plaid params
@@ -1171,11 +1178,11 @@ def grid_dist(dataset, plot=True):
 
 if __name__ == '__main__':
     # modify_plaid_chis('dataset_02_04_23', k = 7)
-    modify_maxent_diag_chi('dataset_02_04_23', k = 7)
+    # modify_maxent_diag_chi('dataset_02_04_23', k = 7)
     # for i in range(201, 210):
         # plot_modified_max_ent(i, k = 8)
     # diagonal_dist('dataset_02_04_23', 7)
     # grid_dist('dataset_01_26_23')
-    plaid_dist('dataset_02_04_23', 7, True, False, True)
+    plaid_dist('dataset_03_01_23', 8, True, False, False)
     # seq_dist('dataset_01_26_23', 4, True, False, True)
     # modify_plaid_chis('dataset_11_14_22', 8)

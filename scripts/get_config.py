@@ -10,7 +10,7 @@ from sklearn.metrics.pairwise import polynomial_kernel
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
 from sequences_to_contact_maps.scripts.energy_utils import (
-    calculate_D, calculate_diag_chi_step, calculate_E_S, calculate_S, s_to_E)
+    calculate_D, calculate_diag_chi_step)
 from sequences_to_contact_maps.scripts.plotting_utils import plot_matrix
 from sequences_to_contact_maps.scripts.utils import LETTERS, crop
 
@@ -76,8 +76,6 @@ def getArgs():
                         help='constant chi parameter between all beads')
 
     # energy config params
-    parser.add_argument('--use_ematrix', type=AC.str2bool, default=False,
-                        help='True to use e_matrix')
     parser.add_argument('--use_smatrix', type=AC.str2bool, default=False,
                         help='True to use s_matrix')
     parser.add_argument('--use_dmatrix', type=AC.str2bool, default=False,
@@ -195,8 +193,8 @@ def main():
         if osp.exists('x.npy'):
             x = np.load('x.npy')
             args.m, _ = x.shape
-        elif osp.exists('e.npy'):
-            e = np.load('e.npy')
+        elif osp.exists('S.npy'):
+            S = np.load('S.npy')
             args.m, _ = e.shape
         elif args.sample_folder is not None:
             y_file = osp.join(args.sample_folder, 'y.npy')
@@ -314,7 +312,7 @@ def main():
                 key = f'chi{LETTERS[row]}{LETTERS[col]}'
                 val = args.chi[row, col]
                 config[key] = val
-    elif args.use_ematrix or args.use_smatrix:
+    elif args.use_smatrix:
         config['bead_type_files'] = None
         config["nspecies"] = 0
     else:
@@ -326,9 +324,6 @@ def main():
         config['dmatrix_on'] = True
     if args.use_lmatrix:
         config['lmatrix_on'] = True
-    if args.use_ematrix:
-        config['ematrix_on'] = True
-        assert not args.use_smatrix
     if args.use_smatrix:
         config['smatrix_on'] = True
 

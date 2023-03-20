@@ -23,7 +23,7 @@ then
 fi
 
 STARTTIME=$(date +%s)
-i=6010
+i=5010
 dataset='dataset_02_04_23'
 useL='false'
 useS='false'
