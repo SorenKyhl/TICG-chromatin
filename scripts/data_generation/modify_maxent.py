@@ -37,18 +37,16 @@ def get_samples(dataset):
         samples = range(2201, 2214)
         experimental = True
     elif dataset in {'dataset_01_26_23', 'dataset_02_04_23', 'dataset_02_21_23'}:
-        # samples = range(201, 283)
+        samples = range(201, 283)
         # samples = range(284, 293)
-        samples = range(201, 210)
+        # samples = range(201, 210)
         experimental = True
     elif dataset in {'dataset_12_20_22', 'dataset_02_13_23', 'dataset_02_06_23',
-                    'dataset_02_01_23', 'dataset_02_22_23',
+                    'dataset_02_22_23',
                     'dataset_03_03_23'}:
         samples = [324, 981, 1936, 2834, 3464]
-    elif dataset == 'dataset_03_01_23':
+    elif dataset in {'dataset_03_01_23', 'dataset_02_01_23', 'dataset_02_20_23'}:
         samples = [1, 2, 3, 4, 5, 324, 981, 1936, 2834, 3464]
-    elif dataset == 'dataset_02_20_23':
-        samples = [1, 2, 3, 4, 5]
         samples.extend([324, 981, 1936, 2834, 3464])
     elif dataset == 'dataset_02_16_23':
         samples = [1, 2, 3, 4, 5]
@@ -161,7 +159,6 @@ def modify_maxent_diag_chi(dataset, k = 8, edit = True):
         edit: True to modify maxent result so that is is flat at start
     '''
     samples, _ = get_samples(dataset)
-    samples = [207]
     for sample in samples:
         print(f'sample{sample}, k{k}')
         # try different modifications to diag chis learned by max ent
@@ -181,8 +178,8 @@ def modify_maxent_diag_chi(dataset, k = 8, edit = True):
 
         if edit:
             # make version that is flat at start
-            min_val = np.min(diag_chis)
-            min_ind = np.argmin(diag_chis)
+            min_val = np.min(diag_chis[:20])
+            min_ind = np.argmin(diag_chis[:20])
             diag_chis[0:min_ind] = min_val
             np.savetxt(osp.join(odir, 'chis_diag_edit.txt'), diag_chis)
 
@@ -746,6 +743,7 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
         os.mkdir(odir, mode = 0o755)
 
     L_list = []
+    D_list = []
     S_list = []
     chi_ij_list = []
     chi_ii_list = []
@@ -779,6 +777,7 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
 
         m = len(L)
         L_list.append(L[np.triu_indices(m)])
+        D_list.append(D[np.triu_indices(m)])
         S_list.append(S[np.triu_indices(m)])
 
         # get chi
@@ -834,8 +833,8 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
                             f'k{k}_chi_ii_dist.png', dist = skewnorm)
 
         # plot plaid Lij parameters
-        # simple_histogram(s_list, r'$L_{ij}$', odir,
-        #                     f'k{k}_L_dist.png')
+        simple_histogram(L_list, r'$L_{ij}$', odir,
+                            f'k{k}_L_dist.png')
 
         # plot net energy parameters
         # simple_histogram(s_list, r'$S_{ij}$', odir,
@@ -1144,7 +1143,7 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
             data2 = np.delete(grid_size_arr, delete_arr, axis = None)
             simple_scatter(data, data2, r'$\chi_{BB}$', 'grid_size', None, odir, 'chi_BB_vs_grid_size.png')
 
-    return L_list, S_list, chi_ij_list
+    return L_list, S_list, D_list, chi_ij_list
 
 def grid_dist(dataset, plot=True):
     # distribution of plaid params
@@ -1178,11 +1177,11 @@ def grid_dist(dataset, plot=True):
 
 if __name__ == '__main__':
     # modify_plaid_chis('dataset_02_04_23', k = 7)
-    # modify_maxent_diag_chi('dataset_02_04_23', k = 7)
-    # for i in range(201, 210):
-        # plot_modified_max_ent(i, k = 8)
+    modify_maxent_diag_chi('dataset_02_04_23', k = 8)
+    for i in range(256, 257):
+        plot_modified_max_ent(i, k = 8)
     # diagonal_dist('dataset_02_04_23', 7)
     # grid_dist('dataset_01_26_23')
-    plaid_dist('dataset_03_01_23', 8, True, False, False)
+    # plaid_dist('dataset_02_04_23', 8, False, False, False)
     # seq_dist('dataset_01_26_23', 4, True, False, True)
     # modify_plaid_chis('dataset_11_14_22', 8)

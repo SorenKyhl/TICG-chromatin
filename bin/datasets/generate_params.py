@@ -352,26 +352,51 @@ class DatasetGenerator():
             else:
                 dataset = '/home/erschultz/dataset_01_26_23/samples'
                 samples = range(201, 250)
+        get_grid = False
+        linear = False
+        poly3 = False
         if 'grid' in self.diag_mode:
             get_grid = True
-        else:
-            get_grid = False
+        if 'linear' in self.diag_mode:
+            linear = True
+        elif 'poly3' in self.diag_mode:
+            poly3 = True
 
+        converged_samples = []
         for j in samples:
             sample_folder = osp.join(dataset, f'sample{j}', f'PCA-normalize-E/k{self.k}/replicate1')
-            diag_chis = np.loadtxt(osp.join(sample_folder, 'chis_diag.txt'))[-1]
-            with open(osp.join(sample_folder, 'resources/config.json'), 'r') as f:
-                config = json.load(f)
-            diag_chi_step = calculate_diag_chi_step(config, diag_chis)
-            diag_dict[j] = diag_chi_step
 
-            # get grid_size
-            if get_grid:
-                grid_dict[j] = np.loadtxt(osp.join(dataset, f'sample{j}', 'none/k0/replicate1/grid_size.txt'))[-1]
+            # check convergence
+            convergence_file = osp.join(sample_folder, 'convergence.txt')
+            eps = 1e-3
+            converged = False
+            if osp.exists(convergence_file):
+                conv = np.loadtxt(convergence_file)
+                for ind in range(1, len(conv)):
+                    diff = conv[ind] - conv[ind-1]
+                    if np.abs(diff) < eps and conv[ind] < conv[0]:
+                        converged = True
 
+            if converged:
+                converged_samples.append(j)
+                if linear:
+                    diag_chi_step = np.loadtxt(osp.join(sample_folder, 'fitting/linear_fit.txt'))
+                elif poly3:
+                    diag_chi_step = np.loadtxt(osp.join(sample_folder, 'fitting/poly3_fit.txt'))
+                else:
+                    diag_chis = np.loadtxt(osp.join(sample_folder, 'chis_diag.txt'))[-1]
+                    with open(osp.join(sample_folder, 'resources/config.json'), 'r') as f:
+                        config = json.load(f)
+                    diag_chi_step = calculate_diag_chi_step(config, diag_chis)
+                diag_dict[j] = diag_chi_step
 
+                # get grid_size
+                if get_grid:
+                    grid_dict[j] = np.loadtxt(osp.join(dataset, f'sample{j}', 'none/k0/replicate1/grid_size.txt'))[-1]
+
+        print('converged %:', len(converged_samples)/ len(samples))
         for i in range(self.N):
-            j = np.random.choice(samples)
+            j = np.random.choice(converged_samples)
             diag_chis = diag_dict[j]
 
             diag_file = osp.join(self.odir, f'diag_chis_{i+1}.npy')
@@ -379,6 +404,7 @@ class DatasetGenerator():
 
             diag_file = osp.join(self.data_dir, self.dataset, f'setup/diag_chis_{i+1}.npy')
 
+            self.sample_dict[i]['exp_max_ent'] = j
             self.sample_dict[i]['diag_chi_method'] = diag_file
 
             if get_grid:

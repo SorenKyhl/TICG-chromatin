@@ -23,8 +23,8 @@ then
 fi
 
 STARTTIME=$(date +%s)
-i=6001
-dataset='dataset_02_16_23'
+i=6501
+dataset='dataset_03_03_23'
 useL='true'
 useS='true'
 useD='true'
@@ -33,11 +33,11 @@ chiMethod='zeros'
 mode='both'
 
 bondtype='gaussian'
-bondLength=28 # TODO make sure this is correct !!!
+bondLength=16.5 # TODO make sure this is correct !!!
 
 diagChiMethod="zeros"
 dense='true'
-diagBins=80
+diagBins=96
 nSmallBins=64
 smallBinSize=1
 diagCutoff=512
@@ -45,7 +45,7 @@ diagCutoff=512
 method='PCA-normalize'
 jobs=0
 waitCount=0
-for k in 4
+for k in 4 8
 do
   for sample in 1 2 3 4 5 324 981 1936 2834 3464
   do
@@ -53,7 +53,7 @@ do
     echo "$sample m=$m k=$k"
     max_ent
     jobs=$(( $jobs + 1 ))
-    if [ $jobs -gt 10 ]
+    if [ $jobs -gt 8 ]
     then
       echo 'Waiting'
       waitCount=$(( $waitCount + 1 ))

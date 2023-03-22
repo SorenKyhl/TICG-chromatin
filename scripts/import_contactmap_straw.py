@@ -271,6 +271,66 @@ def dataset_02_21():
     with multiprocessing.Pool(15) as p:
         p.starmap(import_contactmap_straw, mapping)
 
+def dataset_03_21():
+    dir = '/home/erschultz'
+    dataset='dataset_03_21_23'
+    data_folder = osp.join(dir, dataset)
+    if not osp.exists(data_folder):
+        os.mkdir(data_folder, mode = 0o755)
+    if not osp.exists(osp.join(data_folder, 'samples')):
+        os.mkdir(osp.join(data_folder, 'samples'), mode = 0o755)
+
+    resolution=10000
+    norm = 'NONE'
+    filename_list=[
+                    # "https://hicfiles.s3.amazonaws.com/hiseq/imr90/in-situ/combined.hic",
+                    # "https://hicfiles.s3.amazonaws.com/hiseq/gm12878/agar/HIC030.hic",
+                    # "https://hicfiles.s3.amazonaws.com/hiseq/gm12878/dilution/HIC034.hic",
+                    # "https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
+                    # "https://hicfiles.s3.amazonaws.com/hiseq/hmec/in-situ/combined.hic",
+                    # "https://hicfiles.s3.amazonaws.com/hiseq/nhek/in-situ/combined.hic",
+                    # "https://hicfiles.s3.amazonaws.com/hiseq/k562/in-situ/combined.hic",
+                    # "https://hicfiles.s3.amazonaws.com/hiseq/kbm7/in-situ/combined.hic",
+                    # "https://hicfiles.s3.amazonaws.com/hiseq/huvec/in-situ/combined.hic",
+                    # "https://hicfiles.s3.amazonaws.com/hiseq/hela/in-situ/combined.hic",
+                    "https://hicfiles.s3.amazonaws.com/hiseq/hap1/in-situ/combined.hic"
+                    ]
+    m = 512*5
+
+    chromsizes = bioframe.fetch_chromsizes('hg19')
+
+    # set up for multiprocessing
+    i = 793
+    for filename in filename_list:
+        mapping = []
+        for chromosome in range(1,23):
+            start_mb = np.random.choice(np.arange(6)) # choose start at random
+            start = start_mb * 1000000
+            end = start + resolution * m
+            end_mb = end / 1000000
+            while end < chromsizes[f'chr{chromosome}']:
+                for region in HG19_BAD_REGIONS[chromosome].split(','):
+                    region = region.split('-')
+                    region = [int(d) for d in region]
+                    if intersect((start_mb, end_mb), region):
+                        start_mb = region[1] # skip to end of bad region
+                        start_mb += np.random.choice(np.arange(6)) # add random shift
+                        break
+                else:
+                    print(f'i={i}: chr{chromosome} {start_mb}-{end_mb}')
+                    sample_folder = osp.join(data_folder, 'samples', f'sample{i}')
+                    mapping.append((sample_folder, filename, chromosome, start, end, resolution, norm))
+                    i += 1
+                    start_mb = end_mb
+
+                start = int(start_mb * 1000000)
+                end = start + resolution * m
+                end_mb = end / 1000000
+
+        with multiprocessing.Pool(15) as p:
+            p.starmap(import_contactmap_straw, mapping)
+
+
 
 def download_techinical_replicates():
     dir = '/home/erschultz'
@@ -356,4 +416,4 @@ def pool():
 
 
 if __name__ == '__main__':
-    dataset_02_21()
+    dataset_03_21()

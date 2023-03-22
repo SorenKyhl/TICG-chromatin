@@ -9,13 +9,11 @@
 #SBATCH --mail-type=END
 #SBATCH --mail-user=erschultz@uchicago.edu
 
-dir='/home/erschultz/dataset_03_01_23/samples'
+dir='/home/erschultz/dataset_02_20_23/samples'
 cd $dir
 
 for i in 1 2 3 4 5 324 981 1936 2834 3464
 do
-  cd "${dir}/sample${i}/PCA-normalize-E/k8/replicate1"
-  rm e.png
-  rm s.npy
-  rm s.png
+  cd "${dir}/sample${i}"
+  rm -r GNN-*-E
 done
