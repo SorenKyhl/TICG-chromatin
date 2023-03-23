@@ -13,14 +13,14 @@ compress(){
   do
     cd "${dir}/${dataset}/samples/sample${i}"
     # energy
-    rm e.npy &
-    rm s.npy &
+    # rm e.npy &
+    # rm s.npy &
 
     # rm -r data_out &
     # rm chis.tek &
     # rm chis.npy &
     # rm *diag.npy &
-    rm *.png &
+    # rm *.png &
 
     # rm *.txt &
 
@@ -33,10 +33,24 @@ compress(){
   # rm -r $dataset
 }
 
+to_small(){
+  dataset=$1
+  cd $dir
+  small_dataset="${dataset}-small"
+  mkdir $small_dataset
+  cd $small_dataset
+  mkdir samples
+  for i in {1000..2000}
+  do
+    cd "${dir}/${dataset}/samples"
+    cp -r "sample${i}" "${dir}/${small_dataset}/samples"
+  done
+
+  cd $dir
+  tar -czvf "${dataset}.tar.gz" $small_dataset
+}
+
+dir='/home/erschultz'
+
 dir='/project2/depablo/erschultz'
-compress dataset_11_18_22
-compress dataset_11_21_22
-compress dataset_12_05_22
-compress dataset_02_01_23
-compress dataset_03_01_23
-compress dataset_03_03_23
+tar -xvf dataset_03_21_23.tar.gz

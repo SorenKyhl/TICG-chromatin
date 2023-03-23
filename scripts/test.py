@@ -818,7 +818,28 @@ def gnn_of_max_ent(samples, k, ID):
 
 def check_interpolation():
     '''Check if any of the experimental contact maps had too many rows/cols to be interpolated'''
-    dir = '/home/erschultz/data'
+    dir = '/home/erschultz/dataset_03_21_23'
+    for sample in range(1, 874):
+        s_dir = osp.join(dir, 'samples', f'sample{sample}')
+        if not osp.exists(s_dir):
+            continue
+        with open(osp.join(s_dir, 'Interpolation/zeros_mappability-0.7/log.log')) as f:
+            lines = f.readlines()
+            last = lines[-1]
+            rows = last.split(' ')[1]
+            rows = int(rows)
+            if rows > 1000:
+                print(sample, rows)
+                interp_dir = osp.join(dir, 'samples', f'sample{1000+sample}')
+                if osp.exists(interp_dir):
+                    shutil.rmtree(interp_dir)
+                if osp.exists(s_dir):
+                    shutil.rmtree(s_dir)
+
+
+        with open(osp.join(dir, 'samples', f'sample{1000+sample}/import.log'), 'a') as f:
+            f.write(first)
+
 
 
 
@@ -834,4 +855,5 @@ if __name__ == '__main__':
     # compare_scc_bio_replicates()
     # max_ent_loss_for_gnn('dataset_11_14_22', 2201)
     # plot_p_s('dataset_bond_grid', params = False, grid_size = True)
-    gnn_of_max_ent([207], 8, 378)
+    # gnn_of_max_ent([207], 8, 378)
+    check_interpolation()
