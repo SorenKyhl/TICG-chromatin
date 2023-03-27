@@ -10,7 +10,7 @@
 #SBATCH --mail-user=erschultz@uchicago.edu
 
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
-i=8001
+i=8501
 
 # nonbonded
 useL='false'
