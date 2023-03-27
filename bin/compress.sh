@@ -53,4 +53,5 @@ to_small(){
 dir='/home/erschultz'
 
 dir='/project2/depablo/erschultz'
+cd $dir
 tar -xvf dataset_03_21_23.tar.gz

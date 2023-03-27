@@ -1,24 +1,23 @@
 #! /bin/bash
-source activate python3.9_pytorch1.9_cuda10.2
+source activate python3.9_pytorch1.9
 module load gcc/10.2.0
 
 # directories
 resources=~/TICG-chromatin/utils
 results=~/sequences_to_contact_maps/results
 dir='/project2/depablo/erschultz'
-scratchDir='/scratch/midway2/erschultz'
+scratchDir='/home/erschultz/scratch'
 
 # sweep params
-productionSweeps=300000
-finalSimProductionSweeps=1000000
+productionSweeps=500000
+finalSimProductionSweeps=500000
 equilibSweeps=50000
-numIterations=30 # iteration 1 + numIterations is production run to get contact map
+numIterations=12 # iteration 1 + numIterations is production run to get contact map
 parallel='false'
 numThreads=1
 
 # energy params
 useL='true'
-useE='true'
 useS='false'
 useD='true'
 

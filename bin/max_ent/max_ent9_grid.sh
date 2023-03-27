@@ -2,13 +2,14 @@
 #SBATCH --job-name=maxent9
 #SBATCH --output=logFiles/maxent9.out
 #SBATCH --time=24:00:00
-#SBATCH --partition=depablo-ivyb
-#SBATCH --ntasks=20
+#SBATCH --partition=depablo
+#SBATCH --account=pi-depablo
+#SBATCH --ntasks=24
 #SBATCH --mem=0
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=erschultz@uchicago.edu
 
-local='true'
+local='false'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
 
 if [ $local = 'true' ]
@@ -24,10 +25,9 @@ fi
 
 STARTTIME=$(date +%s)
 i=8002
-dataset='dataset_01_26_23'
+dataset='dataset_03_21_23'
 useL='false'
 useS='false'
-useE='false'
 useD='false'
 m=512
 chiMethod='none'
@@ -47,12 +47,12 @@ gamma=0.2
 jobs=0
 waitCount=0
 k=0
-for sample in {201..292}
+for sample in {1..900}
 do
   echo $sample $m
   max_ent
   jobs=$(( $jobs + 1 ))
-  if [ $jobs -gt 17 ]
+  if [ $jobs -gt 22 ]
   then
     echo 'Waiting'
     waitCount=$(( $waitCount + 1 ))
