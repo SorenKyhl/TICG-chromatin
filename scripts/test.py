@@ -840,6 +840,12 @@ def check_interpolation():
         with open(osp.join(dir, 'samples', f'sample{1000+sample}/import.log'), 'a') as f:
             f.write(first)
 
+def check_s_dag():
+    s = np.array([[1,3],[-2, -6]])
+    sdag = np.multiply(np.sign(s), np.log(np.abs(s)+1))
+    print(sdag)
+    s2 = np.multiply(np.sign(sdag), np.exp(np.abs(sdag))-1)
+    print(s2)
 
 
 
@@ -856,4 +862,5 @@ if __name__ == '__main__':
     # max_ent_loss_for_gnn('dataset_11_14_22', 2201)
     # plot_p_s('dataset_bond_grid', params = False, grid_size = True)
     # gnn_of_max_ent([207], 8, 378)
-    check_interpolation()
+    # check_interpolation()
+    check_s_dag()

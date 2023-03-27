@@ -9,28 +9,28 @@
 
 compress(){
   dataset=$1
-  for i in {1..5000}
+  for i in {1..10000}
   do
     cd "${dir}/${dataset}/samples/sample${i}"
     # energy
-    # rm e.npy &
-    # rm s.npy &
+    rm e.npy &
+    rm s.npy &
 
-    # rm -r data_out &
-    # rm chis.tek &
-    # rm chis.npy &
-    # rm *diag.npy &
-    # rm *.png &
+    rm -r data_out &
+    rm chis.tek &
+    rm chis.npy &
+    rm *diag.npy &
+    rm *.png &
 
-    # rm *.txt &
+    rm *.txt &
 
     wait
   done
 
   cd $dir
-  # rm -r "${dataset}.tar.gz"
-  # tar -czvf "${dataset}.tar.gz" $dataset
-  # rm -r $dataset
+  rm -r "${dataset}.tar.gz"
+  tar -czvf "${dataset}.tar.gz" $dataset
+  rm -r $dataset
 }
 
 to_small(){
@@ -54,4 +54,6 @@ dir='/home/erschultz'
 
 dir='/project2/depablo/erschultz'
 cd $dir
-tar -xvf dataset_03_21_23.tar.gz
+compress dataset_12_05_22
+compress dataset_11_18_22
+compress dataset_11_21_22
