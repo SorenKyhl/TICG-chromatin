@@ -18,7 +18,7 @@ numThreads=1
 
 # energy params
 useL='true'
-useS='false'
+useS='true'
 useD='true'
 
 # general params
@@ -44,7 +44,8 @@ beadVol=520
 constantChi=0
 
 # diag params
-diagChiMethod='linear'
+diagChiMethod='none'
+dense='false'
 diagBins=32
 maxDiagChi=0
 chiDiagSlope=1

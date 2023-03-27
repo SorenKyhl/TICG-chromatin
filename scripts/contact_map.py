@@ -141,6 +141,7 @@ def main():
         D = calculate_D(diag_chi_step)
 
     # get S
+    S = None
     if L is not None:
         S = calculate_S(L, D)
     elif not args.random_mode:

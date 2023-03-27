@@ -9,11 +9,10 @@
 #SBATCH --mail-type=END
 #SBATCH --mail-user=erschultz@uchicago.edu
 
-dir='/home/erschultz/dataset_02_20_23/samples'
+dir='/project2/depablo/erschultz/dataset_03_21_23/samples'
 cd $dir
 
-for i in 1 2 3 4 5 324 981 1936 2834 3464
+for i in {1..999}
 do
-  cd "${dir}/sample${i}"
-  rm -r GNN-*-E
+  rm -r  "sample${i}"
 done

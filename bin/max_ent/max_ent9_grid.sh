@@ -9,45 +9,45 @@
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=erschultz@uchicago.edu
 
-local='false'
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
+i=8001
 
+# nonbonded
+useL='false'
+useS='false'
+useD='false'
+chiMethod='none'
+method='none'
+k=0
+# bonded
+bondLength=16.5
+gridSize=17.5
+# newton's method
+trust_region=5
+gamma=0.2
+mode='grid_size'
+# bash
+STARTTIME=$(date +%s)
+jobs=0
+waitCount=0
+
+local='false'
 if [ $local = 'true' ]
 then
   dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
-  numIterations=8
-  finalSimProductionSweeps=50000
-  equilibSweeps=10000
-  productionSweeps=50000
   source activate python3.9_pytorch1.9
 fi
 
-STARTTIME=$(date +%s)
-i=8002
+numIterations=12
+finalSimProductionSweeps=50000
+equilibSweeps=10000
+productionSweeps=50000
+
 dataset='dataset_03_21_23'
-useL='false'
-useS='false'
-useD='false'
 m=512
-chiMethod='none'
-mode='grid_size'
 
-bondtype='gaussian'
-phiChromatin=0.06
-bondLength=16.5
-gridSize=17.5
-
-diagChiMethod="none"
-dense='false'
-method='none'
-
-trust_region=5
-gamma=0.2
-jobs=0
-waitCount=0
-k=0
-for sample in {1..900}
+for sample in {1001..1999}
 do
   echo $sample $m
   max_ent
