@@ -24,18 +24,14 @@ STARTTIME=$(date +%s)
 i=2000
 dataset='dataset_02_04_23'
 useL='false'
-useS='false'
-useE='true'
+useS='true'
 useD='false'
 m=512
 chiMethod='none'
 mode='none'
 
 bondtype='gaussian'
-bondLength=16.5
-
-diagChiMethod='none'
-dense='false'
+bondLength=16.5 # TODO make sure this is correct !!!
 
 k=0
 method='GNN'
@@ -44,7 +40,7 @@ waitCount=0
 for sample in {201..210}
 do
   gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
-  for GNNModelID in 386
+  for GNNModelID in 390 391
   do
     echo $sample $m
     max_ent

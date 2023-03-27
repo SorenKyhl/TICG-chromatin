@@ -42,21 +42,14 @@ def get_samples(dataset):
         # samples = range(201, 210)
         experimental = True
     elif dataset in {'dataset_12_20_22', 'dataset_02_13_23', 'dataset_02_06_23',
-                    'dataset_02_22_23',
-                    'dataset_03_03_23'}:
+                    'dataset_02_22_23'}:
         samples = [324, 981, 1936, 2834, 3464]
-    elif dataset in {'dataset_03_01_23', 'dataset_02_01_23', 'dataset_02_20_23'}:
-        samples = [1, 2, 3, 4, 5, 324, 981, 1936, 2834, 3464]
-        samples.extend([324, 981, 1936, 2834, 3464])
-    elif dataset == 'dataset_02_16_23':
-        samples = [1, 2, 3, 4, 5]
-        samples.extend([324, 981, 1936, 2834, 3123, 3464, 3554])
     elif dataset == 'dataset_11_21_22':
         samples = [1, 2, 3, 410, 653, 1462, 1801, 2290]
     elif dataset.startswith('dataset_01_27_23'):
         samples = range(1, 16)
     else:
-        samples = range(1, 11)
+        samples = [1, 2, 3, 4, 5, 324, 981, 1936, 2834, 3464]
 
     return samples, experimental
 

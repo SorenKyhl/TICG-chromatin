@@ -350,6 +350,6 @@ def l_ij_comparison(dataset, dataset_exp, k=8):
 if __name__ == '__main__':
     # main()
     # meanDist_comparison()
-    l_ij_comparison('dataset_03_23_23', 'dataset_02_04_23', 8)
-    # p_s_comparison('dataset_03_03_23', 387, 8)
-    # scc_comparison('dataset_03_03_23', 387, 8)
+    # l_ij_comparison('dataset_03_23_23', 'dataset_02_04_23', 8)
+    p_s_comparison('dataset_03_22_23', 391, 8)
+    # scc_comparison('dataset_03_22_23', 391, 8)

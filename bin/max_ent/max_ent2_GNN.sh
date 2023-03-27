@@ -22,7 +22,7 @@ fi
 
 STARTTIME=$(date +%s)
 i=1001
-dataset='dataset_03_03_23'
+dataset='dataset_03_22_23'
 useL='false'
 useS='true'
 useD='false'
@@ -33,18 +33,12 @@ mode='none'
 bondtype='gaussian'
 bondLength=16.5 # TODO make sure this is correct !!!
 
-diagChiMethod='none'
-dense='false'
-
 k=0
 method='GNN'
-for sample in 324 981 1936 2834 3464
-# 1 2 3 4 5
+for sample in 324 981 1936 2834 3464 1 2 3 4 5
 do
   gridSize="${dir}/${dataset}/samples/sample${sample}/config.json"
-  for GNNModelID in 387
-   # 379
-   # 380 382
+  for GNNModelID in 390 391
   do
     echo $sample $m
     max_ent

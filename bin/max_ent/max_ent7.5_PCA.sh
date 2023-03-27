@@ -16,15 +16,15 @@ then
   dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
   numIterations=12
-  finalSimProductionSweeps=1000000
+  finalSimProductionSweeps=500000
   equilibSweeps=100000
-  productionSweeps=1000000
+  productionSweeps=500000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
 i=6501
-dataset='dataset_03_03_23'
+dataset='dataset_03_21_23'
 useL='true'
 useS='true'
 useD='true'
@@ -45,15 +45,15 @@ diagCutoff=512
 method='PCA-normalize'
 jobs=0
 waitCount=0
-for k in 4 8
+for k in 8
 do
-  for sample in 1 2 3 4 5 324 981 1936 2834 3464
+  for sample in {1001..1999}
   do
-    gridSize="${dir}/${dataset}/samples/sample${sample}/config.json"
+    gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
     echo "$sample m=$m k=$k"
     max_ent
     jobs=$(( $jobs + 1 ))
-    if [ $jobs -gt 8 ]
+    if [ $jobs -gt 20 ]
     then
       echo 'Waiting'
       waitCount=$(( $waitCount + 1 ))
