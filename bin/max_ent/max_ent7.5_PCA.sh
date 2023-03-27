@@ -2,8 +2,9 @@
 #SBATCH --job-name=maxent6
 #SBATCH --output=logFiles/maxent6.out
 #SBATCH --time=24:00:00
-#SBATCH --partition=depablo-ivyb
-#SBATCH --ntasks=20
+#SBATCH --partition=depablo
+#SBATCH --account=pi-depablo
+#SBATCH --ntasks=24
 #SBATCH --mem=0
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=erschultz@uchicago.edu
@@ -53,7 +54,7 @@ do
     echo "$sample m=$m k=$k"
     max_ent
     jobs=$(( $jobs + 1 ))
-    if [ $jobs -gt 20 ]
+    if [ $jobs -gt 22 ]
     then
       echo 'Waiting'
       waitCount=$(( $waitCount + 1 ))
