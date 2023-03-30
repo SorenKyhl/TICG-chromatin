@@ -53,7 +53,7 @@ m=512
 
 for k in 8
 do
-  for sample in {1001..1450}
+  for sample in {1392..1450}
   do
     gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
     echo "$sample m=$m k=$k"
