@@ -3,7 +3,7 @@
 
 #SBATCH --time=12:00:00
 #SBATCH --account=pi-depablo
-#SBATCH --partition=broadwl
+#SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=10
 #SBATCH --mem-per-cpu=2000
 #SBATCH --mail-type=END

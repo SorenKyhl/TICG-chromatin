@@ -40,7 +40,7 @@ waitCount=0
 for sample in {201..210}
 do
   gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
-  for GNNModelID in 392 393
+  for GNNModelID in 394 395
   do
     echo $sample $m
     max_ent

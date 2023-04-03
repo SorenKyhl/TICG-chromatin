@@ -840,12 +840,59 @@ def check_interpolation():
         with open(osp.join(dir, 'samples', f'sample{1000+sample}/import.log'), 'a') as f:
             f.write(first)
 
-def check_s_dag():
-    s = np.array([[1,3],[-2, -6]])
-    sdag = np.multiply(np.sign(s), np.log(np.abs(s)+1))
-    print(sdag)
-    s2 = np.multiply(np.sign(sdag), np.exp(np.abs(sdag))-1)
-    print(s2)
+def make_dataset_of_converged(dataset):
+    '''
+    Inputs:
+        dataset: filename of experimental dataset
+    '''
+    dir = '/project2/depablo/erschultz'
+    # dir = '/home/erschultz'
+    data_dir = osp.join(dir, dataset)
+    odata_dir = osp.join(dir, f'{dataset}-max_ent')
+    s_dir = osp.join(data_dir, 'samples')
+    os_dir = osp.join(odata_dir, 'samples')
+
+    if not osp.exists(odata_dir):
+        os.mkdir(odata_dir, mode=0o755)
+        os.mkdir(os_dir, mode=0o755)
+
+    converged_count = 0
+    count = 0
+    for file in os.listdir(s_dir):
+        if file.startswith('sample'):
+            f_dir = osp.join(s_dir, file)
+            pca_dir = osp.join(f_dir, 'PCA-normalize-S/k8/replicate1')
+            conv_file = osp.join(pca_dir, 'convergence.txt')
+            converged = False
+            eps = 1e-3
+            if osp.exists(conv_file):
+                conv = np.loadtxt(conv_file)
+                for ind in range(1, len(conv)):
+                    diff = conv[ind] - conv[ind-1]
+                    if np.abs(diff) < eps and conv[ind] < conv[0]:
+                        converged = True
+
+                if converged:
+                    final_it_dir = get_final_max_ent_folder(pca_dir)
+                    converged_count += 1
+                    of_dir = osp.join(os_dir, file)
+                    if not osp.exists(of_dir):
+                        os.mkdir(of_dir)
+
+                    shutil.copy(osp.join(pca_dir, 'y.npy'), osp.join(of_dir, 'y.npy'))
+                    shutil.copy(osp.join(pca_dir, 'L.npy'), osp.join(of_dir, 'L.npy'))
+                    shutil.copy(osp.join(pca_dir, final_it_dir, 'config.json'), osp.join(of_dir, 'config.json'))
+                    with open(osp.join(pca_dir, final_it_dir, 'config.json')) as f:
+                        config = json.load(f)
+                    diag_chi_continuous = calculate_diag_chi_step(config)
+                    print(diag_chi_continuous)
+                    np.save(osp.join(of_dir, 'diag_chis_continuous.npy'), diag_chi_continuous)
+
+                    # shutil.copytree(osp.join(final_it_dir, 'production_out'), osp.join(of_dir, 'data_out'))
+                else:
+                    count += 1
+    print(f'{converged_count} out of {converged_count+count} converged')
+
 
 
 
@@ -863,4 +910,4 @@ if __name__ == '__main__':
     # plot_p_s('dataset_bond_grid', params = False, grid_size = True)
     # gnn_of_max_ent([207], 8, 378)
     # check_interpolation()
-    check_s_dag()
+    make_dataset_of_converged('dataset_03_21_23')
