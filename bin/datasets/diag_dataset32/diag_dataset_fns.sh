@@ -16,8 +16,8 @@ useL='true'
 useE='true'
 useD='true'
 
-nSweeps=5000
-dumpFrequency=1000
+nSweeps=500000
+dumpFrequency=10000
 TICGSeed=10
 dense='false'
 diagBins=512
