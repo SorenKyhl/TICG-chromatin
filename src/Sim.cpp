@@ -40,7 +40,6 @@ void Sim::run() {
   if (dmatrix_on) { setupDmatrix(); }
 	if (lmatrix_on) { setupLmatrix(); }
   if (smatrix_on) { setupSmatrix(); }
-	if (ematrix_on) { setupEmatrix(); }
 	grid.generate();        // creates the grid locations
 	grid.setActiveCells();  // populates the active cell locations
 	grid.meshBeads(beads);  // populates the grid locations with beads;
@@ -310,14 +309,11 @@ nlohmann::json Sim::readInput() {
   assert(config.contains("constant_chi")); constant_chi = config["constant_chi"];
   lmatrix_filename="none";
   smatrix_filename="none";
-  ematrix_filename="none";
   dmatrix_filename="none";
   assert(config.contains("lmatrix_on")); lmatrix_on = config["lmatrix_on"];
   if (config.contains("lmatrix_filename")) {lmatrix_filename = config["lmatrix_filename"];}
 	assert(config.contains("smatrix_on")); smatrix_on = config["smatrix_on"];
   if (config.contains("smatrix_filename")) {smatrix_filename = config["smatrix_filename"];}
-	assert(config.contains("ematrix_on")); ematrix_on = config["ematrix_on"];
-  if (config.contains("ematrix_filename")) {ematrix_filename = config["ematrix_filename"];}
 	assert(config.contains("dmatrix_on")); dmatrix_on = config["dmatrix_on"];
   if (config.contains("dmatrix_filename")) {dmatrix_filename = config["dmatrix_filename"];}
   assert(config.contains("boundary_attract_on")); boundary_attract_on = config["boundary_attract_on"];
@@ -411,6 +407,9 @@ void Sim::makeOutputFiles() {
 	// std::string overloads + operator and resturns std::string, need to convert back to c_str()
 	xyz_out = fopen(xyz_out_filename.c_str(), "w");
 	energy_out = fopen((energy_out_filename).c_str(), "w");
+  fprintf(energy_out, "sweep\t bonded\t plaid\t diagonal\t boundary\t total\n");
+  fclose(energy_out);
+
 	obs_out = fopen((obs_out_filename).c_str(), "w");
 	diag_obs_out = fopen((diag_obs_out_filename).c_str(), "w");
   constant_obs_out = fopen((constant_obs_out_filename).c_str(), "w");
@@ -747,10 +746,6 @@ double Sim::getNonBondedEnergy(const std::unordered_set<Cell*>& flagged_cells) {
 		else if (smatrix_on)
 		{
 			U += grid.SLmatrixEnergy(flagged_cells, smatrix);
-		}
-		else if (ematrix_on)
-		{
-			U += grid.EmatrixEnergy(flagged_cells, ematrix);
 		}
 		else
 		{
@@ -1440,10 +1435,6 @@ void Sim::dumpEnergy(int sweep) {
     {
       plaid = grid.SLmatrixEnergy(grid.active_cells, smatrix);
     }
-    else if (ematrix_on)
-    {
-      plaid = grid.EmatrixEnergy(grid.active_cells, ematrix);
-    }
     else
     {
       plaid = grid.energy(grid.active_cells, chis);
@@ -1507,7 +1498,7 @@ void Sim::dumpObservables(int sweep) {
   }
 
 	if (diagonal_on || dmatrix_on)
-  // if dmatrix_on and (smatrix_on or ematrix_on), diagonal_on will be set to False for computational efficiency
+  // if dmatrix_on and smatrix_on , diagonal_on will be set to False for computational efficiency
 	{
 		double Udiag = grid.diagEnergy(grid.active_cells, diag_chis); // to update phis_diag? jan 28-2022
 		diag_obs_out = fopen(diag_obs_out_filename.c_str(), "a");
@@ -1620,8 +1611,15 @@ void Sim::setupLmatrix() {
     // try and create lmatrix from chi and psi
     lmatrix = psi*chis*psi.transpose();
   }
-  std::cout << "loaded Lmatrix, first element: " << lmatrix(0,0) << std::endl;
+  std::cout << "loaded L, first row: " << lmatrix.row(0) << std::endl;
 
+  // convert to L prime
+  Eigen::MatrixXd left = lmatrix + lmatrix.transpose();
+  Eigen::MatrixXd right = lmatrix.diagonal().asDiagonal();
+
+  lmatrix = left - right;
+
+  std::cout << "converted to L prime, first row: " << lmatrix.row(0) << std::endl;
 }
 
 
@@ -1636,43 +1634,23 @@ void Sim::setupSmatrix() {
   			smatrixfile >> smatrix(i,j);
   		}
   	}
-	}
-  else
-  {
-    Eigen::MatrixXd dmatrix_diag = dmatrix.diagonal().asDiagonal();
-    smatrix = lmatrix;
-    dmatrix += dmatrix_diag;
-    smatrix += dmatrix;
-    diagonal_on = false;
-    lmatrix_on = false;
-  }
+    std::cout << "loaded S, first element: " << smatrix(0,0) << std::endl;
 
-	std::cout << "loaded Smatrix, first element: " << smatrix(0,0) << std::endl;
-}
-
-void Sim::setupEmatrix() {
-	std::ifstream ematrixfile(ematrix_filename);
-  ematrix.resize(nbeads, nbeads);
-
-	if ( ematrixfile.good() ) {
-    for (int i=0; i<nbeads; i++) {
-      for (int j=0; j<nbeads; j++) {
-        ematrixfile >> ematrix(i,j);
-      }
-    }
-	}
-  else
-  {
-    // first get smatrix
-    Sim::setupSmatrix();
-    smatrix_on = false;
-
+    // convert to S prime
     Eigen::MatrixXd left = smatrix + smatrix.transpose();
     Eigen::MatrixXd right = smatrix.diagonal().asDiagonal();
 
-    ematrix = left - right;
+    smatrix = left - right;
+
+    std::cout << "Converted to S prime, first element: " << smatrix(0,0) << std::endl;
+	}
+  else
+  {
+    smatrix = lmatrix + (dmatrix * 2); //lmatrix is lmatrix prime
+    std::cout << "Converted to S prime, first element: " << smatrix(0,0) << std::endl;
   }
-	std::cout << "loaded Ematrix, first element: " << ematrix(0,0) << std::endl;
+  diagonal_on = false;
+  lmatrix_on = false;
 }
 
 void Sim::setupDmatrix() {
@@ -1697,7 +1675,7 @@ void Sim::setupDmatrix() {
       for (int j=0; j<nbeads; j++)
       {
         int d = std::abs(i - j);
-        if ((d <= Cell::diag_cutoff) && (d >= Cell::diag_start))
+        if ((d <= Cell::diag_cutoff) && (d >= Cell::diag_start) && ( d >= 1))
         {
           d -= Cell::diag_start; // TODO check that this works for non-zero diag_start
           int d_index = Cell::binDiagonal(d);
@@ -1710,5 +1688,6 @@ void Sim::setupDmatrix() {
       }
     }
   }
-  std::cout << "loaded Dmatrix, first element: " << dmatrix(0,0) << std::endl;
+  assert (dmatrix(1,1) == 0); // main diagonal must be zero
+  std::cout << "loaded Dmatrix, first diagonal: " << dmatrix(1,1) << std::endl;
 }

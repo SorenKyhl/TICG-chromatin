@@ -1,6 +1,6 @@
 #! /bin/bash
-#SBATCH --job-name=maxent7
-#SBATCH --output=logFiles/maxent7.out
+#SBATCH --job-name=maxent7_5
+#SBATCH --output=logFiles/maxent7_5.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo
 #SBATCH --account=pi-depablo
@@ -10,7 +10,7 @@
 #SBATCH --mail-user=erschultz@uchicago.edu
 
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
-i=6001
+i=6501
 
 # nonbonded plaid
 useL='true'
@@ -53,7 +53,7 @@ m=512
 
 for k in 8
 do
-  for sample in {1392..1450}
+  for sample in {1750..1999}
   do
     gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
     echo "$sample m=$m k=$k"

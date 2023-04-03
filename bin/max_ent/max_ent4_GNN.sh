@@ -24,8 +24,7 @@ STARTTIME=$(date +%s)
 i=3010
 dataset='dataset_01_26_23'
 useL='false'
-useS='false'
-useE='true'
+useS='true'
 useD='false'
 m=512
 chiMethod='none'
@@ -41,11 +40,11 @@ k=0
 method='GNN'
 jobs=0
 waitCount=0
-for sample in {283..292}
+for sample in {201..210}
 do
-  bondLength=16.5
-  gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
-  for GNNModelID in 371 372
+  # gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
+  gridSize=28.7
+  for GNNModelID in 373
    # 376 377
    # 243 254 262 265 267 271 276
   do

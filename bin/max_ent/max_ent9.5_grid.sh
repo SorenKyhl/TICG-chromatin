@@ -1,6 +1,6 @@
 #! /bin/bash
-#SBATCH --job-name=maxent9
-#SBATCH --output=logFiles/maxent9.out
+#SBATCH --job-name=maxent9_5
+#SBATCH --output=logFiles/maxent9_5.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo
 #SBATCH --account=pi-depablo
@@ -10,7 +10,7 @@
 #SBATCH --mail-user=erschultz@uchicago.edu
 
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
-i=8001
+i=8501
 
 # nonbonded
 useL='false'
@@ -47,7 +47,7 @@ productionSweeps=50000
 dataset='dataset_03_21_23'
 m=512
 
-for sample in {1208..1450}
+for sample in {1451..1999}
 do
   echo $sample $m
   max_ent

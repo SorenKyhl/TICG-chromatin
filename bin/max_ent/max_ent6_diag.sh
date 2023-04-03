@@ -1,6 +1,6 @@
 #! /bin/bash
-#SBATCH --job-name=maxent7
-#SBATCH --output=logFiles/maxent7.out
+#SBATCH --job-name=maxent6
+#SBATCH --output=logFiles/maxent6.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo-ivyb
 #SBATCH --ntasks=20
@@ -23,7 +23,7 @@ then
 fi
 
 STARTTIME=$(date +%s)
-i=6010
+i=5010
 dataset='dataset_02_04_23'
 useL='false'
 useS='false'

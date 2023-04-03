@@ -23,8 +23,7 @@ fi
 STARTTIME=$(date +%s)
 i=1
 useL='false'
-useS='false'
-useE='true'
+useS='true'
 useD='false'
 m=512
 chiMethod='none'
@@ -38,12 +37,13 @@ dense='false'
 
 k=0
 method='GNN'
-for sample in 204
+for sample in {201..210}
 do
   dataset="dataset_02_04_23/samples/sample${sample}/PCA-normalize-E/k8/replicate1"
   gridSize="${dir}/dataset_02_04_23/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
-  sample="${sample}_edit"
-  for GNNModelID in 380
+  # gridSize=24
+  sample="${sample}_copy"
+  for GNNModelID in 378
    # 382
   do
     echo $sample $m

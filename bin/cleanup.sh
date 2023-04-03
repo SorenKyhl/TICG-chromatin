@@ -9,7 +9,10 @@
 #SBATCH --mail-type=END
 #SBATCH --mail-user=erschultz@uchicago.edu
 
-dir='/project/depablo/erschultz'
+dir='/project2/depablo/erschultz/dataset_03_21_23/samples'
 cd $dir
 
-rm -r dataset*
+for i in {1..999}
+do
+  rm -r  "sample${i}"
+done

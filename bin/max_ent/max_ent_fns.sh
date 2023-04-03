@@ -1,25 +1,24 @@
 #! /bin/bash
-source activate python3.9_pytorch1.9_cuda10.2
+source activate python3.9_pytorch1.9
 module load gcc/10.2.0
 
 # directories
 resources=~/TICG-chromatin/utils
 results=~/sequences_to_contact_maps/results
 dir='/project2/depablo/erschultz'
-scratchDir='/scratch/midway2/erschultz'
+scratchDir='/home/erschultz/scratch'
 
 # sweep params
-productionSweeps=300000
-finalSimProductionSweeps=1000000
+productionSweeps=500000
+finalSimProductionSweeps=500000
 equilibSweeps=50000
-numIterations=30 # iteration 1 + numIterations is production run to get contact map
+numIterations=12 # iteration 1 + numIterations is production run to get contact map
 parallel='false'
 numThreads=1
 
 # energy params
 useL='true'
-useE='true'
-useS='false'
+useS='true'
 useD='true'
 
 # general params
@@ -45,7 +44,8 @@ beadVol=520
 constantChi=0
 
 # diag params
-diagChiMethod='linear'
+diagChiMethod='none'
+dense='false'
 diagBins=32
 maxDiagChi=0
 chiDiagSlope=1
@@ -143,7 +143,7 @@ max_ent_inner () {
   python3 ~/TICG-chromatin/scripts/get_params.py --config_ifile "${resources}/default_config_maxent.json" --method=$method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --cell_line $cellLine --epi_data_type $dataType --resolution $resolution --start $start --end $end --chromosome $chrom --ChromHMM_data_file $chromHMMData --gnn_model_path $GNNModelPath --mlp_model_path $MLPModelPath --seq_seed $seqSeed --chi_method $chiMethod --min_chi=-1 --max_chi=1 --chi_seed $chiSeed --diag_chi_method $diagChiMethod --diag_bins $diagBins --max_diag_chi $maxDiagChi --dense_diagonal_on $dense --dense_diagonal_cutoff $denseCutoff --dense_diagonal_loading $denseLoading --small_binsize $smallBinSize --big_binsize $bigBinSize --n_small_bins $nSmallBins --n_big_bins $nBigBins --diag_start $diagStart --diag_cutoff $diagCutoff --diag_chi_slope $chiDiagSlope --diag_chi_scale $chiDiagScale > params.log
 
   echo "starting get_config"
-  python3 ~/TICG-chromatin/scripts/get_config.py --parallel $parallel --num_threads $numThreads --m $m --max_ent --mode $mode --bond_type $bondType --bond_length $bondLength --grid_size $gridSize --bead_vol $beadVol --dense_diagonal_on $dense --use_lmatrix $useL --use_ematrix $useE --use_smatrix $useS --use_dmatrix $useD --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $TICGSeed --sample_folder $sampleFolder --load_configuration_filename $init_config --phi_chromatin $phiChromatin --boundary_type $boundaryType --constant_chi $constantChi > config.log
+  python3 ~/TICG-chromatin/scripts/get_config.py --parallel $parallel --num_threads $numThreads --m $m --max_ent --mode $mode --bond_type $bondType --bond_length $bondLength --grid_size $gridSize --bead_vol $beadVol --dense_diagonal_on $dense --use_lmatrix $useL --use_smatrix $useS --use_dmatrix $useD --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $TICGSeed --sample_folder $sampleFolder --load_configuration_filename $init_config --phi_chromatin $phiChromatin --boundary_type $boundaryType --constant_chi $constantChi > config.log
 
 
   # generate goals
@@ -216,11 +216,6 @@ format_method () {
     method_fmt="${method_fmt}-S"
   fi
 
-  if [ $useE = 'true' ]
-  then
-    method_fmt="${method_fmt}-E"
-  fi
-
   # seed
   if [ $useGroundTruthSeed = 'true' ]
   then
@@ -233,7 +228,10 @@ format_method () {
     method_fmt="${method_fmt}-diagMLP-${MLPModelID}"
   fi
 
-  echo $method_fmt
+  if [ $mode = 'diag' ]
+  then
+    method_fmt="${method_fmt}-diag"
+  fi
 }
 
 param_setup(){

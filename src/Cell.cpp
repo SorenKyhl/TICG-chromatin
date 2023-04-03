@@ -120,30 +120,10 @@ double Cell::getSLmatrixEnergy(const Eigen::MatrixXd &SLmatrix)
 
 	for (int i=0; i<imax; i++)
 	{
-		for(int j=0; j<imax; j++)
+		for(int j=i; j<imax; j++)
 		{
 
 			U += SLmatrix(indices[i],indices[j]) * beadvol/vol;
-		}
-	}
-	return U;
-}
-
-double Cell::getEmatrixEnergy(const Eigen::MatrixXd &Ematrix)
-{
-	double U = 0;
-	std::vector<int> indices;
-	int imax = (int) contains.size();
-	for (const auto& elem : contains)
-	{
-		indices.push_back(elem->id);
-	}
-	assert(imax == indices.size());
-	for (int i=0; i<imax; i++)
-	{
-		for(int j=i; j<imax; j++)
-		{
-			U += Ematrix(indices[i],indices[j]) * beadvol/vol;
 		}
 	}
 	return U;
@@ -162,21 +142,6 @@ double Cell::getDmatrixEnergy(const Eigen::MatrixXd &Dmatrix)
 
 	assert(imax == indices.size());
 
-	// this also works
-	// for (int i=0; i<imax; i++)
-	// {
-	// 	for(int j=0; j<imax; j++)
-	// 	{
-	// 		if (i == j)
-	// 		{
-	// 			U += Dmatrix[indices[i]][indices[j]] * beadvol/vol * 2;
-	// 		}
-	// 		else
-	// 		{
-	// 			U += Dmatrix[indices[i]][indices[j]] * beadvol/vol;
-	// 		}
-	// 	}
-	// }
 	for (int i=0; i<imax; i++)
 	{
 		for(int j=i; j<imax; j++)
@@ -186,32 +151,6 @@ double Cell::getDmatrixEnergy(const Eigen::MatrixXd &Dmatrix)
 	}
 	return U;
 }
-//
-// int Cell::binDiagonal(int d)
-// {
-// 	int bin_index = -1;
-//
-// 	if (dense_diagonal_on)
-// 	{
-// 		int dense_cutoff = n_small_bins * small_binsize;
-// 		// diagonal chis are binned in a dense set (small bins) from d=0 to d=dense_cutoff,
-// 		// then a sparse set (large bins) from d=cutoff to d=diag_cutoff
-// 		if ( d > dense_cutoff )
-// 		{
-// 			bin_index = n_small_bins + std::floor( (d - dense_cutoff) / big_binsize );
-// 		}
-// 		else
-// 		{
-// 			bin_index = std::floor( d / small_binsize );
-// 		}
-// 	}
-// 	else
-// 	{
-// 		// diagonal chis are linearly spaced from d=0 to d=nbeads
-// 		bin_index = std::floor( d / diag_binsize );
-// 	}
-// 	return bin_index;
-// }
 
 int Cell::binDiagonal(int d)
 {
@@ -258,13 +197,14 @@ double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
 		indices.push_back(elem->id);
 	}
 
-	// count pairwise contacts  -- include self-self interaction!!
+	// count pairwise contacts
+	// TODO no longer includeing self-self interaction!!
 	for (int i=0; i<imax; i++)
 	{
 		for (int j=i; j<imax; j++)
 		{
 			int d = std::abs(indices[i] - indices[j]);
-			if ((d <= diag_cutoff) && (d >= diag_start))
+			if ((d <= diag_cutoff) && (d >= diag_start) && (d >= 1))
 			{
 				d -= diag_start; // TODO check that this works for non-zero diag_start
 				d_index = binDiagonal(d);

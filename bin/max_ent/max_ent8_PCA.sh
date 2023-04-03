@@ -26,8 +26,7 @@ STARTTIME=$(date +%s)
 i=7001
 dataset='dataset_02_04_23'
 useL='true'
-useS='false'
-useE='true'
+useS='true'
 useD='true'
 m=512
 chiMethod='zeros'
@@ -35,7 +34,6 @@ mode='both'
 
 bondtype='gaussian'
 bondLength=16.5
-phiChromatin=0.06
 gridSize=24
 
 diagChiMethod="zeros"
@@ -53,7 +51,7 @@ do
   for sample in {218..282}
   do
     # gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
-    echo $sample $m
+    echo "$sample m=$m k=$k"
     max_ent
     jobs=$(( $jobs + 1 ))
     if [ $jobs -gt 16 ]

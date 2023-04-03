@@ -17,16 +17,16 @@ else
   source activate python3.9_pytorch1.9_cuda10.2
 fi
 
-dataset='dataset_02_20_23'
-samples='324-981-1936-2834-3464'
+dataset='dataset_02_16_23'
+samples='1-2-3-4-5-324-981-1936-2834-3464'
 dataFolder="${dataDir}/${dataset}"
 convergenceDefinition='strict'
 python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples --convergence_definition $convergenceDefinition
 #
 #
-for sample in 324 981 1936 2834 3464
-do
-  python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample --convergence_definition $convergenceDefinition &
-done
+# for sample in 324 981 1936 2834 3464
+# do
+#   python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --sample $sample --convergence_definition $convergenceDefinition &
+# done
 
 wait

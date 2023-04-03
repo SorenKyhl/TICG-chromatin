@@ -45,7 +45,6 @@ public:
 	double boundaryEnergy(const std::unordered_set<Cell*>& flagged_cells, const double boundary_chi);
 	// double boundaryEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Smatrix);
 	double SLmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const Eigen::MatrixXd &SLmatrix);
-	double EmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const Eigen::MatrixXd &Ematrix);
 	double DmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const Eigen::MatrixXd &Dmatrix);
 	double get_ij_Contacts(int i, int j);
 	double getContacts();

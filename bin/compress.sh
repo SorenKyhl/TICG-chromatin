@@ -3,13 +3,13 @@
 #SBATCH --output=logFiles/compress.out
 #SBATCH --time=24:00:00
 #SBATCH --account=pi-depablo
-#SBATCH --partition=depablo-csl
-#SBATCH --ntasks=5
-
+#SBATCH --partition=depablo
+#SBATCH --ntasks=10
+#SBATCH --mem-per-cpu=1000
 
 compress(){
   dataset=$1
-  for i in {1..5000}
+  for i in {1..10000}
   do
     cd "${dir}/${dataset}/samples/sample${i}"
     # energy
@@ -33,10 +33,27 @@ compress(){
   rm -r $dataset
 }
 
-dir='/project/depablo/erschultz'
-compress dataset_02_13_23
+to_small(){
+  dataset=$1
+  cd $dir
+  small_dataset="${dataset}-small"
+  mkdir $small_dataset
+  cd $small_dataset
+  mkdir samples
+  for i in {1000..2000}
+  do
+    cd "${dir}/${dataset}/samples"
+    cp -r "sample${i}" "${dir}/${small_dataset}/samples"
+  done
+
+  cd $dir
+  tar -czvf "${dataset}.tar.gz" $small_dataset
+}
+
+dir='/home/erschultz'
 
 dir='/project2/depablo/erschultz'
-compress dataset_02_06_23
-compress dataset_02_07_23
-compress dataset_02_08_23
+cd $dir
+compress dataset_12_05_22
+compress dataset_11_18_22
+compress dataset_11_21_22

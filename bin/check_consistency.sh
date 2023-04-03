@@ -3,13 +3,13 @@
 source ~/TICG-chromatin/bin/random/random_fns.sh
 
 param_setup
-m=1024
+m=512
 dataFolder="/home/erschultz/dataset_test"
 scratchDir='/home/erschultz/scratch'
 relabel='none'
 lmbda=0.8
 chiSeed=12
-seqSeed=13
+seqSeed=11
 chiMethod="random"
 seqMethod="random"
 minChi=-0.4
@@ -36,14 +36,14 @@ run()  {
 }
 
 k=4
-nSweeps=10000
-dumpFrequency=1000
-dumpStatsFrequency=100
+nSweeps=100
+dumpFrequency=1
+dumpStatsFrequency=1
 trackContactMap='false'
 TICGSeed=10
 dense='true'
 diagBins=32
-minDiagchi=2
+minDiagchi=0
 maxDiagChi=10
 nSmallBins=16
 smallBinSize=4
@@ -59,49 +59,29 @@ chiDiagMethod="linear"
 updateContactsDistance='false'
 m=512
 
-# i=1000
-# useE='false'
-# useS='false'
-# useD='false'
-# run &
-#
-# i=1001
-# useE='false'
-# useS='true'
-# useD='false'
-# run &
-#
-# i=1002
-# useE='true'
-# useS='false'
-# useD='false'
-# run &
-#
-# i=1003
-# useE='false'
-# useS='true'
-# useD='true'
-# run &
-#
-# i=1004
-# useE='true'
-# useS='false'
-# useD='true'
-# run &
-
-sample=1462
-baseDataFolder="/home/erschultz/dataset_11_18_22/samples/sample${sample}"
-chiMethod="none"
-m=1024
-
-i=1005
-seqMethod="${baseDataFolder}/sd.npy-S"
-chiDiagMethod="none"
+i=1000
+useL='false'
+useS='false'
+useD='false'
 run &
 
-i=1006
-seqMethod="${baseDataFolder}/sd_wrong.npy-S"
-chiDiagMethod="none"
+i=1001
+useL='true'
+useS='false'
+useD='false'
 run &
+
+i=1002
+useL='false'
+useS='false'
+useD='true'
+run &
+
+i=1003
+useL='true'
+useS='true'
+useD='true'
+run &
+
 
 wait

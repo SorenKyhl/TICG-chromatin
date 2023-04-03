@@ -12,24 +12,20 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch_geometric
-
-sys.path.insert(1, '/home/erschultz/TICG-chromatin/scripts')
 from sklearn.cluster import KMeans
 from sklearn.decomposition import NMF, PCA, KernelPCA
 
 sys.path.append('/home/erschultz')
+
 from sequences_to_contact_maps.scripts.argparse_utils import (
     ArgparserConverter, finalize_opt, get_base_parser)
 from sequences_to_contact_maps.scripts.clean_directories import \
     clean_directories
-from sequences_to_contact_maps.scripts.energy_utils import s_to_E
 from sequences_to_contact_maps.scripts.InteractionConverter import \
     InteractionConverter
 from sequences_to_contact_maps.scripts.knightRuiz import knightRuiz
-from sequences_to_contact_maps.scripts.load_utils import (load_E_S,
-                                                          load_final_max_ent_S,
-                                                          load_X_psi, load_Y,
-                                                          load_Y_diag)
+from sequences_to_contact_maps.scripts.load_utils import (load_L, load_X_psi,
+                                                          load_Y, load_Y_diag)
 from sequences_to_contact_maps.scripts.neural_nets.utils import (
     get_dataset, load_saved_model)
 from sequences_to_contact_maps.scripts.plotting_utils import (
@@ -263,7 +259,7 @@ class GetSeq():
                 args.normalize = True
             elif mode == 'scale':
                 args.scale = True
-            elif mode in {'e', 's', 'l'}:
+            elif mode in {'s', 'l'}:
                 args.use_energy = True
             elif mode == 'random':
                 args.append_random = True
@@ -828,7 +824,7 @@ class GetSeq():
                     seq = np.concatenate((seq, seq_random), axis = 1)
 
                 if args.use_energy:
-                    e, s = load_E_S(self.sample_folder, psi)
+                    L = load_L(self.sample_folder, psi)
             elif args.method.startswith('k_means') or args.method.startswith('k-means'):
                 y_diag = np.load(osp.join(self.sample_folder, 'y_diag.npy'))
                 seq, args.labels = self.get_k_means_seq(y_diag)
@@ -1030,7 +1026,7 @@ class GetPlaidChi():
             conv = InteractionConverter(self.k, chi)
             max_it = 10
             it = 0
-            while not GetPlaidChi.unique_rows(conv.getS()) and it < max_it: # defaults to False
+            while not GetPlaidChi.unique_rows(conv.getL()) and it < max_it: # defaults to False
                 # generate random chi
                 conv.chi = _generate_random_chi(rng)
                 it += 1
@@ -1398,7 +1394,7 @@ class GetEnergy():
         if self.args.method is None:
             return
 
-        if not (self.args.use_lmatrix or self.args.use_ematrix or self.args.use_smatrix):
+        if not (self.args.use_lmatrix or self.args.use_smatrix):
             # should have been handled by GetSeq already
             return
 
@@ -1424,12 +1420,7 @@ class GetEnergy():
     def _process_method(self, args):
         # default values
         args.use_lmatrix = False
-        args.use_ematrix = False
         args.use_smatrix = False
-        args.load_maxent = False # True to load e matrix learned from prior maxent and re-run
-        args.project = False # True to project e into space of ground truth bead labels
-            # (assumes load_maxent is True)
-        args.rank = None # max rank for energy matrix
         args.kr = False # True to use kr as input
         args.clean = False # True to clean input
 
@@ -1440,8 +1431,6 @@ class GetEnergy():
 
         if 's' in modes:
             args.use_smatrix = True
-        if 'e' in modes:
-            args.use_ematrix = True
         if 'l' in modes:
             args.use_lmatrix = True
         if 'kr' in modes:
@@ -1451,106 +1440,76 @@ class GetEnergy():
 
         for mode in modes:
             if mode.startswith('rank'):
-                args.rank = int(mode[4])
+                raise Exception('deprecated')
+                # args.rank = int(mode[4])
 
     def set_up_energy(self):
         args = self.args
         L = None
-        e = None
-        s = None
+        S = None
 
-        if args.load_maxent:
-            method_split = re.split(r'[-+]', args.method)
-            method_split.remove('load_maxent')
-            method_split.remove('e')
-            if 'project' in method_split:
-                method_split.remove('project')
-            original_method = ''.join(method_split)
-            replicate_path = osp.join(self.sample_folder, original_method, f'k{args.k}',
-                                        'replicate1')
-            assert osp.exists(replicate_path), f"path does not exist: {replicate_path}"
-            s = load_final_max_ent_S(args.k, replicate_path, max_it_path = None)
-            e = s_to_E(s)
-        elif osp.exists(self.method_path):
+        if osp.exists(self.method_path):
             print('Method path exists')
-            if args.use_ematrix:
-                e = np.load(self.method_path)
-            elif args.use_smatrix:
-                s = np.load(self.method_path)
+            if args.use_smatrix:
+                S = np.load(self.method_path)
             elif args.use_lmatrix:
                 L = np.load(self.method_path)
         else:
             args.method = args.method.lower()
             if args.method.startswith('ground_truth'):
-                e, s = load_E_S(self.sample_folder)
+                L = load_L(self.sample_folder)
             elif args.method.startswith('gnn'):
                 if args.use_smatrix:
-                    s = self.get_energy_gnn(args.gnn_model_path, self.sample_folder)
-                if args.use_ematrix:
-                    s = self.get_energy_gnn(args.gnn_model_path, self.sample_folder)
-                    e = s_to_E(s)
+                    S = self.get_energy_gnn(args.gnn_model_path, self.sample_folder)
             else:
                 raise Exception(f'Unkown method: {args.method}')
 
-        if args.project:
-            _, psi = load_X_psi(self.sample_folder)
-            s, e = project_S_to_psi_basis(s, psi)
-        if s is not None:
-            s = crop(s, self.m)
-            e = s_to_E(s)
-        elif e is not None:
-            e = crop(e, self.m)
-        if args.rank is not None:
-            pca = PCA(n_components = args.rank)
-            s_transform = pca.fit_transform((s+s.T)/2)
-            print(s_transform.shape)
-            print(f'Rank of S: {np.linalg.matrix_rank(s_transform)}')
-            print(pca.components_.shape)
-            s = pca.inverse_transform(s_transform)
-            e = s_to_E(s)
+        # if args.project:
+        #     _, psi = load_X_psi(self.sample_folder)
+        #     s, e = project_S_to_psi_basis(s, psi)
+        if L is not None:
+            L = crop(L, self.m)
+        elif S is not None:
+            S = crop(S, self.m)
+        # if args.rank is not None:
+        #     pca = PCA(n_components = args.rank)
+        #     L_transform = pca.fit_transform((L+L.T)/2)
+        #     print(s_transform.shape)
+        #     print(f'Rank L_transform L: {np.linalg.matrix_rank(L_transform)}')
+        #     print(pca.components_.shape)
+        #     L = pca.inverse_transform(L_transform)
         if args.use_lmatrix:
             self.config["lmatrix_filename"] = "l_matrix.txt"
             np.savetxt('l_matrix.txt', L, fmt = '%.3e')
             np.save('L.npy', L)
         if args.use_smatrix:
             self.config["smatrix_filename"] = "s_matrix.txt"
-            np.savetxt('s_matrix.txt', s, fmt = '%.3e')
-            np.save('s.npy', s)
-        elif args.use_ematrix:
-            self.config["ematrix_filename"] = "e_matrix.txt"
-            # TODO use https://github.com/rogersce/cnpy to allow cpp to load e.npy
-            np.savetxt('e_matrix.txt', e, fmt = '%.3e')
-            np.save('e.npy', e)
-            if s is not None:
-                np.save('s.npy', s)
+            np.savetxt('s_matrix.txt', S, fmt = '%.3e')
+            np.save('S.npy', S)
 
         if self.m < 2000:
             try:
                 if L is not None:
                     print(f'Rank of L: {np.linalg.matrix_rank(L)}')
-                if s is not None:
-                    print(f'Rank of S: {np.linalg.matrix_rank(s)}')
-                if e is not None:
-                    print(f'Rank of E: {np.linalg.matrix_rank(e)}\n')
+                if S is not None:
+                    print(f'Rank of S: {np.linalg.matrix_rank(S)}')
+
             except np.linalg.LinAlgError as e:
                 print(e)
 
         # look for ground truth:
-        if self.sample_folder is not None:
-            sd_file = osp.join(self.sample_folder, 'sd.npy')
-            if osp.exists(sd_file):
-                ground_truth_sd = np.load(sd_file)
+        # if self.sample_folder is not None:
+        #     file = osp.join(self.sample_folder, 'S.npy')
+        #     if osp.exists(file):
+        #         ground_truth_S = np.load(file)
 
         if self.plot:
-            if args.use_smatrix:
+            if args.use_lmatrix:
                 plot_matrix(L, 'L.png', vmin = 'min', vmax = 'max',
                             cmap = 'blue-red', title = 'L')
             if args.use_smatrix:
-                plot_matrix(s, 's.png', vmin = 'min', vmax = 'max',
+                plot_matrix(S, 'S.png', vmin = 'min', vmax = 'max',
                             cmap = 'blue-red', title = 'S')
-            elif args.use_ematrix:
-                plot_matrix(e, 'e.png', vmin = 'min', vmax = 'max',
-                            cmap = 'blue-red', title = 'E')
 
     def get_energy_gnn(self, model_path, sample_path):
         '''
@@ -1644,7 +1603,7 @@ class GetEnergy():
             if opt.output_preprocesing == 'log':
                 yhat = np.multiply(np.sign(yhat), np.exp(np.abs(yhat)) - 1)
 
-                # ln(E + D) doesn't simplify, so these can't be compared to the ground truth
+                # ln(L + D) doesn't simplify, so these can't be compared to the ground truth
                 plaid_hat = model.plaid_component(data)
                 diagonal_hat = model.diagonal_component(data)
             else:

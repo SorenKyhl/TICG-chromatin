@@ -22,8 +22,7 @@ from get_goal_experimental import get_diag_goal, get_plaid_goal
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.energy_utils import (
-    calculate_D, calculate_diag_chi_step, calculate_E_S, calculate_S,
-    calculate_SD_ED)
+    calculate_D, calculate_diag_chi_step, calculate_S)
 from sequences_to_contact_maps.scripts.knightRuiz import knightRuiz
 from sequences_to_contact_maps.scripts.load_utils import (
     get_final_max_ent_folder, load_all, load_contact_map, load_Y)
@@ -500,8 +499,9 @@ def plot_p_s(dataset, experimental=False, params=False, grid_size=False):
         plt.savefig(osp.join(data_dir, f'meanDist_norm_{norm}.png'))
         plt.close()
 
-def plot_sd():
-    # plot sd matrix at every max ent iteration
+def plot_S():
+    raise Excepton('deprecated - need to fix energy notation')
+    # plot S matrix at every max ent iteration
     dataset = 'dataset_09_30_22'
     dir = f'/home/erschultz/{dataset}/samples'
     sample = 10
@@ -564,101 +564,6 @@ def plot_sd():
     plt.legend()
     plt.savefig(osp.join(rep_dir, 'convergence_mse.png'))
     plt.show()
-
-def compare_y_diag():
-    dir = '/home/erschultz/dataset_test/samples'
-
-    #
-    # for sample in [1, 2, 3, 4]:
-    #     sample_dir = osp.join(dir, f'sample{sample}')
-    #     y_ticg = np.load(osp.join(sample_dir, 'y.npy'))
-    #     y_diag_ticg = np.load(osp.join(sample_dir, 'y_diag.npy'))
-    #     for sweep in [100000, 250000, 500000, 750000, 1000000]:
-    #         y = np.loadtxt(osp.join(sample_dir, 'data_out', f'contacts{sweep}.txt'))
-    #         np.save(osp.join(sample_dir, f'y_sweep{sweep}.npy'), y)
-    #         plot_matrix(y, osp.join(sample_dir, f'y_sweep{sweep}.png'), vmax = 'mean')
-    #
-    #         diff = y_ticg - y
-            # plot_matrix(diff, osp.join(sample_dir, f'y_vs_y_sweep{sweep}.png'),
-            #             title = f'y - y_sweep{sweep}', cmap='bluered')
-    #
-    #         meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
-    #         y_diag = DiagonalPreprocessing.process(y, meanDist)
-            # plot_matrix(y_diag, osp.join(sample_dir, f'y_diag_sweep{sweep}.png'),
-            #             vmax = 'max')
-    #
-    #         diff = y_diag_ticg - y_diag
-            # plot_matrix(diff, osp.join(sample_dir, f'y_diag_vs_y_diag_sweep{sweep}.png'),
-            #             title = f'y_diag - y_diag_sweep{sweep}', cmap='bluered')
-
-    mode='grid'
-    for sample in [1, 2, 3, 4]:
-        sample_dir = osp.join(dir, f'sample{sample}')
-        y_ticg = np.load(osp.join(sample_dir, 'y.npy'))
-        y_diag_ticg = np.load(osp.join(sample_dir, 'y_diag.npy'))
-        for size in [1000, 2500, 5000, 10000]:
-            y = np.loadtxt(osp.join(sample_dir, 'data_out', f'contacts{size}.txt'))
-            np.save(osp.join(sample_dir, f'y_{mode}{size}.npy'), y)
-            plot_matrix(y, osp.join(sample_dir, f'y_{mode}{size}.png'), vmax = 'mean')
-
-            diff = y_ticg - y
-            plot_matrix(diff, osp.join(sample_dir, f'y_vs_y_{mode}{size}.png'),
-                        title = f'y - y_{mode}{size}', cmap='bluered')
-
-            meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
-            y_diag = DiagonalPreprocessing.process(y, meanDist)
-            plot_matrix(y_diag, osp.join(sample_dir, f'y_diag_{mode}{size}.png'), vmax = 'max')
-
-            diff = y_diag_ticg - y_diag
-            plot_matrix(diff, osp.join(sample_dir, f'y_diag_vs_y_diag_{mode}{size}.png'),
-                        title = f'y_diag - y_diag_{mode}{size}', cmap='bluered')
-
-
-    # dir = osp.join(dir, 'sample1')
-    # y_diag = np.load(osp.join(dir, 'y_diag.npy'))
-    # y_diag_log = np.log(y_diag)
-    #
-    # dir = osp.join(dir, 'sample2')
-    # y2_diag = np.load(osp.join(dir, 'y_diag.npy'))
-    # y2_diag_log = np.log(y1000_diag)
-    #
-    # diff = y_diag - y1000_diag
-    # plot_matrix(diff, osp.join(dir, 'diagvs1000diag.png'), 'diag - 1000diag',
-    #             vmin = 'min', vmax = 'max', cmap = 'bluered')
-
-    # diff = y_diag - y5000_diag
-    # plot_matrix(diff, osp.join(dir, 'diagvs5000diag.png'), 'diag - 5000diag',
-    #             vmin = 'min', vmax = 'max', cmap = 'bluered')
-    #
-    # diff = y5000_diag - y1000_diag
-    # plot_matrix(diff, osp.join(dir, 'diag5000vs1000diag.png'),
-    #             '5000diag - 1000diag', vmin = 'min',
-    #             vmax = 'max', cmap = 'bluered')
-    #
-    # diff = y_diag_log - y5000_diag_log
-    # plot_matrix(diff, osp.join(dir, 'diaglogvs5000diaglog.png'),
-    #             'diaglog - 5000diaglog', vmin = 'min',
-    #             vmax = 'max', cmap = 'bluered')
-    #
-    # diff = y5000_diag_log - y1000_diag_log
-    # plot_matrix(diff, osp.join(dir, 'diag5000logvs1000diaglog.png'),
-    #             '5000diaglog - 1000diaglog', vmin = 'min',
-    #             vmax = 'max', cmap = 'bluered')
-
-def check_if_same():
-    # check if contact maps are identical
-    dir = '/home/erschultz/dataset_test/samples'
-
-    y_file = 'y.npy'
-    y_ref = np.load(osp.join(dir, f'sample301/{y_file}'))
-
-    for s in [304, 305, 306, 307]:
-        print('s', s)
-        sample_dir = osp.join(dir, f'sample{s}')
-        y = np.load(osp.join(sample_dir, f'{y_file}'))
-        diff = y_ref - y
-        print(np.mean(diff))
-        plot_matrix(diff, osp.join(sample_dir, 'diff.png'), cmap='bluered')
 
 def time_comparison_dmatrix():
     dir = '/home/erschultz/dataset_test/samples'
@@ -803,41 +708,6 @@ def max_ent_loss_for_gnn(dataset, sample):
     sim.obs_tot = np.hstack((plaid, diag))
     sim.plot_obs_vs_goal('test2.png')
 
-def meanDist_vs_params(dataset):
-    samples, experimental = get_samples(dataset)
-    data_dir = osp.join('/home/erschultz', dataset)
-    samples = np.array(samples)[:10] # cap at 10
-
-    N = len(samples)
-    meanDist_list = []
-    params_list = []
-    for i, sample in enumerate(samples):
-        sample_dir = osp.join(data_dir, f'samples/sample{sample}')
-
-        y, y_diag = load_Y(sample_dir)
-        y /= np.mean(np.diagonal(y))
-
-        meanDist_list.append(DiagonalPreprocessing.genomic_distance_statistics(y))
-
-        params = np.load(osp.join(sample_dir, 'diag_chis_continuous.npy'))
-        params_list.append(params)
-
-    # plot meanDist with params
-    fig, ax = plt.subplots()
-    ax2 = ax.twinx()
-    ax.set_yscale('log')
-    ax.set_xscale('log')
-    ax2.set_ylabel('Diagonal Parameter', fontsize = 16)
-    ax2.set_xscale('log')
-    for meanDist, params, sample in zip(meanDist_list, params_list, samples):
-        ax.plot(meanDist, label = sample)
-        ax2.plot(params, ls = '--')
-
-    ax.legend(loc='upper right')
-    plt.tight_layout()
-    plt.savefig(osp.join(data_dir, 'meanDist.png'))
-    plt.close()
-
 def compare_scc_bio_replicates():
     dir = '/home/erschultz/dataset_test/samples'
     y_a = np.load(osp.join(dir, 'sample2201/y.npy'))
@@ -907,21 +777,90 @@ def main():
     plt.savefig(osp.join(dir, f'kmeans_vs_exp_distribution.png'))
     plt.close()
 
+def gnn_of_max_ent(samples, k, ID):
+    '''Analysis of results for running GNN on max ent of experimental data'''
+    dir = '/home/erschultz/dataset_02_04_23/samples'
+    scc = SCC()
+    for s in samples:
+        s_dir = osp.join(dir, f'sample{s}')
+        y_exp = np.load(osp.join(s_dir, 'y.npy'))
+        y_gnn1 = np.load(osp.join(s_dir, f'GNN-{ID}-E/k0/replicate1/y.npy'))
+
+        s_dir = osp.join(s_dir, f'PCA-normalize-E/k{k}/replicate1',
+                        f'samples/sample{s}_copy')
+        assert osp.exists(s_dir), s_dir
+        y_max_ent1 = np.load(osp.join(s_dir, 'y.npy'))
+
+        max_ent_dir = osp.join(s_dir, 'PCA-normalize-E/k8/replicate1')
+        y_max_ent2 = np.load(osp.join(max_ent_dir, 'y.npy'))
+
+        gnn_dir = osp.join(s_dir, f'GNN-{ID}-S/k0/replicate1')
+        y_gnn2 = np.load(osp.join(gnn_dir, 'y.npy'))
+
+        print('SCC:')
+        corr = scc.scc(y_exp, y_gnn1, var_stabilized = True)
+        print('Exp vs GNN1:', np.round(corr, 3))
+        corr = scc.scc(y_exp, y_gnn2, var_stabilized = True)
+        print('Exp vs GNN2:', np.round(corr, 3))
+
+        corr = scc.scc(y_exp, y_max_ent1, var_stabilized = True)
+        print('Exp vs Max Ent 1:', np.round(corr, 3))
+        corr = scc.scc(y_exp, y_max_ent2, var_stabilized = True)
+        print('Exp vs Max Ent 2:', np.round(corr, 3))
+
+        corr = scc.scc(y_max_ent1, y_max_ent2, var_stabilized = True)
+        print('Max Ent 1 vs Max Ent 2:', np.round(corr, 3))
+        corr = scc.scc(y_max_ent1, y_gnn2, var_stabilized = True)
+        print('Max Ent 1 vs GNN2:', np.round(corr, 3))
+
+
+
+
+def check_interpolation():
+    '''Check if any of the experimental contact maps had too many rows/cols to be interpolated'''
+    dir = '/home/erschultz/dataset_03_21_23'
+    for sample in range(1, 874):
+        s_dir = osp.join(dir, 'samples', f'sample{sample}')
+        if not osp.exists(s_dir):
+            continue
+        with open(osp.join(s_dir, 'Interpolation/zeros_mappability-0.7/log.log')) as f:
+            lines = f.readlines()
+            last = lines[-1]
+            rows = last.split(' ')[1]
+            rows = int(rows)
+            if rows > 1000:
+                print(sample, rows)
+                interp_dir = osp.join(dir, 'samples', f'sample{1000+sample}')
+                if osp.exists(interp_dir):
+                    shutil.rmtree(interp_dir)
+                if osp.exists(s_dir):
+                    shutil.rmtree(s_dir)
+
+
+        with open(osp.join(dir, 'samples', f'sample{1000+sample}/import.log'), 'a') as f:
+            f.write(first)
+
+def check_s_dag():
+    s = np.array([[1,3],[-2, -6]])
+    sdag = np.multiply(np.sign(s), np.log(np.abs(s)+1))
+    print(sdag)
+    s2 = np.multiply(np.sign(sdag), np.exp(np.abs(sdag))-1)
+    print(s2)
+
+
 
 
 if __name__ == '__main__':
-    # compare_y_diag()
-    # check_if_same()
     # test_robust_PCA()
     # check_dataset('dataset_11_18_22')
     # time_comparison()
     # time_comparison_dmatrix()
-    # construct_sc_xyz()
     # convergence_check()
     # main()
     # plot_p_s()
-    # meanDist_vs_params('dataset_02_06_23')
     # compare_scc_bio_replicates()
-    # plot_sd()
     # max_ent_loss_for_gnn('dataset_11_14_22', 2201)
     # plot_p_s('dataset_bond_grid', params = False, grid_size = True)
+    # gnn_of_max_ent([207], 8, 378)
+    # check_interpolation()
+    check_s_dag()

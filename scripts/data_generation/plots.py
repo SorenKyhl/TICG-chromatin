@@ -47,10 +47,15 @@ def meanDist_comparison():
     plt.savefig(osp.join(data_dir, 'meanDist_comparison.png'))
     plt.close()
 
-def p_s_comparison(dataset, ID):
+def p_s_comparison(dataset, ID=None, k=8, max_ent=False):
     samples, experimental = get_samples(dataset)
     data_dir = osp.join('/home/erschultz', dataset)
     samples = np.array(samples)[:10] # cap at 10
+
+    if ID is None:
+        plot_GNN = False
+    else:
+        plot_GNN = True
 
     ncols = 5
     if len(samples) <= 8:
@@ -62,20 +67,56 @@ def p_s_comparison(dataset, ID):
         fig.set_figwidth(6*3)
         row = 0; col=0
         meanDist_list = molar_contact_ratio(dataset, None, False)
+        print(samples, len(meanDist_list))
         for sample, meanDist_exp in zip(samples, meanDist_list):
-            y = np.load(osp.join(data_dir, f'samples/sample{sample}' ,f'GNN-{ID}-E/k0/replicate1/y.npy'))
-            y = y.astype(float)
-            y /= np.mean(np.diagonal(y))
-            meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
-            rmse = mean_squared_error(meanDist, meanDist_exp, squared = False)
+            print('s', sample)
+            s_dir = osp.join(data_dir, f'samples/sample{sample}')
+            if max_ent:
+                dir = osp.join(s_dir, f'PCA-normalize-S/k{k}/replicate1/samples/sample{sample}_copy')
+                if not osp.exists(dir):
+                    dir = osp.join(s_dir, f'PCA-normalize-E/k{k}/replicate1/samples/sample{sample}_copy')
+            else:
+                dir = s_dir
+
+            if plot_GNN:
+                y = np.load(osp.join(dir ,f'GNN-{ID}-S/k0/replicate1/y.npy'))
+                y = y.astype(float)
+                y /= np.mean(np.diagonal(y))
+                meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
+                rmse = mean_squared_error(meanDist, meanDist_exp, squared = False)
+
+            y_file = osp.join(dir ,f'PCA-normalize-S/k{k}/replicate1/y.npy')
+            y_file2 = osp.join(dir ,f'PCA-normalize-E/k{k}/replicate1/y.npy')
+            if osp.exists(y_file):
+                y_pca = np.load(y_file)
+                y_pca = y_pca.astype(float)
+                y_pca /= np.mean(np.diagonal(y_pca))
+                meanDist_pca = DiagonalPreprocessing.genomic_distance_statistics(y_pca)
+                plot_PCA = True
+            elif osp.exists(y_file2):
+                y_pca = np.load(y_file2)
+                y_pca = y_pca.astype(float)
+                y_pca /= np.mean(np.diagonal(y_pca))
+                meanDist_pca = DiagonalPreprocessing.genomic_distance_statistics(y_pca)
+                plot_PCA = True
+            else:
+                plot_PCA = False
 
             ax = axes[row][col]
-            ax.set_title(f'sample{sample}\nRMSE={np.round(rmse, 5)}', fontsize=16)
+            if plot_GNN:
+                ax.set_title(f'sample{sample}\nGNN RMSE={np.round(rmse, 5)}', fontsize=16)
+            else:
+                ax.set_title(f'sample{sample}', fontsize=16)
+
             if experimental:
                 ax.plot(meanDist_exp, label = 'Experiment', color = 'k')
             else:
                 ax.plot(meanDist_exp, label = 'Simulation', color = 'k')
-            ax.plot(meanDist, label = 'GNN', color = 'blue')
+            if plot_GNN:
+                ax.plot(meanDist, label = 'GNN', color = 'blue')
+            if plot_PCA:
+                ax.plot(meanDist_pca, label = 'PCA', color = 'red')
+            # ax.set_ylim(np.percentile(meanDist_exp, 1), None)
             ax.legend(loc='upper left')
             ax.set_yscale('log')
             if log:
@@ -89,7 +130,10 @@ def p_s_comparison(dataset, ID):
 
         fig.supylabel('Contact Probability', fontsize = 16)
         fig.supxlabel('Polymer Distance (beads)', fontsize = 16)
-        fig.suptitle(f'{dataset}\nGNN={ID}', fontsize=16)
+        if max_ent:
+            fig.suptitle(f'{dataset}_max_ent\nGNN={ID}', fontsize=16)
+        else:
+            fig.suptitle(f'{dataset}\nGNN={ID}', fontsize=16)
         plt.tight_layout()
         if log:
                 plt.savefig(osp.join(data_dir, 'p_s_comparison_log.png'))
@@ -97,11 +141,16 @@ def p_s_comparison(dataset, ID):
             plt.savefig(osp.join(data_dir, 'p_s_comparison.png'))
         plt.close()
 
-def scc_comparison(dataset, ID, k=8):
+def scc_comparison(dataset, ID=None, k=8, max_ent=False):
     samples, experimental = get_samples(dataset)
     data_dir = osp.join('/home/erschultz', dataset)
     samples = np.array(samples)[:10] # cap at 10
     scc = SCC()
+
+    if ID is None:
+        plot_GNN = False
+    else:
+        plot_GNN = True
 
     ncols = 5
     if len(samples) <= 8:
@@ -113,27 +162,51 @@ def scc_comparison(dataset, ID, k=8):
         fig.set_figwidth(6*3)
         row = 0; col=0
         for sample in samples:
-            y = np.load(osp.join(data_dir, f'samples/sample{sample}', 'y.npy'))
+            s_dir = osp.join(data_dir, f'samples/sample{sample}')
+            if max_ent:
+                dir = osp.join(s_dir, f'PCA-normalize-S/k{k}/replicate1/samples/sample{sample}_copy')
+                if not osp.exists(dir):
+                    dir = osp.join(s_dir, f'PCA-normalize-E/k{k}/replicate1/samples/sample{sample}_copy')
+            else:
+                dir = s_dir
+            y = np.load(osp.join(dir, 'y.npy'))
             y = y.astype(float)
 
-            yhat = np.load(osp.join(data_dir, f'samples/sample{sample}', f'GNN-{ID}-E/k0/replicate1/y.npy'))
+            yhat = np.load(osp.join(dir, f'GNN-{ID}-S/k0/replicate1/y.npy'))
             yhat = yhat.astype(float)
-
-            yhat_pca = np.load(osp.join(data_dir, f'samples/sample{sample}', f'PCA-normalize-E/k{k}/replicate1/y.npy'))
-
-            corr_scc_var_pca = scc.scc(y, yhat_pca, var_stabilized = True)
-            _, corr_arr_pca = calc_dist_strat_corr(y, yhat_pca, mode = 'pearson',
-                                                    return_arr = True)
-
-
             corr_scc_var = scc.scc(y, yhat, var_stabilized = True)
             _, corr_arr = calc_dist_strat_corr(y, yhat, mode = 'pearson',
                                                     return_arr = True)
 
+            y_file = osp.join(dir ,f'PCA-normalize-S/k{k}/replicate1/y.npy')
+            y_file2 = osp.join(dir ,f'PCA-normalize-E/k{k}/replicate1/y.npy')
+            if osp.exists(y_file):
+                yhat_pca = np.load(y_file)
+                corr_scc_var_pca = scc.scc(y, yhat_pca, var_stabilized = True)
+                _, corr_arr_pca = calc_dist_strat_corr(y, yhat_pca, mode = 'pearson',
+                                                        return_arr = True)
+                plot_PCA = True
+            elif osp.exists(y_file2):
+                yhat_pca = np.load(y_file2)
+                corr_scc_var_pca = scc.scc(y, yhat_pca, var_stabilized = True)
+                _, corr_arr_pca = calc_dist_strat_corr(y, yhat_pca, mode = 'pearson',
+                                                        return_arr = True)
+                plot_PCA = True
+
+            else:
+                plot_PCA = False
+
             ax = axes[row][col]
-            ax.set_title(f'sample{sample}\nGNN SCC: {np.round(corr_scc_var, 3)}\nPCA SCC: {np.round(corr_scc_var_pca, 3)}', fontsize=16)
-            ax.plot(corr_arr, color = 'b', label = f'GNN {ID}')
-            ax.plot(corr_arr_pca, color = 'r', label = f'PCA(k={k})')
+            if plot_PCA and plot_GNN:
+                ax.set_title(f'sample{sample}\nGNN SCC: {np.round(corr_scc_var, 3)}\nPCA SCC: {np.round(corr_scc_var_pca, 3)}', fontsize=16)
+            elif plot_GNN:
+                ax.set_title(f'sample{sample}\nGNN SCC: {np.round(corr_scc_var, 3)}', fontsize=16)
+            else:
+                ax.set_title(f'sample{sample}', fontsize=16)
+            if plot_GNN:
+                ax.plot(corr_arr, color = 'b', label = f'GNN {ID}')
+            if plot_PCA:
+                ax.plot(corr_arr_pca, color = 'r', label = f'PCA(k={k})')
             if log:
                 ax.set_xscale('log')
                 ax.set_xlim(1, 550)
@@ -149,7 +222,10 @@ def scc_comparison(dataset, ID, k=8):
         axes[0,0].legend(loc = 'lower left')
         fig.supxlabel('Polymer Distance (beads)', fontsize = 16)
         fig.supylabel('Pearson Correlation Coefficient', fontsize = 16)
-        fig.suptitle(f'{dataset}', fontsize=16)
+        if max_ent:
+            fig.suptitle(f'{dataset}_max_ent\nGNN={ID}', fontsize=16)
+        else:
+            fig.suptitle(f'{dataset}\nGNN={ID}', fontsize=16)
         plt.tight_layout()
         if log:
                 plt.savefig(osp.join(data_dir, 'distance_pearson_log.png'))
@@ -158,21 +234,28 @@ def scc_comparison(dataset, ID, k=8):
         plt.close()
 
 
-def l_ij_comparison(dataset):
+def l_ij_comparison(dataset, dataset_exp, k=8):
     data_dir = osp.join('/home/erschultz', dataset)
 
     L_list = []
+    D_list = []
+    S_list = []
     chi_list = []
     label_list = []
-    L_max_ent, chi_max_ent = plaid_dist(dataset, 4, False)
+    L_max_ent, S_max_ent, D_max_ent, chi_max_ent = plaid_dist(dataset_exp, k, False)
     L_list.append(L_max_ent)
+    D_list.append(D_max_ent)
+    S_list.append(S_max_ent)
     # chi_list.append(chi_max_ent)
     label_list.append('Max Ent')
 
-    s_sim, chi_sim = plaid_dist('dataset_02_22_23', None, False)
-    L_list.append(s_sim)
+    L_sim, S_sim, D_sim, chi_sim = plaid_dist(dataset, None, False)
+    L_list.append(L_sim)
+    D_list.append(D_sim)
+    S_list.append(S_sim)
+
     # chi_list.append(chi_sim)
-    label_list.append(r'Synthetic $\tilde{\chi}$')
+    label_list.append(r'Synthetic')
 
     # plot plaid L_ij parameters
     cmap = matplotlib.cm.get_cmap('tab10')
@@ -213,12 +296,60 @@ def l_ij_comparison(dataset):
     # plt.savefig(osp.join(data_dir, 'chi_dist_comparison.png'))
     # plt.close()
 
+    # plot D_ij parameters
+    print('\nD')
+    cmap = matplotlib.cm.get_cmap('tab10')
+    ind = np.arange(len(D_list)) % cmap.N
+    colors = cmap(ind)
+    dist = norm
+    bin_width = 1
+    for i, (arr, label) in enumerate(zip(D_list, label_list)):
+        arr = np.array(arr).reshape(-1)
+        print(label)
+        print(np.min(arr), np.max(arr))
+        _, bins, _ = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
+                                    bins=range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width),
+                                    alpha = 0.5, label = label, color = colors[i])
+        params = dist.fit(arr)
+        y = dist.pdf(bins, *params) * bin_width
+        plt.plot(bins, y, ls = '--', color = colors[i])
+
+    plt.legend()
+    plt.ylabel('probability', fontsize=16)
+    plt.xlabel(r'$D_{ij}$', fontsize=16)
+    plt.xlim(-20, 25)
+    plt.savefig(osp.join(data_dir, 'D_dist_comparison.png'))
+    plt.close()
+
+    # plot plaid S_ij parameters
+    print('\nS')
+    cmap = matplotlib.cm.get_cmap('tab10')
+    ind = np.arange(len(L_list)) % cmap.N
+    colors = cmap(ind)
+    dist = norm
+    bin_width = 1
+    for i, (arr, label) in enumerate(zip(S_list, label_list)):
+        arr = np.array(arr).reshape(-1)
+        print(arr)
+        print(np.min(arr), np.max(arr))
+        _, bins, _ = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
+                                    bins=range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width),
+                                    alpha = 0.5, label = label, color = colors[i])
+        params = dist.fit(arr)
+        y = dist.pdf(bins, *params) * bin_width
+        plt.plot(bins, y, ls = '--', color = colors[i])
+
+    plt.legend()
+    plt.ylabel('probability', fontsize=16)
+    plt.xlabel(r'$S_{ij}$', fontsize=16)
+    plt.xlim(-20, 25)
+    plt.savefig(osp.join(data_dir, 'S_dist_comparison.png'))
+    plt.close()
 
 
 if __name__ == '__main__':
     # main()
-    meanDist_comparison()
-    # l_ij_comparison('dataset_02_04_23')
-    # l_dist_comparison()
-    # p_s_comparison('dataset_02_04_23', 380)
-    # scc_comparison('dataset_02_04_23', 380)
+    # meanDist_comparison()
+    # l_ij_comparison('dataset_03_23_23', 'dataset_02_04_23', 8)
+    p_s_comparison('dataset_03_22_23', 391, 8)
+    # scc_comparison('dataset_03_22_23', 391, 8)

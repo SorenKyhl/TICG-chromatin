@@ -17,8 +17,9 @@ from sklearn.metrics import mean_squared_error
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
 from sequences_to_contact_maps.scripts.energy_utils import (
-    calculate_D, calculate_diag_chi_step, calculate_E_S, calculate_SD_ED)
-from sequences_to_contact_maps.scripts.load_utils import (load_max_ent_chi,
+    calculate_D, calculate_diag_chi_step, calculate_L, calculate_S)
+from sequences_to_contact_maps.scripts.load_utils import (load_L,
+                                                          load_max_ent_chi,
                                                           load_Y)
 from sequences_to_contact_maps.scripts.utils import DiagonalPreprocessing
 
@@ -29,7 +30,7 @@ METHODS = ['ground_truth', 'random', 'PCA', 'PCA_split', 'kPCA', 'RPCA',
             'ChromHMM']
 SMALL_METHODS = {'ground_truth', 'random', 'PCA', 'PCA_split', 'k_means', 'nmf', 'GNN',
             'epigenetic', 'epigenetic_sigmoid', 'ChromHMM'}
-LABELS = ['Ground Truth', 'Random', 'PCA', 'PCA Split', 'kPCA', 'RPCA',
+LABELS = ['Ground Truth', 'Random', 'Max Ent (PCA)', 'PCA Split', 'kPCA', 'RPCA',
             'K-means', 'NMF', 'GNN',
             'Epigenetic', 'Epigenetic (Sigmoid)',
             'ChromHMM']
@@ -107,13 +108,16 @@ def loadData(args):
         print(sample)
         sample_folder = osp.join(args.data_folder, 'samples', f'sample{sample}')
         if args.experimental:
-            ground_truth_SD = None
-            ground_truth_ED = None
+            ground_truth_S = None
         else:
-            diag_chi_continuous = np.load(osp.join(sample_folder, 'diag_chis_continuous.npy'))
+            diag_chis_file = osp.join(sample_folder, 'diag_chis_continuous.npy')
+            if not osp.exists(diag_chis_file):
+                diag_chi_continuous = np.load(osp.join(sample_folder, 'diag_chis.npy'))
+            else:
+                diag_chi_continuous = np.load(diag_chis_file)
             D = calculate_D(diag_chi_continuous)
-            S = np.load(osp.join(sample_folder, 's.npy'))
-            ground_truth_SD, ground_truth_ED = calculate_SD_ED(S, D)
+            L = load_L(sample_folder, save = True)
+            ground_truth_S = calculate_S(L, D)
         ground_truth_y, ground_truth_ydiag = load_Y(sample_folder)
         ground_truth_meanDist = DiagonalPreprocessing.genomic_distance_statistics(ground_truth_y, 'prob')
         for method in os.listdir(sample_folder):
@@ -218,8 +222,9 @@ def loadData(args):
                             replicate_data['rmse-diag'].append(rmse_diag)
 
 
-                            rmse_ED = None
-                            if ground_truth_ED is not None:
+                            rmse_S = None
+                            S = None
+                            if ground_truth_S is not None:
                                 if converged_it is not None:
                                     # load bead types
                                     psi_file = osp.join(replicate_folder, 'resources', 'x.npy')
@@ -233,47 +238,37 @@ def loadData(args):
                                     chi = load_max_ent_chi(k, converged_path, throw_exception = False)
 
                                     # calc s
-                                    _, S = calculate_E_S(psi, chi)
+                                    L = calculate_L(psi, chi)
 
                                     with open(osp.join(converged_path, 'config.json'), 'r') as f:
                                         config = json.load(f)
                                     diag_chis_continuous = calculate_diag_chi_step(config)
                                     D = calculate_D(diag_chis_continuous)
 
-                                    # calc s+d
-                                    SD, ED = calculate_SD_ED(S, D)
+                                    # calc S
+                                    S = calculate_S(L, D)
                                 elif converged_path is not None:
                                     # this is either GNN/MLP or ground truth
-                                    ematrix_file = osp.join(replicate_folder, 'resources/e_matrix.txt')
                                     smatrix_file = osp.join(replicate_folder, 'resources/s_matrix.txt')
-                                    if osp.exists(ematrix_file):
-                                        E = np.loadtxt(ematrix_file)
-                                        S = None
-                                    elif osp.exists(smatrix_file):
-                                        E = None
+                                    if osp.exists(smatrix_file):
                                         S = np.loadtxt(smatrix_file)
                                     else:
-                                        raise Exception(f'no <e,s>_matrix.txt for {replicate_folder}')
+                                        raise Exception(f'no s_matrix.txt for {replicate_folder}')
                                     if method.startswith('ground_truth'):
-                                        with open(osp.join(replicate_folder, 'resources/config.json'), 'r') as f:
-                                            config = json.load(f)
-                                        diag_chis_continuous = calculate_diag_chi_step(config)
-                                        D = calculate_D(diag_chis_continuous)
+                                        # with open(osp.join(replicate_folder, 'resources/config.json'), 'r') as f:
+                                        #     config = json.load(f)
+                                        # diag_chis_continuous = calculate_diag_chi_step(config)
+                                        # D = calculate_D(diag_chis_continuous)
+                                        #
+                                        # # calc s+d
+                                        # if S is not None:
+                                        #     S = calculate_S(S, D)
+                                        raise Exception('Deprecated')
 
-                                        # calc s+d
-                                        if E is not None:
-                                            ED = E + 2*D
-                                        elif S is not None:
-                                            SD, ED = calculate_SD_ED(S, D)
-                                    else:
-                                        ED = E
-                                else:
-                                    ED = None
+                                if S is not None:
+                                    rmse_S = mean_squared_error(ground_truth_S, S, squared = False)
 
-                                if ED is not None:
-                                    rmse_ED = mean_squared_error(ground_truth_ED, ED, squared = False)
-
-                            replicate_data['rmse-E+D'].append(rmse_ED)
+                            replicate_data['rmse-S'].append(rmse_S)
 
                             rmse_y = None
                             if yhat is not None:
@@ -318,7 +313,7 @@ def loadData(args):
                         data[k][method]['overall_pearson'].append(replicate_data['overall_pearson'])
                         data[k][method]['scc'].append(replicate_data['scc'])
                         data[k][method]['avg_dist_pearson'].append(replicate_data['avg_dist_pearson'])
-                        data[k][method]['rmse-E+D'].append(replicate_data['rmse-E+D'])
+                        data[k][method]['rmse-S'].append(replicate_data['rmse-S'])
                         data[k][method]['rmse-y'].append(replicate_data['rmse-y'])
                         data[k][method]['rmse-diag'].append(replicate_data['rmse-diag'])
                         data[k][method]['converged_time'].append(replicate_data['converged_time'])
@@ -349,18 +344,18 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
     with open(ofile, mode) as o:
         # set up first rows of table
         o.write("\\begin{center}\n")
-        metric_labels = {'scc':'SCC', 'rmse-E+D':'RMSE-Energy', 'rmse-y':'RMSE-Y',
+        metric_labels = {'scc':'SCC', 'rmse-S':'RMSE-Energy', 'rmse-y':'RMSE-Y',
                         'rmse-diag':'RMSE-P(s)', 'avg_dist_pearson':'Mean Diagonal Corr',
                         'total_time':'Total Time', 'converged_it':'Converged Iteration',
                         'converged_time':'Converged Time', 'final_time':'Final Time'}
         if small:
-            metrics = ['scc', 'rmse-E+D', 'avg_dist_pearson', 'rmse-diag', 'total_time']
+            metrics = ['scc', 'rmse-S', 'avg_dist_pearson', 'rmse-diag', 'total_time']
             metrics = ['scc',  'rmse-diag', 'total_time']
         else:
-            metrics = ['scc', 'avg_dist_pearson', 'rmse-E+D', 'rmse-y', 'rmse-diag',
+            metrics = ['scc', 'avg_dist_pearson', 'rmse-S', 'rmse-y', 'rmse-diag',
                         'converged_it', 'converged_time', 'final_time']
-        if experimental and 'rmse-E+D' in metrics:
-            metrics.remove('rmse-E+D')
+        if experimental and 'rmse-S' in metrics:
+            metrics.remove('rmse-S')
         num_cols = len(metrics) + 2
         num_cols_str = str(num_cols)
 
@@ -475,7 +470,7 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
 
                     if 'time' in metric:
                         roundoff = 1
-                    elif metric == 'rmse-E+D':
+                    elif metric == 'rmse-S':
                         roundoff = 2
                     elif metric == 'rmse-y' or metric == 'rmse-diag':
                         roundoff = 4
@@ -505,6 +500,8 @@ def sort_method_keys(keys):
         key_labels = [] # list of (key, label) tuples of type method
         for key in keys:
             split = key.split('-')
+            while split[-1] in {'E', 'S', 'normalize'}:
+                split.pop()
             if split[0] == method:
                 if len(split) > 1:
                     label_str = label + '-' + '-'.join(split[1:])
