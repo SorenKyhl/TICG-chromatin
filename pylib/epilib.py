@@ -17,7 +17,7 @@ from pathlib import Path
 # import palettable
 # from palettable.colorbrewer.sequential import Reds_3
 
-from pylib import utils
+from pylib import utils, hic
 
 mycmap = matplotlib.colors.LinearSegmentedColormap.from_list(
     "custom", [(0, "white"), (0.3, "white"), (1, "#ff0000")], N=126
@@ -59,8 +59,11 @@ class Sim:
             self.energy = pd.read_csv(
                 self.path / "energy.traj",
                 sep="\t",
-                names=["step", "bonded", "nonbonded", "diagonal", "y"],
+                names=["step", "bonded", "nonbonded", "diagonal", "boundary", "total"],
+                index_col=0
             )
+            # for production runs, when energy trajectories are concatenated
+            self.energy = self.energy.reset_index() 
         except FileNotFoundError:
             logging.error("error loading energy.traj")
 
@@ -114,6 +117,11 @@ class Sim:
 
             if not gthic_loaded:
                 logging.error("no ground truth hic found")
+
+            # if contact map pools, also pool sequences
+            if gthic_loaded and self.config["contact_resolution"] > 1:
+                self.seqs = hic.pool_seqs(self.seqs, self.config["contact_resolution"])
+                self.gthic = hic.pool_sum(self.gthic, self.config["contact_resolution"])
 
             obj_goal_path = resources_path / "obj_goal.txt"
             if obj_goal_path.exists():
@@ -485,14 +493,14 @@ def plot_energy(sim):
     nbondmean = np.mean(sim.energy["nonbonded"][:last20])
     diagmean = np.mean(sim.energy["diagonal"][:last20])
 
-    xaxis = np.array(sim.energy["step"])
+    rightedge = len(sim.energy["bonded"])
 
-    axs[0].plot(xaxis, sim.energy["bonded"], label="bonded")
-    axs[1].plot(xaxis, sim.energy["nonbonded"], label="nonbonded")
-    axs[2].plot(xaxis, sim.energy["diagonal"], label="diagonal")
-    axs[0].hlines(bondmean, 0, xaxis[-1], colors="k")
-    axs[1].hlines(nbondmean, 0, xaxis[-1], colors="k")
-    axs[2].hlines(diagmean, 0, xaxis[-1], colors="k")
+    axs[0].plot(sim.energy["bonded"], label="bonded")
+    axs[1].plot(sim.energy["nonbonded"], label="nonbonded")
+    axs[2].plot(sim.energy["diagonal"], label="diagonal")
+    axs[0].hlines(bondmean, 0, rightedge, colors="k")
+    axs[1].hlines(nbondmean, 0, rightedge, colors="k")
+    axs[2].hlines(diagmean, 0, rightedge, colors="k")
     axs[0].legend()
     axs[1].legend()
     axs[2].legend()
@@ -574,6 +582,7 @@ def get_sequences(
     randomized=False,
     scaleby_singular_values=False,
     scaleby_sqrt_singular_values=False,
+    print_singular_values = True,
 ):
     """
     calculate polymer bead sequences using k principal components
@@ -611,6 +620,13 @@ def get_sequences(
             pc *= np.sqrt(S[i])
 
     assert dtype == "int" or dtype == "float"
+
+    import pdb
+    pdb.set_trace()
+    
+    if print_singular_values:
+        logging.info("singular values are:")
+        logging.info(S)
 
     beads_per_bin = 1
     seqs = []
@@ -1421,6 +1437,15 @@ def make_clean_mask(inds, N):
 
     return mask
 
+def drop_row_col(chis, inds):
+    N = len(chis)
+    mask = np.full((N, N), True)
+    for i in inds:
+        mask[i, :] = False
+        mask[:, i] = False
+
+    deleted = len(inds)
+    return chis[mask].reshape(N - deleted, N - deleted)
 
 def clean_contactmap(contact):
     """if the main diagonal entry is zero, remove the entire row and column"""

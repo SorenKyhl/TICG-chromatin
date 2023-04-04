@@ -245,6 +245,10 @@ class Pysim:
         for p in processes:
             p.join()
 
+        # getting segfaults, possibly due to all processes retaining their memory. does this fix it?
+        for p in processes:
+            p.terminate()
+
         self.aggregate_production_files()
 
     def aggregate_production_files(self):

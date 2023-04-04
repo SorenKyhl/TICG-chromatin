@@ -5,6 +5,7 @@ from typing import Callable
 from skimage.measure import block_reduce
 
 from pylib import epilib, default
+from pylib import hic as hiclib
 
 """
 collection of functions for manipulating hic maps
@@ -93,9 +94,16 @@ def unpool_seqs(seqs, factor):
     return np.array(newseqs)
 
 
-def normalize_hic(hic):
+def normalize_hic(hic, method="ones"):
     """divide hic matrix so the mean of the main diagonal is equal to 1"""
-    return hic / np.mean(np.diagonal(hic))
+    if method == "mean":
+        return hic / np.mean(np.diagonal(hic))
+    elif method == "ones":
+        hic /= np.mean(np.diagonal(hic))
+        np.fill_diagonal(hic, 1)
+        return hic
+    else:
+        raise ValueError("method must be 'mean' or 'ones'")
 
 
 def unpool(inp, factor):
@@ -136,23 +144,28 @@ def smooth_hic(x, smooth_size=10):
     return ndimage.gaussian_filter(x, (smooth_size, smooth_size))
 
 
-def load_hic(nbeads, pool_fn=pool_sum):
+def load_hic(nbeads, pool_fn=pool_sum, chrom=2):
     """load hic by pooling preloaded high resolution map"""
+    chrom = str(chrom)
 
     if not default.data_dir.exists():
         default.data_dir.mkdir()
 
-    if not default.HCT116_hic_20k.exists():
+    hic_file = default.HCT116_hic_20k[chrom]
+
+    if not hic_file.exists():
         nbeads_large = 20480
         pipe = copy.deepcopy(default.data_pipeline)
+        pipe.set_chrom(chrom)
         pipe.resize(nbeads_large)
         gthic = pipe.load_hic(default.HCT116_hic)
-        np.save(default.HCT116_hic_20k, gthic)
+        np.save(hic_file, gthic)
     else:
-        gthic = np.load(default.HCT116_hic_20k)
+        gthic = np.load(hic_file)
 
     factor = int(len(gthic) / nbeads)
-    return pool_fn(gthic, factor)
+    pooled = pool_fn(gthic, factor)
+    return pooled
 
 
 def load_seqs(nbeads, k):
@@ -166,6 +179,10 @@ def load_seqs(nbeads, k):
         np.save(default.HCT116_seqs_20k, seqs)
     else:
         seqs = np.load(default.HCT116_seqs_20k)
+        if k > len(seqs):
+            raise ValueError("number of sequences exceeds the loaded amount")
+        else:
+            seqs = seqs[:k]
 
     if nbeads < 20480:
         factor = int(seqs.shape[1] / nbeads)
@@ -175,3 +192,36 @@ def load_seqs(nbeads, k):
         seqs_final = unpool_seqs(seqs, factor)
 
     return seqs_final
+
+
+def load_chipseq(nbeads, encode_only=False, chrom=2, return_gthic=False):
+    wig_method = "max"
+    pipe = copy.deepcopy(default.data_pipeline)
+
+    nbeads_large = 20480
+    factor = int(nbeads_large/nbeads)
+    pipe.size = nbeads_large
+    pipe.res = 5000
+    pipe.set_chrom(chrom)
+    
+    # need to load gthic to know which indices to drop when loading chip
+    gthic = pipe.load_hic(default.HCT116_hic)
+    gthic = hiclib.pool_sum(gthic, factor)
+    sequences_total = pipe.load_chipseq_from_directory(default.HCT116_chipseq, wig_method)
+
+    encode_seqs = ["H3K4me3", "H3K27ac", "H3K27me3", "H3K4me1", "H3K36me3", "H3K9me3"]
+    if encode_only:
+        sequences = {seq: sequences_total[seq] for seq in encode_seqs}
+    else:
+        sequences = sequences_total
+
+    chip = {}
+    pooled = {}
+    for seq in sequences:
+        pooled[seq] = pool_seqs(sequences[seq], factor)
+        chip[seq] = default.chipseq_pipeline.fit(pooled[seq])
+
+    if return_gthic:
+        return np.array(list(chip.values())), gthic
+    else:
+        return np.array(list(chip.values()))

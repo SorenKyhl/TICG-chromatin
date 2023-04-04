@@ -50,8 +50,7 @@ class Pipeline:
         if self.load_first:
             self.seqs = self.load_sequences()
         else:
-            n_seqs = 10
-            self.seqs = self.seqs_method(self.gthic, n_seqs)
+            self.seqs = self.seqs_method(self.gthic)
 
     def get_goals(self):
         if self.load_first:

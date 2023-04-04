@@ -144,20 +144,19 @@ def load_chis(config):
     return chi
 
 
-def plot_image(x):
+def plot_image(x, dark=False):
     x = np.array(x)
     v = x.flatten()
     lim = np.max([np.abs(np.min(v)), np.max(v)])
+    if dark:
+        lim /= 2
     plt.imshow(x, vmin=-lim, vmax=lim, cmap="bwr")
     plt.colorbar()
 
 
-""" 
-newton's method
-"""
-
 
 def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method):
+    """newton's method"""
     obj_goal = np.array(obj_goal)
     lam = np.array(lam)
 
@@ -167,8 +166,14 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method):
         step = Binv @ difference
     elif method == "g":
         step = difference
+    elif method == "n_new":
+        step = newton_trust_region(difference, B, trust_region, log=True)
+        step *= gamma
+        howfar = np.sqrt(difference @ difference) / np.sqrt(obj_goal @ obj_goal)
+        new_chis = current_chis + step
+        return new_chis, howfar
     else:
-        raise ValueError("specify method: n (newton), g (gradient descent)")
+        raise ValueError("specify method: n (newton), g (gradient descent), n_new (new newton)")
 
     steplength = np.sqrt(step @ step)
 
@@ -232,3 +237,46 @@ def clean_diag_chis(config):
 
     config["diag_chis"] = diag_chis.tolist()
     return config
+
+def newton_trust_region(gradient, hessian, trust_region, log=False):
+    """returns optimal step for trust region newton's method subproblem
+    
+    if the full step is within the trust region, take it
+    otherwise, find the optimal point on the trust region boundary
+    
+    See chapter 4, 
+    Nocedal, Jorge, and Stephen Wright. Numerical optimization. Springer Science & Business Media, 2006.
+    """
+    full_step = -np.linalg.inv(hessian)@gradient
+    if log:
+        logging.info(f"full_step size: {np.linalg.norm(full_step)}")
+    if np.linalg.norm(full_step) < trust_region:
+        if log:
+            logging.info("taking full step")
+        return full_step 
+    else:
+        """newton's method "subproblem" described in Nocedal"""
+
+        if log:
+            logging.info("taking trust region step")
+
+        eigenvalues, eigenvectors = np.linalg.eig(hessian)
+        lowest_eigenvalue = min(eigenvalues) # for some reason evals are not sorted!
+
+        logging.info(f"lowest eval: {lowest_eigenvalue}")
+        logging.info(eigenvalues)
+        
+        # initial lambda needs to be slightly more than lowest eigenvalue
+        lamda = -0.9*lowest_eigenvalue 
+
+        for i in range(10):
+            L = np.linalg.cholesky(hessian + lamda*np.eye(len(hessian)))
+            R = L.T
+            p = np.linalg.solve(R.T@R, -gradient)
+            q = np.linalg.solve(R.T, p)
+            
+            if log:
+                logging.info(f"----- stepsize: {np.sqrt(p@p)}, trust region: {trust_region}, lambda: {lamda}")
+                
+            lamda = lamda + (p@p)/(q@q) * (np.linalg.norm(p) - trust_region)/trust_region
+        return p

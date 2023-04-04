@@ -42,7 +42,15 @@ def sim_analysis(sim):
     plt.savefig("chis.png")
     plt.close()
 
-    plot_energy_matrices(sim)
+    try:
+        plot_energy_matrices(sim)
+    except ValueError:
+        if sim.config["contact_resolution"] > 1:
+            logging.warn("energy matrices could not be created because contact map has been pooled (contact map resolution > 1)")
+        else: 
+            raise ValueError
+    except NotImplementedError:
+        logging.warn("energy matrices not implemented for this situation")
 
     plt.figure()
     plot_chi_matrix(sim)

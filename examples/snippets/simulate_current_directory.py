@@ -1,4 +1,5 @@
 import sys
+import logging
 from pylib.pysim import Pysim
 
 if __name__ == "__main__":
@@ -6,5 +7,7 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         sim.run_eq(10000, 50000, 7)
     if len(sys.argv) == 2:
-        sim.run_eq(10000, sys.argv[1], 7)
+        production_sweeps = int(sys.argv[1])
+        logging.info("simulating with")
+        sim.run_eq(10000, production_sweeps, 7)
 

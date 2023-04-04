@@ -5,6 +5,7 @@ import pyBigWig
 import hicstraw
 
 from pylib import epilib
+from pylib import hic as hiclib
 
 
 def get_experiment_marks(directory):
@@ -37,14 +38,17 @@ class DataPipeline:
 
     def __init__(self, res, chrom, start, end, size):
         self.res = int(res)
-        self.chrom = str(chrom)
-        self.chromstr = "chr" + str(self.chrom)
         self.start = start
         self.end = end
         self.size = size
+        self.set_chrom(chrom)
 
         self.bigsize = self.size
         self.dropped_inds = []
+
+    def set_chrom(self, chrom):
+        self.chrom = str(chrom)
+        self.chromstr = "chr" + str(self.chrom)
 
     def resize(self, newsize):
         factor = int(newsize / self.size)
@@ -71,8 +75,10 @@ class DataPipeline:
         if clean:
             contactmap, self.dropped_inds = epilib.clean_contactmap(contactmap)
 
+        # set main diag to one (on average)
         if rescale_method:
-            raise ValueError("deprecated")
+            contactmap = hiclib.normalize_hic(contactmap, rescale_method)
+            #raise ValueError("deprecated")
             # contactmap = epilib.rescale_contactmap(contactmap, method=rescale_method)
 
         return contactmap[0 : self.size, 0 : self.size]

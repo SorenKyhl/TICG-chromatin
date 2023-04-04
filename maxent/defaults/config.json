@@ -30,7 +30,7 @@
   "smatrix_filename": "smatrix.txt",
   "smatrix_on": false,
   "seed": 82353,
-  "decay_length": 100,
+  "decay_length": 500,
   "nSweeps": 50000,
   "dump_frequency": 50000,
   "dump_stats_frequency": 100,

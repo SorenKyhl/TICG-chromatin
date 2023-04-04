@@ -191,7 +191,7 @@ class Maxent:
                 gamma=gamma,
                 current_chis=curr_chis,
                 trust_region=self.params["trust_region"],
-                method="n",
+                method=self.params["method"],
             )
 
             self.track_progress(newchis, newloss, sim)
@@ -254,3 +254,6 @@ class Maxent:
     def set_config(self, path):
         """load config from path"""
         self.config = utils.load_json(path)
+
+
+
