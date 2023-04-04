@@ -70,6 +70,7 @@ double Cell::getDensityCapEnergy() {
 	{
 		if (phi_solvent < phi_solvent_max)
 		{
+			// phi_solvent_max is the minimum solvent volume fraction (Defaults to 0.5)
 			// high volume fraction occurs when more than 50% of the volume is occupied by beads
 			U = 99999999999*phi_beads;
 		}

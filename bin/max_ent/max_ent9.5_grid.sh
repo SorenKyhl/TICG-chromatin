@@ -31,7 +31,7 @@ STARTTIME=$(date +%s)
 jobs=0
 waitCount=0
 
-local='false'
+local='true'
 if [ $local = 'true' ]
 then
   dir="/home/erschultz"
@@ -44,10 +44,10 @@ finalSimProductionSweeps=50000
 equilibSweeps=10000
 productionSweeps=50000
 
-dataset='dataset_03_21_23'
+dataset='dataset_03_22_23'
 m=512
 
-for sample in {1451..1999}
+for sample in 324 981 1936 2834 3464
 do
   echo $sample $m
   max_ent

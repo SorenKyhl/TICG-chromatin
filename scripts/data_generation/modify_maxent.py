@@ -11,10 +11,12 @@ import numpy as np
 import statsmodels.api as sm
 from ECDF import Ecdf
 from MultivariateSkewNormal import multivariate_skewnorm
+from scipy.ndimage import gaussian_filter
 from scipy.optimize import curve_fit
 from scipy.stats import (beta, gamma, laplace, multivariate_normal, norm,
                          skewnorm, weibull_max, weibull_min)
 from sklearn.decomposition import PCA
+from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz/TICG-chromatin')
 from scripts.get_params import Tester
@@ -192,6 +194,7 @@ def modify_maxent_diag_chi(dataset, k = 8, edit = True):
         x = np.arange(0, 2*m)
 
         if edit:
+            smoothed_fit = None
             piecewise_linear_fit = curve_fit_helper(Curves.piecewise_linear_curve, x[:m],
                                     diag_chi_step, 'piecewise_linear', odir,
                                     [1, 1, 1, 1, 10], start = 2)
@@ -205,22 +208,38 @@ def modify_maxent_diag_chi(dataset, k = 8, edit = True):
                                             'logistic', odir, [10, 1, 100])
             poly2_fit = curve_fit_helper(Curves.poly2_curve, x[:m], diag_chi_step,
                                             'poly2', odir, [1, 1, 1])
+            poly2_log_fit = None
             poly3_fit = curve_fit_helper(Curves.poly3_curve, x[:m], diag_chi_step,
                                             'poly3', odir, [1, 1, 1, 1])
+            poly3_log_fit = None
+            poly4_log_fit = None
             linear_max_fit = curve_fit_helper(Curves.linear_max_curve, x[:m], diag_chi_step,
                                             'linear_max', odir)
             linear_fit = curve_fit_helper(Curves.linear_curve, x[:m], diag_chi_step,
                                             'linear', odir)
         else:
+            smoothed_fit = gaussian_filter(diag_chi_step[2:], sigma = 1)
+            smoothed_fit = np.append(diag_chi_step[:2], smoothed_fit)
             log_fit = None
             log_max_fit = None
             logistic_fit = None
             poly2_fit = curve_fit_helper(Curves.poly2_curve, x[:m], diag_chi_step,
                                             'poly2', odir, [1, 1, 1],
                                             start = 2)
+            poly2_log_fit = curve_fit_helper(Curves.poly2_curve, np.log(x[:m]), diag_chi_step,
+                                            'poly2_log', odir, [1, 1, 1], start = 2)
+
             poly3_fit = curve_fit_helper(Curves.poly3_curve, x[:m], diag_chi_step,
                                             'poly3', odir, [1, 1, 1, 1],
                                             start = 2)
+            poly3_log_fit = curve_fit_helper(Curves.poly3_curve, np.log(x[:m]), diag_chi_step,
+                                            'poly3_log', odir, [1, 1, 1, 1], start = 2)
+            poly4_log_fit = curve_fit_helper(Curves.poly4_curve, np.log(x[:m]), diag_chi_step,
+                                            'poly4_log', odir, [1, 1, 1, 1, 1], start = 2)
+            poly6_log_fit = curve_fit_helper(Curves.poly6_curve, np.log(x[:m]), diag_chi_step,
+                                            'poly6_log', odir, [1, 1, 1, 1, 1, 1, 1], start = 2)
+
+
             piecewise_linear_fit = curve_fit_helper(Curves.piecewise_linear_curve, x[:m],
                                     diag_chi_step, 'piecewise_linear', odir,
                                     [1, 1, 1, 1, 10], start = 2)
@@ -236,6 +255,8 @@ def modify_maxent_diag_chi(dataset, k = 8, edit = True):
 
         for log in [True, False]:
             plt.plot(diag_chi_step, label = 'Max Ent Edit', color = 'lightblue')
+            if smoothed_fit is not None:
+                plt.plot(smoothed_fit, label = 'Gaussian Filter', color = 'lightblue', ls='dashdot')
             if log_fit is not None:
                 plt.plot(log_fit, label = 'log', color = 'orange')
             # if log_max_fit is not None:
@@ -244,25 +265,34 @@ def modify_maxent_diag_chi(dataset, k = 8, edit = True):
                 plt.plot(logistic_fit, label = 'logistic', color = 'purple')
             # if linear_max_fit is not None:
             #     plt.plot(linear_max_fit, label = 'linear_max', color = 'brown')
-            if linear_fit is not None:
-                plt.plot(linear_fit, label = 'linear', color = 'teal')
-            if piecewise_linear_fit is not None:
-                plt.plot(piecewise_linear_fit, label = 'piecewise_linear', color = 'teal', ls='--')
-            if poly2_fit is not None:
-                plt.plot(poly2_fit, label = 'poly2', color = 'pink')
-            if piecewise_poly2_fit is not None:
-                plt.plot(piecewise_poly2_fit, label = 'piecewise_poly2', color = 'pink', ls='--')
-            if poly3_fit is not None:
-                plt.plot(poly3_fit, label = 'poly3', color = 'red')
-            if piecewise_poly3_fit is not None:
-                plt.plot(piecewise_poly3_fit, label = 'piecewise_poly3', color = 'red', ls='--')
+            # if linear_fit is not None:
+            #     plt.plot(linear_fit, label = 'linear', color = 'teal')
+            # if piecewise_linear_fit is not None:
+            #     plt.plot(piecewise_linear_fit, label = 'piecewise_linear', color = 'teal', ls='--')
+            # if poly2_fit is not None:
+            #     plt.plot(poly2_fit, label = 'poly2', color = 'pink')
+            # if piecewise_poly2_fit is not None:
+            #     plt.plot(piecewise_poly2_fit, label = 'piecewise_poly2', color = 'pink', ls='--')
+            # if poly2_log_fit is not None:
+            #     plt.plot(poly2_log_fit, label = 'poly2_log', color = 'pink', ls=':')
+            # if poly3_fit is not None:
+            #     plt.plot(poly3_fit, label = 'poly3', color = 'red')
+            # if poly3_log_fit is not None:
+            #     plt.plot(poly3_log_fit, label = 'poly3_log', color = 'red', ls=':')
+            # if piecewise_poly3_fit is not None:
+            #     plt.plot(piecewise_poly3_fit, label = 'piecewise_poly3', color = 'red', ls='--')
+            if poly4_log_fit is not None:
+                plt.plot(poly4_log_fit, label = 'poly4_log', color = 'green', ls=':')
+            if poly6_log_fit is not None:
+                plt.plot(poly6_log_fit, label = 'poly6_log', color = 'darkgreen', ls=':')
+
             plt.legend()
             plt.ylim(None, 2 * np.max(diag_chi_step))
             if log:
                 plt.xscale('log')
                 plt.savefig(osp.join(odir, 'meanDist_fit_log.png'))
             else:
-                # plt.xlim(0, 50)
+                plt.xlim(0, 50)
                 plt.savefig(osp.join(odir, 'meanDist_fit.png'))
             plt.close()
 
@@ -270,7 +300,9 @@ def curve_fit_helper(fn, x, y, label, odir, init = [1,1], start = 0):
     try:
         popt, pcov = curve_fit(fn, x[start:], y[start:], p0 = init, maxfev = 2000)
         print(f'\t{label} popt', popt)
-        fit = fn(x, *popt)
+        fit = fn(x[start:], *popt)
+        if start > 0:
+            fit = np.append(np.zeros(start), fit)
         np.savetxt(osp.join(odir, f'{label}_fit.txt'), fit)
         np.savetxt(osp.join(odir, f'{label}_popt.txt'), popt)
     except RuntimeError as e:
@@ -327,13 +359,23 @@ class Curves():
         x, max = xmax
         return logistic_curve(x, max, slope, midpoint)
 
+    def poly2_curve(x, A, B, C):
+        result = A + B*x + C*x**2
+        return result
+
     def poly3_curve(x, A, B, C, D):
         result = A + B*x + C*x**2 + D*x**3
         return result
 
-    def poly2_curve(x, A, B, C):
-        result = A + B*x + C*x**2
+    def poly4_curve(x, A, B, C, D, E):
+        result = A + B*x + C*x**2 + D*x**3 + E*x**4
         return result
+
+    def poly6_curve(x, A, B, C, D, E, F, G):
+        result = A + B*x + C*x**2 + D*x**3 + E*x**4 + F*x**5 + G*x**6
+        return result
+
+
 
 def plot_modified_max_ent(sample, params = True, k = 8):
     # plot different p(s) curves
@@ -376,7 +418,8 @@ def plot_modified_max_ent(sample, params = True, k = 8):
             'log_max', 'linear_max',
             'logistic_manual', f'mlp',
             'linear', 'poly2',
-            'poly3']
+            'poly3', 'poly4_log',
+            'poly6_log']
     colors = [
             # 'green',
             # 'purple',
@@ -385,7 +428,8 @@ def plot_modified_max_ent(sample, params = True, k = 8):
             'yellow', 'brown',
             'darkgreen', 'orange',
             'teal', 'pink',
-            'red']
+            'red', 'green',
+            'darkgreen']
     labels = [
             # 'MLP',
             # 'MLP+GNN',
@@ -394,10 +438,11 @@ def plot_modified_max_ent(sample, params = True, k = 8):
             'Log Max', 'Linear Max',
             'Logistic Manual', 'MLP+PCA',
             'Linear', 'Poly2',
-            'Poly3']
+            'Poly3', 'Poly4_log',
+            'Poly6_log']
 
     for method, color, label in zip(methods, colors, labels):
-        if label not in {'Linear', 'Poly3', 'Max Ent Edit', 'Logistic Manual'}:
+        if label not in {'Linear', 'Poly3', 'Poly4_log', 'Poly6_log', 'Max Ent Edit', 'Logistic Manual'}:
             continue
         idir = osp.join(max_ent_dir, f'samples/sample{sample}_{method}')
         ifile = osp.join(idir,'y.npy')
@@ -1167,14 +1212,30 @@ def grid_dist(dataset, plot=True):
 
     return grid_size_arr
 
+def plot_params_test():
+    max_ent_dir = '/home/erschultz/dataset_02_04_23/samples/sample246/PCA-normalize-E/k8/replicate1'
+    diag_chis = np.loadtxt(osp.join(max_ent_dir, 'chis_diag.txt'))[-1]
+    ifile = osp.join(max_ent_dir, 'resources/config.json')
+    with open(ifile, 'r') as f:
+        config = json.load(f)
+
+    y = calculate_diag_chi_step(config, diag_chis)
+
+    print(y)
+    x = np.arange(0, len(y))
+    plt.plot(np.log(x), y, label = 'Max Ent Edit', color = 'lightblue')
+    # plt.xscale('log')
+    plt.show()
+
 
 if __name__ == '__main__':
     # modify_plaid_chis('dataset_02_04_23', k = 7)
-    modify_maxent_diag_chi('dataset_02_04_23', k = 8)
-    for i in range(256, 257):
+    modify_maxent_diag_chi('dataset_02_04_23', 8, False)
+    for i in range(201, 202):
         plot_modified_max_ent(i, k = 8)
     # diagonal_dist('dataset_02_04_23', 7)
     # grid_dist('dataset_01_26_23')
     # plaid_dist('dataset_02_04_23', 8, False, False, False)
     # seq_dist('dataset_01_26_23', 4, True, False, True)
     # modify_plaid_chis('dataset_11_14_22', 8)
+    # plot_params_test()

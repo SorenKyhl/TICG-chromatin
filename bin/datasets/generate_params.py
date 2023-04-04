@@ -361,6 +361,8 @@ class DatasetGenerator():
             linear = True
         elif 'poly3' in self.diag_mode:
             poly3 = True
+        elif 'poly6_log' in self.diag_mode:
+            poly6_log = True
 
         converged_samples = []
         for j in samples:
@@ -383,6 +385,8 @@ class DatasetGenerator():
                     diag_chi_step = np.loadtxt(osp.join(sample_folder, 'fitting/linear_fit.txt'))
                 elif poly3:
                     diag_chi_step = np.loadtxt(osp.join(sample_folder, 'fitting/poly3_fit.txt'))
+                elif poly6_log:
+                    diag_chi_step = np.loadtxt(osp.join(sample_folder, 'fitting2/poly6_log_fit.txt'))
                 else:
                     diag_chis = np.loadtxt(osp.join(sample_folder, 'chis_diag.txt'))[-1]
                     with open(osp.join(sample_folder, 'resources/config.json'), 'r') as f:

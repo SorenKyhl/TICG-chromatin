@@ -43,6 +43,7 @@ then
   source activate python3.9_pytorch1.9
 fi
 
+# MC
 numIterations=12
 finalSimProductionSweeps=500000
 equilibSweeps=100000

@@ -885,7 +885,6 @@ def make_dataset_of_converged(dataset):
                     with open(osp.join(pca_dir, final_it_dir, 'config.json')) as f:
                         config = json.load(f)
                     diag_chi_continuous = calculate_diag_chi_step(config)
-                    print(diag_chi_continuous)
                     np.save(osp.join(of_dir, 'diag_chis_continuous.npy'), diag_chi_continuous)
 
                     # shutil.copytree(osp.join(final_it_dir, 'production_out'), osp.join(of_dir, 'data_out'))

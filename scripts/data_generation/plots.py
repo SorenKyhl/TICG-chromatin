@@ -18,9 +18,9 @@ from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
 
 
 def meanDist_comparison():
-    datasets = ['dataset_01_26_23', 'dataset_02_16_23']
+    # datasets = ['dataset_01_26_23', 'dataset_02_16_23']
     # datasets = ['dataset_01_26_23', 'dataset_02_04_23', 'dataset_02_21_23']
-    # datasets = ['dataset_02_04_23', 'dataset_02_20_23']
+    datasets = ['dataset_02_04_23', 'dataset_03_22_23']
     data_dir = osp.join('/home/erschultz', datasets[0])
 
     cmap = matplotlib.cm.get_cmap('tab10')
@@ -161,6 +161,8 @@ def scc_comparison(dataset, ID=None, k=8, max_ent=False):
         fig.set_figheight(6*2)
         fig.set_figwidth(6*3)
         row = 0; col=0
+        scc_GNN = []
+        scc_PCA = []
         for sample in samples:
             s_dir = osp.join(data_dir, f'samples/sample{sample}')
             if max_ent:
@@ -177,6 +179,7 @@ def scc_comparison(dataset, ID=None, k=8, max_ent=False):
             corr_scc_var = scc.scc(y, yhat, var_stabilized = True)
             _, corr_arr = calc_dist_strat_corr(y, yhat, mode = 'pearson',
                                                     return_arr = True)
+            scc_GNN.append(corr_scc_var)
 
             y_file = osp.join(dir ,f'PCA-normalize-S/k{k}/replicate1/y.npy')
             y_file2 = osp.join(dir ,f'PCA-normalize-E/k{k}/replicate1/y.npy')
@@ -195,6 +198,9 @@ def scc_comparison(dataset, ID=None, k=8, max_ent=False):
 
             else:
                 plot_PCA = False
+
+            if plot_PCA:
+                scc_PCA.append(corr_scc_var_pca)
 
             ax = axes[row][col]
             if plot_PCA and plot_GNN:
@@ -232,6 +238,8 @@ def scc_comparison(dataset, ID=None, k=8, max_ent=False):
         else:
             plt.savefig(osp.join(data_dir, 'distance_pearson.png'))
         plt.close()
+
+    print(f'GNN={np.mean(scc_GNN)}, PCA={np.mean(scc_PCA)}')
 
 
 def l_ij_comparison(dataset, dataset_exp, k=8):
@@ -350,6 +358,6 @@ def l_ij_comparison(dataset, dataset_exp, k=8):
 if __name__ == '__main__':
     # main()
     # meanDist_comparison()
-    # l_ij_comparison('dataset_03_23_23', 'dataset_02_04_23', 8)
-    p_s_comparison('dataset_03_22_23', 391, 8)
-    # scc_comparison('dataset_03_22_23', 391, 8)
+    l_ij_comparison('dataset_03_23_23', 'dataset_02_04_23', 8)
+    # p_s_comparison('dataset_03_22_23', 391, 8)
+    # scc_comparison('dataset_02_04_23', 396, 8, True)

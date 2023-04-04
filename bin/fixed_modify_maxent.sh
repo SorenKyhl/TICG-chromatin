@@ -44,7 +44,7 @@ useE='true'
 
 jobs=0
 waitCount=0
-for sample in {201..210}
+for sample in 201
 do
 	dataFolder="${baseDataFolder}/samples/sample${sample}/PCA-normalize-E/k${k}/replicate1"
 	# gridSize="${sampleFolder}/none/k0/replicate1/grid_size.txt"
@@ -56,10 +56,10 @@ do
 	i="${sample}_copy"
 	dense='true'
 	diagBins=96
-	run &
+	# run &
 
-	chiDiagMethod="${dataFolder}/fitting/chis_diag_edit.txt"
-	i="${sample}_edit"
+	# chiDiagMethod="${dataFolder}/fitting/chis_diag_edit.txt"
+	# i="${sample}_edit"
 	# run &
 
 	# chiDiagMethod="${dataFolder}/fitting/chis_diag_edit_zero.txt"
@@ -78,21 +78,29 @@ do
 	# i="${sample}_logistic_manual"
 	# run &
 	#
-	chiDiagMethod="${dataFolder}/fitting/linear_fit.txt"
-	i="${sample}_linear"
+	# chiDiagMethod="${dataFolder}/fitting/linear_fit.txt"
+	# i="${sample}_linear"
 	# run &
 	# #
 	# # chiDiagMethod="${dataFolder}/log_fit.txt"
 	# # i=log
 	# # run &
 	# #
-	# chiDiagMethod="${dataFolder}/fitting/poly2_fit.txt"
-	# i="${sample}_poly2"
+	# chiDiagMethod="${dataFolder}/fitting2/poly2_log_fit.txt"
+	# i="${sample}_poly2_log"
+	# run &
+	# #
+	# chiDiagMethod="${dataFolder}/fitting2/poly3_log_fit.txt"
+	# i="${sample}_poly3_log"
 	# run &
 	#
-	# chiDiagMethod="${dataFolder}/fitting/poly3_fit.txt"
-	# i="${sample}_poly3"
+	# chiDiagMethod="${dataFolder}/fitting2/poly4_log_fit.txt"
+	# i="${sample}_poly4_log"
 	# run &
+
+	chiDiagMethod="${dataFolder}/fitting2/poly6_log_fit.txt"
+	i="${sample}_poly6_log"
+	run &
 
 	jobs=$(( $jobs + 1 ))
 	if [ $jobs -gt 15 ]
