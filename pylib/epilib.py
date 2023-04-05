@@ -621,8 +621,6 @@ def get_sequences(
 
     assert dtype == "int" or dtype == "float"
 
-    import pdb
-    pdb.set_trace()
     
     if print_singular_values:
         logging.info("singular values are:")

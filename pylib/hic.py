@@ -1,5 +1,6 @@
 import numpy as np
 import copy
+from pathlib import Path
 import scipy.ndimage as ndimage
 from typing import Callable
 from skimage.measure import block_reduce
@@ -144,21 +145,22 @@ def smooth_hic(x, smooth_size=10):
     return ndimage.gaussian_filter(x, (smooth_size, smooth_size))
 
 
-def load_hic(nbeads, pool_fn=pool_sum, chrom=2):
+def load_hic(nbeads, pool_fn=pool_sum, chrom=2, cell="HCT116_auxin"):
     """load hic by pooling preloaded high resolution map"""
     chrom = str(chrom)
 
     if not default.data_dir.exists():
         default.data_dir.mkdir()
 
-    hic_file = default.HCT116_hic_20k[chrom]
+    #hic_file = default.HCT116_hic_20k[chrom]
+    hic_file = Path(default.data_dir, f"{cell}_chr{chrom}_20k.npy")
 
     if not hic_file.exists():
         nbeads_large = 20480
         pipe = copy.deepcopy(default.data_pipeline)
         pipe.set_chrom(chrom)
         pipe.resize(nbeads_large)
-        gthic = pipe.load_hic(default.HCT116_hic)
+        gthic = pipe.load_hic(default.hic_paths[cell])
         np.save(hic_file, gthic)
     else:
         gthic = np.load(hic_file)
@@ -168,17 +170,20 @@ def load_hic(nbeads, pool_fn=pool_sum, chrom=2):
     return pooled
 
 
-def load_seqs(nbeads, k):
+def load_seqs(nbeads, k, chrom="2", cell="HCT116_auxin"):
     """load sequences by pooling preloaded high resolution sequences"""
+    chrom=str(chrom)
 
-    if not default.HCT116_seqs_20k.exists():
+    seqs_file = Path(default.data_dir, f"{cell}_chr{chrom}_seqs20k.npy")
+
+    if not seqs_file.exists():
         nbeads_large = 20480
-        gthic = load_hic(nbeads_large)
+        gthic = load_hic(nbeads_large, chrom=chrom, cell=cell)
         gthic = smooth_hic(gthic)  # this step is very important
         seqs = epilib.get_sequences(gthic, k, randomized=True)
-        np.save(default.HCT116_seqs_20k, seqs)
+        np.save(seqs_file, seqs)
     else:
-        seqs = np.load(default.HCT116_seqs_20k)
+        seqs = np.load(seqs_file)
         if k > len(seqs):
             raise ValueError("number of sequences exceeds the loaded amount")
         else:
