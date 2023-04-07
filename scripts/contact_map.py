@@ -201,9 +201,24 @@ def main():
 
         # meanDist
         if args.random_mode:
+            y_gt_file = osp.join(args.sample_folder, 'resources', 'y_gt.npy')
+            if osp.exists(y_gt_file):
+                y_gt = np.load(y_gt_file)
+                meanDist_gt = DiagonalPreprocessing.genomic_distance_statistics(y_gt, 'prob')
+                meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+                print('meanDist_gt', meanDist_gt.shape)
+                rmse = mean_squared_error(meanDist, meanDist_gt, squared = False)
+                title = f'RMSE: {np.round(rmse, 9)}'
+                plot_mean_dist(meanDist, args.save_folder, 'meanDist_log_ref.png',
+                                diag_chi_step, True, meanDist_gt, 'Reference', 'Sim',
+                                'blue', title)
+                plot_mean_dist(meanDist, args.save_folder, 'meanDist_ref.png',
+                                diag_chi_step, False, meanDist_gt, 'Reference', 'Sim',
+                                'blue', title)
+
             plot_mean_vs_genomic_distance(y, args.save_folder, 'meanDist.png',
                                             diag_chi_step)
-            plot_mean_vs_genomic_distance(y, args.save_folder, 'meanDist.png',
+            plot_mean_vs_genomic_distance(y, args.save_folder, 'meanDist_log.png',
                                             diag_chi_step, logx = True)
 
         else:

@@ -29,6 +29,8 @@ public:
 	static bool density_cap_on;
 	static bool compressibility_on;
 	static bool diag_pseudobeads_on;
+	static bool double_count_main_diagonal;
+	static bool new_soren_eqn;
 	static bool dense_diagonal_on;
 	static int n_small_bins;
 	static int n_big_bins;

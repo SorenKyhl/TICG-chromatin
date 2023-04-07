@@ -230,6 +230,21 @@ nlohmann::json Sim::readInput() {
 	if (diagonal_on)
 	{
     assert(config.contains("diag_pseudobeads_on")); Cell::diag_pseudobeads_on = config["diag_pseudobeads_on"];
+    if (config.contains("new_soren_eqn"))
+    {
+
+      Cell::new_soren_eqn = config["new_soren_eqn"];
+      assert(config.contains("double_count_main_diagonal")); Cell::double_count_main_diagonal = config["double_count_main_diagonal"];
+      if (Cell::new_soren_eqn)
+      {
+        std::cout << "Using Sorens new diag eqn"  << std::endl;
+      }
+
+    }
+    else
+    {
+      Cell::new_soren_eqn = false;
+    }
     assert(config.contains("diagonal_linear")); Cell::diagonal_linear = config["diagonal_linear"];
     assert(config.contains("dense_diagonal_on")); Cell::dense_diagonal_on = config["dense_diagonal_on"];
     assert(config.contains("diag_cutoff")); Cell::diag_cutoff = config["diag_cutoff"];
@@ -292,7 +307,7 @@ nlohmann::json Sim::readInput() {
 	assert(config.contains("gridmove_on")); gridmove_on = config["gridmove_on"];
 	//
 	std::cout << "grid move is : " << gridmove_on << std::endl;
-	//assert(config.contains("production")); production = config["production"];
+	// assert(config.contains("production")); production = config["production"];
 	READ_JSON(config, production);
 
   // MC move params

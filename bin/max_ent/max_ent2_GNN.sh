@@ -38,7 +38,7 @@ method='GNN'
 for sample in 324 981 1936 2834 3464 1 2 3 4 5
 do
   gridSize="${dir}/${dataset}/samples/sample${sample}/config.json"
-  for GNNModelID in 390 391
+  for GNNModelID in 392 396
   do
     echo $sample $m
     max_ent

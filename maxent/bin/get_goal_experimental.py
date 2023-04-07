@@ -21,9 +21,9 @@ def getArgs():
                         help='true for verbose mode')
     parser.add_argument('--mode', type=str,
                         help='{"plaid", "diag", "both", "grid_size"}')
-    parser.add_argument('--v_bead', type=int, default=520,
+    parser.add_argument('--v_bead', type=float, default=520,
                         help='volume of bead')
-    parser.add_argument('--grid_size', default=28.7,
+    parser.add_argument('--grid_size', type=float, default=28.7,
                         help='side length of grid cell')
 
     args = parser.parse_args()
@@ -88,7 +88,7 @@ def get_mask(bin, m, diag_bins, dense, n_small_bins,
                     curr_bin =  math.floor( d_eff / small_binsize)
             else:
                 curr_bin = int(d_eff/binsize)
-            if curr_bin == bin:
+            if curr_bin == bin and d_eff >= 1:
                 mask[i,j] = 1
                 mask[j,i] = 1
                 if i == j:
@@ -100,12 +100,14 @@ def get_plaid_goal(y, args, x = None):
     assert abs(np.mean(y.diagonal()) - 1) < 1e-5, f'{args.contact_map} is not normalized: {np.mean(y.diagonal())} '
     obj_goal = []
     if args.verbose:
-        print(y, y.shape, y.dtype, '\n')
+        print('y\n', y, y.shape, y.dtype, '\n')
         if x is not None:
-            print(x, x.shape, x.dtype, '\n')
+            print('x\n', x, x.shape, x.dtype, '\n')
 
     if x is None:
         x = np.load('x.npy')
+        if args.verbose:
+            print('x\n', x, x.shape, x.dtype, '\n')
     _, k = x.shape
     for i in range(k):
         seqi = x[:, i]
@@ -235,23 +237,19 @@ def main():
 class Tester():
     def test_plaid():
         args = getArgs()
-        dir = '/home/erschultz/dataset_test/samples/sample1'
+        dir = '/home/erschultz/dataset_test/samples/sample5000'
         y = np.load(osp.join(dir, 'y.npy'))
-        y = y.astype(float)
-        y /= np.max(y)
-        # print(y.shape, y.dtype, '\n')
+        y = y.astype(float) # ensure float
+        y /= np.mean(np.diagonal(y))
+        print('y', y)
 
-        x = np.load(osp.join(dir, 'x.npy'))
+        x = np.load(osp.join(dir, 'x_soren.npy')).T
         x = x.astype(float)
         m, k = x.shape
-        # print(x.shape, x.dtype, '\n')
+        print('x', x)
 
-        # obj_goal = get_plaid_goal(y, args, x)
-        # print(obj_goal)
-
-        x = np.ones(m).reshape(-1, 1)
         obj_goal = get_plaid_goal(y, args, x)
-        print(obj_goal)
+        print('goal', obj_goal)
 
     def test_diag():
         args = getArgs()

@@ -18,10 +18,11 @@ useS='false'
 useD='false'
 chiMethod='none'
 method='none'
-k=0
+k=1
 # bonded
-bondLength=16.5
-gridSize=17.5
+bondLength=223.93945336907979
+gridSize=227.7170984734238
+beadVol=260000.0
 # newton's method
 trust_region=5
 gamma=0.2
@@ -39,15 +40,15 @@ then
   source activate python3.9_pytorch1.9
 fi
 
-numIterations=12
+numIterations=5
 finalSimProductionSweeps=50000
 equilibSweeps=10000
 productionSweeps=50000
 
-dataset='dataset_03_22_23'
-m=512
+dataset='dataset_test'
+m=1024
 
-for sample in {1..5}
+for sample in 5000
 do
   echo $sample $m
   max_ent

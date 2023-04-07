@@ -20,7 +20,7 @@ from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
 def meanDist_comparison():
     # datasets = ['dataset_01_26_23', 'dataset_02_16_23']
     # datasets = ['dataset_01_26_23', 'dataset_02_04_23', 'dataset_02_21_23']
-    datasets = ['dataset_02_04_23', 'dataset_03_22_23']
+    datasets = ['dataset_02_04_23', 'dataset_04_04_23']
     data_dir = osp.join('/home/erschultz', datasets[0])
 
     cmap = matplotlib.cm.get_cmap('tab10')
@@ -131,12 +131,12 @@ def p_s_comparison(dataset, ID=None, k=8, max_ent=False):
         fig.supylabel('Contact Probability', fontsize = 16)
         fig.supxlabel('Polymer Distance (beads)', fontsize = 16)
         if max_ent:
-            fig.suptitle(f'{dataset}_max_ent\nGNN={ID}', fontsize=16)
+            fig.suptitle(f'{dataset}_max_ent\nGNN={ID}\nk={k}', fontsize=16)
         else:
-            fig.suptitle(f'{dataset}\nGNN={ID}', fontsize=16)
+            fig.suptitle(f'{dataset}\nGNN={ID}\nk={k}', fontsize=16)
         plt.tight_layout()
         if log:
-                plt.savefig(osp.join(data_dir, 'p_s_comparison_log.png'))
+            plt.savefig(osp.join(data_dir, 'p_s_comparison_log.png'))
         else:
             plt.savefig(osp.join(data_dir, 'p_s_comparison.png'))
         plt.close()
@@ -229,9 +229,9 @@ def scc_comparison(dataset, ID=None, k=8, max_ent=False):
         fig.supxlabel('Polymer Distance (beads)', fontsize = 16)
         fig.supylabel('Pearson Correlation Coefficient', fontsize = 16)
         if max_ent:
-            fig.suptitle(f'{dataset}_max_ent\nGNN={ID}', fontsize=16)
+            fig.suptitle(f'{dataset}_max_ent\nGNN={ID}\nk={k}', fontsize=16)
         else:
-            fig.suptitle(f'{dataset}\nGNN={ID}', fontsize=16)
+            fig.suptitle(f'{dataset}\nGNN={ID}\nk={k}', fontsize=16)
         plt.tight_layout()
         if log:
                 plt.savefig(osp.join(data_dir, 'distance_pearson_log.png'))
@@ -357,7 +357,7 @@ def l_ij_comparison(dataset, dataset_exp, k=8):
 
 if __name__ == '__main__':
     # main()
-    # meanDist_comparison()
-    l_ij_comparison('dataset_03_23_23', 'dataset_02_04_23', 8)
-    # p_s_comparison('dataset_03_22_23', 391, 8)
-    # scc_comparison('dataset_02_04_23', 396, 8, True)
+    meanDist_comparison()
+    # l_ij_comparison('dataset_03_23_23', 'dataset_02_04_23', 8)
+    # p_s_comparison('dataset_02_04_23', 396, 12)
+    # scc_comparison('dataset_02_04_23', 392, 8, True)

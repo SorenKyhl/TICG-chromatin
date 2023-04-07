@@ -43,7 +43,7 @@ do
   gridSize="${dir}/dataset_02_04_23/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
   # gridSize=24
   sample="${sample}_copy"
-  for GNNModelID in 396
+  for GNNModelID in 392
    # 382
   do
     echo $sample $m

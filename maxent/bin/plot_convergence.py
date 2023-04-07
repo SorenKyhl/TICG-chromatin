@@ -65,7 +65,7 @@ def main():
                 counter += 1
         plt.xlabel('Iteration')
         plt.ylabel('chi value')
-        plt.legend(loc=(1.04,0))
+        plt.legend(loc=(1.04,0), ncol = 3)
         plt.tight_layout()
         plt.savefig("pchis.png")
         plt.close()
@@ -109,7 +109,7 @@ def main():
         plt.close()
 
 
-def test():
+def test1():
     args = getArgs()
     args.k = 1
     dataset = '/home/erschultz/sequences_to_contact_maps/dataset_04_27_22/samples/'
@@ -129,7 +129,40 @@ def test():
     plt.show()
     plt.close()
 
+def test_pchis():
+    args = getArgs()
+    args.mode = 'both'
+    args.k = 8
+    dataset = '/home/erschultz/dataset_02_04_23/samples/'
+    sample = 202
+    sample_dir = osp.join(dataset, f'sample{sample}')
+    assert osp.exists(sample_dir)
+    max_ent_dir = osp.join(sample_dir, f'PCA-normalize-scale-S/k{args.k}/replicate1')
+    assert osp.exists(max_ent_dir)
+    chis = np.loadtxt(osp.join(max_ent_dir, 'chis.txt'))
+    if chis.ndim < 2:
+        chis = np.atleast_2d(chis).T
+
+    k = sympy.Symbol('k')
+    result = sympy.solvers.solve(k*(k-1)/2 + k - chis.shape[1])
+    k = np.max(result) # discard negative solution
+
+    counter = 0
+    for i in range(k):
+        for j in range(k):
+            if j < i:
+                continue
+            chistr = "chi{}{}".format(LETTERS[i], LETTERS[j])
+            plt.plot(chis[1:, counter], label = chistr)
+            counter += 1
+    plt.xlabel('Iteration')
+    plt.ylabel('chi value')
+    plt.legend(loc=(1.04,0), ncol = 3)
+    plt.tight_layout()
+    plt.savefig(osp.join(max_ent_dir, "pchis2.png"))
+    plt.close()
+
 
 if __name__ == '__main__':
     main()
-    # test()
+    # test_pchis()

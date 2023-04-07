@@ -6,10 +6,12 @@ import sys
 import tarfile
 from collections import defaultdict
 
+import imageio.v2 as imageio
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats as ss
+import sympy
 import torch
 import torch_geometric
 from scipy.ndimage import uniform_filter
@@ -26,7 +28,8 @@ from sequences_to_contact_maps.scripts.energy_utils import (
 from sequences_to_contact_maps.scripts.knightRuiz import knightRuiz
 from sequences_to_contact_maps.scripts.load_utils import (
     get_final_max_ent_folder, load_all, load_contact_map, load_Y)
-from sequences_to_contact_maps.scripts.plotting_utils import (plot_matrix,
+from sequences_to_contact_maps.scripts.plotting_utils import (plot_diag_chi,
+                                                              plot_matrix,
                                                               plot_seq_binary)
 from sequences_to_contact_maps.scripts.R_pca import R_pca
 from sequences_to_contact_maps.scripts.similarity_measures import SCC
@@ -34,6 +37,7 @@ from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
                                                      pearson_round,
                                                      triu_to_full)
 
+LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 def check_dataset(dataset):
     dir = osp.join("/project2/depablo/erschultz", dataset, "samples")
@@ -815,31 +819,6 @@ def gnn_of_max_ent(samples, k, ID):
 
 
 
-
-def check_interpolation():
-    '''Check if any of the experimental contact maps had too many rows/cols to be interpolated'''
-    dir = '/home/erschultz/dataset_03_21_23'
-    for sample in range(1, 874):
-        s_dir = osp.join(dir, 'samples', f'sample{sample}')
-        if not osp.exists(s_dir):
-            continue
-        with open(osp.join(s_dir, 'Interpolation/zeros_mappability-0.7/log.log')) as f:
-            lines = f.readlines()
-            last = lines[-1]
-            rows = last.split(' ')[1]
-            rows = int(rows)
-            if rows > 1000:
-                print(sample, rows)
-                interp_dir = osp.join(dir, 'samples', f'sample{1000+sample}')
-                if osp.exists(interp_dir):
-                    shutil.rmtree(interp_dir)
-                if osp.exists(s_dir):
-                    shutil.rmtree(s_dir)
-
-
-        with open(osp.join(dir, 'samples', f'sample{1000+sample}/import.log'), 'a') as f:
-            f.write(first)
-
 def make_dataset_of_converged(dataset):
     '''
     Inputs:
@@ -892,8 +871,160 @@ def make_dataset_of_converged(dataset):
                     count += 1
     print(f'{converged_count} out of {converged_count+count} converged')
 
+def plot_seq():
+    dir = '/home/erschultz/dataset_test/samples/sample5000'
+    x_soren = np.load(osp.join(dir, 'x_soren.npy')).T
+    print(x_soren.shape)
+    x = np.load('/home/erschultz/scratch/TICG_maxent6011/resources/x.npy')
+    print(x.shape)
 
+    rows = 3; cols = 3
+    fig, ax = plt.subplots(rows, cols)
+    row = 0; col = 0
+    for i in range(rows*cols):
+        for seq_i, label in zip([x.T[i], x_soren.T[i]], ['Eric', 'Soren']):
+            val = np.mean(seq_i[:100])
+            if val < 0:
+                seq_i *= -1
+            ax[row, col].plot(seq_i, label = label)
+        ax[row, col].set_title(f'PC {i}')
+        col += 1
+        if col == cols:
+            col = 0
+            row += 1
 
+    plt.legend()
+    plt.show()
+
+def temp_plot():
+    dir = '/home/erschultz/dataset_test/samples/sample5000/soren-S/k10_copy/replicate1'
+    all_diag_chis1 = np.loadtxt(osp.join(dir, 'chis_diag.txt'))
+    with open(osp.join(dir, 'iteration11/config.json'), 'r') as f:
+        config1 = json.load(f)
+
+    with open(osp.join(dir, 'config_soren.json'), 'r') as f:
+        config2 = json.load(f)
+
+    allchis = np.load(osp.join(dir, 'chis_soren.npy'))
+    print(allchis.shape)
+    k=10
+    nplaid = int(k*(k+1)/2)
+    all_diag_chis2 = allchis[:12, nplaid:]
+    print(all_diag_chis2.shape)
+
+    files = []
+    ylim = (np.min(all_diag_chis1), np.max(all_diag_chis1))
+    for i in range(1, len(all_diag_chis1)):
+        diag_chi_1i = all_diag_chis1[i]
+        diag_chi_2i = all_diag_chis2[i]
+        file = f'{i}.png'
+        diag_chi_step_1i = calculate_diag_chi_step(config1, diag_chi_1i)
+        diag_chi_step_2i = calculate_diag_chi_step(config2, diag_chi_2i)
+        plot_diag_chi(None, dir, ref = diag_chi_step_2i,
+                        ref_label = 'Soren',
+                        logx = True, ofile = file,
+                        diag_chis_step = diag_chi_step_1i, ylim = ylim,
+                        title = f'Iteration {i}')
+        files.append(osp.join(dir, file))
+
+    frames = []
+    for filename in files:
+        frames.append(imageio.imread(filename))
+
+    imageio.mimsave(osp.join(dir, 'pchis_diag_step_comparison.gif'), frames, format='GIF', fps=2)
+
+    # remove files
+    for filename in files:
+        os.remove(filename)
+
+def temp_plot2():
+    dir = '/home/erschultz/dataset_test/samples/sample5000/soren-S/k10_copy/replicate1'
+
+    allchis = np.load(osp.join(dir, 'chis_soren.npy'))
+    print(allchis.shape)
+    k=10
+    nplaid = int(k*(k+1)/2)
+    chis = allchis[:12, :nplaid]
+
+    counter = 0
+    for i in range(k):
+        for j in range(k):
+            if j < i:
+                continue
+            chistr = "chi{}{}".format(LETTERS[i], LETTERS[j])
+            plt.plot(chis[1:, counter], label = chistr)
+            counter += 1
+    plt.xlabel('Iteration')
+    plt.ylabel('chi value')
+    plt.legend(loc=(1.04,0), ncol = 3)
+    plt.tight_layout()
+    plt.savefig(osp.join(dir, "pchis_soren.png"))
+    plt.close()
+
+def make_config():
+    dir = '/home/erschultz/dataset_test/samples/sample5000/soren-S/k10_copy/replicate1'
+
+    allchis = np.load(osp.join(dir, 'chis_soren.npy'))
+    print(allchis.shape)
+    k=10
+    nplaid = int(k*(k+1)/2)
+    chis = allchis[-1, :nplaid]
+
+    with open(osp.join(dir, 'config_soren.json'), 'r') as f:
+        config = json.load(f)
+
+    diag_chis = allchis[-1, nplaid:]
+
+    config['diag_chis'] = list(diag_chis)
+
+    counter = 0
+    for i in range(k):
+        for j in range(k):
+            if j < i:
+                continue
+            key = 'chi{}{}'.format(LETTERS[i], LETTERS[j])
+            config[key] = chis[counter]
+            counter += 1
+
+    config.pop('chis')
+    config.pop('ematrix_on')
+    config.pop('smatrix_filename')
+    config['lmatrix_on']=True
+    config['dmatrix_on']=True
+    config['smatrix_on']=True
+    config['load_configuration']=False
+    config['nSweeps'] = 1000000
+    config['production'] = True
+    config['prof_timer_on'] = False
+    config['bead_type_files'] = [f'seq{i}.txt' for i in range(10)]
+
+    with open(osp.join(dir, 'config_soren_final.json'), "w") as f:
+        json.dump(config, f, indent = 2)
+
+    with open(osp.join(dir, 'soren/config.json'), "w") as f:
+        json.dump(config, f, indent = 2)
+
+def make_config2():
+    dir = '/home/erschultz/dataset_test/samples/sample5000/soren-S/k10_copy/replicate1/soren_no_energy_no_diag'
+    with open(osp.join(dir, 'config.json')) as f:
+        config = json.load(f)
+
+    config['diag_chis'] = list(np.zeros_like(config['diag_chis']))
+
+    with open(osp.join(dir, 'config.json'), 'w') as f:
+        json.dump(config, f, indent = 2)
+
+def make_config3():
+    dir = '/home/erschultz/dataset_test/samples/sample5000/soren-S/k10_copy/replicate1/soren_no_energy_no_plaid'
+    with open(osp.join(dir, 'config.json')) as f:
+        config = json.load(f)
+
+    for i in range(10):
+        for j in range(i, 10):
+            config[f'chi{LETTERS[i]}{LETTERS[j]}']=0
+
+    with open(osp.join(dir, 'config.json'), 'w') as f:
+        json.dump(config, f, indent = 2)
 
 
 if __name__ == '__main__':
@@ -909,4 +1040,7 @@ if __name__ == '__main__':
     # plot_p_s('dataset_bond_grid', params = False, grid_size = True)
     # gnn_of_max_ent([207], 8, 378)
     # check_interpolation()
-    make_dataset_of_converged('dataset_03_21_23')
+    # make_dataset_of_converged('dataset_03_21_23')
+    # plot_seq()
+    # temp_plot()
+    make_config3()

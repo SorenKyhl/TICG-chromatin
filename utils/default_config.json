@@ -1,6 +1,6 @@
 {
   "production": true,
-  "decay_length": 100,
+  "decay_length": 500,
   "nSweeps": 500000,
   "dump_frequency": 50000,
   "dump_stats_frequency": 100,
@@ -12,8 +12,6 @@
   "pivot_on": true,
   "rotate_on": true,
   "plaid_on": true,
-  "AB_block": false,
-  "domainsize": 800,
   "load_bead_types": true,
   "load_configuration": false,
   "prof_timer_on": false,

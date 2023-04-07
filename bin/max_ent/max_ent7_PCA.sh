@@ -10,7 +10,7 @@
 #SBATCH --mail-user=erschultz@uchicago.edu
 
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
-i=6001
+i=6010
 
 # nonbonded plaid
 useL='true'
@@ -24,10 +24,12 @@ dense='true'
 diagBins=96
 nSmallBins=64
 smallBinSize=1
-diagCutoff=512
+diagCutoff=1024
 # bonded
 bondtype='gaussian'
-bondLength=16.5 # TODO make sure this is correct !!!
+bondLength=223.93945336907979
+gridSize=227.7170984734238
+beadVol=260000.0
 # newton's method
 mode='both'
 # bash
@@ -35,7 +37,7 @@ STARTTIME=$(date +%s)
 jobs=0
 waitCount=0
 
-local='false'
+local='true'
 if [ $local = 'true' ]
 then
   dir="/home/erschultz"
@@ -45,20 +47,19 @@ fi
 
 # MC
 numIterations=12
-finalSimProductionSweeps=500000
-equilibSweeps=100000
-productionSweeps=500000
-
-dataset='dataset_03_21_23'
-m=512
+finalSimProductionSweeps=3500
+equilibSweeps=1000
+productionSweeps=2500
+dataset='dataset_test'
+m=1024
 
 for k in 8
 do
-  for sample in {1392..1450}
+  for sample in 5000
   do
-    gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
+    # gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
     echo "$sample m=$m k=$k"
-    max_ent
+    max_ent_resume 10
     jobs=$(( $jobs + 1 ))
     if [ $jobs -gt 22 ]
     then

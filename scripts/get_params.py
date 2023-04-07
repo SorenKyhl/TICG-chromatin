@@ -10,6 +10,7 @@ from collections import defaultdict
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.linalg
 import torch
 import torch_geometric
 from sklearn.cluster import KMeans
@@ -456,7 +457,7 @@ class GetSeq():
         return seq
 
     def get_PCA_seq(self, input, normalize=False, binarize=False, scale=False,
-                    use_kernel=False, kernel=None):
+                    use_kernel=False, kernel=None, manual=False, soren=False):
         '''
         Defines seq based on PCs of input.
 
@@ -479,26 +480,27 @@ class GetSeq():
         else:
             pca = PCA()
 
-        if scale:
-            pca.fit(input/np.std(input, axis = 0))
+
+        if manual:
+            W, V = np.linalg.eig(np.corrcoef(input))
+            V = V.T
+        elif soren:
+            U, S, V = scipy.linalg.svd(np.corrcoef(input))
         else:
-            pca.fit(input)
+            if scale:
+                pca.fit(input/np.std(input, axis = 0))
+            else:
+                pca.fit(input)
+            if use_kernel:
+                V = pca.eigenvectors_.T
+            else:
+                V = pca.components_
 
         seq = np.zeros((self.m, self.k))
         for j in range(self.k):
-            if use_kernel:
-                pc = pca.eigenvectors_[:, j] # deprecated in 1.0
-            else:
-                pc = pca.components_[j]
-
+            pc = V[j]
             if normalize:
-                min = np.min(pc)
-                max = np.max(pc)
-                if max > abs(min):
-                    val = max
-                else:
-                    val = abs(min)
-
+                val = np.max(np.abs(pc))
                 # multiply by scale such that val x scale = 1
                 scale = 1/val
                 pc *= scale
@@ -748,11 +750,8 @@ class GetSeq():
         else:
             args.method = args.method.lower()
             print(f'Method lowercase: {args.method}')
-            if args.method == 'pca-soren':
-                files = [osp.join(self.sample_folder, f'pcf{i}.txt') for i in range(1,self.k)]
-                seq = np.zeros((self.m, self.k))
-                for i, f in enumerate(files):
-                    seq[:, i] = np.loadtxt(f)
+            if args.method.startswith('soren'):
+                seq = np.load(osp.join(self.sample_folder, 'x_soren.npy')).T
             elif args.method.startswith('random'):
                 seq = self.get_random_seq(args.lmbda, args.f, args.p_switch,
                                             args.seq_seed, args.exclusive,
@@ -1661,7 +1660,7 @@ class Tester():
         self.args_file = None
         self.sample_folder = osp.join('/home/erschultz', self.dataset, f'samples/sample{self.sample}')
         self.m = 1024
-        self.k = 4
+        self.k = 12
         self.plot = False
         self.GetSeq = GetSeq(self, None)
 
@@ -1776,6 +1775,35 @@ class Tester():
         # print(f, lmbda)
         return f, lmbda
 
+    def test_Soren_PCA(self):
+        sample_folder = "/home/erschultz/dataset_11_14_22/samples/sample2217"
+        input = np.load(osp.join(sample_folder, 'y_diag.npy'))
+
+        normalize = True
+        seq = self.GetSeq.get_PCA_seq(input, normalize = normalize)
+        seq_scale = self.GetSeq.get_PCA_seq(input, normalize = normalize, scale = True)
+        seq_soren = self.GetSeq.get_PCA_seq(input, normalize = normalize, soren = True)
+        seq_manual = self.GetSeq.get_PCA_seq(input, normalize = normalize, manual = True)
+        rows = 3; cols = 3
+        fig, ax = plt.subplots(rows, cols)
+        row = 0; col = 0
+        for i in range(rows*cols):
+            print(seq.shape)
+            for seq_i, label in zip([seq.T[i], seq_scale.T[i], seq_soren.T[i], seq_manual.T[i]], ['Eric', 'Eric w/scale', 'Soren', 'manual PCA']):
+                val = np.mean(seq_i[:50])
+                if val < 0:
+                    seq_i *= -1
+                ax[row, col].plot(seq_i, label = label)
+            ax[row, col].set_title(f'PC {i}')
+            col += 1
+            if col == cols:
+                col = 0
+                row += 1
+
+        plt.legend()
+        plt.show()
+
+
 
     def test_suite(self):
         # self.test_markov()
@@ -1784,7 +1812,8 @@ class Tester():
         # self.test_epi()
         # self.test_ChromHMM()
         # self.test_GNN()
-        self.test_PCA()
+        # self.test_PCA()
+        self.test_Soren_PCA()
 
 
 if __name__ ==  "__main__":

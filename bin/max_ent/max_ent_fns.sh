@@ -85,21 +85,25 @@ max_ent_resume(){
   scratchDirI="${scratchDir}/TICG_maxent${i}"
   mkdir -p $scratchDirI
   cd $scratchDirI
-  max_ent_resume_inner $scratchDirI $replicate $1 >> bash.log &
+  max_ent_resume_inner $scratchDirI $1 >> bash.log &
   i=$(( $i + 1 ))
 }
 
 max_ent_resume_inner(){
   # args:
   # 1 = scratchDir
-  # 2 = replicate index
-  # 3 = start iteration
-  odir="${sampleFolder}/${method_fmt}/k${k}/replicate${2}"
+  # 2 = start iteration
+  odir="${sampleFolder}/${method_fmt}/k${k}/replicate1" # only replicate1 permitted
   echo $odir
   echo $method_fmt
 
+  if [ -d "${odir}/resources"]
+  then
+    cp -r "${odir}/resources"
+  fi
+
   # apply max ent with newton's method
-  ~/TICG-chromatin/maxent/bin/run.sh -o $odir -d $1 -g $gamma -t $trust_region -c $mode -s $productionSweeps -e $equilibSweeps -z $goalSpecifiedCopy -q $3 -n $numIterationsCopy -w $overwrite -f $finalSimProductionSweeps
+  ~/TICG-chromatin/maxent/bin/run.sh -o $odir -d $1 -g $gamma -t $trust_region -c $mode -s $productionSweeps -e $equilibSweeps -z $goalSpecifiedCopy -q $2 -n $numIterationsCopy -w $overwrite -f $finalSimProductionSweeps
 
   # run.sh moves all data to $odir upon completion
   cd $odir
@@ -150,7 +154,7 @@ max_ent_inner () {
   if [ $goalSpecifiedCopy -eq 1 ]
   then
     echo "starting goal_specified"
-    python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --contact_map "${sampleFolder}/y.npy" --mode $mode --verbose --grid_size $gridSize > goal.log
+    python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --contact_map "${sampleFolder}/y.npy" --mode $mode --verbose --grid_size $gridSize --v_bead $beadVol > goal.log
   else
     echo "goal_specified is false"
   fi

@@ -442,7 +442,7 @@ def plot_modified_max_ent(sample, params = True, k = 8):
             'Poly6_log']
 
     for method, color, label in zip(methods, colors, labels):
-        if label not in {'Linear', 'Poly3', 'Poly4_log', 'Poly6_log', 'Max Ent Edit', 'Logistic Manual'}:
+        if label not in {'Linear',  'Poly6_log'}:
             continue
         idir = osp.join(max_ent_dir, f'samples/sample{sample}_{method}')
         ifile = osp.join(idir,'y.npy')
@@ -1230,7 +1230,7 @@ def plot_params_test():
 
 if __name__ == '__main__':
     # modify_plaid_chis('dataset_02_04_23', k = 7)
-    modify_maxent_diag_chi('dataset_02_04_23', 8, False)
+    # modify_maxent_diag_chi('dataset_02_04_23', 8, False)
     for i in range(201, 202):
         plot_modified_max_ent(i, k = 8)
     # diagonal_dist('dataset_02_04_23', 7)

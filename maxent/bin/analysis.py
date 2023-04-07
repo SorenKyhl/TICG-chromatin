@@ -73,7 +73,7 @@ class Sim:
 
         energy_file = osp.join(self.path, "energy.traj")
         if osp.exists(energy_file):
-            self.energy = pd.read_csv(energy_file, sep='\t', header=0, names=["step", "bonded", "nonbonded", "diagonal", "y"])
+            self.energy = pd.read_csv(energy_file, sep='\t', header=0, names=["sweep", "bonded", "plaid", "diagonal", "boundary", "total"])
         else:
             print(f"{energy_file} does not exist")
 
@@ -176,11 +176,11 @@ class Sim:
         last20 = int(sz - sz/5)
 
         bondmean = np.mean(self.energy['bonded'][:last20])
-        nbondmean = np.mean(self.energy['nonbonded'][:last20])
+        plaidmean = np.mean(self.energy['plaid'][:last20])
         diagmean = np.mean(self.energy['diagonal'][:last20])
 
         axs[0].plot(self.energy['bonded'], label='bonded')
-        axs[1].plot(self.energy['nonbonded'], label='nonbonded')
+        axs[1].plot(self.energy['plaid'], label='plaid')
         axs[2].plot(self.energy['diagonal'], label='diagonal')
         axs[0].hlines(bondmean, 0, sz, colors='k')
         axs[1].hlines(nbondmean, 0, sz, colors='k')
@@ -198,7 +198,7 @@ class Sim:
             d = np.array(self.diag_obs_full.T)
             plt.semilogy(d[1:].T)
 
-    def plot_tri(self, ofile, vmaxp=None, title="", log=False):
+    def plot_tri(self, ofile, vmaxp=None, title="", log=False, cmap=None):
         '''
         Plot contact map with lower triangle as ground truth and upper as simulation.
         '''
@@ -223,7 +223,7 @@ class Sim:
         if vmaxp is None:
             vmaxp = np.mean(second)
 
-        plot_matrix(composite, ofile, title, vmax = vmaxp, triu = True)
+        plot_matrix(composite, ofile, title, vmax = vmaxp, triu = True, cmap = cmap)
 
     def plot_scatter(self):
         hic1 = self.hic
@@ -394,11 +394,13 @@ def main():
             print("SIMULATION IS NOT CONSISTENT")
 
 def test():
-    dir = '/home/erschultz/dataset_11_14_22/samples/sample2201/PCA-normalize-E/k12/replicate1/iteration16'
+    # dir = '/home/erschultz/dataset_11_14_22/samples/sample2201/PCA-normalize-E/k12/replicate1/iteration16'
+    dir = '/home/erschultz/dataset_test/samples/sample5000/soren-S/k10_copy/replicate1/soren_no_energy'
     os.chdir(dir)
-    sim = Sim("production_out")
+    sim = Sim("data_out")
     sim.plot_tri("tri.png")
     sim.plot_tri("tri_log.png", log = True)
+    sim.plot_tri("tri_dark.png", np.mean(sim.gthic)/2, cmap='soren')
 
 if __name__ == '__main__':
     main()

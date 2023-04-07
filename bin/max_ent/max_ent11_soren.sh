@@ -1,32 +1,35 @@
 #! /bin/bash
-#SBATCH --job-name=maxent8
-#SBATCH --output=logFiles/maxent8.out
+#SBATCH --job-name=maxent7
+#SBATCH --output=logFiles/maxent7.out
 #SBATCH --time=24:00:00
-#SBATCH --partition=depablo-ivyb
-#SBATCH --ntasks=20
+#SBATCH --partition=depablo
+#SBATCH --account=pi-depablo
+#SBATCH --ntasks=24
 #SBATCH --mem=0
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=erschultz@uchicago.edu
 
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
-i=7001
+i=10001
 
 # nonbonded plaid
 useL='true'
 useS='true'
 useD='true'
 chiMethod='zeros'
-method='PCA-normalize'
+method='soren'
 # nonbonded diag
 diagChiMethod="zeros"
 dense='true'
 diagBins=96
 nSmallBins=64
 smallBinSize=1
-diagCutoff=512
+diagCutoff=1024
 # bonded
 bondtype='gaussian'
-bondLength=16.5 # TODO make sure this is correct !!!
+bondLength=223.93945336907979
+gridSize=227.7170984734238
+beadVol=260000.0
 # newton's method
 mode='both'
 # bash
@@ -43,23 +46,23 @@ then
 fi
 
 # MC
-numIterations=12
-finalSimProductionSweeps=500000
-equilibSweeps=100000
+numIterations=10
+finalSimProductionSweeps=1000000
+equilibSweeps=50000
 productionSweeps=500000
 
-dataset='dataset_03_29_23'
-m=512
+dataset='dataset_test'
+m=1024
 
-for k in 8 12
+for k in 10
 do
-  for sample in 1 2 3 4 5 324 981 1936 2834 3464
+  for sample in 5000
   do
-    gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
+    # gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
     echo "$sample m=$m k=$k"
     max_ent
     jobs=$(( $jobs + 1 ))
-    if [ $jobs -gt 19 ]
+    if [ $jobs -gt 22 ]
     then
       echo 'Waiting'
       waitCount=$(( $waitCount + 1 ))
