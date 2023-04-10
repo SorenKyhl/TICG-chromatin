@@ -896,7 +896,7 @@ void Sim::MC() {
 			if (production) {dumpContacts(sweep);}
 
 			if (print_acceptance_rates) {
-				std::cout << "acceptance rate: " << (float) acc/((sweep+1)*nSteps)*100.0 << "%" << std::endl;
+				std::cout << "acceptance rate: " << (float) acc/((sweep)*nSteps)*100.0 << "%" << std::endl;
 				if (displacement_on) std::cout << "disp: " << (float) acc_disp/(sweep*n_disp)*100 << "% \t";
 				if (translation_on) std::cout << "trans: " << (float) acc_trans/(sweep*n_trans)*100 << "% \t";
 				if (crankshaft_on) std::cout << "crank: " << (float) acc_crank/(sweep*n_crank)*100 << "% \t";
@@ -995,6 +995,8 @@ void Sim::MCmove_translate() {
 	// generate displacement vector with magnitude step_trans
 	Eigen::RowVector3d displacement;
 	displacement = step_trans*unit_vec(displacement);
+  std::cout << "first " << first << ", last " << last << std::endl;
+  std::cout << "disp " << displacement << std::endl;
 
 	// memory storage objects
 	std::unordered_set<Cell*> flagged_cells;
