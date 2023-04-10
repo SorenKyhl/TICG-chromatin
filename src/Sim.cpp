@@ -385,7 +385,7 @@ nlohmann::json Sim::readInput() {
 	//cellcount_on = config["cellcount_on"];
 	assert(config.contains("seed"));
 	int seed = config["seed"];
-	rng = new RanMars(seed);
+  rng = std::make_unique<RanMars>(seed);
 
 	std::cout << "read successfully" << std::endl;
 
@@ -836,6 +836,7 @@ void Sim::MC() {
 	int beads_moved_last_sweep = 0;
 
 	std::cout << "Beginning Simulation" << std::endl;
+  dumpEnergy(0);
 	for(int sweep = 1; sweep<nSweeps+1; sweep++)
 	{
 		//std::cout << sweep << std::endl;

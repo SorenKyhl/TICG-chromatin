@@ -1015,13 +1015,19 @@ def make_config2():
         json.dump(config, f, indent = 2)
 
 def make_config3():
-    dir = '/home/erschultz/dataset_test/samples/sample5000/soren-S/k10_copy/replicate1/soren_no_energy_no_plaid'
+    dir = '/home/erschultz/dataset_test/samples/sample5000/soren-S/k10_copy/replicate1/soren_no_energy2'
     with open(osp.join(dir, 'config.json')) as f:
         config = json.load(f)
 
+    chi = np.zeros((10, 10))
     for i in range(10):
         for j in range(i, 10):
-            config[f'chi{LETTERS[i]}{LETTERS[j]}']=0
+            chi[i,j] = config[f'chi{LETTERS[i]}{LETTERS[j]}']
+            chi[j,i] = chi[i,j]
+
+    print(chi)
+
+    config['chis'] = chi.tolist()
 
     with open(osp.join(dir, 'config.json'), 'w') as f:
         json.dump(config, f, indent = 2)

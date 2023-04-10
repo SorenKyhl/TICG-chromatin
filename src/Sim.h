@@ -4,6 +4,7 @@
 #include <vector>
 #include <fstream>
 #include <unordered_set>
+#include <memory>
 
 #include "Eigen/Dense"
 #include "nlohmann/json.hpp"
@@ -21,7 +22,7 @@ public:
 	std::vector<Bead> beads;
 	std::vector<Bond*> bonds; // pointers because Bond class is virtual
 	Grid grid;
-	RanMars* rng;  // random number generator
+	std::unique_ptr<RanMars> rng;  // random number generator
 
 	double chi;
 	Eigen::MatrixXd chis;
