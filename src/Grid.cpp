@@ -236,26 +236,15 @@ double Grid::boundaryEnergy(const std::unordered_set<Cell *> &flagged_cells,
     return U;
 };
 
-double Grid::SmatrixEnergy(const std::unordered_set<Cell *> &flagged_cells,
-                           const Eigen::MatrixXd &Smatrix) {
-    // nonbonded volume interactions
-    double U = 0;
-    for (Cell *cell : flagged_cells) {
-        double smatrixenergy = cell->getSmatrixEnergy(Smatrix);
-        U += smatrixenergy;
-    }
-    return U;
-};
-
-double Grid::EmatrixEnergy(const std::unordered_set<Cell *> &flagged_cells,
-                           const Eigen::MatrixXd &Ematrix) {
-    // nonbonded volume interactions
-    double U = 0;
-    for (Cell *cell : flagged_cells) {
-        double ematrixenergy = cell->getEmatrixEnergy(Ematrix);
-        U += ematrixenergy;
-    }
-    return U;
+double Grid::SLmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const Eigen::MatrixXd &SLmatrix) {
+	// nonbonded volume interactions
+	double U = 0;
+	for(Cell* cell : flagged_cells)
+	{
+		double energy = cell->getSLmatrixEnergy(SLmatrix);
+		U += energy;
+	}
+	return U;
 };
 
 double Grid::DmatrixEnergy(const std::unordered_set<Cell *> &flagged_cells,

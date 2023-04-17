@@ -8,15 +8,16 @@
 #SBATCH --mem-per-cpu=2000
 
 
-dataFolder='/home/erschultz/dataset_test_logistic'
+dataFolder='/home/erschultz/dataset_02_04_23'
 
 source activate python3.9_pytorch1.9
 
 
-for i in 2141
+for i in 201
 do
-  replicateFolder="${dataFolder}/samples/sample${i}/none-diagMLP-66/k0/replicate1"
-  python3 ~/TICG-chromatin/scripts/contact_map.py --replicate_folder $replicateFolder --save_npy &
+  folder="/home/erschultz/dataset_test/samples/sample5000/soren-S/k10_copy/replicate1/Experiments/soren_smatrix_long"
+  ofile="${folder}/contact.log"
+  python3 ~/TICG-chromatin/scripts/contact_map.py --sample_folder $folder --save_npy --plot --random_mode > $ofile &
 done
 
 wait

@@ -1,6 +1,7 @@
 import json
 import os
 import os.path as osp
+import sys
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -10,6 +11,11 @@ import scipy
 from get_goal_experimental import get_diag_goal, get_plaid_goal
 from numba import njit
 from scipy.ndimage import uniform_filter
+
+for p in ['/home/erschultz', '/home/erschultz/sequences_to_contact_maps']:
+    sys.path.insert(1, p)
+from sequences_to_contact_maps.scripts.plotting_utils import plot_matrix
+from sequences_to_contact_maps.scripts.similarity_measures import SCC
 
 
 class Sim:
@@ -27,46 +33,47 @@ class Sim:
                 self.m = self.config["nbeads"]
                 self.v_bead = self.config['beadvol']
                 self.grid_size = self.config["grid_size"]
-                self.diag_bins = len(self.config['diag_chis'])
-                self.diag_start = self.config['diag_start']
-                self.diag_cutoff = self.config['diag_cutoff']
+                if 'diag_chis' in self.config.keys():
+                    self.diag_bins = len(self.config['diag_chis'])
+                    self.diag_start = self.config['diag_start']
+                    self.diag_cutoff = self.config['diag_cutoff']
 
-                self.dense = False
-                self.n_small_bins = None
-                self.small_binsize = None
-                self.big_binsize = None
-                if self.config['dense_diagonal_on']:
-                    self.dense = True
-                    if 'n_small_bins' in self.config.keys():
-                        self.n_small_bins = self.config['n_small_bins']
-                        self.small_binsize = self.config['small_binsize']
-                        self.big_binsize = self.config['big_binsize']
+                    if self.config['dense_diagonal_on']:
+                        self.dense = True
+                        if 'n_small_bins' in self.config.keys():
+                            self.n_small_bins = self.config['n_small_bins']
+                            self.small_binsize = self.config['small_binsize']
+                            self.big_binsize = self.config['big_binsize']
+                        else:
+                            self.dense = False
+                            # compatibility with Soren
+                            self.n_small_bins = int(self.config['dense_diagonal_loading'] * self.diag_bins)
+                            n_big_bins = self.diag_bins - self.n_small_bins
+                            m_eff = self.diag_cutoff - self.diag_start # number of beads with nonzero interaction
+                            dividing_line = m_eff * self.config['dense_diagonal_cutoff']
+                            self.small_binsize = int(dividing_line / (self.n_small_bins))
+                            self.big_binsize = int((m_eff- dividing_line) / n_big_bins)
                     else:
-                        # compatibility with Soren
-                        self.n_small_bins = int(self.config['dense_diagonal_loading'] * self.diag_bins)
-                        n_big_bins = self.diag_bins - self.n_small_bins
-                        m_eff = self.diag_cutoff - self.diag_start # number of beads with nonzero interaction
-                        dividing_line = m_eff * self.config['dense_diagonal_cutoff']
-                        self.small_binsize = int(dividing_line / (self.n_small_bins))
-                        self.big_binsize = int((m_eff- dividing_line) / n_big_bins)
+                        self.n_small_bins = None
+                        self.small_binsize = None
+                        self.big_binsize = None
 
         else:
             print(f"config.json missing at {config_file}")
 
-        self.diag_bins = np.shape(self.config['diag_chis'])[0]
         self.chi = self.load_chis()
 
         hic_file = osp.join(self.path, 'contacts.txt')
         if osp.exists(hic_file):
             self.hic = np.loadtxt(hic_file)
-            self.hic /= np.mean(self.hic.diagonal()) # TODO why only diagonal
+            self.hic /= np.mean(self.hic.diagonal())
             self.d = get_diagonal(self.hic)
         else:
             print(f"{hic_file} does not exist")
 
         energy_file = osp.join(self.path, "energy.traj")
         if osp.exists(energy_file):
-            self.energy = pd.read_csv(energy_file, sep='\t', names=["step", "bonded", "nonbonded", "diagonal", "y"])
+            self.energy = pd.read_csv(energy_file, sep='\t', header=0, names=["sweep", "bonded", "plaid", "diagonal", "boundary", "total"])
         else:
             print(f"{energy_file} does not exist")
 
@@ -74,16 +81,19 @@ class Sim:
         if self.k > 0:
             try:
                 self.seqs = self.load_seqs()
-                self.k = np.shape(self.seqs)[0]
-            except:
+                assert self.k == np.shape(self.seqs)[1], f'{self.k} != {np.shape(self.seqs)[0]}'
+            except Exception as e:
+                print(e)
                 print("load seqs failed")
 
         gthic_path = osp.join(self.replicate_path, "resources/y_gt.npy")
         if osp.exists(gthic_path):
-            self.gthic = np.load(gthic_path)
+            self.gthic = np.load(gthic_path).astype(np.float64)
+            self.gthic /= np.mean(self.gthic.diagonal())
         else:
             self.gthic = None
             print(f"{gthic_path} does not exist")
+
 
         plaid_observables_file = osp.join(self.path,"observables.traj")
         self.obs_full = None
@@ -166,14 +176,14 @@ class Sim:
         last20 = int(sz - sz/5)
 
         bondmean = np.mean(self.energy['bonded'][:last20])
-        nbondmean = np.mean(self.energy['nonbonded'][:last20])
+        plaidmean = np.mean(self.energy['plaid'][:last20])
         diagmean = np.mean(self.energy['diagonal'][:last20])
 
         axs[0].plot(self.energy['bonded'], label='bonded')
-        axs[1].plot(self.energy['nonbonded'], label='nonbonded')
+        axs[1].plot(self.energy['plaid'], label='plaid')
         axs[2].plot(self.energy['diagonal'], label='diagonal')
         axs[0].hlines(bondmean, 0, sz, colors='k')
-        axs[1].hlines(nbondmean, 0, sz, colors='k')
+        axs[1].hlines(plaidmean, 0, sz, colors='k')
         axs[2].hlines(diagmean, 0, sz, colors='k')
         axs[0].legend()
         axs[1].legend()
@@ -188,11 +198,19 @@ class Sim:
             d = np.array(self.diag_obs_full.T)
             plt.semilogy(d[1:].T)
 
-    def plot_tri(self, vmaxp=None, title=""):
-        first = self.hic
-        second = self.gthic
+    def plot_tri(self, ofile, vmaxp=None, title="", log=False, cmap=None):
+        '''
+        Plot contact map with lower triangle as ground truth and upper as simulation.
+        '''
+        assert self.gthic is not None
+        if log:
+            first = np.log(self.hic + 1)
+            second = np.log(self.gthic + 1)
+        else:
+            first = self.hic
+            second = self.gthic
 
-        assert np.shape(first) == np.shape(second)
+        assert np.shape(first) == np.shape(second), f'{first.shape} {second.shape}'
 
         npixels = np.shape(first)[0]
         indu = np.triu_indices(npixels)
@@ -204,9 +222,9 @@ class Sim:
         composite[indl] = second[indl]
 
         if vmaxp is None:
-            plot_contactmap(composite, title=title)
-        else:
-            plot_contactmap(composite, vmaxp=vmaxp, absolute=True, title=title)
+            vmaxp = np.mean(second)
+
+        plot_matrix(composite, ofile, title, vmax = vmaxp, triu = True, cmap = cmap)
 
     def plot_scatter(self):
         hic1 = self.hic
@@ -244,19 +262,22 @@ class Sim:
         plt.imshow(diff, vmin= cutoffmin, vmax = cutoffmax, cmap = 'bwr')
         plt.colorbar()
 
-    def plot_obs_vs_goal(self):
+    def plot_obs_vs_goal(self, ofile):
         fig, axs = plt.subplots(2, figsize=(12,14))
         obs = self.obs_tot
         goal = self.obj_goal_tot
         axs[0].plot(obs, '--o', label="obs")
         axs[0].plot(goal, 'ko', label="goal")
         axs[0].legend()
-        axs[0].set_title("Observables vs Goals")
+        axs[0].set_title("Observables vs Goals", fontsize = 16)
 
         diff = self.obs_tot - self.obj_goal_tot
+        diff_sum = np.round(np.sum(diff), 3)
         axs[1].plot(diff, '--o')
         axs[1].hlines(0, len(self.obs_tot), 0, 'k')
-        axs[1].set_title("Difference")
+        axs[1].set_title(f"Difference\nSum: {diff_sum}", fontsize = 16)
+        plt.savefig(ofile)
+        plt.close()
 
     def plot_oe(self):
         oe = get_oe(self.hic)
@@ -297,98 +318,6 @@ class Sim:
         elif sim.config['contact_resolution'] > 1:
             print("cannot plot consistency because sim.config['contact_resolution'] > 1")
             return 0
-
-def plot_contactmap(contact, vmaxp=0.1, absolute=False, imshow=True, cbar=True, dark=False, title=""):
-    plt.figure(figsize=(12,10))
-    mycmap = mpl.colors.LinearSegmentedColormap.from_list('custom',
-                                             [(0,    'white'),
-                                              (0.3,  'white'),
-                                              (1,    '#ff0000')], N=126)
-
-    if dark:
-        vmaxp=np.mean(contact)/2
-        absolute = True
-
-    if imshow:
-        fn = plt.imshow
-    else:
-        fn = sns.heatmap
-
-    if absolute:
-        fn(contact, cmap=mycmap, vmin = 0, vmax = vmaxp)
-    else:
-        fn(contact, cmap=mycmap, vmin = 0, vmax = contact.mean()+vmaxp*contact.std())
-
-    if cbar:
-        plt.colorbar()
-        plt.title(title)
-
-class SCC():
-    '''
-    Class for calculation of SCC as defined by https://pubmed.ncbi.nlm.nih.gov/28855260/
-    '''
-    def __init__(self):
-        self.r_2k_dict = {} # memoized solution for var_stabilized r_2k
-    def r_2k(self, x_k, y_k, var_stabilized):
-        '''
-        Compute r_2k (numerator of pearson correlation)
-        Inputs:
-            x: contact map
-            y: contact map of same shape as x
-            var_stabilized: True to use var_stabilized version
-        '''
-        # x and y are stratums
-        if var_stabilized:
-            N_k = len(x_k)
-            if N_k in self.r_2k_dict:
-                result = self.r_2k_dict[N_k]
-            else:
-                result = np.var(np.arange(1, N_k+1)/N_k)
-                self.r_2k_dict[N_k] = result
-            return result
-        else:
-            return np.sqrt(np.var(x_k) * np.var(y_k))
-    def mean_filter(x, size):
-        return uniform_filter(x, size, mode = 'constant') / (size)**2
-    def scc(self, x, y, h = 3, K = None, var_stabilized = False, verbose = False):
-        '''
-        Compute scc between contact map x and y.
-        Inputs:
-            x: contact map
-            y: contact map of same shape as x
-            h: span of convolutional kernel (width = (1+2h))
-            K: maximum stratum (diagonal) to consider (None for all)
-            var_stabilized: True to use var_stabilized r_2k
-            verbose: True to print when nan found
-        '''
-        x = SCC.mean_filter(x.astype(np.float64), 1+2*h)
-        y = SCC.mean_filter(y.astype(np.float64), 1+2*h)
-        if K is None:
-            K = len(y) - 2
-        num = 0
-        denom = 0
-        nan_list = []
-        for k in range(1, K):
-            # get stratum (diagonal) of contact map
-            x_k = np.diagonal(x, k)
-            y_k = np.diagonal(y, k)
-            N_k = len(x_k)
-            r_2k = self.r_2k(x_k, y_k, var_stabilized)
-            #p_k, _ = pearsonr(x_k, y_k)
-            p_k = np.corrcoef(x_k, y_k)[0,1]
-            if np.isnan(p_k):
-                # nan is hopefully rare so just set to 0
-                nan_list.append(k)
-                p_k = 0
-                if verbose:
-                    print(f'k={k}')
-                    print(x_k)
-                    print(y_k)
-            num += N_k * r_2k * p_k
-            denom += N_k * r_2k
-        if len(nan_list) > 0:
-            print(f'{len(nan_list)} nans: k = {nan_list}')
-        return num / denom
 
 def get_RMSE(hic1, hic2):
     diff = hic1-hic2
@@ -432,59 +361,10 @@ def main():
     print("analysis")
     sim = Sim("production_out")
 
-    # SCC = ep.get_SCC(sim.hic, sim.gthic)
-    # RMSE = ep.get_RMSE(sim.hic, sim.gthic)
-    # RMSLE = ep.get_RMSLE(sim.hic, sim.gthic)
-    #
-    # with open("../SCC.txt", "a") as f:
-    #     f.write(str(SCC) + "\n")
-    #
-    # with open("../RMSE.txt", "a") as f:
-    #     f.write(str(RMSE) + "\n")
-    #
-    # with open("../RMSLE.txt", "a") as f:
-    #     f.write(str(RMSLE) + "\n")
-    #
-    # plt.figure()
-    # SCC_vec = np.loadtxt("../SCC.txt")
-    # plt.plot(SCC_vec)
-    # plt.xlabel("iteration")
-    # plt.ylabel("SCC")
-    # plt.savefig("../SCC.png")
-    #
-    # plt.figure()
-    # RMSE_vec = np.loadtxt("../RMSE.txt")
-    # RMSLE_vec = np.loadtxt("../RMSLE.txt")
-    # plt.plot(RMSE_vec, label="RMSE")
-    # plt.plot(RMSLE_vec, label="RMSLE")
-    # plt.xlabel("iteration")
-    # plt.ylabel("RMSE")
-    # plt.savefig("../RMSE.png")
-    #
-    # convergence = np.loadtxt("../convergence.txt")
-    # fig, axs = plt.subplots(3, figsize=(12,14))
-    # axs[0].plot(convergence)
-    # axs[0].set_title("Loss")
-    # #axs[1].plot(RMSE_vec, label="RMSE")
-    # #axs[1].plot(RMSLE_vec, label="RMSLE")
-    # axs[1].set_title("RMSE/RMSLE")
-    # axs[1].legend()
-    # #axs[2].plot(SCC_vec)
-    # axs[2].set_title("SCC")
-    # plt.savefig("../error.png")
-    #
-    # sim.plot_oe()
-    # plt.savefig("oe.png")
-    # sim.plot_tri()
-    # plt.savefig("tri.png")
-
-    # plt.figure()
-    # ep.plot_tri(sim.hic, sim.gthic, oe=True)
-    # plt.savefig("tri_oe.png")
-
     if sim.gthic is not None:
-        sim.plot_tri(vmaxp=np.mean(sim.hic)/2)
-        plt.savefig("tri_dark.png")
+        sim.plot_tri("tri.png")
+        sim.plot_tri("tri_log.png", log = True)
+        sim.plot_tri("tri_dark.png", np.mean(sim.gthic)/2)
 
         sim.plot_diff()
         plt.savefig("diff.png")
@@ -492,30 +372,37 @@ def main():
         sim.plot_scatter()
         plt.savefig("scatter.png")
 
-    # plt.figure()
-    # sim.plot_diagonal()
-    # plt.savefig("diagonal.png")
-
     sim.plot_energy()
     plt.savefig("energy.png")
 
     sim.plot_obs(diag=True)
     plt.savefig("obs.png")
 
-
-    plt.figure()
-    plt.plot(sim.config['diag_chis'], 'o')
-    plt.savefig("diag_chis.png")
+    try:
+        plt.figure()
+        plt.plot(sim.config['diag_chis'], 'o')
+        plt.savefig("diag_chis.png")
+    except KeyError:
+        pass
 
     if sim.obs_tot is not None:
         # obs tot is None if 0 max ent iterations
-        sim.plot_obs_vs_goal()
-        plt.savefig("obs_vs_goal.png")
+        sim.plot_obs_vs_goal("obs_vs_goal.png")
 
         error = sim.plot_consistency()
         plt.savefig("consistency.png")
         if error > 0.01:
             print("SIMULATION IS NOT CONSISTENT")
 
+def test():
+    # dir = '/home/erschultz/dataset_11_14_22/samples/sample2201/PCA-normalize-E/k12/replicate1/iteration16'
+    dir = '/home/erschultz/dataset_02_04_23/samples/sample210/PCA-normalize-E/k12/replicate1/iteration13'
+    os.chdir(dir)
+    sim = Sim("production_out")
+    sim.plot_tri("tri.png")
+    sim.plot_tri("tri_log.png", log = True)
+    sim.plot_tri("tri_dark.png", np.mean(sim.gthic)/2, cmap='soren')
+
 if __name__ == '__main__':
     main()
+    # test()

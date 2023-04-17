@@ -5,11 +5,15 @@ Attempts to iterate through all maxent runs for given smaple_folder
 import argparse
 import os
 import os.path as osp
+import sys
 
 import numpy as np
 from compare_contact import (comparePCA,
                              plotDistanceStratifiedPearsonCorrelation)
-from seq2contact import DiagonalPreprocessing, load_Y
+
+sys.path.append('/home/erschultz')
+from sequences_to_contact_maps.scripts.load_utils import load_Y
+from sequences_to_contact_maps.scripts.utils import DiagonalPreprocessing
 
 
 def getArgs():

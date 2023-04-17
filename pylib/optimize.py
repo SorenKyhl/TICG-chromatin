@@ -1,33 +1,32 @@
-import numpy as np
-import os.path as osp
 import copy
 import functools
+import os.path as osp
+
+import numpy as np
+from bayes_opt import BayesianOptimization
+from pylib import default, epilib, utils
+from pylib.pysim import Pysim
 from scipy import optimize
 from sklearn.metrics import mean_squared_error
-from bayes_opt import BayesianOptimization
 
-
-from pylib import epilib, utils, default
-from pylib.pysim import Pysim
-
-""" 
+"""
 module for optimizing simulation parameters
 
 Context:
     The diagonal interactions determined by maximum entropy optimization are sensitive
     to the size of the grid used in TICG simulations. This is especially true for diagonal
-    interaction parameters governing beads separated by short contour lengths (small s). 
+    interaction parameters governing beads separated by short contour lengths (small s).
 
-    Often it is useful to modify the grid size in such a way that the prbability of 
+    Often it is useful to modify the grid size in such a way that the prbability of
     contact between nearest neighbors along the chain (i.e. p(s=1)) for a chain with no
-    nonbonded interactions is identical to the probability observed in experiment. In 
-    this case, the maximum entropy method will need to make only minor 
-    adjustments to the diagonal interactions at short contour lengths. 
+    nonbonded interactions is identical to the probability observed in experiment. In
+    this case, the maximum entropy method will need to make only minor
+    adjustments to the diagonal interactions at short contour lengths.
 
     In the converse situation, large attractive or repulsive interactions are needed to recapitulate
     the experimental p(s) curve for small s, and sometimes the experimental probabilities are
     not achievable, because nearest neighbor beads cannot be brought into more (or less)
-    frequent contact simply becuase the grid spacing is too large or too small relative 
+    frequent contact simply becuase the grid spacing is too large or too small relative
     to the bond length. In this case, the maximum entropy method does not converge.
 
     To ameliroate these issues, the grid size can be optimized prior to maximum entropy,

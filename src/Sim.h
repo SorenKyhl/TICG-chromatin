@@ -25,7 +25,7 @@ public:
 	Sim();
 	Sim(std::string);
 	~Sim();
-	
+
 	// members
 	std::vector<Bead> beads;
 	std::vector<std::unique_ptr<Bond>> bonds; // pointers because Bond class is virtual
@@ -73,14 +73,14 @@ public:
 
 	// MC variables
 	int decay_length;
-	int exp_decay;// = nbeads/decay_length;             // size of exponential falloff for MCmove second bead choice
+	int exp_decay;// = nbeads/decay_length;          // size of exponential falloff for MCmove second bead choice
 	int exp_decay_crank;// = nbeads/decay_length;
 	int exp_decay_pivot;// = nbeads/decay_length;
 	double step_disp_percentage = 0.30; // step disp is this percent of bond length
 	double step_trans_percentage = 0.30; // step trans is this percent of bond length
 	double step_disp; // nm
 	double step_trans; // nm
-	double step_crank = M_PI/6; // radians 
+	double step_crank = M_PI/6; // radians
 	double step_pivot = M_PI/6; // radians
 	double step_rot = M_PI/12; // radians
 	double step_grid; // based off fraction of delta, see initialize
@@ -147,21 +147,23 @@ public:
 	bool visit_tracking;
 	bool update_contacts_distance;
 
+
+
+	bool lmatrix_on;
 	bool smatrix_on;
-	bool ematrix_on;
 	bool dmatrix_on;
 
+	Eigen::MatrixXd lmatrix;
+	std::string lmatrix_filename;
 	Eigen::MatrixXd smatrix;
 	std::string smatrix_filename;
-	Eigen::MatrixXd ematrix;
-	std::string ematrix_filename;
 	Eigen::MatrixXd dmatrix;
 	std::string dmatrix_filename;
 
 	// methods
 	void run();
 	void xyzToContact();
- 
+
 	// contact maps
 	void initializeContactmap();
 	void updateContacts();
@@ -216,7 +218,6 @@ public:
 	void redirectStdout();
 	void returnStdout();
 	void makeOutputFiles();
-	void setupSmatrix();
-	void setupEmatrix();
+	void setupSLmatrix();
 	void setupDmatrix();
 };

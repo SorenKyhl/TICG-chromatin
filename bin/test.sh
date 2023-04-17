@@ -1,13 +1,16 @@
 #! /bin/bash
 #SBATCH --job-name=test
-#SBATCH --output=logFiles/test.out
-#SBATCH --time=0:30:00
+
+#SBATCH --time=12:00:00
+#SBATCH --account=pi-depablo
 #SBATCH --partition=depablo-ivyb
-#SBATCH --ntasks=5
+#SBATCH --ntasks=10
 #SBATCH --mem-per-cpu=2000
-#SBATCH --qos=depablo-debug
+#SBATCH --mail-type=END
+#SBATCH --mail-user=erschultz@uchicago.edu
 
-
+cd ~/TICG-chromatin
 source activate python3.9_pytorch1.9_cuda10.2
+source activate python3.9_pytorch1.9
 
 python3 ~/TICG-chromatin/scripts/test.py

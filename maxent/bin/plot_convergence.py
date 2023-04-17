@@ -20,20 +20,26 @@ def getArgs():
 def main():
     args = getArgs()
     print(args)
-    assert args.mode in {'plaid', 'diag', 'both', 'all'}, 'invalid mode'
+    assert args.mode in {'plaid', 'diag', 'both', 'all', 'grid_size', 'grid_size_v2'}, 'invalid mode'
 
     # convergence plot
-    convergence = np.loadtxt('convergence.txt')
+    assert osp.exists('convergence.txt'), f'convergence.txt does not exist at {os.getcwd()}'
+    convergence = np.atleast_1d(np.loadtxt('convergence.txt'))
     print(convergence)
+    if len(convergence) < 2:
+        return
+
+    iterations = np.arange(1, len(convergence)+1)
+
     converged_it = None
     for i in range(1, len(convergence)):
         diff = convergence[i] - convergence[i-1]
         if np.abs(diff) < 1e-2 and convergence[i] < convergence[0]:
-            converged_it = i
+            converged_it = iterations[i]
             break
     print('converged_it:', converged_it)
 
-    plt.plot(convergence)
+    plt.plot(iterations, convergence)
     if converged_it is not None:
         plt.axvline(converged_it, color = 'k', label = 'converged')
         plt.legend()
@@ -62,7 +68,7 @@ def main():
                 counter += 1
         plt.xlabel('Iteration')
         plt.ylabel('chi value')
-        plt.legend(loc=(1.04,0))
+        plt.legend(loc=(1.04,0), ncol = 3)
         plt.tight_layout()
         plt.savefig("pchis.png")
         plt.close()
@@ -95,8 +101,18 @@ def main():
         plt.savefig("pchi_constant.png")
         plt.close()
 
+    if args.mode.startswith('grid_size'):
+        # constant chi plot
+        constant_chi = np.loadtxt('grid_size.txt')
+        plt.plot(constant_chi)
+        plt.xlabel("Iteration", fontsize=16)
+        plt.ylabel("grid_size value", fontsize=16)
+        plt.tight_layout()
+        plt.savefig("pgrid_size.png")
+        plt.close()
 
-def test():
+
+def test1():
     args = getArgs()
     args.k = 1
     dataset = '/home/erschultz/sequences_to_contact_maps/dataset_04_27_22/samples/'
@@ -116,7 +132,40 @@ def test():
     plt.show()
     plt.close()
 
+def test_pchis():
+    args = getArgs()
+    args.mode = 'both'
+    args.k = 8
+    dataset = '/home/erschultz/dataset_02_04_23/samples/'
+    sample = 202
+    sample_dir = osp.join(dataset, f'sample{sample}')
+    assert osp.exists(sample_dir)
+    max_ent_dir = osp.join(sample_dir, f'PCA-normalize-scale-S/k{args.k}/replicate1')
+    assert osp.exists(max_ent_dir)
+    chis = np.loadtxt(osp.join(max_ent_dir, 'chis.txt'))
+    if chis.ndim < 2:
+        chis = np.atleast_2d(chis).T
+
+    k = sympy.Symbol('k')
+    result = sympy.solvers.solve(k*(k-1)/2 + k - chis.shape[1])
+    k = np.max(result) # discard negative solution
+
+    counter = 0
+    for i in range(k):
+        for j in range(k):
+            if j < i:
+                continue
+            chistr = "chi{}{}".format(LETTERS[i], LETTERS[j])
+            plt.plot(chis[1:, counter], label = chistr)
+            counter += 1
+    plt.xlabel('Iteration')
+    plt.ylabel('chi value')
+    plt.legend(loc=(1.04,0), ncol = 3)
+    plt.tight_layout()
+    plt.savefig(osp.join(max_ent_dir, "pchis2.png"))
+    plt.close()
+
 
 if __name__ == '__main__':
     main()
-    # test()
+    # test_pchis()

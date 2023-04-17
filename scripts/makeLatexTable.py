@@ -3,6 +3,7 @@ import csv
 import json
 import os
 import os.path as osp
+import sys
 import tarfile
 from collections import defaultdict
 
@@ -11,19 +12,28 @@ import numpy as np
 import scipy.stats as ss
 from compare_contact import plotDistanceStratifiedPearsonCorrelation
 from scipy.stats import pearsonr
-from seq2contact import (SCC, ArgparserConverter, DiagonalPreprocessing,
-                         calc_dist_strat_corr, calculate_D,
-                         calculate_diag_chi_step, calculate_E_S, crop,
-                         load_E_S, load_max_ent_chi, load_Y)
 from sklearn.metrics import mean_squared_error
+
+sys.path.append('/home/erschultz')
+from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
+from sequences_to_contact_maps.scripts.energy_utils import (
+    calculate_D, calculate_diag_chi_step, calculate_L, calculate_S)
+from sequences_to_contact_maps.scripts.load_utils import (load_L,
+                                                          load_max_ent_chi,
+                                                          load_Y)
+from sequences_to_contact_maps.scripts.utils import DiagonalPreprocessing
 
 LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 METHODS = ['ground_truth', 'random', 'PCA', 'PCA_split', 'kPCA', 'RPCA',
-            'k_means', 'nmf', 'GNN', 'epigenetic', 'ChromHMM']
-SMALL_METHODS = {'ground_truth', 'random', 'PCA', 'k_means', 'nmf', 'GNN',
-            'epigenetic', 'ChromHMM'}
-LABELS = ['Ground Truth', 'Random', 'PCA', 'PCA Split', 'kPCA', 'RPCA',
-            'K-means', 'NMF', 'GNN', 'Epigenetic', 'ChromHMM']
+            'k_means', 'nmf', 'GNN',
+            'epigenetic', 'epigenetic_sigmoid',
+            'ChromHMM']
+SMALL_METHODS = {'ground_truth', 'random', 'PCA', 'PCA_split', 'k_means', 'nmf', 'GNN',
+            'epigenetic', 'epigenetic_sigmoid', 'ChromHMM'}
+LABELS = ['Ground Truth', 'Random', 'Max Ent (PCA)', 'PCA Split', 'kPCA', 'RPCA',
+            'K-means', 'NMF', 'GNN',
+            'Epigenetic', 'Epigenetic (Sigmoid)',
+            'ChromHMM']
 
 def getArgs(data_folder = None, sample = None, samples = None):
     parser = argparse.ArgumentParser(description='Base parser')
@@ -78,7 +88,8 @@ def loadData(args):
 
     Data is expected to be found at args.data_folder/samples/sample<i>/<method>.
 
-    <method> must be formatted such that <method>.split('-')[0] \in METHODS (e.g. 'nmf-binarize'.split('-')[0] = 'nmf')
+    <method> must be formatted such that <method>.split('-')[0] \in METHODS
+        (e.g. 'nmf-binarize'.split('-')[0] = 'nmf')
 
     All directories within <method> that start with 'k' or 's' are assumed to contain replicate directories.
     All replicate directories are assumed to contain 'distance_pearson.json', from which data is loaded.
@@ -94,10 +105,21 @@ def loadData(args):
     converged_mask = np.ones(len(args.samples)).astype(bool)
 
     for i, sample in enumerate(args.samples):
+        print(sample)
         sample_folder = osp.join(args.data_folder, 'samples', f'sample{sample}')
-        diag_chi_continuous = np.load(osp.join(sample_folder, 'diag_chis_continuous.npy'))
-        ground_truth_sd = calculate_D(diag_chi_continuous)
+        if args.experimental:
+            ground_truth_S = None
+        else:
+            diag_chis_file = osp.join(sample_folder, 'diag_chis_continuous.npy')
+            if not osp.exists(diag_chis_file):
+                diag_chi_continuous = np.load(osp.join(sample_folder, 'diag_chis.npy'))
+            else:
+                diag_chi_continuous = np.load(diag_chis_file)
+            D = calculate_D(diag_chi_continuous)
+            L = load_L(sample_folder, save = True)
+            ground_truth_S = calculate_S(L, D)
         ground_truth_y, ground_truth_ydiag = load_Y(sample_folder)
+        ground_truth_meanDist = DiagonalPreprocessing.genomic_distance_statistics(ground_truth_y, 'prob')
         for method in os.listdir(sample_folder):
             method_folder = osp.join(sample_folder, method)
             # methods should be formatted such that method.split('-')[0] is in METHODS
@@ -113,7 +135,7 @@ def loadData(args):
                         for replicate in os.listdir(k_folder):
                             if args.replicate is not None and int(replicate[-1]) != args.replicate:
                                 continue
-                            print('\t', replicate)
+                            print(f'\tk{k} {replicate}')
                             replicate_folder = osp.join(k_folder, replicate)
 
                             # convergence
@@ -150,7 +172,8 @@ def loadData(args):
                                     elif args.convergence_definition == 'normal':
                                         eps = 1e-2
                                     else:
-                                        raise Exception(f'Unrecognized convergence_definition: {args.convergence_definition}')
+                                        raise Exception('Unrecognized convergence_definition: '
+                                                        f'{args.convergence_definition}')
 
                                     convergence_file = osp.join(replicate_folder, 'convergence.txt')
                                     if osp.exists(convergence_file):
@@ -162,8 +185,10 @@ def loadData(args):
                                                 break
 
                                 if converged_it is not None:
-                                    converged_path = osp.join(replicate_folder, f'iteration{converged_it+1}') # converged path is iteration after max ent converged
+                                    converged_path = osp.join(replicate_folder, f'iteration{converged_it+1}')
+                                    # converged path is iteration after max ent converged
                                 else:
+                                    print('\tDID NOT CONVERGE')
                                     converged_mask[i] = 0
                                     converged_path = None
 
@@ -180,16 +205,26 @@ def loadData(args):
                                     meanDist = DiagonalPreprocessing.genomic_distance_statistics(yhat)
                                     yhat_diag = DiagonalPreprocessing.process(yhat, meanDist, verbose = False)
 
-                                    overall_corr, corr_scc, avg_diag = plotDistanceStratifiedPearsonCorrelation(ground_truth_y,
-                                                                            yhat, ground_truth_ydiag, yhat_diag, converged_path)
+                                    result = plotDistanceStratifiedPearsonCorrelation(ground_truth_y,
+                                                    yhat, ground_truth_ydiag, yhat_diag, converged_path)
+                                    overall_corr, _, corr_scc_var, avg_diag = result
                                     replicate_data['overall_pearson'].append(overall_corr)
-                                    replicate_data['scc'].append(corr_scc)
+                                    replicate_data['scc'].append(corr_scc_var)
                                     replicate_data['avg_dist_pearson'].append(avg_diag)
                                 else:
                                     print(f"Didn't find {y_file}")
+                                    continue
 
-                            rmse_sd = None
-                            if ground_truth_sd is not None:
+                            rmse_diag = None
+                            if yhat is not None:
+                                meanDist = DiagonalPreprocessing.genomic_distance_statistics(yhat, 'prob')
+                                rmse_diag = mean_squared_error(ground_truth_meanDist, meanDist, squared = False)
+                            replicate_data['rmse-diag'].append(rmse_diag)
+
+
+                            rmse_S = None
+                            S = None
+                            if ground_truth_S is not None:
                                 if converged_it is not None:
                                     # load bead types
                                     psi_file = osp.join(replicate_folder, 'resources', 'x.npy')
@@ -203,32 +238,43 @@ def loadData(args):
                                     chi = load_max_ent_chi(k, converged_path, throw_exception = False)
 
                                     # calc s
-                                    _, s = calculate_E_S(psi, chi)
+                                    L = calculate_L(psi, chi)
 
                                     with open(osp.join(converged_path, 'config.json'), 'r') as f:
                                         config = json.load(f)
                                     diag_chis_continuous = calculate_diag_chi_step(config)
                                     D = calculate_D(diag_chis_continuous)
 
-                                    # calc s+d
-                                    sd = (s + s.T)/2 + D
+                                    # calc S
+                                    S = calculate_S(L, D)
                                 elif converged_path is not None:
-                                    # but converged_it is None
-                                    # means this is a GNN/MLP result
-                                    sd = np.loadtxt(osp.join(replicate_folder, 'resources/sd_matrix.txt'))
-                                else:
-                                    sd = None
+                                    # this is either GNN/MLP or ground truth
+                                    smatrix_file = osp.join(replicate_folder, 'resources/s_matrix.txt')
+                                    if osp.exists(smatrix_file):
+                                        S = np.loadtxt(smatrix_file)
+                                    else:
+                                        raise Exception(f'no s_matrix.txt for {replicate_folder}')
+                                    if method.startswith('ground_truth'):
+                                        # with open(osp.join(replicate_folder, 'resources/config.json'), 'r') as f:
+                                        #     config = json.load(f)
+                                        # diag_chis_continuous = calculate_diag_chi_step(config)
+                                        # D = calculate_D(diag_chis_continuous)
+                                        #
+                                        # # calc s+d
+                                        # if S is not None:
+                                        #     S = calculate_S(S, D)
+                                        raise Exception('Deprecated')
 
-                                if sd is not None:
-                                    rmse_sd = mean_squared_error(ground_truth_sd, sd, squared = False)
+                                if S is not None:
+                                    rmse_S = mean_squared_error(ground_truth_S, S, squared = False)
 
-                            replicate_data['rmse-s+d'].append(rmse_sd)
+                            replicate_data['rmse-S'].append(rmse_S)
 
                             rmse_y = None
                             if yhat is not None:
-                                # rescale gt to be same max as simulation
-                                ground_truth_y = ground_truth_y.astype(np.float64) / np.max(np.diagonal(ground_truth_y)) * np.max(yhat)
-                                rmse_y = mean_squared_error(ground_truth_y, yhat.astype(np.float64), squared = False)
+                                # normalize yhat
+                                yhat = yhat.astype(np.float64) / np.mean(np.diagonal(yhat))
+                                rmse_y = mean_squared_error(ground_truth_y, yhat, squared = False)
                             replicate_data['rmse-y'].append(rmse_y)
 
                             bash_file = osp.join(replicate_folder, 'bash.log')
@@ -267,8 +313,9 @@ def loadData(args):
                         data[k][method]['overall_pearson'].append(replicate_data['overall_pearson'])
                         data[k][method]['scc'].append(replicate_data['scc'])
                         data[k][method]['avg_dist_pearson'].append(replicate_data['avg_dist_pearson'])
-                        data[k][method]['rmse-s+d'].append(replicate_data['rmse-s+d'])
+                        data[k][method]['rmse-S'].append(replicate_data['rmse-S'])
                         data[k][method]['rmse-y'].append(replicate_data['rmse-y'])
+                        data[k][method]['rmse-diag'].append(replicate_data['rmse-diag'])
                         data[k][method]['converged_time'].append(replicate_data['converged_time'])
                         data[k][method]['final_time'].append(replicate_data['final_time'])
                         data[k][method]['total_time'].append(replicate_data['total_time'])
@@ -297,11 +344,18 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
     with open(ofile, mode) as o:
         # set up first rows of table
         o.write("\\begin{center}\n")
+        metric_labels = {'scc':'SCC', 'rmse-S':'RMSE-Energy', 'rmse-y':'RMSE-Y',
+                        'rmse-diag':'RMSE-P(s)', 'avg_dist_pearson':'Mean Diagonal Corr',
+                        'total_time':'Total Time', 'converged_it':'Converged Iteration',
+                        'converged_time':'Converged Time', 'final_time':'Final Time'}
         if small:
-            metrics = ['scc', 'rmse-s+d', 'rmse-y', 'total_time']
+            metrics = ['scc', 'rmse-S', 'avg_dist_pearson', 'rmse-diag', 'total_time']
+            metrics = ['scc',  'rmse-diag', 'total_time']
         else:
-            metrics = ['scc', 'rmse-s+d', 'rmse-y',
+            metrics = ['scc', 'avg_dist_pearson', 'rmse-S', 'rmse-y', 'rmse-diag',
                         'converged_it', 'converged_time', 'final_time']
+        if experimental and 'rmse-S' in metrics:
+            metrics.remove('rmse-S')
         num_cols = len(metrics) + 2
         num_cols_str = str(num_cols)
 
@@ -314,10 +368,12 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
 
         o.write("\\hline\n")
 
-        if small:
-            o.write("Method & k & SCC & RMSE-S+D & RMSE-Y & Total Time \\\ \n")
-        else:
-            o.write("Method & k & SCC & RMSE-S+D & RMSE-Y & Converged It & Converged Time & Final Time \\\ \n")
+        row = "Method & k"
+        for metric in metrics:
+            label = metric_labels[metric]
+            row += f" & {label}"
+        row += ' \\\ \n'
+        o.write(row)
         o.write("\\hline\\hline\n")
 
         # get reference data
@@ -332,23 +388,45 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                     print(f'key 1: {key}, key 2: {data[key].keys()}')
 
         GNN_ref = None
+        GNN_ref_id = float('inf')
         if 0 in data.keys():
             for method in data[0].keys():
                 if 'GNN' in method:
-                    print(f'GNN found: using {method}')
-                    GNN_ref = data[0][method]
-                    # TODO get best GNN not first
-                    break
+                    id = int(method.split('-')[1])
+                    if id < GNN_ref_id:
+                        GNN_ref = data[0][method]
+                        GNN_ref_id = id
+
+        if GNN_ref is not None:
+            print(f'GNN found: using GNN {GNN_ref_id}')
 
         for k in sorted(data.keys()):
             first = True # only write k for first row in section
-            keys, labels = sort_method_keys(data[k].keys())
-            for key, label in zip(keys, labels):
-                if small and key.split('-')[0] not in SMALL_METHODS:
+            keys_labels = sort_method_keys(data[k].keys())
+            for method, label in keys_labels:
+                if small and method.split('-')[0] not in SMALL_METHODS:
+                    print(method)
                     # skip methods not in SMALL_METHODS
                     continue
-                if nan_mask is not None and len(nested_list_to_array(data[k][key]['scc'])) != len(nan_mask):
-                    # skip method is not performed for all samples
+                dataset = None
+                if 'GNN' in method:
+                    id = method.split('-')[1]
+                    try:
+                        with open(f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{id}/argparse.txt', 'r') as f:
+                            for line in f:
+                                line = line.strip()
+                                if line == '--data_folder':
+                                    dataset = f.readline().strip()
+                                    dataset_list = dataset.split('-')
+                                    dataset_list = [osp.split(i)[1] for i in dataset_list]
+                                    dataset_list = [i[8:].replace('_', '/') for i in dataset_list]
+                                    dataset = '-'.join(dataset_list)
+                                    break
+                    except Exception as e:
+                        dataset = None
+                        print(e)
+                if nan_mask is not None and len(nested_list_to_array(data[k][method]['scc'])) != len(nan_mask):
+                    # skip method if not performed for all samples
                     continue
                 if first: # only write k for first row in section
                     k_label = k
@@ -357,14 +435,17 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                     first = False
                 else:
                     k_label = ''
-                text = f"{label} & {k_label}"
+                if dataset is None:
+                    text = f"{label} & {k_label}"
+                else:
+                    text = f"{label} ({dataset}) & {k_label}"
 
                 for metric in metrics:
                     significant = False # two sided t test
-                    sample_results = nested_list_to_array(data[k][key][metric])
+                    sample_results = nested_list_to_array(data[k][method][metric])
 
                     if sample_id is not None:
-                        assert sample_results.shape[0] == 1, f"label {label}, metric {metric}, k {k_label}, results {data[k][key][metric]}, {sample_results}"
+                        assert sample_results.shape[0] == 1, f"label {label}, metric {metric}, k {k_label}, results {data[k][method][metric]}, {sample_results}"
                         result = sample_results.reshape(-1)
                         if GNN_ref is not None:
                             ref_result = nested_list_to_array(GNN_ref[metric]).reshape(-1)
@@ -382,15 +463,17 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                                     if pval < 0.05:
                                         significant = True
                         except Exception as e:
-                            print(f'method {key}, k {k}, metric: {metric}')
+                            print(f'method {method}, k {k}, metric: {metric}')
                             print('GNN ref', GNN_ref[metric])
                             print('sample results', sample_results)
                             raise
 
                     if 'time' in metric:
                         roundoff = 1
-                    elif metric.startswith('rmse'):
+                    elif metric == 'rmse-S':
                         roundoff = 2
+                    elif metric == 'rmse-y' or metric == 'rmse-diag':
+                        roundoff = 4
                     else:
                         roundoff = 3
 
@@ -412,19 +495,23 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
 
 def sort_method_keys(keys):
     '''Sorts keys to match order of METHODS and gets corresponding labels from LABELS.'''
-    sorted_keys = []
-    sorted_labels = []
+    sorted_key_labels = []
     for method, label in zip(METHODS, LABELS):
+        key_labels = [] # list of (key, label) tuples of type method
         for key in keys:
             split = key.split('-')
+            while split[-1] in {'E', 'S', 'normalize'}:
+                split.pop()
             if split[0] == method:
-                sorted_keys.append(key)
                 if len(split) > 1:
-                    sorted_labels.append(label + '-' + '-'.join(split[1:]))
+                    label_str = label + '-' + '-'.join(split[1:])
                 else:
-                    sorted_labels.append(label)
+                    label_str = label
+                key_labels.append((key, label_str))
 
-    return sorted_keys, sorted_labels
+        sorted_key_labels.extend(sorted(key_labels))
+
+    return sorted_key_labels
 
 def main(data_folder=None, sample=None):
     args = getArgs(data_folder = data_folder, sample = sample)
@@ -459,6 +546,7 @@ def main(data_folder=None, sample=None):
         temp_label = label + f' {defn} convergence'
         data, converged_mask = loadData(args)
         not_converged_mask = np.logical_not(converged_mask) # now 1 if not converged
+        # not_converged_mask = np.zeros_like(not_converged_mask) # TODO, manually override
 
         # small
         makeLatexTable(data, ofile, temp_label, True, mode,

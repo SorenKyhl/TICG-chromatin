@@ -12,6 +12,9 @@ import numpy as np
 import pandas as pd
 from numba import njit
 
+sys.path.append('/home/erschultz')
+from sequences_to_contact_maps.scripts.utils import DiagonalPreprocessing
+
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
@@ -20,17 +23,29 @@ def getArgs():
     parser.add_argument('--verbose', action='store_true',
                         help='true for verbose mode')
     parser.add_argument('--mode', type=str,
-                        help='{"plaid", "diag", "both"}')
-    parser.add_argument('--v_bead', type=int, default=520,
+                        help='{"plaid", "diag", "both", "grid_size"}')
+    parser.add_argument('--v_bead', type=float, default=520,
                         help='volume of bead')
-    parser.add_argument('--grid_size', type=float, default=28.7,
+    parser.add_argument('--grid_size', default=28.7,
                         help='side length of grid cell')
 
     args = parser.parse_args()
+    if isinstance(args.grid_size, float):
+        args.grid_size = args.grid_size
+    elif osp.exists(args.grid_size):
+        if args.grid_size.endswith('json'):
+            with open(args.grid_size, 'r') as f:
+                tmp = json.load(f)
+                args.grid_size = tmp['grid_size']
+        else:
+            args.grid_size = np.loadtxt(args.grid_size)[-1]
+    else:
+        args.grid_size = float(args.grid_size)
+
     return args
 
 def get_diag_goal(y, args, return_correction = False):
-    '''Input y should have max 1.'''
+    assert abs(np.mean(y.diagonal()) - 1) < 1e-5, f'{args.contact_map} is not normalized: {np.mean(y.diagonal())} '
     m, _ = y.shape
     if args.diag_cutoff > m:
         args.diag_cutoff = m
@@ -68,13 +83,15 @@ def get_mask(bin, m, diag_bins, dense, n_small_bins,
                 continue
             d_eff = d - diag_start
             if dense:
-                if d_eff > dividing_line:
+                if d_eff == 0:
+                    curr_bin = 0
+                elif d_eff > dividing_line:
                     curr_bin = n_small_bins + math.floor( (d_eff - dividing_line) / big_binsize)
                 else:
                     curr_bin =  math.floor( d_eff / small_binsize)
             else:
                 curr_bin = int(d_eff/binsize)
-            if curr_bin == bin:
+            if curr_bin == bin and d_eff >= 1:
                 mask[i,j] = 1
                 mask[j,i] = 1
                 if i == j:
@@ -83,15 +100,17 @@ def get_mask(bin, m, diag_bins, dense, n_small_bins,
     return mask
 
 def get_plaid_goal(y, args, x = None):
-    '''Input y should have max 1.'''
+    assert abs(np.mean(y.diagonal()) - 1) < 1e-5, f'{args.contact_map} is not normalized: {np.mean(y.diagonal())} '
     obj_goal = []
     if args.verbose:
-        print(y, y.shape, y.dtype, '\n')
+        print('y\n', y, y.shape, y.dtype, '\n')
         if x is not None:
-            print(x, x.shape, x.dtype, '\n')
+            print('x\n', x, x.shape, x.dtype, '\n')
 
     if x is None:
         x = np.load('x.npy')
+        if args.verbose:
+            print('x\n', x, x.shape, x.dtype, '\n')
     _, k = x.shape
     for i in range(k):
         seqi = x[:, i]
@@ -136,9 +155,10 @@ def main():
             args.n_small_bins = None
             args.small_binsize = None
             args.big_binsize = None
-        args.diag_bins = len(config['diag_chis'])
-        args.diag_start = config['diag_start']
-        args.diag_cutoff = config['diag_cutoff']
+        if config['diagonal_on']:
+            args.diag_bins = len(config['diag_chis'])
+            args.diag_start = config['diag_start']
+            args.diag_cutoff = config['diag_cutoff']
         args.m = config['nbeads']
 
     if not osp.exists(args.contact_map):
@@ -169,6 +189,7 @@ def main():
     constant_goal = None
     plaid_goal = None
     diag_goal = None
+    grid_goal = None
     if args.mode == 'both':
         plaid_goal = get_plaid_goal(y, args)
         diag_goal = get_diag_goal(y, args)
@@ -194,6 +215,20 @@ def main():
             print('plaid_goal: ', plaid_goal, plaid_goal.shape)
             print('diag_goal: ', diag_goal, diag_goal.shape)
             print('constant_goal: ', constant_goal, constant_goal.shape)
+    elif args.mode == 'grid_size':
+        grid_goal = np.mean(np.diagonal(y, 1)) * 100
+        with open('obj_goal_grid.txt', 'w') as f:
+            f.write(f'{grid_goal}')
+        if args.verbose:
+            print('grid_goal: ', grid_goal)
+    elif args.mode == 'grid_size_v2':
+        grid_goal = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob') * 100
+        if args.verbose:
+            print('grid_goal: ', grid_goal)
+
+        with open('obj_goal_grid.txt', 'w', newline='') as f:
+            wr = csv.writer(f, delimiter = '\t')
+            wr.writerow(grid_goal)
 
     if plaid_goal is not None:
         with open('obj_goal.txt', 'w', newline='') as f:
@@ -212,23 +247,19 @@ def main():
 class Tester():
     def test_plaid():
         args = getArgs()
-        dir = '/home/erschultz/dataset_test/samples/sample1'
+        dir = '/home/erschultz/dataset_test/samples/sample5000'
         y = np.load(osp.join(dir, 'y.npy'))
-        y = y.astype(float)
-        y /= np.max(y)
-        # print(y.shape, y.dtype, '\n')
+        y = y.astype(float) # ensure float
+        y /= np.mean(np.diagonal(y))
+        print('y', y)
 
-        x = np.load(osp.join(dir, 'x.npy'))
+        x = np.load(osp.join(dir, 'x_soren.npy')).T
         x = x.astype(float)
         m, k = x.shape
-        # print(x.shape, x.dtype, '\n')
+        print('x', x)
 
-        # obj_goal = get_plaid_goal(y, args, x)
-        # print(obj_goal)
-
-        x = np.ones(m).reshape(-1, 1)
         obj_goal = get_plaid_goal(y, args, x)
-        print(obj_goal)
+        print('goal', obj_goal)
 
     def test_diag():
         args = getArgs()
@@ -238,7 +269,9 @@ class Tester():
         args.n_big_bins = 16
         args.big_binsize = 24
         args.dense = True
-        dir = '/home/erschultz/sequences_to_contact_maps/dataset_07_20_22/samples/sample4'
+        args.diag_start = 0
+        args.diag_cutoff = 1024
+        dir = '/home/erschultz/dataset_test/samples/sample1'
         y = np.load(osp.join(dir, 'y.npy'))
         y = y.astype(float)
         y /= np.max(y)
@@ -247,6 +280,9 @@ class Tester():
 
         t0 = time.time()
         goal = get_diag_goal(y, args)
+        print(np.mean(np.diagonal(y, 1)))
+        print()
+        print(goal)
         tf = time.time()
         # print(goal)
         print('time: ', tf - t0)
@@ -266,8 +302,18 @@ class Tester():
         y /= np.max(y)
         print(np.sum(y))
 
+    def test_grid():
+        args = getArgs()
+        dir = '/home/erschultz/dataset_test/samples/sample1'
+        y = np.load(osp.join(dir, 'y.npy'))
+        y = y.astype(float)
+        y /= np.max(y)
+        print(np.mean(np.diagonal(y, 1)))
+
+
 if __name__ == '__main__':
     main()
     # Tester.test_constant()
     # Tester.test_plaid()
     # Tester.test_diag()
+    # Tester.test_grid()

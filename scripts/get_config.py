@@ -5,20 +5,27 @@ import os.path as osp
 import sys
 
 import numpy as np
-from seq2contact import (LETTERS, ArgparserConverter, calculate_D,
-                         calculate_diag_chi_step, calculate_E_S, calculate_S,
-                         crop, plot_matrix, s_to_E)
 from sklearn.metrics.pairwise import polynomial_kernel
+
+sys.path.append('/home/erschultz')
+from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
+from sequences_to_contact_maps.scripts.energy_utils import (
+    calculate_D, calculate_diag_chi_step)
+from sequences_to_contact_maps.scripts.plotting_utils import plot_matrix
+from sequences_to_contact_maps.scripts.utils import LETTERS, crop
 
 
 def getArgs():
-    parser = argparse.ArgumentParser(description='Base parser')
+    parser = argparse.ArgumentParser(description='Base parser', fromfile_prefix_chars='@',
+                                allow_abbrev = False)
     AC = ArgparserConverter()
 
     parser.add_argument('--config_ifile', type=str, default='config.json',
                         help='path to default config file')
     parser.add_argument('--config_ofile', type=str, default='config.json',
                             help='path to output config file')
+    parser.add_argument('--args_file', type=AC.str2None,
+                        help='file with more args to load')
 
     # config params
     parser.add_argument('--m', type=int, default=-1,
@@ -37,9 +44,6 @@ def getArgs():
                         help='True to copy seed from config file in sample_folder')
     parser.add_argument('--sample_folder', type=str,
                         help='location of sample for ground truth chi')
-    parser.add_argument('--relabel', type=AC.str2None,
-                        help='specify mark combinations to be relabeled'
-                            '(e.g. AB-C will relabel AB mark pairs as mark C)')
     parser.add_argument('--bond_type', type=AC.str2None, default='gaussian',
                         help='type of bonded interaction')
     parser.add_argument('--parallel', type=AC.str2bool, default=False,
@@ -56,6 +60,10 @@ def getArgs():
                         help='True to dump contact map every dump_frequency')
     parser.add_argument('--gridmove_on', type=AC.str2bool, default=True,
                         help='True to use grid MC move')
+    parser.add_argument('--grid_size', default=28.7,
+                        help='TICG grid size')
+    parser.add_argument('--bead_vol', type=float, default=520,
+                        help='bead volume')
     parser.add_argument('--update_contacts_distance', type=AC.str2bool, default=False,
                         help='True to use distance instead of grid')
 
@@ -68,12 +76,13 @@ def getArgs():
                         help='constant chi parameter between all beads')
 
     # energy config params
-    parser.add_argument('--use_ematrix', type=AC.str2bool, default=False,
-                        help='True to use e_matrix')
     parser.add_argument('--use_smatrix', type=AC.str2bool, default=False,
                         help='True to use s_matrix')
     parser.add_argument('--use_dmatrix', type=AC.str2bool, default=False,
                         help='True to use d_matrix')
+    parser.add_argument('--use_lmatrix', type=AC.str2bool, default=False,
+                        help='True to use l_matrix')
+
     parser.add_argument('--e_constant', type=float, default=0,
                         help='constant to add to e')
     parser.add_argument('--s_constant', type=float, default=0,
@@ -83,8 +92,6 @@ def getArgs():
     parser.add_argument('--diag_pseudobeads_on', type=AC.str2bool, default=True)
     parser.add_argument('--dense_diagonal_on', type=AC.str2bool, default=False,
                         help='True to place 1/2 of beads left of cutoff')
-    parser.add_argument('--use_ground_truth_diag_chi', type=AC.str2bool, default=False,
-                        help='True to use ground truth diag chi')
 
 
     # max_ent options
@@ -95,6 +102,15 @@ def getArgs():
 
 
     args = parser.parse_args()
+    if args.args_file is not None:
+        assert osp.exists(args.args_file), f'{args.args_file} does not exist'
+        print(f'parsing {args.args_file}')
+        argv = sys.argv
+        argv.append(f'@{args.args_file}') # appending means args_file will override other args
+        argv.pop(0) # remove program name
+        args, unknown = parser.parse_known_args(argv)
+        print(unknown)
+
     return args
 
 #### x, psi functions ####
@@ -177,11 +193,9 @@ def main():
         if osp.exists('x.npy'):
             x = np.load('x.npy')
             args.m, _ = x.shape
-        elif osp.exists('e.npy'):
-            e = np.load('e.npy')
+        elif osp.exists('S.npy'):
+            S = np.load('S.npy')
             args.m, _ = e.shape
-        elif sample_config is not None:
-            args.m = sample_config['nbeads']
         elif args.sample_folder is not None:
             y_file = osp.join(args.sample_folder, 'y.npy')
             if osp.exists(y_file):
@@ -221,14 +235,6 @@ def main():
             print(f'y_gt.shape = {y_gt.shape}')
             np.save('y_gt.npy', y_gt)
 
-    if args.relabel is not None:
-        x = np.load('x.npy')
-        old, new = args.relabel.split('-')
-        assert len(new) == 1, f"unsupported relabel: {args.relabel}"
-        args.k += 1
-        psi = relabel_x_to_psi(x, args.relabel)
-        np.save('psi.npy', psi)
-
     # load chi
     chi_file = 'chis.npy'
     if args.use_ground_truth_chi:
@@ -252,23 +258,11 @@ def main():
     config['dense_diagonal_on'] = args.dense_diagonal_on
 
     # load diag chi
-    if args.use_ground_truth_diag_chi:
-        assert sample_config is not None, 'ground truth config missing'
-        config["diagonal_on"] = sample_config["diagonal_on"]
-        config["dense_diagonal_on"] = sample_config["dense_diagonal_on"]
-        diag_chis = np.array(sample_config["diag_chis"])
-        config["diag_chis"] = list(diag_chis)
-        np.save('diag_chis.npy', diag_chis)
-        if config["diagonal_on"]:
-            config['n_small_bins'] = sample_config['n_small_bins']
-            config['n_big_bins'] = sample_config['n_big_bins']
-            config['small_binsize'] = sample_config['small_binsize']
-            config['big_binsize'] = sample_config['big_binsize']
-
-    elif osp.exists('diag_chis.npy'):
+    if osp.exists('diag_chis.npy'):
         config["diagonal_on"] = True
         if args.max_ent:
             diag_chis = np.load('diag_chis.npy')
+            print(f'diag_chis loaded with shape {diag_chis.shape}')
             with open('chis_diag.txt', 'w', newline='') as f:
                 wr = csv.writer(f, delimiter = '\t')
                 wr.writerow(diag_chis)
@@ -298,49 +292,13 @@ def main():
         psi = None
         print('psi is None')
 
+    if args.s_constant != 0 or args.e_constant != 0:
+        raise Exception('deprecated')
+
     # set up e, s
-    e = None; s = None
     if psi is not None:
         writeSeq(psi)
 
-        e, s = calculate_E_S(psi, args.chi)
-    else:
-        assert args.use_ematrix or args.use_smatrix
-        config['bead_type_files'] = None
-        config["nspecies"] = 0
-
-        if osp.exists('s.npy'):
-            s = np.load('s.npy')
-            s += args.s_constant
-        if osp.exists('e.npy'):
-            e = np.load('e.npy')
-            e += args.e_constant
-
-        np.save('s.npy', s) # save s either way
-        if args.use_smatrix:
-            np.save('s.npy', s)
-            np.savetxt('s_matrix.txt', s, fmt='%0.5f')
-            config["smatrix_filename"] = "s_matrix.txt"
-        if args.use_ematrix:
-            assert not args.use_smatrix, 'Cannot use smatrix and ematrix'
-            np.save('e.npy', e)
-            np.savetxt('e_matrix.txt', e, fmt='%0.5f')
-            config["ematrix_filename"] = "e_matrix.txt"
-            # TODO use https://github.com/rogersce/cnpy to allow cpp to load e.npy
-
-    if args.use_dmatrix:
-        config['dmatrix_on'] = True
-    if args.use_ematrix:
-        config['ematrix_on'] = True
-        assert not args.use_smatrix
-    if args.use_smatrix:
-        config['smatrix_on'] = True
-
-    if args.k == 0:
-        config['plaid_on'] = False
-        config['bead_type_files'] = None
-        config["nspecies"] = 0
-    else:
         # save seq
         config['bead_type_files'] = [f'seq{i}.txt' for i in range(args.k)]
 
@@ -354,6 +312,20 @@ def main():
                 key = f'chi{LETTERS[row]}{LETTERS[col]}'
                 val = args.chi[row, col]
                 config[key] = val
+    elif args.use_smatrix:
+        config['bead_type_files'] = None
+        config["nspecies"] = 0
+    else:
+        config['plaid_on'] = False
+        config['bead_type_files'] = None
+        config["nspecies"] = 0
+
+    if args.use_dmatrix:
+        config['dmatrix_on'] = True
+    if args.use_lmatrix:
+        config['lmatrix_on'] = True
+    if args.use_smatrix:
+        config['smatrix_on'] = True
 
     if not config['plaid_on'] and not config["diagonal_on"]:
         config['nonbonded_on'] = False
@@ -401,6 +373,29 @@ def main():
     # save gridmove_on
     config['gridmove_on'] = args.gridmove_on
 
+    # save grid_size
+    if isinstance(args.grid_size, float):
+        grid_size = args.grid_size
+    elif osp.exists(args.grid_size):
+        if args.grid_size.endswith('json'):
+            with open(args.grid_size, 'r') as f:
+                tmp = json.load(f)
+                grid_size = tmp['grid_size']
+        else:
+            grid_size = np.loadtxt(args.grid_size)[-1]
+    elif isinstance(args.grid_size, str):
+        if args.grid_size.startswith('scale_'):
+            scale = float(args.grid_size[6:])
+            grid_size = args.bond_length * scale
+        else:
+            grid_size = float(args.grid_size)
+    else:
+        raise Exception(f'Invalid grid_size {args.grid_size}')
+    config['grid_size'] = grid_size
+
+    # save bead volume
+    config['beadvol'] = args.bead_vol
+
     # save update_contacts_distance
     config['update_contacts_distance'] = args.update_contacts_distance
 
@@ -429,6 +424,12 @@ def main():
             wr = csv.writer(f, delimiter = '\t')
             wr.writerow([args.constant_chi])
             wr.writerow([args.constant_chi])
+    if args.max_ent and args.mode.startswith('grid_size'):
+        with open('grid_size.txt', 'w', newline='') as f:
+            wr = csv.writer(f, delimiter = '\t')
+            wr.writerow([args.grid_size])
+            wr.writerow([args.grid_size])
+
 
     # save parallel
     config['parallel'] = args.parallel

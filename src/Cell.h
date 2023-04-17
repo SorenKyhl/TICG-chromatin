@@ -1,3 +1,6 @@
+
+
+
 #pragma once
 
 #include <iostream>
@@ -23,13 +26,13 @@ public:
 	std::vector<double> diag_phis = std::vector<double>(diag_nbins);
 	static bool diagonal_linear;
 
-    static bool double_count_main_diagonal;
 	static double phi_solvent_max;
 	static double phi_chromatin;
 	static double kappa;
 	static bool density_cap_on;
 	static bool compressibility_on;
 	static bool diag_pseudobeads_on;
+	static bool double_count_main_diagonal;
 	static bool dense_diagonal_on;
 	static int n_small_bins;
 	static int n_big_bins;
@@ -47,12 +50,11 @@ public:
 	double getConstantEnergy(const double constant_chi);
 	double getDiagEnergy(const std::vector<double> diag_chis);
 	double getBoundaryEnergy(const double boundary_chi, const double delta);
-	double getSmatrixEnergy(const Eigen::MatrixXd &Smatrix);
-	double getEmatrixEnergy(const Eigen::MatrixXd &Ematrix);
+	double getSLmatrixEnergy(const Eigen::MatrixXd &SLmatrix);
 	double getDmatrixEnergy(const Eigen::MatrixXd &Dmatrix);
 
 
-	double bonds_to_beads(int bonds, int index);
+	double bonds_to_beads(int bonds);
 	static int binDiagonal(int d);
 
 
