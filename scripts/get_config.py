@@ -424,7 +424,7 @@ def main():
             wr = csv.writer(f, delimiter = '\t')
             wr.writerow([args.constant_chi])
             wr.writerow([args.constant_chi])
-    if args.max_ent and args.mode == 'grid_size':
+    if args.max_ent and args.mode.startswith('grid_size'):
         with open('grid_size.txt', 'w', newline='') as f:
             wr = csv.writer(f, delimiter = '\t')
             wr.writerow([args.grid_size])

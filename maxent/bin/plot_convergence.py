@@ -20,9 +20,10 @@ def getArgs():
 def main():
     args = getArgs()
     print(args)
-    assert args.mode in {'plaid', 'diag', 'both', 'all', 'grid_size'}, 'invalid mode'
+    assert args.mode in {'plaid', 'diag', 'both', 'all', 'grid_size', 'grid_size_v2'}, 'invalid mode'
 
     # convergence plot
+    assert osp.exists('convergence.txt'), f'convergence.txt does not exist at {os.getcwd()}'
     convergence = np.atleast_1d(np.loadtxt('convergence.txt'))
     print(convergence)
     if len(convergence) < 2:
@@ -100,7 +101,7 @@ def main():
         plt.savefig("pchi_constant.png")
         plt.close()
 
-    if args.mode == 'grid_size':
+    if args.mode.startswith('grid_size'):
         # constant chi plot
         constant_chi = np.loadtxt('grid_size.txt')
         plt.plot(constant_chi)

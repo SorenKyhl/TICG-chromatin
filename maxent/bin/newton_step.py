@@ -7,6 +7,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+sys.path.append('/home/erschultz')
+from sequences_to_contact_maps.scripts.utils import DiagonalPreprocessing
+
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
@@ -247,6 +250,19 @@ def main():
         obs_files = ["grid_observable.traj"]
         goal_files = ["obj_goal_grid.txt"]
         args.method = 'g' # switch to gradient descent
+    elif args.mode == 'grid_size_v2':
+        # manually create grid_observable
+        it_root = osp.join(f"iteration{args.it}", "production_out")
+        y = np.loadtxt(osp.join(it_root, 'contacts.txt'))
+        obs_i = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob') * 100
+        grid_obs = np.atleast_2d(np.concatenate(([0], obs_i))) # 0 is a filler
+        np.savetxt(osp.join(it_root, 'grid_observable.traj'), grid_obs, delimiter = '\t')
+
+        parameter_files = ["grid_size.txt"]
+        obs_files = ["grid_observable.traj"]
+        goal_files = ["obj_goal_grid.txt"]
+        args.method = 'g' # switch to gradient descent
+
 
     step(parameter_files, obs_files, 'convergence.txt', goal_files,
                 args.gamma, args.it, args.goal_specified, args.trust_region,

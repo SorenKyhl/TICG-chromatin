@@ -18,7 +18,7 @@ useS='false'
 useD='false'
 chiMethod='none'
 method='none'
-k=10
+k=210
 # bonded
 bondLength=488
 gridSize=600
@@ -27,7 +27,7 @@ phiChromatin=0.006
 # newton's method
 trust_region=20
 gamma=2
-mode='grid_size'
+mode='grid_size_v2'
 # bash
 STARTTIME=$(date +%s)
 jobs=0
@@ -41,7 +41,7 @@ then
   source activate python3.9_pytorch1.9
 fi
 
-numIterations=7
+numIterations=5
 finalSimProductionSweeps=50000
 equilibSweeps=20000
 productionSweeps=50000

@@ -12,6 +12,9 @@ import numpy as np
 import pandas as pd
 from numba import njit
 
+sys.path.append('/home/erschultz')
+from sequences_to_contact_maps.scripts.utils import DiagonalPreprocessing
+
 
 def getArgs():
     parser = argparse.ArgumentParser(description='Base parser')
@@ -218,7 +221,14 @@ def main():
             f.write(f'{grid_goal}')
         if args.verbose:
             print('grid_goal: ', grid_goal)
+    elif args.mode == 'grid_size_v2':
+        grid_goal = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob') * 100
+        if args.verbose:
+            print('grid_goal: ', grid_goal)
 
+        with open('obj_goal_grid.txt', 'w', newline='') as f:
+            wr = csv.writer(f, delimiter = '\t')
+            wr.writerow(grid_goal)
 
     if plaid_goal is not None:
         with open('obj_goal.txt', 'w', newline='') as f:
