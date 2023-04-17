@@ -22,7 +22,7 @@ fi
 
 STARTTIME=$(date +%s)
 i=1001
-dataset='dataset_03_22_23'
+dataset='Su2020'
 useL='false'
 useS='true'
 useD='false'
@@ -35,9 +35,9 @@ bondLength=16.5 # TODO make sure this is correct !!!
 
 k=0
 method='GNN'
-for sample in 324 981 1936 2834 3464 1 2 3 4 5
+for sample in 1002
 do
-  gridSize="${dir}/${dataset}/samples/sample${sample}/config.json"
+  gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
   for GNNModelID in 392 396
   do
     echo $sample $m

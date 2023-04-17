@@ -21,7 +21,7 @@ run()  {
 
 param_setup
 m=512
-dataset=dataset_bond_grid
+dataset=dataset_bond
 baseDataFolder="/home/erschultz/${dataset}"
 dataFolder=$baseDataFolder
 scratchDir='/home/erschultz/scratch'
@@ -30,17 +30,14 @@ overwrite=1
 k=0
 nSweeps=50000
 dumpFrequency=1000
+dumpStatsFrequency=100
 TICGSeed=10
 chiSeed=3
 seqSeed=4
 diag='false'
 dense='false'
-diagBins=512
-nSmallBins=64
-smallBinSize=1
-bigBinSize=-1
-nBigBins=-1
-bondLength=28
+gridSize='scale_1.4'
+beadVol=260000
 useD='false'
 useL='false'
 useE='false'
@@ -48,25 +45,22 @@ seqMethod='none'
 chiMethod="none"
 chiDiagMethod='none'
 
-i=1
+i=7
 jobs=0
 waitCount=0
-for bondLength in 16.5
+for bondLength in 131 261 488
 do
-	for gridSize in 20 22 24 26 28 30 32 34 36
-	do
-		echo $i bondLength $bondLength gridSize $gridSize
-		run &
-		i=$(( $i + 1 ))
-		jobs=$(( $jobs + 1 ))
-		if [ $jobs -gt 16 ]
-		then
-			echo 'Waiting'
-			waitCount=$(( $waitCount + 1 ))
-			wait
-			jobs=0
-		fi
-	done
+	echo $i bondLength $bondLength
+	run &
+	i=$(( $i + 1 ))
+	jobs=$(( $jobs + 1 ))
+	if [ $jobs -gt 16 ]
+	then
+		echo 'Waiting'
+		waitCount=$(( $waitCount + 1 ))
+		wait
+		jobs=0
+	fi
 done
 
 echo $waitCount

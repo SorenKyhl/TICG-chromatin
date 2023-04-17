@@ -10,26 +10,24 @@
 #SBATCH --mail-user=erschultz@uchicago.edu
 
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
-i=6010
+i=6004
 
 # nonbonded plaid
 useL='true'
 useS='true'
 useD='true'
 chiMethod='zeros'
-method='PCA-normalize'
+method='PCA-normalize-scale'
 # nonbonded diag
 diagChiMethod="zeros"
 dense='true'
 diagBins=96
 nSmallBins=64
 smallBinSize=1
-diagCutoff=1024
 # bonded
-bondtype='gaussian'
-bondLength=223.93945336907979
-gridSize=227.7170984734238
-beadVol=260000.0
+bondLength=488
+beadVol=130000
+phiChromatin=0.006
 # newton's method
 mode='both'
 # bash
@@ -46,20 +44,20 @@ then
 fi
 
 # MC
-numIterations=12
-finalSimProductionSweeps=3500
-equilibSweeps=1000
-productionSweeps=2500
-dataset='dataset_test'
-m=1024
+numIterations=15
+finalSimProductionSweeps=500000
+equilibSweeps=25000
+productionSweeps=250000
+dataset='Su2020'
+m=512
 
-for k in 8
+for k in 10
 do
-  for sample in 5000
+  for sample in 1002
   do
-    # gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
+    gridSize="${dir}/${dataset}/samples/sample${sample}/none/k10/replicate1/grid_size.txt"
     echo "$sample m=$m k=$k"
-    max_ent_resume 10
+    max_ent
     jobs=$(( $jobs + 1 ))
     if [ $jobs -gt 22 ]
     then

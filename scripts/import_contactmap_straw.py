@@ -30,18 +30,33 @@ HG19_BAD_REGIONS = {1:'0-3,120-150',
                     21:'0-15,46-48',
                     22:'0-20'}
 
-def intersect(region_1, region_2):
-    # region_1/2 is a tuple
-    if region_1[0] > region_2[0] and region_1[0] < region_2[1]:
+ALL_FILES = [
+            "https://hicfiles.s3.amazonaws.com/hiseq/imr90/in-situ/combined.hic",
+            "https://hicfiles.s3.amazonaws.com/hiseq/gm12878/agar/HIC030.hic",
+            "https://hicfiles.s3.amazonaws.com/hiseq/gm12878/dilution/HIC034.hic",
+            "https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
+            "https://hicfiles.s3.amazonaws.com/hiseq/hmec/in-situ/combined.hic",
+            "https://hicfiles.s3.amazonaws.com/hiseq/nhek/in-situ/combined.hic",
+            "https://hicfiles.s3.amazonaws.com/hiseq/k562/in-situ/combined.hic",
+            "https://hicfiles.s3.amazonaws.com/hiseq/kbm7/in-situ/combined.hic",
+            "https://hicfiles.s3.amazonaws.com/hiseq/huvec/in-situ/combined.hic",
+            "https://hicfiles.s3.amazonaws.com/hiseq/hela/in-situ/combined.hic",
+            "https://hicfiles.s3.amazonaws.com/hiseq/hap1/in-situ/combined.hic"
+            ]
+
+def intersect(region, bad_region):
+    # region/2 is a tuple
+    if region[0] >= bad_region[0] and region[0] < bad_region[1]:
         return True
-    if region_1[1] > region_2[0] and region_1[1] < region_2[1]:
+    if region[1] > bad_region[0] and region[1] < bad_region[1]:
         return True
-    if region_2[0] > region_1[0] and region_2[0] < region_1[1]:
+    if bad_region[0] >= region[0] and bad_region[0] < region[1]:
         return True
 
     return False
 
-def download_contactmap_straw(hic_filename, chrom, start, end, resolution, norm):
+def import_contactmap_straw(sample_folder, hic_filename, chrom, start,
+                            end, resolution, norm = 'NONE'):
     basepairs = f"{chrom}:{start}:{end}"
     print(basepairs)
     result = hicstraw.straw("observed", norm, hic_filename, basepairs, basepairs, "BP", resolution)
@@ -61,17 +76,11 @@ def download_contactmap_straw(hic_filename, chrom, start, end, resolution, norm)
             print(row.binX, row.binY, row.counts, i, j)
 
     if np.max(y_arr) == 0:
-        return None
-    else:
-        return y_arr / np.max(y_arr)
-
-
-def import_contactmap_straw(sample_folder, hic_filename, chrom, start,
-                            end, resolution, norm = 'NONE'):
-    y_arr = download_contactmap_straw(hic_filename, chrom, start, end, resolution, norm)
-    if y_arr is None:
         print(f'{sample_folder} had no reads')
         return
+    else:
+        y_arr /= np.max(y_arr)
+
 
     m, _ = y_arr.shape
 
@@ -113,52 +122,41 @@ def single_cell_import():
     with multiprocessing.Pool(15) as p:
         p.starmap(import_contactmap_straw, mapping)
 
-
-def main():
-    dir = '/home/erschultz'
-    dataset='dataset_01_26_23'
-    data_folder = osp.join(dir, dataset)
-    if not osp.exists(data_folder):
-        os.mkdir(data_folder, mode = 0o755)
-    if not osp.exists(osp.join(data_folder, 'samples')):
-        os.mkdir(osp.join(data_folder, 'samples'), mode = 0o755)
-
-    resolution=10000
-    norm = 'NONE'
-    filename="https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-treated_6hr_combined_30.hic"
-    m = 512*5
-
-    chromsizes = bioframe.fetch_chromsizes('hg19')
-    print(chromsizes['chr4'])
-
-    # set up for multiprocessing
-    i = 1
+def import_wrapper(data_folder, filename_list, resolution, norm, m,
+                    i, ref_genome, chroms):
+    if isinstance(filename_list, str):
+        filename_list = [filename_list]
+    chromsizes = bioframe.fetch_chromsizes(ref_genome)
     mapping = []
-    for chromosome in range(1,23):
-        start_mb = 0
-        start = start_mb * 1000000
-        end = start + resolution * m
-        end_mb = end / 1000000
-        while end < chromsizes[f'chr{chromosome}']:
-            for region in HG19_BAD_REGIONS[chromosome].split(','):
-                region = region.split('-')
-                region = [int(d) for d in region]
-                if intersect((start_mb, end_mb), region):
-                    start_mb = region[1] # skip to end of bad region
-                    break
-            else:
-                print(f'i={i}: chr{chromosome} {start_mb}-{end_mb}')
-                sample_folder = osp.join(data_folder, 'samples', f'sample{i}')
-                mapping.append((sample_folder, filename, chromosome, start, end, resolution, norm))
-                i += 1
-                start_mb = end_mb
-
-            start = int(start_mb * 1000000)
+    for filename in filename_list:
+        for chromosome in chroms:
+            start_mb = 0
+            start = start_mb * 1000000
             end = start + resolution * m
             end_mb = end / 1000000
+            while end < chromsizes[f'chr{chromosome}']:
+                for region in HG19_BAD_REGIONS[chromosome].split(','):
+                    region = region.split('-')
+                    region = [int(d) for d in region]
+                    if intersect((start_mb, end_mb), region):
+                        start_mb = region[1] # skip to end of bad region
+                        start_mb += np.random.choice(np.arange(6)) # add random shift
+                        break
+                else:
+                    print(f'i={i}: chr{chromosome} {start_mb}-{end_mb}')
+                    sample_folder = osp.join(data_folder, 'samples', f'sample{i}')
+                    mapping.append((sample_folder, filename, chromosome, start,
+                                    end, resolution, norm))
+                    i += 1
+                    start_mb = end_mb
+
+                start = int(start_mb * 1000000)
+                end = start + resolution * m
+                end_mb = end / 1000000
 
     with multiprocessing.Pool(15) as p:
         p.starmap(import_contactmap_straw, mapping)
+
 
 def dataset_01_26():
     dir = '/home/erschultz'
@@ -226,227 +224,37 @@ def dataset_11_14():
     with multiprocessing.Pool(10) as p:
         p.starmap(import_contactmap_straw, mapping)
 
-def dataset_02_21():
+def single_experiment_dataset(filename, dataset, resolution, m,
+                                norm='NONE', i=1, ref_genome='hg19',
+                                chroms=range(1,23)):
     dir = '/home/erschultz'
-    dataset='dataset_02_21_23'
     data_folder = osp.join(dir, dataset)
     if not osp.exists(data_folder):
         os.mkdir(data_folder, mode = 0o755)
     if not osp.exists(osp.join(data_folder, 'samples')):
         os.mkdir(osp.join(data_folder, 'samples'), mode = 0o755)
 
-    resolution=10000
-    norm = 'NONE'
-    filename="https://hicfiles.s3.amazonaws.com/hiseq/imr90/in-situ/combined.hic"
-    m = 512*5
+    import_wrapper(data_folder, filename, resolution, norm, m, i, ref_genome, chroms)
 
-    chromsizes = bioframe.fetch_chromsizes('hg19')
-
-    # set up for multiprocessing
-    i = 1
-    mapping = []
-    for chromosome in range(1,23):
-        start_mb = 0
-        start = start_mb * 1000000
-        end = start + resolution * m
-        end_mb = end / 1000000
-        while end < chromsizes[f'chr{chromosome}']:
-            for region in HG19_BAD_REGIONS[chromosome].split(','):
-                region = region.split('-')
-                region = [int(d) for d in region]
-                if intersect((start_mb, end_mb), region):
-                    start_mb = region[1] # skip to end of bad region
-                    break
-            else:
-                print(f'i={i}: chr{chromosome} {start_mb}-{end_mb}')
-                sample_folder = osp.join(data_folder, 'samples', f'sample{i}')
-                mapping.append((sample_folder, filename, chromosome, start, end, resolution, norm))
-                i += 1
-                start_mb = end_mb
-
-            start = int(start_mb * 1000000)
-            end = start + resolution * m
-            end_mb = end / 1000000
-
-    with multiprocessing.Pool(15) as p:
-        p.starmap(import_contactmap_straw, mapping)
-
-def dataset_03_21():
+def mixed_experimental_dataset(dataset, resolution, m, norm='NONE'):
     dir = '/home/erschultz'
-    dataset='dataset_03_21_23'
     data_folder = osp.join(dir, dataset)
     if not osp.exists(data_folder):
         os.mkdir(data_folder, mode = 0o755)
     if not osp.exists(osp.join(data_folder, 'samples')):
         os.mkdir(osp.join(data_folder, 'samples'), mode = 0o755)
 
-    resolution=10000
-    norm = 'NONE'
-    filename_list=[
-                    # "https://hicfiles.s3.amazonaws.com/hiseq/imr90/in-situ/combined.hic",
-                    # "https://hicfiles.s3.amazonaws.com/hiseq/gm12878/agar/HIC030.hic",
-                    # "https://hicfiles.s3.amazonaws.com/hiseq/gm12878/dilution/HIC034.hic",
-                    # "https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
-                    # "https://hicfiles.s3.amazonaws.com/hiseq/hmec/in-situ/combined.hic",
-                    # "https://hicfiles.s3.amazonaws.com/hiseq/nhek/in-situ/combined.hic",
-                    # "https://hicfiles.s3.amazonaws.com/hiseq/k562/in-situ/combined.hic",
-                    # "https://hicfiles.s3.amazonaws.com/hiseq/kbm7/in-situ/combined.hic",
-                    # "https://hicfiles.s3.amazonaws.com/hiseq/huvec/in-situ/combined.hic",
-                    # "https://hicfiles.s3.amazonaws.com/hiseq/hela/in-situ/combined.hic",
-                    "https://hicfiles.s3.amazonaws.com/hiseq/hap1/in-situ/combined.hic"
-                    ]
-    m = 512*5
+    import_wrapper(data_folder, ALL_FILES, resolution, norm, m)
 
-    chromsizes = bioframe.fetch_chromsizes('hg19')
+def Su2020imr90():
+    sample_folder = '/home/erschultz/Su2020/samples/sample2'
+    filename='https://hicfiles.s3.amazonaws.com/hiseq/imr90/in-situ/combined.hic'
 
-    # set up for multiprocessing
-    i = 793
-    for filename in filename_list:
-        mapping = []
-        for chromosome in range(1,23):
-            start_mb = np.random.choice(np.arange(6)) # choose start at random
-            start = start_mb * 1000000
-            end = start + resolution * m
-            end_mb = end / 1000000
-            while end < chromsizes[f'chr{chromosome}']:
-                for region in HG19_BAD_REGIONS[chromosome].split(','):
-                    region = region.split('-')
-                    region = [int(d) for d in region]
-                    if intersect((start_mb, end_mb), region):
-                        start_mb = region[1] # skip to end of bad region
-                        start_mb += np.random.choice(np.arange(6)) # add random shift
-                        break
-                else:
-                    print(f'i={i}: chr{chromosome} {start_mb}-{end_mb}')
-                    sample_folder = osp.join(data_folder, 'samples', f'sample{i}')
-                    mapping.append((sample_folder, filename, chromosome, start, end, resolution, norm))
-                    i += 1
-                    start_mb = end_mb
+    resolution = 10000
+    start = 15372323
+    end = start + 512*5*resolution
+    import_contactmap_straw(sample_folder, filename, 21, start, end, resolution, 'NONE')
 
-                start = int(start_mb * 1000000)
-                end = start + resolution * m
-                end_mb = end / 1000000
-
-        with multiprocessing.Pool(15) as p:
-            p.starmap(import_contactmap_straw, mapping)
-
-def dataset_04_06():
-    dir = '/home/erschultz'
-    dataset='dataset_04_06_23'
-    data_folder = osp.join(dir, dataset)
-    if not osp.exists(data_folder):
-        os.mkdir(data_folder, mode = 0o755)
-    if not osp.exists(osp.join(data_folder, 'samples')):
-        os.mkdir(osp.join(data_folder, 'samples'), mode = 0o755)
-
-    resolution=10000
-    norm = 'NONE'
-    filename_list=[
-                    "https://hicfiles.s3.amazonaws.com/hiseq/imr90/in-situ/combined.hic",
-                    "https://hicfiles.s3.amazonaws.com/hiseq/gm12878/agar/HIC030.hic",
-                    "https://hicfiles.s3.amazonaws.com/hiseq/gm12878/dilution/HIC034.hic",
-                    "https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
-                    "https://hicfiles.s3.amazonaws.com/hiseq/hmec/in-situ/combined.hic",
-                    "https://hicfiles.s3.amazonaws.com/hiseq/nhek/in-situ/combined.hic",
-                    "https://hicfiles.s3.amazonaws.com/hiseq/k562/in-situ/combined.hic",
-                    "https://hicfiles.s3.amazonaws.com/hiseq/kbm7/in-situ/combined.hic",
-                    "https://hicfiles.s3.amazonaws.com/hiseq/huvec/in-situ/combined.hic",
-                    "https://hicfiles.s3.amazonaws.com/hiseq/hela/in-situ/combined.hic",
-                    "https://hicfiles.s3.amazonaws.com/hiseq/hap1/in-situ/combined.hic"
-                    ]
-    m = 1024*5
-
-    chromsizes = bioframe.fetch_chromsizes('hg19')
-
-    # set up for multiprocessing
-    i = 1
-    for filename in filename_list:
-        mapping = []
-        for chromosome in range(1,23):
-            start_mb = np.random.choice(np.arange(6)) # choose start at random
-            start = start_mb * 1000000
-            end = start + resolution * m
-            end_mb = end / 1000000
-            while end < chromsizes[f'chr{chromosome}']:
-                for region in HG19_BAD_REGIONS[chromosome].split(','):
-                    region = region.split('-')
-                    region = [int(d) for d in region]
-                    if intersect((start_mb, end_mb), region):
-                        start_mb = region[1] # skip to end of bad region
-                        start_mb += np.random.choice(np.arange(6)) # add random shift
-                        break
-                else:
-                    print(f'i={i}: chr{chromosome} {start_mb}-{end_mb}')
-                    sample_folder = osp.join(data_folder, 'samples', f'sample{i}')
-                    mapping.append((sample_folder, filename, chromosome, start, end, resolution, norm))
-                    i += 1
-                    start_mb = end_mb
-
-                start = int(start_mb * 1000000)
-                end = start + resolution * m
-                end_mb = end / 1000000
-
-        with multiprocessing.Pool(15) as p:
-            p.starmap(import_contactmap_straw, mapping)
-
-def dataset_04_07():
-    dir = '/home/erschultz'
-    dataset='dataset_04_07_23'
-    data_folder = osp.join(dir, dataset)
-    if not osp.exists(data_folder):
-        os.mkdir(data_folder, mode = 0o755)
-    if not osp.exists(osp.join(data_folder, 'samples')):
-        os.mkdir(osp.join(data_folder, 'samples'), mode = 0o755)
-
-    resolution=25000
-    norm = 'NONE'
-    filename_list=[
-                    "https://hicfiles.s3.amazonaws.com/hiseq/imr90/in-situ/combined.hic",
-                    "https://hicfiles.s3.amazonaws.com/hiseq/gm12878/agar/HIC030.hic",
-                    "https://hicfiles.s3.amazonaws.com/hiseq/gm12878/dilution/HIC034.hic",
-                    "https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
-                    "https://hicfiles.s3.amazonaws.com/hiseq/hmec/in-situ/combined.hic",
-                    "https://hicfiles.s3.amazonaws.com/hiseq/nhek/in-situ/combined.hic",
-                    "https://hicfiles.s3.amazonaws.com/hiseq/k562/in-situ/combined.hic",
-                    "https://hicfiles.s3.amazonaws.com/hiseq/kbm7/in-situ/combined.hic",
-                    "https://hicfiles.s3.amazonaws.com/hiseq/huvec/in-situ/combined.hic",
-                    "https://hicfiles.s3.amazonaws.com/hiseq/hela/in-situ/combined.hic",
-                    "https://hicfiles.s3.amazonaws.com/hiseq/hap1/in-situ/combined.hic"
-                    ]
-    m = 1024*4
-
-    chromsizes = bioframe.fetch_chromsizes('hg19')
-
-    # set up for multiprocessing
-    i = 1
-    for filename in filename_list:
-        mapping = []
-        for chromosome in range(1,23):
-            start_mb = np.random.choice(np.arange(6)) # choose start at random
-            start = start_mb * 1000000
-            end = start + resolution * m
-            end_mb = end / 1000000
-            while end < chromsizes[f'chr{chromosome}']:
-                for region in HG19_BAD_REGIONS[chromosome].split(','):
-                    region = region.split('-')
-                    region = [int(d) for d in region]
-                    if intersect((start_mb, end_mb), region):
-                        start_mb = region[1] # skip to end of bad region
-                        start_mb += np.random.choice(np.arange(6)) # add random shift
-                        break
-                else:
-                    print(f'i={i}: chr{chromosome} {start_mb}-{end_mb}')
-                    sample_folder = osp.join(data_folder, 'samples', f'sample{i}')
-                    mapping.append((sample_folder, filename, chromosome, start, end, resolution, norm))
-                    i += 1
-                    start_mb = end_mb
-
-                start = int(start_mb * 1000000)
-                end = start + resolution * m
-                end_mb = end / 1000000
-
-        with multiprocessing.Pool(15) as p:
-            p.starmap(import_contactmap_straw, mapping)
 
 
 def download_techinical_replicates():
@@ -533,4 +341,17 @@ def pool():
 
 
 if __name__ == '__main__':
-    dataset_04_07()
+    # single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
+    #                             'dataset_02_04_23', 10000, 512*5)
+    # single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/imr90/in-situ/combined.hic",
+    #                             'dataset_02_21_23', 10000, 512*5)
+    # mixed_experimental_dataset('dataset_03_21', 10000, 512*5)
+    # mixed_experimental_dataset('dataset_04_06', 10000, 1024*5)
+    # mixed_experimental_dataset('dataset_04_07', 25000, 1024*4)
+    # single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
+                                # 'dataset_04_09_23', 25000, 512*4)
+    # single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
+                                # 'dataset_04_10_23', 10000, 1024*5)
+    # single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
+                                # 'dataset_test', 25000, 1024*4, i=5001, chroms=[2])
+    Su2020imr90()

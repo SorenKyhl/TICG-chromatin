@@ -10,7 +10,7 @@
 #SBATCH --mail-user=erschultz@uchicago.edu
 
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
-i=8001
+i=8002
 
 # nonbonded
 useL='false'
@@ -18,14 +18,15 @@ useS='false'
 useD='false'
 chiMethod='none'
 method='none'
-k=1
+k=10
 # bonded
-bondLength=223.93945336907979
-gridSize=227.7170984734238
-beadVol=260000.0
+bondLength=488
+gridSize=600
+beadVol=130000
+phiChromatin=0.006
 # newton's method
-trust_region=5
-gamma=0.2
+trust_region=20
+gamma=2
 mode='grid_size'
 # bash
 STARTTIME=$(date +%s)
@@ -40,20 +41,20 @@ then
   source activate python3.9_pytorch1.9
 fi
 
-numIterations=5
+numIterations=7
 finalSimProductionSweeps=50000
-equilibSweeps=10000
+equilibSweeps=20000
 productionSweeps=50000
 
-dataset='dataset_test'
-m=1024
+dataset='Su2020'
+m=512
 
-for sample in 5000
+for sample in {1002..1002}
 do
   echo $sample $m
   max_ent
   jobs=$(( $jobs + 1 ))
-  if [ $jobs -gt 22 ]
+  if [ $jobs -gt 17 ]
   then
     echo 'Waiting'
     waitCount=$(( $waitCount + 1 ))

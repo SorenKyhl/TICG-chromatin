@@ -183,7 +183,7 @@ class Sim:
         axs[1].plot(self.energy['plaid'], label='plaid')
         axs[2].plot(self.energy['diagonal'], label='diagonal')
         axs[0].hlines(bondmean, 0, sz, colors='k')
-        axs[1].hlines(nbondmean, 0, sz, colors='k')
+        axs[1].hlines(plaidmean, 0, sz, colors='k')
         axs[2].hlines(diagmean, 0, sz, colors='k')
         axs[0].legend()
         axs[1].legend()
@@ -202,6 +202,7 @@ class Sim:
         '''
         Plot contact map with lower triangle as ground truth and upper as simulation.
         '''
+        assert self.gthic is not None
         if log:
             first = np.log(self.hic + 1)
             second = np.log(self.gthic + 1)
@@ -209,7 +210,7 @@ class Sim:
             first = self.hic
             second = self.gthic
 
-        assert np.shape(first) == np.shape(second)
+        assert np.shape(first) == np.shape(second), f'{first.shape} {second.shape}'
 
         npixels = np.shape(first)[0]
         indu = np.triu_indices(npixels)
@@ -395,9 +396,9 @@ def main():
 
 def test():
     # dir = '/home/erschultz/dataset_11_14_22/samples/sample2201/PCA-normalize-E/k12/replicate1/iteration16'
-    dir = '/home/erschultz/dataset_test/samples/sample5000/soren-S/k10_copy/replicate1/soren_no_energy'
+    dir = '/home/erschultz/dataset_02_04_23/samples/sample210/PCA-normalize-E/k12/replicate1/iteration13'
     os.chdir(dir)
-    sim = Sim("data_out")
+    sim = Sim("production_out")
     sim.plot_tri("tri.png")
     sim.plot_tri("tri_log.png", log = True)
     sim.plot_tri("tri_dark.png", np.mean(sim.gthic)/2, cmap='soren')

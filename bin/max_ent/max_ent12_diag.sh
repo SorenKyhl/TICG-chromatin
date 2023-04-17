@@ -1,6 +1,6 @@
 #! /bin/bash
-#SBATCH --job-name=maxent7_5
-#SBATCH --output=logFiles/maxent7_5.out
+#SBATCH --job-name=maxent7
+#SBATCH --output=logFiles/maxent7.out
 #SBATCH --time=24:00:00
 #SBATCH --partition=depablo
 #SBATCH --account=pi-depablo
@@ -10,14 +10,15 @@
 #SBATCH --mail-user=erschultz@uchicago.edu
 
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
-i=6501
+i=11002
 
 # nonbonded plaid
-useL='true'
-useS='true'
-useD='true'
-chiMethod='zeros'
-method='PCA-normalize'
+useL='false'
+useS='false'
+useD='false'
+chiMethod='none'
+method='none'
+k=10
 # nonbonded diag
 diagChiMethod="zeros"
 dense='true'
@@ -25,11 +26,12 @@ diagBins=96
 nSmallBins=64
 smallBinSize=1
 # bonded
-bondtype='gaussian'
-bondLength=363.76751
-beadVol=260000
+bondLength=488
+beadVol=130000
+phiChromatin=0.006
 # newton's method
-mode='both'
+mode='diag'
+trust_region=300
 # bash
 STARTTIME=$(date +%s)
 jobs=0
@@ -44,30 +46,30 @@ then
 fi
 
 # MC
-numIterations=10
-finalSimProductionSweeps=500000
-equilibSweeps=25000
-productionSweeps=250000
-dataset='dataset_04_09_23'
+numIterations=15
+finalSimProductionSweeps=200000
+equilibSweeps=50000
+productionSweeps=200000
+dataset='Su2020'
 m=512
 
-for k in 8
+
+for sample in 1002
 do
-  for sample in {1001..1002}
-  do
-    gridSize="${dir}/${dataset}/samples/sample${sample}/none/k2/replicate1/grid_size.txt"
-    echo "$sample m=$m k=$k"
-    max_ent
-    jobs=$(( $jobs + 1 ))
-    if [ $jobs -gt 22 ]
-    then
-      echo 'Waiting'
-      waitCount=$(( $waitCount + 1 ))
-      wait
-      jobs=0
-    fi
-  done
+  # gridSize=200
+  gridSize="${dir}/${dataset}/samples/sample${sample}/none/k10/replicate1/grid_size.txt"
+  echo "$sample m=$m k=$k"
+  max_ent
+  jobs=$(( $jobs + 1 ))
+  if [ $jobs -gt 22 ]
+  then
+    echo 'Waiting'
+    waitCount=$(( $waitCount + 1 ))
+    wait
+    jobs=0
+  fi
 done
+
 
 echo $waitCount
 wait

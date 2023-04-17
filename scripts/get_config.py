@@ -383,8 +383,14 @@ def main():
                 grid_size = tmp['grid_size']
         else:
             grid_size = np.loadtxt(args.grid_size)[-1]
+    elif isinstance(args.grid_size, str):
+        if args.grid_size.startswith('scale_'):
+            scale = float(args.grid_size[6:])
+            grid_size = args.bond_length * scale
+        else:
+            grid_size = float(args.grid_size)
     else:
-        grid_size = float(args.grid_size)
+        raise Exception(f'Invalid grid_size {args.grid_size}')
     config['grid_size'] = grid_size
 
     # save bead volume

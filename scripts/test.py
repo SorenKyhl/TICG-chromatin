@@ -1,3 +1,4 @@
+import csv
 import json
 import os
 import os.path as osp
@@ -10,6 +11,7 @@ import imageio.v2 as imageio
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import scipy.stats as ss
 import sympy
 import torch
@@ -428,7 +430,7 @@ def plot_sc_p_s():
     plt.savefig(osp.join(data_dir, 'sc_contacts_time', 'meanDist_log2.png'))
     plt.close()
 
-def plot_p_s(dataset, experimental=False, params=False, grid_size=False):
+def plot_p_s(dataset, experimental=False, params=False, grid_size=False, phi_c=False):
     # plot different p(s) curves
     dir = '/home/erschultz/'
     if experimental:
@@ -450,11 +452,14 @@ def plot_p_s(dataset, experimental=False, params=False, grid_size=False):
 
             with open(osp.join(sample_dir, 'config.json')) as f:
                 config = json.load(f)
+                data[sample]['grid_size'] = config['grid_size']
+                data[sample]['phi_chromatin'] = config['phi_chromatin']
+                data[sample]['bond_length'] = config["bond_length"]
+                data[sample]['grid_size'] = config["grid_size"]
+                data[sample]['beadvol'] = config['beadvol']
             if params:
                 diag_chis_step = calculate_diag_chi_step(config)
                 data[sample]['diag_chis_step'] = np.array(diag_chis_step)
-            if grid_size:
-                data[sample]['grid_size'] = config['grid_size']
 
 
     for norm in [True, False]:
@@ -477,6 +482,8 @@ def plot_p_s(dataset, experimental=False, params=False, grid_size=False):
                 X = np.arange(0, len(meanDist), 1)
             if grid_size:
                 ax.plot(X, meanDist, c = data[sample]['grid_size'], label = data[sample]['grid_size'])
+            elif phi_c:
+                ax.plot(X, meanDist, label = data[sample]['phi_chromatin'])
             else:
                 ax.plot(X, meanDist, label = label)
 
@@ -497,8 +504,13 @@ def plot_p_s(dataset, experimental=False, params=False, grid_size=False):
         else:
             if grid_size:
                 ax.legend(loc='upper right', title = 'Grid Size')
+            if phi_c:
+                ax.legend(loc='upper right', title = r'$\phi_c$')
             else:
                 ax.legend(loc='upper right', title = 'Sample')
+        plt.title(f"b={data[sample]['bond_length']}, "
+                    r"$\Delta$"
+                    f"={data[sample]['grid_size']}, vb={data[sample]['beadvol']}")
         plt.tight_layout()
         plt.savefig(osp.join(data_dir, f'meanDist_norm_{norm}.png'))
         plt.close()
@@ -871,96 +883,6 @@ def make_dataset_of_converged(dataset):
                     count += 1
     print(f'{converged_count} out of {converged_count+count} converged')
 
-def plot_seq():
-    dir = '/home/erschultz/dataset_test/samples/sample5000'
-    x_soren = np.load(osp.join(dir, 'x_soren.npy')).T
-    print(x_soren.shape)
-    x = np.load('/home/erschultz/scratch/TICG_maxent6011/resources/x.npy')
-    print(x.shape)
-
-    rows = 3; cols = 3
-    fig, ax = plt.subplots(rows, cols)
-    row = 0; col = 0
-    for i in range(rows*cols):
-        for seq_i, label in zip([x.T[i], x_soren.T[i]], ['Eric', 'Soren']):
-            val = np.mean(seq_i[:100])
-            if val < 0:
-                seq_i *= -1
-            ax[row, col].plot(seq_i, label = label)
-        ax[row, col].set_title(f'PC {i}')
-        col += 1
-        if col == cols:
-            col = 0
-            row += 1
-
-    plt.legend()
-    plt.show()
-
-def temp_plot():
-    dir = '/home/erschultz/dataset_test/samples/sample5000/soren-S/k10_copy/replicate1'
-    all_diag_chis1 = np.loadtxt(osp.join(dir, 'chis_diag.txt'))
-    with open(osp.join(dir, 'iteration11/config.json'), 'r') as f:
-        config1 = json.load(f)
-
-    with open(osp.join(dir, 'config_soren.json'), 'r') as f:
-        config2 = json.load(f)
-
-    allchis = np.load(osp.join(dir, 'chis_soren.npy'))
-    print(allchis.shape)
-    k=10
-    nplaid = int(k*(k+1)/2)
-    all_diag_chis2 = allchis[:12, nplaid:]
-    print(all_diag_chis2.shape)
-
-    files = []
-    ylim = (np.min(all_diag_chis1), np.max(all_diag_chis1))
-    for i in range(1, len(all_diag_chis1)):
-        diag_chi_1i = all_diag_chis1[i]
-        diag_chi_2i = all_diag_chis2[i]
-        file = f'{i}.png'
-        diag_chi_step_1i = calculate_diag_chi_step(config1, diag_chi_1i)
-        diag_chi_step_2i = calculate_diag_chi_step(config2, diag_chi_2i)
-        plot_diag_chi(None, dir, ref = diag_chi_step_2i,
-                        ref_label = 'Soren',
-                        logx = True, ofile = file,
-                        diag_chis_step = diag_chi_step_1i, ylim = ylim,
-                        title = f'Iteration {i}')
-        files.append(osp.join(dir, file))
-
-    frames = []
-    for filename in files:
-        frames.append(imageio.imread(filename))
-
-    imageio.mimsave(osp.join(dir, 'pchis_diag_step_comparison.gif'), frames, format='GIF', fps=2)
-
-    # remove files
-    for filename in files:
-        os.remove(filename)
-
-def temp_plot2():
-    dir = '/home/erschultz/dataset_test/samples/sample5000/soren-S/k10_copy/replicate1'
-
-    allchis = np.load(osp.join(dir, 'chis_soren.npy'))
-    print(allchis.shape)
-    k=10
-    nplaid = int(k*(k+1)/2)
-    chis = allchis[:12, :nplaid]
-
-    counter = 0
-    for i in range(k):
-        for j in range(k):
-            if j < i:
-                continue
-            chistr = "chi{}{}".format(LETTERS[i], LETTERS[j])
-            plt.plot(chis[1:, counter], label = chistr)
-            counter += 1
-    plt.xlabel('Iteration')
-    plt.ylabel('chi value')
-    plt.legend(loc=(1.04,0), ncol = 3)
-    plt.tight_layout()
-    plt.savefig(osp.join(dir, "pchis_soren.png"))
-    plt.close()
-
 def make_config():
     dir = '/home/erschultz/dataset_test/samples/sample5000/soren-S/k10_copy/replicate1'
 
@@ -1032,7 +954,6 @@ def make_config3():
     with open(osp.join(dir, 'config.json'), 'w') as f:
         json.dump(config, f, indent = 2)
 
-
 if __name__ == '__main__':
     # test_robust_PCA()
     # check_dataset('dataset_11_18_22')
@@ -1040,7 +961,7 @@ if __name__ == '__main__':
     # time_comparison_dmatrix()
     # convergence_check()
     # main()
-    # plot_p_s()
+    plot_p_s('dataset_phi_c', phi_c = True)
     # compare_scc_bio_replicates()
     # max_ent_loss_for_gnn('dataset_11_14_22', 2201)
     # plot_p_s('dataset_bond_grid', params = False, grid_size = True)
@@ -1049,4 +970,4 @@ if __name__ == '__main__':
     # make_dataset_of_converged('dataset_03_21_23')
     # plot_seq()
     # temp_plot()
-    make_config3()
+    # make_config3()

@@ -28,15 +28,17 @@ def main():
     if len(convergence) < 2:
         return
 
+    iterations = np.arange(1, len(convergence)+1)
+
     converged_it = None
     for i in range(1, len(convergence)):
         diff = convergence[i] - convergence[i-1]
         if np.abs(diff) < 1e-2 and convergence[i] < convergence[0]:
-            converged_it = i
+            converged_it = iterations[i]
             break
     print('converged_it:', converged_it)
 
-    plt.plot(convergence)
+    plt.plot(iterations, convergence)
     if converged_it is not None:
         plt.axvline(converged_it, color = 'k', label = 'converged')
         plt.legend()

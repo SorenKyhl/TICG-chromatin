@@ -61,11 +61,13 @@ public:
 
 	// MC variables
 	int decay_length;
-	int exp_decay;// = nbeads/decay_length;             // size of exponential falloff for MCmove second bead choice
+	int exp_decay;// = nbeads/decay_length;          // size of exponential falloff for MCmove second bead choice
 	int exp_decay_crank;// = nbeads/decay_length;
 	int exp_decay_pivot;// = nbeads/decay_length;
-	double step_disp = 5;
-	double step_trans = 2;
+	double step_disp_percentage = 0.30; // step disp is this percent of bond length
+	double step_trans_percentage = 0.30; // step trans is this percent of bond length
+	double step_disp; // nm
+	double step_trans; // nm
 	double step_crank = M_PI/6;
 	double step_pivot = M_PI/6;
 	double step_rot = M_PI/12;

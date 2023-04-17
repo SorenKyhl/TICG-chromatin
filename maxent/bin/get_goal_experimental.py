@@ -23,7 +23,7 @@ def getArgs():
                         help='{"plaid", "diag", "both", "grid_size"}')
     parser.add_argument('--v_bead', type=float, default=520,
                         help='volume of bead')
-    parser.add_argument('--grid_size', type=float, default=28.7,
+    parser.add_argument('--grid_size', default=28.7,
                         help='side length of grid cell')
 
     args = parser.parse_args()

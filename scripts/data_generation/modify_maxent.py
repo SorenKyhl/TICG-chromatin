@@ -50,6 +50,12 @@ def get_samples(dataset):
         samples = [1, 2, 3, 410, 653, 1462, 1801, 2290]
     elif dataset.startswith('dataset_01_27_23'):
         samples = range(1, 16)
+    elif dataset in {'dataset_04_09_23', 'dataset_04_10_23',}:
+        samples = range(1001, 1028)
+    elif dataset == 'dataset_04_06_23':
+        samples = range(1001, 1286)
+    elif dataset == 'dataset_04_07_23':
+        samples = range(1021, 1027)
     else:
         samples = [1, 2, 3, 4, 5, 324, 981, 1936, 2834, 3464]
 

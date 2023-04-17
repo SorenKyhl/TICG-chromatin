@@ -549,7 +549,11 @@ void Sim::volParameters_new() {
 void Sim::calculateParameters(nlohmann::json config) {
 	grid.delta = grid_size;
 	std::cout << "grid size is : " << grid.delta << std::endl;
-	step_grid = grid.delta/10.0; // size of grid displacement MC moves
+
+  // size of Monte-Carlo proposal steps for each type:
+  step_grid = grid.delta / 10.0;
+  step_disp = step_disp_percentage * bond_length;
+  step_trans = step_trans_percentage * bond_length;
 
 	std::cout << "bead volume is : " << Cell::beadvol << std::endl;
 	volParameters_new();
@@ -558,9 +562,9 @@ void Sim::calculateParameters(nlohmann::json config) {
 	// sphere center needs to be centered on a multiple of grid delta
 	//grid.sphere_center = {grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta};
 
-	exp_decay = nbeads/decay_length;             // size of exponential falloff for MCmove second bead choice
-	exp_decay_crank = nbeads/decay_length;
-	exp_decay_pivot = nbeads/decay_length;
+	exp_decay = nbeads / decay_length;             // size of exponential falloff for MCmove second bead choice
+	exp_decay_crank = nbeads / decay_length;
+	exp_decay_pivot = nbeads / decay_length;
 
 	if(bond_type == "gaussian" && rotate_on)
 	{
@@ -995,8 +999,6 @@ void Sim::MCmove_translate() {
 	// generate displacement vector with magnitude step_trans
 	Eigen::RowVector3d displacement;
 	displacement = step_trans*unit_vec(displacement);
-  std::cout << "first " << first << ", last " << last << std::endl;
-  std::cout << "disp " << displacement << std::endl;
 
 	// memory storage objects
 	std::unordered_set<Cell*> flagged_cells;

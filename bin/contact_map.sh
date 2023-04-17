@@ -15,7 +15,7 @@ source activate python3.9_pytorch1.9
 
 for i in 201
 do
-  folder="/home/erschultz/dataset_test/samples/sample5000/soren-S/k10_copy/replicate1/soren_no_energy_no_plaid_new_eqn"
+  folder="/home/erschultz/dataset_test/samples/sample5000/soren-S/k10_copy/replicate1/Experiments/soren_smatrix_long"
   ofile="${folder}/contact.log"
   python3 ~/TICG-chromatin/scripts/contact_map.py --sample_folder $folder --save_npy --plot --random_mode > $ofile &
 done
