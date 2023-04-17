@@ -1,13 +1,14 @@
+import shutil
+import time
+from multiprocessing import Process
 from pathlib import Path
+from typing import Optional, Sequence, Union
+
 import numpy as np
 import pandas as pd
-from multiprocessing import Process
-import time
-from typing import Sequence, Union, Optional
-
-from pylib.pyticg import Sim
-from pylib.utils import cd, cat, copy_last_snapshot
 from pylib import utils
+from pylib.pyticg import Sim
+from pylib.utils import cat, cd, copy_last_snapshot
 
 PathLike = Union[Path, str]
 ArrayLike = Union[list, np.ndarray]
@@ -29,8 +30,9 @@ class Pysim:
         randomize_seed: bool = True,
         mkdir: bool = True,
         setup_needed: bool = True,
+        overwrite: Optional[bool] = False
     ):
-        self.set_root(root, mkdir)
+        self.set_root(root, mkdir, overwrite)
         self.set_config(config)
         self.seqs = seqs
         self.setup_needed = (
@@ -61,7 +63,7 @@ class Pysim:
         else:
             return cls(new_root, config, seqs, mkdir=True, setup_needed=True)
 
-    def set_root(self, root: PathLike, mkdir: bool):
+    def set_root(self, root: PathLike, mkdir: bool, overwrite: Optional[bool]=False):
         """set the root of the simulation. and (optionally) create the directory
 
         Args:
@@ -70,6 +72,8 @@ class Pysim:
         """
 
         self.root = Path(root)
+        if overwrite:
+            shutil.rmtree(self.root)
         if mkdir:
             self.root.mkdir(exist_ok=False)
 

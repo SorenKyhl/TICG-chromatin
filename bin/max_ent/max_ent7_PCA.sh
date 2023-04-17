@@ -25,9 +25,9 @@ diagBins=96
 nSmallBins=64
 smallBinSize=1
 # bonded
-bondLength=488
-beadVol=130000
-phiChromatin=0.006
+bondLength=16.5
+beadVol=520
+phiChromatin=0.06
 # newton's method
 mode='both'
 # bash
@@ -44,18 +44,18 @@ then
 fi
 
 # MC
-numIterations=15
-finalSimProductionSweeps=500000
-equilibSweeps=25000
-productionSweeps=250000
+numIterations=1
+finalSimProductionSweeps=5000
+equilibSweeps=250
+productionSweeps=2500
 dataset='Su2020'
 m=512
 
 for k in 10
 do
-  for sample in 1002
+  for sample in 1003
   do
-    gridSize="${dir}/${dataset}/samples/sample${sample}/none/k10/replicate1/grid_size.txt"
+    gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
     echo "$sample m=$m k=$k"
     max_ent
     jobs=$(( $jobs + 1 ))

@@ -306,12 +306,7 @@ def main():
         config["nspecies"] = args.k
 
         # save chi to config
-        rows, cols = args.chi.shape
-        for row in range(rows):
-            for col in range(row, cols):
-                key = f'chi{LETTERS[row]}{LETTERS[col]}'
-                val = args.chi[row, col]
-                config[key] = val
+        config['chis'] = args.chi.tolist()
     elif args.use_smatrix:
         config['bead_type_files'] = None
         config["nspecies"] = 0

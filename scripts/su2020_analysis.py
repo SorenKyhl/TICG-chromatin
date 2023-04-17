@@ -18,7 +18,8 @@ sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
 from sequences_to_contact_maps.scripts.load_utils import (
     get_final_max_ent_folder, load_Y)
-from sequences_to_contact_maps.scripts.plotting_utils import (plot_matrix,
+from sequences_to_contact_maps.scripts.plotting_utils import (BLUE_CMAP,
+                                                              plot_matrix,
                                                               plot_mean_dist)
 from sequences_to_contact_maps.scripts.similarity_measures import SCC
 from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
@@ -161,8 +162,13 @@ def find_volume():
                 raise
             vols[i] = hull.volume * 1e-9 # convert to um^3
 
+    plt.hist(vols, bins = 50)
+    plt.xlabel(r'Volume $\mu m^3$')
+    plt.show()
     mean_vol = np.nanmean(vols)
+    std_vol = np.nanstd(vols)
     print(f'mean vol {mean_vol} um^3')
+    print(f'std vol {std_vol}')
     r_sphere = (3/4 * mean_vol / np.pi)**(1/3)
     r_sphere *= 1e3
     print(f'spherical radius {r_sphere} nm')
@@ -193,21 +199,20 @@ def dist_distribution():
     plt.title(f'distance between\n{coords_a} and {coords_b}')
     plt.savefig(osp.join(dir, 'distance_distribution.png'))
 
-
-
 def xyz_to_dist():
-    dir = '/home/erschultz/Su2020/samples/sample1'
-    file = osp.join(dir, 'chromosome21.tsv')
+    chr=2
+    dir = '/home/erschultz/Su2020/samples/sample10'
+    file = osp.join(dir, f'chromosome{chr}.tsv')
     xyz_file = osp.join(dir, 'xyz.npy')
     coords_file = osp.join(dir, 'coords.json')
     D_file = osp.join(dir, 'dist_mean.npy')
 
     coords_dict = {} # coords : ind
-    start = 10400001
-    end = 10450001
+    start = 1
+    end = 50001
     i=0
-    while end <= 46700001:
-        coords_dict[f'chr21:{start}-{end}'] = i
+    while end <= 242050001:
+        coords_dict[f'chr{chr}:{start}-{end}'] = i
         i += 1
         start = end
         end += 50000
@@ -239,7 +244,7 @@ def xyz_to_dist():
             for line in reader:
                 z, x, y, coords, cell = line[:5]
                 x, y, z, cell = [AC.str2int(i) for i in [x, y, z, cell]]
-                number -= 1 # convert to 0-based indexing
+                cell -= 1 # convert to 0-based indexing
                 xyz[cell, coords_dict[coords], :] = [x, y, z]
 
         np.save(xyz_file, xyz)
@@ -249,8 +254,7 @@ def xyz_to_dist():
     print(xyz.shape, xyz.dtype)
     num_cells, num_coords, _ = xyz.shape
 
-    D = xyz_to_distance(xyz, True)
-
+    D = xyz_to_distance(xyz[:500], True)
 
     print(D)
     print(D.dtype)
@@ -361,6 +365,36 @@ def compare_D_to_sim_D():
     D_sim *= 10
     m = len(D_sim)
 
+    def plot_D(input, dir, label):
+        plot_matrix(input, osp.join(dir, f'D_{label}.png'), f'D_{label}', vmax = 'max', cmap=BLUE_CMAP)
+        # normalize by genomic distance
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(input)
+        input_diag = DiagonalPreprocessing.process(input, meanDist)
+
+        plot_matrix(input_diag, osp.join(dir, f'D_diag_{label}.png'), f'D_diag_{label}', vmin = 'center1', cmap='bluered')
+
+    pca = PCA()
+    def get_pcs(input, nan_rows=None):
+        if nan_rows is None:
+            nan_rows = np.isnan(input[0])
+        input = input[~nan_rows][:, ~nan_rows] # ignore nan_rows
+        print(np.sum(np.isnan(input)))
+
+        # normalize by genomic distance
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(input)
+        input_diag = DiagonalPreprocessing.process(input, meanDist)
+
+        # corrcoef
+        # input = np.corrcoef(input)
+
+        # pca.fit(input/np.std(input, axis = 0))
+        pca.fit(input)
+        V = pca.components_
+        for v in V:
+            v *= np.sign(np.mean(v[:100]))
+        return V
+
+
     if max_ent:
         with open(osp.join(max_ent_dir, 'resources/config.json'), 'r') as f:
             config = json.load(f)
@@ -377,7 +411,15 @@ def compare_D_to_sim_D():
     dir = '/home/erschultz/Su2020/samples/sample1'
     D_file = osp.join(dir, 'dist_mean.npy')
     D = np.load(D_file)
+    V = get_pcs(D)
+    plt.plot(V[0])
+    plt.show()
+    plot_D(D, dir, 'exp')
     D = crop_hg38(D, 'chr21:14000001-14050001', m)
+
+
+    plot_D(D, max_ent_dir, 'exp')
+    plot_D(D_sim, max_ent_dir, 'sim')
 
     # min_MSE(D, D_sim)
 
@@ -387,13 +429,9 @@ def compare_D_to_sim_D():
     overall_corr2 = pearson_round(D, D_sim, stat = 'nan_pearson')
     print(overall_corr, overall_corr2)
 
-    cmap = matplotlib.colors.LinearSegmentedColormap.from_list('custom',
-                                         [(0,    'white'),
-                                          (1,    'blue')], N=126)
-
 
     plot_tri(D, D_sim, osp.join(max_ent_dir, 'dist_triu.png'), vmaxp = np.nanmax(D),
-            title = f'Corr = {overall_corr}', cmap = cmap)
+            title = f'Corr = {overall_corr}', cmap = BLUE_CMAP)
 
     title = f'b={bl}, gs={delta}, vb={vb}'
     meanDist_gt = DiagonalPreprocessing.genomic_distance_statistics(D)
@@ -430,7 +468,30 @@ def compare_D_to_sim_D():
         plt.savefig(osp.join(max_ent_dir, 'dist_distance_pearson.png'))
     plt.close()
 
-    plot_diagonal(D, D_sim)
+    # plot_diagonal(D, D_sim)
+
+
+    # compare PCs
+    nan_rows = np.isnan(D[0])
+    V_D = get_pcs(D, nan_rows)
+    V_D_sim = get_pcs(D_sim, nan_rows)
+
+    rows = 2; cols = 2
+    row = 0; col = 0
+    fig, ax = plt.subplots(rows, cols)
+    fig.set_figheight(12)
+    fig.set_figwidth(16)
+    for i in range(rows*cols):
+        ax[row,col].plot(V_D[i], label = 'experimental dist')
+        ax[row,col].plot(V_D_sim[i], label = 'simulated dist')
+        ax[row,col].set_title(f'PC {i+1}')
+        ax[row,col].legend()
+
+        col += 1
+        if col > cols-1:
+            col = 0
+            row += 1
+    plt.savefig(osp.join(max_ent_dir, 'pc_D_vs_D_sim.png'))
 
 def compare_sim_Hic_to_sim_D():
     dir = '/home/erschultz/dataset_test/samples/sample5000'
@@ -478,9 +539,9 @@ def compare_sim_Hic_to_sim_D():
 
 if __name__ == '__main__':
     # temp_plot()
-    # xyz_to_dist()
+    xyz_to_dist()
     # compare_control()
     # compare_D_to_sim_D()
     # find_volume()
     # dist_distribution()
-    compare_sim_Hic_to_sim_D()
+    # compare_sim_Hic_to_sim_D()

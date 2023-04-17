@@ -12,7 +12,6 @@ double Cell::phi_chromatin;
 double Cell::kappa;
 bool Cell::density_cap_on;
 bool Cell::compressibility_on;
-bool Cell::diag_pseudobeads_on;
 bool Cell::double_count_main_diagonal;
 bool Cell::dense_diagonal_on;
 int Cell::n_small_bins;
@@ -186,67 +185,45 @@ int Cell::binDiagonal(int d)
 }
 
 double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
-	for (int i = 0; i < diag_nbins; i++) {
-			diag_phis[i] = 0;
-	}
+    for (int i = 0; i < diag_nbins; i++) {
+        diag_phis[i] = 0;
+    }
 
-	int d_index; // genomic separation (index for diag_phis)
-	int imax = (int)contains.size();
-	std::vector<int> indices;
-	for (const auto &elem : contains) {
-			indices.push_back(elem->id);
-	}
+    int d_index; // genomic separation (index for diag_phis)
+    int imax = (int)contains.size();
+    std::vector<int> indices;
+    for (const auto &elem : contains) {
+        indices.push_back(elem->id);
+    }
 
+    // count pairwise contacts  -- include self-self interaction!!
+    for (int i = 0; i < imax; i++) {
+        for (int j = i; j < imax; j++) {
+            int d = std::abs(indices[i] - indices[j]);
+            if ((d <= diag_cutoff) && (d >= diag_start)) {
+                d -= diag_start; // TODO check that this works for non-zero
+                                 // diag_start
+                d_index = binDiagonal(d);
 
-	// count pairwise contacts
-	// TODO no longer includeing self-self interaction!!
-	for (int i=0; i<imax; i++)
-	{
-		for (int j=i; j<imax; j++)
-		{
-			int d = std::abs(indices[i] - indices[j]);
-			if ((d <= diag_cutoff) && (d >= diag_start) && (d >= 1))
-			{
-				d -= diag_start; // TODO check that this works for non-zero diag_start
-				d_index = binDiagonal(d);
-				diag_phis[d_index] += 1; // diag phis is just a count, multiply by volumes later
-			}
-		}
-	}
+                int nbonds;
+                if (Cell::double_count_main_diagonal)
+                {
+                    nbonds = 2;  // both main and off diagonal count twice
+                }
+                else {
+                    nbonds = d ? 2 : 1;       // count two for all off-diagonal
+                }
+                diag_phis[d_index] += nbonds; // diag phis is just a count,
+                                              // multiply by volumes later
+            }
+        }
+    }
 
-	double Udiag = 0;
-	if (diag_pseudobeads_on)
-	{
-		for (int i=0; i<diag_nbins; i++)
-		{
-			double npseudobeads = bonds_to_beads(diag_phis[i]);
-			// Udiag += diag_chis[i] * npseudobeads * npseudobeads;// * beadvol/vol;
-
-			diag_phis[i] = npseudobeads * beadvol/vol;
-			Udiag += diag_chis[i] * diag_phis[i] * diag_phis[i];
-		}
-
-		return Udiag * vol/beadvol;
-	}
-	else
-	{
-		for (int i=0; i<diag_nbins; i++)
-		{
-			diag_phis[i] *= beadvol/vol; // convert to actual volume fraction
-
-			if (diagonal_linear) {
-				Udiag += diag_chis[i]*diag_phis[i];
-			}
-			else {
-				Udiag += diag_chis[i]* diag_phis[i]*diag_phis[i];
-			}
-		}
-
-		// multiply by vol/beadvol to calculate mean-field energy
-		// needs to be different for linear case?
-		//if(!diagonal_linear) { Udiag *= vol/beadvol;}
-		return Udiag*vol/beadvol;
-	}
+    double Udiag = 0;
+    for (int i = 0; i < diag_nbins; i++) {
+        Udiag += diag_chis[i] * diag_phis[i];
+    }
+    return Udiag * beadvol / vol;
 };
 
 double Cell::bonds_to_beads(int bonds)

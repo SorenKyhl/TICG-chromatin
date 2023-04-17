@@ -954,6 +954,37 @@ def make_config3():
     with open(osp.join(dir, 'config.json'), 'w') as f:
         json.dump(config, f, indent = 2)
 
+def test_nan_slice():
+    x = np.random.rand(10,10)
+    x = np.round(x, 1)*10
+    for i in [2, 5, 8]:
+        x[i, :] = np.nan
+        x[:, i] = np.nan
+    print(x)
+    nan_cols = np.isnan(x[0])
+    print(nan_cols)
+    y = x[~nan_cols][:, ~nan_cols]
+    print(y)
+
+def data_manipulation():
+    dir = '/home/erschultz/Su2020/samples/sample1002_edit'
+    y = np.load(osp.join(dir, 'y.npy'))
+    y /= np.mean(np.diagonal(y))
+    m1 = np.mean(np.diagonal(y, 1))
+    y = y / m1 * 0.2
+    m1 = np.mean(np.diagonal(y, 1))
+    print(m1)
+    m0 = np.mean(np.diagonal(y, 0))
+    print(m0)
+    np.fill_diagonal(y, np.diagonal(y) / m0)
+
+    m1 = np.mean(np.diagonal(y, 1))
+    print(m1)
+    m0 = np.mean(np.diagonal(y, 0))
+    print(m0)
+
+    np.save(osp.join(dir, 'y.npy'), y)
+
 if __name__ == '__main__':
     # test_robust_PCA()
     # check_dataset('dataset_11_18_22')
@@ -961,7 +992,7 @@ if __name__ == '__main__':
     # time_comparison_dmatrix()
     # convergence_check()
     # main()
-    plot_p_s('dataset_phi_c', phi_c = True)
+    # plot_p_s('dataset_phi_c', phi_c = True)
     # compare_scc_bio_replicates()
     # max_ent_loss_for_gnn('dataset_11_14_22', 2201)
     # plot_p_s('dataset_bond_grid', params = False, grid_size = True)
@@ -971,3 +1002,5 @@ if __name__ == '__main__':
     # plot_seq()
     # temp_plot()
     # make_config3()
+    # test_nan_slice()
+    data_manipulation()

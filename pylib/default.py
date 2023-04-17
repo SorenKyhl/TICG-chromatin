@@ -1,13 +1,18 @@
+import os.path as osp
 from pathlib import Path
+
 from pylib import utils
-from pylib.chipseqPipeline import ChipseqPipeline, Smooth, Normalize, Sigmoid
+from pylib.chipseqPipeline import ChipseqPipeline, Normalize, Sigmoid, Smooth
 from pylib.datapipeline import DataPipeline
 
 """
 contains default config and params files
 """
 
-proj_root = Path("/home/skyhl/Documents/TICG-chromatin")
+root = "/home/skyhl/Documents/"
+if not osp.exists(root):
+    root = "/home/erschultz"
+proj_root = Path(root, "TICG-chromatin")
 config = utils.load_json(proj_root / "maxent/defaults/config.json")
 params = utils.load_json(proj_root / "maxent/defaults/params.json")
 chipseq_pipeline = ChipseqPipeline([Smooth(), Normalize(), Sigmoid()])
@@ -19,15 +24,15 @@ size = 1024
 data_pipeline = DataPipeline(res, chrom, start, end, size)
 
 hic_paths = {
-        "HCT116_auxin" : "/home/skyhl/Documents/chromatin/hic-data/HCT116_auxin/HIC-GSE104333_Rao-2017-treated_6hr_combined_30.hic",
-        "GM12878" : "/home/skyhl/Documents/chromatin/hic-data/GM12878/GSE63525_GM12878_insitu_replicate_30.hic"
+        "HCT116_auxin" : f"{root}/chromatin/hic-data/HCT116_auxin/HIC-GSE104333_Rao-2017-treated_6hr_combined_30.hic",
+        "GM12878" : f"{root}/chromatin/hic-data/GM12878/GSE63525_GM12878_insitu_replicate_30.hic"
             }
 
 HCT116_hic = Path(
-    "/home/skyhl/Documents/chromatin/hic-data/HCT116_auxin/HIC-GSE104333_Rao-2017-treated_6hr_combined_30.hic"
+    f"{root}/chromatin/hic-data/HCT116_auxin/HIC-GSE104333_Rao-2017-treated_6hr_combined_30.hic"
 )
 HCT116_chipseq = Path(
-    "/home/skyhl/Documents/chromatin/maxent-analysis/HCT116_chipseq_hg19/"
+    f"{root}/chromatin/maxent-analysis/HCT116_chipseq_hg19/"
 )
 
 data_dir = proj_root / "data"

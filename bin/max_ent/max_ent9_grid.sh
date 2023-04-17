@@ -18,16 +18,16 @@ useS='false'
 useD='false'
 chiMethod='none'
 method='none'
-k=210
+k=0
 # bonded
-bondLength=488
-gridSize=600
-beadVol=130000
-phiChromatin=0.006
+bondLength=16.5
+gridSize=17.5
+beadVol=520
+phiChromatin=0.06
 # newton's method
 trust_region=20
 gamma=2
-mode='grid_size_v2'
+mode='grid_size'
 # bash
 STARTTIME=$(date +%s)
 jobs=0
@@ -41,7 +41,7 @@ then
   source activate python3.9_pytorch1.9
 fi
 
-numIterations=5
+numIterations=2
 finalSimProductionSweeps=50000
 equilibSweeps=20000
 productionSweeps=50000
@@ -49,7 +49,7 @@ productionSweeps=50000
 dataset='Su2020'
 m=512
 
-for sample in {1002..1002}
+for sample in {1003..1003}
 do
   echo $sample $m
   max_ent

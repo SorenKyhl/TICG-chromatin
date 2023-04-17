@@ -5,6 +5,7 @@ import os
 import os.path as osp
 
 import numpy as np
+from pylib import epilib
 from pylib.pysim import Pysim
 from scipy import optimize
 from sklearn.metrics import mean_squared_error
@@ -43,7 +44,7 @@ def nearest_neighbor_contact_error(grid_bond_ratio, sim_engine, gthic):
     return error
 
 
-def optimize_grid_size(config, gthic, low_bound=0.5, high_bound=1.5, root="optimize-grid-size"):
+def optimize_grid_size(config, gthic, low_bound=0.5, high_bound=2, root="optimize-grid-size"):
     """tune grid size until simulated nearest neighbor contact probability
     is equal to the same probability derived from the ground truth hic matrix.
 
@@ -59,8 +60,14 @@ def optimize_grid_size(config, gthic, low_bound=0.5, high_bound=1.5, root="optim
     config["load_configuration"] = False
     config["nonbonded_on"] = False
     config["load_bead_types"] = False
+    config['angles_on'] = False
+    config['k_angle'] = 0
+    config['double_count_main_diagonal'] = False
+    config['conservative_contact_pooling'] = False
 
-    sim_engine = Pysim(root, config, seqs=None)
+
+    gthic /= np.mean(np.diagonal(gthic))
+    sim_engine = Pysim(root, config, seqs=None, overwrite=False)
 
     result = optimize.brentq(
         nearest_neighbor_contact_error,
@@ -76,13 +83,12 @@ def optimize_grid_size(config, gthic, low_bound=0.5, high_bound=1.5, root="optim
 
 def main():
     dir = '/home/erschultz'
-    os.chdir(osp.join(dir, 'Su2020/samples/sample1002/none/k10/replicate1'))
-    with open("resources/config.json") as f:
+    os.chdir(osp.join(dir, 'Su2020/samples/sample1003'))
+    with open("config.json") as f:
         config = json.load(f)
-    config["nSweeps"] = 10000
+    config["nSweeps"] = 20000
 
-    assert osp.exists("resources/y_gt.npy")
-    gthic = np.load("resources/y_gt.npy")
+    gthic = np.load("y.npy")
 
     optimal_grid_size = optimize_grid_size(config, gthic)
     print("optimal grid size is:", optimal_grid_size)

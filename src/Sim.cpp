@@ -263,8 +263,6 @@ void Sim::readInput() {
     }
 
     if (diagonal_on) {
-        assert(config.contains("diag_pseudobeads_on"));
-        Cell::diag_pseudobeads_on = config["diag_pseudobeads_on"];
         assert(config.contains("diagonal_linear"));
         Cell::diagonal_linear = config["diagonal_linear"];
         assert(config.contains("dense_diagonal_on"));
@@ -443,10 +441,13 @@ void Sim::readInput() {
     contact_bead_skipping = config["contact_bead_skipping"];
     assert(config.contains("boundary_type"));
     boundary_type = config["boundary_type"];
-    assert(config.contains("angles_on"));
-    angles_on = config["angles_on"];
-    assert(config.contains("k_angle"));
-    k_angle = config["k_angle"];
+
+    if (config.contains("angles_on")){
+      angles_on = config["angles_on"];
+    } else {
+      angles_on = false;
+    }
+    if (config.contains("k_angle")){k_angle = config["k_angle"];}
 
     // parallel config params
     assert(config.contains("parallel"));
@@ -462,11 +463,17 @@ void Sim::readInput() {
     }
     // cellcount_on = config["cellcount_on"];
 
-    assert(config.contains("double_count_main_diagonal"));
-    Cell::double_count_main_diagonal = config["double_count_main_diagonal"];
+    if (config.contains("double_count_main_diagonal")) {
+        Cell::double_count_main_diagonal = config["double_count_main_diagonal"];
+    } else {
+        Cell::double_count_main_diagonal = false;
+    }
+    if (config.contains("conservative_contact_pooling")) {
+        conservative_contact_pooling = config["conservative_contact_pooling"];
+    } else {
+        conservative_contact_pooling = false;
+    }
 
-    assert(config.contains("conservative_contact_pooling"));
-    conservative_contact_pooling = config["conservative_contact_pooling"];
 
     assert(config.contains("seed"));
     int seed = config["seed"];

@@ -10,7 +10,7 @@
 #SBATCH --mail-user=erschultz@uchicago.edu
 
 source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
-i=11002
+i=11003
 
 # nonbonded plaid
 useL='false'
@@ -18,7 +18,7 @@ useS='false'
 useD='false'
 chiMethod='none'
 method='none'
-k=10
+k=0
 # nonbonded diag
 diagChiMethod="zeros"
 dense='true'
@@ -26,12 +26,12 @@ diagBins=96
 nSmallBins=64
 smallBinSize=1
 # bonded
-bondLength=488
-beadVol=130000
-phiChromatin=0.006
+bondLength=16.5
+beadVol=520
+phiChromatin=0.06
 # newton's method
 mode='diag'
-trust_region=300
+trust_region=10
 # bash
 STARTTIME=$(date +%s)
 jobs=0
@@ -46,18 +46,18 @@ then
 fi
 
 # MC
-numIterations=15
-finalSimProductionSweeps=200000
+numIterations=5
+finalSimProductionSweeps=100000
 equilibSweeps=50000
-productionSweeps=200000
+productionSweeps=100000
 dataset='Su2020'
 m=512
 
 
-for sample in 1002
+for sample in 1003
 do
   # gridSize=200
-  gridSize="${dir}/${dataset}/samples/sample${sample}/none/k10/replicate1/grid_size.txt"
+  gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
   echo "$sample m=$m k=$k"
   max_ent
   jobs=$(( $jobs + 1 ))

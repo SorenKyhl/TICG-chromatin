@@ -1,23 +1,23 @@
-import numpy as np
+import copy
+import json
+import logging
+import os
+from pathlib import Path
+
+import matplotlib.colors
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import scipy
 import seaborn as sns
 import sklearn.metrics
-import os
-import copy
-import json
-import matplotlib.colors
-import logging
-
 from numba import njit
+from pylib import hic, utils
 from tqdm import tqdm
-from pathlib import Path
 
 # import palettable
 # from palettable.colorbrewer.sequential import Reds_3
 
-from pylib import utils, hic
 
 mycmap = matplotlib.colors.LinearSegmentedColormap.from_list(
     "custom", [(0, "white"), (0.3, "white"), (1, "#ff0000")], N=126
@@ -46,9 +46,6 @@ class Sim:
         except FileNotFoundError:
             logging.error("error loading config.json")
 
-        self.diag_bins = np.shape(self.config["diag_chis"])[0]
-        self.chi = self.load_chis()
-
         try:
             self.hic = get_contactmap(self.path / "contacts.txt")
             self.d = get_diagonal(self.hic)
@@ -63,31 +60,36 @@ class Sim:
                 index_col=0
             )
             # for production runs, when energy trajectories are concatenated
-            self.energy = self.energy.reset_index() 
+            self.energy = self.energy.reset_index()
         except FileNotFoundError:
             logging.error("error loading energy.traj")
 
-        try:
-            self.seqs = self.load_seqs()
-            self.k = np.shape(self.seqs)[0]
-        except OSError:
-            logging.error("error loading sequences")
+        self.chi = self.load_chis()
+        self.k = self.config['nspecies']
+        if self.k > 0:
+            try:
+                self.seqs = self.load_seqs()
+                assert self.k == np.shape(self.seqs)[0]
+            except OSError:
+                logging.error("error loading sequences")
 
-        try:
-            self.obs_full = pd.read_csv(
-                self.path / "observables.traj", sep="\t", header=None
-            )
-            self.obs = np.array(self.obs_full.mean().values[1:])
-        except FileNotFoundError:
-            logging.error("error loading plaid observables")
+            try:
+                self.obs_full = pd.read_csv(
+                    self.path / "observables.traj", sep="\t", header=None
+                )
+                self.obs = np.array(self.obs_full.mean().values[1:])
+            except FileNotFoundError:
+                logging.error("error loading plaid observables")
 
-        try:
-            self.diag_obs_full = pd.read_csv(
-                self.path / "diag_observables.traj", sep="\t", header=None
-            )
-            self.diag_obs = np.array(self.diag_obs_full.mean().values[1:])
-        except FileNotFoundError:
-            logging.error("error loading diag observables")
+        if "diag_chis" in self.config:
+            self.diag_bins = np.shape(self.config["diag_chis"])[0]
+            try:
+                self.diag_obs_full = pd.read_csv(
+                    self.path / "diag_observables.traj", sep="\t", header=None
+                )
+                self.diag_obs = np.array(self.diag_obs_full.mean().values[1:])
+            except FileNotFoundError:
+                logging.error("error loading diag observables")
 
         try:
             self.obs_tot = np.hstack((self.obs, self.diag_obs))
@@ -621,7 +623,7 @@ def get_sequences(
 
     assert dtype == "int" or dtype == "float"
 
-    
+
     if print_singular_values:
         logging.info("singular values are:")
         logging.info(S)
@@ -1064,7 +1066,7 @@ def get_goal_diag(
     """get goal observables for diagonal interaction
 
     hic: contact map
-    config: simulation configuration 
+    config: simulation configuration
     prefactors: multiply by physical parameters to convert probabilities to simulation observables
     get_ps: return binned p(s) and s vectors, where s is the center of the diagonal bins
 
@@ -1121,7 +1123,7 @@ def mask_diagonal2(contact, bins=16):
 
 def diag_bin_centers(config):
     """return centers of diagonal bins"""
-    
+
     nbeads = config["nbeads"]
     ndiag_bins = len(config["diag_chis"])
     cutoff = config["dense_diagonal_cutoff"]
@@ -1139,7 +1141,7 @@ def diag_bin_centers(config):
         s = np.hstack((np.arange(0, n_small_bins)*small_binsize, np.arange(0,n_big_bins)*big_binsize + dividing_line))
     else:
         s = np.array(range(ndiag_bins))
-        
+
     return s
 
 
