@@ -218,6 +218,7 @@ public:
 	void redirectStdout();
 	void returnStdout();
 	void makeOutputFiles();
-	void setupSLmatrix();
+	void setupLmatrix();
+	void setupSmatrix();
 	void setupDmatrix();
 };

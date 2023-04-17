@@ -13,7 +13,6 @@ double Cell::kappa;
 bool Cell::density_cap_on;
 bool Cell::compressibility_on;
 bool Cell::diag_pseudobeads_on;
-bool Cell::new_soren_eqn;
 bool Cell::double_count_main_diagonal;
 bool Cell::dense_diagonal_on;
 int Cell::n_small_bins;
@@ -213,40 +212,40 @@ double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
 				diag_phis[d_index] += 1; // diag phis is just a count, multiply by volumes later
 			}
 		}
+	}
 
-		double Udiag = 0;
-		if (diag_pseudobeads_on)
+	double Udiag = 0;
+	if (diag_pseudobeads_on)
+	{
+		for (int i=0; i<diag_nbins; i++)
 		{
-			for (int i=0; i<diag_nbins; i++)
-			{
-				double npseudobeads = bonds_to_beads(diag_phis[i]);
-				// Udiag += diag_chis[i] * npseudobeads * npseudobeads;// * beadvol/vol;
+			double npseudobeads = bonds_to_beads(diag_phis[i]);
+			// Udiag += diag_chis[i] * npseudobeads * npseudobeads;// * beadvol/vol;
 
-				diag_phis[i] = npseudobeads * beadvol/vol;
-				Udiag += diag_chis[i] * diag_phis[i] * diag_phis[i];
-			}
-
-			return Udiag * vol/beadvol;
+			diag_phis[i] = npseudobeads * beadvol/vol;
+			Udiag += diag_chis[i] * diag_phis[i] * diag_phis[i];
 		}
-		else
+
+		return Udiag * vol/beadvol;
+	}
+	else
+	{
+		for (int i=0; i<diag_nbins; i++)
 		{
-			for (int i=0; i<diag_nbins; i++)
-			{
-				diag_phis[i] *= beadvol/vol; // convert to actual volume fraction
+			diag_phis[i] *= beadvol/vol; // convert to actual volume fraction
 
-				if (diagonal_linear) {
-					Udiag += diag_chis[i]*diag_phis[i];
-				}
-				else {
-					Udiag += diag_chis[i]* diag_phis[i]*diag_phis[i];
-				}
+			if (diagonal_linear) {
+				Udiag += diag_chis[i]*diag_phis[i];
 			}
-
-			// multiply by vol/beadvol to calculate mean-field energy
-			// needs to be different for linear case?
-			//if(!diagonal_linear) { Udiag *= vol/beadvol;}
-			return Udiag*vol/beadvol;
+			else {
+				Udiag += diag_chis[i]* diag_phis[i]*diag_phis[i];
+			}
 		}
+
+		// multiply by vol/beadvol to calculate mean-field energy
+		// needs to be different for linear case?
+		//if(!diagonal_linear) { Udiag *= vol/beadvol;}
+		return Udiag*vol/beadvol;
 	}
 };
 

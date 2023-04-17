@@ -357,8 +357,13 @@ void Sim::readInput() {
     assert(config.contains("constant_chi"));
     constant_chi = config["constant_chi"];
     smatrix_filename = "none";
-    ematrix_filename = "none";
+    lmatrix_filename = "none";
     dmatrix_filename = "none";
+    assert(config.contains("lmatrix_on"));
+    smatrix_on = config["lmatrix_on"];
+    if (config.contains("lmatrix_filename")) {
+        lmatrix_filename = config["lmatrix_filename"];
+    }
     assert(config.contains("smatrix_on"));
     smatrix_on = config["smatrix_on"];
     if (config.contains("smatrix_filename")) {
@@ -1215,131 +1220,134 @@ void Sim::MCmove_translate() {
 }
 
 void Sim::MCmove_crankshaft() {
-    // index of first bead through index of last bead represent all beads that
-    // MOVE in the crankshaft axis of crankshaft motion is between beads
-    // (first-1) and (last+1), because those two do not move.
+	// index of first bead through index of last bead represent all beads that MOVE in the crankshaft
+	// axis of crankshaft motion is between beads (first-1) and (last+1), because those two do not move.
 
-    // select a first bead at random (cannot be first or last bead)
-    int first = -1;
-    while (first < 1 || first > nbeads - 2) {
-        first = floor(beads.size() * rng->uniform());
-    }
+	// select a first bead at random (cannot be first or last bead)
+	int first = -1;
+	while (first < 1 || first > nbeads-2)
+	{
+		first = floor(beads.size()*rng->uniform());
+	}
 
-    // choose second bead from two-sided exponential distribution around first
-    int last = -1;
-    while (last < 1 || last > nbeads - 2) {
-        last = std::round(randomExp(first, exp_decay_crank));
-    }
+	// choose second bead from two-sided exponential distribution around first
+	int last = -1;
+	while (last < 1 || last > nbeads-2)
+	{
+		last = std::round(randomExp(first, exp_decay_crank));
+	}
 
-    // swap first and last to ensure last > first
-    if (last < first) {
-        std::swap(first, last);
-    }
+	// swap first and last to ensure last > first
+	if (last < first) {std::swap(first, last);}
 
-    // compute axis of rotation, create quaternion
-    Eigen::RowVector3d axis = beads[last + 1].r - beads[first - 1].r;
-    double angle =
-        step_crank *
-        (rng->uniform() - 0.5); // random symmtric angle in cone size step_crank
-    Eigen::Quaterniond du;
-    du = Eigen::AngleAxisd(
-        angle, axis.normalized()); // object representing this rotation
+	// compute axis of rotation, create quaternion
+	Eigen::RowVector3d axis = beads[last+1].r - beads[first-1].r;
+	double angle = step_crank*(rng->uniform()- 0.5); // random symmtric angle in cone size step_crank
+	Eigen::Quaterniond du;
+	du = Eigen::AngleAxisd(angle, axis.normalized()); // object representing this rotation
 
-    // memory storage objects
-    std::vector<Eigen::RowVector3d> old_positions;
-    std::vector<Eigen::RowVector3d> old_orientations;
-    std::unordered_set<Cell *> flagged_cells;
-    std::unordered_map<int, std::pair<Cell *, Cell *>> bead_swaps;
+	// memory storage objects
+	std::vector<Eigen::RowVector3d> old_positions;
+	std::vector<Eigen::RowVector3d> old_orientations;
+	std::unordered_set<Cell*> flagged_cells;
+	std::unordered_map<int, std::pair<Cell*, Cell*>> bead_swaps;
 
-    old_positions.reserve(last - first);
-    old_orientations.reserve(last - first);
-    flagged_cells.reserve(last - first);
-    bead_swaps.reserve(last - first);
+	old_positions.reserve(last-first);
+	old_orientations.reserve(last-first);
+	flagged_cells.reserve(last-first);
+	bead_swaps.reserve(last-first);
 
-    Cell *old_cell_tmp;
-    Cell *new_cell_tmp;
+	Cell* old_cell_tmp;
+	Cell* new_cell_tmp;
 
-    // execute move
-    try {
-        double Uold = 0;
-        if (bonded_on)
-            Uold += getBondedEnergy(first, last);
+	// execute move
+	try
+	{
+		double Uold = 0;
+		if(bonded_on) Uold += getBondedEnergy(first, last);
 
-        for (int i = first; i <= last; i++) {
-            // save old configuration
-            // --------------------- can this be done more efficiently?
-            // ------------------------------------------
-            old_positions.push_back(beads[i].r);
-            old_orientations.push_back(beads[i].u);
+		for(int i=first; i<=last; i++)
+		{
+			// save old configuration
+			// --------------------- can this be done more efficiently? ------------------------------------------
+			old_positions.push_back(beads[i].r);
+			old_orientations.push_back(beads[i].u);
 
-            // step to new configuration, but don't update grid yet (going to
-            // check if in bounds first)
-            beads[i].r = du * (beads[i].r - beads[first - 1].r) +
-                         beads[first - 1].r.transpose();
-            beads[i].u = du * beads[i].u;
-        }
+			// step to new configuration, but don't update grid yet (going to check if in bounds first)
+			beads[i].r = du*(beads[i].r - beads[first-1].r) + beads[first-1].r.transpose();
+			beads[i].u = du*beads[i].u;
+		}
 
-        // reject if moved out of simulation box, need to restore old bead
-        // positions
-        for (int i = first; i <= last; i++) {
-            if (outside_boundary(beads[i].r)) {
-                throw "exited simulation box";
-            }
-        }
+		// reject if moved out of simulation box, need to restore old bead positions
+		for(int i=first; i<=last; i++)
+		{
+			if (outside_boundary(beads[i].r))
+			{
+				throw "exited simulation box";
+			}
+		}
 
-        // flag cells and bead swaps, but do not update the grid
-        for (int i = first; i <= last; i++) {
-            new_cell_tmp = grid.getCell(beads[i]);
-            old_cell_tmp = grid.getCell(old_positions[i - first]);
+		// flag cells and bead swaps, but do not update the grid
+		for(int i=first; i<=last; i++)
+		{
+			new_cell_tmp = grid.getCell(beads[i]);
+			old_cell_tmp = grid.getCell(old_positions[i-first]);
 
-            if (new_cell_tmp != old_cell_tmp) {
-                bead_swaps[i] = std::make_pair(old_cell_tmp, new_cell_tmp);
-                flagged_cells.insert(new_cell_tmp);
-                flagged_cells.insert(old_cell_tmp);
-            }
-        }
+			if (new_cell_tmp != old_cell_tmp)
+			{
+				bead_swaps[i] = std::make_pair(old_cell_tmp, new_cell_tmp);
+				flagged_cells.insert(new_cell_tmp);
+				flagged_cells.insert(old_cell_tmp);
+			}
+		}
 
-        // calculate old nonbonded energy based on flagged cells
-        if (nonbonded_on)
-            Uold += getNonBondedEnergy(flagged_cells);
+		// calculate old nonbonded energy based on flagged cells
+		if (nonbonded_on) Uold += getNonBondedEnergy(flagged_cells);
 
-        // Update grid
-        // for(std::pair<int, std::pair<Cell*, Cell*>> &x : bead_swaps)
-        for (auto const &x : bead_swaps) {
-            x.second.first->moveOut(&beads[x.first]); // out of the old cell
-            x.second.second->moveIn(&beads[x.first]); // in to the new cell
-        }
+		// Update grid
+		//for(std::pair<int, std::pair<Cell*, Cell*>> &x : bead_swaps)
+		for(auto const &x : bead_swaps)
+		{
+			x.second.first->moveOut(&beads[x.first]); // out of the old cell
+			x.second.second->moveIn(&beads[x.first]); // in to the new cell
+		}
 
-        double Unew = getTotalEnergy(first, last, flagged_cells);
+		double Unew = getTotalEnergy(first, last, flagged_cells);
 
-        if (rng->uniform() < exp(Uold - Unew)) {
-            // std::cout << "Accepted"<< std::endl;
-            acc += 1;
-            acc_crank += 1;
-            analytics.nbeads_moved += (last - first);
-        } else {
-            // std::cout << "Rejected" << std::endl;
-            throw "rejected";
-        }
-    }
-    // REJECTION CASES -- restore old conditions
-    catch (const char *msg) {
-        // restore particle positions
-        for (std::size_t i = 0; i < old_positions.size(); i++) {
-            beads[first + i].r = old_positions[i];
-            beads[first + i].u = old_orientations[i];
-        }
+		if (rng->uniform() < exp(Uold-Unew))
+		{
+			//std::cout << "Accepted"<< std::endl;
+			acc += 1;
+			acc_crank += 1;
+			nbeads_moved += (last-first);
+		}
+		else
+		{
+			//std::cout << "Rejected" << std::endl;
+			throw "rejected";
+		}
+	}
+	// REJECTION CASES -- restore old conditions
+	catch (const char* msg)
+	{
+		// restore particle positions
+		for(int i=0; i<old_positions.size(); i++)
+		{
+			beads[first+i].r = old_positions[i];
+			beads[first+i].u = old_orientations[i];
+		}
 
-        // restore grid allocations
-        if (bead_swaps.size() > 0) {
-            // for(std::pair<int, std::pair<Cell*, Cell*>> &x : bead_swaps)
-            for (auto const &x : bead_swaps) {
-                x.second.first->moveIn(&beads[x.first]); // back in to the old
-                x.second.second->moveOut(
-                    &beads[x.first]); // back out of the new
-            }
-        }
-    }
+		// restore grid allocations
+		if (bead_swaps.size() > 0)
+		{
+			//for(std::pair<int, std::pair<Cell*, Cell*>> &x : bead_swaps)
+			for(auto const &x : bead_swaps)
+			{
+				x.second.first->moveIn(&beads[x.first]);   // back in to the old
+				x.second.second->moveOut(&beads[x.first]); // back out of the new
+			}
+		}
+	}
 }
 
 void Sim::MCmove_rotate() {
@@ -1563,11 +1571,13 @@ void Sim::saveEnergy(int sweep) {
     bonded = bonded_on ? getAllBondedEnergy() : 0;
     double plaid = 0;
     if (plaid_on) {
-        if (smatrix_on) {
-            plaid = grid.SmatrixEnergy(grid.active_cells, smatrix);
-        } else if (ematrix_on) {
-            plaid = grid.EmatrixEnergy(grid.active_cells, ematrix);
-        } else {
+        if (lmatrix_on) {
+          plaid = grid.SLmatrixEnergy(grid.active_cells, lmatrix);
+        }
+        else if (smatrix_on) {
+          plaid = grid.SLmatrixEnergy(grid.active_cells, smatrix);
+        }
+        else {
             plaid = grid.energy(grid.active_cells, chis);
         }
     }
@@ -1622,8 +1632,7 @@ void Sim::saveObservables(int sweep) {
     }
 
     if (diagonal_on || dmatrix_on)
-    // if dmatrix_on and (smatrix_on or ematrix_on), diagonal_on will be set to
-    // False for computational efficiency
+    // if dmatrix_on and smatrix_on , diagonal_on will be set to False for computational efficiency
     {
         double Udiag = grid.diagEnergy(
             grid.active_cells, diag_chis); // to update phis_diag? jan 28-2022
@@ -1706,20 +1715,19 @@ void Sim::setupLmatrix() {
     std::cout << "lmatrix_filename (" << lmatrix_filename << ") does not exist or cannot be opened\n";
     Eigen::MatrixXd psi;
 
-        // need to define psi
-        psi = Eigen::MatrixXd::Zero(nbeads, nspecies);
-        for (int i = 0; i < nbeads; i++) {
-            for (int k = 0; k < nspecies; k++) {
-                psi(i, k) = beads[i].d[k];
-            }
-        }
-        // ensure chis are triu
-        Eigen::MatrixXd chis_triu;
-        chis_triu = chis.triangularView<Eigen::Upper>();
+    // need to define psi
+    psi = Eigen::MatrixXd::Zero(nbeads, nspecies);
+    for (int i=0; i<nbeads; i++)
+    {
+      for (int k=0; k<nspecies; k++)
+      {
+        psi(i, k) = beads[i].d[k];
+      }
 
-        // try and create smatrix from chi and psi
-        smatrix = psi * chis * psi.transpose();
     }
+    // ensure chis are triu
+    Eigen::MatrixXd chis_triu;
+    chis_triu = chis.triangularView<Eigen::Upper>();
 
     // try and create lmatrix from chi and psi
     lmatrix = psi*chis*psi.transpose();
@@ -1767,19 +1775,20 @@ void Sim::setupSmatrix() {
 }
 
 void Sim::setupDmatrix() {
-    std::ifstream dmatrixfile(dmatrix_filename);
-    dmatrix.resize(nbeads, nbeads);
+	std::ifstream dmatrixfile(dmatrix_filename);
+  dmatrix.resize(nbeads, nbeads);
 
-    if (dmatrixfile.good()) {
-        std::cout << dmatrix_filename << " opened\n";
-        for (int i = 0; i < nbeads; i++) {
-            for (int j = 0; j < nbeads; j++) {
-                dmatrixfile >> dmatrix(i, j);
-            }
-        }
-    } else {
-        std::cout << "dmatrix_filename (" << dmatrix_filename
-                  << ") does not exist or cannot be opened\n";
+	if ( dmatrixfile.good() ) {
+    std::cout << dmatrix_filename << " opened\n";
+    for (int i=0; i<nbeads; i++) {
+      for (int j=0; j<nbeads; j++) {
+        dmatrixfile >> dmatrix(i,j);
+      }
+    }
+	}
+  else
+  {
+    std::cout << "dmatrix_filename (" << dmatrix_filename << ") does not exist or cannot be opened\n";
 
     // try and create dmatrix from diag_chis
     for (int i=0; i<nbeads; i++)
@@ -1793,6 +1802,11 @@ void Sim::setupDmatrix() {
           int d_index = Cell::binDiagonal(d);
           dmatrix(i,j) = diag_chis[d_index];
         }
+        else
+        {
+          dmatrix(i,j) = 0;
+        }
+      }
     }
   }
   assert (dmatrix(1,1) == 0); // main diagonal must be zero

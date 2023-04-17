@@ -14,7 +14,7 @@
   "plaid_on": true,
   "load_bead_types": true,
   "load_configuration": false,
-  "prof_timer_on": false,
+  "profiling_on": false,
   "print_trans": false,
   "print_acceptance_rates": true,
   "contact_resolution": 1,
