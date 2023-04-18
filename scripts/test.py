@@ -430,10 +430,10 @@ def plot_sc_p_s():
     plt.savefig(osp.join(data_dir, 'sc_contacts_time', 'meanDist_log2.png'))
     plt.close()
 
-def plot_p_s(dataset, experimental=False, params=False, grid_size=False, phi_c=False):
+def plot_p_s(dataset, experimental=False, ref=False, params=False, grid_size=False, phi_c=False):
     # plot different p(s) curves
     dir = '/home/erschultz/'
-    if experimental:
+    if ref:
         data_dir = osp.join(dir, 'dataset_11_14_22/samples/sample1') # experimental data sample
         file = osp.join(data_dir, 'y.npy')
         y_exp = np.load(file)
@@ -442,7 +442,7 @@ def plot_p_s(dataset, experimental=False, params=False, grid_size=False, phi_c=F
     data_dir = osp.join(dir, dataset)
 
     data = defaultdict(dict) # sample : {meanDist, diag_chis_step} : vals
-    for sample in range(1, 10):
+    for sample in [1002, 1003]:
         sample_dir = osp.join(data_dir, 'samples', f'sample{sample}')
         ifile = osp.join(sample_dir, 'y.npy')
         if osp.exists(ifile):
@@ -450,13 +450,15 @@ def plot_p_s(dataset, experimental=False, params=False, grid_size=False, phi_c=F
             meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
             data[sample]['meanDist'] = meanDist
 
-            with open(osp.join(sample_dir, 'config.json')) as f:
-                config = json.load(f)
-                data[sample]['grid_size'] = config['grid_size']
-                data[sample]['phi_chromatin'] = config['phi_chromatin']
-                data[sample]['bond_length'] = config["bond_length"]
-                data[sample]['grid_size'] = config["grid_size"]
-                data[sample]['beadvol'] = config['beadvol']
+            config_file = osp.join(sample_dir, 'config.json')
+            if osp.exists(config_file):
+                with open(config_file) as f:
+                    config = json.load(f)
+                    data[sample]['grid_size'] = config['grid_size']
+                    data[sample]['phi_chromatin'] = config['phi_chromatin']
+                    data[sample]['bond_length'] = config["bond_length"]
+                    data[sample]['grid_size'] = config["grid_size"]
+                    data[sample]['beadvol'] = config['beadvol']
             if params:
                 diag_chis_step = calculate_diag_chi_step(config)
                 data[sample]['diag_chis_step'] = np.array(diag_chis_step)
@@ -466,7 +468,7 @@ def plot_p_s(dataset, experimental=False, params=False, grid_size=False, phi_c=F
         fig, ax = plt.subplots()
         if params:
             ax2 = ax.twinx()
-        if experimental:
+        if ref:
             if norm:
                 X = np.arange(0, 1, len(meanDist_ref))
             else:
@@ -508,7 +510,8 @@ def plot_p_s(dataset, experimental=False, params=False, grid_size=False, phi_c=F
                 ax.legend(loc='upper right', title = r'$\phi_c$')
             else:
                 ax.legend(loc='upper right', title = 'Sample')
-        plt.title(f"b={data[sample]['bond_length']}, "
+        if not experimental:
+            plt.title(f"b={data[sample]['bond_length']}, "
                     r"$\Delta$"
                     f"={data[sample]['grid_size']}, vb={data[sample]['beadvol']}")
         plt.tight_layout()
@@ -961,7 +964,7 @@ if __name__ == '__main__':
     # time_comparison_dmatrix()
     # convergence_check()
     # main()
-    plot_p_s('dataset_phi_c', phi_c = True)
+    plot_p_s('Su2020', experimental = True)
     # compare_scc_bio_replicates()
     # max_ent_loss_for_gnn('dataset_11_14_22', 2201)
     # plot_p_s('dataset_bond_grid', params = False, grid_size = True)
