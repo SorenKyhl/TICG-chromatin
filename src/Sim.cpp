@@ -348,12 +348,24 @@ void Sim::readInput() {
     rotate_on = config["rotate_on"];
 
     // energy/chi params
-    assert(config.contains("boundary_chi"));
-    boundary_chi = config["boundary_chi"];
-    assert(config.contains("constant_chi_on"));
-    constant_chi_on = config["constant_chi_on"];
-    assert(config.contains("constant_chi"));
-    constant_chi = config["constant_chi"];
+    if (config.contains("boundary_attract_on")) {
+      boundary_attract_on = config["boundary_attract_on"];
+      if (boundary_attract_on){
+        assert(config.contains("boundary_chi"));
+        boundary_chi = config["boundary_chi"];
+      }
+    } else {
+      boundary_attract_on = false;
+    }
+    if (config.contains("constant_chi_on")) {
+      constant_chi_on = config["constant_chi_on"];
+      if (constant_chi_on) {
+        assert(config.contains("constant_chi"));
+        constant_chi = config["constant_chi"];
+      }
+    } else {
+      constant_chi_on = false;
+    }
     smatrix_filename = "none";
     lmatrix_filename = "none";
     dmatrix_filename = "none";
@@ -372,8 +384,6 @@ void Sim::readInput() {
     if (config.contains("dmatrix_filename")) {
         dmatrix_filename = config["dmatrix_filename"];
     }
-    assert(config.contains("boundary_attract_on"));
-    boundary_attract_on = config["boundary_attract_on"];
 
     // bead/bond params
     assert(config.contains("beadvol"));
@@ -400,20 +410,29 @@ void Sim::readInput() {
     nSweeps = config["nSweeps"];
     assert(config.contains("load_configuration"));
     load_configuration = config["load_configuration"];
-    assert(config.contains("load_configuration_filename"));
-    load_configuration_filename = config["load_configuration_filename"];
+    if (load_configuration) {
+      assert(config.contains("load_configuration_filename"));
+      load_configuration_filename = config["load_configuration_filename"];
+    }
     assert(config.contains("profiling_on"));
     profiling_on = config["profiling_on"];
-    assert(config.contains("print_trans"));
-    print_trans = config["print_trans"];
+    if (config.contains("print_trans")) {
+      print_trans = config["print_trans"];
+    } else {
+      print_trans = false;
+    }
+
     assert(config.contains("contact_resolution"));
     contact_resolution = config["contact_resolution"];
     assert(config.contains("grid_size"));
     grid_size = config["grid_size"];
     assert(config.contains("track_contactmap"));
     track_contactmap = config["track_contactmap"];
-    assert(config.contains("visit_tracking"));
-    visit_tracking = config["visit_tracking"];
+    if (config.contains("visit_tracking")){
+        visit_tracking = config["visit_tracking"];
+    } else {
+      visit_tracking = false;
+    }
     assert(config.contains("update_contacts_distance"));
     update_contacts_distance = config["update_contacts_distance"];
     assert(config.contains("phi_solvent_max"));
@@ -424,8 +443,10 @@ void Sim::readInput() {
     Cell::density_cap_on = config["density_cap_on"];
     assert(config.contains("compressibility_on"));
     Cell::compressibility_on = config["compressibility_on"];
-    assert(config.contains("kappa"));
-    Cell::kappa = config["kappa"];
+    if (Cell::compressibility_on) {
+      assert(config.contains("kappa"));
+      Cell::kappa = config["kappa"];
+    }
 
     assert(config.contains("parallel"));
     Grid::parallel = config["parallel"];
@@ -437,8 +458,11 @@ void Sim::readInput() {
     bond_type = config["bond_type"];
     assert(config.contains("bond_length"));
     bond_length = config["bond_length"];
-    assert(config.contains("contact_bead_skipping"));
-    contact_bead_skipping = config["contact_bead_skipping"];
+    if (config.contains("contact_bead_skipping")) {
+      contact_bead_skipping = config["contact_bead_skipping"];
+    } else {
+      contact_bead_skipping = false;
+    }
     assert(config.contains("boundary_type"));
     boundary_type = config["boundary_type"];
 

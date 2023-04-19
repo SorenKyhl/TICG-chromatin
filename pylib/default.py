@@ -10,10 +10,15 @@ contains default config and params files
 """
 
 root = "/home/skyhl/Documents/"
+eric = False
 if not osp.exists(root):
+    eric = True
     root = "/home/erschultz"
 proj_root = Path(root, "TICG-chromatin")
-config = utils.load_json(proj_root / "maxent/defaults/config.json")
+if eric:
+    config = utils.load_json(proj_root / "utils/default_config.json")
+else:
+    config = utils.load_json(proj_root / "maxent/defaults/config.json")
 params = utils.load_json(proj_root / "maxent/defaults/params.json")
 chipseq_pipeline = ChipseqPipeline([Smooth(), Normalize(), Sigmoid()])
 res = 100000

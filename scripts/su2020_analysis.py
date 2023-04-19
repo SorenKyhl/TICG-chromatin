@@ -9,6 +9,7 @@ import cv2
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.ma as ma
 import pandas as pd
 from scipy.optimize import curve_fit
 from scipy.spatial import ConvexHull
@@ -20,6 +21,7 @@ from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
 from sequences_to_contact_maps.scripts.load_utils import (
     get_final_max_ent_folder, load_Y)
 from sequences_to_contact_maps.scripts.plotting_utils import (BLUE_CMAP,
+                                                              RED_BLUE_CMAP,
                                                               plot_matrix,
                                                               plot_mean_dist)
 from sequences_to_contact_maps.scripts.similarity_measures import SCC
@@ -103,6 +105,7 @@ def crop_hg38(inp, start, m):
         coords_dict = json.load(f)
 
     i = coords_dict[start]
+    print(i)
     return inp[i:i+m, i:i+m]
 
 def hg38_to_hg19(coords):
@@ -257,18 +260,22 @@ def compare_dist_distribution():
     plt.savefig(osp.join(dir, 'distance_distribution.png'))
 
 def xyz_to_dist():
-    chr=2
-    dir = '/home/erschultz/Su2020/samples/sample10'
+    chr=21
+    dir = '/home/erschultz/Su2020/samples/sample1'
+    log_file = osp.join(dir, 'xyz_to_dist.log')
+    log_file = open(log_file, 'w')
     file = osp.join(dir, f'chromosome{chr}.tsv')
     xyz_file = osp.join(dir, 'xyz.npy')
     coords_file = osp.join(dir, 'coords.json')
     D_file = osp.join(dir, 'dist_mean.npy')
+    D_file2 = osp.join(dir, 'dist_median.npy')
+
 
     coords_dict = {} # coords : ind
     start = 1
-    end = 50001
+    end = 10400001
     i=0
-    while end <= 242050001:
+    while end <= 46700001:
         coords_dict[f'chr{chr}:{start}-{end}'] = i
         i += 1
         start = end
@@ -308,18 +315,22 @@ def xyz_to_dist():
     else:
         xyz = np.load(xyz_file)
 
-    print(xyz.shape, xyz.dtype)
+    print(xyz.shape, xyz.dtype, file = log_file)
     num_cells, num_coords, _ = xyz.shape
 
-    D = xyz_to_distance(xyz[:500], True)
-
-    print(D)
-    print(D.dtype)
+    D = xyz_to_distance(xyz, True)
 
     D_mean = np.nanmean(D, axis = 0)
-    print(D_mean)
-    print('mean', np.nanmean(np.diagonal(D_mean, 1)))
+    print(D_mean, file = log_file)
+    print('mean', np.nanmean(np.diagonal(D_mean, 1)), file = log_file)
     np.save(D_file, D_mean)
+
+    D_median = np.nanmedian(D, axis = 0)
+    print(D_median, file = log_file)
+    print('mean', np.nanmean(np.diagonal(D_median, 1)), file = log_file)
+    print('median', np.nanmean(np.diagonal(D_median, 1)), file = log_file)
+
+    np.save(D_file2, D_median)
 
     # create negative control
     D_file1 = osp.join(dir, 'dist_mean_first_half.npy')
@@ -331,6 +342,9 @@ def xyz_to_dist():
     D2 = D[len(D)//2:]
     D2_mean = np.nanmean(D2, axis = 0)
     np.save(D_file2, D2_mean)
+
+    log_file.close()
+
 
 def sim_xyz_to_dist(dir, max_ent=True):
     if max_ent:
@@ -423,19 +437,22 @@ def compare_D_to_sim_D():
     m = len(D_sim)
 
     def plot_D(input, dir, label):
-        plot_matrix(input, osp.join(dir, f'D_{label}.png'), f'D_{label}', vmax = 'max', cmap=BLUE_CMAP)
+        plot_matrix(input, osp.join(dir, f'D_{label}.png'), f'D_{label}', vmax = 'max', cmap=RED_BLUE_CMAP)
         # normalize by genomic distance
         meanDist = DiagonalPreprocessing.genomic_distance_statistics(input)
         input_diag = DiagonalPreprocessing.process(input, meanDist)
 
         plot_matrix(input_diag, osp.join(dir, f'D_diag_{label}.png'), f'D_diag_{label}', vmin = 'center1', cmap='bluered')
 
+        if np.sum(np.isnan(input_diag)) == 0:
+            input_diag_corr = np.corrcoef(input_diag)
+            plot_matrix(input_diag_corr, osp.join(dir, f'D_diag_corr_{label}.png'), f'D_diag_corr_{label}', vmin = -1, vmax= 1, cmap='bluered')
+
     pca = PCA()
     def get_pcs(input, nan_rows=None):
         if nan_rows is None:
             nan_rows = np.isnan(input[0])
         input = input[~nan_rows][:, ~nan_rows] # ignore nan_rows
-        print(np.sum(np.isnan(input)))
 
         # normalize by genomic distance
         meanDist = DiagonalPreprocessing.genomic_distance_statistics(input)
@@ -444,8 +461,8 @@ def compare_D_to_sim_D():
         # corrcoef
         # input = np.corrcoef(input)
 
-        # pca.fit(input/np.std(input, axis = 0))
-        pca.fit(input)
+        pca.fit(input/np.std(input, axis = 0))
+        # pca.fit(input)
         V = pca.components_
         for v in V:
             v *= np.sign(np.mean(v[:100]))
@@ -468,14 +485,15 @@ def compare_D_to_sim_D():
     dir = '/home/erschultz/Su2020/samples/sample1'
     D_file = osp.join(dir, 'dist_mean.npy')
     D = np.load(D_file)
-    V = get_pcs(D)
-    plt.plot(V[0])
-    plt.show()
-    plot_D(D, dir, 'exp')
+    nan_rows = np.isnan(D[0])
+    D_no_nan = D[~nan_rows][:, ~nan_rows]
+    plot_D(D_no_nan, dir, 'exp_no_nan')
+    V_no_nan = get_pcs(D_no_nan)
+    # plt.plot(V_no_nan[0])
+    # plt.fill_between(np.arange(0, len(V_no_nan[0])), V_no_nan[0], 0)
+    # plt.show()
     D = crop_hg38(D, 'chr21:14000001-14050001', m)
-
-
-    plot_D(D, max_ent_dir, 'exp')
+    nan_rows = np.isnan(D[0])
     plot_D(D_sim, max_ent_dir, 'sim')
 
     # min_MSE(D, D_sim)
@@ -529,8 +547,9 @@ def compare_D_to_sim_D():
 
 
     # compare PCs
-    nan_rows = np.isnan(D[0])
     V_D = get_pcs(D, nan_rows)
+    # plt.plot(V[0])
+    # plt.show()
     V_D_sim = get_pcs(D_sim, nan_rows)
 
     rows = 2; cols = 2
@@ -591,14 +610,11 @@ def compare_sim_Hic_to_sim_D():
     plt.savefig(osp.join(max_ent_dir, 'pc_D_vs_Y.png'))
 
 
-
-
-
 if __name__ == '__main__':
     # temp_plot()
-    # xyz_to_dist()
+    xyz_to_dist()
     # compare_control()
     # compare_D_to_sim_D()
     # find_volume()
-    compare_dist_distribution()
+    # compare_dist_distribution()
     # compare_sim_Hic_to_sim_D()

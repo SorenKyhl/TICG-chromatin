@@ -5,10 +5,11 @@ import os
 import os.path as osp
 
 import numpy as np
-from pylib import epilib
-from pylib.pysim import Pysim
 from scipy import optimize
 from sklearn.metrics import mean_squared_error
+
+from pylib import default, epilib, utils
+from pylib.pysim import Pysim
 
 
 def nearest_neighbor_contact_error(grid_bond_ratio, sim_engine, gthic):
@@ -42,7 +43,6 @@ def nearest_neighbor_contact_error(grid_bond_ratio, sim_engine, gthic):
     error = p1_sim - p1_exp
     print(f"error, {error}")
     return error
-
 
 def optimize_grid_size(config, gthic, low_bound=0.5, high_bound=2, root="optimize-grid-size"):
     """tune grid size until simulated nearest neighbor contact probability
@@ -82,18 +82,28 @@ def optimize_grid_size(config, gthic, low_bound=0.5, high_bound=2, root="optimiz
     optimal_grid_size = result * config["bond_length"]
     return optimal_grid_size
 
-def main():
-    dir = '/home/erschultz'
-    os.chdir(osp.join(dir, 'Su2020/samples/sample1002/none/k0/replicate1'))
-    with open("resources/config.json") as f:
-        config = json.load(f)
+def load_config(dir):
+    config = default.config
+    config['nonbonded'] = False
     config["nSweeps"] = 20000
+
+    config['beadvol'] = 130000
+    config['bond_length'] = 322
+    config['phi_chromatin'] = 0.006
+
+    utils.write_json(config, dir)
+
+
+def main(dataset, sample):
+    dir = '/home/erschultz'
+    os.chdir(osp.join(dir, f'{dataset}/samples/sample{sample}'))
+    create_config(dir)
 
     gthic = np.load("resources/y_gt.npy")
 
-    optimal_grid_size = optimize_grid_size(config, gthic)
-    print("optimal grid size is:", optimal_grid_size)
+    # optimal_grid_size = optimize_grid_size(config, gthic)
+    # print("optimal grid size is:", optimal_grid_size)
 
 
 if __name__ == "__main__":
-    main()
+    main('Su2020', 1002)
