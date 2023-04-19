@@ -247,13 +247,13 @@ def mixed_experimental_dataset(dataset, resolution, m, norm='NONE'):
     import_wrapper(data_folder, ALL_FILES, resolution, norm, m)
 
 def Su2020imr90():
-    sample_folder = '/home/erschultz/Su2020/samples/sample2'
+    sample_folder = '/home/erschultz/Su2020/samples/sample3'
     filename='https://hicfiles.s3.amazonaws.com/hiseq/imr90/in-situ/combined.hic'
 
     resolution = 10000
     start = 15372323
     end = start + 512*5*resolution
-    import_contactmap_straw(sample_folder, filename, 21, start, end, resolution, 'NONE')
+    import_contactmap_straw(sample_folder, filename, 21, start, end, resolution, 'KR')
 
 
 
