@@ -17,6 +17,7 @@ then
   scratchDir='/home/erschultz/scratch'
   numIterations=1
   finalSimProductionSweeps=500000
+  dumpFrequency=5000
   source activate python3.9_pytorch1.9
 fi
 

@@ -1,5 +1,6 @@
 import csv
 import json
+import math
 import os
 import os.path as osp
 import sys
@@ -58,6 +59,20 @@ def plot_tri(exp, sim, ofile, vmaxp=None, title="", log=False, cmap=None):
     plot_matrix(composite, ofile, title, vmax = vmaxp, triu = True, cmap = cmap)
 
 def rotate_bound(image, angle):
+    def plot_diagonal(exp, sim):
+
+        #This colors the image
+        resized = exp
+
+        # Rotate 45 degs
+        resized = rotate_bound(resized,-45)
+
+
+        fig, ax = plt.subplots(figsize=(6, 6),dpi=600)
+        _pf = ax.imshow(resized, vmin=200, vmax=1000, cmap='seismic')
+
+        plt.show()
+
     # grab the dimensions of the image and then determine the
     # center
     (h, w) = image.shape[:2]
@@ -81,20 +96,6 @@ def rotate_bound(image, angle):
     # perform the actual rotation and return the image
     return cv2.warpAffine(image, M, (nW, nH),cv2.INTER_NEAREST)
 
-def plot_diagonal(exp, sim):
-
-    #This colors the image
-    resized = exp
-
-    # Rotate 45 degs
-    resized = rotate_bound(resized,-45)
-
-
-    fig, ax = plt.subplots(figsize=(6, 6),dpi=600)
-    _pf = ax.imshow(resized, vmin=200, vmax=1000, cmap='seismic')
-
-    plt.show()
-
 def crop_hg38(inp, start, m):
     dir = '/home/erschultz/Su2020/samples/sample1'
     coords_file = osp.join(dir, 'coords.json')
@@ -103,6 +104,17 @@ def crop_hg38(inp, start, m):
 
     i = coords_dict[start]
     return inp[i:i+m, i:i+m]
+
+def hg38_to_hg19(coords):
+    dir = '/home/erschultz/Su2020/samples/sample1'
+    with open(osp.join(dir, 'hg38_positions.txt'), 'r') as f:
+        for i, line in enumerate(f.readlines()):
+            if line.strip() == coords:
+                break
+
+    with open(osp.join(dir, 'hg19_positions.bed')) as f:
+        return f.readlines()[i]
+
 
 def temp_plot():
     dir = '/home/erschultz/Su2020/samples/sample1'
@@ -173,7 +185,15 @@ def find_volume():
     r_sphere *= 1e3
     print(f'spherical radius {r_sphere} nm')
 
-def dist_distribution():
+def compare_dist_distribution():
+    def dist_distribution(xyz, a, b):
+        # a and b are indices
+        num_cells, num_coords, _ = xyz.shape
+        dist = np.zeros(num_cells)
+        for i in range(num_cells):
+            dist[i] = np.linalg.norm(xyz[i, a, :] - xyz[i, b, :])
+        return dist
+
     dir = '/home/erschultz/Su2020/samples/sample1'
     xyz_file = osp.join(dir, 'xyz.npy')
     xyz = np.load(xyz_file)
@@ -182,20 +202,57 @@ def dist_distribution():
         coords_dict = json.load(f)
 
     coords_a = 'chr21:29100001-29150001'
-    coords_b = 'chr21:29400001-29450001'
+    # coords_b = 'chr21:29400001-29450001'
+    coords_b = 'chr21:28800001-28850001'
+
     a = coords_dict[coords_a]
     b = coords_dict[coords_b]
+    dist = dist_distribution(xyz, a, b)
 
-    num_cells, num_coords, _ = xyz.shape
-    dist = np.zeros(num_cells)
-    for i in range(num_cells):
-        dist[i] = np.linalg.norm(xyz[i, a, :] - xyz[i, b, :])
+    dir = '/home/erschultz/Su2020/samples/sample1002'
+    max_ent_dir = osp.join(dir, 'GNN-392-S/k0/replicate1')
+    final_dir = get_final_max_ent_folder(max_ent_dir)
+    file = osp.join(final_dir, 'production_out/output.xyz')
+    xyz_sim = xyz_load(file, multiple_timesteps = True)
+    with open(osp.join(dir, 'import.log'), 'r') as f:
+        line = f.readline().strip()
+        while not line.startswith('start'):
+            line = f.readline().strip()
+        start = int(line.split('=')[1])
+    print(start)
+    coords_a = hg38_to_hg19(coords_a)
+    coords_b = hg38_to_hg19(coords_b)
+    def get_ind_hg19(start, coords, res=50000):
+        chr, rest = coords.split(':')
+        l, u = rest.split('-')
+        l = int(l); u = int(u)
+        i=0
+        while start < l:
+            start += res
+            i += 1
+        end = start + res
+        return i, f'{chr}:{l}-{u}'
+    a, temp = get_ind_hg19(start, coords_a)
+    b, temp = get_ind_hg19(start, coords_b)
 
-    print(dist)
+    dist_sim = dist_distribution(xyz_sim, a, b)
 
-    plt.hist(dist[~np.isnan(dist)], bins = 50)
-    plt.xlabel('Distance (nm)')
+
+    print('exp', dist, dist.shape)
+    print('sim', dist_sim, dist_sim.shape)
+
+    bin_width = 50
+    arr = dist[~np.isnan(dist)]
+    plt.hist(arr, label = 'Exp',
+                weights = np.ones_like(arr) / len(arr),
+                bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width))
+    arr = dist_sim * 20
+    plt.hist(arr, label = 'Sim',
+                weights = np.ones_like(arr) / len(arr),
+                bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width))
+    plt.xlabel('Distance (nm)', fontsize=16)
     plt.ylabel('Frequency')
+    plt.legend()
     plt.title(f'distance between\n{coords_a} and {coords_b}')
     plt.savefig(osp.join(dir, 'distance_distribution.png'))
 
@@ -484,7 +541,7 @@ def compare_D_to_sim_D():
     for i in range(rows*cols):
         ax[row,col].plot(V_D[i], label = 'experimental dist')
         ax[row,col].plot(V_D_sim[i], label = 'simulated dist')
-        ax[row,col].set_title(f'PC {i+1}')
+        ax[row,col].set_title(f'PC {i+1}\nCorr={pearson_round(V_D[i], V_D_sim[i])}')
         ax[row,col].legend()
 
         col += 1
@@ -539,9 +596,9 @@ def compare_sim_Hic_to_sim_D():
 
 if __name__ == '__main__':
     # temp_plot()
-    xyz_to_dist()
+    # xyz_to_dist()
     # compare_control()
     # compare_D_to_sim_D()
     # find_volume()
-    # dist_distribution()
+    compare_dist_distribution()
     # compare_sim_Hic_to_sim_D()

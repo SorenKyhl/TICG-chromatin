@@ -60,14 +60,15 @@ def optimize_grid_size(config, gthic, low_bound=0.5, high_bound=2, root="optimiz
     config["load_configuration"] = False
     config["nonbonded_on"] = False
     config["load_bead_types"] = False
-    config['angles_on'] = False
-    config['k_angle'] = 0
-    config['double_count_main_diagonal'] = False
-    config['conservative_contact_pooling'] = False
+    config["profiling_on"] = False
+    # config['angles_on'] = False
+    # config['k_angle'] = 0
+    # config['double_count_main_diagonal'] = False
+    # config['conservative_contact_pooling'] = False
 
 
     gthic /= np.mean(np.diagonal(gthic))
-    sim_engine = Pysim(root, config, seqs=None, overwrite=False)
+    sim_engine = Pysim(root, config, seqs=None, overwrite=True)
 
     result = optimize.brentq(
         nearest_neighbor_contact_error,
@@ -83,12 +84,12 @@ def optimize_grid_size(config, gthic, low_bound=0.5, high_bound=2, root="optimiz
 
 def main():
     dir = '/home/erschultz'
-    os.chdir(osp.join(dir, 'Su2020/samples/sample1003'))
-    with open("config.json") as f:
+    os.chdir(osp.join(dir, 'Su2020/samples/sample1002/none/k0/replicate1'))
+    with open("resources/config.json") as f:
         config = json.load(f)
     config["nSweeps"] = 20000
 
-    gthic = np.load("y.npy")
+    gthic = np.load("resources/y_gt.npy")
 
     optimal_grid_size = optimize_grid_size(config, gthic)
     print("optimal grid size is:", optimal_grid_size)
