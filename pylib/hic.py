@@ -145,7 +145,7 @@ def smooth_hic(x, smooth_size=10):
     return ndimage.gaussian_filter(x, (smooth_size, smooth_size))
 
 
-def load_hic(nbeads, pool_fn=pool_sum, chrom=2, cell="HCT116_auxin"):
+def load_hic(nbeads, pool_fn=pool_sum, chrom=2, cell="HCT116_auxin", start=None, end=None):
     """load hic by pooling preloaded high resolution map"""
     chrom = str(chrom)
 
@@ -153,12 +153,23 @@ def load_hic(nbeads, pool_fn=pool_sum, chrom=2, cell="HCT116_auxin"):
         default.data_dir.mkdir()
 
     #hic_file = default.HCT116_hic_20k[chrom]
-    hic_file = Path(default.data_dir, f"{cell}_chr{chrom}_20k.npy")
+    if start and end:
+        hic_file_suffix = f"{cell}_chr{chrom}_20k-{start}-{end}.npy"
+    else:
+        hic_file_suffix = f"{cell}_chr{chrom}_20k.npy"
+
+    hic_file = Path(default.data_dir, hic_file_suffix)
 
     if not hic_file.exists():
         nbeads_large = 20480
         pipe = copy.deepcopy(default.data_pipeline)
         pipe.set_chrom(chrom)
+
+        if start:
+            pipe.start = start
+        if end:
+            pipe.end = end
+
         pipe.resize(nbeads_large)
         gthic = pipe.load_hic(default.hic_paths[cell])
         np.save(hic_file, gthic)

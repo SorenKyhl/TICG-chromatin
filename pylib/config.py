@@ -49,3 +49,6 @@ class Config:
         plaid_chis_flat, diag_chis = self.split_chis(allchis)
         self.config["chis"] = self.chis_to_matrix(plaid_chis_flat).tolist()
         self.config["diag_chis"] = diag_chis.tolist()
+
+    def scale_chis(self, scale_factor):
+        return NotImplementedError

@@ -180,6 +180,8 @@ class Maxent:
             gamma = self.params["gamma"]
             if self.dampen_first_step and (it == 0):
                 gamma *= 0.25
+            if self.dampen_first_step and (it == 1):
+                gamma *= 0.25
 
             print(f"gammma = {gamma}")
             print("self.gamma = " + str(self.params["gamma"]))

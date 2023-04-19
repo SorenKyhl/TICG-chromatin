@@ -87,14 +87,27 @@ def optimize_grid_size(config, gthic, low_bound=0.5, high_bound=1.5, root="optim
 
     sim_engine = Pysim(root, config, seqs=None)
 
-    result = optimize.brentq(
-        nearest_neighbor_contact_error,
-        low_bound,
-        high_bound,
-        args=(sim_engine, gthic),
-        xtol=1e-3,
-        maxiter=10,
-    )
+    try:
+        result = optimize.brentq(
+            nearest_neighbor_contact_error,
+            low_bound,
+            high_bound,
+            args=(sim_engine, gthic),
+            xtol=1e-3,
+            maxiter=10,
+        )
+    except ValueError:
+        low_bound /= 2
+        high_bound *= 2
+        result = optimize.brentq(
+            nearest_neighbor_contact_error,
+            low_bound,
+            high_bound,
+            args=(sim_engine, gthic),
+            xtol=1e-3,
+            maxiter=10,
+        )
+
     # optimizer returns the grid_to_bond ratio... have to convert to real units.
     optimal_grid_size = result * config["bond_length"]
     return optimal_grid_size
@@ -155,7 +168,7 @@ def simulate_stiffness_error(k_angle, sim_engine, gthic, method):
     return error
 
 
-def optimize_stiffness(config, gthic, low_bound=0, high_bound=1, method="bayes", root="optimize-stiffness"):
+def optimize_stiffness(config, gthic, low_bound=0, high_bound=1, method="notbayes", root="optimize-stiffness"):
     """tune angle stiffness until simulated p(s) diagonal probabity
     is equal to the same probability derived from the ground truth hic matrix.
 

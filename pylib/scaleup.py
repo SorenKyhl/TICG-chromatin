@@ -111,7 +111,7 @@ def tune_stiffness(nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method,
         return k_angle_opt
 
 
-def scaleup(nbeads_large, nbeads_small, pool_fn, method="bayes", pool_large = True, zerodiag = False, match_ideal_large_grid=False):
+def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large = True, zerodiag = False, match_ideal_large_grid=False):
     """optimize chis on small system, and scale up parameters to large system
 
     requires tuning the grid size and stiffness at small scale,
