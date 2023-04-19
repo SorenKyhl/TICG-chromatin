@@ -130,7 +130,7 @@ void Sim::updateContactsGridConservative() {
 
 void Sim::updateContactsGridNonconservative()
 {
-    std::vector<std::vector<bool>> visited(contact_map.size(), std::vector<bool>(contact_map.size(), false));   
+    std::vector<std::vector<bool>> visited(contact_map.size(), std::vector<bool>(contact_map.size(), false));
     int pixel1, pixel2;
 	for(Cell* cell : grid.active_cells)
 	{
@@ -980,6 +980,7 @@ void Sim::MC() {
     analytics.startTimer();
     checkConsistency();
 
+    saveEnergy(0);
     for (int sweep = 1; sweep < nSweeps + 1; sweep++) {
         double nonbonded;
 
