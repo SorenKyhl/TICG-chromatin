@@ -1,11 +1,11 @@
+from pathlib import Path
+
+import hicstraw
 import numpy as np
 import pandas as pd
-from pathlib import Path
 import pyBigWig
-import hicstraw
 
-from pylib import epilib
-from pylib import hic as hiclib
+from pylib.utils import epilib, hic_utils
 
 
 def get_experiment_marks(directory):
@@ -77,7 +77,7 @@ class DataPipeline:
 
         # set main diag to one (on average)
         if rescale_method:
-            contactmap = hiclib.normalize_hic(contactmap, rescale_method)
+            contactmap = hic_utils.normalize_hic(contactmap, rescale_method)
             #raise ValueError("deprecated")
             # contactmap = epilib.rescale_contactmap(contactmap, method=rescale_method)
 

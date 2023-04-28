@@ -1,109 +1,92 @@
-import copy
-import functools
-import json
 import os
 import os.path as osp
+import shutil
+import sys
 
 import numpy as np
 from scipy import optimize
-from sklearn.metrics import mean_squared_error
 
-from pylib import default, epilib, utils
-from pylib.pysim import Pysim
+import pylib.utils.epilib as epilib
+from pylib.optimize import optimize_config
+from pylib.Pysim import Pysim
+from pylib.utils import default, utils
+from pylib.utils.hic_utils import DiagonalPreprocessing
+from scripts.contact_map import plot_max_ent
 
-
-def nearest_neighbor_contact_error(grid_bond_ratio, sim_engine, gthic):
-    """calculate the difference between simulated and experimental nearest-neighbor contact
-    probability.
-
-    Args:
-        grid_bond_ratio [float]: grid size expressed as a ratio of the bond length.
-        sim_engine [Pysim]: object to call simulation runs
-        gthic [ndarray]: ground truth hic
-
-    Returns:
-        error [float]: difference between simulated and experimental contact frequency
-                        for nearest-neighbor beads: p_simulated(1) - p_experiment(1)
-    """
-    try:
-        nearest_neighbor_contact_error.counter += 1
-    except AttributeError:
-        nearest_neighbor_contact_error.counter = 1
-
-    output = f"iteration{nearest_neighbor_contact_error.counter}"
-    print(f"optimizing grid size, {output}")
-    sim_engine.config["grid_size"] = sim_engine.config["bond_length"] * grid_bond_ratio
-
-    sim_engine.run(output)
-
-    output_dir = osp.join(sim_engine.root, output)
-    sim_analysis = epilib.Sim(output_dir, maxent_analysis=False)
-    p1_sim = sim_analysis.d[1]
-    p1_exp = epilib.get_diagonal(gthic)[1]
-    error = p1_sim - p1_exp
-    print(f"error, {error}")
-    return error
-
-def optimize_grid_size(config, gthic, low_bound=0.5, high_bound=2, root="optimize-grid-size"):
-    """tune grid size until simulated nearest neighbor contact probability
-    is equal to the same probability derived from the ground truth hic matrix.
-
-    Args:
-        config [json]: simulation config file. grid_size will be overwritten,
-                            so it's initial value doesn't matter
-        gthic [ndarray]: ground truth hic map. used as the target for optimization
-    Returns:
-        optimal_grid_size [float]: size of grid cell that matches first neighbor contact probability
-    """
-    config = copy.deepcopy(config)
-
-    config["load_configuration"] = False
-    config["nonbonded_on"] = False
-    config["load_bead_types"] = False
-    config["profiling_on"] = False
-    # config['angles_on'] = False
-    # config['k_angle'] = 0
-    # config['double_count_main_diagonal'] = False
-    # config['conservative_contact_pooling'] = False
+sys.path.append('/home/erschultz')
+from sequences_to_contact_maps.scripts.load_utils import \
+    get_final_max_ent_folder
 
 
-    gthic /= np.mean(np.diagonal(gthic))
-    sim_engine = Pysim(root, config, seqs=None, overwrite=True)
+def main(root, config, mode='grid_angle10'):
 
-    result = optimize.brentq(
-        nearest_neighbor_contact_error,
-        low_bound,
-        high_bound,
-        args=(sim_engine, gthic),
-        xtol=1e-3,
-        maxiter=10,
-    )
-    # optimizer returns the grid_to_bond ratio... have to convert to real units.
-    optimal_grid_size = result * config["bond_length"]
-    return optimal_grid_size
+    gthic = np.load(osp.join(osp.split(root)[0], 'y.npy'))
+    config['nbeads'] = len(gthic)
 
-def load_config(dir):
-    config = default.config
-    config['nonbonded'] = False
-    config["nSweeps"] = 20000
-
-    config['beadvol'] = 130000
-    config['bond_length'] = 322
-    config['phi_chromatin'] = 0.006
-
-    utils.write_json(config, dir)
+    if mode.startswith('grid'):
+        optimum = optimize_config(config, gthic, 'grid', 0.5, 2.5, root)
+        plot_max_ent(root)
+        print(f"optimal grid size is: {optimum}")
+        with open(osp.join(root, 'grid_size.txt'), 'w') as f:
+            f.write(str(optimum))
+    elif mode.startswith('angle'):
+        assert config['angles_on']
+        optimum = optimize_config(config, gthic, 'angle', 0.0, 2.0, root, 'neighbor_10')
+        plot_max_ent(root)
+        print(f"optimal angle is: {optimum}")
+        with open(osp.join(droot, 'angle.txt'), 'w') as f:
+            f.write(str(optimum))
 
 
-def main(dataset, sample):
-    dir = '/home/erschultz'
-    os.chdir(osp.join(dir, f'{dataset}/samples/sample{sample}'))
-    create_config(dir)
+    if mode.startswith('grid_angle'):
+        os.mkdir('temp', mode=0o755)
+        # move grid temporarily
+        for file in os.listdir(root):
+            shutil.move(osp.join(root, file), osp.join('temp', file))
 
-    gthic = np.load("resources/y_gt.npy")
+        config['grid_size'] = optimum
+        config['k_angle'] = 0.0
+        config['angles_on'] = True
 
-    # optimal_grid_size = optimize_grid_size(config, gthic)
-    # print("optimal grid size is:", optimal_grid_size)
+        s = mode[10:]
+        optimum = optimize_config(config, gthic, 'angle', 0.0, 2.0, root, f'neighbor_{s}')
+        plot_max_ent(root)
+        print(f"optimal angle is: {optimum}")
+        with open(osp.join(root, 'angle.txt'), 'w') as f:
+            f.write(str(optimum))
 
+        # move grid back
+        shutil.move('temp', osp.join(root, 'grid'))
+        shutil.move(osp.join(root, 'grid/grid_size.txt'), osp.join(root, 'grid_size.txt'))
+
+    return root, config
+
+def check_all_converged():
+    dataset = 'dataset_02_04_23'
+    for sample in range(201, 283):
+        dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
+        dir = osp.join(dir, 'optimize_grid_b_140_phi_0.06')
+        g = np.loadtxt(osp.join(dir, 'grid_size.txt'))
+        print(g)
+
+def create_config():
+    config = default.bonded_config
+
+    config['beadvol'] = 260000
+    config['bond_length'] = 260
+    config['phi_chromatin'] = 0.06
+    config['grid_size'] = 222.5
+    # config['bond_type'] = 'DSS'
+    config['k_angle'] = 0.0
+    config['angles_on'] = False
+
+    return config
 
 if __name__ == "__main__":
-    main('Su2020', 1002)
+    config = create_config()
+    mode = 'grid_angle20'
+    root = f"optimize_{mode}"
+    root = f"{root}_b_{config['bond_length']}_phi_{config['phi_chromatin']}"
+    root = osp.join('/home/erschultz/dataset_test/samples/sample5002', root)
+    main(root, config, mode)
+    # check_all_converged()

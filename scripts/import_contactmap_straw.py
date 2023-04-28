@@ -354,4 +354,9 @@ if __name__ == '__main__':
                                 # 'dataset_04_10_23', 10000, 1024*5)
     # single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
                                 # 'dataset_test', 25000, 1024*4, i=5001, chroms=[2])
-    Su2020imr90()
+    single_experiment_dataset("https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-untreated_combined_30.hic",
+                                'dataset_HCT116', 10000, 512*5, i=10, chroms=[2])
+    # single_experiment_dataset("https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-treated_6hr_combined_30.hic",
+                                # 'dataset_HCT116_RAD21_KO', 10000, 512*5, i=10, chroms=[2])
+
+    # Su2020imr90()

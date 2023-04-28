@@ -173,10 +173,8 @@ run_simulation () {
 	# delete files copied from resources to save space
 	rm *.txt *.npy
 
-	if [ $(($it % 2)) -eq 0 ]
-	then
-		python3 $proj_bin/analysis.py > analysis.log
-	fi
+	python3 $proj_bin/analysis.py > analysis.log
+
 
 	ENDTIME=$(date +%s)
 	echo "finished iteration ${it}: $(( $(( $ENDTIME - $STARTTIME )) / 60 )) minutes ($(( $ENDTIME - $STARTTIME )) seconds)"

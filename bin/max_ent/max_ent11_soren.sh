@@ -27,9 +27,10 @@ smallBinSize=1
 diagCutoff=1024
 # bonded
 bondtype='gaussian'
-bondLength=223.93945336907979
-gridSize=227.7170984734238
+bondLength=177.7408619276304
+gridSize=222.54167063131106
 beadVol=260000.0
+kAngle=0.4276035825897667
 # newton's method
 mode='both'
 # bash
@@ -47,16 +48,16 @@ fi
 
 # MC
 numIterations=10
-finalSimProductionSweeps=1000000
+finalSimProductionSweeps=500000
 equilibSweeps=50000
-productionSweeps=500000
+productionSweeps=250000
 
 dataset='dataset_test'
 m=1024
 
 for k in 10
 do
-  for sample in 5000
+  for sample in 5003
   do
     # gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
     echo "$sample m=$m k=$k"

@@ -16,21 +16,19 @@ sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
 from sequences_to_contact_maps.scripts.energy_utils import (
     calculate_D, calculate_diag_chi_step, calculate_S)
-from sequences_to_contact_maps.scripts.load_utils import (load_final_max_ent_L,
-                                                          load_L)
+from sequences_to_contact_maps.scripts.load_utils import (
+    get_final_max_ent_folder, load_final_max_ent_L, load_L)
 from sequences_to_contact_maps.scripts.plotting_utils import (
     plot_diag_chi, plot_matrix, plot_mean_dist, plot_mean_vs_genomic_distance)
 from sequences_to_contact_maps.scripts.utils import DiagonalPreprocessing, crop
 
 
-def getArgs():
+def getArgs(sample_folder=''):
     parser = argparse.ArgumentParser(description='Base parser')
     AC = ArgparserConverter()
 
     parser.add_argument('--m', type=int, default=-1,
                         help='number of particles (-1 to infer)')
-    parser.add_argument('--k', type=AC.str2int,
-                        help='number of bead labels')
     parser.add_argument('--save_npy', action='store_true',
                         help='true to save y as .npy')
     parser.add_argument('--random_mode', action='store_true',
@@ -39,7 +37,7 @@ def getArgs():
                         help='True to plot data, False to just save')
 
     # random_mode
-    parser.add_argument('--sample_folder', type=str, default='',
+    parser.add_argument('--sample_folder', type=str, default=sample_folder,
                         help='path to sample folder')
 
     # max_ent mode
@@ -49,29 +47,24 @@ def getArgs():
     args = parser.parse_args()
     if args.random_mode:
         args.save_folder = args.sample_folder
-    else:
-        final_it = -1
-        for file in os.listdir(args.replicate_folder):
-            if file.startswith('iteration'):
-                it = int(file[9:])
-                if it > final_it:
-                    final_it = it
-        args.final_folder = osp.join(args.replicate_folder, f"iteration{final_it}")
-        args.final_it = final_it
+    elif args.replicate_folder is not None:
+        args.final_folder, args.final_it = get_final_max_ent_folder(args.replicate_folder, return_it = True)
         args.save_folder = args.replicate_folder
 
         path_split = args.replicate_folder.split(osp.sep)
         args.sample_folder = osp.join('/', *path_split[:path_split.index('samples')+2])
     return args
 
-def main():
-    args = getArgs()
-    print(args)
-
+def plot_all(args):
     if args.random_mode:
         y_path = osp.join(args.sample_folder, 'data_out')
+        if not osp.exists(y_path):
+            y_path = args.sample_folder
     else:
         y_path = osp.join(args.final_folder, "production_out")
+        if not osp.exists(y_path):
+            y_path = args.final_folder
+
 
     # get y
     y_file = osp.join(y_path, 'contacts.txt')
@@ -105,15 +98,7 @@ def main():
         with open(osp.join(args.sample_folder, 'config.json'), 'r') as f:
             config = json.load(f)
     else:
-        # find last iteration
-        max_it = 1
-        for f in os.listdir(args.replicate_folder):
-            if f.startswith('iteration'):
-                it = int(f[9:])
-                if it > max_it:
-                    max_it = it
-        print(f'max_it = {max_it}')
-        with open(osp.join(args.replicate_folder, f'iteration{max_it}', 'config.json'), 'r') as f:
+        with open(osp.join(args.final_folder, 'config.json'), 'r') as f:
             config = json.load(f)
 
     # diag chi
@@ -130,7 +115,7 @@ def main():
                 diag_chi_ref = np.load(file)
             else:
                 diag_chi_ref = None
-    else:
+    elif args.replicate_folder is not None:
         file = osp.join(args.replicate_folder, 'chis_diag.txt')
         if osp.exists(file):
             all_diag_chis = np.loadtxt(file)
@@ -144,7 +129,7 @@ def main():
     S = None
     if L is not None:
         S = calculate_S(L, D)
-    elif not args.random_mode:
+    elif args.replicate_folder is not None:
         file = osp.join(args.replicate_folder, 'resources/S.npy')
         if osp.exists(file):
             S = np.load(file)
@@ -223,12 +208,15 @@ def main():
 
         else:
             meanDist_max_ent = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
-            print('meanDist_max_ent', meanDist_max_ent)
-            y_gt_file = osp.join(args.replicate_folder, 'resources', 'y_gt.npy')
+            print('meanDist_max_ent', meanDist_max_ent[:10])
+            if args.replicate_folder is not None:
+                y_gt_file = osp.join(args.replicate_folder, 'resources', 'y_gt.npy')
+            else:
+                y_gt_file = osp.join(osp.split(args.save_folder)[0],  'y.npy')
             if osp.exists(y_gt_file):
                 y_gt = np.load(y_gt_file)
                 meanDist_gt = DiagonalPreprocessing.genomic_distance_statistics(y_gt, 'prob')
-                print('meanDist_gt', meanDist_gt)
+                print('meanDist_gt', meanDist_gt[:10])
                 rmse = mean_squared_error(meanDist_max_ent, meanDist_gt, squared = False)
                 title = f'RMSE: {np.round(rmse, 9)}'
             else:
@@ -256,6 +244,29 @@ def main():
         if L is not None:
             np.save(osp.join(args.save_folder, 'L.npy'), L)
 
+def main():
+    args = getArgs()
+    print(args)
+    plot_all(args)
+
+def plot_random(folder):
+    args = getArgs()
+    args.random_mode = True
+    args.save_npy = True
+    args.plot = True
+    args.sample_folder = folder
+    args.save_folder = folder
+    print(args)
+    plot_all(args)
+
+def plot_max_ent(folder):
+    args = getArgs()
+    args.save_npy = True
+    args.plot = True
+    args.final_folder, args.final_it = get_final_max_ent_folder(folder, return_it = True)
+    args.save_folder = folder
+    print(args)
+    plot_all(args)
 
 if __name__ == '__main__':
     main()

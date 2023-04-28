@@ -21,8 +21,8 @@ then
 fi
 
 STARTTIME=$(date +%s)
-i=2000
-dataset='dataset_02_04_23'
+i=2001
+dataset='dataset_HCT116'
 useL='false'
 useS='true'
 useD='false'
@@ -37,10 +37,9 @@ k=0
 method='GNN'
 jobs=0
 waitCount=0
-for sample in {201..210}
+for sample in 1010
 do
-  gridSize="${dir}/${dataset}/samples/sample${sample}/none/k0/replicate1/grid_size.txt"
-  for GNNModelID in 398 399
+  for GNNModelID in 392
   do
     echo $sample $m
     max_ent

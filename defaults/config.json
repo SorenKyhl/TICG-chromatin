@@ -1,7 +1,7 @@
 {
   "conservative_contact_pooling": false,
   "double_count_main_diagonal": false,
-  "angles_on": true,
+  "angles_on": false,
   "k_angle": 0,
   "cell_volumes":  false,
   "compressibility_on": false,
@@ -18,9 +18,9 @@
   "dump_density": false,
   "update_contacts_distance": false,
 
-  "lmatrix_on": false,
-  "smatrix_on": false,
-  "dmatrix_on": false,
+  "lmatrix_on": true,
+  "smatrix_on": true,
+  "dmatrix_on": true,
 
   "decay_length": 500,
   "nSweeps": 500000,
@@ -31,13 +31,14 @@
   "nonbonded_on": true,
   "plaid_on": true,
   "diagonal_on": false,
+  "diag_start": 0,
 
 
   "displacement_on": false,
   "translation_on": true,
   "crankshaft_on": true,
   "pivot_on": true,
-  "rotate_on": true,
+  "rotate_on": false,
   "gridmove_on": true,
 
   "density_cap_on": true,

@@ -146,6 +146,7 @@ public:
 	bool dump_density;
 	bool visit_tracking;
 	bool update_contacts_distance;
+	double distance_cutoff;
 
 
 

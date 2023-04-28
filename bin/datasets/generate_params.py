@@ -268,7 +268,7 @@ class DatasetGenerator():
 
         for j in samples:
             sample_folder = osp.join(dataset, f'sample{j}')
-            max_ent_folder = osp.join(sample_folder, f'PCA-normalize-E/k{self.k}/replicate1/resources')
+            max_ent_folder = osp.join(sample_folder, 'optimize_grid_b_140_phi_0.06-max_ent/resources')
             if norm:
                 x = np.load(osp.join(max_ent_folder, 'x_eig_norm.npy'))
             else:
@@ -366,11 +366,11 @@ class DatasetGenerator():
 
         converged_samples = []
         for j in samples:
-            sample_folder = osp.join(dataset, f'sample{j}', f'PCA-normalize-E/k{self.k}/replicate1')
+            sample_folder = osp.join(dataset, f'sample{j}', 'optimize_grid_b_140_phi_0.06-max_ent')
 
             # check convergence
             convergence_file = osp.join(sample_folder, 'convergence.txt')
-            eps = 1e-3
+            eps = 1e-2
             converged = False
             if osp.exists(convergence_file):
                 conv = np.loadtxt(convergence_file)
@@ -378,6 +378,8 @@ class DatasetGenerator():
                     diff = conv[ind] - conv[ind-1]
                     if np.abs(diff) < eps and conv[ind] < conv[0]:
                         converged = True
+            else:
+                print(f'Warning: {convergence_file} does not exist')
 
             if converged:
                 converged_samples.append(j)
@@ -396,7 +398,9 @@ class DatasetGenerator():
 
                 # get grid_size
                 if get_grid:
-                    grid_dict[j] = np.loadtxt(osp.join(dataset, f'sample{j}', 'none/k0/replicate1/grid_size.txt'))[-1]
+                    grid_dict[j] = np.loadtxt(osp.join(dataset, f'sample{j}', 'optimize_grid_b_140_phi_0.06/grid_size.txt'))
+            else:
+                print(f'sample{j} did not converge')
 
         print('converged %:', len(converged_samples)/ len(samples))
         for i in range(self.N):

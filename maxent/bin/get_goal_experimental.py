@@ -24,23 +24,15 @@ def getArgs():
                         help='true for verbose mode')
     parser.add_argument('--mode', type=str,
                         help='{"plaid", "diag", "both", "grid_size"}')
-    parser.add_argument('--v_bead', type=float, default=520,
-                        help='volume of bead')
-    parser.add_argument('--grid_size', default=28.7,
-                        help='side length of grid cell')
+    parser.add_argument('--config', default='config.json',
+                        help='path to config file')
 
     args = parser.parse_args()
-    if isinstance(args.grid_size, float):
-        args.grid_size = args.grid_size
-    elif osp.exists(args.grid_size):
-        if args.grid_size.endswith('json'):
-            with open(args.grid_size, 'r') as f:
-                tmp = json.load(f)
-                args.grid_size = tmp['grid_size']
-        else:
-            args.grid_size = np.loadtxt(args.grid_size)[-1]
-    else:
-        args.grid_size = float(args.grid_size)
+    if osp.exists(args.config):
+        with open(args.config, 'r') as f:
+            config = json.load(f)
+            args.grid_size = config['grid_size']
+            args.v_bead = config['beadvol']
 
     return args
 
@@ -130,6 +122,35 @@ def get_plaid_goal(y, args, x = None):
     obj_goal *= (args.v_bead / args.grid_size**3)
 
     return obj_goal
+
+def get_goals(y, x, config):
+    y /= np.mean(np.diagonal(y))
+
+    args = getArgs()
+    args.verbose = False
+    if config['dense_diagonal_on']:
+        args.dense = True
+        args.n_small_bins = config['n_small_bins']
+        args.small_binsize = config['small_binsize']
+        args.big_binsize = config['big_binsize']
+    else:
+        args.dense = False
+        args.n_small_bins = None
+        args.small_binsize = None
+        args.big_binsize = None
+    if config['diagonal_on']:
+        args.diag_bins = len(config['diag_chis'])
+        args.diag_start = config['diag_start']
+        args.diag_cutoff = config['diag_cutoff']
+    args.m = config['nbeads']
+    args.v_bead = config['beadvol']
+    args.grid_size = config['grid_size']
+    # copies Sorens method epilib.get_goals
+    plaid_goal = get_plaid_goal(y, args, x)
+    diag_goal = get_diag_goal(y, args)
+
+    return np.hstack((plaid_goal, diag_goal))
+
 
 def main():
     '''

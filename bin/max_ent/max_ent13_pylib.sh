@@ -9,28 +9,30 @@
 #SBATCH --mail-user=erschultz@uchicago.edu
 
 local='false'
-source ~/TICG-chromatin/bin/max_ent/max_ent_fns.sh
-
 if [ $local = 'true' ]
 then
-  dir="/home/eric/sequences_to_contact_maps"
-  scratchDir='/home/eric/scratch'
-  numIterations=1
-  finalSimProductionSweeps=5000
-  equilibSweeps=1000
-  productionSweeps=5000
-  source activate python3.9_pytorch1.11
+  source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
-i=12000
+jobs=0
+waitCount=0
+for sample in {201..282}
+do
+  echo $sample
+  python3 ~/TICG-chromatin/max_ent.py $sample &
+  jobs=$(( $jobs + 1 ))
+  if [ $jobs -gt 16 ]
+  then
+    echo 'Waiting'
+    waitCount=$(( $waitCount + 1 ))
+    wait
+    jobs=0
+  fi
+done
 
-
-
+echo $waitCount
 wait
-
-
-# python3 ~/TICG-chromatin/scripts/makeLatexTable.py --data_folder $dataFolder --samples $samples
 
 ENDTIME=$(date +%s)
 echo "total time:$(( $(( $ENDTIME - $STARTTIME )) / 60 )) minutes"

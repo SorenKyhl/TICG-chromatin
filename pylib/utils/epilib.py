@@ -1,7 +1,9 @@
 import copy
 import json
 import logging
+import math
 import os
+import sys
 from pathlib import Path
 
 import matplotlib.colors
@@ -10,10 +12,13 @@ import numpy as np
 import pandas as pd
 import scipy
 import seaborn as sns
-import sklearn.metrics
 from numba import njit
-from pylib import hic, utils
 from tqdm import tqdm
+
+from pylib.utils import hic_utils, utils
+from pylib.utils.goals import *
+from pylib.utils.plotting_utils import plot_matrix
+from pylib.utils.similarity_measures import *
 
 # import palettable
 # from palettable.colorbrewer.sequential import Reds_3
@@ -48,7 +53,7 @@ class Sim:
 
         try:
             self.hic = get_contactmap(self.path / "contacts.txt")
-            self.d = get_diagonal(self.hic)
+            self.d = hic_utils.get_diagonal(self.hic)
         except FileNotFoundError:
             logging.error("error loading contactmap.")
 
@@ -56,6 +61,7 @@ class Sim:
             self.energy = pd.read_csv(
                 self.path / "energy.traj",
                 sep="\t",
+                header=0,
                 names=["step", "bonded", "nonbonded", "diagonal", "boundary", "total"],
                 index_col=0
             )
@@ -64,22 +70,26 @@ class Sim:
         except FileNotFoundError:
             logging.error("error loading energy.traj")
 
-        self.chi = self.load_chis()
-        self.k = self.config['nspecies']
-        if self.k > 0:
-            try:
-                self.seqs = self.load_seqs()
-                assert self.k == np.shape(self.seqs)[0]
-            except OSError:
-                logging.error("error loading sequences")
+        if self.config['plaid_on']:
+            self.chi = self.load_chis()
+            self.k = self.config['nspecies']
+            if self.k > 0:
+                try:
+                    self.seqs = self.load_seqs()
+                    assert self.k == np.shape(self.seqs)[0]
+                except OSError:
+                    logging.error("error loading sequences")
 
-            try:
-                self.obs_full = pd.read_csv(
-                    self.path / "observables.traj", sep="\t", header=None
-                )
-                self.obs = np.array(self.obs_full.mean().values[1:])
-            except FileNotFoundError:
-                logging.error("error loading plaid observables")
+                try:
+                    self.obs_full = pd.read_csv(
+                        self.path / "observables.traj", sep="\t", header=None
+                    )
+                    self.obs = np.array(self.obs_full.mean().values[1:])
+                except FileNotFoundError:
+                    logging.error("error loading plaid observables")
+        else:
+            self.chi = None
+            self.k = 0
 
         if "diag_chis" in self.config:
             self.diag_bins = np.shape(self.config["diag_chis"])[0]
@@ -122,8 +132,8 @@ class Sim:
 
             # if contact map pools, also pool sequences
             if gthic_loaded and self.config["contact_resolution"] > 1:
-                self.seqs = hic.pool_seqs(self.seqs, self.config["contact_resolution"])
-                self.gthic = hic.pool_sum(self.gthic, self.config["contact_resolution"])
+                self.seqs = hic_utils.pool_seqs(self.seqs, self.config["contact_resolution"])
+                self.gthic = hic_utils.pool_sum(self.gthic, self.config["contact_resolution"])
 
             obj_goal_path = resources_path / "obj_goal.txt"
             if obj_goal_path.exists():
@@ -286,7 +296,7 @@ class Sim:
         diag = self.d
         plot_fn(np.linspace(1 / len(diag), 1, len(diag)), diag, *args, label="sim")
         try:
-            diag = get_diagonal(self.gthic)
+            diag = hic_utils.get_diagonal(self.gthic)
             plot_fn(np.linspace(1 / len(diag), 1, len(diag)), diag, "k", label="exp")
         except FileNotFoundError:
             logging.error("no ground truth hi-c for plot_diagonal")
@@ -298,77 +308,6 @@ class Sim:
         lower_bound = np.max([np.min(diag) / 5, 1e-7])
         plt.axis([0, 1, lower_bound, 1])
 
-
-class SCC:
-    """calculate Stratified Correlation Coefficient (SCC)
-    as defined by https://pubmed.ncbi.nlm.nih.gov/28855260/
-    """
-
-    def __init__(self):
-        self.r_2k_dict = {}  # memoized solution for var_stabilized r_2k
-
-    def r_2k(self, x_k, y_k, var_stabilized):
-        """Compute r_2k (numerator of pearson correlation)
-
-        Args:
-            x: contact map
-            y: contact map of same shape as x
-            var_stabilized: True to use var_stabilized version
-        """
-        # x and y are stratums
-        if var_stabilized:
-            N_k = len(x_k)
-            if N_k in self.r_2k_dict:
-                result = self.r_2k_dict[N_k]
-            else:
-                result = np.var(np.arange(1, N_k + 1) / N_k)
-                self.r_2k_dict[N_k] = result
-            return result
-        else:
-            return np.sqrt(np.var(x_k) * np.var(y_k))
-
-    def mean_filter(self, x, size):
-        return scipy.ndimage.uniform_filter(x, size, mode="constant") / (size) ** 2
-
-    def scc(self, x, y, h=3, K=None, var_stabilized=False, verbose=False):
-        """Compute scc between contact map x and y.
-
-        Args:
-            x: contact map
-            y: contact map of same shape as x
-            h: span of convolutional kernel (width = (1+2h))
-            K: maximum stratum (diagonal) to consider (None for all)
-            var_stabilized: True to use var_stabilized r_2k
-            verbose: True to print when nan found
-        """
-        x = self.mean_filter(x.astype(np.float64), 1 + 2 * h)
-        y = self.mean_filter(y.astype(np.float64), 1 + 2 * h)
-        if K is None:
-            K = len(y) - 2
-        num = 0
-        denom = 0
-        nan_list = []
-        for k in range(1, K):
-            # get stratum (diagonal) of contact map
-            x_k = np.diagonal(x, k)
-            y_k = np.diagonal(y, k)
-            N_k = len(x_k)
-            r_2k = self.r_2k(x_k, y_k, var_stabilized)
-            # p_k, _ = pearsonr(x_k, y_k)
-            p_k = np.corrcoef(x_k, y_k)[0, 1]
-            if np.isnan(p_k):
-                # nan is hopefully rare so just set to 0
-                nan_list.append(k)
-                p_k = 0
-                if verbose:
-                    print(f"k={k}")
-                    print(x_k)
-                    print(y_k)
-            num += N_k * r_2k * p_k
-            denom += N_k * r_2k
-        if len(nan_list) > 0:
-            print(f"{len(nan_list)} nans: k = {nan_list}")
-        return num / denom
 
 
 def get_contactmap(filename, norm=True, log=False, rawcounts=False, normtype="mean"):
@@ -392,15 +331,6 @@ def get_contactmap(filename, norm=True, log=False, rawcounts=False, normtype="me
         return contactmap
 
 
-@njit
-def get_diagonal(contact):
-    """Returns the probablity of contact as a function of genomic distance"""
-    rows, cols = np.shape(contact)
-    d = np.zeros(rows)
-    for k in range(rows):
-        d[k] = np.mean(np.diag(contact, k))
-    return d
-
 
 @njit
 def get_oe(contact, diagonal=None):
@@ -409,7 +339,7 @@ def get_oe(contact, diagonal=None):
     """
 
     if diagonal is None:
-        diagonal = get_diagonal(contact)
+        diagonal = hic_utils.get_diagonal(contact)
 
     oe = np.zeros_like(contact)
     for i, row in enumerate(contact):
@@ -474,11 +404,13 @@ def plot_contactmap(
         plt.title(title)
 
 
-def plot_diagonal(diag, *args, scale="semilogy", label=None):
-    if diag.ndim == 2:
-        diag = get_diagonal(
-            diag
-        )  # in case the input is a full matrix instead of just the diagonal
+def plot_diagonal(input, *args, scale="semilogy", label=None):
+    if input.ndim == 2:
+        # input is a full matrix
+        diag = hic_utils.get_diagonal(input)
+    else:
+        # input is p(s)
+        diag = input
 
     if scale == "semilogy":
         plt.semilogy(np.linspace(1 / len(diag), 1, len(diag)), diag, *args, label=label)
@@ -808,7 +740,7 @@ def process2(folder, ignore=100):
 
 def mask_vs_diagonal(contact, nbeads=1024, bins=16):
     raise NotImplementedError("deprecated")
-    diag_exp = get_diagonal(contact)
+    diag_exp = hic_utils.get_diagonal(contact)
     diag_exp = downsample(diag_exp, int(nbeads / bins))
 
     diag_mask, correction = mask_diagonal(contact, bins)
@@ -844,7 +776,7 @@ def compare_diagonal(
     # plt.plot(diag_sim, 'o')
 
     contact = get_contactmap(filename + "/contacts.txt")
-    diag_exp = get_diagonal(contact)
+    diag_exp = hic_utils.get_diagonal(contact)
     diag_exp = downsample(diag_exp, int(nbeads / bins))
 
     diag_mask, correction = mask_diagonal(contact, bins)
@@ -874,111 +806,6 @@ def compare_diagonal(
 
     return diag_sim, diag_exp, diag_mask, correction
 
-
-@njit
-def make_mask(
-    size, b, cutoff, loading, ndiag_bins, dense_diagonal_on, double_diagonal=True
-):
-    """makes a mask with 1's in subdiagonals inside
-
-    actually faster than numpy version when jitted
-    """
-    rows, cols = size, size
-    mask = np.zeros((rows, cols))
-    for r in range(rows):
-        for c in range(cols):
-            # if int((r-c)/binsize) == b:
-            bin_index = binDiagonal(
-                r, c, cutoff, loading, ndiag_bins, rows, dense_diagonal_on
-            )
-            if bin_index == b:
-                mask[r, c] = 1
-                mask[c, r] = 1
-                if r == c and double_diagonal:
-                    mask[r, r] = 2
-    return mask
-
-
-@njit
-def make_mask_fast(size, binsize, b):
-    # not actually faster if you jit the make_mask code
-    rows, cols = size, size
-    mask = np.zeros((rows, cols))
-    for i in range(binsize):
-        mask += np.eye(rows, cols, b * binsize + i)
-        mask += np.eye(rows, cols, -b * binsize - i)
-    return mask
-
-
-@njit
-def mask_diagonal(
-    contact, cutoff, loading, ndiag_bins, dense_diagonal_on, double_diagonal
-):
-    """Returns weighted averages of contact map"""
-    rows, cols = contact.shape
-    # binsize = int(rows/ndiag_bins)
-
-    assert rows == cols, "contact map must be square"
-    nbeads = rows
-    measure = []
-    correction = []
-
-    for b in range(ndiag_bins):
-        """
-        mask = np.zeros_like(contact)
-        for r in range(rows):
-            for c in range(cols):
-                if int((r-c)/binsize) == b:
-                    mask[r,c] = 1
-                    mask[c,r] = 1
-                    if r==c:
-                        mask[r,r] = 2
-        """
-        mask = make_mask(
-            nbeads, b, cutoff, loading, ndiag_bins, dense_diagonal_on, double_diagonal
-        )
-        # measure.append(np.mean((mask*contact).flatten()))
-        # correction.append(np.sum(mask)/nbeads**2)
-        measure.append(np.sum((mask * contact).flatten()))
-        correction.append(np.sum(mask))
-    """
-
-    for b in range(bins):
-        mask = make_mask_fast(rows, cols, binsize, b)
-        measure.append(np.mean((mask*contact).flatten()))
-        correction.append(np.sum(mask)/nbeads**2)
-    """
-
-    measure = np.array(measure)
-    correction = np.array(correction)
-    return measure, correction
-
-
-@njit
-def binDiagonal(i, j, cutoff, loading, ndiag_bins, nbeads, dense_diagonal_on):
-    s = abs(i - j)
-
-    if dense_diagonal_on:
-        # loading = config["loading"]
-        # cutoff = config["cutoff"]
-        dividing_line = nbeads * cutoff
-
-        n_small_bins = int(loading * ndiag_bins)
-        n_big_bins = ndiag_bins - n_small_bins
-        small_binsize = int(dividing_line / (n_small_bins))
-        big_binsize = int((nbeads - dividing_line) / n_big_bins)
-
-        if s > dividing_line:
-            bin_index = n_small_bins + np.floor((s - dividing_line) / big_binsize)
-        else:
-            bin_index = np.floor(s / small_binsize)
-    else:
-        binsize = nbeads / ndiag_bins
-        bin_index = np.floor(s / binsize)
-
-    return bin_index
-
-
 def downsample(sequence, res):
     """
     take sequence of numbers and reduce length
@@ -990,160 +817,6 @@ def downsample(sequence, res):
         new.append(np.mean(sequence[i : i + res]))
 
     return np.array(new)
-
-
-def get_goal_plaid(hic, seqs, config, flat=True, norm=False, adj=True):
-    """
-    flat: return vector. else return matrix of chis.
-    """
-    k, n = np.shape(seqs)
-    goal_exp = np.zeros((k, k))
-    logging.info("getting plaid goals...")
-    for i, seqi in tqdm(enumerate(seqs)):
-        for j, seqj in enumerate(seqs):
-            # goal_exp[i,j] = np.mean((np.outer(seqi,seqj)*hic).flatten())
-            goal_exp[i, j] = np.sum((np.outer(seqi, seqj) * hic).flatten())
-
-            if adj:
-                vbead = config["beadvol"]
-                vcell = config["grid_size"] ** 3
-                goal_exp[i, j] *= vbead / vcell
-
-            if norm == "abs":
-                goal_exp[i, j] /= np.sum(np.outer(np.abs(seqi), np.abs(seqj)))
-
-            if norm == "n2":
-                goal_exp[i, j] /= np.shape(hic)[0] ** 2
-
-            if norm == "n":
-                goal_exp[i, j] /= np.shape(hic)[0]
-
-            if norm == "nlogn":
-                n = np.shape(hic)[0]
-                goal_exp[i, j] /= n * np.log10(n)
-
-            if norm == "n1.5":
-                goal_exp[i, j] /= np.shape(hic)[0] ** 1.5
-
-            if norm == "nsqrt":
-                n = np.shape(hic)[0]
-                f = np.sum(np.outer(np.abs(seqi), np.abs(seqj)))
-                goal_exp[i, j] /= f / np.sqrt(n)
-
-    if flat:
-        ind = np.triu_indices(k)
-        goal_exp = goal_exp[ind]
-
-    return goal_exp
-
-
-def get_goal_plaid2(hic, seqs, k, flat=True):
-    """
-    do we need to get the correct denominator??
-    k is the number of sequences (not pcs)
-    flat: return vector. else return matrix of chis.
-    """
-
-    goal_exp = np.zeros((k, k))
-    for i, seqi in enumerate(seqs):
-        for j, seqj in enumerate(seqs):
-            goal_exp[i, j] = np.mean((np.outer(seqi, seqj) * hic).flatten())
-            # correction = np.sum(np.outer(seqi,seqj)) / nbeads**2
-
-    if flat:
-        ind = np.triu_indices(k)
-        goal_exp = goal_exp[ind]
-
-    return goal_exp
-
-
-def get_goal_diag(
-    hic,
-    config,
-    prefactors=True,
-    get_ps=False
-):
-    """get goal observables for diagonal interaction
-
-    hic: contact map
-    config: simulation configuration
-    prefactors: multiply by physical parameters to convert probabilities to simulation observables
-    get_ps: return binned p(s) and s vectors, where s is the center of the diagonal bins
-
-    """
-    ndiag_bins = len(config["diag_chis"])
-    cutoff = config["dense_diagonal_cutoff"]
-    loading = config["dense_diagonal_loading"]
-    dense_diagonal_on = config["dense_diagonal_on"]
-    double_diagonal = config["double_count_main_diagonal"]
-    diag_mask, correction = mask_diagonal(
-        hic, cutoff, loading, ndiag_bins, dense_diagonal_on, double_diagonal
-    )
-
-    if get_ps:
-        ps = diag_mask/correction
-        s = diag_bin_centers(config)
-
-    if prefactors:
-        vbead = config["beadvol"]
-        vcell = config["grid_size"] ** 3
-        diag_mask *= vbead / vcell
-
-    if get_ps:
-        return diag_mask, ps, s
-    else:
-        return diag_mask
-
-
-def mask_diagonal2(contact, bins=16):
-    """Returns weighted averages of contact map"""
-    rows, cols = contact.shape
-    binsize = rows / bins
-
-    assert rows == cols, "contact map must be square"
-    nbeads = rows
-    measure = []
-    correction = []
-
-    for b in range(bins):
-        mask = np.zeros_like(contact)
-        for r in range(rows):
-            for c in range(cols):
-                if int((r - c) / binsize) == b:
-                    mask[r, c] = 1
-                    mask[c, r] = 1
-
-        measure.append(np.mean((mask * contact).flatten()))
-        correction.append(np.sum(mask))
-
-    measure = np.array(measure)
-    correction = np.array(correction)
-    return measure, correction
-
-
-def diag_bin_centers(config):
-    """return centers of diagonal bins"""
-
-    nbeads = config["nbeads"]
-    ndiag_bins = len(config["diag_chis"])
-    cutoff = config["dense_diagonal_cutoff"]
-    loading = config["dense_diagonal_loading"]
-
-    dividing_line = nbeads * cutoff
-
-    n_small_bins = int(loading * ndiag_bins)
-    n_big_bins = ndiag_bins - n_small_bins
-    small_binsize = int(dividing_line / (n_small_bins))
-    big_binsize = int((nbeads - dividing_line) / n_big_bins)
-
-
-    if config["dense_diagonal_on"]:
-        s = np.hstack((np.arange(0, n_small_bins)*small_binsize, np.arange(0,n_big_bins)*big_binsize + dividing_line))
-    else:
-        s = np.array(range(ndiag_bins))
-
-    return s
-
 
 def bin_chipseq(df, resolution, method="max"):
     step = resolution
@@ -1198,26 +871,6 @@ def plot_scatter_oe(hic1, hic2):
     plt.axis([-2, 2, -2, 2])
 
 
-def get_SCC(hic1, hic2):
-    # oe1 = get_oe(hic1)
-    # oe2 = get_oe(hic2)
-    # return np.corrcoef(oe1.flatten(), oe2.flatten())[0,1]
-    myscc = SCC()
-    return myscc.scc(hic1, hic2)
-
-
-def get_RMSE(hic1, hic2):
-    return np.sqrt(sklearn.metrics.mean_squared_error(hic1, hic2))
-
-
-def get_RMSLE(hic1, hic2):
-    return np.sqrt(sklearn.metrics.mean_squared_log_error(hic1, hic2))
-
-
-def get_pearson(hic1, hic2):
-    return np.corrcoef(hic1.flatten(), hic2.flatten())[0, 1]
-
-
 def fill_subdiagonal(a, offset, fn):
     n = np.shape(a)[0]
     inds = np.arange(n - offset)
@@ -1228,21 +881,8 @@ def fill_subdiagonal(a, offset, fn):
     return a
 
 
-def get_goals(hic, seqs, config, save_path=None):
-    """get maximum entropy goals for simulation observables"""
-    plaid = get_goal_plaid(hic, seqs, config)
-    diag = get_goal_diag(hic, config)
-
-    if save_path is not None:
-        np.savetxt(save_path, plaid, newline=" ", fmt="%.8f")
-        np.savetxt(save_path, diag, newline=" ", fmt="%.8f")
-
-    return np.hstack((plaid, diag))
-
-
 def resize_contactmap(hic, sizex, sizey):
-    pass
-
+    raise Exception("Not Implemented")
 
 def plot_consistency(sim):
     """ensure simulation observables are consistent with goals
@@ -1266,18 +906,9 @@ def plot_consistency(sim):
     plt.legend()
     return error
 
-
-def get_symmetry_score(A, order="fro"):
-    symmetric = np.linalg.norm(1 / 2 * (A + A.T), order)
-    skew_symmetric = np.linalg.norm(1 / 2 * (A - A.T), order)
-
-    return symmetric / (symmetric + skew_symmetric)
-
-
 def get_symmetry_score_2(first, second, order="fro"):
     composite = make_tri_composite(first, second)
     return get_symmetry_score(composite, order)
-
 
 def make_tri_composite(first, second):
     """make composite matrix with upper triangle taken from first
@@ -1291,6 +922,29 @@ def make_tri_composite(first, second):
     composite[indu] = first[indu]
     composite[indl] = second[indl]
     return composite
+
+def eric_plot_tri(sim, exp, ofile, vmaxp=None, title="", log=False, cmap=None):
+    '''
+    Plot contact map with lower triangle as ground truth and upper as simulation.
+    '''
+    assert np.shape(sim) == np.shape(exp), f'{sim.shape} {sim.shape}'
+    if log:
+        sim = np.log(sim + 1)
+        exp = np.log(exp + 1)
+
+    npixels = np.shape(sim)[0]
+    indu = np.triu_indices(npixels)
+    indl = np.tril_indices(npixels)
+
+    # make composite contact map
+    composite = np.zeros((npixels, npixels))
+    composite[indu] = sim[indu]
+    composite[indl] = exp[indl]
+
+    if vmaxp is None:
+        vmaxp = np.mean(exp)
+
+    plot_matrix(composite, ofile, title, vmax = vmaxp, triu = True, cmap = cmap)
 
 
 def plot_tri(first, second, vmaxp=None, oe=False, title="", dark=False, log=False):

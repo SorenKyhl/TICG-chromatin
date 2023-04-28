@@ -18,7 +18,6 @@ int Cell::n_small_bins;
 int Cell::n_big_bins;
 int Cell::small_binsize;
 int Cell::big_binsize;
-int Cell::diag_cutoff;
 int Cell::diag_start;
 
 void Cell::print() {
@@ -161,7 +160,7 @@ int Cell::binDiagonal(int d)
 	{
 		int dense_cutoff = Cell::n_small_bins * Cell::small_binsize;
 		// diagonal chis are binned in a dense set (small bins) from d=0 to d=dense_cutoff,
-		// then a sparse set (large bins) from d=cutoff to d=diag_cutoff
+		// then a sparse set (large bins) from d=cutoff to d=len(hic)
 		if ( d == 0 )
 		{
 			// this clause avoids divide by zero error
@@ -196,15 +195,12 @@ double Cell::getDiagEnergy(const std::vector<double> diag_chis) {
         indices.push_back(elem->id);
     }
 
-    // count pairwise contacts  -- include self-self interaction!!
+    // count pairwise contacts
     for (int i = 0; i < imax; i++) {
         for (int j = i; j < imax; j++) {
             int d = std::abs(indices[i] - indices[j]);
-            if ((d <= diag_cutoff) && (d >= diag_start)) {
-                d -= diag_start; // TODO check that this works for non-zero
-                                 // diag_start
+            if (d >= diag_start) {
                 d_index = binDiagonal(d);
-
                 int nbonds;
                 if (Cell::double_count_main_diagonal)
                 {

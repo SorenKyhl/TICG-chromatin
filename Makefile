@@ -1,9 +1,9 @@
 
-install: 
+install:
 	python setup.py bdist_wheel
 	python -m pip install dist/* --force-reinstall
 
-build: 
+build:
 	(cd src && make pybind && mv pyticg* ../pylib)
 
 clean:
@@ -11,7 +11,7 @@ clean:
 	rm -r dist
 
 all:
-	make clean || make build && make install
+	make clean && make build && make install
 
-docs: 
+docs:
 	(cd pylib/docs && python -m sphinx.cmd.build -M html source/ build/)

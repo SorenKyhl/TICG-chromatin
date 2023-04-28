@@ -54,14 +54,16 @@ def getArgs():
                         help='chromatin volume fraction')
     parser.add_argument('--bond_length', type=float, default=16.5,
                         help='bond length')
+    parser.add_argument('--k_angle', type=float, default=0.0,
+                        help='k for angle term')
     parser.add_argument('--boundary_type', type=str, default='spherical',
                         help='simulation boundary type {cubic, spherical}')
     parser.add_argument('--track_contactmap', type=AC.str2bool, default=False,
                         help='True to dump contact map every dump_frequency')
     parser.add_argument('--gridmove_on', type=AC.str2bool, default=True,
                         help='True to use grid MC move')
-    parser.add_argument('--grid_size', default=28.7,
-                        help='TICG grid size')
+    parser.add_argument('--grid_size',
+                        help='TICG grid size (None to load from optimize_grid)')
     parser.add_argument('--bead_vol', type=float, default=520,
                         help='bead volume')
     parser.add_argument('--update_contacts_distance', type=AC.str2bool, default=False,
@@ -369,24 +371,44 @@ def main():
     config['gridmove_on'] = args.gridmove_on
 
     # save grid_size
-    if isinstance(args.grid_size, float):
-        grid_size = args.grid_size
-    elif osp.exists(args.grid_size):
+    grid_size = None
+    if osp.exists(args.grid_size):
         if args.grid_size.endswith('json'):
             with open(args.grid_size, 'r') as f:
                 tmp = json.load(f)
                 grid_size = tmp['grid_size']
+        elif args.grid_size.endswith('txt'):
+            arr = np.loadtxt(args.grid_size)
+            arr = np.atleast_1d(arr)
+            print(f'shape of args.grid_size = {arr.shape}')
+            if len(arr) > 1:
+                grid_size = arr[-1]
+            else:
+                grid_size = arr.item()
+    elif args.grid_size.startswith('scale_'):
+        scale = float(args.grid_size[6:])
+        grid_size = args.bond_length * scale
+    elif args.grid_size.lower() == 'none':
+        assert args.sample_folder is not None
+        if args.k_angle != 0:
+            optimize_folder = osp.join(args.sample_folder,
+                        f'optimize_grid_angle_{args.k_angle}_b_{args.bond_length}_phi_{args.phi_chromatin}')
         else:
-            grid_size = np.loadtxt(args.grid_size)[-1]
-    elif isinstance(args.grid_size, str):
-        if args.grid_size.startswith('scale_'):
-            scale = float(args.grid_size[6:])
-            grid_size = args.bond_length * scale
-        else:
-            grid_size = float(args.grid_size)
+            optimize_folder = osp.join(args.sample_folder,
+                        f'optimize_grid_b_{args.bond_length}_phi_{args.phi_chromatin}')
+        arr = np.loadtxt(osp.join(optimize_folder, 'grid_size.txt'))
+        arr = np.atleast_1d(arr)
+        grid_size = arr.item()
     else:
+        grid_size = float(args.grid_size)
+    if grid_size is None:
         raise Exception(f'Invalid grid_size {args.grid_size}')
     config['grid_size'] = grid_size
+
+    # save k_angle
+    if args.k_angle != 0:
+        config['angles_on'] = True
+        config['k_angle'] = args.k_angle
 
     # save bead volume
     config['beadvol'] = args.bead_vol

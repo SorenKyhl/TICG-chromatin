@@ -1,5 +1,7 @@
-import numpy as np
 from os import PathLike
+
+import numpy as np
+
 from pylib import utils
 
 

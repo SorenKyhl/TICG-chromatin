@@ -2,7 +2,7 @@ import sys
 from typing import Optional
 
 from pylib import parameters
-from pylib.pysim import Pysim
+from pylib.Pysim import Pysim
 
 """ ideal_chain
 module for running ideal chain simulations

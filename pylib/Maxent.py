@@ -1,15 +1,16 @@
-from pathlib import Path
 import copy
-import numpy as np
-import matplotlib.pyplot as plt
 import os
 import pickle
-from typing import Union, Optional
+from pathlib import Path
+from typing import Optional, Union
 
-from pylib import analysis
-from pylib.utils import cd, newton
-from pylib.pysim import Pysim
-from pylib import utils
+import matplotlib.pyplot as plt
+import numpy as np
+import sympy
+
+import pylib.analysis as analysis
+from pylib.Pysim import Pysim
+from pylib.utils import utils
 
 plt.rcParams["figure.figsize"] = [8, 6]
 plt.rcParams.update({"font.size": 18})
@@ -35,6 +36,7 @@ class Maxent:
         analysis_on: bool = True,
         initial_chis: Optional[bool] = None,
         dampen_first_step: bool = True,
+        final_it_sweeps: int = 0
     ):
         """
         root: root of maxent filesystem
@@ -49,7 +51,11 @@ class Maxent:
         self.set_root(root)
         self.params = params
         self.config = config
-        self.seqs = seqs
+        if seqs.shape[0] > seqs.shape[1]:
+            # Maxent assumes seq is kxm
+            self.seqs = seqs.T
+        else:
+            self.seqs = seqs
         self.gthic = gthic
         self.overwrite = overwrite
 
@@ -73,6 +79,7 @@ class Maxent:
 
         # optimization things
         self.dampen_first_step = dampen_first_step
+        self.final_it_sweeps = final_it_sweeps
         self.lengthen_iterations = lengthen_iterations
         self.analysis_on = analysis_on
 
@@ -126,18 +133,65 @@ class Maxent:
         np.savetxt(self.root / "chis_diag.txt", diag, fmt="%.4f", newline=" ")
         np.savetxt(self.root / "convergence.txt", self.loss, fmt="%.16f")
         np.save(self.root / "plaid_chis.npy", self.track_plaid_chis)
-        np.save(self.root / "daig_chis.npy", self.track_diag_chis)
+        np.save(self.root / "diag_chis.npy", self.track_diag_chis)
 
+        self.plot_convergence()
+        self.plot_plaid_chis()
+        self.plot_plaid_chis(True)
+        self.plot_diag_chis()
+
+    def plot_convergence(self):
         plt.figure()
-        plt.plot(self.loss, ".-")
+        plt.xlabel('Iteration', fontsize=16)
+        plt.ylabel('Loss', fontsize=16)
+        iterations = np.arange(1, len(self.loss)+1)
+        plt.plot(iterations, self.loss, ".-")
+
+        converged_it = None
+        for i in range(1, len(self.loss)):
+            diff = self.loss[i] - self.loss[i-1]
+            if np.abs(diff) < 1e-2 and self.loss[i] < self.loss[0]:
+                converged_it = iterations[i]
+                break
+
+        if converged_it is not None:
+            plt.axvline(converged_it, color = 'k', label = 'converged')
+            plt.legend()
+
+        plt.tight_layout()
         plt.savefig(self.root / "loss.png")
 
-        plt.figure()
-        plt.plot(self.track_plaid_chis, ".-")
-        plt.savefig(self.root / "track_plaid_chis.png")
+    def plot_plaid_chis(self, legend=False):
+        k = sympy.Symbol('k')
+        result = sympy.solvers.solve(k*(k-1)/2 + k - self.track_plaid_chis.shape[1])
+        k = np.max(result) # discard negative solution
 
+        counter = 0
+        LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
         plt.figure()
+        for i in range(k):
+            for j in range(k):
+                if j < i:
+                    continue
+                chistr = f"chi{LETTERS[i]}{LETTERS[j]}"
+                plt.plot(self.track_plaid_chis[:, counter], ".-", label = chistr)
+                counter += 1
+        plt.xlabel('Iteration', fontsize=16)
+        plt.ylabel(r'$\chi_{IJ}$ value', fontsize=16)
+        if legend:
+            plt.legend(loc=(1.04,0), ncol = 3)
+            plt.tight_layout()
+            plt.savefig(self.root / "track_plaid_chis_legend.png")
+        else:
+            plt.savefig(self.root / "track_plaid_chis.png")
+        plt.close()
+
+    def plot_diag_chis(self):
+        plt.figure()
+        plt.xlabel("Iteration", fontsize=16)
+        plt.ylabel("Diagonal Parameter Value", fontsize=16)
         plt.plot(self.track_diag_chis, ".-")
+        plt.tight_layout()
         plt.savefig(self.root / "track_diag_chis.png")
 
     def analyze(self):
@@ -184,7 +238,7 @@ class Maxent:
             print(f"gammma = {gamma}")
             print("self.gamma = " + str(self.params["gamma"]))
 
-            newchis, newloss = newton(
+            newchis, newloss = utils.newton(
                 lam=obs,
                 obj_goal=self.params["goals"],
                 B=jac,
@@ -200,8 +254,42 @@ class Maxent:
                 sim.root / "experimental_hic.npy",
             )
 
-            with cd(sim.root):
+            with utils.cd(sim.root):
                 self.analyze()
+
+        if self.final_it_sweeps > 0:
+            self.run_final_iteration(newchis)
+
+    def run_final_iteration(self, newchis):
+        self.save_state()
+
+        # set up new config
+        config = self.defaultsim.config.copy()
+        sweeps = self.final_it_sweeps // self.params["parallel"]
+
+        sim = Pysim(
+            root=self.root / f"iteration{self.params['iterations']}",
+            config=config,
+            seqs=self.defaultsim.seqs,
+            randomize_seed=True,
+        )
+
+        sim.set_chis(newchis)
+
+        sim.run_eq(
+            self.params["equilib_sweeps"],
+            sweeps,
+            self.params["parallel"],
+        )
+
+        os.symlink(
+            self.resources / "experimental_hic.npy",
+            sim.root / "experimental_hic.npy",
+        )
+
+        with utils.cd(sim.root):
+            self.analyze()
+
 
     def save_state(self):
         self_copy = copy.deepcopy(self)
@@ -254,6 +342,3 @@ class Maxent:
     def set_config(self, path):
         """load config from path"""
         self.config = utils.load_json(path)
-
-
-

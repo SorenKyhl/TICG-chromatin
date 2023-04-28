@@ -3,7 +3,7 @@ source activate python3.9_pytorch1.9
 module load gcc/10.2.0
 
 # directories
-resources=~/TICG-chromatin/utils
+resources=~/TICG-chromatin/defaults
 results=~/sequences_to_contact_maps/results
 dir='/project2/depablo/erschultz'
 scratchDir='/home/erschultz/scratch'
@@ -40,9 +40,10 @@ phiChromatin=0.06
 boundaryType='spherical'
 
 
-gridSize=28.7
+gridSize='none'
 beadVol=520
 constantChi=0
+kAngle=0
 
 # diag params
 diagChiMethod='none'
@@ -110,7 +111,7 @@ max_ent_resume_inner(){
   cd $odir
 
   # compare results
-  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --k $k --replicate_folder $odir --save_npy --plot > contact.log
+  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --replicate_folder $odir --save_npy --plot > contact.log
   python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${odir}/y.npy" --y_diag "$sampleFolder/y_diag.npy" --yhat_diag "${odir}/y_diag.npy" >> contact.log
 
   echo ''
@@ -138,24 +139,23 @@ max_ent_inner () {
   scratchDirResources="${1}/resources"
   mkdir -p $scratchDirResources
 
-  cd $resources
   init_config='none'
 
   cd $scratchDirResources
   # generate sequences
   echo "starting get_params"
   echo $method_fmt
-  python3 ~/TICG-chromatin/scripts/get_params.py --config_ifile "${resources}/default_config_maxent.json" --method=$method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --cell_line $cellLine --epi_data_type $dataType --resolution $resolution --start $start --end $end --chromosome $chrom --ChromHMM_data_file $chromHMMData --gnn_model_path $GNNModelPath --mlp_model_path $MLPModelPath --seq_seed $seqSeed --chi_method $chiMethod --min_chi=-1 --max_chi=1 --chi_seed $chiSeed --diag_chi_method $diagChiMethod --diag_bins $diagBins --max_diag_chi $maxDiagChi --dense_diagonal_on $dense --dense_diagonal_cutoff $denseCutoff --dense_diagonal_loading $denseLoading --small_binsize $smallBinSize --big_binsize $bigBinSize --n_small_bins $nSmallBins --n_big_bins $nBigBins --diag_start $diagStart --diag_cutoff $diagCutoff --diag_chi_slope $chiDiagSlope --diag_chi_scale $chiDiagScale > params.log
+  python3 ~/TICG-chromatin/scripts/get_params.py --config_ifile "${resources}/config.json" --method=$method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --cell_line $cellLine --epi_data_type $dataType --resolution $resolution --start $start --end $end --chromosome $chrom --ChromHMM_data_file $chromHMMData --gnn_model_path $GNNModelPath --mlp_model_path $MLPModelPath --seq_seed $seqSeed --chi_method $chiMethod --min_chi=-1 --max_chi=1 --chi_seed $chiSeed --diag_chi_method $diagChiMethod --diag_bins $diagBins --max_diag_chi $maxDiagChi --dense_diagonal_on $dense --dense_diagonal_cutoff $denseCutoff --dense_diagonal_loading $denseLoading --small_binsize $smallBinSize --big_binsize $bigBinSize --n_small_bins $nSmallBins --n_big_bins $nBigBins --diag_start $diagStart --diag_cutoff $diagCutoff --diag_chi_slope $chiDiagSlope --diag_chi_scale $chiDiagScale > params.log
 
   echo "starting get_config"
-  python3 ~/TICG-chromatin/scripts/get_config.py --dump_frequency $dumpFrequency --parallel $parallel --num_threads $numThreads --m $m --max_ent --mode $mode --bond_type $bondType --bond_length $bondLength --grid_size $gridSize --bead_vol $beadVol --dense_diagonal_on $dense --use_lmatrix $useL --use_smatrix $useS --use_dmatrix $useD --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $TICGSeed --sample_folder $sampleFolder --load_configuration_filename $init_config --phi_chromatin $phiChromatin --boundary_type $boundaryType --constant_chi $constantChi > config.log
+  python3 ~/TICG-chromatin/scripts/get_config.py --dump_frequency $dumpFrequency --parallel $parallel --num_threads $numThreads --m $m --max_ent --mode $mode --bond_type $bondType --bond_length $bondLength --grid_size $gridSize --bead_vol $beadVol --dense_diagonal_on $dense --use_lmatrix $useL --use_smatrix $useS --use_dmatrix $useD --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $TICGSeed --sample_folder $sampleFolder --load_configuration_filename $init_config --phi_chromatin $phiChromatin --boundary_type $boundaryType --constant_chi $constantChi --k_angle $kAngle > config.log
 
 
   # generate goals
   if [ $goalSpecifiedCopy -eq 1 ]
   then
     echo "starting goal_specified"
-    python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --contact_map "${sampleFolder}/y.npy" --mode $mode --verbose --grid_size $gridSize --v_bead $beadVol > goal.log
+    python3 ~/TICG-chromatin/maxent/bin/get_goal_experimental.py --contact_map "${sampleFolder}/y.npy" --mode $mode --verbose > goal.log
   else
     echo "goal_specified is false"
   fi
@@ -167,7 +167,7 @@ max_ent_inner () {
   cd $odir
 
   # compare results
-  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --k $k --replicate_folder $odir --save_npy --plot > contact.log
+  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --replicate_folder $odir --save_npy --plot > contact.log
   python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${odir}/y.npy" --y_diag "$sampleFolder/y_diag.npy" --yhat_diag "${odir}/y_diag.npy" >> contact.log
 
   echo ''
@@ -237,6 +237,8 @@ format_method () {
   then
     method_fmt="${method_fmt}-diag"
   fi
+
+  method_fmt="${method_fmt}-b_${bondLength}_phi_${phiChromatin}"
 }
 
 param_setup(){

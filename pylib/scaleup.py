@@ -1,13 +1,15 @@
-import numpy as np
 import logging
-import matplotlib.pyplot as plt
 
-from pylib import default, epilib, parameters, hic, utils
-from pylib.optimize import optimize_stiffness, optimize_grid_size
-from pylib.ideal_chain import ideal_chain_simulation
-from pylib.maxent import Maxent
+import matplotlib.pyplot as plt
+import numpy as np
+
+from pylib import parameters
 from pylib.config import Config
-from pylib.pysim import Pysim
+from pylib.ideal_chain import ideal_chain_simulation
+from pylib.Maxent import Maxent
+from pylib.optimize import optimize_config, optimize_stiffness
+from pylib.Pysim import Pysim
+from pylib.utils import default, epilib, hic_utils, utils
 
 
 def plot_stiffness_error(ideal_small, ideal_large, gthic_big):
@@ -17,10 +19,10 @@ def plot_stiffness_error(ideal_small, ideal_large, gthic_big):
     gthic_big: ground truth hic at big scale
     """
     factor = int(len(gthic_big) / len(ideal_small.hic))
-    gthic_small = hic.pool_sum(gthic_big, factor)
+    gthic_small = hic_utils.pool_sum(gthic_big, factor)
 
     factor = int(len(ideal_large.hic) / len(ideal_small.hic))
-    id_pooled = hic.pool_sum(ideal_large.hic, factor)
+    id_pooled = hic_utils.pool_sum(ideal_large.hic, factor)
 
     ratio_pooled = epilib.get_diagonal(id_pooled) / epilib.get_diagonal(gthic_small)
     ratio_sim = ideal_small.d / epilib.get_diagonal(gthic_small)
@@ -93,7 +95,7 @@ def tune_stiffness(nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method,
         # tune grid size
         root = "optimize-grid-match-ideal-large"
         try:
-            optimal_grid_size = optimize_grid_size(small_config, large_ideal_hic_pooled, root=root)
+            optimal_grid_size = optimize_config(small_config, large_ideal_hic_pooled, 'grid', 0.5, 2.5, root)
         except FileExistsError:
             optimal_grid_size = utils.load_json(f"{root}/config.json")[
                 "grid_size"
@@ -106,12 +108,13 @@ def tune_stiffness(nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method,
     )
 
     if match_ideal_large_grid:
-        return k_angle_opt, optimal_grid_size   
+        return k_angle_opt, optimal_grid_size
     else:
         return k_angle_opt
 
 
-def scaleup(nbeads_large, nbeads_small, pool_fn, method="bayes", pool_large = True, zerodiag = False, match_ideal_large_grid=False):
+def scaleup(nbeads_large, nbeads_small, pool_fn, method="bayes", pool_large = True,
+            zerodiag = False, match_ideal_large_grid=False):
     """optimize chis on small system, and scale up parameters to large system
 
     requires tuning the grid size and stiffness at small scale,
@@ -124,19 +127,19 @@ def scaleup(nbeads_large, nbeads_small, pool_fn, method="bayes", pool_large = Tr
 
     config_small = parameters.get_config(nbeads_small)
 
-    gthic_small = hic.load_hic(nbeads_small, pool_fn)
+    gthic_small = hic_utils.load_hic(nbeads_small, pool_fn)
 
     if pool_large:
         gthic_large = gthic_small
     else:
-        gthic_large = hic.load_hic(nbeads_large, pool_fn)
+        gthic_large = hic_utils.load_hic(nbeads_large, pool_fn)
 
-    seqs_large = hic.load_seqs(nbeads_large, 10)
-    seqs_small = hic.load_seqs(nbeads_small, 10)
+    seqs_large = hic_utils.load_seqs(nbeads_large, 10)
+    seqs_small = hic_utils.load_seqs(nbeads_small, 10)
 
     # tune grid size
     try:
-        optimal_grid_size = optimize_grid_size(config_small, gthic_small)
+        optimal_grid_size = optimize_config(config_small, gthic_small, 'grid', 0.5, 2.5)
     except FileExistsError:
         optimal_grid_size = utils.load_json("optimize-grid-size/config.json")[
             "grid_size"
@@ -219,4 +222,4 @@ def scaleup(nbeads_large, nbeads_small, pool_fn, method="bayes", pool_large = Tr
 
 
 if __name__ == "__main__":
-    scaleup(2048, 1024, hic.pool_sum)
+    scaleup(2048, 1024, hic_utils.pool)

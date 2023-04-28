@@ -4,10 +4,12 @@ import os.path as osp
 
 import numpy as np
 from bayes_opt import BayesianOptimization
-from pylib import default, epilib, utils
-from pylib.pysim import Pysim
 from scipy import optimize
 from sklearn.metrics import mean_squared_error
+
+from pylib.Pysim import Pysim
+from pylib.utils import default, hic_utils, utils
+from pylib.utils.epilib import Sim
 
 """
 module for optimizing simulation parameters
@@ -33,41 +35,65 @@ Context:
     to ensure stable behavior of the maximum entropy optimization.
 """
 
+class ErrorMetric():
+    """Calculate difference between sim and exp p(s) for different metrics."""
+    def __init__(self, metric, mode, gthic):
+        self.counter = 0 # number of iterations
+        self.metric = metric
+        self.mode = mode # what is being optimized
+        self.gthic = gthic # experiment
 
-def nearest_neighbor_contact_error(grid_bond_ratio, sim_engine, gthic):
-    """calculate the difference between simulated and experimental nearest-neighbor contact
-    probability.
+    def __call__(self, val, sim_engine):
+        '''
+        Inputs:
+            val [float]: current value of optimization
+            sim_engine [Pysim]: object to call simulation runs
 
-    Args:
-        grid_bond_ratio [float]: grid size expressed as a ratio of the bond length.
-        sim_engine [Pysim]: object to call simulation runs
-        gthic [ndarray]: ground truth hic
+        Outut:
+            error [float]: difference between simulated and experimental contact frequency
+                            according to metric
+        '''
+        self.counter += 1
+        output = f"iteration{self.counter}"
+        print(f"optimizing {self.mode}, {output}")
 
-    Returns:
-        error [float]: difference between simulated and experimental contact frequency
-                        for nearest-neighbor beads: p_simulated(1) - p_experiment(1)
-    """
-    try:
-        nearest_neighbor_contact_error.counter += 1
-    except AttributeError:
-        nearest_neighbor_contact_error.counter = 1
+        if self.mode.startswith("grid"):
+            sim_engine.config["grid_size"] = sim_engine.config["bond_length"] * float(val)
+            print(sim_engine.config["grid_size"])
+        elif self.mode == 'angle':
+            sim_engine.config["k_angle"] = float(val)
+            print(sim_engine.config["k_angle"])
+        else:
+            raise Exception(f'Unrecognized mode {self.mode}')
 
-    output = f"iteration{nearest_neighbor_contact_error.counter}"
-    print(f"optimizing grid size, {output}")
-    sim_engine.config["grid_size"] = sim_engine.config["bond_length"] * grid_bond_ratio
+        # run simulation
+        sim_engine.run(output)
+        output_dir = osp.join(sim_engine.root, output)
+        self.sim_analysis = Sim(output_dir, maxent_analysis=False)
 
-    sim_engine.run(output)
+        if self.metric.startswith('neighbor'):
+            error = self.neighbor_error()
+        elif self.metric == 'mse':
+            error = self.mse_error()
 
-    output_dir = osp.join(sim_engine.root, output)
-    sim_analysis = epilib.Sim(output_dir, maxent_analysis=False)
-    p1_sim = sim_analysis.d[1]
-    p1_exp = epilib.get_diagonal(gthic)[1]
-    error = p1_sim - p1_exp
-    print(f"error, {error}")
-    return error
+        print(f"error, {error}")
+        return error
 
+    def neighbor_error(self):
+        i = int(self.metric.split('_')[1])
+        p_i_sim = self.sim_analysis.d[i]
+        p_i_exp = hic_utils.get_diagonal(self.gthic)[i]
+        error = p_i_sim - p_i_exp
+        return error
 
-def optimize_grid_size(config, gthic, low_bound=0.5, high_bound=1.5, root="optimize-grid-size"):
+    def mse(self):
+        p_s_sim = DiagonalPreprocessing.genomic_distance_statistics(self.sim_analysis.hic, 'prob')
+        p_s_exp = DiagonalPreprocessing.genomic_distance_statistics(self.gthic, 'prob')
+        error = mean_squared_error(p_s_sim, p_s_exp)
+        return error
+
+def optimize_config(config, gthic, mode, low_bound, high_bound,
+                        root=None, metric='neighbor_1'):
     """tune grid size until simulated nearest neighbor contact probability
     is equal to the same probability derived from the ground truth hic matrix.
 
@@ -75,29 +101,60 @@ def optimize_grid_size(config, gthic, low_bound=0.5, high_bound=1.5, root="optim
         config [json]: simulation config file. grid_size will be overwritten,
                             so it's initial value doesn't matter
         gthic [ndarray]: ground truth hic map. used as the target for optimization
+        mode [str]: optimization mode
+        metric [str]: choice of error metric
     Returns:
-        optimal_grid_size [float]: size of grid cell that matches first neighbor contact probability
+        optimum [float]: optimal value of val corresponding to mode given metric
     """
-    config = copy.deepcopy(config)
+    if root is None:
+        root = f'optimize-{mode}'
 
+    config = copy.deepcopy(config)
     config["load_configuration"] = False
     config["nonbonded_on"] = False
     config["load_bead_types"] = False
 
-    sim_engine = Pysim(root, config, seqs=None)
+    gthic /= np.mean(np.diagonal(gthic))
+    sim_engine = Pysim(root, config, seqs=None, overwrite=True)
 
-    result = optimize.brentq(
-        nearest_neighbor_contact_error,
-        low_bound,
-        high_bound,
-        args=(sim_engine, gthic),
-        xtol=1e-3,
-        maxiter=10,
-    )
-    # optimizer returns the grid_to_bond ratio... have to convert to real units.
-    optimal_grid_size = result * config["bond_length"]
-    return optimal_grid_size
+    error_metric = ErrorMetric(metric, mode, gthic)
+    if metric.startswith('neighbor'):
+        try:
+            result = optimize.brentq(
+                error_metric,
+                low_bound,
+                high_bound,
+                args=(sim_engine),
+                xtol=1e-3,
+                maxiter=15,
+            )
+        except RuntimeError as e:
+            print(e)
+            return None
+        except ValueError as e:
+            print(e)
+            return None
+    else:
+        try:
+            result = optimize.minimize(
+                error_metric,
+                0.9,
+                bounds=[(low_bound, high_bound)],
+                args=(sim_engine),
+                options={'maxiter':10},
+            )
+        except RuntimeError as e:
+            print(e)
+            raise
+        result = result.x
 
+    if mode == 'grid':
+        # optimizer returns the grid_to_bond ratio... have to convert to real units.
+        optimum = result * config["bond_length"]
+    elif mode == 'angle':
+        optimum = result
+
+    return optimum
 
 def stiffness_root_error(hic, gthic):
     """calculate error for the purposes of optimizing stiffness.
@@ -107,14 +164,14 @@ def stiffness_root_error(hic, gthic):
     """
     nbeads = len(hic)
     index = int(4*nbeads/1024) - 1
-    return epilib.get_diagonal(hic)[index] - epilib.get_diagonal(gthic)[index]
-    # return np.mean(epilib.get_diagonal(hic) - epilib.get_diagonal(gthic))
+    return hic_utils.get_diagonal(hic)[index] - hic_utils.get_diagonal(gthic)[index]
+    # return np.mean(hic_utils.get_diagonal(hic) - hic_utils.get_diagonal(gthic))
 
 
 def stiffness_bayes_error(hic, gthic):
     """error used for bayesian optimization"""
-    sim = epilib.get_diagonal(hic)
-    exp = epilib.get_diagonal(gthic)
+    sim = hic_utils.get_diagonal(hic)
+    exp = hic_utils.get_diagonal(gthic)
     return mean_squared_error(sim, exp, squared=False)
 
 
@@ -142,7 +199,7 @@ def simulate_stiffness_error(k_angle, sim_engine, gthic, method):
     sim_engine.run(output)
 
     output_dir = osp.join(sim_engine.root, output)
-    sim_analysis = epilib.Sim(output_dir, maxent_analysis=False)
+    sim_analysis = Sim(output_dir, maxent_analysis=False)
 
     if method == "bayes":
         # bayes method maximizes, so return negative of error

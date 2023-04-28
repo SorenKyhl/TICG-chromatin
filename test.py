@@ -20,9 +20,8 @@ from scipy.ndimage import uniform_filter
 from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
 
-sys.path.append('/home/erschultz/TICG-chromatin/maxent/bin')
-from analysis import Sim
-from get_goal_experimental import get_diag_goal, get_plaid_goal
+from pylib.utils import default, epilib, hic_utils
+from scripts.get_params import GetSeq
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.energy_utils import (
@@ -38,6 +37,8 @@ from sequences_to_contact_maps.scripts.similarity_measures import SCC
 from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
                                                      pearson_round,
                                                      triu_to_full)
+from sequences_to_contact_maps.scripts.xyz_utils import (xyz_load,
+                                                         xyz_to_distance)
 
 LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -430,7 +431,7 @@ def plot_sc_p_s():
     plt.savefig(osp.join(data_dir, 'sc_contacts_time', 'meanDist_log2.png'))
     plt.close()
 
-def plot_p_s(dataset, experimental=False, ref=False, params=False, grid_size=False, phi_c=False):
+def plot_p_s(dataset, experimental=False, ref=False, params=False, label=None):
     # plot different p(s) curves
     dir = '/home/erschultz/'
     if ref:
@@ -442,7 +443,7 @@ def plot_p_s(dataset, experimental=False, ref=False, params=False, grid_size=Fal
     data_dir = osp.join(dir, dataset)
 
     data = defaultdict(dict) # sample : {meanDist, diag_chis_step} : vals
-    for sample in [1002, 1003]:
+    for sample in range(100, 111):
         sample_dir = osp.join(data_dir, 'samples', f'sample{sample}')
         ifile = osp.join(sample_dir, 'y.npy')
         if osp.exists(ifile):
@@ -459,6 +460,7 @@ def plot_p_s(dataset, experimental=False, ref=False, params=False, grid_size=Fal
                     data[sample]['bond_length'] = config["bond_length"]
                     data[sample]['grid_size'] = config["grid_size"]
                     data[sample]['beadvol'] = config['beadvol']
+                    data[sample]['k_angle'] = config['k_angle']
             if params:
                 diag_chis_step = calculate_diag_chi_step(config)
                 data[sample]['diag_chis_step'] = np.array(diag_chis_step)
@@ -476,18 +478,15 @@ def plot_p_s(dataset, experimental=False, ref=False, params=False, grid_size=Fal
             ax.plot(meanDist_ref, label = 'Experiment', color = 'k')
 
         for sample in data.keys():
-            label = sample
             meanDist = data[sample]['meanDist']
             if norm:
                 X = np.linspace(0, 1, len(meanDist))
             else:
                 X = np.arange(0, len(meanDist), 1)
-            if grid_size:
-                ax.plot(X, meanDist, c = data[sample]['grid_size'], label = data[sample]['grid_size'])
-            elif phi_c:
-                ax.plot(X, meanDist, label = data[sample]['phi_chromatin'])
+            if label is not None:
+                ax.plot(X, meanDist, label = data[sample][label])
             else:
-                ax.plot(X, meanDist, label = label)
+                ax.plot(X, meanDist, label = sample)
 
             if params:
                 diag_chis_step = data[sample]['diag_chis_step']
@@ -503,13 +502,10 @@ def plot_p_s(dataset, experimental=False, ref=False, params=False, grid_size=Fal
             ax2.set_xscale('log')
             ax2.set_ylabel('Diagonal Parameter', fontsize = 16)
             ax2.legend(loc='upper right')
+        elif label is not None:
+            ax.legend(loc='upper right', title = label)
         else:
-            if grid_size:
-                ax.legend(loc='upper right', title = 'Grid Size')
-            if phi_c:
-                ax.legend(loc='upper right', title = r'$\phi_c$')
-            else:
-                ax.legend(loc='upper right', title = 'Sample')
+            ax.legend(loc='upper right', title = 'Sample')
         if not experimental:
             plt.title(f"b={data[sample]['bond_length']}, "
                     r"$\Delta$"
@@ -833,7 +829,6 @@ def gnn_of_max_ent(samples, k, ID):
         print('Max Ent 1 vs GNN2:', np.round(corr, 3))
 
 
-
 def make_dataset_of_converged(dataset):
     '''
     Inputs:
@@ -886,76 +881,6 @@ def make_dataset_of_converged(dataset):
                     count += 1
     print(f'{converged_count} out of {converged_count+count} converged')
 
-def make_config():
-    dir = '/home/erschultz/dataset_test/samples/sample5000/soren-S/k10_copy/replicate1'
-
-    allchis = np.load(osp.join(dir, 'chis_soren.npy'))
-    print(allchis.shape)
-    k=10
-    nplaid = int(k*(k+1)/2)
-    chis = allchis[-1, :nplaid]
-
-    with open(osp.join(dir, 'config_soren.json'), 'r') as f:
-        config = json.load(f)
-
-    diag_chis = allchis[-1, nplaid:]
-
-    config['diag_chis'] = list(diag_chis)
-
-    counter = 0
-    for i in range(k):
-        for j in range(k):
-            if j < i:
-                continue
-            key = 'chi{}{}'.format(LETTERS[i], LETTERS[j])
-            config[key] = chis[counter]
-            counter += 1
-
-    config.pop('chis')
-    config.pop('ematrix_on')
-    config.pop('smatrix_filename')
-    config['lmatrix_on']=True
-    config['dmatrix_on']=True
-    config['smatrix_on']=True
-    config['load_configuration']=False
-    config['nSweeps'] = 1000000
-    config['production'] = True
-    config['prof_timer_on'] = False
-    config['bead_type_files'] = [f'seq{i}.txt' for i in range(10)]
-
-    with open(osp.join(dir, 'config_soren_final.json'), "w") as f:
-        json.dump(config, f, indent = 2)
-
-    with open(osp.join(dir, 'soren/config.json'), "w") as f:
-        json.dump(config, f, indent = 2)
-
-def make_config2():
-    dir = '/home/erschultz/dataset_test/samples/sample5000/soren-S/k10_copy/replicate1/soren_no_energy_no_diag'
-    with open(osp.join(dir, 'config.json')) as f:
-        config = json.load(f)
-
-    config['diag_chis'] = list(np.zeros_like(config['diag_chis']))
-
-    with open(osp.join(dir, 'config.json'), 'w') as f:
-        json.dump(config, f, indent = 2)
-
-def make_config3():
-    dir = '/home/erschultz/dataset_test/samples/sample5000/soren-S/k10_copy/replicate1/soren_no_energy2'
-    with open(osp.join(dir, 'config.json')) as f:
-        config = json.load(f)
-
-    chi = np.zeros((10, 10))
-    for i in range(10):
-        for j in range(i, 10):
-            chi[i,j] = config[f'chi{LETTERS[i]}{LETTERS[j]}']
-            chi[j,i] = chi[i,j]
-
-    print(chi)
-
-    config['chis'] = chi.tolist()
-
-    with open(osp.join(dir, 'config.json'), 'w') as f:
-        json.dump(config, f, indent = 2)
 
 def test_nan_slice():
     x = np.random.rand(10,10)
@@ -969,33 +894,85 @@ def test_nan_slice():
     y = x[~nan_cols][:, ~nan_cols]
     print(y)
 
-def data_manipulation():
-    dir = '/home/erschultz/Su2020/samples/sample1002_edit'
+def check_bonded_distributions():
+    dir = '/home/erschultz/dataset_grid/samples/sample3'
+    xyz = xyz_load(osp.join(dir, 'data_out/output.xyz'), multiple_timesteps = True)
+    D = xyz_to_distance(xyz) ** 2
+
+    with open(osp.join(dir, 'config.json')) as f:
+        config = json.load(f)
+        print(f"bond_length = {config['bond_length']}")
+
+    D_mean = np.mean(D, axis = 0)
+    for i in range(4):
+        print(i, np.mean(np.diagonal(D_mean, i))**0.5)
+
+def plot_seq_comparison(seqs, labels):
+    for i, seq in enumerate(seqs):
+        if seq.shape[1] > seq.shape[0]:
+            seqs[i] = seq.T
+    rows = 3; cols = 3
+    row = 0; col = 0
+    fig, ax = plt.subplots(rows, cols)
+    fig.set_figheight(12)
+    fig.set_figwidth(16)
+    for i in range(rows*cols):
+        for seq, label in zip(seqs, labels):
+            ax[row, col].plot(seq[:, i], label = label)
+        ax[row, col].set_title(f'PC {i+1}')
+        ax[row, col].legend()
+
+        col += 1
+        if col > cols-1:
+            col = 0
+            row += 1
+    plt.show()
+
+def compare_PCA():
+    dir = '/home/erschultz/dataset_test/samples/sample5003'
     y = np.load(osp.join(dir, 'y.npy'))
+    k=10
     y /= np.mean(np.diagonal(y))
-    m1 = np.mean(np.diagonal(y, 1))
-    y = y / m1 * 0.2
-    m1 = np.mean(np.diagonal(y, 1))
-    print(m1)
-    m0 = np.mean(np.diagonal(y, 0))
-    print(m0)
-    np.fill_diagonal(y, np.diagonal(y) / m0)
+    y_diag = epilib.get_oe(y)
 
-    m1 = np.mean(np.diagonal(y, 1))
-    print(m1)
-    m0 = np.mean(np.diagonal(y, 0))
-    print(m0)
+    x_small = epilib.get_sequences(y, k, randomized = True)
 
-    np.save(osp.join(dir, 'y.npy'), y)
+    config = default.config
+    config['nbeads'] = len(y)
+    config['nspecies'] = k
+    getSeq = GetSeq(config = config)
+    x = getSeq.get_PCA_seq(y_diag, normalize = True)
+
+    x_soren = np.load(osp.join(dir, 'x_soren.npy')) * -1
+
+
+    y_smooth = hic_utils.smooth_hic(y, 3)
+    x_small_smooth = epilib.get_sequences(y_smooth, k, randomized=True)
+
+    plot_seq_comparison([x, x_small, x_soren],
+                        ['Eric','Soren Small',  'Soren Big'])
+
+
+
+def compare_seq():
+    dir = '/home/erschultz/dataset_test/samples/sample5003'
+    x_soren = np.load(osp.join(dir, 'x_soren.npy'))
+    x = np.load(osp.join(dir, 'x.npy'))
+    x_small = np.load(osp.join(dir, 'x_small.npy'))
+
+    plot_seq_comparison([x, x_soren, x_small], ['Eric', 'Soren', 'Soren Small'])
+
+
 
 if __name__ == '__main__':
+    # compare_seq()
+    compare_PCA()
     # test_robust_PCA()
     # check_dataset('dataset_11_18_22')
     # time_comparison()
     # time_comparison_dmatrix()
     # convergence_check()
     # main()
-    plot_p_s('Su2020', experimental = True)
     # compare_scc_bio_replicates()
     # max_ent_loss_for_gnn('dataset_11_14_22', 2201)
     # plot_p_s('dataset_bond_grid', params = False, grid_size = True)
@@ -1006,4 +983,6 @@ if __name__ == '__main__':
     # temp_plot()
     # make_config3()
     # test_nan_slice()
-    data_manipulation()
+    # data_manipulation()
+    # plot_p_s('dataset_angle', experimental = False, label='k_angle')
+    # check_bonded_distributions()

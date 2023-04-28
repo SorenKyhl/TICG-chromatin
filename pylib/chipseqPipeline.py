@@ -1,6 +1,6 @@
-import scipy.ndimage
 import numpy as np
-from pylib import epilib
+import scipy.ndimage
+from pylib.utils import epilib
 
 
 class ChipseqPipeline:

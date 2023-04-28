@@ -1,14 +1,15 @@
-import numpy as np
 import json
+import logging
 import os
+from contextlib import contextmanager
+from multiprocessing import Process
+from pathlib import Path
+
 import jsbeautifier
 import matplotlib.pyplot as plt
-import logging
-from pathlib import Path
-from multiprocessing import Process
-from contextlib import contextmanager
+import numpy as np
 
-""" 
+"""
 utility functions
 """
 
@@ -35,7 +36,7 @@ def write_json(data, path):
         # json.dump(data, f, indent=4)
 
 
-def cat(outfilename, infilenames):
+def cat(outfilename, infilenames, header=False):
     """implementation of linux cat command, concatenates ``infilenames`` into ``outfilename``
 
     Args:
@@ -43,11 +44,16 @@ def cat(outfilename, infilenames):
         infilenames (List[str]): name of files to concatenate into ``outfilename``
     """
     with open(outfilename, "w") as outfile:
+        first = True
         for infilename in infilenames:
             with open(infilename) as infile:
+                if not first and header:
+                    line = infile.readline() # skip header line for subsequent files
                 for line in infile:
                     if line.strip():
+                        # ignore lines that are purely whitespace
                         outfile.write(line)
+            first = False
 
 
 import subprocess
@@ -240,11 +246,11 @@ def clean_diag_chis(config):
 
 def newton_trust_region(gradient, hessian, trust_region, log=False):
     """returns optimal step for trust region newton's method subproblem
-    
+
     if the full step is within the trust region, take it
     otherwise, find the optimal point on the trust region boundary
-    
-    See chapter 4, 
+
+    See chapter 4,
     Nocedal, Jorge, and Stephen Wright. Numerical optimization. Springer Science & Business Media, 2006.
     """
     full_step = -np.linalg.inv(hessian)@gradient
@@ -253,7 +259,7 @@ def newton_trust_region(gradient, hessian, trust_region, log=False):
     if np.linalg.norm(full_step) < trust_region:
         if log:
             logging.info("taking full step")
-        return full_step 
+        return full_step
     else:
         """newton's method "subproblem" described in Nocedal"""
 
@@ -265,18 +271,18 @@ def newton_trust_region(gradient, hessian, trust_region, log=False):
 
         logging.info(f"lowest eval: {lowest_eigenvalue}")
         logging.info(eigenvalues)
-        
+
         # initial lambda needs to be slightly more than lowest eigenvalue
-        lamda = -0.9*lowest_eigenvalue 
+        lamda = -0.9*lowest_eigenvalue
 
         for i in range(10):
             L = np.linalg.cholesky(hessian + lamda*np.eye(len(hessian)))
             R = L.T
             p = np.linalg.solve(R.T@R, -gradient)
             q = np.linalg.solve(R.T, p)
-            
+
             if log:
                 logging.info(f"----- stepsize: {np.sqrt(p@p)}, trust region: {trust_region}, lambda: {lamda}")
-                
+
             lamda = lamda + (p@p)/(q@q) * (np.linalg.norm(p) - trust_region)/trust_region
         return p

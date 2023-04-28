@@ -1,13 +1,21 @@
-import numpy as np
-import matplotlib.pyplot as plt
+import csv
+import json
 import logging
 
-from pylib import epilib as ep
-from pylib import utils, energy_utils
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.stats import pearsonr
+from sklearn.decomposition import PCA
+
+import pylib.utils.epilib as ep
+import pylib.utils.utils as utils
+from pylib.utils.energy_utils import calculate_all_energy
+from pylib.utils.hic_utils import DiagonalPreprocessing
+from pylib.utils.plotting_utils import plot_matrix
+from pylib.utils.similarity_measures import SCC
 
 plt.rcParams["figure.figsize"] = [8, 6]
 plt.rcParams.update({"font.size": 18})
-
 
 def sim_analysis(sim):
     """analyze data from simulation only (doesn't require ground truth hic)"""
@@ -47,7 +55,7 @@ def sim_analysis(sim):
     except ValueError:
         if sim.config["contact_resolution"] > 1:
             logging.warn("energy matrices could not be created because contact map has been pooled (contact map resolution > 1)")
-        else: 
+        else:
             raise ValueError
     except NotImplementedError:
         logging.warn("energy matrices not implemented for this situation")
@@ -71,25 +79,31 @@ def sim_analysis(sim):
     plt.savefig("diagonal-log.png")
     plt.close()
 
-
 def compare_analysis(sim):
     """analyze comparison of simulation with ground truth contact map"""
+    ep.eric_plot_tri(sim.hic, sim.gthic, "tri.png")
+    ep.eric_plot_tri(sim.hic, sim.gthic, "tri_log.png", log = True)
+    ep.eric_plot_tri(sim.hic, sim.gthic, "tri_dark.png", np.mean(sim.gthic)/2)
+
+    plot_dist_stratified_pearson_r(sim.hic, sim.gthic)
+    compare_top_PCs(sim.hic, sim.gthic)
+
     plt.figure()
     ep.plot_tri(sim.hic, sim.gthic, oe=True)
     plt.savefig("tri_oe.png")
     plt.close()
-
-    sim.plot_tri()
-    plt.savefig("tri.png")
-    plt.close()
-
-    sim.plot_tri(log=True)
-    plt.savefig("tri_log.png")
-    plt.close()
-
-    sim.plot_tri(vmaxp=np.mean(sim.hic) / 2)
-    plt.savefig("tri_dark.png")
-    plt.close()
+    #
+    # sim.plot_tri()
+    # plt.savefig("tri.png")
+    # plt.close()
+    #
+    # sim.plot_tri(log=True)
+    # plt.savefig("tri_log.png")
+    # plt.close()
+    #
+    # sim.plot_tri(vmaxp=np.mean(sim.hic) / 2)
+    # plt.savefig("tri_dark.png")
+    # plt.close()
 
     sim.plot_diff()
     plt.savefig("diff.png")
@@ -158,34 +172,148 @@ def plot_chi_matrix(sim):
 
 def plot_energy_matrices(sim):
     # energy matrices
-    S, D, E, ED = energy_utils.calculate_all_energy(
-        sim.config, sim.seqs.T, np.array(sim.config["chis"])
+    L, D, S = calculate_all_energy(
+        sim.config, sim.seqs, np.array(sim.config["chis"])
     )
+    plot_matrix(L, 'matrix_L.png', "L", cmap='bluered')
+    plot_matrix(D, 'matrix_D.png', "D")
+    plot_matrix(S, 'matrix_S.png', "S", cmap='bluered')
 
-    plt.figure()
-    utils.plot_image(S)
-    plt.title("Smatrix")
-    plt.savefig("matrix_S.png")
+
+def compare_top_PCs(y, yhat):
+    # y
+    pca_y = PCA()
+    pca_y.fit(y/np.std(y))
+
+    # yhat
+    pca_yhat = PCA()
+    pca_yhat.fit(yhat/np.std(yhat))
+
+    results = [['Component Index', 'Accuracy', 'Pearson R']]
+
+    for i in range(5):
+        comp_y = pca_y.components_[i]
+        sign_y = np.sign(comp_y)
+
+        comp_yhat = pca_yhat.components_[i]
+        sign_yhat = np.sign(comp_yhat)
+
+        acc = np.sum((sign_yhat == sign_y)) / sign_y.size
+        acc = max(acc, 1 - acc)
+        corr, pval = pearsonr(comp_yhat, comp_y)
+        corr = abs(corr)
+        results.append([i, acc, corr])
+
+    with open('PCA_results.txt', 'w', newline = '') as f:
+        wr = csv.writer(f, delimiter = '\t')
+        wr.writerows(results)
+
+    results = np.array(results[1:]).astype(float)
+    fig, ax1 = plt.subplots()
+    ax1.plot(results[:, 0], results[:, 1], color = 'b')
+    ax1.set_ylabel('Accuracy', color = 'b')
+
+    ax2 = ax1.twinx()
+    ax2.plot(results[:, 0], results[:, 2], color = 'r')
+    ax2.set_ylabel('Pearson R', color = 'r')
+
+    ax1.set_xlabel('Component Index')
+    plt.xticks(results[:, 0])
+    plt.savefig('PCA_results.png')
     plt.close()
 
-    plt.figure()
-    utils.plot_image(D)
-    plt.title("Dmatrix")
-    plt.savefig("matrix_D.png")
-    plt.close()
+# plotting functions
+def plot_dist_stratified_pearson_r(y, yhat):
+    m, _ = y.shape
 
-    plt.figure()
-    utils.plot_image(E)
-    plt.title("Ematrix")
-    plt.savefig("matrix_E.png")
-    plt.close()
+    # diagonal preprocessing
+    meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
+    y_diag = DiagonalPreprocessing.process(y, meanDist)
+    meanDist = DiagonalPreprocessing.genomic_distance_statistics(yhat)
+    yhat_diag = DiagonalPreprocessing.process(yhat, meanDist)
 
-    plt.figure()
-    utils.plot_image(ED)
-    plt.title("EDmatrix")
-    plt.savefig("matrix_ED.png")
-    plt.close()
+    triu_ind = np.triu_indices(m)
+    overall_corr, _ = pearsonr(y[triu_ind], yhat[triu_ind])
+    scc = SCC()
+    corr_scc = scc.scc(y, yhat, var_stabilized = False)
+    corr_scc_var = scc.scc(y, yhat, var_stabilized = True)
+    avg_diag, corr_arr = calc_dist_strat_corr(y, yhat, mode = 'pearson',
+                                            return_arr = True)
 
+    # save correlations to json
+    with open('distance_pearson.json', 'w') as f:
+        temp_dict = {'overall_pearson': overall_corr,
+                     'scc': corr_scc,
+                     'scc_var': corr_scc_var,
+                     'avg_dist_pearson': avg_diag}
+        json.dump(temp_dict, f)
+
+    # round
+    corr_scc = np.round(corr_scc, 3)
+    corr_scc_var = np.round(corr_scc_var, 3)
+    avg_diag = np.round(avg_diag, 3)
+    overall_corr = np.round(overall_corr, 3)
+
+    # format title
+    title = f'Overall Pearson Corr: {overall_corr}'
+    title += f'\nMean Diagonal Pearson Corr: {avg_diag}'
+    title += f'\nSCC: {corr_scc_var}'
+
+    for log in [True, False]:
+        plt.plot(np.arange(m-2), corr_arr, color = 'black')
+        plt.ylim(-0.5, 1)
+        plt.xlabel('Distance', fontsize = 16)
+        plt.ylabel('Pearson Correlation Coefficient', fontsize = 16)
+        plt.title(title, fontsize = 16)
+
+        plt.tight_layout()
+        if log:
+            plt.xscale('log')
+            plt.savefig('distance_pearson_log.png')
+        else:
+            plt.savefig('distance_pearson.png')
+        plt.close()
+
+    return overall_corr, corr_scc, corr_scc_var, avg_diag
+
+def calc_dist_strat_corr(y, yhat, mode = 'pearson', return_arr = False):
+    """
+    Helper function to calculate correlation stratified by distance.
+
+    Inputs:
+        y: target
+        yhat: prediction
+        mode: pearson or spearman (str)
+
+    Outpus:
+        avg: average distance stratified correlation
+        corr_arr: array of distance stratified correlations
+    """
+    if mode.lower() == 'pearson':
+        stat = pearsonr
+    elif mode.lower() == 'nan_pearson':
+        stat = nan_pearsonr
+    elif mode.lower() == 'spearman':
+        stat = spearmanr
+
+    assert len(y.shape) == 2
+    n, _ = y.shape
+    triu_ind = np.triu_indices(n)
+
+    corr_arr = np.zeros(n-2)
+    corr_arr[0] = np.NaN
+    for d in range(1, n-2):
+        # n-1, n, and 0 are NaN always, so skip
+        y_diag = np.diagonal(y, offset = d)
+        yhat_diag = np.diagonal(yhat, offset = d)
+        corr, _ = stat(y_diag, yhat_diag)
+        corr_arr[d] = corr
+
+    avg = np.nanmean(corr_arr)
+    if return_arr:
+        return avg, corr_arr
+    else:
+        return avg
 
 def main():
     sim = ep.Sim("production_out")

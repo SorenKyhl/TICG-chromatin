@@ -6,9 +6,10 @@ from typing import Optional, Sequence, Union
 
 import numpy as np
 import pandas as pd
-from pylib import utils
+
 from pylib.pyticg import Sim
-from pylib.utils import cat, cd, copy_last_snapshot
+from pylib.utils import utils
+from pylib.utils.utils import cat, cd, copy_last_snapshot
 
 PathLike = Union[Path, str]
 ArrayLike = Union[list, np.ndarray]
@@ -34,10 +35,14 @@ class Pysim:
     ):
         self.set_root(root, mkdir, overwrite)
         self.set_config(config)
-        self.seqs = seqs
-        self.setup_needed = (
-            setup_needed  # should be true unless instantiated using from_directory
-        )
+        if seqs is not None and seqs.shape[0] > seqs.shape[1]:
+            # Pysim assumes seq is kxm
+            self.seqs = seqs.T
+        else:
+            self.seqs = seqs
+
+        self.setup_needed = setup_needed
+        # should be true unless instantiated using from_directory
 
         if gthic is not None:
             np.save(self.root / "experimental_hic.npy", gthic)
@@ -72,7 +77,7 @@ class Pysim:
         """
 
         self.root = Path(root)
-        if overwrite:
+        if overwrite and self.root.exists():
             shutil.rmtree(self.root)
         if mkdir:
             self.root.mkdir(exist_ok=False)
@@ -93,7 +98,7 @@ class Pysim:
         # needs to happen regardless of setup_needed setting, because seed is randomized
         utils.write_json(self.config, Path(self.root, "config.json"))
 
-        # further setup needed - write seuences to directory
+        # further setup needed - write sequences to directory
         if self.setup_needed:
             if self.seqs is None:
                 return
@@ -104,6 +109,7 @@ class Pysim:
                     self.write_sequence(seq, Path(self.root, f"pcf{i+1}.txt"))
             else:
                 self.write_sequence(self.seqs, Path(self.root, "pcf1.txt"))
+            np.save(Path(self.root, f"x.npy"), self.seqs)
 
     def flatten_chis(self):
         """restructure chi parameters into a 1-dimensional list
@@ -239,11 +245,9 @@ class Pysim:
             self.randomize_seed()
             p.start()  # run simulation for process p
             sleeptime = int(
-                self.config["nbeads"] / 1000
+                max(1, self.config["nbeads"] / 1000)
             )  # larger simulations take longer to move over
-            time.sleep(
-                sleeptime
-            )  # engine needs time to load config.json before next iteration
+            time.sleep(sleeptime)  # engine needs time to load config.json before next iteration
 
         # wait to join
         for p in processes:
@@ -266,17 +270,21 @@ class Pysim:
         Path(self.root / "production_out").mkdir()
 
         # aggregate files are concatenated together to form one trajectory
-        aggregate_files = [
-            "observables.traj",
-            "diag_observables.traj",
-            "energy.traj",
-            "output.xyz",
-        ]
+        aggregate_files = ["observables.traj",
+                            "diag_observables.traj",
+                            "output.xyz"]
         for file in aggregate_files:
             cat(
                 self.root / "production_out" / file,
                 self.root.glob("core*/" + str(file)),
             )
+
+        cat(
+            self.root / "production_out" / "energy.traj",
+            self.root.glob("core*/energy.traj"),
+            True
+            )
+
 
         # contact maps are summed together to form one contact map
         contact_files = list(self.root.glob("core*/contacts.txt"))

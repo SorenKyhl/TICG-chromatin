@@ -181,8 +181,10 @@ def find_volume():
     plt.xlabel(r'Volume $\mu m^3$')
     plt.show()
     mean_vol = np.nanmean(vols)
+    median_vol = np.nanmedian(vols)
     std_vol = np.nanstd(vols)
-    print(f'mean vol {mean_vol} um^3')
+    print(f'median vol {mean_vol} um^3')
+    print(f'mean vol {median_vol} um^3')
     print(f'std vol {std_vol}')
     r_sphere = (3/4 * mean_vol / np.pi)**(1/3)
     r_sphere *= 1e3
@@ -260,8 +262,8 @@ def compare_dist_distribution():
     plt.savefig(osp.join(dir, 'distance_distribution.png'))
 
 def xyz_to_dist():
-    chr=21
-    dir = '/home/erschultz/Su2020/samples/sample1'
+    chr=2
+    dir = '/home/erschultz/Su2020/samples/sample10'
     log_file = osp.join(dir, 'xyz_to_dist.log')
     log_file = open(log_file, 'w')
     file = osp.join(dir, f'chromosome{chr}.tsv')
@@ -270,12 +272,30 @@ def xyz_to_dist():
     D_file = osp.join(dir, 'dist_mean.npy')
     D_file2 = osp.join(dir, 'dist_median.npy')
 
+    with open(file, 'r') as f:
+        line = f.readline()
+        line = f.readline().strip()
+        line = line.split('\t')
+        print(line)
+        coords = line[3].split(":")[1]
+        start, end = coords.split('-')
+        start = int(start)
+        end = int(end)
+        copy = int(line[4])
+        while True:
+            line = f.readline().strip()
+            line = line.split('\t')
+            copy = int(line[4])
+            if copy > 1:
+                break
+            coords = line[3].split(":")[1]
+        _, final = coords.split('-')
+        final = int(final)
+    print(start, end, final)
 
     coords_dict = {} # coords : ind
-    start = 1
-    end = 10400001
     i=0
-    while end <= 46700001:
+    while end <= final:
         coords_dict[f'chr{chr}:{start}-{end}'] = i
         i += 1
         start = end
@@ -318,7 +338,7 @@ def xyz_to_dist():
     print(xyz.shape, xyz.dtype, file = log_file)
     num_cells, num_coords, _ = xyz.shape
 
-    D = xyz_to_distance(xyz, True)
+    D = xyz_to_distance(xyz[:100], True)
 
     D_mean = np.nanmean(D, axis = 0)
     print(D_mean, file = log_file)
@@ -355,7 +375,7 @@ def sim_xyz_to_dist(dir, max_ent=True):
     D_file = osp.join(dir, 'dist_mean.npy')
 
 
-    xyz = xyz_load(file, multiple_timesteps = True)
+    xyz = xyz_load(file, multiple_timesteps = True, N_min = 5)
     D = xyz_to_distance(xyz)
 
     D_mean = np.nanmean(D, axis = 0)
@@ -390,6 +410,8 @@ def compare_control():
     plot_mean_dist(meanDist, dir, 'dist_meanDist_log_ref.png',
                     None, True, meanDist_gt, 'Exp 1/2', 'Exp 2/2',
                     'blue', ylabel='Distance (nm)')
+    meanDist = DiagonalPreprocessing.genomic_distance_statistics(D2)
+
 
     # scc = SCC()
     # corr_scc = scc.scc(D, D_sim, var_stabilized = False)
@@ -429,11 +451,11 @@ def min_MSE(D, D_sim):
 
 def compare_D_to_sim_D():
     dir = '/home/erschultz/Su2020/samples/sample1002'
-    max_ent_dir = osp.join(dir, 'GNN-392-S/k0/replicate1')
+    max_ent_dir = osp.join(dir, 'optimize_grid_b_140_phi_0.06-max_ent_fill_1')
     # max_ent_dir = '/home/erschultz/dataset_bond/samples/sample9'
     max_ent = True
     D_sim = sim_xyz_to_dist(max_ent_dir, max_ent)
-    D_sim *= 10
+    D_sim *= 1
     m = len(D_sim)
 
     def plot_D(input, dir, label):
@@ -510,9 +532,16 @@ def compare_D_to_sim_D():
 
     title = f'b={bl}, gs={delta}, vb={vb}'
     meanDist_gt = DiagonalPreprocessing.genomic_distance_statistics(D)
+    np.save(osp.join(max_ent_dir, 'meanDist_gt.npy'), meanDist_gt)
     meanDist = DiagonalPreprocessing.genomic_distance_statistics(D_sim)
     plot_mean_dist(meanDist, max_ent_dir, 'dist_meanDist_log_ref.png',
                     None, True, meanDist_gt, 'Exp', 'Sim',
+                    'blue', title, 'Distance (nm)')
+    plot_mean_dist(meanDist, max_ent_dir, 'dist_meanDist_ref.png',
+                    None, False, meanDist_gt, 'Exp', 'Sim',
+                    'blue', title, 'Distance (nm)')
+    plot_mean_dist(meanDist, max_ent_dir, 'dist_meanDist_ref.png',
+                    None, False, meanDist_gt, 'Exp', 'Sim',
                     'blue', title, 'Distance (nm)')
 
 
@@ -609,12 +638,42 @@ def compare_sim_Hic_to_sim_D():
             row += 1
     plt.savefig(osp.join(max_ent_dir, 'pc_D_vs_Y.png'))
 
+def quick_plot():
+    dir = '/home/erschultz/Su2020/samples/sample10'
+    def plot_D(input, dir, label):
+        plot_matrix(input, osp.join(dir, f'D_{label}.png'), f'D_{label}', vmax = 'max', cmap=RED_BLUE_CMAP)
+        # normalize by genomic distance
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(input)
+        input_diag = DiagonalPreprocessing.process(input, meanDist)
+
+        plot_matrix(input_diag, osp.join(dir, f'D_diag_{label}.png'), f'D_diag_{label}', vmin = 'center1', cmap='bluered')
+
+        if np.sum(np.isnan(input_diag)) == 0:
+            input_diag_corr = np.corrcoef(input_diag)
+            plot_matrix(input_diag_corr, osp.join(dir, f'D_diag_corr_{label}.png'), f'D_diag_corr_{label}', vmin = -1, vmax= 1, cmap='bluered')
+
+    D_file = osp.join(dir, 'dist_mean.npy')
+    D = np.load(D_file)
+    # plot_D(D, dir, 'exp')
+
+    nan_rows = np.isnan(D[0])
+    D_no_nan = D[~nan_rows][:, ~nan_rows]
+    # plot_D(D_no_nan, dir, 'exp_no_nan')
+
+    meanDist_gt = DiagonalPreprocessing.genomic_distance_statistics(D)
+    np.save(osp.join(dir, 'meanDist_gt_chr2.npy'), meanDist_gt)
+    print(meanDist_gt)
+    plt.scatter(np.arange(0, len(meanDist_gt)), meanDist_gt)
+    plt.show()
+
+
 
 if __name__ == '__main__':
     # temp_plot()
-    xyz_to_dist()
+    # quick_plot()
+    # xyz_to_dist()
     # compare_control()
-    # compare_D_to_sim_D()
+    compare_D_to_sim_D()
     # find_volume()
     # compare_dist_distribution()
     # compare_sim_Hic_to_sim_D()

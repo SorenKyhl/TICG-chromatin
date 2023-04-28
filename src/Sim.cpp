@@ -1,5 +1,6 @@
 #include "Sim.h"
 #include <cstdio>
+#include <math.h>
 
 // assign variable to json key of the same name
 #define READ_JSON(json, var) read_json((json), (var), #var)
@@ -158,15 +159,19 @@ void Sim::updateContactsGridNonconservative()
     }
 }
 
+
+// double Sim::p_crosslinking(bool distance, double mu, double cutoff) {
+//   return 0.5 * ( 1 + tanh(mu*(cutoff - distance)))
+// }
+
 // alternative method for calculating bead contacts
 // two beads are considered in contact if they are closer than a cutoff radius
 void Sim::updateContactsDistance() {
-    double cutoff = 28.7; // nm
     int pixel1, pixel2;
     for (std::size_t i = 0; i < beads.size(); i++) {
         for (std::size_t j = i; j < beads.size(); j++) {
             Eigen::RowVector3d distance = beads[i].r - beads[j].r;
-            if (distance.norm() < cutoff) {
+            if (distance.norm() < distance_cutoff) {
                 pixel1 = beads[i].id / contact_resolution;
                 pixel2 = beads[j].id / contact_resolution;
                 contact_map[pixel1][pixel2] += 1;
@@ -252,8 +257,7 @@ void Sim::readInput() {
                 }
             }
 
-            std::cout << "chis are: " << std::endl;
-            std::cout << chis << std::endl;
+            std::cout << "chis are: " << chis << std::endl;
         } else {
             nspecies = 0;
         }
@@ -263,15 +267,16 @@ void Sim::readInput() {
     }
 
     if (diagonal_on) {
+        std::cout << "processing diag chis" << std::endl;
+        if (config.contains("diag_cutoff")) {
+          std::cout << "  Warning: diag cutoff is deprecated" << std::endl;
+        }
         assert(config.contains("diagonal_linear"));
         Cell::diagonal_linear = config["diagonal_linear"];
         assert(config.contains("dense_diagonal_on"));
         Cell::dense_diagonal_on = config["dense_diagonal_on"];
-        assert(config.contains("diag_cutoff"));
-        Cell::diag_cutoff = config["diag_cutoff"];
         assert(config.contains("diag_start"));
         Cell::diag_start = config["diag_start"];
-
         assert(config.contains("diag_chis"));
         for (auto e : config["diag_chis"]) {
             diag_chis.push_back(e);
@@ -279,9 +284,6 @@ void Sim::readInput() {
 
         Cell::diag_nbins = diag_chis.size();
 
-        int ndiag_beads =
-            Cell::diag_cutoff - Cell::diag_start; // only count beads that will
-                                                  // have diagonal interactions
         if (Cell::dense_diagonal_on) {
             if (config.contains("n_small_bins") &&
                 config.contains("n_big_bins")) {
@@ -305,28 +307,30 @@ void Sim::readInput() {
             } else {
                 assert(config.contains("dense_diagonal_cutoff"));
                 dense_diagonal_cutoff = config["dense_diagonal_cutoff"];
-                assert(floorf(ndiag_beads * dense_diagonal_cutoff) ==
-                       ndiag_beads * dense_diagonal_cutoff);
-                int dividing_line = ndiag_beads * dense_diagonal_cutoff;
+                assert(floorf(nbeads * dense_diagonal_cutoff) ==
+                       nbeads * dense_diagonal_cutoff);
+                int dividing_line = nbeads * dense_diagonal_cutoff;
                 Cell::small_binsize = int(dividing_line / Cell::n_small_bins);
                 Cell::big_binsize =
-                    int((ndiag_beads - dividing_line) / Cell::n_big_bins);
+                    int((nbeads - dividing_line) / Cell::n_big_bins);
             }
-            std::cout << "number of small bins: " << Cell::n_small_bins
+            std::cout << "  number of small bins: " << Cell::n_small_bins
                       << ", of size: " << Cell::small_binsize << std::endl;
-            std::cout << "number of big bins: " << Cell::n_big_bins
+            std::cout << "  number of big bins: " << Cell::n_big_bins
                       << ", of size: " << Cell::big_binsize << std::endl;
-            std::cout << "number of diag beads: " << ndiag_beads << std::endl;
+            std::cout << "  number of diag beads: " << nbeads << std::endl;
             assert(Cell::n_big_bins + Cell::n_small_bins == Cell::diag_nbins);
             assert(Cell::small_binsize * Cell::n_small_bins +
                        Cell::big_binsize * Cell::n_big_bins ==
-                   ndiag_beads);
+                   nbeads);
         } else {
             std::cout << "number of bins: " << Cell::diag_nbins << std::endl;
-            Cell::diag_binsize = ndiag_beads / diag_chis.size();
+            Cell::diag_binsize = nbeads / diag_chis.size();
             std::cout << "binsize " << Cell::diag_binsize << std::endl;
-            assert(ndiag_beads % Cell::diag_binsize == 0);
+            assert(nbeads % Cell::diag_binsize == 0);
         }
+
+        std::cout << "  diag chis are " << diag_chis[0] << ", " << diag_chis[1] << "..." << std::endl;
     }
 
     assert(config.contains("gridmove_on"));
@@ -370,7 +374,7 @@ void Sim::readInput() {
     lmatrix_filename = "none";
     dmatrix_filename = "none";
     assert(config.contains("lmatrix_on"));
-    smatrix_on = config["lmatrix_on"];
+    lmatrix_on = config["lmatrix_on"];
     if (config.contains("lmatrix_filename")) {
         lmatrix_filename = config["lmatrix_filename"];
     }
@@ -433,8 +437,16 @@ void Sim::readInput() {
     } else {
       visit_tracking = false;
     }
-    assert(config.contains("update_contacts_distance"));
-    update_contacts_distance = config["update_contacts_distance"];
+    if (config.contains("update_contacts_distance")){
+      update_contacts_distance = config["update_contacts_distance"];
+      if (update_contacts_distance) {
+        assert(config.contains("distance_cutoff"));
+        distance_cutoff = config["distance_cutoff"];
+      }
+    } else {
+      update_contacts_distance = false;
+    }
+
     assert(config.contains("phi_solvent_max"));
     Cell::phi_solvent_max = config["phi_solvent_max"];
     assert(config.contains("phi_chromatin"));
@@ -548,8 +560,6 @@ void Sim::makeOutputFiles() {
     // convert back to c_str()
     xyz_out = fopen(xyz_out_filename.c_str(), "w");
     energy_out = fopen((energy_out_filename).c_str(), "w");
-    fprintf(energy_out, "sweep\t bonded\t plaid\t diagonal\t boundary\t total\n");
-    fclose(energy_out);
     obs_out = fopen((obs_out_filename).c_str(), "w");
     diag_obs_out = fopen((diag_obs_out_filename).c_str(), "w");
     constant_obs_out = fopen((constant_obs_out_filename).c_str(), "w");
@@ -1754,8 +1764,9 @@ void Sim::setupLmatrix() {
       {
         psi(i, k) = beads[i].d[k];
       }
-
     }
+    std::cout << "loaded Psi, first row: " << psi.row(0) << std::endl;
+
     // ensure chis are triu
     Eigen::MatrixXd chis_triu;
     chis_triu = chis.triangularView<Eigen::Upper>();
@@ -1827,7 +1838,7 @@ void Sim::setupDmatrix() {
       for (int j=0; j<nbeads; j++)
       {
         int d = std::abs(i - j);
-        if ((d <= Cell::diag_cutoff) && (d >= Cell::diag_start) && ( d >= 1))
+        if (d >= Cell::diag_start)
         {
           d -= Cell::diag_start; // TODO check that this works for non-zero diag_start
           int d_index = Cell::binDiagonal(d);
@@ -1840,6 +1851,5 @@ void Sim::setupDmatrix() {
       }
     }
   }
-  assert (dmatrix(1,1) == 0); // main diagonal must be zero
   std::cout << "loaded Dmatrix, first diagonal: " << dmatrix(1,1) << std::endl;
 }

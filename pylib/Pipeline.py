@@ -1,13 +1,14 @@
-import numpy as np
 from pathlib import Path
+
 import matplotlib.pyplot as plt
+import numpy as np
 
 plt.rcParams["figure.figsize"] = [8, 6]
 plt.rcParams.update({"font.size": 18})
 
 
-import pylib.maxent as me
 from pylib import epilib as ep
+from pylib.Maxent import Maxent
 
 
 class Pipeline:
@@ -63,7 +64,7 @@ class Pipeline:
         self.get_goals()
         self.params["goals"] = self.goals
 
-        optimizer = me.Maxent(
+        optimizer = Maxent(
             root=self.root,
             params=self.params,
             config=self.config,

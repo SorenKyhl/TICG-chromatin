@@ -1,25 +1,44 @@
+import os
 import os.path as osp
+import sys
 from pathlib import Path
 
-from pylib import utils
 from pylib.chipseqPipeline import ChipseqPipeline, Normalize, Sigmoid, Smooth
 from pylib.datapipeline import DataPipeline
+from pylib.utils import utils
 
 """
 contains default config and params files
 """
 
-root = "/home/skyhl/Documents/"
-eric = False
-if not osp.exists(root):
-    eric = True
+usr = sys.path[1].split(os.sep)[2]
+if usr == 'skyhl':
+    root = "/home/skyhl/Documents/"
+elif usr == 'erschultz':
     root = "/home/erschultz"
-proj_root = Path(root, "TICG-chromatin")
-if eric:
-    config = utils.load_json(proj_root / "utils/default_config.json")
 else:
+    raise Exception(f"Unrecognized user: {sys.path}")
+proj_root = Path(root, "TICG-chromatin")
+
+
+if usr == 'skyhl':
     config = utils.load_json(proj_root / "maxent/defaults/config.json")
-params = utils.load_json(proj_root / "maxent/defaults/params.json")
+    params = utils.load_json(proj_root / "maxent/defaults/params.json")
+elif usr ==  'erschultz':
+    config = utils.load_json(proj_root / "defaults/config.json")
+    params = utils.load_json(proj_root / "defaults/params.json")
+
+
+bonded_config = config.copy()
+bonded_config['nonbonded'] = False
+bonded_config['plaid_on'] = False
+bonded_config['diagonal_on'] = False
+bonded_config["nSweeps"] = 20000
+bonded_config["dump_frequency"] = 2000
+bonded_config['lmatrix_on'] = False
+bonded_config['dmatrix_on'] = False
+bonded_config['smatrix_on'] = False
+
 chipseq_pipeline = ChipseqPipeline([Smooth(), Normalize(), Sigmoid()])
 res = 100000
 chrom = 2

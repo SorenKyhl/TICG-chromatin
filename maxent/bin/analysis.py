@@ -14,7 +14,8 @@ from scipy.ndimage import uniform_filter
 
 for p in ['/home/erschultz', '/home/erschultz/sequences_to_contact_maps']:
     sys.path.insert(1, p)
-from sequences_to_contact_maps.scripts.plotting_utils import plot_matrix
+from sequences_to_contact_maps.scripts.plotting_utils import (
+    plot_matrix, plot_mean_vs_genomic_distance)
 from sequences_to_contact_maps.scripts.similarity_measures import SCC
 
 
@@ -73,7 +74,8 @@ class Sim:
 
         energy_file = osp.join(self.path, "energy.traj")
         if osp.exists(energy_file):
-            self.energy = pd.read_csv(energy_file, sep='\t', header=0, names=["sweep", "bonded", "plaid", "diagonal", "boundary", "total"])
+            self.energy = pd.read_csv(energy_file, sep='\t',
+                        names=["sweep", "bonded", "plaid", "diagonal", "boundary", "total"])
         else:
             print(f"{energy_file} does not exist")
 
@@ -197,6 +199,14 @@ class Sim:
         if diag and self.diag_obs_full is not None:
             d = np.array(self.diag_obs_full.T)
             plt.semilogy(d[1:].T)
+
+    def plot_meanDist(self):
+        plot_mean_vs_genomic_distance(self.hic, '', 'meanDist.png',
+                            ref = self.gthic, ref_label = 'Experiment')
+        plot_mean_vs_genomic_distance(self.hic, '', 'meanDist_log.png',
+                            logx=True,
+                            ref = self.gthic, ref_label = 'Experiment')
+
 
     def plot_tri(self, ofile, vmaxp=None, title="", log=False, cmap=None):
         '''
@@ -361,29 +371,31 @@ def main():
     print("analysis")
     sim = Sim("production_out")
 
-    if sim.gthic is not None:
-        sim.plot_tri("tri.png")
-        sim.plot_tri("tri_log.png", log = True)
-        sim.plot_tri("tri_dark.png", np.mean(sim.gthic)/2)
+    # if sim.gthic is not None:
+    #     sim.plot_tri("tri.png")
+    #     sim.plot_tri("tri_log.png", log = True)
+    #     sim.plot_tri("tri_dark.png", np.mean(sim.gthic)/2)
+    #
+    #     sim.plot_meanDist()
+    #
+    #     sim.plot_diff()
+    #     plt.savefig("diff.png")
+    #
+    #     sim.plot_scatter()
+    #     plt.savefig("scatter.png")
 
-        sim.plot_diff()
-        plt.savefig("diff.png")
-
-        sim.plot_scatter()
-        plt.savefig("scatter.png")
-
-    sim.plot_energy()
-    plt.savefig("energy.png")
-
-    sim.plot_obs(diag=True)
-    plt.savefig("obs.png")
-
-    try:
-        plt.figure()
-        plt.plot(sim.config['diag_chis'], 'o')
-        plt.savefig("diag_chis.png")
-    except KeyError:
-        pass
+    # sim.plot_energy()
+    # plt.savefig("energy.png")
+    #
+    # sim.plot_obs(diag=True)
+    # plt.savefig("obs.png")
+    #
+    # try:
+    #     plt.figure()
+    #     plt.plot(sim.config['diag_chis'], 'o')
+    #     plt.savefig("diag_chis.png")
+    # except KeyError:
+    #     pass
 
     if sim.obs_tot is not None:
         # obs tot is None if 0 max ent iterations
