@@ -1839,8 +1839,9 @@ void Sim::setupDmatrix() {
       {
         int d = std::abs(i - j);
         if (d >= Cell::diag_start)
+        // TODO need to account for bin_size > 1
         {
-          d -= Cell::diag_start; // TODO check that this works for non-zero diag_start
+          d -= Cell::diag_start;
           int d_index = Cell::binDiagonal(d);
           dmatrix(i,j) = diag_chis[d_index];
         }

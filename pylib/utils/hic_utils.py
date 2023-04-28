@@ -214,7 +214,6 @@ class DiagonalPreprocessing():
         return result
 
 
-
 def pool(inp, factor, fn=np.nansum, normalize=True):
     """Resizes input matrix by factor using fn using modified sum pooling
 
