@@ -113,9 +113,108 @@ def tune_stiffness(nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method,
         return k_angle_opt
 
 
+def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large = True, zerodiag = False, match_ideal_large_grid=False,
+            cell="HCT116_auxin", hic_base = "gaussian-5k"):
+    """optimize chis on small system, and scale up parameters to large system
 
-def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large = True,
-        zerodiag = False, match_ideal_large_grid=False):
+    requires tuning the grid size and stiffness at small scale,
+    in order for the chi parameters to be transferrable
+    """
+    if pool_large:
+        large_contact_pooling_factor = int(nbeads_large/nbeads_small)
+    else:
+        large_contact_pooling_factor = 1
+
+    config_small = parameters.get_config(nbeads_small, base=hic_base)
+
+    gthic_small = hic.load_hic(nbeads_small, pool_fn, cell=cell)
+
+    if pool_large:
+        gthic_large = gthic_small
+    else:
+        gthic_large = hic.load_hic(nbeads_large, pool_fn, cell=cell)
+
+    seqs_large = hic.load_seqs(nbeads_large, 10)
+    seqs_small = hic.load_seqs(nbeads_small, 10)
+
+    # tune grid size
+    try:
+        optimal_grid_size = optimize_grid_size(config_small, gthic_small)
+    except FileExistsError:
+        optimal_grid_size = utils.load_json("optimize-grid-size/config.json")[
+            "grid_size"
+        ]
+
+    config_small["grid_size"] = optimal_grid_size
+    grid_bond_ratio = (
+        optimal_grid_size / config_small["bond_length"]
+    )  # for later, when getting large sim config
+
+    # tune stiffness
+    try:
+        if match_ideal_large_grid:
+            k_angle_opt, small_optimal_grid_size = tune_stiffness(
+                nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method, large_contact_pooling_factor, match_ideal_large_grid
+            )
+        else:
+            k_angle_opt = tune_stiffness(
+                nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method, large_contact_pooling_factor, match_ideal_large_grid
+            )
+    except FileExistsError:
+        stiff_opt_config = utils.load_json("optimize-stiffness/config.json")
+        k_angle_opt = stiff_opt_config["k_angle"]
+
+        if match_ideal_large_grid:
+            small_optimal_grid_size = stiff_opt_config["grid_size"]
+
+    config_small["k_angle"] = k_angle_opt
+
+    if match_ideal_large_grid:
+        logging.info(f"optimal small grid size is : {small_optimal_grid_size}")
+        config_small["grid_size"] = small_optimal_grid_size
+
+    # plot results
+    final_it_stiff = utils.get_last_iteration("optimize-stiffness")
+    ideal_small = epilib.Sim(final_it_stiff)
+    ideal_large = epilib.Sim(f"ideal-chain-{str(nbeads_large)}/data_out")
+    plot_stiffness_error(ideal_small, ideal_large, gthic_large)
+
+    # maxent at small size
+    goals = epilib.get_goals(gthic_small, seqs_small, config_small)
+    params = default.params
+    params["goals"] = goals
+
+    me_root = "me-" + str(nbeads_small)
+    try:
+        me = Maxent(me_root, params, config_small, seqs_small, gthic_small)
+        me.fit()
+    except FileExistsError:
+        pass
+
+    # production at large simulation size
+    final_it = utils.get_last_iteration(me_root)
+    config_opt = Config(final_it / "config.json")
+
+    config_large = parameters.get_config(
+        nbeads_large, config_opt.config, grid_bond_ratio=grid_bond_ratio, base=hic_base
+    )
+
+    def scale_chis(config, scaling_ratio):
+        config["chis"] = (scaling_ratio * np.array(config["chis"])).tolist()
+        config["diag_chis"] = (scaling_ratio * np.array(config["diag_chis"])).tolist()
+        return config
+
+    # correct chis for difference in grid size due to matching large ideal pooled
+    if match_ideal_large_grid:
+        scaling_ratio = (optimal_grid_size/small_optimal_grid_size)**3
+        config_large = scale_chis(config_large, scaling_ratio)
+
+    config_large["contact_resolution"] = large_contact_pooling_factor
+    config_large["k_angle"] = 0
+    config_large["angles_on"] = False
+
+    if zerodiag:
+        config_large["diag_chis"][1] = 0
 
 
 if __name__ == "__main__":
