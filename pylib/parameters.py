@@ -37,7 +37,6 @@ def get_config(
     # if nbeads > 10241:
     #    config['contact_resolution'] = 5
 
-    assert base in ["gaussian", "gaussian-5k", "persistent", "persistent-5k"]
     if base == "gaussian":
         baseb = 16.5
         baseg = grid_bond_ratio * baseb
@@ -53,6 +52,16 @@ def get_config(
         baseg = grid_bond_ratio * baseb
         baseN = 20480
         basev = 13000
+    elif base == "gaussian-40k":
+        baseb = 58.33
+        baseg = grid_bond_ratio * baseb
+        baseN = 40960
+        basev = 6500
+    elif base == "gaussian-80k":
+        baseb = 41.25
+        baseg = grid_bond_ratio * baseb
+        baseN = 81920
+        basev = 3250
     elif base == "persistent-5k":
         baseb = 203.10
         baseg = grid_bond_ratio * baseb
@@ -65,7 +74,7 @@ def get_config(
         basev = config["beadvol"]
     else:
         raise ValueError(
-            "base must be: ['gaussian' | 'gaussian-5k' | 'persistent' | 'persistent-5k]"
+            "base must be: ['gaussian' | 'gaussian-5k' | 'persistent' | 'persistent-5k' | 'gaussian-40k' | 'gaussian-80k']"
         )
 
     if scale == "onethird":
@@ -83,5 +92,9 @@ def get_config(
         config["diag_cutoff"] = nbeads
     else:
         raise ValueError("scale must be onethird or gaussian")
+
+    # make sure the small diag bin size is 1
+    #small_diag_bins = int(config["dense_diagonal_loading"] * len(config["diag_chis"]))
+    #config["dense_diagonal_cutoff"] = small_diag_bins/config["nbeads"]
 
     return config
