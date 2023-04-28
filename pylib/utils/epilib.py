@@ -532,6 +532,8 @@ def get_sequences(
         print("getting sequences with np.linalg.svd")
         U, S, VT = np.linalg.svd(np.corrcoef(OEmap), full_matrices=0)
 
+    # return VT can return here if you want
+
     pcs = []
     for i in range(k):
         if split:

@@ -8,5 +8,6 @@
 	"overwrite": 0,
 	"parallel": 7,
 	"randomize_seed": 1,
-	"mode": "all"
+	"mode": "all",
+    "method": "n"
 }
