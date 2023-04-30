@@ -82,7 +82,7 @@ move() {
 	else
 		init_config='none'
 	fi
-	cp config.json "${scratchDirI}/default_config.json"
+	cp config_erschultz.json "${scratchDirI}/default_config.json"
 
 	cd $scratchDirI
 }
