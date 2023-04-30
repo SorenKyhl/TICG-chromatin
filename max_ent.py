@@ -73,7 +73,7 @@ def modify_soren():
 
 def fit(sample):
     print(sample)
-    mode = 'grid_angle20'
+    mode = 'grid'
     dataset = 'dataset_02_04_23'
     dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
     y = np.load(osp.join(dir, 'y.npy'))
@@ -84,7 +84,7 @@ def fit(sample):
     bonded_config = default.bonded_config
     bonded_config['beadvol'] = 130000
     bonded_config['bond_length'] = 140
-    bonded_config['phi_chromatin'] = 0.06
+    bonded_config['phi_chromatin'] = 0.03
     root = f"optimize_{mode}"
     root = f"{root}_b_{bonded_config['bond_length']}_phi_{bonded_config['phi_chromatin']}"
     print(root)
@@ -97,7 +97,6 @@ def fit(sample):
             bonded_config['angles_on'] = True
     else:
         root, bonded_config = optimize_grid.main(root, bonded_config, mode)
-
     config = default.config
     for key in ['beadvol', 'bond_length', 'phi_chromatin', 'grid_size',
                 'k_angle', 'angles_on']:
@@ -111,6 +110,7 @@ def fit(sample):
     config['nbeads'] = len(y)
     getSeq = GetSeq(config = config)
     seqs = getSeq.get_PCA_seq(epilib.get_oe(y), normalize = True)
+    # seqs = epilib.get_sequences(y, k, randomized=True)
 
     # set up diag chis
     config['diagonal_on'] = True
@@ -124,7 +124,7 @@ def fit(sample):
     params = default.params
     goals = epilib.get_goals(y, seqs, config)
     params["goals"] = goals
-    params['iterations'] = 12
+    params['iterations'] = 15
     params['parallel'] = 1
     params['production_sweeps'] = 300000
     params['equilib_sweeps'] = 30000
@@ -134,9 +134,11 @@ def fit(sample):
     me.fit()
 
 def main():
-    # with mp.Pool(18) as p:
-        # p.map(fit, range(201, 283))
-    fit(201)
+    with mp.Pool(17) as p:
+        p.map(fit, range(202, 283))
+    # for i in range(202, 283):
+        # fit(i)
+    # fit(202)
 
 
 

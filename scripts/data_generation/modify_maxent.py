@@ -69,7 +69,7 @@ def modify_plaid_chis(dataset, k):
     samples, _ = get_samples(dataset)
     for sample in samples:
         dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
-        max_ent_dir = osp.join(dir, f'optimize_grid_b_140_phi_0.06-max_ent')
+        max_ent_dir = osp.join(dir, f'optimize_grid_b_140_phi_0.03-max_ent')
         chis = np.loadtxt(osp.join(max_ent_dir, 'chis.txt'))
         chis = triu_to_full(chis)
         plot_matrix(chis, osp.join(max_ent_dir, 'chis.png'), cmap = 'blue-red')
@@ -171,7 +171,7 @@ def modify_maxent_diag_chi(dataset, k = 8, edit = True):
         print(f'sample{sample}, k{k}')
         # try different modifications to diag chis learned by max ent
         dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
-        max_ent_dir = osp.join(dir, f'optimize_grid_b_140_phi_0.06-max_ent')
+        max_ent_dir = osp.join(dir, f'optimize_grid_b_140_phi_0.03-max_ent')
         if not osp.exists(max_ent_dir):
             print(f'{max_ent_dir} does not exist')
             continye
@@ -806,7 +806,7 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
     for sample in samples:
         dir = osp.join(data_dir, f'samples/sample{sample}')
         if experimental:
-            dir = osp.join(dir, 'optimize_grid_b_140_phi_0.06-max_ent')
+            dir = osp.join(dir, 'optimize_grid_b_140_phi_0.03-max_ent')
         if not osp.exists(dir):
             continue
 
@@ -1249,7 +1249,7 @@ def plot_params_test():
 
 
 if __name__ == '__main__':
-    # modify_plaid_chis('dataset_02_04_23', k = 10)
+    modify_plaid_chis('dataset_02_04_23', k = 10)
     modify_maxent_diag_chi('dataset_02_04_23', 10, False)
     # for i in range(201, 202):
         # plot_modified_max_ent(i, k = 8)

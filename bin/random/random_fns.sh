@@ -74,7 +74,7 @@ param_setup() {
 move() {
 	# move utils to scratch
 	mkdir -p $scratchDirI
-	cd ~/TICG-chromatin/utils
+	cd ~/TICG-chromatin/defaults
 	init_config="input${m}.xyz"
 	if [ -f $init_config ]
 	then
@@ -82,7 +82,7 @@ move() {
 	else
 		init_config='none'
 	fi
-	cp default_config.json "${scratchDirI}/default_config.json"
+	cp config.json "${scratchDirI}/default_config.json"
 
 	cd $scratchDirI
 }

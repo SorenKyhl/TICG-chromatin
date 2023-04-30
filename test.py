@@ -443,7 +443,7 @@ def plot_p_s(dataset, experimental=False, ref=False, params=False, label=None):
     data_dir = osp.join(dir, dataset)
 
     data = defaultdict(dict) # sample : {meanDist, diag_chis_step} : vals
-    for sample in range(100, 111):
+    for sample in range(1, 16):
         sample_dir = osp.join(data_dir, 'samples', f'sample{sample}')
         ifile = osp.join(sample_dir, 'y.npy')
         if osp.exists(ifile):
@@ -929,7 +929,7 @@ def plot_seq_comparison(seqs, labels):
     plt.show()
 
 def compare_PCA():
-    dir = '/home/erschultz/dataset_test/samples/sample5003'
+    dir = '/home/erschultz/dataset_02_04_23/samples/sample202'
     y = np.load(osp.join(dir, 'y.npy'))
     k=10
     y /= np.mean(np.diagonal(y))
@@ -941,16 +941,16 @@ def compare_PCA():
     config['nbeads'] = len(y)
     config['nspecies'] = k
     getSeq = GetSeq(config = config)
-    x = getSeq.get_PCA_seq(y_diag, normalize = True)
+    x_eric = getSeq.get_PCA_seq(y_diag, normalize = True)
 
-    x_soren = np.load(osp.join(dir, 'x_soren.npy')) * -1
+    # x_soren = np.load(osp.join(dir, 'x_soren.npy')) * -1
 
-
+    x = epilib.get_sequences(y, k, randomized=True)
     y_smooth = hic_utils.smooth_hic(y, 3)
-    x_small_smooth = epilib.get_sequences(y_smooth, k, randomized=True)
+    x_smooth = epilib.get_sequences(y_smooth, k, randomized=True)
 
-    plot_seq_comparison([x, x_small, x_soren],
-                        ['Eric','Soren Small',  'Soren Big'])
+    plot_seq_comparison([x_eric, x_smooth, x],
+                        ['Eric','Soren Smooth', 'Soren'])
 
 
 
@@ -966,7 +966,7 @@ def compare_seq():
 
 if __name__ == '__main__':
     # compare_seq()
-    compare_PCA()
+    # compare_PCA()
     # test_robust_PCA()
     # check_dataset('dataset_11_18_22')
     # time_comparison()
@@ -975,7 +975,7 @@ if __name__ == '__main__':
     # main()
     # compare_scc_bio_replicates()
     # max_ent_loss_for_gnn('dataset_11_14_22', 2201)
-    # plot_p_s('dataset_bond_grid', params = False, grid_size = True)
+    plot_p_s('dataset_04_28_23', params = False)
     # gnn_of_max_ent([207], 8, 378)
     # check_interpolation()
     # make_dataset_of_converged('dataset_03_21_23')
@@ -984,5 +984,4 @@ if __name__ == '__main__':
     # make_config3()
     # test_nan_slice()
     # data_manipulation()
-    # plot_p_s('dataset_angle', experimental = False, label='k_angle')
     # check_bonded_distributions()

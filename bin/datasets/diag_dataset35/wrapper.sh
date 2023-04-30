@@ -23,10 +23,10 @@ cd ~/TICG-chromatin
 dataset="dataset_04_28_23"
 echo "generate_params for ${dataset}"
 # uses linear fit to max ent params + grid
-python  ~/TICG-chromatin/bin/datasets/generate_params.py --samples 5000 --k 10 --m 512 --dataset $dataset --seq_mode 'eig_norm_v2' --chi_param_version 'v13' --diag_mode 'max_ent_poly6_log_v2_grid' --data_dir '/home/erschultz'
+python  ~/TICG-chromatin/bin/datasets/generate_params.py --samples 5000 --k 10 --m 512 --dataset $dataset --seq_mode 'eig_norm_v2' --chi_param_version 'v13' --diag_mode 'max_ent_poly6_log_v2_grid' --data_dir '/project2/depablo/erschultz'
 #
-# cd "/home/erschultz/${dataset}"
-# tar -czvf setup.tar.gz setup
+cd "/home/erschultz/${dataset}"
+tar -czvf setup.tar.gz setup
 #
 # cd "/project2/depablo/erschultz/${dataset}"
 # tar -xzf setup.tar.gz
