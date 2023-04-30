@@ -113,7 +113,6 @@ def optimize_config(config, gthic, mode, low_bound, high_bound,
     config["load_configuration"] = False
     config["nonbonded_on"] = False
     config["load_bead_types"] = False
-
     gthic /= np.mean(np.diagonal(gthic))
     sim_engine = Pysim(root, config, seqs=None, overwrite=True)
 
@@ -131,9 +130,17 @@ def optimize_config(config, gthic, mode, low_bound, high_bound,
         except RuntimeError as e:
             print(e)
             return None
-        except ValueError as e:
-            print(e)
-            return None
+        except ValueError:
+            low_bound /= 2
+            high_bound *= 2
+            result = optimize.brentq(
+                error_metric,
+                low_bound,
+                high_bound,
+                args=(sim_engine),
+                xtol=1e-3,
+                maxiter=15,
+            )
     else:
         try:
             result = optimize.minimize(
@@ -211,7 +218,7 @@ def simulate_stiffness_error(k_angle, sim_engine, gthic, method):
     return error
 
 
-def optimize_stiffness(config, gthic, low_bound=0, high_bound=1, method="bayes", root="optimize-stiffness"):
+def optimize_stiffness(config, gthic, low_bound=0, high_bound=1, method="notbayes", root="optimize-stiffness"):
     """tune angle stiffness until simulated p(s) diagonal probabity
     is equal to the same probability derived from the ground truth hic matrix.
 

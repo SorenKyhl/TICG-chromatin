@@ -113,8 +113,8 @@ def tune_stiffness(nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method,
         return k_angle_opt
 
 
-def scaleup(nbeads_large, nbeads_small, pool_fn, method="bayes", pool_large = True,
-            zerodiag = False, match_ideal_large_grid=False):
+def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large = True, zerodiag = False, match_ideal_large_grid=False,
+            cell="HCT116_auxin", hic_base = "gaussian-5k"):
     """optimize chis on small system, and scale up parameters to large system
 
     requires tuning the grid size and stiffness at small scale,
@@ -125,21 +125,21 @@ def scaleup(nbeads_large, nbeads_small, pool_fn, method="bayes", pool_large = Tr
     else:
         large_contact_pooling_factor = 1
 
-    config_small = parameters.get_config(nbeads_small)
+    config_small = parameters.get_config(nbeads_small, base=hic_base)
 
-    gthic_small = hic_utils.load_hic(nbeads_small, pool_fn)
+    gthic_small = hic.load_hic(nbeads_small, pool_fn, cell=cell)
 
     if pool_large:
         gthic_large = gthic_small
     else:
-        gthic_large = hic_utils.load_hic(nbeads_large, pool_fn)
+        gthic_large = hic.load_hic(nbeads_large, pool_fn, cell=cell)
 
-    seqs_large = hic_utils.load_seqs(nbeads_large, 10)
-    seqs_small = hic_utils.load_seqs(nbeads_small, 10)
+    seqs_large = hic.load_seqs(nbeads_large, 10)
+    seqs_small = hic.load_seqs(nbeads_small, 10)
 
     # tune grid size
     try:
-        optimal_grid_size = optimize_config(config_small, gthic_small, 'grid', 0.5, 2.5)
+        optimal_grid_size = optimize_grid_size(config_small, gthic_small)
     except FileExistsError:
         optimal_grid_size = utils.load_json("optimize-grid-size/config.json")[
             "grid_size"
@@ -196,7 +196,7 @@ def scaleup(nbeads_large, nbeads_small, pool_fn, method="bayes", pool_large = Tr
     config_opt = Config(final_it / "config.json")
 
     config_large = parameters.get_config(
-        nbeads_large, config_opt.config, grid_bond_ratio=grid_bond_ratio
+        nbeads_large, config_opt.config, grid_bond_ratio=grid_bond_ratio, base=hic_base
     )
 
     def scale_chis(config, scaling_ratio):
@@ -215,10 +215,6 @@ def scaleup(nbeads_large, nbeads_small, pool_fn, method="bayes", pool_large = Tr
 
     if zerodiag:
         config_large["diag_chis"][1] = 0
-
-    sim_large_root = f"final-{nbeads_large}"
-    sim_large = Pysim(sim_large_root, config_large, seqs_large, gthic=gthic_large)
-    sim_large.run_eq(10000, 50000, 7)
 
 
 if __name__ == "__main__":

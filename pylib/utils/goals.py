@@ -23,7 +23,6 @@ def get_goals(hic, seqs, config, save_path=None):
 
     return np.hstack((plaid, diag))
 
-
 def get_goal_plaid(hic, seqs, config, flat=True, norm=False, adj=True):
     """
     flat: return vector. else return matrix of chis.
@@ -231,7 +230,6 @@ def deprecated():
         measure = np.array(measure)
         correction = np.array(correction)
         return measure, correction
-
 
     @njit
     def make_mask(

@@ -4,6 +4,7 @@ import copy
 from pylib import default
 
 
+
 def get_config(
     nbeads=None, config=default.config, grid_bond_ratio=0.95, base="gaussian-5k", scale="onethird"
 ):
@@ -25,6 +26,7 @@ def get_config(
     if nbeads is None:
         nbeads = config["nbeads"]
     else:
+        # scale config.chis to new size specified by nbeads
         config["chis"] = (config["nbeads"] / nbeads * np.array(config["chis"])).tolist()
         config["diag_chis"] = (
             config["nbeads"] / nbeads * np.array(config["diag_chis"])
@@ -35,7 +37,6 @@ def get_config(
     # if nbeads > 10241:
     #    config['contact_resolution'] = 5
 
-    assert base in ["gaussian", "gaussian-5k", "persistent", "persistent-5k"]
     if base == "gaussian":
         baseb = 16.5
         baseg = grid_bond_ratio * baseb
@@ -51,14 +52,29 @@ def get_config(
         baseg = grid_bond_ratio * baseb
         baseN = 20480
         basev = 13000
+    elif base == "gaussian-40k":
+        baseb = 58.33
+        baseg = grid_bond_ratio * baseb
+        baseN = 40960
+        basev = 6500
+    elif base == "gaussian-80k":
+        baseb = 41.25
+        baseg = grid_bond_ratio * baseb
+        baseN = 81920
+        basev = 3250
     elif base == "persistent-5k":
         baseb = 203.10
         baseg = grid_bond_ratio * baseb
         baseN = 20480
         basev = 13000
+    elif base == "load":
+        baseb = config["bond_length"]
+        baseg = config["grid_size"]
+        baseN = config["nbeads"]
+        basev = config["beadvol"]
     else:
         raise ValueError(
-            "base must be: ['gaussian' | 'gaussian-5k' | 'persistent' | 'persistent-5k]"
+            "base must be: ['gaussian' | 'gaussian-5k' | 'persistent' | 'persistent-5k' | 'gaussian-40k' | 'gaussian-80k']"
         )
 
     if scale == "onethird":
@@ -67,9 +83,18 @@ def get_config(
         config["bond_length"] = baseb * factor
         config["grid_size"] = baseg * factor
         config["beadvol"] = basev * baseN / nbeads
-
+        config["diag_cutoff"] = nbeads
+    elif scale == "gaussian":
+        factor = (nbeads / baseN) ** (-1 / 2)
+        config["nbeads"] = nbeads
+        config["bond_length"] = baseb * factor
+        config["beadvol"] = basev * baseN / nbeads
         config["diag_cutoff"] = nbeads
     else:
-        raise ValueError("scale must be 'onethird'")
+        raise ValueError("scale must be onethird or gaussian")
+
+    # make sure the small diag bin size is 1
+    #small_diag_bins = int(config["dense_diagonal_loading"] * len(config["diag_chis"]))
+    #config["dense_diagonal_cutoff"] = small_diag_bins/config["nbeads"]
 
     return config

@@ -19,14 +19,8 @@ elif usr == 'erschultz':
 else:
     raise Exception(f"Unrecognized user: {sys.path}")
 proj_root = Path(root, "TICG-chromatin")
-
-
-if usr == 'skyhl':
-    config = utils.load_json(proj_root / "maxent/defaults/config.json")
-    params = utils.load_json(proj_root / "maxent/defaults/params.json")
-elif usr ==  'erschultz':
-    config = utils.load_json(proj_root / "defaults/config.json")
-    params = utils.load_json(proj_root / "defaults/params.json")
+config = utils.load_json(proj_root / f"defaults/config_{usr}.json")
+params = utils.load_json(proj_root / f"defaults/params_{usr}.json")
 
 
 bonded_config = config.copy()
