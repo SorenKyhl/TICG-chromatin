@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
+from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
+
 RED_CMAP = matplotlib.colors.LinearSegmentedColormap.from_list('custom',
                                          [(0,    'white'),
                                           (1,    'red')], N=126)
@@ -180,6 +182,87 @@ def plot_matrix_gif(arr, dir, ofile = None, title = None, vmin = 0, vmax = 1,
     # remove files
     for filename in set(filenames):
         os.remove(filename)
+
+def plot_mean_dist(meanDist, path, ofile, diag_chis_step, logx, ref,
+                    ref_label = 'reference', label = '', color = 'blue',
+                    title = None, ylabel='Contact Probability'):
+    '''
+    Inputs:
+        meanDist (array): mean value along off-diagonals of contact map
+        path (path): save path
+        ofile (str): save file name
+        diag_chis_step (array or None): diagonal chi parameter as function of d (None to skip)
+        logx (bool): True to log-scale x axis
+        ref (array): reference meanDist
+        ref_label (str): label for legend
+        label (str): label for legend
+        color (str): color for meanDist
+        title (str): plt title
+        ylabel (str): y-axis label
+    '''
+    meanDist = meanDist.copy()
+    if ref is not None:
+        ref = ref.copy()
+
+    fig, ax = plt.subplots()
+    if ref is not None:
+        ax.plot(ref, label = ref_label, color = 'k')
+    ax.plot(meanDist, label = label, color = color)
+    ax.legend(loc='upper left')
+    ax.set_yscale('log')
+    if logx:
+        ax.set_xscale('log')
+
+    if diag_chis_step is not None:
+        ax2 = ax.twinx()
+        ax2.plot(diag_chis_step, ls = '--', label = 'Parameters', color = color)
+        ax2.set_ylabel('Diagonal Parameter', fontsize = 16)
+        if logx:
+            ax2.set_xscale('log')
+        ax2.legend(loc='upper right')
+    # else:
+    #     x = np.arange(1, 10).astype(np.float64)
+    #     ax.plot(x, np.power(x, -1)/4, color = 'grey', ls = '--', label='-1')
+    #     x = np.arange(10, 100).astype(np.float64)
+    #     ax.plot(x, np.power(x, -1.5), color = 'grey', ls = ':', label='-3/2')
+    #     ax.legend(loc='upper right')
+
+    ax.set_ylabel(ylabel, fontsize = 16)
+    ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
+    if title is not None:
+        plt.title(title)
+    plt.tight_layout()
+    plt.savefig(osp.join(path, ofile))
+    plt.close()
+
+def plot_mean_vs_genomic_distance(y, path, ofile, diag_chis_step = None,
+                                config = None, logx = False, ref = None,
+                                ref_label = 'reference'):
+    '''
+    Wrapper for plot_mean_dist that takes contact map as input.
+
+    Inputs:
+        y: contact map
+        path: save path
+        ofile: save file name
+        diag_chis_step: diagonal chi parameter as function of d (None to skip)
+        config: config file (None to skip)
+        logx: True to log-scale x axis
+    '''
+    meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob',
+                                            zero_diag = False, zero_offset = 0)
+    if ref is not None and ref.shape == y.shape:
+        # ref is a contact map
+        # else ref is already meanDist
+        ref = DiagonalPreprocessing.genomic_distance_statistics(ref, 'prob',
+                                                zero_diag = False, zero_offset = 0)
+    if config is not None:
+        diag_chis_step = calculate_diag_chi_step(config)
+
+    plot_mean_dist(meanDist, path, ofile, diag_chis_step, logx, ref, ref_label)
+
+    return meanDist
+
 
 def test():
     y = np.random.normal(size=(512, 512))

@@ -1,6 +1,7 @@
-from setuptools import find_packages, setup, Extension
 import subprocess
+
 from pybind11.setup_helpers import Pybind11Extension
+from setuptools import Extension, find_packages, setup
 
 module1 = Pybind11Extension(name = 'pylib.pyticg',
                     include_dirs = ['include'],
@@ -9,7 +10,7 @@ module1 = Pybind11Extension(name = 'pylib.pyticg',
 
 setup(
     name='pylib',
-    packages=find_packages(include=['pylib']),
+    packages=find_packages(include=['pylib', 'pylib.*']),
     version='0.1.3',
     description='set up library',
     author='Soren Kyhl',

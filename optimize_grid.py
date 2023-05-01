@@ -4,13 +4,12 @@ import shutil
 import sys
 
 import numpy as np
-from scipy import optimize
-
 import pylib.utils.epilib as epilib
 from pylib.optimize import optimize_config
 from pylib.Pysim import Pysim
 from pylib.utils import default, utils
-from pylib.utils.hic_utils import DiagonalPreprocessing
+from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
+from scipy import optimize
 from scripts.contact_map import plot_max_ent
 
 sys.path.append('/home/erschultz')
@@ -20,7 +19,7 @@ from sequences_to_contact_maps.scripts.load_utils import \
 
 def main(root, config, mode='grid_angle10'):
 
-    gthic = np.load(osp.join(osp.split(root)[0], 'y.npy'))
+    gthic = np.load(osp.join(osp.split(root)[0], 'y_gt.npy')).astype(float)
     config['nbeads'] = len(gthic)
 
     if mode.startswith('grid'):
@@ -83,10 +82,14 @@ def create_config():
     return config
 
 if __name__ == "__main__":
-    config = create_config()
-    mode = 'grid_angle20'
+    # config = create_config()
+    dir = '/home/erschultz/dataset_04_28_23/samples/sample100'
+    config = utils.load_json(osp.join(dir, 'config.json'))
+    config['track_contactmap'] = False
+    config['bead_type_files'] = [osp.join(dir, f'seq{i}.txt') for i in range(10)]
+    mode = 'grid'
     root = f"optimize_{mode}"
     root = f"{root}_b_{config['bond_length']}_phi_{config['phi_chromatin']}"
-    root = osp.join('/home/erschultz/dataset_test/samples/sample5002', root)
+    root = osp.join(dir, root)
     main(root, config, mode)
     # check_all_converged()

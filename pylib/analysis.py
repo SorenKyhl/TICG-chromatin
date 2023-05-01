@@ -4,15 +4,15 @@ import logging
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.stats import pearsonr
-from sklearn.decomposition import PCA
-
 import pylib.utils.epilib as ep
 import pylib.utils.utils as utils
+from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import calculate_all_energy
-from pylib.utils.hic_utils import DiagonalPreprocessing
-from pylib.utils.plotting_utils import plot_matrix
+from pylib.utils.plotting_utils import (plot_matrix,
+                                        plot_mean_vs_genomic_distance)
 from pylib.utils.similarity_measures import SCC
+from scipy.stats import pearsonr
+from sklearn.decomposition import PCA
 
 plt.rcParams["figure.figsize"] = [8, 6]
 plt.rcParams.update({"font.size": 18})
@@ -78,6 +78,9 @@ def sim_analysis(sim):
     sim.plot_diagonal(scale="log")
     plt.savefig("diagonal-log.png")
     plt.close()
+
+    plot_mean_vs_genomic_distance(sim.hic, '', 'meanDist_log.png', logx = True, ref = sim.gthic)
+
 
 def compare_analysis(sim):
     """analyze comparison of simulation with ground truth contact map"""
@@ -314,6 +317,14 @@ def calc_dist_strat_corr(y, yhat, mode = 'pearson', return_arr = False):
         return avg, corr_arr
     else:
         return avg
+
+def main_no_maxent():
+    sim = ep.Sim("production_out")
+    logging.info("sim created")
+    sim_analysis(sim)
+    logging.info("sim analysis done")
+    compare_analysis(sim)
+    logging.info("compare analysis done")
 
 def main():
     sim = ep.Sim("production_out")

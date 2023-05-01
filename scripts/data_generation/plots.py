@@ -20,7 +20,7 @@ from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
 def meanDist_comparison():
     # datasets = ['dataset_01_26_23', 'dataset_02_16_23']
     # datasets = ['dataset_01_26_23', 'dataset_02_04_23', 'dataset_02_21_23']
-    datasets = ['dataset_04_06_23', 'dataset_04_07_23']
+    datasets = ['dataset_02_04_23', 'dataset_03_22_23']
     data_dir = osp.join('/home/erschultz', datasets[0])
 
     cmap = matplotlib.cm.get_cmap('tab10')

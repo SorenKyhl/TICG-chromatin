@@ -13,12 +13,11 @@ import pandas as pd
 import scipy
 import seaborn as sns
 from numba import njit
-from tqdm import tqdm
-
 from pylib.utils import hic_utils, utils
 from pylib.utils.goals import *
 from pylib.utils.plotting_utils import plot_matrix
 from pylib.utils.similarity_measures import *
+from tqdm import tqdm
 
 # import palettable
 # from palettable.colorbrewer.sequential import Reds_3
@@ -51,11 +50,17 @@ class Sim:
         except FileNotFoundError:
             logging.error("error loading config.json")
 
-        try:
+        found = False
+        if osp.exists(self.path / "contacts.txt"):
             self.hic = get_contactmap(self.path / "contacts.txt")
+            found = True
+        elif osp.exists(self.path / f"contacts{self.config['nSweeps']}.txt"):
+            self.hic = get_contactmap(self.path / f"contacts{self.config['nSweeps']}.txt")
+        if found:
             self.d = hic_utils.get_diagonal(self.hic)
-        except FileNotFoundError:
+        else:
             logging.error("error loading contactmap.")
+            logging.error(self.path / f"contacts{self.config['nSweeps']}.txt")
 
         try:
             self.energy = pd.read_csv(

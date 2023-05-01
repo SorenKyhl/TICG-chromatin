@@ -5,7 +5,6 @@ import os.path as osp
 import sys
 
 import numpy as np
-
 import optimize_grid
 from pylib.Maxent import Maxent
 from pylib.utils import default, epilib, utils
@@ -101,7 +100,7 @@ def fit(sample):
     for key in ['beadvol', 'bond_length', 'phi_chromatin', 'grid_size',
                 'k_angle', 'angles_on']:
         config[key] = bonded_config[key]
-    k = 10
+    k = 8
     config['nspecies'] = k
     config['chis'] = np.zeros((k,k))
     config['dump_frequency'] = 10000
@@ -125,8 +124,8 @@ def fit(sample):
     goals = epilib.get_goals(y, seqs, config)
     params["goals"] = goals
     params['iterations'] = 15
-    params['parallel'] = 1
-    params['production_sweeps'] = 300000
+    params['parallel'] = 10
+    params['production_sweeps'] = 30000
     params['equilib_sweeps'] = 30000
 
     me = Maxent(osp.join(dir, f'{root}-max_ent'), params, config, seqs, y,
@@ -135,7 +134,7 @@ def fit(sample):
 
 def main():
     with mp.Pool(17) as p:
-        p.map(fit, range(202, 283))
+        p.map(fit, range(221, 222))
     # for i in range(202, 283):
         # fit(i)
     # fit(202)

@@ -9,6 +9,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import statsmodels.api as sm
+import tqdm
 from ECDF import Ecdf
 from MultivariateSkewNormal import multivariate_skewnorm
 from scipy.ndimage import gaussian_filter
@@ -52,7 +53,7 @@ def get_samples(dataset):
         samples = [324, 981, 1936, 2834, 3464]
     elif dataset == 'dataset_11_21_22':
         samples = [1, 2, 3, 410, 653, 1462, 1801, 2290]
-    elif dataset.startswith('dataset_01_27_23'):
+    elif dataset in {'dataset_01_27_23', 'dataset_04_28_23'}:
         samples = range(1, 16)
     elif dataset in {'dataset_04_09_23', 'dataset_04_10_23',}:
         samples = range(1001, 1028)
@@ -67,12 +68,16 @@ def get_samples(dataset):
 
 def modify_plaid_chis(dataset, k):
     samples, _ = get_samples(dataset)
-    for sample in samples:
+    for sample in tqdm(samples):
         dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
         max_ent_dir = osp.join(dir, f'optimize_grid_b_140_phi_0.03-max_ent')
         chis = np.loadtxt(osp.join(max_ent_dir, 'chis.txt'))
         chis = triu_to_full(chis)
         plot_matrix(chis, osp.join(max_ent_dir, 'chis.png'), cmap = 'blue-red')
+
+        # 0.5 * chi
+        chis_half = 0.5 * chis
+        np.save(osp.join(max_ent_dir, 'chis_half.npy'), chis_half)
 
         # negative version of chi
         chis_neg = -1 * chis
@@ -168,6 +173,8 @@ def modify_maxent_diag_chi(dataset, k = 8, edit = True):
     '''
     samples, _ = get_samples(dataset)
     for sample in samples:
+        if sample != 221:
+            continue
         print(f'sample{sample}, k{k}')
         # try different modifications to diag chis learned by max ent
         dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
@@ -264,8 +271,8 @@ def modify_maxent_diag_chi(dataset, k = 8, edit = True):
                                     diag_chi_step, 'piecewise_poly3', odir,
                                     [1, 1, 1, 1, 1, 1, 1, 1, 20], start = 2)
             linear_max_fit = None
-            linear_fit = None
-
+            linear_fit = curve_fit_helper(Curves.linear_curve, x[:m], diag_chi_step,
+                                            'linear', odir)
 
         for log in [True, False]:
             plt.plot(diag_chi_step, label = 'Max Ent Edit', color = 'lightblue')
@@ -279,8 +286,8 @@ def modify_maxent_diag_chi(dataset, k = 8, edit = True):
                 plt.plot(logistic_fit, label = 'logistic', color = 'purple')
             # if linear_max_fit is not None:
             #     plt.plot(linear_max_fit, label = 'linear_max', color = 'brown')
-            # if linear_fit is not None:
-            #     plt.plot(linear_fit, label = 'linear', color = 'teal')
+            if linear_fit is not None:
+                plt.plot(linear_fit, label = 'linear', color = 'teal')
             # if piecewise_linear_fit is not None:
             #     plt.plot(piecewise_linear_fit, label = 'piecewise_linear', color = 'teal', ls='--')
             # if poly2_fit is not None:
@@ -396,7 +403,7 @@ def plot_modified_max_ent(sample, params = True, k = 8):
     print(f'sample{sample}, k{k}')
     dataset = 'dataset_02_04_23'
     dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
-    max_ent_dir = osp.join(dir, f'PCA-normalize-E/k{k}/replicate1')
+    max_ent_dir = osp.join(dir, 'optimize_grid_b_140_phi_0.03-max_ent')
     fig, ax = plt.subplots()
     if params:
         ax2 = ax.twinx()
@@ -419,7 +426,8 @@ def plot_modified_max_ent(sample, params = True, k = 8):
                 config = json.load(f)
 
         # find diag_chis
-        diag_chis = np.loadtxt(osp.join(max_ent_dir, 'chis_diag.txt'))[-1]
+        diag_chis = np.loadtxt(osp.join(max_ent_dir, 'chis_diag.txt'))
+        diag_chis = np.atleast_2d(diag_chis)[-1]
 
         diag_chis_step = calculate_diag_chi_step(config, diag_chis)
         ax2.plot(diag_chis_step, ls = '--', label = 'Parameters', color = 'blue')
@@ -433,7 +441,7 @@ def plot_modified_max_ent(sample, params = True, k = 8):
             'logistic_manual', f'mlp',
             'linear', 'poly2',
             'poly3', 'poly4_log',
-            'poly6_log']
+            'poly6_log', 'poly6_log_edit', 'poly6_log_edit2']
     colors = [
             # 'green',
             # 'purple',
@@ -443,7 +451,7 @@ def plot_modified_max_ent(sample, params = True, k = 8):
             'darkgreen', 'orange',
             'teal', 'pink',
             'red', 'green',
-            'darkgreen']
+            'darkgreen', 'darkgreen', 'darkgreen']
     labels = [
             # 'MLP',
             # 'MLP+GNN',
@@ -453,10 +461,10 @@ def plot_modified_max_ent(sample, params = True, k = 8):
             'Logistic Manual', 'MLP+PCA',
             'Linear', 'Poly2',
             'Poly3', 'Poly4_log',
-            'Poly6_log']
+            'Poly6_log', 'Poly6_log_edit', 'Poly6_log_edit2']
 
     for method, color, label in zip(methods, colors, labels):
-        if label not in {'Linear',  'Poly6_log'}:
+        if label not in {'Linear',  'Poly6_log', 'Poly4_log'}:
             continue
         idir = osp.join(max_ent_dir, f'samples/sample{sample}_{method}')
         ifile = osp.join(idir,'y.npy')
@@ -506,7 +514,7 @@ def plot_modified_max_ent(sample, params = True, k = 8):
     else:
         ax.legend(loc='upper right')
     plt.tight_layout()
-    plt.savefig(osp.join(max_ent_dir, 'fitting/meanDist_edit.png'))
+    plt.savefig(osp.join(max_ent_dir, 'fitting2/meanDist_edit.png'))
     plt.close()
 
 def test_shuffle():
@@ -888,8 +896,8 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
                             f'k{k}_chi_ii_dist.png', dist = skewnorm)
 
         # plot plaid Lij parameters
-        simple_histogram(L_list, r'$L_{ij}$', odir,
-                            f'k{k}_L_dist.png')
+        # simple_histogram(L_list, r'$L_{ij}$', odir,
+        #                     f'k{k}_L_dist.png')
 
         # plot net energy parameters
         # simple_histogram(s_list, r'$S_{ij}$', odir,
@@ -1043,14 +1051,20 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
                 data.append(chi[i,i])
             arr = np.array(data).reshape(-1)
 
-            # remove outliers
+            # remove outliers by 1.5 * IQR
             iqr = np.percentile(arr, 75) - np.percentile(arr, 25)
             width = 1.5
             l_cutoff = np.percentile(arr, 25) - width * iqr
             u_cutoff = np.percentile(arr, 75) + width * iqr
-
             delete_arr = np.logical_or(arr < l_cutoff, arr > u_cutoff)
             print(i, iqr, (l_cutoff, u_cutoff))
+            arr = np.delete(arr, delete_arr, axis = None)
+
+            # remove outliers by zscore
+            mean = np.mean(arr)
+            std = np.std(arr)
+            delete_arr = np.abs(arr - mean)/ std > 2
+            print(np.sum(delete_arr))
             arr = np.delete(arr, delete_arr, axis = None)
 
             dist = skewnorm
@@ -1249,13 +1263,13 @@ def plot_params_test():
 
 
 if __name__ == '__main__':
-    modify_plaid_chis('dataset_02_04_23', k = 10)
-    modify_maxent_diag_chi('dataset_02_04_23', 10, False)
-    # for i in range(201, 202):
-        # plot_modified_max_ent(i, k = 8)
+    # modify_plaid_chis('dataset_02_04_23', k = 10)
+    # modify_maxent_diag_chi('dataset_02_04_23', 10, False)
+    # for i in range(221, 222):
+    #     plot_modified_max_ent(i, k = 10)
     # diagonal_dist('dataset_02_04_23', 7)
     # grid_dist('dataset_01_26_23')
-    # plaid_dist('dataset_02_04_23', 10, True, False, True)
+    plaid_dist('dataset_02_04_23', 10, True, False, True)
     # seq_dist('dataset_01_26_23', 4, True, False, True)
     # modify_plaid_chis('dataset_11_14_22', 8)
     # plot_params_test()

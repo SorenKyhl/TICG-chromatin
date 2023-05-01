@@ -16,12 +16,11 @@ import scipy.stats as ss
 import sympy
 import torch
 import torch_geometric
+from pylib.utils import default, epilib, hic_utils
 from scipy.ndimage import uniform_filter
+from scripts.get_params import GetSeq
 from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
-
-from pylib.utils import default, epilib, hic_utils
-from scripts.get_params import GetSeq
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.energy_utils import (

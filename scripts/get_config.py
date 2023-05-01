@@ -299,10 +299,10 @@ def main():
 
     # set up e, s
     if psi is not None:
-        writeSeq(psi)
+        # writeSeq(psi)
 
         # save seq
-        config['bead_type_files'] = [f'seq{i}.txt' for i in range(args.k)]
+        config['bead_type_files'] = [f'pcf{i}.txt' for i in range(1, args.k+1)]
 
         # save nspecies
         config["nspecies"] = args.k
