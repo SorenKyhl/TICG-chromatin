@@ -624,6 +624,7 @@ void Sim::initializeObjects() {
         constructAngles();
 
     // energy matrices
+    std::cout << "Loading energy matrices" << std::endl;
     if (dmatrix_on) {
         setupDmatrix();
     }
@@ -631,6 +632,7 @@ void Sim::initializeObjects() {
         setupLmatrix();
     }
     if (smatrix_on) {
+        std::ifstream smatrixfile(smatrix_filename);
         setupSmatrix();
     }
 
@@ -1791,7 +1793,7 @@ void Sim::setupSmatrix() {
   smatrix.resize(nbeads, nbeads);
 
 	if ( smatrixfile.good() ) {
-    std::cout << smatrix_filename << "smatrix_filename is good\n";
+    std::cout << smatrix_filename << " smatrix_filename is good\n";
     for (int i=0; i<nbeads; i++) {
   		for (int j=0; j<nbeads; j++) {
   			smatrixfile >> smatrix(i,j);
@@ -1841,7 +1843,6 @@ void Sim::setupDmatrix() {
         if (d >= Cell::diag_start)
         // TODO need to account for bin_size > 1
         {
-          d -= Cell::diag_start;
           int d_index = Cell::binDiagonal(d);
           dmatrix(i,j) = diag_chis[d_index];
         }

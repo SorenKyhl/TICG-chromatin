@@ -1394,21 +1394,25 @@ class GetDiagChi():
         return diag_chis_continuous, diag_chis
 
 class GetEnergy():
-    def __init__(self, args, unknown_args):
-        self.config = args.config
-        self.m = args.m
-        self.sample_folder = args.sample_folder
-        self.plot = args.plot
-        self._get_args(unknown_args)
+    def __init__(self, args=None, unknown_args=None, config=None):
+        if args is None:
+            assert unknown_args is None and config is not None
+            self.m = config['nbeads']
+        else:
+            self.config = args.config
+            self.m = args.m
+            self.sample_folder = args.sample_folder
+            self.plot = args.plot
+            self._get_args(unknown_args)
 
-        if self.args.method is None:
-            return
+            if self.args.method is None:
+                return
 
-        if not (self.args.use_lmatrix or self.args.use_smatrix):
-            # should have been handled by GetSeq already
-            return
+            if not (self.args.use_lmatrix or self.args.use_smatrix):
+                # should have been handled by GetSeq already
+                return
 
-        self.set_up_energy()
+            self.set_up_energy()
 
     def _get_args(self, unknown_args):
         AC = ArgparserConverter()
@@ -1470,7 +1474,8 @@ class GetEnergy():
                 L = load_L(self.sample_folder)
             elif args.method.startswith('gnn'):
                 if args.use_smatrix:
-                    S = self.get_energy_gnn(args.gnn_model_path, self.sample_folder)
+                    S = self.get_energy_gnn(args.gnn_model_path, self.sample_folder,
+                                            args.kr)
             else:
                 raise Exception(f'Unkown method: {args.method}')
 
@@ -1521,7 +1526,7 @@ class GetEnergy():
                 plot_matrix(S, 'S.png', vmin = 'min', vmax = 'max',
                             cmap = 'blue-red', title = 'S')
 
-    def get_energy_gnn(self, model_path, sample_path):
+    def get_energy_gnn(self, model_path, sample_path, kr=False):
         '''
         Loads output from GNN model to use as energy matrix
 
@@ -1587,7 +1592,7 @@ class GetEnergy():
             _, *opt.y_preprocessing = opt.y_preprocessing.split('_')
             if isinstance(opt.y_preprocessing, list):
                 opt.y_preprocessing = '_'.join(opt.y_preprocessing)
-        if self.args.kr:
+        if kr:
             opt.kr = True
             opt.y_preprocessing = f'{opt.y_preprocessing}'
         print(opt)
@@ -1608,7 +1613,6 @@ class GetEnergy():
             print(f'data first node: {data.x[0]}')
             yhat = model(data)
             yhat = yhat.cpu().detach().numpy().reshape((opt.m,opt.m))
-            print(f'yhat first row: {yhat[0]}')
 
             if opt.output_preprocesing == 'log':
                 yhat = np.multiply(np.sign(yhat), np.exp(np.abs(yhat)) - 1)

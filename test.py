@@ -17,17 +17,20 @@ import sympy
 import torch
 import torch_geometric
 from pylib.utils import default, epilib, hic_utils
+from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
+                                      calculate_S)
 from scipy.ndimage import uniform_filter
+from scripts.data_generation.modify_maxent import get_samples
 from scripts.get_params import GetSeq
 from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
-from sequences_to_contact_maps.scripts.energy_utils import (
-    calculate_D, calculate_diag_chi_step, calculate_S)
+
 from sequences_to_contact_maps.scripts.knightRuiz import knightRuiz
 from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_all, load_contact_map, load_Y)
+    get_final_max_ent_folder, load_all, load_contact_map, load_max_ent_D,
+    load_max_ent_L, load_Y)
 from sequences_to_contact_maps.scripts.plotting_utils import (plot_diag_chi,
                                                               plot_matrix,
                                                               plot_seq_binary)
@@ -442,7 +445,8 @@ def plot_p_s(dataset, experimental=False, ref=False, params=False, label=None):
     data_dir = osp.join(dir, dataset)
 
     data = defaultdict(dict) # sample : {meanDist, diag_chis_step} : vals
-    for sample in range(1, 16):
+    samples, _ = get_samples(dataset)
+    for sample in samples:
         sample_dir = osp.join(data_dir, 'samples', f'sample{sample}')
         ifile = osp.join(sample_dir, 'y.npy')
         if osp.exists(ifile):
@@ -476,16 +480,21 @@ def plot_p_s(dataset, experimental=False, ref=False, params=False, label=None):
                 X = np.arange(0, len(meanDist_ref), 1)
             ax.plot(meanDist_ref, label = 'Experiment', color = 'k')
 
-        for sample in data.keys():
+        for i, sample in enumerate(data.keys()):
             meanDist = data[sample]['meanDist']
             if norm:
                 X = np.linspace(0, 1, len(meanDist))
             else:
                 X = np.arange(0, len(meanDist), 1)
-            if label is not None:
-                ax.plot(X, meanDist, label = data[sample][label])
+            if i > 10:
+                ls = 'dashed'
             else:
-                ax.plot(X, meanDist, label = sample)
+                ls = 'solid'
+
+            if label is not None:
+                ax.plot(X, meanDist, label = data[sample][label], ls = ls)
+            else:
+                ax.plot(X, meanDist, label = sample, ls = ls)
 
             if params:
                 diag_chis_step = data[sample]['diag_chis_step']
@@ -512,6 +521,51 @@ def plot_p_s(dataset, experimental=False, ref=False, params=False, label=None):
         plt.tight_layout()
         plt.savefig(osp.join(data_dir, f'meanDist_norm_{norm}.png'))
         plt.close()
+
+def plot_mean_dist_S(dataset, experimental=False, label=None):
+    # plot different p(s) curves
+    dir = '/home/erschultz/'
+    data_dir = osp.join(dir, dataset)
+
+    data = defaultdict(dict) # sample : {meanDist, diag_chis_step} : vals
+    samples, experimental = get_samples(dataset)
+    for sample in samples:
+        sample_dir = osp.join(data_dir, 'samples', f'sample{sample}')
+        if experimental:
+            max_ent_dir = osp.join(sample_dir, 'optimize_grid_b_140_phi_0.03-max_ent')
+            L = load_max_ent_L(max_ent_dir)
+            D = load_max_ent_D(max_ent_dir)
+            S = calculate_S(L, D)
+        else:
+            S = np.load(osp.join(sample_dir, 'S.npy'))
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(S, 'freq')
+        data[sample]['meanDist'] = meanDist
+
+    fig, ax = plt.subplots()
+    for i, sample in enumerate(data.keys()):
+        meanDist = data[sample]['meanDist']
+        X = np.arange(0, len(meanDist), 1)
+        if i > 10:
+            ls = 'dashed'
+        else:
+            ls = 'solid'
+        if label is not None:
+            ax.plot(X, meanDist, label = data[sample][label], ls = ls)
+        else:
+            ax.plot(X, meanDist, label = sample, ls = ls)
+
+    ax.set_xscale('log')
+    ax.set_ylabel('Mean Energy', fontsize = 16)
+    ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
+
+    if label is not None:
+        ax.legend(loc='upper right', title = label)
+    else:
+        ax.legend(loc='upper right', title = 'Sample')
+    plt.tight_layout()
+    plt.savefig(osp.join(data_dir, 'S_meanDist.png'))
+    plt.close()
+
 
 def plot_S():
     raise Excepton('deprecated - need to fix energy notation')
@@ -975,6 +1029,7 @@ if __name__ == '__main__':
     # compare_scc_bio_replicates()
     # max_ent_loss_for_gnn('dataset_11_14_22', 2201)
     plot_p_s('dataset_04_28_23', params = False)
+    # plot_mean_dist_S('dataset_04_28_23')
     # gnn_of_max_ent([207], 8, 378)
     # check_interpolation()
     # make_dataset_of_converged('dataset_03_21_23')

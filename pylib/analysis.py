@@ -20,49 +20,44 @@ plt.rcParams.update({"font.size": 18})
 def sim_analysis(sim):
     """analyze data from simulation only (doesn't require ground truth hic)"""
     error = sim.plot_consistency()
-    plt.savefig("consistency.png")
-    plt.close()
     if error > 0.01:
         logging.error("SIMULATION IS NOT CONSISTENT")
 
-    plt.figure()
     sim.plot_contactmap()
-    plt.savefig("contactmap.png")
-    plt.close()
+    np.save('y.npy', sim.hic)
 
     plt.figure()
     sim.plot_energy()
     plt.savefig("energy.png")
     plt.close()
 
-    plt.figure()
     sim.plot_obs(diag=False)
-    plt.savefig("obs.png")
-    plt.close()
 
-    plt.figure()
-    plt.plot(sim.config["diag_chis"], "o")
-    plt.savefig("diag_chis.png")
-    plt.close()
+    if sim.config['diagonal_on']:
+        plt.figure()
+        plt.plot(sim.config["diag_chis"], "o")
+        plt.savefig("diag_chis.png")
+        plt.close()
 
-    plt.figure()
-    utils.plot_image(sim.config["chis"])
-    plt.savefig("chis.png")
-    plt.close()
+    if sim.config['nspecies'] > 0:
+        plt.figure()
+        utils.plot_image(sim.config["chis"])
+        plt.savefig("chis.png")
+        plt.close()
 
-    try:
-        plot_energy_matrices(sim)
-    except ValueError:
-        if sim.config["contact_resolution"] > 1:
-            logging.warn("energy matrices could not be created because contact map has been pooled (contact map resolution > 1)")
-        else:
-            raise ValueError
-    except NotImplementedError:
-        logging.warn("energy matrices not implemented for this situation")
+        plt.figure()
+        plot_chi_matrix(sim)
+        plt.close()
 
-    plt.figure()
-    plot_chi_matrix(sim)
-    plt.close()
+        try:
+            plot_energy_matrices(sim)
+        except ValueError:
+            if sim.config["contact_resolution"] > 1:
+                logging.warn("energy matrices could not be created because contact map has been pooled (contact map resolution > 1)")
+            else:
+                raise ValueError
+        except NotImplementedError:
+            logging.warn("energy matrices not implemented for this situation")
 
     plt.figure()
     sim.plot_oe()
@@ -84,6 +79,7 @@ def sim_analysis(sim):
 
 def compare_analysis(sim):
     """analyze comparison of simulation with ground truth contact map"""
+
     ep.eric_plot_tri(sim.hic, sim.gthic, "tri.png")
     ep.eric_plot_tri(sim.hic, sim.gthic, "tri_log.png", log = True)
     ep.eric_plot_tri(sim.hic, sim.gthic, "tri_dark.png", np.mean(sim.gthic)/2)
@@ -182,6 +178,9 @@ def plot_energy_matrices(sim):
     plot_matrix(D, 'matrix_D.png', "D")
     plot_matrix(S, 'matrix_S.png', "S", cmap='bluered')
 
+    np.save('S.npy', S)
+    np.save('D.npy', D)
+    np.save('L.npy', L)
 
 def compare_top_PCs(y, yhat):
     # y

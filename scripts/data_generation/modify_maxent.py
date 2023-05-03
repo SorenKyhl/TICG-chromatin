@@ -10,8 +10,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import statsmodels.api as sm
 import tqdm
-from ECDF import Ecdf
-from MultivariateSkewNormal import multivariate_skewnorm
 from scipy.ndimage import gaussian_filter
 from scipy.optimize import curve_fit
 from scipy.stats import (beta, gamma, laplace, multivariate_normal, norm,
@@ -20,6 +18,9 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz/TICG-chromatin')
+from scripts.data_generation.ECDF import Ecdf
+from scripts.data_generation.MultivariateSkewNormal import \
+    multivariate_skewnorm
 from scripts.get_params import Tester
 
 sys.path.append('/home/erschultz/TICG-chromatin/pylib')
@@ -53,7 +54,7 @@ def get_samples(dataset):
         samples = [324, 981, 1936, 2834, 3464]
     elif dataset == 'dataset_11_21_22':
         samples = [1, 2, 3, 410, 653, 1462, 1801, 2290]
-    elif dataset in {'dataset_01_27_23', 'dataset_04_28_23'}:
+    elif dataset in {'dataset_01_27_23'}:
         samples = range(1, 16)
     elif dataset in {'dataset_04_09_23', 'dataset_04_10_23',}:
         samples = range(1001, 1028)

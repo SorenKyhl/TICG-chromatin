@@ -5,7 +5,6 @@ import scipy
 
 
 def calculate_all_energy(config, seq, chi, diag_chis=None):
-    seq = seq.copy()
     assert len(seq.shape) == 2
     if seq.shape[1] > seq.shape[0]:
         seq = seq.T

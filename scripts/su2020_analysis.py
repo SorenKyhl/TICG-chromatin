@@ -214,51 +214,52 @@ def compare_dist_distribution():
     b = coords_dict[coords_b]
     dist = dist_distribution(xyz, a, b)
 
-    dir = '/home/erschultz/Su2020/samples/sample1002'
-    max_ent_dir = osp.join(dir, 'GNN-392-S/k0/replicate1')
-    final_dir = get_final_max_ent_folder(max_ent_dir)
-    file = osp.join(final_dir, 'production_out/output.xyz')
-    xyz_sim = xyz_load(file, multiple_timesteps = True)
-    with open(osp.join(dir, 'import.log'), 'r') as f:
-        line = f.readline().strip()
-        while not line.startswith('start'):
-            line = f.readline().strip()
-        start = int(line.split('=')[1])
-    print(start)
-    coords_a = hg38_to_hg19(coords_a)
-    coords_b = hg38_to_hg19(coords_b)
-    def get_ind_hg19(start, coords, res=50000):
-        chr, rest = coords.split(':')
-        l, u = rest.split('-')
-        l = int(l); u = int(u)
-        i=0
-        while start < l:
-            start += res
-            i += 1
-        end = start + res
-        return i, f'{chr}:{l}-{u}'
-    a, temp = get_ind_hg19(start, coords_a)
-    b, temp = get_ind_hg19(start, coords_b)
-
-    dist_sim = dist_distribution(xyz_sim, a, b)
+    # dir = '/home/erschultz/Su2020/samples/sample1002'
+    # max_ent_dir = osp.join(dir, 'optimize_grid_b_140_phi_0.06-max_ent_fill_1')
+    # final_dir = get_final_max_ent_folder(max_ent_dir)
+    # file = osp.join(final_dir, 'production_out/output.xyz')
+    # xyz_sim = xyz_load(file, multiple_timesteps = True)
+    # with open(osp.join(dir, 'import.log'), 'r') as f:
+    #     line = f.readline().strip()
+    #     while not line.startswith('start'):
+    #         line = f.readline().strip()
+    #     start = int(line.split('=')[1])
+    # print(start)
+    # coords_a = hg38_to_hg19(coords_a)
+    # coords_b = hg38_to_hg19(coords_b)
+    # def get_ind_hg19(start, coords, res=50000):
+    #     chr, rest = coords.split(':')
+    #     l, u = rest.split('-')
+    #     l = int(l); u = int(u)
+    #     i=0
+    #     while start < l:
+    #         start += res
+    #         i += 1
+    #     end = start + res
+    #     return i, f'{chr}:{l}-{u}'
+    # a, temp = get_ind_hg19(start, coords_a)
+    # b, temp = get_ind_hg19(start, coords_b)
+    #
+    # dist_sim = dist_distribution(xyz_sim, a, b)
 
 
     print('exp', dist, dist.shape)
-    print('sim', dist_sim, dist_sim.shape)
+    # print('sim', dist_sim, dist_sim.shape)
 
     bin_width = 50
     arr = dist[~np.isnan(dist)]
     plt.hist(arr, label = 'Exp',
                 weights = np.ones_like(arr) / len(arr),
                 bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width))
-    arr = dist_sim * 20
-    plt.hist(arr, label = 'Sim',
-                weights = np.ones_like(arr) / len(arr),
-                bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width))
-    plt.xlabel('Distance (nm)', fontsize=16)
-    plt.ylabel('Frequency')
-    plt.legend()
-    plt.title(f'distance between\n{coords_a} and {coords_b}')
+    # arr = dist_sim * 20
+    # plt.hist(arr, label = 'Sim',
+    #             weights = np.ones_like(arr) / len(arr),
+    #             bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width))
+    plt.xlabel('Distance between A and B', fontsize=16)
+    plt.ylabel('Probability', fontsize=16)
+    # plt.legend()
+    # plt.title(f'Distance between\n{coords_a} and {coords_b}')
+    # plt.title(f'Distance between A and B')
     plt.savefig(osp.join(dir, 'distance_distribution.png'))
 
 def xyz_to_dist():
@@ -673,7 +674,7 @@ if __name__ == '__main__':
     # quick_plot()
     # xyz_to_dist()
     # compare_control()
-    compare_D_to_sim_D()
+    # compare_D_to_sim_D()
     # find_volume()
-    # compare_dist_distribution()
+    compare_dist_distribution()
     # compare_sim_Hic_to_sim_D()

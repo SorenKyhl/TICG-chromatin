@@ -75,10 +75,13 @@ class Sim:
         except FileNotFoundError:
             logging.error("error loading energy.traj")
 
+        self.chi = None
+        self.seqs = None
+        self.obs_full = None
         if self.config['plaid_on']:
-            self.chi = self.load_chis()
             self.k = self.config['nspecies']
             if self.k > 0:
+                self.chi = self.load_chis()
                 try:
                     self.seqs = self.load_seqs()
                     assert self.k == np.shape(self.seqs)[0]
@@ -93,10 +96,9 @@ class Sim:
                 except FileNotFoundError:
                     logging.error("error loading plaid observables")
         else:
-            self.chi = None
             self.k = 0
 
-        if "diag_chis" in self.config:
+        if self.config['diagonal_on']:
             self.diag_bins = np.shape(self.config["diag_chis"])[0]
             try:
                 self.diag_obs_full = pd.read_csv(
@@ -249,16 +251,17 @@ class Sim:
 
         return smatrix
 
-    def plot_contactmap(
-        self, vmaxp=0.1, absolute=False, dark=False, title="", log=False
-    ):
-        plot_contactmap(self.hic, vmaxp, absolute, dark=dark, title=title, log=log)
+    def plot_contactmap(self, vmaxp=0.1, absolute=False, dark=False,
+                        title="", log=False):
+        plot_contactmap(self.hic, vmaxp, absolute, dark=dark, title=title, log=log,
+                        ofile="contactmap.png")
 
     def plot_energy(self):
         plot_energy(self)
 
     def plot_obs(self, diag):
-        plot_obs(self, diag)
+        if self.obs_full is not None:
+            plot_obs(self, diag, 'obs.png')
 
     def plot_tri(self, vmaxp=None, title="", dark=False, log=False):
         plot_tri(self.hic, self.gthic, vmaxp, title=title, dark=dark, log=log)
@@ -276,7 +279,9 @@ class Sim:
         plot_oe(get_oe(self.hic), log=log)
 
     def plot_consistency(self):
-        return plot_consistency(self)
+        if self.seqs is None:
+            return 0
+        return plot_consistency(self, "consistency.png")
 
     def calc_goals(self):
         plaid = get_goal_plaid(self.gthic, self.seqs, self.config)
@@ -366,16 +371,8 @@ def plot_oe(oe, title="", log=False):
     plt.colorbar()
 
 
-def plot_contactmap(
-    contact,
-    vmaxp=0.1,
-    absolute=False,
-    imshow=True,
-    cbar=True,
-    dark=False,
-    title="",
-    log=False,
-):
+def plot_contactmap(contact, vmaxp=0.1, absolute=False, imshow=True, cbar=True,
+                    dark=False, title="", log=False, ofile=None):
     plt.figure(figsize=(12, 10))
 
     cmap = mycmap
@@ -407,6 +404,10 @@ def plot_contactmap(
     if cbar:
         plt.colorbar()
         plt.title(title)
+
+    if ofile is not None:
+        plt.savefig(ofile)
+        plt.close()
 
 
 def plot_diagonal(input, *args, scale="semilogy", label=None):
@@ -445,13 +446,17 @@ def plot_energy(sim):
     axs[2].legend()
 
 
-def plot_obs(sim, diag=True):
+def plot_obs(sim, diag=True, ofile=None):
     o = np.array(sim.obs_full.T)
     d = np.array(sim.diag_obs_full.T)
     plt.plot(o[1:].T)
     if diag:
         plt.figure()
         plt.semilogy(d[1:].T)
+
+    if ofile is not None:
+        plt.savefig(ofile)
+        plt.close()
 
 
 def plot_diff(first, second, c=None, log=False, oe=False, title=""):
@@ -891,10 +896,9 @@ def fill_subdiagonal(a, offset, fn):
 def resize_contactmap(hic, sizex, sizey):
     raise Exception("Not Implemented")
 
-def plot_consistency(sim):
+def plot_consistency(sim, ofile=None):
     """ensure simulation observables are consistent with goals
     computed from simulation contact map"""
-
     if len(sim.hic) != len(sim.seqs[0]):
         size = np.shape(sim.seqs[0])[0]
         hic = resize_contactmap(sim.hic, size, size)
@@ -911,6 +915,9 @@ def plot_consistency(sim):
     plt.plot(goal, "x", label="goal")
     plt.title("sim.obs vs Goals(sim.hic); Error: {%.3f}" % error)
     plt.legend()
+    if ofile is not None:
+        plt.savefig(ofile)
+        plt.close()
     return error
 
 def get_symmetry_score_2(first, second, order="fro"):

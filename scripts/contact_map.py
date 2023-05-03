@@ -17,7 +17,7 @@ from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
 from sequences_to_contact_maps.scripts.energy_utils import (
     calculate_D, calculate_diag_chi_step, calculate_S)
 from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_final_max_ent_L, load_L)
+    get_final_max_ent_folder, load_L, load_max_ent_L)
 from sequences_to_contact_maps.scripts.plotting_utils import (
     plot_diag_chi, plot_matrix, plot_mean_dist, plot_mean_vs_genomic_distance)
 from sequences_to_contact_maps.scripts.utils import DiagonalPreprocessing, crop
@@ -91,7 +91,7 @@ def plot_all(args):
     if args.random_mode:
         L = load_L(args.sample_folder, throw_exception = False)
     else:
-        L = load_final_max_ent_L(args.replicate_folder, args.final_folder)
+        L = load_max_ent_L(args.replicate_folder)
 
     # get config
     if args.random_mode:

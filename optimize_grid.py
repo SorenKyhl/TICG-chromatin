@@ -19,7 +19,7 @@ from sequences_to_contact_maps.scripts.load_utils import \
 
 def main(root, config, mode='grid_angle10'):
 
-    gthic = np.load(osp.join(osp.split(root)[0], 'y_gt.npy')).astype(float)
+    gthic = np.load(osp.join(osp.split(root)[0], 'y.npy')).astype(float)
     config['nbeads'] = len(gthic)
 
     if mode.startswith('grid'):

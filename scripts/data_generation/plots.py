@@ -20,7 +20,8 @@ from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
 def meanDist_comparison():
     # datasets = ['dataset_01_26_23', 'dataset_02_16_23']
     # datasets = ['dataset_01_26_23', 'dataset_02_04_23', 'dataset_02_21_23']
-    datasets = ['dataset_02_04_23', 'dataset_03_22_23']
+    datasets = ['dataset_02_04_23', 'dataset_04_28_23']
+    labels = ['Experiment', 'Synthetic']
     data_dir = osp.join('/home/erschultz', datasets[0])
 
     cmap = matplotlib.cm.get_cmap('tab10')
@@ -30,12 +31,12 @@ def meanDist_comparison():
     ax2 = ax.twinx()
     ax2.get_yaxis().set_visible(False)
 
-    for i, dataset in enumerate(datasets):
+    for i, (dataset, label) in enumerate(zip(datasets, labels)):
         meanDist_list = molar_contact_ratio(dataset, None, False)
         print(f'Retrieved meanDist_list for dataset {dataset}')
         for meanDist in meanDist_list:
             ax.plot(meanDist, c = colors[i], alpha=0.6)
-        ax2.plot(np.NaN, np.NaN, label = dataset, c = colors[i])
+        ax2.plot(np.NaN, np.NaN, label = label, c = colors[i])
 
     ax.set_yscale('log')
     ax.set_xscale('log')
@@ -358,6 +359,6 @@ def l_ij_comparison(dataset, dataset_exp, k=8):
 if __name__ == '__main__':
     # main()
     meanDist_comparison()
-    # l_ij_comparison('dataset_03_23_23', 'dataset_02_04_23', 8)
+    # l_ij_comparison('dataset_04_28_23', 'dataset_02_04_23', 10)
     # p_s_comparison('dataset_02_04_23', 396, 12)
     # scc_comparison('dataset_02_04_23', 392, 8, True)
