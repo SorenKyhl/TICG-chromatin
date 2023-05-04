@@ -20,6 +20,8 @@ from pylib.utils.goals import *
 from pylib.utils.plotting_utils import plot_matrix
 from pylib.utils.similarity_measures import *
 
+from pylib.utils.hic_utils import get_diagonal
+
 # import palettable
 # from palettable.colorbrewer.sequential import Reds_3
 
@@ -1112,3 +1114,5 @@ def clean_contactmap(contact):
     deleted = len(inds)
 
     return contact[mask].reshape(N - deleted, N - deleted), inds
+
+

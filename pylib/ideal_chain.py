@@ -9,7 +9,7 @@ module for running ideal chain simulations
 """
 
 
-def ideal_chain_simulation(nbeads: int, grid_bond_ratio: Optional[float] = None):
+def ideal_chain_simulation(nbeads: int, grid_bond_ratio: Optional[float] = None, base="gaussian-20k"):
     """return simulation object with only bonded interactions
 
     Args:
@@ -20,9 +20,9 @@ def ideal_chain_simulation(nbeads: int, grid_bond_ratio: Optional[float] = None)
         Pysim object for simulating ideal chain
     """
     if grid_bond_ratio is None:
-        config = parameters.get_config(nbeads)
+        config = parameters.get_config(nbeads, base=base)
     else:
-        config = parameters.get_config(nbeads, grid_bond_ratio=grid_bond_ratio)
+        config = parameters.get_config(nbeads, grid_bond_ratio=grid_bond_ratio, base=base)
 
     config["nonbonded_on"] = False
     config["load_bead_types"] = False

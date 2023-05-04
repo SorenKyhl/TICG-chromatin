@@ -92,18 +92,18 @@ def compare_analysis(sim):
     ep.plot_tri(sim.hic, sim.gthic, oe=True)
     plt.savefig("tri_oe.png")
     plt.close()
-    #
-    # sim.plot_tri()
-    # plt.savefig("tri.png")
-    # plt.close()
-    #
-    # sim.plot_tri(log=True)
-    # plt.savefig("tri_log.png")
-    # plt.close()
-    #
-    # sim.plot_tri(vmaxp=np.mean(sim.hic) / 2)
-    # plt.savefig("tri_dark.png")
-    # plt.close()
+   
+    sim.plot_tri()
+    plt.savefig("tri_sk.png")
+    plt.close()
+    
+    sim.plot_tri(log=True)
+    plt.savefig("tri_log_sk.png")
+    plt.close()
+    
+    sim.plot_tri(vmaxp=np.mean(sim.hic) / 2)
+    plt.savefig("tri_dark_sk.png")
+    plt.close()
 
     sim.plot_diff()
     plt.savefig("diff.png")

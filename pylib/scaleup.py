@@ -56,7 +56,7 @@ def plot_stiffness_error(ideal_small, ideal_large, gthic_big):
     plt.savefig("stiff_ratio_ratios.png")
 
 
-def tune_stiffness(nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method, large_contact_pooling_factor, match_ideal_large_grid=False):
+def tune_stiffness(nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method, large_contact_pooling_factor, base, match_ideal_large_grid=False):
     """optimize chain stiffness of small system to match p(s) curve of large system
 
     simualte ideal chain at large scale and pool large ideal hic down to small scale,
@@ -70,7 +70,7 @@ def tune_stiffness(nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method,
 
     # run large ideal simulation
     try:
-        ideal_chain_large = ideal_chain_simulation(nbeads_large, grid_bond_ratio)
+        ideal_chain_large = ideal_chain_simulation(nbeads_large, grid_bond_ratio, base=base)
         if nbeads_large >= 10240:
             ideal_chain_large.config["nSweeps"] = 25000
         ideal_chain_large.config["contact_resolution"] = large_contact_pooling_factor
@@ -81,7 +81,7 @@ def tune_stiffness(nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method,
         large_hic = np.loadtxt(large_out + "/contacts.txt")
 
     # get config for small ideal chain simulation
-    ideal_chain_small = ideal_chain_simulation(nbeads_small, grid_bond_ratio)
+    ideal_chain_small = ideal_chain_simulation(nbeads_small, grid_bond_ratio, base=base)
     small_config = ideal_chain_small.config
 
     factor = int(len(large_hic)/nbeads_small)
@@ -120,6 +120,7 @@ def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large =
     requires tuning the grid size and stiffness at small scale,
     in order for the chi parameters to be transferrable
     """
+
     if pool_large:
         large_contact_pooling_factor = int(nbeads_large/nbeads_small)
     else:
@@ -154,11 +155,11 @@ def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large =
     try:
         if match_ideal_large_grid:
             k_angle_opt, small_optimal_grid_size = tune_stiffness(
-                nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method, large_contact_pooling_factor, match_ideal_large_grid
+                nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method, large_contact_pooling_factor, hic_base, match_ideal_large_grid
             )
         else:
             k_angle_opt = tune_stiffness(
-                nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method, large_contact_pooling_factor, match_ideal_large_grid
+                nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method, large_contact_pooling_factor, hic_base, match_ideal_large_grid
             )
     except FileExistsError:
         stiff_opt_config = utils.load_json("optimize-stiffness/config.json")
