@@ -1,9 +1,7 @@
 import numpy as np
 import copy
 
-from pylib import default
-
-
+from pylib.utils import default
 
 def get_config(
     nbeads=None, config=default.config, grid_bond_ratio=0.95, base="gaussian-5k", scale="onethird"

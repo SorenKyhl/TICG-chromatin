@@ -9,11 +9,11 @@ module1 = Pybind11Extension(name = 'pylib.pyticg',
 
 setup(
     name='pylib',
-    packages=find_packages(include=['pylib']),
+    packages=find_packages(include=['pylib', 'pylib.*']),
     version='0.1.3',
     description='set up library',
     author='Soren Kyhl',
     license='MIT',
-	install_requires=['hic-straw','jsbeautifier'],
+	install_requires=['hic-straw','jsbeautifier'],#, 'hicrep', 'numba'],
     ext_modules=[module1],
 )

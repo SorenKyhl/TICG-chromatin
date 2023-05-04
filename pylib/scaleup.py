@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from pylib import parameters
-from pylib.config import Config
+from pylib.Config import Config
 from pylib.ideal_chain import ideal_chain_simulation
 from pylib.Maxent import Maxent
 from pylib.optimize import optimize_config, optimize_stiffness
@@ -127,21 +127,21 @@ def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large =
 
     config_small = parameters.get_config(nbeads_small, base=hic_base)
 
-    gthic_small = hic.load_hic(nbeads_small, pool_fn, cell=cell)
+    gthic_small = hic_utils.load_hic(nbeads_small, pool_fn, cell=cell)
 
     if pool_large:
         gthic_large = gthic_small
     else:
-        gthic_large = hic.load_hic(nbeads_large, pool_fn, cell=cell)
+        gthic_large = hic_utils.load_hic(nbeads_large, pool_fn, cell=cell)
 
-    seqs_large = hic.load_seqs(nbeads_large, 10)
-    seqs_small = hic.load_seqs(nbeads_small, 10)
+    seqs_large = hic_utils.load_seqs(nbeads_large, 10)
+    seqs_small = hic_utils.load_seqs(nbeads_small, 10)
 
     # tune grid size
     try:
-        optimal_grid_size = optimize_grid_size(config_small, gthic_small)
+        optimal_grid_size = optimize_config(config_small, gthic_large, 'grid', 0.5, 2.5)
     except FileExistsError:
-        optimal_grid_size = utils.load_json("optimize-grid-size/config.json")[
+        optimal_grid_size = utils.load_json("optimize-grid/config.json")[
             "grid_size"
         ]
 
