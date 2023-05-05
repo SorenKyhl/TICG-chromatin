@@ -43,7 +43,9 @@ data_pipeline = DataPipeline(res, chrom, start, end, size)
 
 hic_paths = {
         "HCT116_auxin" : f"{root}/chromatin/hic-data/HCT116_auxin/HIC-GSE104333_Rao-2017-treated_6hr_combined_30.hic",
-        "GM12878" : f"{root}/chromatin/hic-data/GM12878/GSE63525_GM12878_insitu_replicate_30.hic"
+        "GM12878" : f"{root}/chromatin/hic-data/GM12878/GSE63525_GM12878_insitu_replicate_30.hic",
+        "IMR90": "/mnt/hic-data/IMR90/GSE63525_IMR90_combined_30.hic",
+        "IMR90-new": "/mnt/hic-data/IMR90/ENCFF946RTR.hic"
             }
 
 HCT116_hic = Path(

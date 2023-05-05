@@ -1,6 +1,6 @@
 import sys
 import logging
-from pylib.pysim import Pysim
+from pylib.Pysim import Pysim
 
 if __name__ == "__main__":
     sim = Pysim.from_directory(".")
