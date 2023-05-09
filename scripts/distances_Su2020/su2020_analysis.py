@@ -11,6 +11,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import numpy.ma as ma
 import pandas as pd
+import seaborn as sns
+from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
+from pylib.utils.epilib import eric_plot_tri
+from pylib.utils.plotting_utils import (BLUE_CMAP, RED_BLUE_CMAP, plot_matrix,
+                                        plot_mean_dist)
+from pylib.utils.similarity_measures import SCC
 from scipy.optimize import curve_fit
 from scipy.spatial import ConvexHull
 from sklearn.decomposition import PCA
@@ -20,46 +26,14 @@ sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
 from sequences_to_contact_maps.scripts.load_utils import (
     get_final_max_ent_folder, load_Y)
-from sequences_to_contact_maps.scripts.plotting_utils import (BLUE_CMAP,
-                                                              RED_BLUE_CMAP,
-                                                              plot_matrix,
-                                                              plot_mean_dist)
-from sequences_to_contact_maps.scripts.similarity_measures import SCC
-from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
-                                                     calc_dist_strat_corr,
+from sequences_to_contact_maps.scripts.utils import (calc_dist_strat_corr,
                                                      nan_pearsonr,
                                                      pearson_round)
 from sequences_to_contact_maps.scripts.xyz_utils import (xyz_load,
                                                          xyz_to_distance)
 
 
-def plot_tri(exp, sim, ofile, vmaxp=None, title="", log=False, cmap=None):
-    '''
-    Plot contact map with lower triangle as ground truth and upper as simulation.
-    '''
-    if log:
-        first = np.log(sim + 1)
-        second = np.log(exp + 1)
-    else:
-        first = sim
-        second = exp
-
-    assert np.shape(first) == np.shape(second), f'{first.shape} {second.shape}'
-
-    npixels = np.shape(first)[0]
-    indu = np.triu_indices(npixels)
-    indl = np.tril_indices(npixels)
-
-    composite = np.zeros((npixels, npixels))
-
-    composite[indu] = first[indu]
-    composite[indl] = second[indl]
-
-    if vmaxp is None:
-        vmaxp = np.nanmean(second)
-
-    plot_matrix(composite, ofile, title, vmax = vmaxp, triu = True, cmap = cmap)
-
+# plotting functions
 def rotate_bound(image, angle):
     def plot_diagonal(exp, sim):
 
@@ -98,7 +72,28 @@ def rotate_bound(image, angle):
     # perform the actual rotation and return the image
     return cv2.warpAffine(image, M, (nW, nH),cv2.INTER_NEAREST)
 
+def plot_distance_map(input, dir, label):
+    plot_matrix(input, osp.join(dir, f'D_{label}.png'), f'D_{label}', vmax = 'max', cmap=RED_BLUE_CMAP)
+    # normalize by genomic distance
+    meanDist = DiagonalPreprocessing.genomic_distance_statistics(input)
+    input_diag = DiagonalPreprocessing.process(input, meanDist)
+
+    plot_matrix(input_diag, osp.join(dir, f'D_diag_{label}.png'), f'D_diag_{label}', vmin = 'center1', cmap='bluered')
+
+    if np.sum(np.isnan(input_diag)) == 0:
+        input_diag_corr = np.corrcoef(input_diag)
+        plot_matrix(input_diag_corr, osp.join(dir, f'D_diag_corr_{label}.png'), f'D_diag_corr_{label}', vmin = -1, vmax= 1, cmap='bluered')
+
+# utility functions
 def crop_hg38(inp, start, m):
+    '''
+    Crop input distance map to m pixels starting from start.
+
+    Inputs:
+        inp (np array): distance map
+        start (str): genomic coordinates
+        m (int): desired len of output
+    '''
     dir = '/home/erschultz/Su2020/samples/sample1'
     coords_file = osp.join(dir, 'coords.json')
     with open(coords_file) as f:
@@ -109,6 +104,7 @@ def crop_hg38(inp, start, m):
     return inp[i:i+m, i:i+m]
 
 def hg38_to_hg19(coords):
+    '''Convert hg38 coords to hg19.'''
     dir = '/home/erschultz/Su2020/samples/sample1'
     with open(osp.join(dir, 'hg38_positions.txt'), 'r') as f:
         for i, line in enumerate(f.readlines()):
@@ -118,34 +114,65 @@ def hg38_to_hg19(coords):
     with open(osp.join(dir, 'hg19_positions.bed')) as f:
         return f.readlines()[i]
 
+def min_MSE(D, D_sim):
+    def metric(D, D_sim, alpha):
+        return mean_squared_error(D, D_sim*alpha)
 
-def temp_plot():
+    popt, pcov = curve_fit(metric, D, D_sim, p0 = 1, maxfev = 2000)
+    print(f'popt', popt)
+
+    return popt
+
+def get_pcs(input, nan_rows=None):
+    pca = PCA()
+    if nan_rows is None:
+        nan_rows = np.isnan(input[0])
+    input = input[~nan_rows][:, ~nan_rows] # ignore nan_rows
+
+    # normalize by genomic distance
+    meanDist = DiagonalPreprocessing.genomic_distance_statistics(input)
+    input_diag = DiagonalPreprocessing.process(input, meanDist)
+
+    # corrcoef
+    # input = np.corrcoef(input)
+
+    pca.fit(input/np.std(input, axis = 0))
+    # pca.fit(input)
+    V = pca.components_
+    for v in V:
+        v *= np.sign(np.mean(v[:100]))
+    return V
+
+
+# analysis scripts
+def find_hg38_positions():
     dir = '/home/erschultz/Su2020/samples/sample1'
-    file = osp.join(dir, 'Hi-C_contacts_chromosome21.tsv')
+    file = osp.join(dir, 'Hi-C_contacts_chromosome21.tsv') # hic file
     df = pd.read_csv(file, sep = '\t', index_col=0)
-    y = df.to_numpy().astype(float)
-    lower = 4
-    upper = 4 + 512
-    contiguous=True
+    lower_ind = 4
+    upper_ind = 4 + 512
 
+    # df.columns contains genomic coordinate windows
     cols = [i.split(':')[1].split('-') for i in df.columns]
-    cols = [(int(i), int(j)) for i,j in cols]
-    print(cols)
 
+    cols = [(int(i), int(j)) for i,j in cols]
+    print(cols) # cols now contains tuples of (start, end) coordinate for each window
+
+    # find contiguous region of 512 windows
     for i, (start, end) in enumerate(cols):
-        if i <= lower:
+        if i <= lower_ind:
             prev_end = end
             continue
 
         if not start == prev_end:
             diff = start-prev_end
             print(f'{i} {prev_end} {start}, diff={diff}, {diff//50000}')
-            upper -= diff // 50000
+            upper_ind -= diff // 50000
 
         prev_end = end
 
-    columns = df.columns[lower:upper+1]
-    cols = cols[lower:upper+1]
+    columns = df.columns[lower_ind:upper_ind+1]
+    cols = cols[lower_ind:upper_ind+1]
 
     print((cols[-1][1] - cols[0][0]) / 50000)
 
@@ -154,6 +181,7 @@ def temp_plot():
         wr.writerows([columns])
 
 def find_volume():
+    '''Find average volume of cells in dataset.'''
     dir = '/home/erschultz/Su2020/samples/sample1'
     xyz_file = osp.join(dir, 'xyz.npy')
     xyz = np.load(xyz_file)
@@ -191,6 +219,7 @@ def find_volume():
     print(f'spherical radius {r_sphere} nm')
 
 def compare_dist_distribution():
+    '''Compare distributions of A-B distances between sim and experiment.'''
     def dist_distribution(xyz, a, b):
         # a and b are indices
         num_cells, num_coords, _ = xyz.shape
@@ -214,54 +243,56 @@ def compare_dist_distribution():
     b = coords_dict[coords_b]
     dist = dist_distribution(xyz, a, b)
 
-    dir = '/home/erschultz/Su2020/samples/sample1002'
-    max_ent_dir = osp.join(dir, 'GNN-392-S/k0/replicate1')
-    final_dir = get_final_max_ent_folder(max_ent_dir)
-    file = osp.join(final_dir, 'production_out/output.xyz')
-    xyz_sim = xyz_load(file, multiple_timesteps = True)
-    with open(osp.join(dir, 'import.log'), 'r') as f:
-        line = f.readline().strip()
-        while not line.startswith('start'):
-            line = f.readline().strip()
-        start = int(line.split('=')[1])
-    print(start)
-    coords_a = hg38_to_hg19(coords_a)
-    coords_b = hg38_to_hg19(coords_b)
-    def get_ind_hg19(start, coords, res=50000):
-        chr, rest = coords.split(':')
-        l, u = rest.split('-')
-        l = int(l); u = int(u)
-        i=0
-        while start < l:
-            start += res
-            i += 1
-        end = start + res
-        return i, f'{chr}:{l}-{u}'
-    a, temp = get_ind_hg19(start, coords_a)
-    b, temp = get_ind_hg19(start, coords_b)
-
-    dist_sim = dist_distribution(xyz_sim, a, b)
+    # dir = '/home/erschultz/Su2020/samples/sample1002'
+    # max_ent_dir = osp.join(dir, 'optimize_grid_b_140_phi_0.06-max_ent_fill_1')
+    # final_dir = get_final_max_ent_folder(max_ent_dir)
+    # file = osp.join(final_dir, 'production_out/output.xyz')
+    # xyz_sim = xyz_load(file, multiple_timesteps = True)
+    # with open(osp.join(dir, 'import.log'), 'r') as f:
+    #     line = f.readline().strip()
+    #     while not line.startswith('start'):
+    #         line = f.readline().strip()
+    #     start = int(line.split('=')[1])
+    # print(start)
+    # coords_a = hg38_to_hg19(coords_a)
+    # coords_b = hg38_to_hg19(coords_b)
+    # def get_ind_hg19(start, coords, res=50000):
+    #     chr, rest = coords.split(':')
+    #     l, u = rest.split('-')
+    #     l = int(l); u = int(u)
+    #     i=0
+    #     while start < l:
+    #         start += res
+    #         i += 1
+    #     end = start + res
+    #     return i, f'{chr}:{l}-{u}'
+    # a, temp = get_ind_hg19(start, coords_a)
+    # b, temp = get_ind_hg19(start, coords_b)
+    #
+    # dist_sim = dist_distribution(xyz_sim, a, b)
 
 
     print('exp', dist, dist.shape)
-    print('sim', dist_sim, dist_sim.shape)
+    # print('sim', dist_sim, dist_sim.shape)
 
     bin_width = 50
     arr = dist[~np.isnan(dist)]
     plt.hist(arr, label = 'Exp',
                 weights = np.ones_like(arr) / len(arr),
                 bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width))
-    arr = dist_sim * 20
-    plt.hist(arr, label = 'Sim',
-                weights = np.ones_like(arr) / len(arr),
-                bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width))
-    plt.xlabel('Distance (nm)', fontsize=16)
-    plt.ylabel('Frequency')
-    plt.legend()
-    plt.title(f'distance between\n{coords_a} and {coords_b}')
+    # arr = dist_sim * 20
+    # plt.hist(arr, label = 'Sim',
+    #             weights = np.ones_like(arr) / len(arr),
+    #             bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width))
+    plt.xlabel('Distance between A and B', fontsize=16)
+    plt.ylabel('Probability', fontsize=16)
+    # plt.legend()
+    # plt.title(f'Distance between\n{coords_a} and {coords_b}')
+    # plt.title(f'Distance between A and B')
     plt.savefig(osp.join(dir, 'distance_distribution.png'))
 
 def xyz_to_dist():
+    '''Convert experimental xyz to distance map.'''
     chr=2
     dir = '/home/erschultz/Su2020/samples/sample10'
     log_file = osp.join(dir, 'xyz_to_dist.log')
@@ -272,6 +303,7 @@ def xyz_to_dist():
     D_file = osp.join(dir, 'dist_mean.npy')
     D_file2 = osp.join(dir, 'dist_median.npy')
 
+    # get size of chromosome
     with open(file, 'r') as f:
         line = f.readline()
         line = f.readline().strip()
@@ -293,6 +325,7 @@ def xyz_to_dist():
         final = int(final)
     print(start, end, final)
 
+    # create coords dict
     coords_dict = {} # coords : ind
     i=0
     while end <= final:
@@ -304,7 +337,9 @@ def xyz_to_dist():
     with open(coords_file, 'w') as f:
         json.dump(coords_dict, f)
 
+    # create xyz_file
     if not osp.exists(xyz_file):
+        # count number of cells
         all_numbers = set()
         with open(file, 'r') as f:
             col_names = f.readline()
@@ -365,15 +400,13 @@ def xyz_to_dist():
 
     log_file.close()
 
-
 def sim_xyz_to_dist(dir, max_ent=True):
     if max_ent:
         final_dir = get_final_max_ent_folder(dir)
         file = osp.join(final_dir, 'production_out/output.xyz')
     else:
-        file = osp.join(dir, 'data_out/output.xyz')
+        file = osp.join(dir, 'production_out/output.xyz')
     D_file = osp.join(dir, 'dist_mean.npy')
-
 
     xyz = xyz_load(file, multiple_timesteps = True, N_min = 5)
     D = xyz_to_distance(xyz)
@@ -385,69 +418,91 @@ def sim_xyz_to_dist(dir, max_ent=True):
 
     return D_mean
 
-def compare_control():
-    dir = '/home/erschultz/Su2020/samples/sample1'
-    D_file = osp.join(dir, 'dist_mean_first_half.npy')
-    D1 = np.load(D_file)
-    m = 512
-    D1 = crop_hg38(D1, 'chr21:14000001-14050001', m)
-    print(D1)
+def controls():
+    def compare_control():
+        dir = '/home/erschultz/Su2020/samples/sample1'
+        D_file = osp.join(dir, 'dist_mean_first_half.npy')
+        D1 = np.load(D_file)
+        m = 512
+        D1 = crop_hg38(D1, 'chr21:14000001-14050001', m)
+        print(D1)
 
 
-    D_file = osp.join(dir, 'dist_mean_second_half.npy')
-    D2 = np.load(D_file)
-    D2 = crop_hg38(D2, 'chr21:14000001-14050001', m)
-    print(D2)
+        D_file = osp.join(dir, 'dist_mean_second_half.npy')
+        D2 = np.load(D_file)
+        D2 = crop_hg38(D2, 'chr21:14000001-14050001', m)
+        print(D2)
 
-    triu_ind = np.triu_indices(len(D1))
-    overall_corr = pearson_round(D1[triu_ind], D2[triu_ind], stat = 'nan_pearson')
-    overall_corr2 = pearson_round(D1, D2, stat = 'nan_pearson')
-    print(overall_corr, overall_corr2)
-
-
-    meanDist_gt = DiagonalPreprocessing.genomic_distance_statistics(D1)
-    meanDist = DiagonalPreprocessing.genomic_distance_statistics(D2)
-    plot_mean_dist(meanDist, dir, 'dist_meanDist_log_ref.png',
-                    None, True, meanDist_gt, 'Exp 1/2', 'Exp 2/2',
-                    'blue', ylabel='Distance (nm)')
-    meanDist = DiagonalPreprocessing.genomic_distance_statistics(D2)
+        triu_ind = np.triu_indices(len(D1))
+        overall_corr = pearson_round(D1[triu_ind], D2[triu_ind], stat = 'nan_pearson')
+        overall_corr2 = pearson_round(D1, D2, stat = 'nan_pearson')
+        print(overall_corr, overall_corr2)
 
 
-    # scc = SCC()
-    # corr_scc = scc.scc(D, D_sim, var_stabilized = False)
-    # corr_scc_var = scc.scc(D, D_sim, var_stabilized = True)
-    avg_diag, corr_arr = calc_dist_strat_corr(D1, D2, mode = 'nan_pearson',
-                                            return_arr = True)
-    avg_diag = np.round(avg_diag, 3)
+        meanDist_gt = DiagonalPreprocessing.genomic_distance_statistics(D1)
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(D2)
+        plot_mean_dist(meanDist, dir, 'dist_meanDist_log_ref.png',
+                        None, True, meanDist_gt, 'Exp 1/2', 'Exp 2/2',
+                        'blue', ylabel='Distance (nm)')
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(D2)
 
-    # format title
-    title = f'Overall Pearson Corr: {overall_corr}'
-    title += f'\nMean Diagonal Pearson Corr: {avg_diag}'
-    # title += f'\nSCC: {corr_scc_var}'
 
-    log=True
-    plt.plot(np.arange(m-2), corr_arr, color = 'black')
-    plt.ylim(-0.5, 1)
-    plt.xlabel('Distance', fontsize = 16)
-    plt.ylabel('Pearson Correlation Coefficient', fontsize = 16)
-    plt.title(title, fontsize = 16)
+        # scc = SCC()
+        # corr_scc = scc.scc(D, D_sim, var_stabilized = False)
+        # corr_scc_var = scc.scc(D, D_sim, var_stabilized = True)
+        avg_diag, corr_arr = calc_dist_strat_corr(D1, D2, mode = 'nan_pearson',
+                                                return_arr = True)
+        avg_diag = np.round(avg_diag, 3)
 
-    plt.tight_layout()
-    if log:
-        plt.xscale('log')
-        plt.savefig(osp.join(dir, 'dist_distance_pearson_log.png'))
-    else:
-        plt.savefig(osp.join(dir, 'dist_distance_pearson.png'))
-    plt.close()
+        # format title
+        title = f'Overall Pearson Corr: {overall_corr}'
+        title += f'\nMean Diagonal Pearson Corr: {avg_diag}'
+        # title += f'\nSCC: {corr_scc_var}'
 
-def min_MSE(D, D_sim):
-    def metric(D, D_sim, alpha):
-        return mean_squared_error(D, D_sim*alpha)
+        log=True
+        plt.plot(np.arange(m-2), corr_arr, color = 'black')
+        plt.ylim(-0.5, 1)
+        plt.xlabel('Distance', fontsize = 16)
+        plt.ylabel('Pearson Correlation Coefficient', fontsize = 16)
+        plt.title(title, fontsize = 16)
 
-    popt, pcov = curve_fit(metric, D, D_sim, p0 = 1, maxfev = 2000)
-    print(f'popt', popt)
+        plt.tight_layout()
+        if log:
+            plt.xscale('log')
+            plt.savefig(osp.join(dir, 'dist_distance_pearson_log.png'))
+        else:
+            plt.savefig(osp.join(dir, 'dist_distance_pearson.png'))
+        plt.close()
 
-    return popt
+    def compare_sim_Hic_to_sim_D():
+        dir = '/home/erschultz/dataset_test/samples/sample5000'
+        max_ent_dir = osp.join(dir, 'soren-S/k10/replicate1')
+        # max_ent_dir = '/home/erschultz/dataset_bond/samples/sample9'
+        max_ent = True
+        D = sim_xyz_to_dist(max_ent_dir, max_ent)
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(D)
+
+        Y, Y_diag = load_Y(max_ent_dir)
+
+        V_D = get_pcs(D)
+        V_Y = get_pcs(Y)
+
+        rows = 3; cols = 3
+        row = 0; col = 0
+        fig, ax = plt.subplots(rows, cols)
+        fig.set_figheight(12)
+        fig.set_figwidth(16)
+        for i in range(rows*cols):
+            ax[row,col].plot(V_D[i], label = 'simulated dist')
+            ax[row,col].plot(V_Y[i], label = 'simulated Hi-C')
+            ax[row,col].set_title(f'PC {i+1}')
+            ax[row,col].legend()
+
+            col += 1
+            if col > cols-1:
+                col = 0
+                row += 1
+        plt.savefig(osp.join(max_ent_dir, 'pc_D_vs_Y.png'))
 
 def compare_D_to_sim_D():
     dir = '/home/erschultz/Su2020/samples/sample1002'
@@ -458,39 +513,7 @@ def compare_D_to_sim_D():
     D_sim *= 1
     m = len(D_sim)
 
-    def plot_D(input, dir, label):
-        plot_matrix(input, osp.join(dir, f'D_{label}.png'), f'D_{label}', vmax = 'max', cmap=RED_BLUE_CMAP)
-        # normalize by genomic distance
-        meanDist = DiagonalPreprocessing.genomic_distance_statistics(input)
-        input_diag = DiagonalPreprocessing.process(input, meanDist)
-
-        plot_matrix(input_diag, osp.join(dir, f'D_diag_{label}.png'), f'D_diag_{label}', vmin = 'center1', cmap='bluered')
-
-        if np.sum(np.isnan(input_diag)) == 0:
-            input_diag_corr = np.corrcoef(input_diag)
-            plot_matrix(input_diag_corr, osp.join(dir, f'D_diag_corr_{label}.png'), f'D_diag_corr_{label}', vmin = -1, vmax= 1, cmap='bluered')
-
-    pca = PCA()
-    def get_pcs(input, nan_rows=None):
-        if nan_rows is None:
-            nan_rows = np.isnan(input[0])
-        input = input[~nan_rows][:, ~nan_rows] # ignore nan_rows
-
-        # normalize by genomic distance
-        meanDist = DiagonalPreprocessing.genomic_distance_statistics(input)
-        input_diag = DiagonalPreprocessing.process(input, meanDist)
-
-        # corrcoef
-        # input = np.corrcoef(input)
-
-        pca.fit(input/np.std(input, axis = 0))
-        # pca.fit(input)
-        V = pca.components_
-        for v in V:
-            v *= np.sign(np.mean(v[:100]))
-        return V
-
-
+    # load config params
     if max_ent:
         with open(osp.join(max_ent_dir, 'resources/config.json'), 'r') as f:
             config = json.load(f)
@@ -504,19 +527,16 @@ def compare_D_to_sim_D():
             delta = config["grid_size"]
             vb = config['beadvol']
 
+    # process experimental distance map
     dir = '/home/erschultz/Su2020/samples/sample1'
     D_file = osp.join(dir, 'dist_mean.npy')
     D = np.load(D_file)
     nan_rows = np.isnan(D[0])
     D_no_nan = D[~nan_rows][:, ~nan_rows]
-    plot_D(D_no_nan, dir, 'exp_no_nan')
-    V_no_nan = get_pcs(D_no_nan)
-    # plt.plot(V_no_nan[0])
-    # plt.fill_between(np.arange(0, len(V_no_nan[0])), V_no_nan[0], 0)
-    # plt.show()
+    plot_distance_map(D_no_nan, dir, 'exp_no_nan')
     D = crop_hg38(D, 'chr21:14000001-14050001', m)
     nan_rows = np.isnan(D[0])
-    plot_D(D_sim, max_ent_dir, 'sim')
+    plot_distance_map(D_sim, max_ent_dir, 'sim')
 
     # min_MSE(D, D_sim)
 
@@ -527,7 +547,7 @@ def compare_D_to_sim_D():
     print(overall_corr, overall_corr2)
 
 
-    plot_tri(D, D_sim, osp.join(max_ent_dir, 'dist_triu.png'), vmaxp = np.nanmax(D),
+    eric_plot_tri(D, D_sim, osp.join(max_ent_dir, 'dist_triu.png'), vmaxp = np.nanmax(D),
             title = f'Corr = {overall_corr}', cmap = BLUE_CMAP)
 
     title = f'b={bl}, gs={delta}, vb={vb}'
@@ -598,82 +618,97 @@ def compare_D_to_sim_D():
             row += 1
     plt.savefig(osp.join(max_ent_dir, 'pc_D_vs_D_sim.png'))
 
-def compare_sim_Hic_to_sim_D():
-    dir = '/home/erschultz/dataset_test/samples/sample5000'
-    max_ent_dir = osp.join(dir, 'soren-S/k10/replicate1')
-    # max_ent_dir = '/home/erschultz/dataset_bond/samples/sample9'
-    max_ent = True
-    D = sim_xyz_to_dist(max_ent_dir, max_ent)
-    meanDist = DiagonalPreprocessing.genomic_distance_statistics(D)
-    D_diag = DiagonalPreprocessing.process(D, meanDist)
+def load_exp_gnn_pca(dir):
+    max_ent_dir = osp.join(dir, 'optimize_grid_b_140_phi_0.06-max_ent_fill_1')
+    D_pca = sim_xyz_to_dist(max_ent_dir, True)
+    m = len(D_pca)
+    gnn_dir = osp.join(dir, 'optimize_grid_b_16.5_phi_0.06-GNN396')
+    D_gnn = sim_xyz_to_dist(gnn_dir, False)
 
-    Y, Y_diag = load_Y(max_ent_dir)
+    # process experimental distance map
+    exp_dir = '/home/erschultz/Su2020/samples/sample1'
+    D_file = osp.join(exp_dir, 'dist_mean.npy')
+    D = np.load(D_file)
+    D = crop_hg38(D, 'chr21:14000001-14050001', m)
+    np.save(osp.join(dir, 'D_crop.npy'), D)
+
+    return D, D_gnn, D_pca
+
+def compare_pcs():
+    dir = '/home/erschultz/Su2020/samples/sample1002'
+    D, D_gnn, D_pca = load_exp_gnn_pca(dir)
+    nan_rows = np.isnan(D[0])
 
 
-    pca = PCA()
-    def get_pcs(input):
-        pca.fit(input/np.std(input, axis = 0))
-        V = pca.components_
-        for v in V:
-            v *= np.sign(np.mean(v[:100]))
-        return V
+    # compare PCs
+    V_D = get_pcs(D, nan_rows)
+    V_D_pca = get_pcs(D_pca, nan_rows)
+    V_D_gnn = get_pcs(D_gnn, nan_rows)
 
-    V_D = get_pcs(D_diag)
-    V_Y = get_pcs(Y_diag)
 
-    rows = 3; cols = 3
+    rows = 2; cols = 1
     row = 0; col = 0
     fig, ax = plt.subplots(rows, cols)
     fig.set_figheight(12)
     fig.set_figwidth(16)
     for i in range(rows*cols):
-        ax[row,col].plot(V_D[i], label = 'simulated dist')
-        ax[row,col].plot(V_Y[i], label = 'simulated Hi-C')
-        ax[row,col].set_title(f'PC {i+1}')
-        ax[row,col].legend()
+        ax[row].plot(V_D[i], label = 'Experiment', color = 'k')
+        ax[row].plot(V_D_pca[i], label = 'Max. Ent.', color = 'blue')
+        ax[row].plot(V_D_gnn[i], label = 'GNN', color = 'red')
+        ax[row].set_title(f'PC {i+1}')
+        if i == 0:
+            ax[row].legend()
 
         col += 1
         if col > cols-1:
             col = 0
             row += 1
-    plt.savefig(osp.join(max_ent_dir, 'pc_D_vs_Y.png'))
+    plt.savefig(osp.join(dir, 'pc_D_vs_D_sim.png'))
 
-def quick_plot():
-    dir = '/home/erschultz/Su2020/samples/sample10'
-    def plot_D(input, dir, label):
-        plot_matrix(input, osp.join(dir, f'D_{label}.png'), f'D_{label}', vmax = 'max', cmap=RED_BLUE_CMAP)
-        # normalize by genomic distance
-        meanDist = DiagonalPreprocessing.genomic_distance_statistics(input)
-        input_diag = DiagonalPreprocessing.process(input, meanDist)
+def compare_d_maps():
+    dir = '/home/erschultz/Su2020/samples/sample1002'
+    D, D_gnn, D_pca = load_exp_gnn_pca(dir)
+    D_list = [D, D_pca, D_gnn]
+    labels = ['Experiment', 'Max Ent', 'GNN']
 
-        plot_matrix(input_diag, osp.join(dir, f'D_diag_{label}.png'), f'D_diag_{label}', vmin = 'center1', cmap='bluered')
+    triu_ind = np.triu_indices(len(D))
 
-        if np.sum(np.isnan(input_diag)) == 0:
-            input_diag_corr = np.corrcoef(input_diag)
-            plot_matrix(input_diag_corr, osp.join(dir, f'D_diag_corr_{label}.png'), f'D_diag_corr_{label}', vmin = -1, vmax= 1, cmap='bluered')
+    fig, ax = plt.subplots(1, 3, gridspec_kw={'width_ratios':[1,1,1]})
+    fig.set_figheight(6)
+    fig.set_figwidth(6*2.5)
+    vmax = np.nanmean(D)
+    for i, (D_i, label) in enumerate(zip(D_list, labels)):
+        # if i == 2:
+        #     s = sns.heatmap(D_i, linewidth = 0, vmin = vmin, vmax = vmax, cmap = BLUE_CMAP,
+        #                     ax = ax[i], cbar_ax = ax[3])
+        # else:
+        s = sns.heatmap(D_i, linewidth = 0, vmin = 0, vmax = np.nanmean(D_i), cmap = BLUE_CMAP,
+                        ax = ax[i], cbar = False)
 
-    D_file = osp.join(dir, 'dist_mean.npy')
-    D = np.load(D_file)
-    # plot_D(D, dir, 'exp')
+        if i == 0:
+            s.set_title(label, fontsize = 16)
+        else:
+            corr = pearson_round(D[triu_ind], D_i[triu_ind], stat = 'nan_pearson')
 
-    nan_rows = np.isnan(D[0])
-    D_no_nan = D[~nan_rows][:, ~nan_rows]
-    # plot_D(D_no_nan, dir, 'exp_no_nan')
+            s.set_yticks([])
+            title = (f'{label}'
+                    f'\nCorr={np.round(corr, 3)}')
+            s.set_title(title, fontsize = 16)
 
-    meanDist_gt = DiagonalPreprocessing.genomic_distance_statistics(D)
-    np.save(osp.join(dir, 'meanDist_gt_chr2.npy'), meanDist_gt)
-    print(meanDist_gt)
-    plt.scatter(np.arange(0, len(meanDist_gt)), meanDist_gt)
-    plt.show()
+
+
+    plt.tight_layout()
+    plt.savefig(osp.join(dir, 'PCA_vs_GNN.png'))
+    plt.close()
 
 
 
 if __name__ == '__main__':
-    # temp_plot()
-    # quick_plot()
+    # load_exp_gnn_pca('/home/erschultz/Su2020/samples/sample1002')
+    # find_hg38_positions()
     # xyz_to_dist()
-    # compare_control()
-    compare_D_to_sim_D()
+    # compare_D_to_sim_D()
     # find_volume()
+    compare_pcs()
+    # compare_d_maps()
     # compare_dist_distribution()
-    # compare_sim_Hic_to_sim_D()

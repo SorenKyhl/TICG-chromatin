@@ -1,6 +1,7 @@
-from setuptools import find_packages, setup, Extension
 import subprocess
+
 from pybind11.setup_helpers import Pybind11Extension
+from setuptools import Extension, find_packages, setup
 
 module1 = Pybind11Extension(name = 'pylib.pyticg',
                     include_dirs = ['include'],

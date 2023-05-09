@@ -624,6 +624,7 @@ void Sim::initializeObjects() {
         constructAngles();
 
     // energy matrices
+    std::cout << "Loading energy matrices" << std::endl;
     if (dmatrix_on) {
         setupDmatrix();
     }
@@ -631,6 +632,7 @@ void Sim::initializeObjects() {
         setupLmatrix();
     }
     if (smatrix_on) {
+        std::ifstream smatrixfile(smatrix_filename);
         setupSmatrix();
     }
 
@@ -1744,7 +1746,7 @@ void Sim::setupLmatrix() {
   lmatrix.resize(nbeads, nbeads);
 
 	if ( lmatrixfile.good() ) {
-    std::cout << lmatrix_filename << "lmatrix_filename is good\n";
+    std::cout << lmatrix_filename << " lmatrix_filename is good\n";
     for (int i=0; i<nbeads; i++) {
   		for (int j=0; j<nbeads; j++) {
   			lmatrixfile >> lmatrix(i,j);
@@ -1753,7 +1755,6 @@ void Sim::setupLmatrix() {
 	}
   else
   {
-    std::cout << "lmatrix_filename (" << lmatrix_filename << ") does not exist or cannot be opened\n";
     Eigen::MatrixXd psi;
 
     // need to define psi
@@ -1772,7 +1773,7 @@ void Sim::setupLmatrix() {
     chis_triu = chis.triangularView<Eigen::Upper>();
 
     // try and create lmatrix from chi and psi
-    lmatrix = psi*chis*psi.transpose();
+    lmatrix = psi*chis_triu*psi.transpose();
   }
   std::cout << "loaded L, first row: " << lmatrix.row(0) << std::endl;
 
@@ -1791,29 +1792,31 @@ void Sim::setupSmatrix() {
   smatrix.resize(nbeads, nbeads);
 
 	if ( smatrixfile.good() ) {
-    std::cout << smatrix_filename << "smatrix_filename is good\n";
+    std::cout << smatrix_filename << " smatrix_filename is good\n";
     for (int i=0; i<nbeads; i++) {
   		for (int j=0; j<nbeads; j++) {
   			smatrixfile >> smatrix(i,j);
   		}
   	}
-    std::cout << "loaded S, first element: " << smatrix(0,0) << std::endl;
+    std::cout << "loaded S, first row: " << smatrix.row(0) << std::endl;
 
     // convert to S prime
     Eigen::MatrixXd left = smatrix + smatrix.transpose();
     Eigen::MatrixXd right = smatrix.diagonal().asDiagonal();
 
     smatrix = left - right;
-
-    std::cout << "Converted to S prime, first element: " << smatrix(0,0) << std::endl;
 	}
   else
   {
     smatrix = lmatrix + (dmatrix * 2); //lmatrix is lmatrix prime
-    std::cout << "Converted to S prime, first element: " << smatrix(0,0) << std::endl;
   }
+  std::cout << "Converted to S prime, first row: " << smatrix.row(0) << std::endl;
   diagonal_on = false;
   lmatrix_on = false;
+
+  // write out smatrix
+  std::ofstream file("./" + data_out_filename + "/smatrix_prime.txt");
+  file << smatrix;
 }
 
 void Sim::setupDmatrix() {
@@ -1851,5 +1854,5 @@ void Sim::setupDmatrix() {
       }
     }
   }
-  std::cout << "loaded Dmatrix, first diagonal: " << dmatrix(1,1) << std::endl;
+  std::cout << "loaded Dmatrix, first row: " << dmatrix.row(0) << std::endl;
 }

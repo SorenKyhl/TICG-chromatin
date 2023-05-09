@@ -13,12 +13,11 @@ import pandas as pd
 import scipy
 import seaborn as sns
 from numba import njit
-from tqdm import tqdm
-
 from pylib.utils import hic_utils, utils
 from pylib.utils.goals import *
 from pylib.utils.plotting_utils import plot_matrix
 from pylib.utils.similarity_measures import *
+from tqdm import tqdm
 
 from pylib.utils.hic_utils import get_diagonal
 
@@ -53,11 +52,19 @@ class Sim:
         except FileNotFoundError:
             logging.error("error loading config.json")
 
-        try:
+        found = False
+        if osp.exists(self.path / "contacts.txt"):
             self.hic = get_contactmap(self.path / "contacts.txt")
+            found = True
+        elif osp.exists(self.path / f"contacts{self.config['nSweeps']}.txt"):
+            self.hic = get_contactmap(self.path / f"contacts{self.config['nSweeps']}.txt")
+            found = True
+
+        if found:
             self.d = hic_utils.get_diagonal(self.hic)
-        except FileNotFoundError:
+        else:
             logging.error("error loading contactmap.")
+            logging.error(self.path / f"contacts{self.config['nSweeps']}.txt")
 
         try:
             self.energy = pd.read_csv(
@@ -72,10 +79,13 @@ class Sim:
         except FileNotFoundError:
             logging.error("error loading energy.traj")
 
+        self.chi = None
+        self.seqs = None
+        self.obs_full = None
         if self.config['plaid_on']:
-            self.chi = self.load_chis()
             self.k = self.config['nspecies']
             if self.k > 0:
+                self.chi = self.load_chis()
                 try:
                     self.seqs = self.load_seqs()
                     assert self.k == np.shape(self.seqs)[0]
@@ -90,10 +100,9 @@ class Sim:
                 except FileNotFoundError:
                     logging.error("error loading plaid observables")
         else:
-            self.chi = None
             self.k = 0
 
-        if "diag_chis" in self.config:
+        if self.config['diagonal_on']:
             self.diag_bins = np.shape(self.config["diag_chis"])[0]
             try:
                 self.diag_obs_full = pd.read_csv(
@@ -119,6 +128,7 @@ class Sim:
         if resources_path.exists():
             self.resources_path = resources_path
 
+        self.gthic = None
         if self.maxent_analysis:
             """look for maxent related things"""
             gthic_possibilites = [".", "..", "../../resources"]
@@ -246,16 +256,17 @@ class Sim:
 
         return smatrix
 
-    def plot_contactmap(
-        self, vmaxp=0.1, absolute=False, dark=False, title="", log=False
-    ):
-        plot_contactmap(self.hic, vmaxp, absolute, dark=dark, title=title, log=log)
+    def plot_contactmap(self, vmaxp=0.1, absolute=False, dark=False,
+                        title="", log=False):
+        plot_contactmap(self.hic, vmaxp, absolute, dark=dark, title=title, log=log,
+                        ofile="contactmap.png")
 
     def plot_energy(self):
         plot_energy(self)
 
     def plot_obs(self, diag):
-        plot_obs(self, diag)
+        if self.obs_full is not None:
+            plot_obs(self, diag, 'obs.png')
 
     def plot_tri(self, vmaxp=None, title="", dark=False, log=False):
         plot_tri(self.hic, self.gthic, vmaxp, title=title, dark=dark, log=log)
@@ -273,7 +284,9 @@ class Sim:
         plot_oe(get_oe(self.hic), log=log)
 
     def plot_consistency(self):
-        return plot_consistency(self)
+        if self.seqs is None:
+            return 0
+        return plot_consistency(self, "consistency.png")
 
     def calc_goals(self):
         plaid = get_goal_plaid(self.gthic, self.seqs, self.config)
@@ -297,11 +310,9 @@ class Sim:
 
         diag = self.d
         plot_fn(np.linspace(1 / len(diag), 1, len(diag)), diag, *args, label="sim")
-        try:
+        if self.gthic is not None:
             diag = hic_utils.get_diagonal(self.gthic)
             plot_fn(np.linspace(1 / len(diag), 1, len(diag)), diag, "k", label="exp")
-        except FileNotFoundError:
-            logging.error("no ground truth hi-c for plot_diagonal")
 
         plt.xlabel("genomic distance")
         plt.ylabel("probability")
@@ -363,16 +374,8 @@ def plot_oe(oe, title="", log=False):
     plt.colorbar()
 
 
-def plot_contactmap(
-    contact,
-    vmaxp=0.1,
-    absolute=False,
-    imshow=True,
-    cbar=True,
-    dark=False,
-    title="",
-    log=False,
-):
+def plot_contactmap(contact, vmaxp=0.1, absolute=False, imshow=True, cbar=True,
+                    dark=False, title="", log=False, ofile=None):
     plt.figure(figsize=(12, 10))
 
     cmap = mycmap
@@ -404,6 +407,10 @@ def plot_contactmap(
     if cbar:
         plt.colorbar()
         plt.title(title)
+
+    if ofile is not None:
+        plt.savefig(ofile)
+        plt.close()
 
 
 def plot_diagonal(input, *args, scale="semilogy", label=None):
@@ -442,13 +449,17 @@ def plot_energy(sim):
     axs[2].legend()
 
 
-def plot_obs(sim, diag=True):
+def plot_obs(sim, diag=True, ofile=None):
     o = np.array(sim.obs_full.T)
     d = np.array(sim.diag_obs_full.T)
     plt.plot(o[1:].T)
     if diag:
         plt.figure()
         plt.semilogy(d[1:].T)
+
+    if ofile is not None:
+        plt.savefig(ofile)
+        plt.close()
 
 
 def plot_diff(first, second, c=None, log=False, oe=False, title=""):
@@ -888,10 +899,9 @@ def fill_subdiagonal(a, offset, fn):
 def resize_contactmap(hic, sizex, sizey):
     raise Exception("Not Implemented")
 
-def plot_consistency(sim):
+def plot_consistency(sim, ofile=None):
     """ensure simulation observables are consistent with goals
     computed from simulation contact map"""
-
     if len(sim.hic) != len(sim.seqs[0]):
         size = np.shape(sim.seqs[0])[0]
         hic = resize_contactmap(sim.hic, size, size)
@@ -908,6 +918,9 @@ def plot_consistency(sim):
     plt.plot(goal, "x", label="goal")
     plt.title("sim.obs vs Goals(sim.hic); Error: {%.3f}" % error)
     plt.legend()
+    if ofile is not None:
+        plt.savefig(ofile)
+        plt.close()
     return error
 
 def get_symmetry_score_2(first, second, order="fro"):
@@ -931,7 +944,7 @@ def eric_plot_tri(sim, exp, ofile, vmaxp=None, title="", log=False, cmap=None):
     '''
     Plot contact map with lower triangle as ground truth and upper as simulation.
     '''
-    assert np.shape(sim) == np.shape(exp), f'{sim.shape} {sim.shape}'
+    assert np.shape(sim) == np.shape(exp), f'{sim.shape} {exp.shape}'
     if log:
         sim = np.log(sim + 1)
         exp = np.log(exp + 1)

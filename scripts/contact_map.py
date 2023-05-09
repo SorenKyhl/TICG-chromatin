@@ -17,7 +17,7 @@ from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
 from sequences_to_contact_maps.scripts.energy_utils import (
     calculate_D, calculate_diag_chi_step, calculate_S)
 from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_final_max_ent_L, load_L)
+    get_final_max_ent_folder, load_L, load_max_ent_L)
 from sequences_to_contact_maps.scripts.plotting_utils import (
     plot_diag_chi, plot_matrix, plot_mean_dist, plot_mean_vs_genomic_distance)
 from sequences_to_contact_maps.scripts.utils import DiagonalPreprocessing, crop
@@ -57,7 +57,7 @@ def getArgs(sample_folder=''):
 
 def plot_all(args):
     if args.random_mode:
-        y_path = osp.join(args.sample_folder, 'data_out')
+        y_path = osp.join(args.sample_folder, 'production_out')
         if not osp.exists(y_path):
             y_path = args.sample_folder
     else:
@@ -91,7 +91,7 @@ def plot_all(args):
     if args.random_mode:
         L = load_L(args.sample_folder, throw_exception = False)
     else:
-        L = load_final_max_ent_L(args.replicate_folder, args.final_folder)
+        L = load_max_ent_L(args.replicate_folder)
 
     # get config
     if args.random_mode:
@@ -110,16 +110,20 @@ def plot_all(args):
         file = osp.join(args.sample_folder, 'diag_chis.npy')
         if osp.exists(file):
             diag_chi = np.load(file)
+            if len(diag_chi.shape) > 1:
+                diag_chi = diag_chi[-1]
             file = osp.join(args.sample_folder, 'diag_chis_continuous.npy')
             if osp.exists(file):
                 diag_chi_ref = np.load(file)
             else:
                 diag_chi_ref = None
+
+
     elif args.replicate_folder is not None:
         file = osp.join(args.replicate_folder, 'chis_diag.txt')
         if osp.exists(file):
             all_diag_chis = np.loadtxt(file)
-            diag_chi = all_diag_chis[-1]
+            diag_chi = np.atleast_2d(all_diag_chis)[-1]
             diag_chi_ref = None
     if diag_chi is not None:
         diag_chi_step = calculate_diag_chi_step(config, diag_chi)
