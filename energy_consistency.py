@@ -42,6 +42,10 @@ def setup():
     config['dump_frequency'] = 1000
     config['dump_stats_frequency'] = 1
 
+    config['smatrix_on'] = True
+    config['lmatrix_on'] = True
+    config['dmatrix_on'] = True
+
     # set up diag chis
     config['diagonal_on'] = True
     config['dense_diagonal_on'] = True
@@ -66,6 +70,7 @@ def setup():
     return config, seq, chis
 
 def baseline(config, seq, chis):
+    '''Run simulation with chis.'''
     root = '/home/erschultz/consistency_check/baseline'
     config['smatrix_on'] = False
     config['dmatrix_on'] = False
@@ -101,6 +106,7 @@ def baseline_only_d(config, seq, chis):
         analysis.main_no_compare()
 
 def baseline_energy_on(config, seq, chis):
+    '''Run simulation using S calculated in TICG engine.'''
     root = '/home/erschultz/consistency_check/baseline_energy_on'
     sim = Pysim(root, config, seq, None, randomize_seed = False, overwrite = True)
     sim.run_eq(1000, 1000, 1)
@@ -109,6 +115,7 @@ def baseline_energy_on(config, seq, chis):
         analysis.main_no_compare()
 
 def smatrix_only(config, seq, chis):
+    '''Run simulation using S calculated in python.'''
     root = '/home/erschultz/consistency_check/smatrix_only'
     L, D, S = calculate_all_energy(config, seq, chis)
     print('L')
@@ -122,19 +129,14 @@ def smatrix_only(config, seq, chis):
     # print(S)
     config = smatrix_mode(config)
 
-    S_prime = convert_L_to_Lp(S)
+    sim = Pysim(root, config, None, None, randomize_seed = False, overwrite = True, smatrix = S)
+    sim.run_eq(1000, 1000, 1)
 
-    S_prime2 = np.loadtxt(osp.join(root, 'equilibration/smatrix_prime.txt'))
-
-    print(np.max(S_prime - S_prime2))
-
-    # sim = Pysim(root, config, None, None, randomize_seed = False, overwrite = True, smatrix = S)
-    # sim.run_eq(1000, 1000, 1)
-    #
-    # with utils.cd(sim.root):
-    #   analysis.main_no_compare()
+    with utils.cd(sim.root):
+      analysis.main_no_compare()
 
 def smatrix_only_zeros(config, seq, chis):
+    '''Run simulation with smatrix_filename but S is all zeros.'''
     root = '/home/erschultz/consistency_check/smatrix_only_zeros'
     S = np.zeros((512, 512))
     # print(S)
@@ -146,6 +148,7 @@ def smatrix_only_zeros(config, seq, chis):
       analysis.main_no_compare()
 
 def lmatrix_dmatrix_only(config, seq, chis):
+    '''Run simulation with lmatrix_filename and dmatrix_filename.'''
     root = '/home/erschultz/consistency_check/lmatrix_dmatrix_only'
     L, D, S = calculate_all_energy(config, seq, chis)
     config['chis'] = None
@@ -166,6 +169,7 @@ def lmatrix_dmatrix_only(config, seq, chis):
       analysis.main_no_compare()
 
 def lmatrix_dmatrix_only_use_S(config, seq, chis):
+    '''Run simulation with lmatrix_filename and dmatrix_filename, and use TICG engine to calculate S.'''
     root = '/home/erschultz/consistency_check/lmatrix_dmatrix_only_use_S'
     L, D, S = calculate_all_energy(config, seq, chis)
     config['chis'] = None
@@ -186,6 +190,7 @@ def lmatrix_dmatrix_only_use_S(config, seq, chis):
       analysis.main_no_compare()
 
 def hack_smatrix_as_lmatrix(config, seq, chis):
+    '''Run simulation with python S, but hack it into the lmatrix_filename.'''
     root = '/home/erschultz/consistency_check/hack_smatrix_as_lmatrix'
     L, D, S = calculate_all_energy(config, seq, chis)
     config['chis'] = None
