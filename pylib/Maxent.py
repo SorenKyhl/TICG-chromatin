@@ -36,7 +36,8 @@ class Maxent:
         analysis_on: bool = True,
         initial_chis: Optional[bool] = None,
         dampen_first_step: bool = True,
-        final_it_sweeps: int = 0
+        final_it_sweeps: int = 0,
+        plaid_diagonly: bool = False
     ):
         """
         root: root of maxent filesystem
@@ -82,6 +83,7 @@ class Maxent:
         self.final_it_sweeps = final_it_sweeps
         self.lengthen_iterations = lengthen_iterations
         self.analysis_on = analysis_on
+        self.plaid_diagonly = plaid_diagonly
 
     def set_root(self, root: PathLike):
         """
@@ -230,6 +232,16 @@ class Maxent:
 
             curr_chis = sim.flatten_chis()
             obs, jac = sim.load_observables(jacobian=True)
+            obj_goal = np.array(self.params["goals"])
+
+
+            if self.plaid_diagonly:
+                inds = self.plaid_diagonly_inds(sim)
+                new_chis_diagonly = np.zeros_like(curr_chis)
+                obs = obs[inds]
+                obj_goal = obj_goal[inds]
+                jac = jac[np.ix_(inds, inds)]
+                curr_chis = curr_chis[inds]
 
             gamma = self.params["gamma"]
             if self.dampen_first_step and (it == 0):
@@ -242,13 +254,17 @@ class Maxent:
 
             newchis, newloss = utils.newton(
                 lam=obs,
-                obj_goal=self.params["goals"],
+                obj_goal=obj_goal,
                 B=jac,
                 gamma=gamma,
                 current_chis=curr_chis,
                 trust_region=self.params["trust_region"],
                 method=self.params["method"],
             )
+
+            if self.plaid_diagonly:
+                new_chis_diagonly[inds] = newchis
+                newchis = new_chis_diagonly
 
             self.track_progress(newchis, newloss, sim)
             os.symlink(
@@ -344,3 +360,27 @@ class Maxent:
     def set_config(self, path):
         """load config from path"""
         self.config = utils.load_json(path)
+
+    def plaid_diagonly_inds(self, sim):
+        """get indices for chis and observables to keep when using plaid diagonly."""
+
+        # when plaid_chis are flattened, get indices for plaid chis along the main diagonal
+        #plaid_chis_diag_inds = np.diag_indices_from(plaid_chis)
+        #plaid_chis_diag_inds_flat = np.ravel_multi_index(plaid_chis_diag_inds, np.shape(plaid_chis))
+
+        # raster flat indices into upper triangular matrix, then get just the diagonal entries
+        plaid_chis_flat, diag_chis_flat = sim.split_chis(sim.flatten_chis())
+        n = len(sim.config["chis"])
+        tri = np.zeros_like(sim.config["chis"])
+        flat_indices = list(range(len(plaid_chis_flat)))
+        tri[np.triu_indices(n)] = flat_indices
+        plaid_chis_diag_inds_flat = np.diagonal(tri)
+        plaid_chis_diag_inds_flat = np.array(plaid_chis_diag_inds_flat, dtype=int)
+
+        # when allchis are flattened, get indices for all diagonal chis
+        ndiag_chis = len(sim.config["diag_chis"])
+        start = plaid_chis_diag_inds_flat[-1] + 1
+        diag_chis_inds = np.arange(start, start+ndiag_chis) 
+
+        inds = np.hstack((plaid_chis_diag_inds_flat, diag_chis_inds))
+        return inds
