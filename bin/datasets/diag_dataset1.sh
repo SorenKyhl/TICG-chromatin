@@ -1,5 +1,5 @@
 #! /bin/bash
-#SBATCH --job-name=fds
+#SBATCH --job-name=fds1
 #SBATCH --output=logFiles/fixed_diag_dataset.out
 #SBATCH --time=24:00:00
 #SBATCH --account=pi-depablo

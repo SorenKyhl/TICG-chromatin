@@ -26,10 +26,10 @@ baseDataFolder="/home/erschultz/${dataset}"
 scratchDir='/home/erschultz/scratch'
 overwrite=1
 
-k=8
-nSweeps=500000
+k=10
+nSweeps=50000
 dumpFrequency=10000
-TICGSeed=10
+TICGSeed=1464
 diag='true'
 dense='false'
 diagBins=512
@@ -37,16 +37,20 @@ nSmallBins=64
 smallBinSize=1
 bigBinSize=-1
 nBigBins=-1
-bondLength=16.5
 useL='true'
 useD='true'
-useE='true'
+useS='true'
+
+bondLength=140
+phiChromatin=0.03
+beadVol=130000
 
 jobs=0
 waitCount=0
-for sample in 201
+for sample in 221
 do
-	dataFolder="${baseDataFolder}/samples/sample${sample}/PCA-normalize-E/k${k}/replicate1"
+	dataFolder="${baseDataFolder}/samples/sample${sample}/optimize_grid_b_140_phi_0.03-max_ent"
+	# initConfig="${dataFolder}/iteration15/equilibrated.txt"
 	# gridSize="${sampleFolder}/none/k0/replicate1/grid_size.txt"
 	gridSize="${dataFolder}/resources/config.json"
 
@@ -55,15 +59,26 @@ do
 	seqMethod="${dataFolder}/resources/x.npy"
 	i="${sample}_copy"
 	dense='true'
-	diagBins=96
+	diagBins=80
+	run &
+
+	# chiMethod="${dataFolder}/chis_half.npy"
+	# i="${sample}_chi_half_zero"
+	# run &
+
+	# chiMethod="${dataFolder}/chis.txt"
+	#
+	# chiDiagMethod="${dataFolder}/chis_diag_double.npy"
+	# i="${sample}_double_diag"
+	# run &
+
+
+	# chiDiagMethod="zeros"
+	# i="${sample}_zero"
 	# run &
 
 	# chiDiagMethod="${dataFolder}/fitting/chis_diag_edit.txt"
 	# i="${sample}_edit"
-	# run &
-
-	# chiDiagMethod="${dataFolder}/fitting/chis_diag_edit_zero.txt"
-	# i="${sample}_edit_zero"
 	# run &
 
 	# chiDiagMethod="${dataFolder}/log_max_fit.txt"
@@ -78,7 +93,7 @@ do
 	# i="${sample}_logistic_manual"
 	# run &
 	#
-	# chiDiagMethod="${dataFolder}/fitting/linear_fit.txt"
+	# chiDiagMethod="${dataFolder}/fitting2/linear_fit.txt"
 	# i="${sample}_linear"
 	# run &
 	# #
@@ -98,9 +113,21 @@ do
 	# i="${sample}_poly4_log"
 	# run &
 
+	# chiDiagMethod="${dataFolder}/fitting2/poly4_log_fit.txt"
+	# i="${sample}_poly4_log"
+	# run &
+
 	chiDiagMethod="${dataFolder}/fitting2/poly6_log_fit.txt"
 	i="${sample}_poly6_log"
 	run &
+	#
+	# chiDiagMethod="${dataFolder}/fitting2/poly6_log_fit_edit.txt"
+	# i="${sample}_poly6_log_edit"
+	# run &
+	#
+	# chiDiagMethod="${dataFolder}/fitting2/poly6_log_fit_edit2.txt"
+	# i="${sample}_poly6_log_edit2"
+	# run &
 
 	jobs=$(( $jobs + 1 ))
 	if [ $jobs -gt 15 ]

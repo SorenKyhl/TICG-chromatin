@@ -66,7 +66,7 @@ param_setup() {
 
 	TICGSeed='none'
 	bondType='gaussian'
-
+	initConfig='none'
 	parallel='false'
 	numThreads=2
 }
@@ -74,15 +74,18 @@ param_setup() {
 move() {
 	# move utils to scratch
 	mkdir -p $scratchDirI
-	cd ~/TICG-chromatin/utils
-	init_config="input${m}.xyz"
-	if [ -f $init_config ]
+	cd ~/TICG-chromatin/defaults
+	if [ $initConfig == 'none' ]
 	then
-		cp $init_config "${scratchDirI}/${init_config}"
-	else
-		init_config='none'
+		initConfig="input${m}.xyz"
 	fi
-	cp default_config.json "${scratchDirI}/default_config.json"
+	if [ -f $initConfig ]
+	then
+		cp $initConfig "${scratchDirI}/${initConfig}"
+	else
+		initConfig='none'
+	fi
+	cp config_erschultz.json "${scratchDirI}/default_config.json"
 
 	cd $scratchDirI
 }
@@ -112,7 +115,7 @@ random_inner() {
 	python3 ~/TICG-chromatin/scripts/get_params.py --args_file $argsFile --method $seqMethod --exclusive $exclusive --m $m --p_switch $pSwitch --lmbda $lmbda --scale_resolution $scaleResolution --k $k --save_npy --seq_seed $seqSeed --chi=$chi --chi_method $chiMethod --chi_seed $chiSeed --min_chi $minChi --max_chi $maxChi --fill_diag $fillDiag --ensure_distinguishable --diag_chi_method $chiDiagMethod --diag_chi_slope $chiDiagSlope --diag_chi_scale $chiDiagScale --min_diag_chi $minDiagChi --max_diag_chi $maxDiagChi --diag_bins $diagBins --chi_constant=$chiConstant --chi_multiplier=$chiMultiplier --diag_chi_constant=$chiDiagConstant --diag_chi_midpoint=$chiDiagMidpoint --dense_diagonal_on $dense --dense_diagonal_cutoff $denseCutoff --dense_diagonal_loading $denseLoading --m_continuous $mContinuous --small_binsize $smallBinSize --big_binsize $bigBinSize --n_small_bins $nSmallBins --n_big_bins $nBigBins --diag_start $diagStart --diag_cutoff $diagCutoff > params.log
 
 	# set up config.json
-	python3 ~/TICG-chromatin/scripts/get_config.py --args_file $argsFile --phi_chromatin $phiChromatin --bond_length $bondLength --grid_size $gridSize --bead_vol $beadVol --k_angle $kAngle --m $m --n_sweeps $nSweeps --dump_stats_frequency $dumpStatsFrequency --dump_frequency $dumpFrequency --track_contactmap $trackContactMap --gridmove_on $gridMoveOn --update_contacts_distance $updateContactsDistance --TICG_seed $TICGSeed --constant_chi $constantChi --e_constant $eConstant --s_constant $sConstant --use_lmatrix $useL --use_smatrix $useS --use_dmatrix $useD --load_configuration_filename $init_config --bond_type $bondType --parallel $parallel --num_threads $numThreads --dense_diagonal_on $dense > config.log
+	python3 ~/TICG-chromatin/scripts/get_config.py --args_file $argsFile --phi_chromatin $phiChromatin --bond_length $bondLength --grid_size $gridSize --bead_vol $beadVol --k_angle $kAngle --m $m --n_sweeps $nSweeps --dump_stats_frequency $dumpStatsFrequency --dump_frequency $dumpFrequency --track_contactmap $trackContactMap --gridmove_on $gridMoveOn --update_contacts_distance $updateContactsDistance --TICG_seed $TICGSeed --constant_chi $constantChi --e_constant $eConstant --s_constant $sConstant --use_lmatrix $useL --use_smatrix $useS --use_dmatrix $useD --load_configuration_filename $initConfig --bond_type $bondType --parallel $parallel --num_threads $numThreads --dense_diagonal_on $dense > config.log
 
 	# run simulation
 	~/TICG-chromatin/TICG-engine > log.log

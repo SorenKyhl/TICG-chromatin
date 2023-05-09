@@ -5,7 +5,6 @@ import scipy
 
 
 def calculate_all_energy(config, seq, chi, diag_chis=None):
-    seq = seq.copy()
     assert len(seq.shape) == 2
     if seq.shape[1] > seq.shape[0]:
         seq = seq.T
@@ -17,11 +16,10 @@ def calculate_all_energy(config, seq, chi, diag_chis=None):
 
 def calculate_S(L, D):
     # S is symmetric net energy
-    Lp = L + L.T - np.diag(np.diagonal(L).copy())
     if D is None:
-        return Lp
+        return L
     else:
-        return Lp + 2*D
+        return L + D
 
 def convert_L_to_Lp(L):
     # Lp only requires upper triangle

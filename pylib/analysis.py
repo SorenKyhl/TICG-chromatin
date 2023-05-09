@@ -4,15 +4,15 @@ import logging
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.stats import pearsonr
-from sklearn.decomposition import PCA
-
 import pylib.utils.epilib as ep
 import pylib.utils.utils as utils
+from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import calculate_all_energy
-from pylib.utils.hic_utils import DiagonalPreprocessing
-from pylib.utils.plotting_utils import plot_matrix
+from pylib.utils.plotting_utils import (plot_matrix,
+                                        plot_mean_vs_genomic_distance)
 from pylib.utils.similarity_measures import SCC
+from scipy.stats import pearsonr
+from sklearn.decomposition import PCA
 
 plt.rcParams["figure.figsize"] = [8, 6]
 plt.rcParams.update({"font.size": 18})
@@ -20,49 +20,44 @@ plt.rcParams.update({"font.size": 18})
 def sim_analysis(sim):
     """analyze data from simulation only (doesn't require ground truth hic)"""
     error = sim.plot_consistency()
-    plt.savefig("consistency.png")
-    plt.close()
     if error > 0.01:
         logging.error("SIMULATION IS NOT CONSISTENT")
 
-    plt.figure()
     sim.plot_contactmap()
-    plt.savefig("contactmap.png")
-    plt.close()
+    np.save('y.npy', sim.hic)
 
     plt.figure()
     sim.plot_energy()
     plt.savefig("energy.png")
     plt.close()
 
-    plt.figure()
     sim.plot_obs(diag=False)
-    plt.savefig("obs.png")
-    plt.close()
 
-    plt.figure()
-    plt.plot(sim.config["diag_chis"], "o")
-    plt.savefig("diag_chis.png")
-    plt.close()
+    if sim.config['diagonal_on']:
+        plt.figure()
+        plt.plot(sim.config["diag_chis"], "o")
+        plt.savefig("diag_chis.png")
+        plt.close()
 
-    plt.figure()
-    utils.plot_image(sim.config["chis"])
-    plt.savefig("chis.png")
-    plt.close()
+    if sim.config['nspecies'] > 0:
+        plt.figure()
+        utils.plot_image(sim.config["chis"])
+        plt.savefig("chis.png")
+        plt.close()
 
-    try:
-        plot_energy_matrices(sim)
-    except ValueError:
-        if sim.config["contact_resolution"] > 1:
-            logging.warn("energy matrices could not be created because contact map has been pooled (contact map resolution > 1)")
-        else:
-            raise ValueError
-    except NotImplementedError:
-        logging.warn("energy matrices not implemented for this situation")
+        plt.figure()
+        plot_chi_matrix(sim)
+        plt.close()
 
-    plt.figure()
-    plot_chi_matrix(sim)
-    plt.close()
+        try:
+            plot_energy_matrices(sim)
+        except ValueError:
+            if sim.config["contact_resolution"] > 1:
+                logging.warn("energy matrices could not be created because contact map has been pooled (contact map resolution > 1)")
+            else:
+                raise ValueError
+        except NotImplementedError:
+            logging.warn("energy matrices not implemented for this situation")
 
     plt.figure()
     sim.plot_oe()
@@ -79,8 +74,12 @@ def sim_analysis(sim):
     plt.savefig("diagonal-log.png")
     plt.close()
 
+    plot_mean_vs_genomic_distance(sim.hic, '', 'meanDist_log.png', logx = True, ref = sim.gthic)
+
+
 def compare_analysis(sim):
     """analyze comparison of simulation with ground truth contact map"""
+
     ep.eric_plot_tri(sim.hic, sim.gthic, "tri.png")
     ep.eric_plot_tri(sim.hic, sim.gthic, "tri_log.png", log = True)
     ep.eric_plot_tri(sim.hic, sim.gthic, "tri_dark.png", np.mean(sim.gthic)/2)
@@ -179,6 +178,9 @@ def plot_energy_matrices(sim):
     plot_matrix(D, 'matrix_D.png', "D")
     plot_matrix(S, 'matrix_S.png', "S", cmap='bluered')
 
+    np.save('S.npy', S)
+    np.save('D.npy', D)
+    np.save('L.npy', L)
 
 def compare_top_PCs(y, yhat):
     # y
@@ -260,6 +262,7 @@ def plot_dist_stratified_pearson_r(y, yhat):
     title += f'\nSCC: {corr_scc_var}'
 
     for log in [True, False]:
+        plt.figure()
         plt.plot(np.arange(m-2), corr_arr, color = 'black')
         plt.ylim(-0.5, 1)
         plt.xlabel('Distance', fontsize = 16)
@@ -314,6 +317,20 @@ def calc_dist_strat_corr(y, yhat, mode = 'pearson', return_arr = False):
         return avg, corr_arr
     else:
         return avg
+
+def main_no_compare():
+    sim = ep.Sim("production_out")
+    logging.info("sim created")
+    sim_analysis(sim)
+    logging.info("sim analysis done")
+
+def main_no_maxent():
+    sim = ep.Sim("production_out")
+    logging.info("sim created")
+    sim_analysis(sim)
+    logging.info("sim analysis done")
+    compare_analysis(sim)
+    logging.info("compare analysis done")
 
 def main():
     sim = ep.Sim("production_out")
