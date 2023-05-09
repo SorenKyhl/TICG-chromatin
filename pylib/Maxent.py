@@ -1,14 +1,14 @@
 import copy
 import os
 import pickle
+import shutil
 from pathlib import Path
 from typing import Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-import sympy
-
 import pylib.analysis as analysis
+import sympy
 from pylib.Pysim import Pysim
 from pylib.utils import utils
 
@@ -111,7 +111,9 @@ class Maxent:
 
     def make_directory(self):
         """create maxent directory and populate resources"""
-        self.root.mkdir(exist_ok=self.overwrite)
+        if self.root.exists() and self.overwrite:
+            shutil.rmtree(self.root)
+        self.root.mkdir()
         self.resources.mkdir(exist_ok=self.overwrite)
         np.save(self.resources / "experimental_hic.npy", self.gthic)
         utils.write_json(self.config, self.resources / "config.json")

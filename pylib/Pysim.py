@@ -31,7 +31,10 @@ class Pysim:
         mkdir: bool = True,
         setup_needed: bool = True,
         overwrite: Optional[bool] = False,
-        smatrix: Optional[ArrayLike] = None
+        smatrix: Optional[ArrayLike] = None,
+        lmatrix: Optional[ArrayLike] = None,
+        dmatrix: Optional[ArrayLike] = None
+
     ):
         self.set_root(root, mkdir, overwrite)
         self.set_config(config)
@@ -40,10 +43,9 @@ class Pysim:
             self.seqs = seqs.T
         else:
             self.seqs = seqs
-        if smatrix is not None:
-            self.S = smatrix
-        else:
-            self.S = None
+        self.S = smatrix
+        self.L = lmatrix
+        self.D = dmatrix
 
         self.setup_needed = setup_needed
         # should be true unless instantiated using from_directory
@@ -115,6 +117,13 @@ class Pysim:
             if self.S is not None:
                 np.save(Path(self.root, f"S.npy"), self.S)
                 np.savetxt(Path(self.root, f"smatrix.txt"), self.S)
+            if self.L is not None:
+                np.save(Path(self.root, f"L.npy"), self.L)
+                np.savetxt(Path(self.root, f"lmatrix.txt"), self.L)
+            if self.D is not None:
+                np.save(Path(self.root, f"D.npy"), self.D)
+                np.savetxt(Path(self.root, f"dmatrix.txt"), self.D)
+
 
     def flatten_chis(self):
         """restructure chi parameters into a 1-dimensional list

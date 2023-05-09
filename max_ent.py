@@ -73,7 +73,7 @@ def modify_soren():
 def fit(sample):
     print(sample)
     mode = 'grid'
-    dataset = 'dataset_02_04_23'
+    dataset = 'downsampling_analysis'
     dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
     y = np.load(osp.join(dir, 'y.npy'))
     y /= np.mean(np.diagonal(y))
@@ -100,10 +100,10 @@ def fit(sample):
     for key in ['beadvol', 'bond_length', 'phi_chromatin', 'grid_size',
                 'k_angle', 'angles_on']:
         config[key] = bonded_config[key]
-    k = 8
+    k = 10
     config['nspecies'] = k
     config['chis'] = np.zeros((k,k))
-    config['dump_frequency'] = 10000
+    config['dump_frequency'] = 30000
 
     # get sequences
     config['nbeads'] = len(y)
@@ -124,20 +124,20 @@ def fit(sample):
     goals = epilib.get_goals(y, seqs, config)
     params["goals"] = goals
     params['iterations'] = 15
-    params['parallel'] = 10
-    params['production_sweeps'] = 30000
+    params['parallel'] = 1
+    params['production_sweeps'] = 300000
     params['equilib_sweeps'] = 30000
 
     me = Maxent(osp.join(dir, f'{root}-max_ent'), params, config, seqs, y,
-                final_it_sweeps=500000)
+                final_it_sweeps=500000, overwrite = True)
     me.fit()
 
 def main():
-    with mp.Pool(17) as p:
-        p.map(fit, range(221, 222))
+    with mp.Pool(14) as p:
+        p.map(fit, [1, 2, 3, 4, 5, 10, 25, 50, 75, 100])
     # for i in range(202, 283):
         # fit(i)
-    # fit(202)
+    # fit(201)
 
 
 

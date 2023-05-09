@@ -12,10 +12,10 @@ from pylib.utils import default, epilib, utils
 from scripts.get_params import GetEnergy
 
 
-def fit(sample):
+def fit(sample, GNN_ID):
     print(sample)
     mode = 'grid'
-    dataset = 'dataset_HCT116'
+    dataset = 'dataset_02_04_23'
     dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
     y = np.load(osp.join(dir, 'y.npy'))
     y /= np.mean(np.diagonal(y))
@@ -51,24 +51,32 @@ def fit(sample):
     # get energy
     config['nbeads'] = len(y)
     getenergy = GetEnergy(config = config)
-    GNN_ID = 392
     model_path = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{GNN_ID}'
     S = getenergy.get_energy_gnn(model_path, dir)
     config["smatrix_filename"] = "smatrix.txt"
 
     sim = Pysim(f'{root}-GNN{GNN_ID}', config, None, y, randomize_seed = True, overwrite = True,
                 smatrix = S)
-    sim.run_eq(10000, 10000, 5)
+    sim.run_eq(30000, 500000, 1)
 
     with utils.cd(sim.root):
         analysis.main_no_maxent()
 
 def main():
-    # with mp.Pool(17) as p:
-        # p.map(fit, range(221, 222))
-    # for i in range(202, 283):
-        # fit(i)
-    fit(1010)
+    mapping = []
+    samples = range(201, 211)
+    GNN_IDs = [402]
+    for i in samples:
+        for GNN_ID in GNN_IDs:
+            mapping.append((i, GNN_ID))
+
+    print(mapping)
+
+    with mp.Pool(5) as p:
+        p.starmap(fit, mapping)
+    # for i in samples:
+        # fit(i, GNN_ID)
+    # fit(5)
 
 
 

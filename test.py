@@ -17,8 +17,9 @@ import sympy
 import torch
 import torch_geometric
 from pylib.utils import default, epilib, hic_utils
-from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
-                                      calculate_S)
+from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
+                                      calculate_diag_chi_step, calculate_S)
+from pylib.utils.utils import load_json
 from scipy.ndimage import uniform_filter
 from scripts.data_generation.modify_maxent import get_samples
 from scripts.get_params import GetSeq
@@ -433,95 +434,6 @@ def plot_sc_p_s():
     plt.savefig(osp.join(data_dir, 'sc_contacts_time', 'meanDist_log2.png'))
     plt.close()
 
-def plot_p_s(dataset, experimental=False, ref=False, params=False, label=None):
-    # plot different p(s) curves
-    dir = '/home/erschultz/'
-    if ref:
-        data_dir = osp.join(dir, 'dataset_11_14_22/samples/sample1') # experimental data sample
-        file = osp.join(data_dir, 'y.npy')
-        y_exp = np.load(file)
-        meanDist_ref = DiagonalPreprocessing.genomic_distance_statistics(y_exp, 'prob')
-
-    data_dir = osp.join(dir, dataset)
-
-    data = defaultdict(dict) # sample : {meanDist, diag_chis_step} : vals
-    samples, _ = get_samples(dataset)
-    for sample in samples:
-        sample_dir = osp.join(data_dir, 'samples', f'sample{sample}')
-        ifile = osp.join(sample_dir, 'y.npy')
-        if osp.exists(ifile):
-            y = np.load(ifile)
-            meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
-            data[sample]['meanDist'] = meanDist
-
-            config_file = osp.join(sample_dir, 'config.json')
-            if osp.exists(config_file):
-                with open(config_file) as f:
-                    config = json.load(f)
-                    data[sample]['grid_size'] = config['grid_size']
-                    data[sample]['phi_chromatin'] = config['phi_chromatin']
-                    data[sample]['bond_length'] = config["bond_length"]
-                    data[sample]['grid_size'] = config["grid_size"]
-                    data[sample]['beadvol'] = config['beadvol']
-                    data[sample]['k_angle'] = config['k_angle']
-            if params:
-                diag_chis_step = calculate_diag_chi_step(config)
-                data[sample]['diag_chis_step'] = np.array(diag_chis_step)
-
-
-    for norm in [True, False]:
-        fig, ax = plt.subplots()
-        if params:
-            ax2 = ax.twinx()
-        if ref:
-            if norm:
-                X = np.arange(0, 1, len(meanDist_ref))
-            else:
-                X = np.arange(0, len(meanDist_ref), 1)
-            ax.plot(meanDist_ref, label = 'Experiment', color = 'k')
-
-        for i, sample in enumerate(data.keys()):
-            meanDist = data[sample]['meanDist']
-            if norm:
-                X = np.linspace(0, 1, len(meanDist))
-            else:
-                X = np.arange(0, len(meanDist), 1)
-            if i > 10:
-                ls = 'dashed'
-            else:
-                ls = 'solid'
-
-            if label is not None:
-                ax.plot(X, meanDist, label = data[sample][label], ls = ls)
-            else:
-                ax.plot(X, meanDist, label = sample, ls = ls)
-
-            if params:
-                diag_chis_step = data[sample]['diag_chis_step']
-                ax2.plot(X, diag_chis_step, ls = '--', label = 'Parameters')
-
-        ax.set_yscale('log')
-        ax.set_xscale('log')
-        ax.set_ylabel('Contact Probability', fontsize = 16)
-        ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
-
-        if params:
-            ax.legend(loc='lower left', title = 'Sample')
-            ax2.set_xscale('log')
-            ax2.set_ylabel('Diagonal Parameter', fontsize = 16)
-            ax2.legend(loc='upper right')
-        elif label is not None:
-            ax.legend(loc='upper right', title = label)
-        else:
-            ax.legend(loc='upper right', title = 'Sample')
-        if not experimental:
-            plt.title(f"b={data[sample]['bond_length']}, "
-                    r"$\Delta$"
-                    f"={data[sample]['grid_size']}, vb={data[sample]['beadvol']}")
-        plt.tight_layout()
-        plt.savefig(osp.join(data_dir, f'meanDist_norm_{norm}.png'))
-        plt.close()
-
 def plot_mean_dist_S(dataset, experimental=False, label=None):
     # plot different p(s) curves
     dir = '/home/erschultz/'
@@ -565,7 +477,6 @@ def plot_mean_dist_S(dataset, experimental=False, label=None):
     plt.tight_layout()
     plt.savefig(osp.join(data_dir, 'S_meanDist.png'))
     plt.close()
-
 
 def plot_S():
     raise Excepton('deprecated - need to fix energy notation')
@@ -881,7 +792,6 @@ def gnn_of_max_ent(samples, k, ID):
         corr = scc.scc(y_max_ent1, y_gnn2, var_stabilized = True)
         print('Max Ent 1 vs GNN2:', np.round(corr, 3))
 
-
 def make_dataset_of_converged(dataset):
     '''
     Inputs:
@@ -934,19 +844,6 @@ def make_dataset_of_converged(dataset):
                     count += 1
     print(f'{converged_count} out of {converged_count+count} converged')
 
-
-def test_nan_slice():
-    x = np.random.rand(10,10)
-    x = np.round(x, 1)*10
-    for i in [2, 5, 8]:
-        x[i, :] = np.nan
-        x[:, i] = np.nan
-    print(x)
-    nan_cols = np.isnan(x[0])
-    print(nan_cols)
-    y = x[~nan_cols][:, ~nan_cols]
-    print(y)
-
 def check_bonded_distributions():
     dir = '/home/erschultz/dataset_grid/samples/sample3'
     xyz = xyz_load(osp.join(dir, 'data_out/output.xyz'), multiple_timesteps = True)
@@ -960,82 +857,17 @@ def check_bonded_distributions():
     for i in range(4):
         print(i, np.mean(np.diagonal(D_mean, i))**0.5)
 
-def plot_seq_comparison(seqs, labels):
-    for i, seq in enumerate(seqs):
-        if seq.shape[1] > seq.shape[0]:
-            seqs[i] = seq.T
-    rows = 3; cols = 3
-    row = 0; col = 0
-    fig, ax = plt.subplots(rows, cols)
-    fig.set_figheight(12)
-    fig.set_figwidth(16)
-    for i in range(rows*cols):
-        for seq, label in zip(seqs, labels):
-            ax[row, col].plot(seq[:, i], label = label)
-        ax[row, col].set_title(f'PC {i+1}')
-        ax[row, col].legend()
-
-        col += 1
-        if col > cols-1:
-            col = 0
-            row += 1
-    plt.show()
-
-def compare_PCA():
-    dir = '/home/erschultz/dataset_02_04_23/samples/sample202'
-    y = np.load(osp.join(dir, 'y.npy'))
-    k=10
-    y /= np.mean(np.diagonal(y))
-    y_diag = epilib.get_oe(y)
-
-    x_small = epilib.get_sequences(y, k, randomized = True)
-
-    config = default.config
-    config['nbeads'] = len(y)
-    config['nspecies'] = k
-    getSeq = GetSeq(config = config)
-    x_eric = getSeq.get_PCA_seq(y_diag, normalize = True)
-
-    # x_soren = np.load(osp.join(dir, 'x_soren.npy')) * -1
-
-    x = epilib.get_sequences(y, k, randomized=True)
-    y_smooth = hic_utils.smooth_hic(y, 3)
-    x_smooth = epilib.get_sequences(y_smooth, k, randomized=True)
-
-    plot_seq_comparison([x_eric, x_smooth, x],
-                        ['Eric','Soren Smooth', 'Soren'])
-
-
-
-def compare_seq():
-    dir = '/home/erschultz/dataset_test/samples/sample5003'
-    x_soren = np.load(osp.join(dir, 'x_soren.npy'))
-    x = np.load(osp.join(dir, 'x.npy'))
-    x_small = np.load(osp.join(dir, 'x_small.npy'))
-
-    plot_seq_comparison([x, x_soren, x_small], ['Eric', 'Soren', 'Soren Small'])
-
-
-
 if __name__ == '__main__':
-    # compare_seq()
-    # compare_PCA()
     # test_robust_PCA()
     # check_dataset('dataset_11_18_22')
     # time_comparison()
     # time_comparison_dmatrix()
     # convergence_check()
-    # main()
+    main()
     # compare_scc_bio_replicates()
     # max_ent_loss_for_gnn('dataset_11_14_22', 2201)
-    plot_p_s('dataset_04_28_23', params = False)
     # plot_mean_dist_S('dataset_04_28_23')
     # gnn_of_max_ent([207], 8, 378)
     # check_interpolation()
     # make_dataset_of_converged('dataset_03_21_23')
-    # plot_seq()
-    # temp_plot()
-    # make_config3()
-    # test_nan_slice()
-    # data_manipulation()
     # check_bonded_distributions()

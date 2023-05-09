@@ -60,21 +60,21 @@ do
 	i="${sample}_copy"
 	dense='true'
 	diagBins=80
-	# run &
-
-	chiMethod="${dataFolder}/chis_half.npy"
-	i="${sample}_chi_half_zero"
-	# run &
-
-	chiMethod="${dataFolder}/chis.txt"
-
-	chiDiagMethod="${dataFolder}/chis_diag_double.npy"
-	i="${sample}_double_diag"
 	run &
 
+	# chiMethod="${dataFolder}/chis_half.npy"
+	# i="${sample}_chi_half_zero"
+	# run &
 
-	chiDiagMethod="zeros"
-	i="${sample}_zero"
+	# chiMethod="${dataFolder}/chis.txt"
+	#
+	# chiDiagMethod="${dataFolder}/chis_diag_double.npy"
+	# i="${sample}_double_diag"
+	# run &
+
+
+	# chiDiagMethod="zeros"
+	# i="${sample}_zero"
 	# run &
 
 	# chiDiagMethod="${dataFolder}/fitting/chis_diag_edit.txt"
@@ -93,7 +93,7 @@ do
 	# i="${sample}_logistic_manual"
 	# run &
 	#
-	# chiDiagMethod="${dataFolder}/fitting/linear_fit.txt"
+	# chiDiagMethod="${dataFolder}/fitting2/linear_fit.txt"
 	# i="${sample}_linear"
 	# run &
 	# #
@@ -116,10 +116,10 @@ do
 	# chiDiagMethod="${dataFolder}/fitting2/poly4_log_fit.txt"
 	# i="${sample}_poly4_log"
 	# run &
-	#
-	# chiDiagMethod="${dataFolder}/fitting2/poly6_log_fit.txt"
-	# i="${sample}_poly6_log"
-	# run &
+
+	chiDiagMethod="${dataFolder}/fitting2/poly6_log_fit.txt"
+	i="${sample}_poly6_log"
+	run &
 	#
 	# chiDiagMethod="${dataFolder}/fitting2/poly6_log_fit_edit.txt"
 	# i="${sample}_poly6_log_edit"

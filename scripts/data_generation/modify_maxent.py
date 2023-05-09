@@ -69,7 +69,7 @@ def get_samples(dataset):
 
 def modify_plaid_chis(dataset, k):
     samples, _ = get_samples(dataset)
-    for sample in tqdm(samples):
+    for sample in tqdm.tqdm(samples):
         dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
         max_ent_dir = osp.join(dir, f'optimize_grid_b_140_phi_0.03-max_ent')
         chis = np.loadtxt(osp.join(max_ent_dir, 'chis.txt'))
@@ -174,8 +174,8 @@ def modify_maxent_diag_chi(dataset, k = 8, edit = True):
     '''
     samples, _ = get_samples(dataset)
     for sample in samples:
-        if sample != 221:
-            continue
+        # if sample != 221:
+            # continue
         print(f'sample{sample}, k{k}')
         # try different modifications to diag chis learned by max ent
         dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
@@ -1268,7 +1268,7 @@ if __name__ == '__main__':
     # modify_maxent_diag_chi('dataset_02_04_23', 10, False)
     # for i in range(221, 222):
     #     plot_modified_max_ent(i, k = 10)
-    # diagonal_dist('dataset_02_04_23', 7)
+    # diagonal_dist('dataset_02_04_23', 10)
     # grid_dist('dataset_01_26_23')
     plaid_dist('dataset_02_04_23', 10, True, False, True)
     # seq_dist('dataset_01_26_23', 4, True, False, True)

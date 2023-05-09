@@ -262,6 +262,7 @@ def plot_dist_stratified_pearson_r(y, yhat):
     title += f'\nSCC: {corr_scc_var}'
 
     for log in [True, False]:
+        plt.figure()
         plt.plot(np.arange(m-2), corr_arr, color = 'black')
         plt.ylim(-0.5, 1)
         plt.xlabel('Distance', fontsize = 16)
@@ -316,6 +317,12 @@ def calc_dist_strat_corr(y, yhat, mode = 'pearson', return_arr = False):
         return avg, corr_arr
     else:
         return avg
+
+def main_no_compare():
+    sim = ep.Sim("production_out")
+    logging.info("sim created")
+    sim_analysis(sim)
+    logging.info("sim analysis done")
 
 def main_no_maxent():
     sim = ep.Sim("production_out")

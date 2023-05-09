@@ -9,7 +9,6 @@ import matplotlib.colors
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 
 RED_CMAP = matplotlib.colors.LinearSegmentedColormap.from_list('custom',
@@ -29,9 +28,9 @@ RED_BLUE_CMAP = matplotlib.colors.LinearSegmentedColormap.from_list('custom',
 
 
 def plot_matrix(arr, ofile=None, title=None, vmin=0, vmax='max',
-                    size_in=6, minVal=None, maxVal=None, prcnt=False,
-                    cmap=RED_CMAP, x_tick_locs=None, x_ticks=None,
-                    y_tick_locs=None, y_ticks=None, triu=False, lines=[]):
+                size_in=6, minVal=None, maxVal=None, prcnt=False,
+                cmap=RED_CMAP, x_tick_locs=None, x_ticks=None,
+                y_tick_locs=None, y_ticks=None, triu=False, lines=[]):
     """
     Plotting function for 2D arrays.
 
@@ -161,9 +160,9 @@ def plot_matrix(arr, ofile=None, title=None, vmin=0, vmax='max',
         plt.show()
     plt.close()
 
-def plot_matrix_gif(arr, dir, ofile = None, title = None, vmin = 0, vmax = 1,
-                    size_in = 6, minVal = None, maxVal = None, prcnt = False,
-                    cmap = None, x_ticks = None, y_ticks = None):
+def plot_matrix_gif(arr, dir, ofile=None, title=None, vmin=0, vmax=1,
+                    size_in=6, minVal=None, maxVal=None, prcnt=False,
+                    cmap=None, x_ticks=None, y_ticks=None):
     filenames = []
     for i in range(len(arr)):
         fname=osp.join(dir, f'{i}.png')
@@ -183,9 +182,10 @@ def plot_matrix_gif(arr, dir, ofile = None, title = None, vmin = 0, vmax = 1,
     for filename in set(filenames):
         os.remove(filename)
 
-def plot_mean_dist(meanDist, path, ofile, diag_chis_step, logx, ref,
-                    ref_label = 'reference', label = '', color = 'blue',
-                    title = None, ylabel='Contact Probability'):
+def plot_mean_dist(meanDist, path, ofile, diag_chis_step, logx, logy=True,
+                    ref=None, ref_label='reference', label='',
+                    color='blue', title=None,
+                    ylabel='Contact Probability'):
     '''
     Inputs:
         meanDist (array): mean value along off-diagonals of contact map
@@ -209,7 +209,8 @@ def plot_mean_dist(meanDist, path, ofile, diag_chis_step, logx, ref,
         ax.plot(ref, label = ref_label, color = 'k')
     ax.plot(meanDist, label = label, color = color)
     ax.legend(loc='upper left')
-    ax.set_yscale('log')
+    if logy:
+        ax.set_yscale('log')
     if logx:
         ax.set_xscale('log')
 
@@ -259,10 +260,9 @@ def plot_mean_vs_genomic_distance(y, path, ofile, diag_chis_step = None,
     if config is not None:
         diag_chis_step = calculate_diag_chi_step(config)
 
-    plot_mean_dist(meanDist, path, ofile, diag_chis_step, logx, ref, ref_label)
+    plot_mean_dist(meanDist, path, ofile, diag_chis_step, logx, ref=ref, ref_label=ref_label)
 
     return meanDist
-
 
 def test():
     y = np.random.normal(size=(512, 512))

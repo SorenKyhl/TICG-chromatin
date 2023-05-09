@@ -14,6 +14,7 @@ import scipy.linalg
 import scipy.ndimage as ndimage
 import torch
 import torch_geometric
+from pylib.utils.utils import load_json
 from sklearn.cluster import KMeans
 from sklearn.decomposition import NMF, PCA, KernelPCA
 
@@ -1603,50 +1604,49 @@ class GetEnergy():
         # get dataset
         dataset = get_dataset(opt, verbose = True, samples = [sample_id])
         print('Dataset: ', dataset, len(dataset))
-        dataloader = torch_geometric.loader.DataLoader(dataset, batch_size = 1,
-                            shuffle = False, num_workers = 1)
 
         # get prediction
-        for i, data in enumerate(dataloader):
-            print(i, data)
-            data = data.to(opt.device)
-            print(f'data first node: {data.x[0]}')
-            yhat = model(data)
-            yhat = yhat.cpu().detach().numpy().reshape((opt.m,opt.m))
+        data = dataset[0]
+        data.batch = torch.zeros(data.num_nodes, dtype=torch.int64)
+        print(data)
+        data = data.to(opt.device)
+        print(f'data first node: {data.x[0]}')
+        yhat = model(data)
+        yhat = yhat.cpu().detach().numpy().reshape((opt.m,opt.m))
 
-            if opt.output_preprocesing == 'log':
-                yhat = np.multiply(np.sign(yhat), np.exp(np.abs(yhat)) - 1)
+        if opt.output_preprocesing == 'log':
+            yhat = np.multiply(np.sign(yhat), np.exp(np.abs(yhat)) - 1)
 
-                # ln(L + D) doesn't simplify, so these can't be compared to the ground truth
-                plaid_hat = model.plaid_component(data)
-                diagonal_hat = model.diagonal_component(data)
-            else:
-                plaid_hat = model.plaid_component(data)
-                diagonal_hat = model.diagonal_component(data)
+            # ln(L + D) doesn't simplify, so these can't be compared to the ground truth
+            plaid_hat = model.plaid_component(data)
+            diagonal_hat = model.diagonal_component(data)
+        else:
+            plaid_hat = model.plaid_component(data)
+            diagonal_hat = model.diagonal_component(data)
 
-            energy = yhat
+        energy = yhat
 
-            if plaid_hat is not None and diagonal_hat is not None:
-                # plot plaid contribution
-                v_max = max(np.max(energy), -1*np.min(energy))
-                v_min = -1 * v_max
-                # vmin = vmax = 'center'
-                plaid_hat = plaid_hat.cpu().detach().numpy().reshape((opt.m,opt.m))
-                plot_matrix(plaid_hat, 'plaid_hat.png', vmin = v_min,
-                                vmax = v_max, title = 'plaid portion', cmap = 'blue-red')
-                print(f'Rank of plaid_hat: {np.linalg.matrix_rank(plaid_hat)}')
-                w, v = np.linalg.eig(plaid_hat)
-                prcnt = np.abs(w) / np.sum(np.abs(w))
-                print(prcnt[0:4])
-                print(np.sum(prcnt[0:4]))
-                np.savetxt('plaid_hat.txt', plaid_hat)
+        if plaid_hat is not None and diagonal_hat is not None:
+            # plot plaid contribution
+            v_max = max(np.max(energy), -1*np.min(energy))
+            v_min = -1 * v_max
+            # vmin = vmax = 'center'
+            plaid_hat = plaid_hat.cpu().detach().numpy().reshape((opt.m,opt.m))
+            plot_matrix(plaid_hat, 'plaid_hat.png', vmin = v_min,
+                            vmax = v_max, title = 'plaid portion', cmap = 'blue-red')
+            print(f'Rank of plaid_hat: {np.linalg.matrix_rank(plaid_hat)}')
+            w, v = np.linalg.eig(plaid_hat)
+            prcnt = np.abs(w) / np.sum(np.abs(w))
+            print(prcnt[0:4])
+            print(np.sum(prcnt[0:4]))
+            np.savetxt('plaid_hat.txt', plaid_hat)
 
 
-                # plot diag contribution
-                diagonal_hat = diagonal_hat.cpu().detach().numpy().reshape((opt.m,opt.m))
-                plot_matrix(diagonal_hat, 'diagonal_hat.png', vmin = v_min,
-                                vmax = v_max, title = 'diagonal portion', cmap = 'blue-red')
-                np.savetxt('diagonal_hat.txt', diagonal_hat)
+            # plot diag contribution
+            diagonal_hat = diagonal_hat.cpu().detach().numpy().reshape((opt.m,opt.m))
+            plot_matrix(diagonal_hat, 'diagonal_hat.png', vmin = v_min,
+                            vmax = v_max, title = 'diagonal portion', cmap = 'blue-red')
+            np.savetxt('diagonal_hat.txt', diagonal_hat)
 
         # cleanup
         # opt.root is set in get_dataset
@@ -1819,6 +1819,15 @@ class Tester():
         plt.legend()
         plt.show()
 
+    def test_energy_GNN(self):
+        sample = '/home/erschultz/dataset_02_04_23/samples/sample201'
+        config = load_json(osp.join(sample, 'optimize_grid_b_140_phi_0.03-GNN400/config.json'))
+        getEnergy = GetEnergy(config = config)
+
+        model = '/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/400'
+        s = getEnergy.get_energy_gnn(model, sample)
+        print(s)
+
 
 
     def test_suite(self):
@@ -1828,8 +1837,9 @@ class Tester():
         # self.test_epi()
         # self.test_ChromHMM()
         # self.test_GNN()
+        self.test_energy_GNN()
         # self.test_PCA()
-        self.test_Soren_PCA()
+        # self.test_Soren_PCA()
 
 
 if __name__ ==  "__main__":

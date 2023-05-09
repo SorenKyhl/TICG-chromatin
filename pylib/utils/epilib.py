@@ -56,6 +56,8 @@ class Sim:
             found = True
         elif osp.exists(self.path / f"contacts{self.config['nSweeps']}.txt"):
             self.hic = get_contactmap(self.path / f"contacts{self.config['nSweeps']}.txt")
+            found = True
+
         if found:
             self.d = hic_utils.get_diagonal(self.hic)
         else:
@@ -124,6 +126,7 @@ class Sim:
         if resources_path.exists():
             self.resources_path = resources_path
 
+        self.gthic = None
         if self.maxent_analysis:
             """look for maxent related things"""
             gthic_possibilites = [".", "..", "../../resources"]
@@ -305,11 +308,9 @@ class Sim:
 
         diag = self.d
         plot_fn(np.linspace(1 / len(diag), 1, len(diag)), diag, *args, label="sim")
-        try:
+        if self.gthic is not None:
             diag = hic_utils.get_diagonal(self.gthic)
             plot_fn(np.linspace(1 / len(diag), 1, len(diag)), diag, "k", label="exp")
-        except FileNotFoundError:
-            logging.error("no ground truth hi-c for plot_diagonal")
 
         plt.xlabel("genomic distance")
         plt.ylabel("probability")
@@ -941,7 +942,7 @@ def eric_plot_tri(sim, exp, ofile, vmaxp=None, title="", log=False, cmap=None):
     '''
     Plot contact map with lower triangle as ground truth and upper as simulation.
     '''
-    assert np.shape(sim) == np.shape(exp), f'{sim.shape} {sim.shape}'
+    assert np.shape(sim) == np.shape(exp), f'{sim.shape} {exp.shape}'
     if log:
         sim = np.log(sim + 1)
         exp = np.log(exp + 1)
