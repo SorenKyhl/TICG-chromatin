@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import sys
 
-from pylib import epilib
+from pylib.utils import epilib
 
 
 def plot_contactmap(sim_dir):
