@@ -6,8 +6,8 @@ from setuptools import Extension, find_packages, setup
 module1 = Pybind11Extension(name = 'pylib.pyticg',
                     include_dirs = ['include'],
                     language = 'c++',
-                    sources = ["src/pybind_Sim.cpp"],
-                    extra_compile_args=["-g"])
+                    sources = ["src/pybind_Sim.cpp"])
+                    #, extra_compile_args=["-g"])
 
 setup(
     name='pylib',
