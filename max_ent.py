@@ -2,6 +2,7 @@ import json
 import multiprocessing as mp
 import os
 import os.path as osp
+import shutil
 import sys
 
 import numpy as np
@@ -73,7 +74,7 @@ def modify_soren():
 def fit(sample):
     print(sample)
     mode = 'grid'
-    dataset = 'downsampling_analysis'
+    dataset = 'Su2020'
     dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
     y = np.load(osp.join(dir, 'y.npy'))
     y /= np.mean(np.diagonal(y))
@@ -81,9 +82,12 @@ def fit(sample):
     nbeads = len(y)
 
     bonded_config = default.bonded_config
-    bonded_config['beadvol'] = 130000
-    bonded_config['bond_length'] = 140
-    bonded_config['phi_chromatin'] = 0.03
+    bonded_config['bond_length'] = 261
+    bonded_config['phi_chromatin'] = 0.006
+    if bonded_config['bond_length'] == 16.5:
+        bonded_config['beadvol'] = 520
+    else:
+        bonded_config['beadvol'] = 130000
     root = f"optimize_{mode}"
     root = f"{root}_b_{bonded_config['bond_length']}_phi_{bonded_config['phi_chromatin']}"
     print(root)
@@ -103,12 +107,10 @@ def fit(sample):
     k = 10
     config['nspecies'] = k
     config['chis'] = np.zeros((k,k))
-    config['dump_frequency'] = 30000
+    config['dump_frequency'] = 10000
 
     # get sequences
-    config['nbeads'] = len(y)
-    getSeq = GetSeq(config = config)
-    seqs = getSeq.get_PCA_seq(epilib.get_oe(y), normalize = True)
+    seqs = epilib.get_pcs(epilib.get_oe(y), k, normalize = True)
     # seqs = epilib.get_sequences(y, k, randomized=True)
 
     # set up diag chis
@@ -124,20 +126,33 @@ def fit(sample):
     goals = epilib.get_goals(y, seqs, config)
     params["goals"] = goals
     params['iterations'] = 15
-    params['parallel'] = 1
-    params['production_sweeps'] = 300000
+    params['parallel'] = 3
     params['equilib_sweeps'] = 30000
+    params['production_sweeps'] = 100000
 
-    me = Maxent(osp.join(dir, f'{root}-max_ent'), params, config, seqs, y,
-                final_it_sweeps=500000, overwrite = True)
-    me.fit()
+    root = osp.join(dir, f'{root}-max_ent{k}')
+    if osp.exists(root):
+        shutil.rmtree(root)
+        print('WARNING: root exists')
+    os.mkdir(root, mode=0o755)
+
+    stdout = sys.stdout
+    with open(osp.join(root, 'log.log'), 'w') as sys.stdout:
+        me = Maxent(root, params, config, seqs, y,
+                    final_it_sweeps=500000, mkdir=False)
+        t = me.fit()
+        print(f'Simulation took {np.round(t, 2)} seconds')
+    sys.stdout = stdout
+
+    # cleanup
+    shutil.move('/home/erschultz/log.log', root)
 
 def main():
-    with mp.Pool(14) as p:
-        p.map(fit, [1, 2, 3, 4, 5, 10, 25, 50, 75, 100])
+    # with mp.Pool(14) as p:
+        # p.map(fit, [1, 2, 3, 4, 5, 10, 25, 50, 75, 100])
     # for i in range(202, 283):
         # fit(i)
-    # fit(201)
+    fit(1002)
 
 
 

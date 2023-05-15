@@ -2,6 +2,7 @@ import json
 import multiprocessing as mp
 import os
 import os.path as osp
+import shutil
 import sys
 
 import numpy as np
@@ -15,7 +16,7 @@ from scripts.get_params import GetEnergy
 def fit(sample, GNN_ID):
     print(sample)
     mode = 'grid'
-    dataset = 'dataset_02_04_23'
+    dataset = 'downsampling_analysis'
     dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
     y = np.load(osp.join(dir, 'y.npy'))
     y /= np.mean(np.diagonal(y))
@@ -23,9 +24,13 @@ def fit(sample, GNN_ID):
     nbeads = len(y)
 
     bonded_config = default.bonded_config
-    bonded_config['beadvol'] = 520
-    bonded_config['bond_length'] = 16.5
-    bonded_config['phi_chromatin'] = 0.06
+    bonded_config['bond_length'] = 140
+    bonded_config['phi_chromatin'] = 0.03
+    if bonded_config['bond_length'] == 140:
+        bonded_config['beadvol'] = 130000
+    elif bonded_config['bond_length'] == 16.5:
+        bonded_config['beadvol'] = 520
+    bonded_config["nSweeps"] = 20000
     root = f"optimize_{mode}"
     root = f"{root}_b_{bonded_config['bond_length']}_phi_{bonded_config['phi_chromatin']}"
     print(root)
@@ -48,35 +53,44 @@ def fit(sample, GNN_ID):
     config['dmatrix_on'] = False
     config['dump_frequency'] = 10000
 
-    # get energy
-    config['nbeads'] = len(y)
-    getenergy = GetEnergy(config = config)
-    model_path = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{GNN_ID}'
-    S = getenergy.get_energy_gnn(model_path, dir)
-    config["smatrix_filename"] = "smatrix.txt"
+    root = f'{root}-GNN{GNN_ID}'
+    if osp.exists(root):
+        shutil.rmtree(root)
+        print('WARNING: root exists')
+    os.mkdir(root, mode=0o755)
 
-    sim = Pysim(f'{root}-GNN{GNN_ID}', config, None, y, randomize_seed = True, overwrite = True,
-                smatrix = S)
-    sim.run_eq(30000, 500000, 1)
+    with open(osp.join(root, 'energy.log'), 'w') as sys.stdout:
+        # get energy
+        config['nbeads'] = len(y)
+        getenergy = GetEnergy(config = config)
+        model_path = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{GNN_ID}'
+        S = getenergy.get_energy_gnn(model_path, dir)
+        config["smatrix_filename"] = "smatrix.txt"
 
-    with utils.cd(sim.root):
-        analysis.main_no_maxent()
+    with open(osp.join(root, 'log.log'), 'w') as sys.stdout:
+        sim = Pysim(root, config, None, y, randomize_seed = True, mkdir = False,
+                    smatrix = S)
+        t = sim.run_eq(30000, 500000, 1)
+        print(f'Simulation took {np.round(t, 2)} seconds')
+
+        analysis.main_no_maxent(sim.root)
 
 def main():
     mapping = []
-    samples = range(201, 211)
-    GNN_IDs = [402]
+    samples = [1, 2, 3, 4, 5, 10, 25, 50, 75, 100]
+    # samples = [2]
+    GNN_IDs = [403]
     for i in samples:
         for GNN_ID in GNN_IDs:
             mapping.append((i, GNN_ID))
 
-    print(mapping)
+    # print(mapping)
 
-    with mp.Pool(5) as p:
+    with mp.Pool(12) as p:
         p.starmap(fit, mapping)
     # for i in samples:
         # fit(i, GNN_ID)
-    # fit(5)
+    # fit(1010, 403)
 
 
 

@@ -2,6 +2,8 @@ import copy
 import os
 import pickle
 import shutil
+import sys
+import time
 from pathlib import Path
 from typing import Optional, Union
 
@@ -36,7 +38,8 @@ class Maxent:
         analysis_on: bool = True,
         initial_chis: Optional[bool] = None,
         dampen_first_step: bool = True,
-        final_it_sweeps: int = 0
+        final_it_sweeps: int = 0,
+        mkdir: bool = True
     ):
         """
         root: root of maxent filesystem
@@ -58,6 +61,7 @@ class Maxent:
             self.seqs = seqs
         self.gthic = gthic
         self.overwrite = overwrite
+        self.mkdir = mkdir
 
         if "goals" not in self.params:
             raise ValueError("goals are not specified in parameters")
@@ -113,8 +117,9 @@ class Maxent:
         """create maxent directory and populate resources"""
         if self.root.exists() and self.overwrite:
             shutil.rmtree(self.root)
-        self.root.mkdir()
-        self.resources.mkdir(exist_ok=self.overwrite)
+        if self.mkdir:
+            self.root.mkdir(exist_ok=False)
+        self.resources.mkdir(exist_ok=False)
         np.save(self.resources / "experimental_hic.npy", self.gthic)
         utils.write_json(self.config, self.resources / "config.json")
         # TODO: write seqs, defaultsim.config, goals, gthic to resources.
@@ -196,18 +201,19 @@ class Maxent:
         plt.tight_layout()
         plt.savefig(self.root / "track_diag_chis.png")
 
-    def analyze(self):
+    def analyze(self, dir):
         if self.analysis_on:
-            analysis.main()
+            analysis.main(dir)
 
     def fit(self):
         """execute maxent optimization"""
-
+        t0 = time.time()
         self.make_directory()
         newchis = self.initial_chis
         utils.write_json(self.params, self.resources / "params.json")
 
         for it in range(self.params["iterations"]):
+            print(f'Iteration {it}')
             self.save_state()
 
             sim = Pysim(
@@ -258,13 +264,16 @@ class Maxent:
                 sim.root / "experimental_hic.npy",
             )
 
-            with utils.cd(sim.root):
-                self.analyze()
+            self.analyze(sim.root)
 
         if self.final_it_sweeps > 0:
             self.run_final_iteration(newchis)
 
+        tf = time.time()
+        return tf - t0
+
     def run_final_iteration(self, newchis):
+        print(f'Final Iteration')
         self.save_state()
 
         # set up new config
@@ -291,8 +300,7 @@ class Maxent:
             sim.root / "experimental_hic.npy",
         )
 
-        with utils.cd(sim.root):
-            self.analyze()
+        self.analyze(sim.root)
 
 
     def save_state(self):

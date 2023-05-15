@@ -14,7 +14,8 @@ from sklearn.metrics import mean_squared_error
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.similarity_measures import SCC
 from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
-                                                     calc_dist_strat_corr)
+                                                     calc_dist_strat_corr,
+                                                     triu_to_full)
 
 
 def meanDist_comparison():
@@ -355,10 +356,39 @@ def l_ij_comparison(dataset, dataset_exp, k=8):
     plt.savefig(osp.join(data_dir, 'S_dist_comparison.png'))
     plt.close()
 
+    # plot frob(L)
+    print('\nL frob norm')
+    cmap = matplotlib.cm.get_cmap('tab10')
+    ind = np.arange(len(L_list)) % cmap.N
+    colors = cmap(ind)
+    dist = norm
+    bin_width = 100
+    for i, (sublist, label) in enumerate(zip(L_list, label_list)):
+        arr = []
+        for L in sublist:
+            L = triu_to_full(L)
+            arr.append(np.linalg.norm(L, ord='fro'))
+
+        arr = np.array(arr).reshape(-1)
+        print(arr)
+        print(np.min(arr), np.max(arr))
+        _, bins, _ = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
+                                    bins=range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width),
+                                    alpha = 0.5, label = label, color = colors[i])
+        params = dist.fit(arr)
+        y = dist.pdf(bins, *params) * bin_width
+        plt.plot(bins, y, ls = '--', color = colors[i])
+
+    plt.legend()
+    plt.ylabel('probability', fontsize=16)
+    plt.xlabel('Frob(L)', fontsize=16)
+    plt.savefig(osp.join(data_dir, 'frob_L_comparison.png'))
+    plt.close()
+
 
 if __name__ == '__main__':
     # main()
-    meanDist_comparison()
-    # l_ij_comparison('dataset_04_28_23', 'dataset_02_04_23', 10)
+    # meanDist_comparison()
+    l_ij_comparison('dataset_04_28_23', 'dataset_02_04_23', 10)
     # p_s_comparison('dataset_02_04_23', 396, 12)
     # scc_comparison('dataset_02_04_23', 392, 8, True)

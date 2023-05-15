@@ -11,6 +11,7 @@ scratchDir='/home/erschultz/scratch'
 # sweep params
 productionSweeps=500000
 dumpFrequency=50000
+dumpStatsFrequency=100
 finalSimProductionSweeps=500000
 equilibSweeps=50000
 numIterations=12 # iteration 1 + numIterations is production run to get contact map
@@ -148,7 +149,7 @@ max_ent_inner () {
   python3 ~/TICG-chromatin/scripts/get_params.py --config_ifile "${resources}/config_erschultz.json" --method=$method_fmt --m $m --k $k --sample $sample --data_folder $dataFolder --plot --cell_line $cellLine --epi_data_type $dataType --resolution $resolution --start $start --end $end --chromosome $chrom --ChromHMM_data_file $chromHMMData --gnn_model_path $GNNModelPath --mlp_model_path $MLPModelPath --seq_seed $seqSeed --chi_method $chiMethod --min_chi=-1 --max_chi=1 --chi_seed $chiSeed --diag_chi_method $diagChiMethod --diag_bins $diagBins --max_diag_chi $maxDiagChi --dense_diagonal_on $dense --dense_diagonal_cutoff $denseCutoff --dense_diagonal_loading $denseLoading --small_binsize $smallBinSize --big_binsize $bigBinSize --n_small_bins $nSmallBins --n_big_bins $nBigBins --diag_start $diagStart --diag_cutoff $diagCutoff --diag_chi_slope $chiDiagSlope --diag_chi_scale $chiDiagScale > params.log
 
   echo "starting get_config"
-  python3 ~/TICG-chromatin/scripts/get_config.py --dump_frequency $dumpFrequency --parallel $parallel --num_threads $numThreads --m $m --max_ent --mode $mode --bond_type $bondType --bond_length $bondLength --grid_size $gridSize --bead_vol $beadVol --dense_diagonal_on $dense --use_lmatrix $useL --use_smatrix $useS --use_dmatrix $useD --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $TICGSeed --sample_folder $sampleFolder --load_configuration_filename $init_config --phi_chromatin $phiChromatin --boundary_type $boundaryType --constant_chi $constantChi --k_angle $kAngle > config.log
+  python3 ~/TICG-chromatin/scripts/get_config.py --dump_frequency $dumpFrequency --dump_stats_frequency $dumpStatsFrequency --parallel $parallel --num_threads $numThreads --m $m --max_ent --mode $mode --bond_type $bondType --bond_length $bondLength --grid_size $gridSize --bead_vol $beadVol --dense_diagonal_on $dense --use_lmatrix $useL --use_smatrix $useS --use_dmatrix $useD --use_ground_truth_chi $useGroundTruthChi --use_ground_truth_TICG_seed $useGroundTruthSeed --TICG_seed $TICGSeed --sample_folder $sampleFolder --load_configuration_filename $init_config --phi_chromatin $phiChromatin --boundary_type $boundaryType --constant_chi $constantChi --k_angle $kAngle > config.log
 
 
   # generate goals
@@ -161,16 +162,14 @@ max_ent_inner () {
   fi
 
   # apply max ent with newton's method
-  ~/TICG-chromatin/maxent/bin/run.sh -o $odir -d $1 -g $gamma -t $trust_region -c $mode -s $productionSweeps -e $equilibSweeps -z $goalSpecifiedCopy -n $numIterationsCopy -w $overwrite -f $finalSimProductionSweeps
+  # ~/TICG-chromatin/maxent/bin/run.sh -o $odir -d $1 -g $gamma -t $trust_region -c $mode -s $productionSweeps -e $equilibSweeps -z $goalSpecifiedCopy -n $numIterationsCopy -w $overwrite -f $finalSimProductionSweeps
 
   # run.sh moves all data to $odir upon completion
-  cd $odir
+  # cd $odir
 
   # compare results
-  python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --replicate_folder $odir --save_npy --plot > contact.log
-  python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${odir}/y.npy" --y_diag "$sampleFolder/y_diag.npy" --yhat_diag "${odir}/y_diag.npy" >> contact.log
-
-  echo ''
+  # python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --replicate_folder $odir --save_npy --plot > contact.log
+  # python3 ~/TICG-chromatin/scripts/compare_contact.py --m $m --y "$sampleFolder/y.npy" --yhat "${odir}/y.npy" --y_diag "$sampleFolder/y_diag.npy" --yhat_diag "${odir}/y_diag.npy" >> contact.log
 }
 
 format_method () {
@@ -237,8 +236,6 @@ format_method () {
   then
     method_fmt="${method_fmt}-diag"
   fi
-
-  method_fmt="${method_fmt}-b_${bondLength}_phi_${phiChromatin}"
 }
 
 param_setup(){

@@ -12,8 +12,8 @@ import numpy as np
 import numpy.ma as ma
 import pandas as pd
 import seaborn as sns
+from pylib.utils import epilib
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
-from pylib.utils.epilib import eric_plot_tri
 from pylib.utils.plotting_utils import (BLUE_CMAP, RED_BLUE_CMAP, plot_matrix,
                                         plot_mean_dist)
 from pylib.utils.similarity_measures import SCC
@@ -29,7 +29,8 @@ from sequences_to_contact_maps.scripts.load_utils import (
 from sequences_to_contact_maps.scripts.utils import (calc_dist_strat_corr,
                                                      nan_pearsonr,
                                                      pearson_round)
-from sequences_to_contact_maps.scripts.xyz_utils import (xyz_load,
+from sequences_to_contact_maps.scripts.xyz_utils import (calculate_rg,
+                                                         xyz_load,
                                                          xyz_to_distance)
 
 
@@ -124,24 +125,13 @@ def min_MSE(D, D_sim):
     return popt
 
 def get_pcs(input, nan_rows=None):
-    pca = PCA()
     if nan_rows is None:
         nan_rows = np.isnan(input[0])
     input = input[~nan_rows][:, ~nan_rows] # ignore nan_rows
 
-    # normalize by genomic distance
-    meanDist = DiagonalPreprocessing.genomic_distance_statistics(input)
-    input_diag = DiagonalPreprocessing.process(input, meanDist)
-
-    # corrcoef
-    # input = np.corrcoef(input)
-
-    pca.fit(input/np.std(input, axis = 0))
-    # pca.fit(input)
-    V = pca.components_
-    for v in V:
-        v *= np.sign(np.mean(v[:100]))
-    return V
+    seqs = epilib.get_pcs(epilib.get_oe(input), 12,
+                        normalize = False, align = True)
+    return seqs.T # k x m
 
 
 # analysis scripts
@@ -243,52 +233,53 @@ def compare_dist_distribution():
     b = coords_dict[coords_b]
     dist = dist_distribution(xyz, a, b)
 
-    # dir = '/home/erschultz/Su2020/samples/sample1002'
-    # max_ent_dir = osp.join(dir, 'optimize_grid_b_140_phi_0.06-max_ent_fill_1')
-    # final_dir = get_final_max_ent_folder(max_ent_dir)
-    # file = osp.join(final_dir, 'production_out/output.xyz')
-    # xyz_sim = xyz_load(file, multiple_timesteps = True)
-    # with open(osp.join(dir, 'import.log'), 'r') as f:
-    #     line = f.readline().strip()
-    #     while not line.startswith('start'):
-    #         line = f.readline().strip()
-    #     start = int(line.split('=')[1])
-    # print(start)
-    # coords_a = hg38_to_hg19(coords_a)
-    # coords_b = hg38_to_hg19(coords_b)
-    # def get_ind_hg19(start, coords, res=50000):
-    #     chr, rest = coords.split(':')
-    #     l, u = rest.split('-')
-    #     l = int(l); u = int(u)
-    #     i=0
-    #     while start < l:
-    #         start += res
-    #         i += 1
-    #     end = start + res
-    #     return i, f'{chr}:{l}-{u}'
-    # a, temp = get_ind_hg19(start, coords_a)
-    # b, temp = get_ind_hg19(start, coords_b)
-    #
-    # dist_sim = dist_distribution(xyz_sim, a, b)
+    dir = '/home/erschultz/Su2020/samples/sample1002'
+    max_ent_dir = osp.join(dir, 'optimize_grid_b_261_phi_0.006-max_ent10')
+    final_dir = get_final_max_ent_folder(max_ent_dir)
+    file = osp.join(final_dir, 'production_out/output.xyz')
+    xyz_sim = xyz_load(file, multiple_timesteps = True)
+    with open(osp.join(dir, 'import.log'), 'r') as f:
+        line = f.readline().strip()
+        while not line.startswith('start'):
+            line = f.readline().strip()
+        start = int(line.split('=')[1])
+    print(start)
+    coords_a = hg38_to_hg19(coords_a)
+    coords_b = hg38_to_hg19(coords_b)
+    def get_ind_hg19(start, coords, res=50000):
+        chr, rest = coords.split(':')
+        l, u = rest.split('-')
+        l = int(l); u = int(u)
+        i=0
+        while start < l:
+            start += res
+            i += 1
+        end = start + res
+        return i, f'{chr}:{l}-{u}'
+    a, temp = get_ind_hg19(start, coords_a)
+    b, temp = get_ind_hg19(start, coords_b)
+
+    dist_sim = dist_distribution(xyz_sim, a, b)
 
 
     print('exp', dist, dist.shape)
-    # print('sim', dist_sim, dist_sim.shape)
+    print('sim', dist_sim, dist_sim.shape)
 
     bin_width = 50
     arr = dist[~np.isnan(dist)]
-    plt.hist(arr, label = 'Exp',
+    plt.hist(arr, label = 'Exp', alpha = 0.5,
                 weights = np.ones_like(arr) / len(arr),
                 bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width))
-    # arr = dist_sim * 20
-    # plt.hist(arr, label = 'Sim',
-    #             weights = np.ones_like(arr) / len(arr),
-    #             bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width))
+    arr = dist_sim * 1.86
+    plt.hist(arr, label = 'Sim', alpha = 0.5,
+                weights = np.ones_like(arr) / len(arr),
+                bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width))
     plt.xlabel('Distance between A and B', fontsize=16)
     plt.ylabel('Probability', fontsize=16)
-    # plt.legend()
-    # plt.title(f'Distance between\n{coords_a} and {coords_b}')
+    plt.legend()
+    plt.title(f'Distance between\n{coords_a} and {coords_b}')
     # plt.title(f'Distance between A and B')
+    plt.tight_layout()
     plt.savefig(osp.join(dir, 'distance_distribution.png'))
 
 def xyz_to_dist():
@@ -442,7 +433,7 @@ def controls():
         meanDist_gt = DiagonalPreprocessing.genomic_distance_statistics(D1)
         meanDist = DiagonalPreprocessing.genomic_distance_statistics(D2)
         plot_mean_dist(meanDist, dir, 'dist_meanDist_log_ref.png',
-                        None, True, meanDist_gt, 'Exp 1/2', 'Exp 2/2',
+                        None, True, True, meanDist_gt, 'Exp 1/2', 'Exp 2/2',
                         'blue', ylabel='Distance (nm)')
         meanDist = DiagonalPreprocessing.genomic_distance_statistics(D2)
 
@@ -506,7 +497,7 @@ def controls():
 
 def compare_D_to_sim_D():
     dir = '/home/erschultz/Su2020/samples/sample1002'
-    max_ent_dir = osp.join(dir, 'optimize_grid_b_140_phi_0.06-max_ent_fill_1')
+    max_ent_dir = osp.join(dir, 'optimize_grid_b_261_phi_0.006-max_ent10')
     # max_ent_dir = '/home/erschultz/dataset_bond/samples/sample9'
     max_ent = True
     D_sim = sim_xyz_to_dist(max_ent_dir, max_ent)
@@ -547,7 +538,7 @@ def compare_D_to_sim_D():
     print(overall_corr, overall_corr2)
 
 
-    eric_plot_tri(D, D_sim, osp.join(max_ent_dir, 'dist_triu.png'), vmaxp = np.nanmax(D),
+    epilib.eric_plot_tri(D_sim, D, osp.join(max_ent_dir, 'dist_triu.png'), vmaxp = np.nanmax(D),
             title = f'Corr = {overall_corr}', cmap = BLUE_CMAP)
 
     title = f'b={bl}, gs={delta}, vb={vb}'
@@ -555,13 +546,13 @@ def compare_D_to_sim_D():
     np.save(osp.join(max_ent_dir, 'meanDist_gt.npy'), meanDist_gt)
     meanDist = DiagonalPreprocessing.genomic_distance_statistics(D_sim)
     plot_mean_dist(meanDist, max_ent_dir, 'dist_meanDist_log_ref.png',
-                    None, True, meanDist_gt, 'Exp', 'Sim',
+                    None, True, True, meanDist_gt, 'Exp', 'Sim',
                     'blue', title, 'Distance (nm)')
     plot_mean_dist(meanDist, max_ent_dir, 'dist_meanDist_ref.png',
-                    None, False, meanDist_gt, 'Exp', 'Sim',
+                    None, False, True, meanDist_gt, 'Exp', 'Sim',
                     'blue', title, 'Distance (nm)')
     plot_mean_dist(meanDist, max_ent_dir, 'dist_meanDist_ref.png',
-                    None, False, meanDist_gt, 'Exp', 'Sim',
+                    None, False, True, meanDist_gt, 'Exp', 'Sim',
                     'blue', title, 'Distance (nm)')
 
 
@@ -619,10 +610,10 @@ def compare_D_to_sim_D():
     plt.savefig(osp.join(max_ent_dir, 'pc_D_vs_D_sim.png'))
 
 def load_exp_gnn_pca(dir):
-    max_ent_dir = osp.join(dir, 'optimize_grid_b_140_phi_0.06-max_ent_fill_1')
+    max_ent_dir = osp.join(dir, 'optimize_grid_b_261_phi_0.006-max_ent10')
     D_pca = sim_xyz_to_dist(max_ent_dir, True)
     m = len(D_pca)
-    gnn_dir = osp.join(dir, 'optimize_grid_b_16.5_phi_0.06-GNN396')
+    gnn_dir = osp.join(dir, 'optimize_grid_b_140_phi_0.03-GNN403')
     D_gnn = sim_xyz_to_dist(gnn_dir, False)
 
     # process experimental distance map
@@ -664,6 +655,7 @@ def compare_pcs():
             col = 0
             row += 1
     plt.savefig(osp.join(dir, 'pc_D_vs_D_sim.png'))
+    plt.close()
 
 def compare_d_maps():
     dir = '/home/erschultz/Su2020/samples/sample1002'
@@ -698,8 +690,55 @@ def compare_d_maps():
 
 
     plt.tight_layout()
-    plt.savefig(osp.join(dir, 'PCA_vs_GNN.png'))
+    plt.savefig(osp.join(dir, 'D_PCA_vs_GNN.png'))
     plt.close()
+
+def compare_rg():
+    dir = '/home/erschultz/Su2020/samples/sample1'
+    xyz_file = osp.join(dir, 'xyz.npy')
+    xyz = np.load(xyz_file)
+    coords_file = osp.join(dir, 'coords.json')
+    with open(coords_file) as f:
+        coords_dict = json.load(f)
+    i = coords_dict['chr21:14000001-14050001']
+    xyz = xyz[:, i:i+512, :]
+
+    dir = '/home/erschultz/Su2020/samples/sample1002'
+    max_ent_dir = osp.join(dir, 'optimize_grid_b_261_phi_0.006-max_ent10')
+    final_dir = get_final_max_ent_folder(max_ent_dir)
+
+    file = osp.join(final_dir, 'production_out/output.xyz')
+    xyz_max_ent = xyz_load(file, multiple_timesteps = True)
+
+    gnn_dir = osp.join(dir, 'optimize_grid_b_140_phi_0.03-GNN403')
+    file = osp.join(gnn_dir, 'production_out/output.xyz')
+    xyz_gnn = xyz_load(file, multiple_timesteps = True)
+
+    sizes = [64, 128, 256, 512]
+    ref_rgs = np.zeros((len(sizes), 2))
+    max_ent_rgs = np.zeros((len(sizes), 2))
+    gnn_rgs = np.zeros((len(sizes), 2))
+    for i, size in enumerate(sizes):
+        left = int(256 - size/2)
+        right = int(256 + size/2)
+        xyz_size = xyz[:, left:right, :]
+        xyz_max_ent_size = xyz_max_ent[:, left:right, :]
+        xyz_gnn_size = xyz_gnn[:, left:right, :]
+
+        ref_rgs[i] = calculate_rg(xyz_size, verbose = False)
+        max_ent_rgs[i] = calculate_rg(xyz_max_ent_size)
+        gnn_rgs[i] = calculate_rg(xyz_gnn_size)
+
+    plt.errorbar(sizes, ref_rgs[:, 0], ref_rgs[:, 1], color = 'k', label = 'Experiment')
+    plt.errorbar(sizes, max_ent_rgs[:, 0], max_ent_rgs[:, 1], color = 'b', label = 'Max Ent')
+    plt.errorbar(sizes, gnn_rgs[:, 0], gnn_rgs[:, 1], color = 'r', label = 'GNN')
+    plt.ylabel('Radius of Gyration', fontsize=16)
+    plt.xlabel('Domain Size (beads)', fontsize=16)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(osp.join(dir, 'rg_comparison.png'))
+
+
 
 
 
@@ -707,8 +746,9 @@ if __name__ == '__main__':
     # load_exp_gnn_pca('/home/erschultz/Su2020/samples/sample1002')
     # find_hg38_positions()
     # xyz_to_dist()
-    # compare_D_to_sim_D()
+    compare_D_to_sim_D()
     # find_volume()
-    compare_pcs()
+    # compare_pcs()
     # compare_d_maps()
     # compare_dist_distribution()
+    # compare_rg()

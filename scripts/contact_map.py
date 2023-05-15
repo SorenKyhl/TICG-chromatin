@@ -59,12 +59,14 @@ def plot_all(args):
     if args.random_mode:
         y_path = osp.join(args.sample_folder, 'production_out')
         if not osp.exists(y_path):
+            print(f'{y_path} does not exist')
             y_path = args.sample_folder
+
     else:
         y_path = osp.join(args.final_folder, "production_out")
         if not osp.exists(y_path):
             y_path = args.final_folder
-
+    assert osp.exists(y_path), f'{y_path} does not exist'
 
     # get y
     y_file = osp.join(y_path, 'contacts.txt')
@@ -234,11 +236,13 @@ def plot_all(args):
                 sim_label = 'Max Ent'
                 color = 'blue'
             plot_mean_dist(meanDist_max_ent, args.save_folder, 'meanDist.png',
-                            diag_chi_step, False, meanDist_gt, 'Reference', sim_label,
-                            color, title)
+                            diag_chi_step, False, ref = meanDist_gt,
+                            ref_label = 'Reference',  label = sim_label,
+                            color = color, title = title)
             plot_mean_dist(meanDist_max_ent, args.save_folder, 'meanDist_log.png',
-                            diag_chi_step, True, meanDist_gt, 'Reference', sim_label,
-                            color, title)
+                            diag_chi_step, True, ref = meanDist_gt,
+                            ref_label = 'Reference',  label = sim_label,
+                            color = color, title = title)
 
     if args.save_npy:
         np.save(osp.join(args.save_folder, 'y.npy'), y.astype(np.int16))

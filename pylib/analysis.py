@@ -1,6 +1,9 @@
 import csv
 import json
 import logging
+import os
+import os.path as osp
+import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,7 +11,7 @@ import pylib.utils.epilib as ep
 import pylib.utils.utils as utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import calculate_all_energy
-from pylib.utils.plotting_utils import (plot_matrix,
+from pylib.utils.plotting_utils import (plot_matrix, plot_mean_dist,
                                         plot_mean_vs_genomic_distance)
 from pylib.utils.similarity_measures import SCC
 from scipy.stats import pearsonr
@@ -58,6 +61,15 @@ def sim_analysis(sim):
                 raise ValueError
         except NotImplementedError:
             logging.warn("energy matrices not implemented for this situation")
+    elif osp.exists('S.npy'):
+        S = np.load('S.npy')
+        plot_matrix(S, 'matrix_S.png', "S", cmap='bluered')
+        meanDist_S = DiagonalPreprocessing.genomic_distance_statistics(S, mode='freq')
+        plot_mean_dist(meanDist_S, '', 'meanDist_S_log.png', None, 
+                        logx = True, logy = False,
+                        ylabel = 'mean(S_ii)')
+
+
 
     plt.figure()
     sim.plot_oe()
@@ -318,13 +330,19 @@ def calc_dist_strat_corr(y, yhat, mode = 'pearson', return_arr = False):
     else:
         return avg
 
-def main_no_compare():
+def main_no_compare(dir=None):
+    if dir is not None:
+        os.chdir(dir)
+    assert osp.exists("production_out"), f'{os.getcwd()}'
     sim = ep.Sim("production_out")
     logging.info("sim created")
     sim_analysis(sim)
     logging.info("sim analysis done")
 
-def main_no_maxent():
+def main_no_maxent(dir=None):
+    if dir is not None:
+        os.chdir(dir)
+    assert osp.exists("production_out"), f'{os.getcwd()}'
     sim = ep.Sim("production_out")
     logging.info("sim created")
     sim_analysis(sim)
@@ -332,7 +350,10 @@ def main_no_maxent():
     compare_analysis(sim)
     logging.info("compare analysis done")
 
-def main():
+def main(dir=None):
+    if dir is not None:
+        os.chdir(dir)
+    assert osp.exists("production_out"), f'{dir}, {os.getcwd()}'
     sim = ep.Sim("production_out")
     logging.info("sim created")
     sim_analysis(sim)

@@ -181,7 +181,7 @@ def relabel_x_to_psi(x, relabel_str):
 def writeSeq(seq, format='%.8e'):
     m, k = seq.shape
     for j in range(k):
-        np.savetxt(f'seq{j}.txt', seq[:, j], fmt = format)
+        np.savetxt(f'pcf{j+1}.txt', seq[:, j], fmt = format)
 
 def main():
     args = getArgs()
@@ -299,7 +299,7 @@ def main():
 
     # set up e, s
     if psi is not None:
-        # writeSeq(psi)
+        writeSeq(psi)
 
         # save seq
         config['bead_type_files'] = [f'pcf{i}.txt' for i in range(1, args.k+1)]
@@ -319,10 +319,16 @@ def main():
 
     if args.use_dmatrix:
         config['dmatrix_on'] = True
+    else:
+        config['dmatrix_on'] = False
     if args.use_lmatrix:
         config['lmatrix_on'] = True
+    else:
+        config['lmatrix_on'] = False
     if args.use_smatrix:
         config['smatrix_on'] = True
+    else:
+        config['smatrix_on'] = False
 
     if not config['plaid_on'] and not config["diagonal_on"]:
         config['nonbonded_on'] = False
@@ -390,12 +396,16 @@ def main():
         grid_size = args.bond_length * scale
     elif args.grid_size.lower() == 'none':
         assert args.sample_folder is not None
+        if args.bond_length.is_integer():
+            b = int(args.bond_length)
+        else:
+            b = args.bond_length
         if args.k_angle != 0:
             optimize_folder = osp.join(args.sample_folder,
-                        f'optimize_grid_angle_{args.k_angle}_b_{args.bond_length}_phi_{args.phi_chromatin}')
+                        f'optimize_grid_angle_{args.k_angle}_b_{b}_phi_{args.phi_chromatin}')
         else:
             optimize_folder = osp.join(args.sample_folder,
-                        f'optimize_grid_b_{args.bond_length}_phi_{args.phi_chromatin}')
+                        f'optimize_grid_b_{b}_phi_{args.phi_chromatin}')
         arr = np.loadtxt(osp.join(optimize_folder, 'grid_size.txt'))
         arr = np.atleast_1d(arr)
         grid_size = arr.item()

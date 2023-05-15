@@ -369,6 +369,7 @@ void Sim::readInput() {
       }
     } else {
       constant_chi_on = false;
+      constant_chi = 0;
     }
     smatrix_filename = "none";
     lmatrix_filename = "none";
@@ -958,10 +959,12 @@ Sim::getNonBondedEnergy(const std::unordered_set<Cell *> &flagged_cells) {
   			U += grid.energy(flagged_cells, chis);
   		}
   	}
-    if (constant_chi > 0)
+
+    if (constant_chi_on)
     {
       U += grid.constantEnergy(flagged_cells, constant_chi);
     }
+
     if (diagonal_on) {
         if (dmatrix_on) {
             U += grid.DmatrixEnergy(flagged_cells, dmatrix);
@@ -982,12 +985,6 @@ Sim::getNonBondedEnergy(const std::unordered_set<Cell *> &flagged_cells) {
     return U;
 }
 
-double
-Sim::getJustPlaidEnergy(const std::unordered_set<Cell *> &flagged_cells) {
-    // for when dumping energy;
-    double U = grid.energy(flagged_cells, chis);
-    return U;
-}
 
 double
 Sim::getJustBoundaryEnergy(const std::unordered_set<Cell *> &flagged_cells) {
@@ -1089,17 +1086,17 @@ void Sim::printAcceptanceRates(int sweep) {
     std::cout << "acceptance rate: "
               << (float)acc / ((sweep + 1) * nSteps) * 100.0 << "%"
               << std::endl;
-    if (displacement_on)
-        std::cout << "disp: " << (float)acc_disp / (sweep * n_disp) * 100
-                  << "% \t";
-    if (translation_on)
-        std::cout << "trans: " << (float)acc_trans / (sweep * n_trans) * 100
+    if (pivot_on)
+        std::cout << "pivot: " << (float)acc_pivot / (sweep * n_pivot) * 100
                   << "% \t";
     if (crankshaft_on)
         std::cout << "crank: " << (float)acc_crank / (sweep * n_crank) * 100
                   << "% \t";
-    if (pivot_on)
-        std::cout << "pivot: " << (float)acc_pivot / (sweep * n_pivot) * 100
+    if (translation_on)
+        std::cout << "trans: " << (float)acc_trans / (sweep * n_trans) * 100
+                  << "% \t";
+    if (displacement_on)
+        std::cout << "disp: " << (float)acc_disp / (sweep * n_disp) * 100
                   << "% \t";
     if (rotate_on)
         std::cout << "rot: " << (float)acc_rot / (sweep * n_rot) * 100
@@ -1813,10 +1810,6 @@ void Sim::setupSmatrix() {
   std::cout << "Converted to S prime, first row: " << smatrix.row(0) << std::endl;
   diagonal_on = false;
   lmatrix_on = false;
-
-  // write out smatrix
-  std::ofstream file("./" + data_out_filename + "/smatrix_prime.txt");
-  file << smatrix;
 }
 
 void Sim::setupDmatrix() {

@@ -20,9 +20,10 @@ from sequences_to_contact_maps.scripts.load_utils import \
 def run_long_simulation():
     if not osp.exists('/home/erschultz/downsampling_analysis/'):
         os.mkdir('/home/erschultz/downsampling_analysis')
-    root = '/home/erschultz/downsampling_analysis/long_simulation2'
+    root = '/home/erschultz/downsampling_analysis/long_simulation'
 
-    dir = '/home/erschultz/dataset_02_04_23/samples/sample212/optimize_grid_b_140_phi_0.03-max_ent'
+    # dir2 = '/home/erschultz/dataset_02_04_23/samples/sample212/optimize_grid_b_140_phi_0.03-max_ent'
+    dir = '/home/erschultz/dataset_04_28_23/samples/sample324'
     config = utils.load_json(osp.join(dir, 'config.json'))
     config['bead_type_files'] = [f'pcf{i}.txt' for i in range(1, config['nspecies']+1)]
     config['track_contactmap'] = True
@@ -36,7 +37,7 @@ def run_long_simulation():
     # config['profiling_on'] = False
 
     # get sequences
-    seqs = np.load(osp.join(dir, 'resources/x.npy'))
+    seqs = np.load(osp.join(dir, 'x.npy'))
 
     sim = Pysim(root, config, seqs, None, randomize_seed = False, overwrite = True)
     sim.run_eq(50000, 300000, 1)
@@ -46,8 +47,9 @@ def run_long_simulation():
 
 def split_long_simulation():
     dir = '/home/erschultz/downsampling_analysis'
-    production_dir = osp.join(dir, 'long_simulation2/production_out')
-    for i in [1, 2, 3, 4, 5, 10, 25, 50, 75, 100]:
+    production_dir = osp.join(dir, 'long_simulation3/production_out')
+    for i in [1/3]:
+    # [1, 2, 3, 4, 5, 10, 25, 50, 75, 100]:
         y = np.loadtxt(osp.join(production_dir, f'contacts{int(300000 * i/100)}.txt'))
         print(i)
         odir = osp.join(dir, f'sample{i}')
@@ -58,30 +60,25 @@ def split_long_simulation():
 
 
 def analysis():
-    dir = '/home/erschultz/downsampling_analysis/samples2'
-    GNN_ID = 396
+    dir = '/home/erschultz/downsampling_analysis/samples3'
+    GNN_ID = 403
     gnn_scc = []
     max_ent_scc = []
     samples = [1, 2, 3, 4, 5, 10, 25, 50, 75, 100]
     for i in samples:
         s_dir = osp.join(dir, f'sample{i}')
-        max_ent_dir = osp.join(s_dir, 'optimize_grid_b_140_phi_0.03-max_ent')
-        final = get_final_max_ent_folder(max_ent_dir)
-        dist_pearson = utils.load_json(osp.join(final, 'distance_pearson.json'))
-        max_ent_scc.append(dist_pearson['scc_var'])
+        # max_ent_dir = osp.join(s_dir, 'optimize_grid_b_140_phi_0.03-max_ent')
+        # final = get_final_max_ent_folder(max_ent_dir)
+        # dist_pearson = utils.load_json(osp.join(final, 'distance_pearson.json'))
+        # max_ent_scc.append(dist_pearson['scc_var'])
 
-        gnn_dir = osp.join(s_dir, f'optimize_grid_b_16.5_phi_0.06-GNN{GNN_ID}')
+        gnn_dir = osp.join(s_dir, f'optimize_grid_b_140_phi_0.03-GNN{GNN_ID}')
         dist_pearson = utils.load_json(osp.join(gnn_dir, 'distance_pearson.json'))
         gnn_scc.append(dist_pearson['scc_var'])
 
-        s = np.load(osp.join(gnn_dir, 'S.npy'))
-        plot_matrix(s, osp.join(gnn_dir, 'S.png'), cmap='blue-red')
-        meandist_s = DiagonalPreprocessing.genomic_distance_statistics(s, mode = 'freq')
-        plot_mean_dist(meandist_s, gnn_dir, 'meanDist_S.png', None, logx=True, logy=False,
-                        ylabel='S energy')
 
-
-    plt.plot(samples, max_ent_scc, label='Max Ent', color='blue')
+    print(gnn_scc)
+    # plt.plot(samples, max_ent_scc, label='Max Ent', color='blue')
     plt.plot(samples, gnn_scc, label='GNN', color='red')
     plt.xlabel('Downsampling %', fontsize=16)
     plt.ylabel('SCC', fontsize=16)
@@ -91,5 +88,5 @@ def analysis():
 
 if __name__ == '__main__':
     # run_long_simulation()
-    # split_long_simulation()
-    analysis()
+    split_long_simulation()
+    # analysis()

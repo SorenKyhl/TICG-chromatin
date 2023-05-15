@@ -83,7 +83,7 @@ class DiagonalPreprocessing():
 
         return np.array(stat_per_diagonal)
 
-    def process(y, mean_per_diagonal, triu = False, verbose = True):
+    def process(y, mean_per_diagonal, triu = False, verbose = False):
         """
         Inputs:
             y: contact map numpy array or path to .npy file

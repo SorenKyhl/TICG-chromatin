@@ -7,6 +7,8 @@ import sys
 from collections import defaultdict
 
 import numpy as np
+from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
+from pylib.utils.energy_utils import calculate_diag_chi_step, calculate_L
 from scipy.stats import laplace, multivariate_normal, norm, qmc, skewnorm
 
 sys.path.insert(0, '/home/erschultz/TICG-chromatin')
@@ -14,9 +16,7 @@ from scripts.data_generation.ECDF import Ecdf
 from scripts.get_params import GetSeq
 
 sys.path.insert(0, '/home/erschultz')
-from sequences_to_contact_maps.scripts.energy_utils import \
-    calculate_diag_chi_step
-from sequences_to_contact_maps.scripts.load_utils import load_Y
+from sequences_to_contact_maps.scripts.load_utils import load_max_ent_S, load_Y
 from sequences_to_contact_maps.scripts.utils import pearson_round, triu_to_full
 
 LETTERS='ABCDEFGHIJKLMN'
@@ -268,7 +268,7 @@ class DatasetGenerator():
 
         for j in samples:
             sample_folder = osp.join(dataset, f'sample{j}')
-            max_ent_folder = osp.join(sample_folder, 'optimize_grid_b_140_phi_0.03-max_ent/resources')
+            max_ent_folder = osp.join(sample_folder, f'optimize_grid_b_140_phi_0.03-max_ent{self.k}/resources')
             if norm:
                 x = np.load(osp.join(max_ent_folder, 'x_eig_norm.npy'))
             else:
@@ -366,7 +366,7 @@ class DatasetGenerator():
 
         converged_samples = []
         for j in samples:
-            sample_folder = osp.join(dataset, f'sample{j}', 'optimize_grid_b_140_phi_0.03-max_ent')
+            sample_folder = osp.join(dataset, f'sample{j}', f'optimize_grid_b_140_phi_0.03-max_ent{self.k}')
 
             # check convergence
             convergence_file = osp.join(sample_folder, 'convergence.txt')
@@ -418,6 +418,78 @@ class DatasetGenerator():
             if get_grid:
                 self.sample_dict[i]['grid_size'] = grid_dict[j]
 
+    def meanDist_S_params(self):
+        meanDist_S_dict = {} # id : meanDist_S
+        grid_dict = {} # id : grid_size
+        if self.m == 1024:
+            dataset = '/home/erschultz/dataset_11_14_22/samples'
+            samples = range(2201, 2216)
+        elif self.m == 512:
+            if 'v2' in self.diag_mode:
+                dataset = '/home/erschultz/dataset_02_04_23/samples'
+                samples = range(201, 283)
+            else:
+                dataset = '/home/erschultz/dataset_01_26_23/samples'
+                samples = range(201, 250)
+        get_grid = False
+        if 'grid' in self.diag_mode:
+            get_grid = True
+
+        converged_samples = []
+        for j in samples:
+            sample_folder = osp.join(dataset, f'sample{j}', f'optimize_grid_b_140_phi_0.03-max_ent{self.k}')
+
+            # check convergence
+            convergence_file = osp.join(sample_folder, 'convergence.txt')
+            eps = 1e-2
+            converged = False
+            if osp.exists(convergence_file):
+                conv = np.loadtxt(convergence_file)
+                for ind in range(1, len(conv)):
+                    diff = conv[ind] - conv[ind-1]
+                    if np.abs(diff) < eps and conv[ind] < conv[0]:
+                        converged = True
+            else:
+                print(f'Warning: {convergence_file} does not exist')
+
+            if converged:
+                converged_samples.append(j)
+                meanDist_S = np.loadtxt(osp.join(sample_folder, 'fitting2/smoothed_fit_meanDist_S.txt'))
+                meanDist_S_dict[j] = meanDist_S
+
+                # get grid_size
+                if get_grid:
+                    grid_dict[j] = np.loadtxt(osp.join(dataset, f'sample{j}', 'optimize_grid_b_140_phi_0.03/grid_size.txt'))
+            else:
+                print(f'sample{j} did not converge')
+
+        print('converged %:', len(converged_samples)/ len(samples))
+        for i in range(self.N):
+            j = np.random.choice(converged_samples)
+            meanDist_S = meanDist_S_dict[j]
+
+            file = osp.split(self.sample_dict[i]['method'])[-1]
+            path = osp.join(f'/home/erschultz/{self.dataset}/setup/', file)
+            seq = np.load(path)
+            file = osp.split(self.sample_dict[i]['chi_method'])[-1]
+            path = osp.join(f'/home/erschultz/{self.dataset}/setup/', file)
+            chi = np.load(path)
+            L = calculate_L(seq, chi)
+
+            meanDist_L = DiagonalPreprocessing.genomic_distance_statistics(L, 'freq')
+            diag_chis = meanDist_S - meanDist_L
+
+            diag_file = osp.join(self.odir, f'diag_chis_{i+1}.npy')
+            np.save(diag_file, diag_chis)
+            diag_file = osp.join(self.data_dir, self.dataset, f'setup/diag_chis_{i+1}.npy')
+
+            self.sample_dict[i]['exp_max_ent'] = j
+            self.sample_dict[i]['diag_chi_method'] = diag_file
+
+            if get_grid:
+                self.sample_dict[i]['grid_size'] = grid_dict[j]
+
+
 
     def grid_params(self):
         for i in range(self.N):
@@ -428,13 +500,6 @@ class DatasetGenerator():
             self.sample_dict[i]['grid_size'] = grid_size
 
     def get_dataset(self):
-        if self.diag_mode.startswith('linear'):
-            self.linear_params()
-        elif self.diag_mode == 'logistic':
-            self.logistic_params()
-        elif self.diag_mode.startswith('max_ent'):
-            self.max_ent_params()
-
         if self.seq_mode == 'markov':
             self.seq_markov_params()
         elif self.seq_mode == 'pcs':
@@ -447,6 +512,15 @@ class DatasetGenerator():
             self.seq_pc_params(True)
 
         self.plaid_params()
+
+        if self.diag_mode.startswith('linear'):
+            self.linear_params()
+        elif self.diag_mode == 'logistic':
+            self.logistic_params()
+        elif self.diag_mode.startswith('max_ent'):
+            self.max_ent_params()
+        elif self.diag_mode.startswith('meanDist_S'):
+            self.meanDist_S_params()
 
         if self.max_L is not None:
             for i in range(self.N):
