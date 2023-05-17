@@ -32,7 +32,7 @@ echo "generate_params for ${dataset}"
 # tar -xzf setup.tar.gz
 # rm -r samples
 
-# sourceFile=~/TICG-chromatin/bin/datasets/diag_dataset35/diag_dataset_fns.sh
+sourceFile=~/TICG-chromatin/bin/datasets/diag_dataset36/diag_dataset_fns.sh
 for i in 1 2 3 4 5 6 7 8 9 10
 do
   echo $i

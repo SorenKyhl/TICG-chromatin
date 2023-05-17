@@ -44,6 +44,8 @@ ALL_FILES = [
             "https://hicfiles.s3.amazonaws.com/hiseq/hap1/in-situ/combined.hic"
             ]
 
+ALL_FILES_NO_GM12878 = [f for f in ALL_FILES if 'gm12878' not in f]
+
 def intersect(region, bad_region):
     # region/2 is a tuple
     if region[0] >= bad_region[0] and region[0] < bad_region[1]:
@@ -236,7 +238,9 @@ def single_experiment_dataset(filename, dataset, resolution, m,
 
     import_wrapper(data_folder, filename, resolution, norm, m, i, ref_genome, chroms)
 
-def mixed_experimental_dataset(dataset, resolution, m, norm='NONE'):
+def mixed_experimental_dataset(dataset, resolution, m, norm='NONE',
+                                i=1, ref_genome='hg19',
+                                chroms=range(1,23), files=ALL_FILES):
     dir = '/home/erschultz'
     data_folder = osp.join(dir, dataset)
     if not osp.exists(data_folder):
@@ -244,7 +248,7 @@ def mixed_experimental_dataset(dataset, resolution, m, norm='NONE'):
     if not osp.exists(osp.join(data_folder, 'samples')):
         os.mkdir(osp.join(data_folder, 'samples'), mode = 0o755)
 
-    import_wrapper(data_folder, ALL_FILES, resolution, norm, m)
+    import_wrapper(data_folder, files, resolution, norm, m, i , ref_genome, chroms)
 
 def Su2020imr90():
     sample_folder = '/home/erschultz/Su2020/samples/sample3'
@@ -346,6 +350,7 @@ if __name__ == '__main__':
     # single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/imr90/in-situ/combined.hic",
     #                             'dataset_02_21_23', 10000, 512*5)
     # mixed_experimental_dataset('dataset_03_21', 10000, 512*5)
+    mixed_experimental_dataset('dataset_04_05_23', 10000, 1024*5, files = ALL_FILES_NO_GM12878)
     # mixed_experimental_dataset('dataset_04_06', 10000, 1024*5)
     # mixed_experimental_dataset('dataset_04_07', 25000, 1024*4)
     # single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
@@ -354,8 +359,8 @@ if __name__ == '__main__':
                                 # 'dataset_04_10_23', 10000, 1024*5)
     # single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
                                 # 'dataset_test', 25000, 1024*4, i=5001, chroms=[2])
-    single_experiment_dataset("https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-untreated_combined_30.hic",
-                                'dataset_HCT116', 10000, 512*5, i=10, chroms=[2])
+    # single_experiment_dataset("https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-untreated_combined_30.hic",
+    #                             'dataset_HCT116', 10000, 512*5, i=10, chroms=[2])
     # single_experiment_dataset("https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-treated_6hr_combined_30.hic",
                                 # 'dataset_HCT116_RAD21_KO', 10000, 512*5, i=10, chroms=[2])
 

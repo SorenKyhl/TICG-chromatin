@@ -74,7 +74,7 @@ def modify_soren():
 def fit(sample):
     print(sample)
     mode = 'grid'
-    dataset = 'Su2020'
+    dataset = 'dataset_04_05_23'
     dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
     y = np.load(osp.join(dir, 'y.npy'))
     y /= np.mean(np.diagonal(y))
@@ -82,8 +82,8 @@ def fit(sample):
     nbeads = len(y)
 
     bonded_config = default.bonded_config
-    bonded_config['bond_length'] = 261
-    bonded_config['phi_chromatin'] = 0.006
+    bonded_config['bond_length'] = 140
+    bonded_config['phi_chromatin'] = 0.03
     if bonded_config['bond_length'] == 16.5:
         bonded_config['beadvol'] = 520
     else:
@@ -117,18 +117,18 @@ def fit(sample):
     config['diagonal_on'] = True
     config['dense_diagonal_on'] = True
     config['n_small_bins'] = 64
-    config["n_big_bins"] = 16
+    config["n_big_bins"] = 32
     config["small_binsize"] = 1
-    config["big_binsize"] = 28
+    config["big_binsize"] = 30
     config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
 
     params = default.params
     goals = epilib.get_goals(y, seqs, config)
     params["goals"] = goals
     params['iterations'] = 15
-    params['parallel'] = 3
+    params['parallel'] = 1
     params['equilib_sweeps'] = 30000
-    params['production_sweeps'] = 100000
+    params['production_sweeps'] = 300000
 
     root = osp.join(dir, f'{root}-max_ent{k}')
     if osp.exists(root):
@@ -148,11 +148,11 @@ def fit(sample):
     shutil.move('/home/erschultz/log.log', root)
 
 def main():
-    # with mp.Pool(14) as p:
-        # p.map(fit, [1, 2, 3, 4, 5, 10, 25, 50, 75, 100])
+    with mp.Pool(17) as p:
+        p.map(fit, range(1001, 1211))
     # for i in range(202, 283):
         # fit(i)
-    fit(1002)
+    # fit(1002)
 
 
 
