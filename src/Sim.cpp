@@ -511,6 +511,13 @@ void Sim::readInput() {
     }
 
 
+	if (config.contains("write_smatrix_prime")) {
+		write_smatrix_prime = config["write_smatrix_prime"];
+	}
+	else {
+		write_smatrix_prime = false;
+	}
+
     assert(config.contains("seed"));
     int seed = config["seed"];
     rng = std::make_unique<RanMars>(seed);
@@ -1815,8 +1822,11 @@ void Sim::setupSmatrix() {
   lmatrix_on = false;
 
   // write out smatrix
-  std::ofstream file("./" + data_out_filename + "/smatrix_prime.txt");
-  file << smatrix;
+  if (write_smatrix_prime)
+  {
+	  std::ofstream file("./" + data_out_filename + "/smatrix_prime.txt");
+	  file << smatrix;
+  }
 }
 
 void Sim::setupDmatrix() {

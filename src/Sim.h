@@ -153,6 +153,7 @@ public:
 	bool lmatrix_on;
 	bool smatrix_on;
 	bool dmatrix_on;
+	bool write_smatrix_prime;
 
 	Eigen::MatrixXd lmatrix;
 	std::string lmatrix_filename;
