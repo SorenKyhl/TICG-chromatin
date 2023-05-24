@@ -16,7 +16,6 @@ def soren():
     dir = '/home/erschultz/dataset_test/samples/sample5003'
 
     y = np.load(osp.join(dir, 'y.npy'))
-    nbeads = len(y)
     seqs = np.load(osp.join(dir, 'x_soren.npy')).T
     with open(osp.join(dir, 'config.json')) as f:
         config = json.load(f)
@@ -44,7 +43,6 @@ def modify_soren():
     sample = 5003
     dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
     y = np.load(osp.join(dir, 'y.npy'))
-    nbeads = len(y)
 
     root = osp.join(dir, 'soren_me_0-seq')
     print(root)
@@ -74,12 +72,11 @@ def modify_soren():
 def fit(sample):
     print(sample)
     mode = 'grid'
-    dataset = 'dataset_04_05_23'
+    dataset = 'Su2020'
     dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
     y = np.load(osp.join(dir, 'y.npy'))
     y /= np.mean(np.diagonal(y))
     np.fill_diagonal(y, 1)
-    nbeads = len(y)
 
     bonded_config = default.bonded_config
     bonded_config['bond_length'] = 140
@@ -109,18 +106,30 @@ def fit(sample):
     config['chis'] = np.zeros((k,k))
     config['dump_frequency'] = 10000
 
-    # get sequences
-    seqs = epilib.get_pcs(epilib.get_oe(y), k, normalize = True)
-    # seqs = epilib.get_sequences(y, k, randomized=True)
-
     # set up diag chis
     config['diagonal_on'] = True
     config['dense_diagonal_on'] = True
     config['n_small_bins'] = 64
-    config["n_big_bins"] = 32
     config["small_binsize"] = 1
-    config["big_binsize"] = 30
+    if len(y) == 1024:
+        config["n_big_bins"] = 32
+        config["big_binsize"] = 30
+    elif len(y) == 512:
+        config["n_big_bins"] = 16
+        config["big_binsize"] = 28
     config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
+
+
+    root = osp.join(dir, f'{root}-max_ent{k}')
+    if osp.exists(root):
+        # shutil.rmtree(root)
+        print('WARNING: root exists')
+        return
+    os.mkdir(root, mode=0o755)
+
+    # get sequences
+    seqs = epilib.get_pcs(epilib.get_oe(y), k, normalize = True)
+    # seqs = epilib.get_sequences(y, k, randomized=True)
 
     params = default.params
     goals = epilib.get_goals(y, seqs, config)
@@ -130,11 +139,6 @@ def fit(sample):
     params['equilib_sweeps'] = 30000
     params['production_sweeps'] = 300000
 
-    root = osp.join(dir, f'{root}-max_ent{k}')
-    if osp.exists(root):
-        shutil.rmtree(root)
-        print('WARNING: root exists')
-    os.mkdir(root, mode=0o755)
 
     stdout = sys.stdout
     with open(osp.join(root, 'log.log'), 'w') as sys.stdout:
@@ -144,15 +148,12 @@ def fit(sample):
         print(f'Simulation took {np.round(t, 2)} seconds')
     sys.stdout = stdout
 
-    # cleanup
-    shutil.move('/home/erschultz/log.log', root)
-
 def main():
-    with mp.Pool(17) as p:
-        p.map(fit, range(1001, 1211))
-    # for i in range(202, 283):
+    # with mp.Pool(8) as p:
+        # p.map(fit, range(1001, 1211))
+    # for i in range(1001, 1211):
         # fit(i)
-    # fit(1002)
+    fit(1013)
 
 
 

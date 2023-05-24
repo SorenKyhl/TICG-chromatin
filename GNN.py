@@ -16,7 +16,7 @@ from scripts.get_params import GetEnergy
 def fit(sample, GNN_ID):
     print(sample)
     mode = 'grid'
-    dataset = 'downsampling_analysis'
+    dataset = 'Su2020'
     dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
     y = np.load(osp.join(dir, 'y.npy'))
     y /= np.mean(np.diagonal(y))
@@ -26,10 +26,10 @@ def fit(sample, GNN_ID):
     bonded_config = default.bonded_config
     bonded_config['bond_length'] = 140
     bonded_config['phi_chromatin'] = 0.03
-    if bonded_config['bond_length'] == 140:
-        bonded_config['beadvol'] = 130000
-    elif bonded_config['bond_length'] == 16.5:
+    if bonded_config['bond_length'] == 16.5:
         bonded_config['beadvol'] = 520
+    else:
+        bonded_config['beadvol'] = 130000
     bonded_config["nSweeps"] = 20000
     root = f"optimize_{mode}"
     root = f"{root}_b_{bonded_config['bond_length']}_phi_{bonded_config['phi_chromatin']}"
@@ -77,20 +77,21 @@ def fit(sample, GNN_ID):
 
 def main():
     mapping = []
-    samples = [1, 2, 3, 4, 5, 10, 25, 50, 75, 100]
+    # samples = [1, 2, 3, 4, 5, 10, 25, 50, 75, 100]
+    # samples = range(1011, 1012)
     # samples = [2]
-    GNN_IDs = [403]
-    for i in samples:
-        for GNN_ID in GNN_IDs:
-            mapping.append((i, GNN_ID))
-
+    # GNN_IDs = [404]
+    # for i in samples:
+    #     for GNN_ID in GNN_IDs:
+    #         mapping.append((i, GNN_ID))
+    #
     # print(mapping)
-
-    with mp.Pool(12) as p:
-        p.starmap(fit, mapping)
+    #
+    # with mp.Pool(2) as p:
+    #     p.starmap(fit, mapping)
     # for i in samples:
         # fit(i, GNN_ID)
-    # fit(1010, 403)
+    fit(1013, 404)
 
 
 

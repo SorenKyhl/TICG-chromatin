@@ -277,6 +277,7 @@ def loadData(args):
                                 rmse_y = mean_squared_error(ground_truth_y, yhat, squared = False)
                             replicate_data['rmse-y'].append(rmse_y)
 
+                            # time
                             bash_file = osp.join(replicate_folder, 'bash.log')
                             if osp.exists(bash_file):
                                 with open(bash_file, 'r') as f:

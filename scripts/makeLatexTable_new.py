@@ -1,18 +1,14 @@
 import argparse
-import csv
 import json
 import os
 import os.path as osp
 import re
 import sys
-import tarfile
 from collections import defaultdict
 
 import matplotlib.pyplot as plt
 import numpy as np
-import scipy.stats as ss
 from compare_contact import plotDistanceStratifiedPearsonCorrelation
-from scipy.stats import pearsonr
 from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
@@ -22,6 +18,7 @@ from sequences_to_contact_maps.scripts.energy_utils import (
 from sequences_to_contact_maps.scripts.load_utils import (
     get_final_max_ent_folder, load_L, load_max_ent_chi, load_Y)
 from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
+                                                     load_time_dir,
                                                      triu_to_full)
 
 
@@ -111,6 +108,8 @@ def loadData(args):
                 continue
             if 'angle' in fname:
                 continue
+            if '0.006' in fname or '0.06' in fname:
+                continue
             print(fname)
             method = fname.split('-')[1]
             if method.startswith('GNN'):
@@ -118,11 +117,15 @@ def loadData(args):
                 converged_it = None
                 converged_path = fpath
                 S = np.load(osp.join(fpath, 'S.npy'))
+                times = [load_time_dir(fpath)]
             elif method.startswith('max_ent'):
                 method = fname
                 k = len(triu_to_full(np.loadtxt(osp.join(fpath, 'chis.txt'))))
 
                 # convergence
+                convergence_file = osp.join(fpath, 'convergence.txt')
+                assert osp.exists(convergence_file)
+                conv = np.loadtxt(convergence_file)
                 converged_it = None
                 if args.convergence_definition is None:
                     _, converged_it = get_final_max_ent_folder(fpath, return_it = True)
@@ -152,9 +155,7 @@ def loadData(args):
                         raise Exception('Unrecognized convergence_definition: '
                                         f'{args.convergence_definition}')
 
-                    convergence_file = osp.join(fpath, 'convergence.txt')
-                    assert osp.exists(convergence_file)
-                    conv = np.loadtxt(convergence_file)
+
                     for j in range(1, len(conv)):
                         diff = conv[j] - conv[j-1]
                         if np.abs(diff) < eps and conv[j] < conv[0]:
@@ -168,6 +169,12 @@ def loadData(args):
                     print('\tDID NOT CONVERGE')
                     converged_mask[i] = 0
                     converged_path = None
+
+                # times
+                its = len(conv)
+                times = []
+                for it in range(its+1):
+                    times.append(load_time_dir(osp.join(fpath, f'iteration{it}')))
 
                 # S
                 if converged_it is not None:
@@ -198,10 +205,19 @@ def loadData(args):
                     S = calculate_S(L, D)
                 else:
                     S = None
-
             else:
                 # method must be GNN or max_ent
                 continue
+
+
+            # time
+            if converged_it is None:
+                converge_time = None
+            else:
+                converge_time = np.sum(times[:converged_it])
+                converge_time /= 60 # to minutes
+            temp_dict['converged_time'] = converge_time
+            temp_dict['total_time'] = np.sum(times) / 60
 
             if converged_path is not None:
                 # SCC
@@ -247,7 +263,6 @@ def loadData(args):
             data[k][method]['rmse-y'].append(temp_dict['rmse-y'])
             data[k][method]['rmse-diag'].append(temp_dict['rmse-diag'])
             data[k][method]['converged_time'].append(temp_dict['converged_time'])
-            data[k][method]['final_time'].append(temp_dict['final_time'])
             data[k][method]['total_time'].append(temp_dict['total_time'])
             data[k][method]['converged_it'].append(temp_dict['converged_it'])
 
@@ -272,14 +287,13 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
     '''
     metric_labels = {'scc':'SCC', 'scc_var':'SCC var',
                     'rmse-S':'RMSE-Energy', 'rmse-y':'RMSE-Y',
-                    'rmse-diag':'RMSE-P(s)', 'avg_dist_pearson':'Mean Diagonal Corr',
-                    'total_time':'Total Time', 'converged_it':'Converged Iteration',
-                    'converged_time':'Converged Time', 'final_time':'Final Time'}
+                    'rmse-diag':'RMSE-P(s)', 'avg_dist_pearson':'SCC mean',
+                    'total_time':'Total Time', 'converged_it':'Converged It.',
+                    'converged_time':'Converged Time'}
     if small:
-        metrics = ['scc', 'scc_var', 'avg_dist_pearson', 'rmse-S', 'rmse-diag', 'converged_it']
+        metrics = ['scc', 'scc_var', 'avg_dist_pearson', 'rmse-S', 'rmse-diag', 'rmse-y']
     else:
-        metrics = ['scc', 'avg_dist_pearson', 'rmse-S', 'rmse-y', 'rmse-diag',
-                    'converged_it', 'converged_time', 'final_time']
+        metrics = ['converged_it', 'converged_time', 'total_time']
 
 
     print(f'\nMAKING TABLE-small={small}')
@@ -439,6 +453,44 @@ def sort_method_keys(keys):
 
     return sorted_key_labels
 
+def boxplot(data, ofile):
+    max_ent = 'optimize_grid_b_140_phi_0.03-max_ent10'
+    max_ent_times = data[10][max_ent]['converged_time']
+    max_ent_times = [i for i in max_ent_times if i is not None]
+    max_ent_sccs = data[10][max_ent]['scc_var']
+    max_ent_sccs = [i for i in max_ent_sccs if not np.isnan(i)]
+
+    gnn = 'GNN403'
+    gnn_times = data[0][gnn]['total_time']
+    gnn_sccs = data[0][gnn]['scc_var']
+
+    labels = ['Max. Ent.', 'GNN']
+
+    fig, axes = plt.subplots(1, 2)
+    data = [max_ent_sccs, gnn_sccs]
+    print('scc data', data)
+    b1 = axes[0].boxplot(data, vert = True,
+                        patch_artist = True, labels = labels)
+    axes[0].set_ylabel('SCC', fontsize=16)
+
+    data = [max_ent_times, gnn_times]
+    print('time data', data)
+    b2 = axes[1].boxplot(data,  vert = True,
+                        patch_artist = True, labels = labels)
+    # axes[1].set_yscale('log')
+    axes[1].set_ylabel('Time (mins)', fontsize=16)
+
+    # fill with colors
+    colors = ['b' ,'r']
+    for bplot in [b1, b2]:
+        for patch, color in zip(bplot['boxes'], colors):
+            patch.set_facecolor(color)
+
+    plt.tight_layout()
+    plt.savefig(ofile)
+
+
+
 def main(data_folder=None, sample=None):
     args = getArgs(data_folder = data_folder, sample = sample)
     assert args.sample is None or args.samples is None
@@ -451,12 +503,13 @@ def main(data_folder=None, sample=None):
 
     if args.sample is not None:
         args.samples = [args.sample]
-        ofile = osp.join(args.sample_folder, fname)
+        odir = args.sample_folder
     else:
-        ofile = osp.join(args.data_folder, fname)
+        odir = args.data_folder
+    ofile = osp.join(odir, fname)
 
     if args.convergence_definition == 'all':
-        convergence_def_list = ['normal', 'strict', 'param']
+        convergence_def_list = ['normal', 'strict', None]
     else:
         convergence_def_list = [args.convergence_definition]
 
@@ -483,5 +536,16 @@ def main(data_folder=None, sample=None):
                         sample_id = args.sample, experimental = args.experimental,
                         nan_mask = not_converged_mask)
 
+        boxplot(data, osp.join(odir, f'boxplot_{defn}_convergence.png'))
+
+
 if __name__ == '__main__':
     main()
+    # data_dir = '/home/erschultz/dataset_02_04_23'
+    # samples = range(201, 211)
+    # samples = [201, 202, 203, 204, 205, 206]
+    # args = getArgs(data_folder = data_dir, samples = samples)
+    # args.experimental = True
+    # args.convergence_definition = 'normal'
+    # data, converged_mask = loadData(args)
+    # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

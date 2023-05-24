@@ -23,7 +23,7 @@ def main(root, config, mode='grid_angle10'):
     config['nbeads'] = len(gthic)
 
     if mode.startswith('grid'):
-        optimum = optimize_config(config, gthic, 'grid', 0.5, 2.5, root)
+        optimum = optimize_config(config, gthic, 'grid', 0.7, 2.0, root)
         plot_max_ent(root)
         print(f"optimal grid size is: {optimum}")
         with open(osp.join(root, 'grid_size.txt'), 'w') as f:
@@ -71,10 +71,10 @@ def check_all_converged():
 def create_config():
     config = default.bonded_config
 
-    config['beadvol'] = 260000
-    config['bond_length'] = 260
-    config['phi_chromatin'] = 0.06
-    config['grid_size'] = 222.5
+    config['beadvol'] = 130000
+    config['bond_length'] = 140
+    config['phi_chromatin'] = 0.03
+    config['grid_size'] = 150
     # config['bond_type'] = 'DSS'
     config['k_angle'] = 0.0
     config['angles_on'] = False
@@ -82,11 +82,11 @@ def create_config():
     return config
 
 if __name__ == "__main__":
-    # config = create_config()
-    dir = '/home/erschultz/dataset_04_28_23/samples/sample100'
-    config = utils.load_json(osp.join(dir, 'config.json'))
+    config = create_config()
+    dir = '/home/erschultz/Su2020/samples/sample1014'
+    # config = utils.load_json(osp.join(dir, 'config.json'))
     config['track_contactmap'] = False
-    config['bead_type_files'] = [osp.join(dir, f'seq{i}.txt') for i in range(10)]
+    # config['bead_type_files'] = [osp.join(dir, f'seq{i}.txt') for i in range(10)]
     mode = 'grid'
     root = f"optimize_{mode}"
     root = f"{root}_b_{config['bond_length']}_phi_{config['phi_chromatin']}"

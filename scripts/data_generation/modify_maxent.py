@@ -47,6 +47,9 @@ def get_samples(dataset):
         # samples = range(284, 293)
         # samples = range(201, 210)
         experimental = True
+    elif dataset == 'dataset_04_05_23':
+        samples = range(1001, 1211)
+        experimental = True
     elif dataset in {'dataset_12_20_22', 'dataset_02_13_23', 'dataset_02_06_23',
                     'dataset_02_22_23'}:
         samples = [324, 981, 1936, 2834, 3464]
@@ -69,7 +72,7 @@ def modify_plaid_chis(dataset, k):
     samples, _ = get_samples(dataset)
     for sample in tqdm.tqdm(samples):
         dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
-        max_ent_dir = osp.join(dir, f'optimize_grid_b_140_phi_0.03-max_ent')
+        max_ent_dir = osp.join(dir, f'optimize_grid_b_140_phi_0.03-max_ent{k}')
         chis = np.loadtxt(osp.join(max_ent_dir, 'chis.txt'))
         chis = triu_to_full(chis)
         plot_matrix(chis, osp.join(max_ent_dir, 'chis.png'), cmap = 'blue-red')
@@ -164,7 +167,7 @@ def modify_plaid_chis(dataset, k):
         assert np.allclose(L, L_eig), L - L_eig
 
 
-def modify_maxent_diag_chi(dataset, k = 8, edit = True):
+def modify_maxent_diag_chi(dataset, k = 10, edit = True):
     '''
     Inputs:
         k: number of marks
@@ -1293,13 +1296,13 @@ def diag_vs_plaid(dataset):
 
 
 if __name__ == '__main__':
-    # modify_plaid_chis('dataset_02_04_23', k = 10)
-    modify_maxent_diag_chi('dataset_02_04_23', 10, False)
+    # modify_plaid_chis('dataset_04_05_23', k = 10)
+    # modify_maxent_diag_chi('dataset_04_05_23', 10, False)
     # for i in range(221, 222):
-    #     plot_modified_max_ent(i, k = 10)
+        # plot_modified_max_ent(i, k = 10)
     # diagonal_dist('dataset_02_04_23', 10)
     # grid_dist('dataset_01_26_23')
-    # plaid_dist('dataset_02_04_23', 10, True, False, True)
+    plaid_dist('dataset_04_05_23', 10, True, False, True)
     # seq_dist('dataset_01_26_23', 4, True, False, True)
     # modify_plaid_chis('dataset_11_14_22', 8)
     # plot_params_test()

@@ -20,13 +20,13 @@ fi
 dataset='dataset_02_04_23'
 samples='201-202-203-204-205-206-207-208-209-210'
 dataFolder="${dataDir}/${dataset}"
-convergenceDefinition='none'
-# python3 ~/TICG-chromatin/scripts/makeLatexTable_new.py --data_folder $dataFolder --samples $samples --convergence_definition $convergenceDefinition --experimental --convergence_mask &
+convergenceDefinition='all'
+python3 ~/TICG-chromatin/scripts/makeLatexTable_new.py --data_folder $dataFolder --samples $samples --convergence_definition $convergenceDefinition --experimental --convergence_mask
 
 
-for sample in 201 202 203
-do
-  python3 ~/TICG-chromatin/scripts/makeLatexTable_new.py --data_folder $dataFolder --sample $sample --convergence_definition $convergenceDefinition --experimental &
-done
-
-wait
+# for sample in 201
+#  # 202 203
+# do
+#   python3 ~/TICG-chromatin/scripts/makeLatexTable_new.py --data_folder $dataFolder --sample $sample --convergence_definition $convergenceDefinition --experimental &
+# done
+# wait

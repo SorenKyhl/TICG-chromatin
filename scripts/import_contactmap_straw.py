@@ -62,6 +62,7 @@ def import_contactmap_straw(sample_folder, hic_filename, chrom, start,
     basepairs = f"{chrom}:{start}:{end}"
     print(basepairs)
     result = hicstraw.straw("observed", norm, hic_filename, basepairs, basepairs, "BP", resolution)
+    hic = hicstraw.HiCFile(hic_filename)
 
     m = int((end - start) / resolution)
     y_arr = np.zeros((m, m))
@@ -90,8 +91,10 @@ def import_contactmap_straw(sample_folder, hic_filename, chrom, start,
         os.mkdir(sample_folder, mode = 0o755)
 
     with open(osp.join(sample_folder, 'import.log'), 'w') as f:
+        chrom = chrom.strip('chr')
         f.write(f'{hic_filename}\nchrom={chrom}\nstart={start}\nend={end}\n')
-        f.write(f'resolution={resolution}\nbeads={m}\nnorm={norm}')
+        f.write(f'resolution={resolution}\nbeads={m}\nnorm={norm}\n')
+        f.write(f'genome={hic.getGenomeID()}')
 
     np.save(osp.join(sample_folder, 'y.npy'), y_arr)
     print(f'{sample_folder} done')
@@ -251,13 +254,14 @@ def mixed_experimental_dataset(dataset, resolution, m, norm='NONE',
     import_wrapper(data_folder, files, resolution, norm, m, i , ref_genome, chroms)
 
 def Su2020imr90():
-    sample_folder = '/home/erschultz/Su2020/samples/sample3'
+    sample_folder = '/home/erschultz/Su2020/samples/sample14'
     filename='https://hicfiles.s3.amazonaws.com/hiseq/imr90/in-situ/combined.hic'
+    filename='/home/erschultz/Su2020/ENCFF281ILS.hic'
 
     resolution = 10000
-    start = 15372323
-    end = start + 512*5*resolution
-    import_contactmap_straw(sample_folder, filename, 21, start, end, resolution, 'KR')
+    start = 10000001
+    end = start + 1024*5*resolution
+    import_contactmap_straw(sample_folder, filename, 'chr2', start, end, resolution, 'NONE')
 
 
 
@@ -350,7 +354,7 @@ if __name__ == '__main__':
     # single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/imr90/in-situ/combined.hic",
     #                             'dataset_02_21_23', 10000, 512*5)
     # mixed_experimental_dataset('dataset_03_21', 10000, 512*5)
-    mixed_experimental_dataset('dataset_04_05_23', 10000, 1024*5, files = ALL_FILES_NO_GM12878)
+    # mixed_experimental_dataset('dataset_04_05_23', 10000, 1024*5, files = ALL_FILES_NO_GM12878)
     # mixed_experimental_dataset('dataset_04_06', 10000, 1024*5)
     # mixed_experimental_dataset('dataset_04_07', 25000, 1024*4)
     # single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
@@ -364,4 +368,4 @@ if __name__ == '__main__':
     # single_experiment_dataset("https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-treated_6hr_combined_30.hic",
                                 # 'dataset_HCT116_RAD21_KO', 10000, 512*5, i=10, chroms=[2])
 
-    # Su2020imr90()
+    Su2020imr90()
