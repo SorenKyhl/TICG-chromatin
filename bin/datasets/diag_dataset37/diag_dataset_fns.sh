@@ -2,7 +2,7 @@
 
 source ~/TICG-chromatin/bin/datasets/dataset_fns.sh
 
-dataset=dataset_05_23_23
+dataset=dataset_05_28_23
 dataFolder="/project2/depablo/erschultz/${dataset}"
 scratchDir='/home/erschultz/scratch'
 #
