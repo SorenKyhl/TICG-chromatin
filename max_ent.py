@@ -69,10 +69,9 @@ def modify_soren():
                 final_it_sweeps=500000)
     me.fit()
 
-def fit(sample):
+def fit(dataset, sample):
     print(sample)
     mode = 'grid'
-    dataset = 'Su2020'
     dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
     y = np.load(osp.join(dir, 'y.npy'))
     y /= np.mean(np.diagonal(y))
@@ -101,6 +100,8 @@ def fit(sample):
     for key in ['beadvol', 'bond_length', 'phi_chromatin', 'grid_size',
                 'k_angle', 'angles_on']:
         config[key] = bonded_config[key]
+    return
+
     k = 10
     config['nspecies'] = k
     config['chis'] = np.zeros((k,k))
@@ -111,12 +112,15 @@ def fit(sample):
     config['dense_diagonal_on'] = True
     config['n_small_bins'] = 64
     config["small_binsize"] = 1
+    # config["n_big_bins"] = 16
+    # config["big_binsize"] = 37
     if len(y) == 1024:
         config["n_big_bins"] = 32
         config["big_binsize"] = 30
     elif len(y) == 512:
         config["n_big_bins"] = 16
         config["big_binsize"] = 28
+
     config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
 
 
@@ -124,7 +128,6 @@ def fit(sample):
     if osp.exists(root):
         # shutil.rmtree(root)
         print('WARNING: root exists')
-        return
     os.mkdir(root, mode=0o755)
 
     # get sequences
@@ -149,11 +152,23 @@ def fit(sample):
     sys.stdout = stdout
 
 def main():
-    # with mp.Pool(8) as p:
-        # p.map(fit, range(1001, 1211))
-    # for i in range(1001, 1211):
-        # fit(i)
-    fit(1013)
+    dataset = 'dataset_04_09_23'
+    samples = list(range(1001, 1028))
+    # samples = sorted(np.random.choice(samples, 12, replace = False))
+    # print(samples)
+    #
+    mapping = []
+    for i in samples:
+        mapping.append((dataset, i))
+    print(len(mapping))
+
+    with mp.Pool(15) as p:
+        p.starmap(fit, mapping)
+    # # for i in range(1001, 1211):
+    #     # fit(i)
+
+    # dataset = 'Su2020'
+    # fit(dataset, 1003)
 
 
 

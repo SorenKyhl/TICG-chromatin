@@ -25,12 +25,21 @@ RED_BLUE_CMAP = matplotlib.colors.LinearSegmentedColormap.from_list('custom',
                                          [(0, 'red'),
                                          (0.5, 'white'),
                                           (1, 'blue')], N=126)
+YELLOW_BLUE_CMAP = matplotlib.colors.LinearSegmentedColormap.from_list('custom',
+                                         [(0, 'yellow'),
+                                         (0.5, 'white'),
+                                          (1, 'blue')], N=126)
+RED_GREEN_CMAP = matplotlib.colors.LinearSegmentedColormap.from_list('custom',
+                                         [(0, 'red'),
+                                         (0.5, 'white'),
+                                          (1, 'green')], N=126)
 
 
 def plot_matrix(arr, ofile=None, title=None, vmin=0, vmax='max',
                 size_in=6, minVal=None, maxVal=None, prcnt=False,
                 cmap=RED_CMAP, x_tick_locs=None, x_ticks=None,
-                y_tick_locs=None, y_ticks=None, triu=False, lines=[]):
+                y_tick_locs=None, y_ticks=None, triu=False, lines=[],
+                percentile=1):
     """
     Plotting function for 2D arrays.
 
@@ -93,13 +102,13 @@ def plot_matrix(arr, ofile=None, title=None, vmin=0, vmax='max',
 
     # set min and max
     if vmin == 'center':
-        vmin = np.nanpercentile(arr, 1)
-        vmax = np.nanpercentile(arr, 99)
+        vmin = np.nanpercentile(arr, percentile)
+        vmax = np.nanpercentile(arr, 100-percentile)
         vmax = max(vmax, vmin * -1)
         vmin = vmax * -1
     elif vmin == 'center1':
-        vmin = np.nanpercentile(arr, 1)
-        vmax = np.nanpercentile(arr, 99)
+        vmin = np.nanpercentile(arr, percentile)
+        vmax = np.nanpercentile(arr, 100-percentile)
         d_vmin = 1-vmin
         d_vmax = vmax-1
         d = max(d_vmax, d_vmin)
@@ -107,7 +116,7 @@ def plot_matrix(arr, ofile=None, title=None, vmin=0, vmax='max',
         vmax = 1 + d
     else:
         if vmin == 'min':
-            vmin = np.nanpercentile(arr, 1)
+            vmin = np.nanpercentile(arr, percentile)
             print(vmin)
             # uses 1st percentile instead of absolute min
         elif vmin == 'abs_min':
@@ -116,7 +125,7 @@ def plot_matrix(arr, ofile=None, title=None, vmin=0, vmax='max',
         if vmax == 'mean':
             vmax = np.mean(arr)
         elif vmax == 'max':
-            vmax = np.nanpercentile(arr, 99)
+            vmax = np.nanpercentile(arr, 100-percentile)
             # uses 99th percentile instead of absolute max
         elif vmax == 'abs_max':
             vmax = np.max(arr)

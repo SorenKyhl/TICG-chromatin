@@ -1527,7 +1527,7 @@ class GetEnergy():
                 plot_matrix(S, 'S.png', vmin = 'min', vmax = 'max',
                             cmap = 'blue-red', title = 'S')
 
-    def get_energy_gnn(self, model_path, sample_path, kr=False):
+    def get_energy_gnn(self, model_path, sample_path, kr=False, grid_path=None):
         '''
         Loads output from GNN model to use as energy matrix
 
@@ -1576,8 +1576,7 @@ class GetEnergy():
         sys.argv = [sys.argv[0]] # delete args from get_params, otherwise gnn opt will try and use them
         opt = parser.parse_args(['@{}'.format(argparse_path)])
         opt.id = int(model_id)
-        print(opt)
-        opt = finalize_opt(opt, parser, local = True, debug = True)
+        opt = finalize_opt(opt, parser, local = True, debug = True, grid_path=grid_path)
         if self.m > 0:
             opt.m = self.m # override m
         opt.data_folder = osp.join('/',*sample_path_split[:-2]) # use sample_dataset not gnn_dataset
@@ -1588,6 +1587,7 @@ class GetEnergy():
         opt.device = torch.device('cpu')
         opt.scratch = '/home/erschultz/scratch' # use local scratch
         opt.plaid_score_cutoff = None # no cutoff at test time
+
 
         if opt.y_preprocessing.startswith('sweep'):
             _, *opt.y_preprocessing = opt.y_preprocessing.split('_')

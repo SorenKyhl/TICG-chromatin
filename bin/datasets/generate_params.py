@@ -79,6 +79,9 @@ class DatasetGenerator():
         elif self.exp_dataset == 'dataset_04_05_23':
             self.exp_samples = range(1001, 1211)
             assert self.m == 1024
+        elif self.exp_dataset == 'dataset_04_10_23':
+            self.exp_samples = range(1001, 1027)
+            assert self.m == 1024
         else:
             raise Exception(f'unrecognized dataset {self.exp_dataset}')
 

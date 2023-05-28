@@ -13,10 +13,9 @@ from pylib.utils import default, epilib, utils
 from scripts.get_params import GetEnergy
 
 
-def fit(sample, GNN_ID):
+def fit(dataset, sample, GNN_ID):
     print(sample)
     mode = 'grid'
-    dataset = 'Su2020'
     dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
     y = np.load(osp.join(dir, 'y.npy'))
     y /= np.mean(np.diagonal(y))
@@ -53,22 +52,22 @@ def fit(sample, GNN_ID):
     config['dmatrix_on'] = False
     config['dump_frequency'] = 10000
 
-    root = f'{root}-GNN{GNN_ID}'
-    if osp.exists(root):
-        shutil.rmtree(root)
+    gnn_root = f'{root}-GNN{GNN_ID}'
+    if osp.exists(gnn_root):
+        shutil.rmtree(gnn_root)
         print('WARNING: root exists')
-    os.mkdir(root, mode=0o755)
+    os.mkdir(gnn_root, mode=0o755)
 
-    with open(osp.join(root, 'energy.log'), 'w') as sys.stdout:
+    with open(osp.join(gnn_root, 'energy.log'), 'w') as sys.stdout:
         # get energy
         config['nbeads'] = len(y)
         getenergy = GetEnergy(config = config)
         model_path = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{GNN_ID}'
-        S = getenergy.get_energy_gnn(model_path, dir)
+        S = getenergy.get_energy_gnn(model_path, dir, grid_path=osp.join(root, 'grid_size.txt'))
         config["smatrix_filename"] = "smatrix.txt"
 
-    with open(osp.join(root, 'log.log'), 'w') as sys.stdout:
-        sim = Pysim(root, config, None, y, randomize_seed = True, mkdir = False,
+    with open(osp.join(gnn_root, 'log.log'), 'w') as sys.stdout:
+        sim = Pysim(gnn_root, config, None, y, randomize_seed = True, mkdir = False,
                     smatrix = S)
         t = sim.run_eq(30000, 500000, 1)
         print(f'Simulation took {np.round(t, 2)} seconds')
@@ -76,22 +75,25 @@ def fit(sample, GNN_ID):
         analysis.main_no_maxent(sim.root)
 
 def main():
+    dataset='Su2020'
     mapping = []
     # samples = [1, 2, 3, 4, 5, 10, 25, 50, 75, 100]
-    # samples = range(1011, 1012)
-    # samples = [2]
-    # GNN_IDs = [404]
+    # samples = [1222, 1250, 1279]
+    # samples = range(1001, 1011)
+    # # samples = [1014]
+    # GNN_IDs = [408]
     # for i in samples:
     #     for GNN_ID in GNN_IDs:
-    #         mapping.append((i, GNN_ID))
-    #
+    #         mapping.append((dataset, i, GNN_ID))
+    # #
     # print(mapping)
-    #
-    # with mp.Pool(2) as p:
+    # print(len(mapping))
+    # #
+    # with mp.Pool(10) as p:
     #     p.starmap(fit, mapping)
     # for i in samples:
-        # fit(i, GNN_ID)
-    fit(1013, 404)
+        # fit(dataset, i, GNN_ID)
+    fit(dataset, 1014, 408)
 
 
 

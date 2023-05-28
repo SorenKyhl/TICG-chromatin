@@ -43,6 +43,8 @@ ALL_FILES = [
             "https://hicfiles.s3.amazonaws.com/hiseq/hela/in-situ/combined.hic",
             "https://hicfiles.s3.amazonaws.com/hiseq/hap1/in-situ/combined.hic"
             ]
+            # "https://www.encodeproject.org/files/ENCFF675SJE/@@download/ENCFF675SJE.hic" hg38 A549
+            # "https://www.encodeproject.org/files/ENCFF177TYX/@@download/ENCFF177TYX.hic"
 
 ALL_FILES_NO_GM12878 = [f for f in ALL_FILES if 'gm12878' not in f]
 
@@ -91,7 +93,8 @@ def import_contactmap_straw(sample_folder, hic_filename, chrom, start,
         os.mkdir(sample_folder, mode = 0o755)
 
     with open(osp.join(sample_folder, 'import.log'), 'w') as f:
-        chrom = chrom.strip('chr')
+        if isinstance(chrom, str):
+            chrom = chrom.strip('chr')
         f.write(f'{hic_filename}\nchrom={chrom}\nstart={start}\nend={end}\n')
         f.write(f'resolution={resolution}\nbeads={m}\nnorm={norm}\n')
         f.write(f'genome={hic.getGenomeID()}')
@@ -254,14 +257,15 @@ def mixed_experimental_dataset(dataset, resolution, m, norm='NONE',
     import_wrapper(data_folder, files, resolution, norm, m, i , ref_genome, chroms)
 
 def Su2020imr90():
-    sample_folder = '/home/erschultz/Su2020/samples/sample14'
+    sample_folder = '/home/erschultz/Su2020/samples/sample3'
     filename='https://hicfiles.s3.amazonaws.com/hiseq/imr90/in-situ/combined.hic'
     filename='/home/erschultz/Su2020/ENCFF281ILS.hic'
 
     resolution = 10000
-    start = 10000001
-    end = start + 1024*5*resolution
-    import_contactmap_straw(sample_folder, filename, 'chr2', start, end, resolution, 'NONE')
+    start = 14000001
+    end = 46700001
+    # end = start + 1024*5*resolution
+    import_contactmap_straw(sample_folder, filename, 'chr21', start, end, resolution, 'NONE')
 
 
 
@@ -354,7 +358,10 @@ if __name__ == '__main__':
     # single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/imr90/in-situ/combined.hic",
     #                             'dataset_02_21_23', 10000, 512*5)
     # mixed_experimental_dataset('dataset_03_21', 10000, 512*5)
-    # mixed_experimental_dataset('dataset_04_05_23', 10000, 1024*5, files = ALL_FILES_NO_GM12878)
+    # files = ["https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
+            # "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-untreated_combined_30.hic"]
+    files = ["https://www.encodeproject.org/files/ENCFF177TYX/@@download/ENCFF177TYX.hic"]
+    # mixed_experimental_dataset('dataset_04_05_23', 10000, 1024*5, files = files, i=263)
     # mixed_experimental_dataset('dataset_04_06', 10000, 1024*5)
     # mixed_experimental_dataset('dataset_04_07', 25000, 1024*4)
     # single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",

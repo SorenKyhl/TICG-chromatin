@@ -201,6 +201,8 @@ def analysis():
 
     plt.tight_layout(h_pad=-0.5)
     plt.savefig('/home/erschultz/downsampling_analysis/downsampling_figure.png')
+    plt.savefig('/home/erschultz/TICG-chromatin/figures/downsampling_figure.png')
+
     plt.close()
 
 

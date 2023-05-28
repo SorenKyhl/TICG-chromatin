@@ -59,6 +59,7 @@ def get_samples(dataset):
         samples = range(1, 16)
     elif dataset in {'dataset_04_09_23', 'dataset_04_10_23',}:
         samples = range(1001, 1028)
+        experimental = True
     elif dataset == 'dataset_04_06_23':
         samples = range(1001, 1286)
     elif dataset == 'dataset_04_07_23':
@@ -1296,13 +1297,13 @@ def diag_vs_plaid(dataset):
 
 
 if __name__ == '__main__':
-    # modify_plaid_chis('dataset_04_05_23', k = 10)
-    # modify_maxent_diag_chi('dataset_04_05_23', 10, False)
+    # modify_plaid_chis('dataset_04_10_23', k = 10)
+    # modify_maxent_diag_chi('dataset_04_10_23', 10, False)
     # for i in range(221, 222):
         # plot_modified_max_ent(i, k = 10)
     # diagonal_dist('dataset_02_04_23', 10)
     # grid_dist('dataset_01_26_23')
-    plaid_dist('dataset_04_05_23', 10, True, False, True)
+    plaid_dist('dataset_04_10_23', 10, True, False, True)
     # seq_dist('dataset_01_26_23', 4, True, False, True)
     # modify_plaid_chis('dataset_11_14_22', 8)
     # plot_params_test()
