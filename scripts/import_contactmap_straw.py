@@ -43,10 +43,17 @@ ALL_FILES = [
             "https://hicfiles.s3.amazonaws.com/hiseq/hela/in-situ/combined.hic",
             "https://hicfiles.s3.amazonaws.com/hiseq/hap1/in-situ/combined.hic"
             ]
-            # "https://www.encodeproject.org/files/ENCFF675SJE/@@download/ENCFF675SJE.hic" hg38 A549
-            # "https://www.encodeproject.org/files/ENCFF177TYX/@@download/ENCFF177TYX.hic"
+            # "https://www.encodeproject.org/files/ENCFF675SJE/@@download/ENCFF675SJE.hic"  hg38 A549
+
 
 ALL_FILES_NO_GM12878 = [f for f in ALL_FILES if 'gm12878' not in f]
+
+VALIDATION_FILES = [
+        "https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
+        "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-untreated_combined_30.hic",
+        "https://www.encodeproject.org/files/ENCFF177TYX/@@download/ENCFF177TYX.hic"
+        ]
+        # gm12878, HL-60, HCT116
 
 def intersect(region, bad_region):
     # region/2 is a tuple
@@ -362,6 +369,7 @@ if __name__ == '__main__':
             # "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-untreated_combined_30.hic"]
     files = ["https://www.encodeproject.org/files/ENCFF177TYX/@@download/ENCFF177TYX.hic"]
     # mixed_experimental_dataset('dataset_04_05_23', 10000, 1024*5, files = files, i=263)
+    mixed_experimental_dataset('dataset_05_31_23', 10000, 512*5, files = ALL_FILES_NO_GM12878)
     # mixed_experimental_dataset('dataset_04_06', 10000, 1024*5)
     # mixed_experimental_dataset('dataset_04_07', 25000, 1024*4)
     # single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
@@ -375,4 +383,4 @@ if __name__ == '__main__':
     # single_experiment_dataset("https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-treated_6hr_combined_30.hic",
                                 # 'dataset_HCT116_RAD21_KO', 10000, 512*5, i=10, chroms=[2])
 
-    Su2020imr90()
+    # Su2020imr90()

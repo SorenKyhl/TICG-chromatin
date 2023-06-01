@@ -15,7 +15,7 @@ useL='true'
 useS='true'
 useD='true'
 
-nSweeps=500000
+nSweeps=300000
 dumpFrequency=100000
 TICGSeed=10
 dense='false'

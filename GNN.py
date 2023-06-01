@@ -13,10 +13,10 @@ from pylib.utils import default, epilib, utils
 from scripts.get_params import GetEnergy
 
 
-def fit(dataset, sample, GNN_ID):
+def fit(dataset, sample, GNN_ID, sub_dir='samples'):
     print(sample)
     mode = 'grid'
-    dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
+    dir = f'/home/erschultz/{dataset}/{sub_dir}/sample{sample}'
     y = np.load(osp.join(dir, 'y.npy'))
     y /= np.mean(np.diagonal(y))
     np.fill_diagonal(y, 1)
@@ -34,14 +34,15 @@ def fit(dataset, sample, GNN_ID):
     root = f"{root}_b_{bonded_config['bond_length']}_phi_{bonded_config['phi_chromatin']}"
     print(root)
     root = osp.join(dir, root)
-    if osp.exists(root):
-        bonded_config['grid_size'] = np.loadtxt(osp.join(root, 'grid_size.txt'))
-        angle_file = osp.join(root, 'angle.txt')
-        if osp.exists(angle_file):
-            bonded_config['k_angle'] = np.loadtxt(angle_file)
-            bonded_config['angles_on'] = True
-    else:
-        root, bonded_config = optimize_grid.main(root, bonded_config, mode)
+    # if osp.exists(root):
+    #     bonded_config['grid_size'] = np.loadtxt(osp.join(root, 'grid_size.txt'))
+    #     angle_file = osp.join(root, 'angle.txt')
+    #     if osp.exists(angle_file):
+    #         bonded_config['k_angle'] = np.loadtxt(angle_file)
+    #         bonded_config['angles_on'] = True
+    # else:
+    root, bonded_config = optimize_grid.main(root, bonded_config, mode)
+    return
     config = default.config
     for key in ['beadvol', 'bond_length', 'phi_chromatin', 'grid_size',
                 'k_angle', 'angles_on']:
@@ -63,7 +64,8 @@ def fit(dataset, sample, GNN_ID):
         config['nbeads'] = len(y)
         getenergy = GetEnergy(config = config)
         model_path = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{GNN_ID}'
-        S = getenergy.get_energy_gnn(model_path, dir, grid_path=osp.join(root, 'grid_size.txt'))
+        S = getenergy.get_energy_gnn(model_path, dir, grid_path=osp.join(root, 'grid_size.txt'),
+                                    sub_dir = sub_dir)
         config["smatrix_filename"] = "smatrix.txt"
 
     with open(osp.join(gnn_root, 'log.log'), 'w') as sys.stdout:
@@ -75,16 +77,29 @@ def fit(dataset, sample, GNN_ID):
         analysis.main_no_maxent(sim.root)
 
 def main():
-    dataset='Su2020'
+    dataset='downsampling_analysis'
     mapping = []
     # samples = [1, 2, 3, 4, 5, 10, 25, 50, 75, 100]
     # samples = [1222, 1250, 1279]
-    # samples = range(1001, 1011)
+    samples = range(201, 211)
     # # samples = [1014]
     # GNN_IDs = [408]
     # for i in samples:
     #     for GNN_ID in GNN_IDs:
     #         mapping.append((dataset, i, GNN_ID))
+
+    mapping = []
+    for j in [1, 5, 10, 25, 50, 75, 100]:
+        for i in samples:
+            mapping.append((dataset, i, 403, f'samples_sim{j}'))
+    print(len(mapping))
+    print(mapping)
+
+    with mp.Pool(15) as p:
+        p.starmap(fit, mapping)
+    for i in range(1001, 1211):
+        fit(i)
+
     # #
     # print(mapping)
     # print(len(mapping))
@@ -93,7 +108,7 @@ def main():
     #     p.starmap(fit, mapping)
     # for i in samples:
         # fit(dataset, i, GNN_ID)
-    fit(dataset, 1014, 408)
+    # fit(dataset, 1014, 408)
 
 
 

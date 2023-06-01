@@ -63,6 +63,8 @@ class DiagonalPreprocessing():
             np_stat = np.nanmean
         elif stat == 'var':
             np_stat = np.nanvar
+        elif stat == 'std':
+            np_stat = np.nanstd
         m = len(y)
         distances = range(0, m, 1)
         stat_per_diagonal = np.zeros_like(distances).astype(float)

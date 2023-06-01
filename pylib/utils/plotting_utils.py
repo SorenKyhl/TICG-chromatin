@@ -230,17 +230,17 @@ def plot_mean_dist(meanDist, path, ofile, diag_chis_step, logx, logy=True,
         if logx:
             ax2.set_xscale('log')
         ax2.legend(loc='upper right')
-    # else:f
+    # else:
     #     x = np.arange(1, 10).astype(np.float64)
     #     ax.plot(x, np.power(x, -1)/4, color = 'grey', ls = '--', label='-1')
     #     x = np.arange(10, 100).astype(np.float64)
     #     ax.plot(x, np.power(x, -1.5), color = 'grey', ls = ':', label='-3/2')
     #     ax.legend(loc='upper right')
 
-    if np.min(meanDist) < 1e-6:
-        plt.ylim(1e-6, 2)
-    else:
-        plt.ylim(None, 2)
+    # if np.min(meanDist[meanDist != 0]) < 1e-6:
+    #     plt.ylim(1e-6, 2)
+    # else:
+    #     plt.ylim(None, 2)
 
     ax.set_ylabel(ylabel, fontsize = 16)
     ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)

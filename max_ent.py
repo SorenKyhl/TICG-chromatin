@@ -69,19 +69,18 @@ def modify_soren():
                 final_it_sweeps=500000)
     me.fit()
 
-def fit(dataset, sample):
-    print(sample)
+def setup_config(dataset, sample, samples='samples'):
     mode = 'grid'
-    dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
-    y = np.load(osp.join(dir, 'y.npy'))
-    y /= np.mean(np.diagonal(y))
-    np.fill_diagonal(y, 1)
+    print(sample, mode)
+    dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
 
     bonded_config = default.bonded_config
     bonded_config['bond_length'] = 140
     bonded_config['phi_chromatin'] = 0.03
     if bonded_config['bond_length'] == 16.5:
         bonded_config['beadvol'] = 520
+    if bonded_config['bond_length'] == 117:
+        bonded_config['beadvol'] = 26000
     else:
         bonded_config['beadvol'] = 130000
     root = f"optimize_{mode}"
@@ -96,11 +95,24 @@ def fit(dataset, sample):
             bonded_config['angles_on'] = True
     else:
         root, bonded_config = optimize_grid.main(root, bonded_config, mode)
+
     config = default.config
     for key in ['beadvol', 'bond_length', 'phi_chromatin', 'grid_size',
                 'k_angle', 'angles_on']:
         config[key] = bonded_config[key]
-    return
+
+    return root, config
+
+
+def fit(dataset, sample, samples='samples'):
+    print(sample)
+    mode = 'grid'
+    dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
+    y = np.load(osp.join(dir, 'y.npy'))
+    y /= np.mean(np.diagonal(y))
+    np.fill_diagonal(y, 1)
+
+    root, config = setup_config(dataset, sample, samples)
 
     k = 10
     config['nspecies'] = k
@@ -110,23 +122,26 @@ def fit(dataset, sample):
     # set up diag chis
     config['diagonal_on'] = True
     config['dense_diagonal_on'] = True
-    config['n_small_bins'] = 64
     config["small_binsize"] = 1
-    # config["n_big_bins"] = 16
-    # config["big_binsize"] = 37
     if len(y) == 1024:
+        config['n_small_bins'] = 64
         config["n_big_bins"] = 32
         config["big_binsize"] = 30
     elif len(y) == 512:
+        config['n_small_bins'] = 64
         config["n_big_bins"] = 16
         config["big_binsize"] = 28
+    elif len(y) == 3270:
+        config['n_small_bins'] = 70
+        config["n_big_bins"] = 32
+        config["big_binsize"] = 100
 
     config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
 
 
     root = osp.join(dir, f'{root}-max_ent{k}')
     if osp.exists(root):
-        # shutil.rmtree(root)
+        shutil.rmtree(root)
         print('WARNING: root exists')
     os.mkdir(root, mode=0o755)
 
@@ -152,23 +167,24 @@ def fit(dataset, sample):
     sys.stdout = stdout
 
 def main():
-    dataset = 'dataset_04_09_23'
-    samples = list(range(1001, 1028))
+    dataset = 'dataset_02_04_23'
+    samples = list(range(201, 211))
     # samples = sorted(np.random.choice(samples, 12, replace = False))
     # print(samples)
     #
+    # for j in [4, 5, 6, 7, 8]:
     mapping = []
     for i in samples:
-        mapping.append((dataset, i))
+        mapping.append((dataset, i, f'samples'))
     print(len(mapping))
 
-    with mp.Pool(15) as p:
+    with mp.Pool(11) as p:
         p.starmap(fit, mapping)
     # # for i in range(1001, 1211):
     #     # fit(i)
 
     # dataset = 'Su2020'
-    # fit(dataset, 1003)
+    # fit(dataset, 3)
 
 
 

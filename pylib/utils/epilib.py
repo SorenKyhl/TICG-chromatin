@@ -579,8 +579,9 @@ def get_pcs(input, k, normalize=False, binarize=False, scale=False,
         seq[:,j] = pc
 
     if align:
+        cutoff = int(0.2 * m)
         for j in range(k):
-            seq[:, j] *= np.sign(np.mean(seq[:100, j]))
+            seq[:, j] *= np.sign(np.mean(seq[:cutoff, j]))
 
     return seq
 

@@ -1355,7 +1355,7 @@ class GetDiagChi():
         model, _, _ = load_saved_model(opt, False)
 
         # get dataset
-        dataset = get_dataset(opt, verbose = True, samples = [sample_id])
+        dataset = get_dataset(opt, verbose = True, samples = [sample_id], )
         print(dataset)
 
         # get prediction
@@ -1527,7 +1527,8 @@ class GetEnergy():
                 plot_matrix(S, 'S.png', vmin = 'min', vmax = 'max',
                             cmap = 'blue-red', title = 'S')
 
-    def get_energy_gnn(self, model_path, sample_path, kr=False, grid_path=None):
+    def get_energy_gnn(self, model_path, sample_path, kr=False, grid_path=None,
+                        sub_dir='samples'):
         '''
         Loads output from GNN model to use as energy matrix
 
@@ -1602,7 +1603,8 @@ class GetEnergy():
         model, _, _ = load_saved_model(opt, True)
 
         # get dataset
-        dataset = get_dataset(opt, verbose = True, samples = [sample_id])
+        dataset = get_dataset(opt, verbose = True, samples = [sample_id],
+                                sub_dir = sub_dir)
         print('Dataset: ', dataset, len(dataset))
 
         # get prediction

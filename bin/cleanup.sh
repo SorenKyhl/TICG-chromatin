@@ -28,21 +28,23 @@
 dir='/home/erschultz/dataset_02_04_23/samples'
 cd $dir
 
-for i in {201..282}
+for i in {201..211}
 do
+  # rm -r "/${dir}/sample${i}/optimize_grid_b_140_phi_0.01"
   echo $i
   for j in {0..5}
   do
     cd  "${dir}/sample${i}/optimize_grid_b_140_phi_0.03-max_ent10/iteration${j}"
-    tar -czf equilibration.tar.gz equilibration
-    rm -r equilibration
-    tar -czf production_out.tar.gz production_out
-    rm -r production_out
-
-    cd  "${dir}/sample${i}/optimize_grid_b_140_phi_0.06-max_ent10/iteration${j}"
-    tar -czf equilibration.tar.gz equilibration
-    rm -r equilibration
-    tar -czf production_out.tar.gz production_out
-    rm -r production_out
+    mv x.npy ..
+  #   # tar -czf equilibration.tar.gz equilibration
+  #   # rm -r equilibration
+  #   # tar -czf production_out.tar.gz production_out
+  #   # rm -r production_out
+  #   #
+  #   # cd  "${dir}/sample${i}/optimize_grid_b_140_phi_0.06-max_ent10/iteration${j}"
+  #   # tar -czf equilibration.tar.gz equilibration
+  #   # rm -r equilibration
+  #   # tar -czf production_out.tar.gz production_out
+  #   # rm -r production_out
   done
 done

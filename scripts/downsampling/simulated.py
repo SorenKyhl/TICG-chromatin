@@ -1,4 +1,5 @@
 import json
+import multiprocessing
 import os
 import os.path as osp
 import string
@@ -16,19 +17,31 @@ from pylib.utils.plotting_utils import RED_CMAP, plot_matrix, plot_mean_dist
 from pylib.utils.similarity_measures import SCC
 
 sys.path.append('/home/erschultz')
-
 from sequences_to_contact_maps.scripts.load_utils import \
     get_final_max_ent_folder
 
 
-def run_long_simulation():
+def run_long_simulation_wrapper():
+    samples = range(201, 211)
+    odir = '/home/erschultz/downsampling_analysis/samples_long'
+    if not osp.exists(odir):
+        os.mkdir(odir, mode=0o755)
+
+    wrapper = []
+    for sample in samples:
+        wrapper.append((sample, osp.join(odir, f'sample{sample}')))
+
+    with multiprocessing.Pool(11) as p:
+        p.starmap(run_long_simulation, wrapper)
+
+def run_long_simulation(sample, root = '/home/erschultz/downsampling_analysis/long_simulation'):
     if not osp.exists('/home/erschultz/downsampling_analysis/'):
         os.mkdir('/home/erschultz/downsampling_analysis')
-    root = '/home/erschultz/downsampling_analysis/long_simulation'
 
-    # dir2 = '/home/erschultz/dataset_02_04_23/samples/sample212/optimize_grid_b_140_phi_0.03-max_ent'
-    dir = '/home/erschultz/dataset_04_28_23/samples/sample324'
-    config = utils.load_json(osp.join(dir, 'config.json'))
+    dir = f'/home/erschultz/dataset_02_04_23/samples/sample{sample}/optimize_grid_b_140_phi_0.03-max_ent10'
+    # dir = '/home/erschultz/dataset_04_28_23/samples/sample324'
+    final = get_final_max_ent_folder(dir)
+    config = utils.load_json(osp.join(final, 'config.json'))
     config['bead_type_files'] = [f'pcf{i}.txt' for i in range(1, config['nspecies']+1)]
     config['track_contactmap'] = True
     config['dump_frequency'] = 1000
@@ -49,14 +62,27 @@ def run_long_simulation():
     with utils.cd(sim.root):
         analysis.main_no_maxent()
 
-def split_long_simulation():
+def split_long_simulation_wrapper():
+    samples = range(201, 211)
+
+    with multiprocessing.Pool(11) as p:
+        p.map(split_long_simulation, samples)
+
+def split_long_simulation(sample):
     dir = '/home/erschultz/downsampling_analysis'
-    production_dir = osp.join(dir, 'long_simulation3/production_out')
-    for i in [1/3]:
-    # [1, 2, 3, 4, 5, 10, 25, 50, 75, 100]:
+
+    sampling_rates = [1, 5, 10, 25, 50, 75, 100]
+    for i in sampling_rates:
+        short_dir = osp.join(dir, f'samples_sim{i}')
+        if not osp.exists(short_dir):
+            os.mkdir(short_dir, mode=0o755)
+
+    long_dir = osp.join(dir, f'samples_long/sample{sample}')
+    production_dir = osp.join(long_dir, 'production_out')
+    for i in sampling_rates:
+        short_dir = osp.join(dir, f'samples_sim{i}')
         y = np.loadtxt(osp.join(production_dir, f'contacts{int(300000 * i/100)}.txt'))
-        print(i)
-        odir = osp.join(dir, f'sample{i}')
+        odir = osp.join(short_dir, f'sample{sample}')
         if not osp.exists(odir):
             os.mkdir(odir)
         np.save(osp.join(odir, 'y.npy'), y)
@@ -77,7 +103,7 @@ def smooth_samples():
         np.save(osp.join(fdir, 'y.npy'), y_smooth)
         plot_matrix(y_smooth, osp.join(odir, f, 'y.png'), vmax = 'mean')
 
-def analysis():
+def figure():
     dir = '/home/erschultz/downsampling_analysis/samples2'
     GNN_ID = 403
     gnn_scc = []
@@ -209,7 +235,7 @@ def analysis():
 
 
 if __name__ == '__main__':
-    # run_long_simulation()
-    # split_long_simulation()
-    analysis()
+    # run_long_simulation_wrapper()
+    split_long_simulation_wrapper()
+    # figure()
     # smooth_samples()

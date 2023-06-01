@@ -19,6 +19,7 @@ fi
 
 dataset='dataset_02_04_23'
 samples='201-202-203-204-205-206-207-208-209-210'
+# samples='211-212-213-214-215-216-217-218-219-220'
 dataFolder="${dataDir}/${dataset}"
 convergenceDefinition='all'
 python3 ~/TICG-chromatin/scripts/makeLatexTable_new.py --data_folder $dataFolder --samples $samples --convergence_definition $convergenceDefinition --experimental --convergence_mask

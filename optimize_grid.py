@@ -71,9 +71,9 @@ def check_all_converged():
 def create_config():
     config = default.bonded_config
 
-    config['beadvol'] = 130000
-    config['bond_length'] = 140
-    config['phi_chromatin'] = 0.03
+    config['beadvol'] = 26000
+    config['bond_length'] = 117
+    config['phi_chromatin'] = 0.01
     config['grid_size'] = 150
     # config['bond_type'] = 'DSS'
     config['k_angle'] = 0.0
@@ -83,7 +83,7 @@ def create_config():
 
 if __name__ == "__main__":
     config = create_config()
-    dir = '/home/erschultz/Su2020/samples/sample1014'
+    dir = '/home/erschultz/Su2020/samples/sample3'
     # config = utils.load_json(osp.join(dir, 'config.json'))
     config['track_contactmap'] = False
     # config['bead_type_files'] = [osp.join(dir, f'seq{i}.txt') for i in range(10)]
