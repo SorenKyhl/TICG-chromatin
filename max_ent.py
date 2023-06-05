@@ -118,6 +118,7 @@ def fit(dataset, sample, samples='samples'):
     config['nspecies'] = k
     config['chis'] = np.zeros((k,k))
     config['dump_frequency'] = 10000
+    config['dump_observables'] = True
 
     # set up diag chis
     config['diagonal_on'] = True
@@ -167,8 +168,8 @@ def fit(dataset, sample, samples='samples'):
     sys.stdout = stdout
 
 def main():
-    dataset = 'dataset_04_05_23'
-    samples = list(range(1001, 1009))
+    dataset = 'dataset_04_05_23'; samples = list(range(1001, 1009))
+    # dataset = 'downsampling_analysis'; samples = list(range(201, 211))
     # samples = sorted(np.random.choice(samples, 12, replace = False))
 
     mapping = []
@@ -178,7 +179,7 @@ def main():
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(9) as p:
+    with mp.Pool(8) as p:
         p.starmap(fit, mapping)
     # # for i in range(1001, 1211):
     #     # fit(i)
