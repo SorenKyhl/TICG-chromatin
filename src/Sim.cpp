@@ -410,6 +410,12 @@ void Sim::readInput() {
     dump_stats_frequency = config["dump_stats_frequency"];
     assert(config.contains("dump_density"));
     dump_density = config["dump_density"];
+    if (config.contains("dump_observables")) {
+      dump_observables = config["dump_observables"];
+    } else {
+      dump_observables = true;
+    }
+
 
     assert(config.contains("nSweeps"));
     nSweeps = config["nSweeps"];
@@ -1073,7 +1079,9 @@ void Sim::MC() {
         if (sweep % dump_stats_frequency == 0) {
             saveEnergy(sweep);
             updateContacts();
-            saveObservables(sweep);
+            if (dump_observables) {
+              saveObservables(sweep);
+            }
         }
     }
 

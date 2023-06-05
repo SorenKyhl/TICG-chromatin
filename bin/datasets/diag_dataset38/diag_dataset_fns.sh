@@ -2,7 +2,7 @@
 
 source ~/TICG-chromatin/bin/datasets/dataset_fns.sh
 
-dataset=dataset_05_23_23
+dataset=dataset_06_05_23
 dataFolder="/project2/depablo/erschultz/${dataset}"
 scratchDir='/home/erschultz/scratch'
 #
@@ -15,8 +15,8 @@ useL='true'
 useS='true'
 useD='true'
 
-nSweeps=300000
-dumpFrequency=100000
+nSweeps=150000
+dumpFrequency=50000
 TICGSeed=10
 dense='false'
 diagBins=1024

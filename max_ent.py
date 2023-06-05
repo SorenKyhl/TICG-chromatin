@@ -75,8 +75,8 @@ def setup_config(dataset, sample, samples='samples'):
     dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
 
     bonded_config = default.bonded_config
-    bonded_config['bond_length'] = 140
-    bonded_config['phi_chromatin'] = 0.03
+    bonded_config['bond_length'] = 261
+    bonded_config['phi_chromatin'] = 0.01
     if bonded_config['bond_length'] == 16.5:
         bonded_config['beadvol'] = 520
     if bonded_config['bond_length'] == 117:
@@ -161,24 +161,24 @@ def fit(dataset, sample, samples='samples'):
     stdout = sys.stdout
     with open(osp.join(root, 'log.log'), 'w') as sys.stdout:
         me = Maxent(root, params, config, seqs, y,
-                    final_it_sweeps=500000, mkdir=False)
+                    final_it_sweeps=0, mkdir=False)
         t = me.fit()
         print(f'Simulation took {np.round(t, 2)} seconds')
     sys.stdout = stdout
 
 def main():
-    dataset = 'dataset_02_04_23'
-    samples = list(range(201, 211))
+    dataset = 'dataset_04_05_23'
+    samples = list(range(1001, 1009))
     # samples = sorted(np.random.choice(samples, 12, replace = False))
-    # print(samples)
-    #
-    # for j in [4, 5, 6, 7, 8]:
+
     mapping = []
+    # for j in [25, 50, 75, 100]:
     for i in samples:
         mapping.append((dataset, i, f'samples'))
     print(len(mapping))
+    print(mapping)
 
-    with mp.Pool(11) as p:
+    with mp.Pool(9) as p:
         p.starmap(fit, mapping)
     # # for i in range(1001, 1211):
     #     # fit(i)

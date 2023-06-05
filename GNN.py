@@ -34,15 +34,14 @@ def fit(dataset, sample, GNN_ID, sub_dir='samples'):
     root = f"{root}_b_{bonded_config['bond_length']}_phi_{bonded_config['phi_chromatin']}"
     print(root)
     root = osp.join(dir, root)
-    # if osp.exists(root):
-    #     bonded_config['grid_size'] = np.loadtxt(osp.join(root, 'grid_size.txt'))
-    #     angle_file = osp.join(root, 'angle.txt')
-    #     if osp.exists(angle_file):
-    #         bonded_config['k_angle'] = np.loadtxt(angle_file)
-    #         bonded_config['angles_on'] = True
-    # else:
-    root, bonded_config = optimize_grid.main(root, bonded_config, mode)
-    return
+    if osp.exists(root):
+        bonded_config['grid_size'] = np.loadtxt(osp.join(root, 'grid_size.txt'))
+        angle_file = osp.join(root, 'angle.txt')
+        if osp.exists(angle_file):
+            bonded_config['k_angle'] = np.loadtxt(angle_file)
+            bonded_config['angles_on'] = True
+    else:
+        root, bonded_config = optimize_grid.main(root, bonded_config, mode)
     config = default.config
     for key in ['beadvol', 'bond_length', 'phi_chromatin', 'grid_size',
                 'k_angle', 'angles_on']:
@@ -55,10 +54,12 @@ def fit(dataset, sample, GNN_ID, sub_dir='samples'):
 
     gnn_root = f'{root}-GNN{GNN_ID}'
     if osp.exists(gnn_root):
-        shutil.rmtree(gnn_root)
+        # shutil.rmtree(gnn_root)
         print('WARNING: root exists')
+        return
     os.mkdir(gnn_root, mode=0o755)
 
+    stdout = sys.stdout
     with open(osp.join(gnn_root, 'energy.log'), 'w') as sys.stdout:
         # get energy
         config['nbeads'] = len(y)
@@ -75,6 +76,7 @@ def fit(dataset, sample, GNN_ID, sub_dir='samples'):
         print(f'Simulation took {np.round(t, 2)} seconds')
 
         analysis.main_no_maxent(sim.root)
+    sys.stdout = stdout
 
 def main():
     dataset='downsampling_analysis'
@@ -97,8 +99,7 @@ def main():
 
     with mp.Pool(15) as p:
         p.starmap(fit, mapping)
-    for i in range(1001, 1211):
-        fit(i)
+
 
     # #
     # print(mapping)

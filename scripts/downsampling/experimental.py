@@ -50,7 +50,7 @@ def make_samples():
             np.save(osp.join(odir, 'y.npy'), y_i)
             plot_matrix(y_i, osp.join(odir, 'y.png'), vmax = 'mean')
 
-def analysis():
+def figure():
     samples = np.arange(201, 211)
     N = len(samples)
     exponents = np.arange(4, 9)
@@ -172,4 +172,4 @@ def analysis():
 
 if __name__ == '__main__':
     # make_samples()
-    analysis()
+    figure()
