@@ -20,7 +20,7 @@ from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_S)
+    get_final_max_ent_folder, load_max_ent_S, load_S)
 
 
 def run_long_simulation_wrapper():
@@ -115,6 +115,7 @@ def figure():
     gnn_scc = defaultdict(lambda: np.zeros(N)) # downsampling : list of sccs
     gnn_mse = defaultdict(lambda: np.zeros(N)) # downsampling : list of mses
     max_ent_scc = defaultdict(lambda: np.zeros(N))
+    max_ent_mse = defaultdict(lambda: np.zeros(N))
     composite_dict = defaultdict(lambda: np.zeros((N,m,m))) # downsampling: list of gnn composites
 
     y_list = [] # ground truth y from highly sampled simulation
@@ -139,11 +140,20 @@ def figure():
             y_dense = y_list[i]
             S_gt = S_list[i]
 
-            # max_ent_dir = osp.join(s_dir, 'optimize_grid_b_140_phi_0.03-max_ent10')
-            # final = get_final_max_ent_folder(max_ent_dir)
-            # yhat = np.load(osp.join(final, 'y.npy'))
-            # corr_scc_var = scc.scc(y_dense, yhat, var_stabilized = True)
-            # max_ent_scc[d][i] = corr_scc_var
+            max_ent_dir = osp.join(s_dir, 'optimize_grid_b_140_phi_0.03-max_ent10')
+            if osp.exists(max_ent_dir):
+                final = get_final_max_ent_folder(max_ent_dir)
+                y_file = osp.join(final, 'y.npy')
+                if osp.exists(y_file):
+                    yhat = np.load(y_file)
+                    corr_scc_var = scc.scc(y_dense, yhat, var_stabilized = True)
+                    max_ent_scc[d][i] = corr_scc_var
+
+                    S = load_max_ent_S(max_ent_dir, True)
+                    mse = mean_squared_error(S_gt, S)
+                    max_ent_mse[d][i] = mse
+
+
 
             gnn_dir = osp.join(s_dir, f'optimize_grid_b_140_phi_0.03-GNN{GNN_ID}')
             y_file = osp.join(gnn_dir, 'y.npy')
@@ -175,6 +185,8 @@ def figure():
     max_ent_std = np.zeros_like(downsamplings, dtype=float)
     gnn_mse_mean = np.zeros_like(downsamplings, dtype=float)
     gnn_mse_std = np.zeros_like(downsamplings, dtype=float)
+    max_ent_mse_mean = np.zeros_like(downsamplings, dtype=float)
+    max_ent_mse_std = np.zeros_like(downsamplings, dtype=float)
     for i, d in enumerate(downsamplings):
         gnn_mean[i] = np.mean(gnn_scc[d])
         gnn_std[i] = np.std(gnn_scc[d])
@@ -184,6 +196,9 @@ def figure():
 
         gnn_mse_mean[i] = np.mean(gnn_mse[d])
         gnn_mse_std[i] = np.std(gnn_mse[d])
+
+        max_ent_mse_mean[i] = np.mean(max_ent_mse[d])
+        max_ent_mse_std[i] = np.std(max_ent_mse[d])
 
 
     ### combined plot ##
@@ -224,17 +239,17 @@ def figure():
     axes[-2].axis('off')
 
     # scc
-    # axes[-1].plot(downsamplings, max_ent_mean, label='Max Ent', color='blue')
-    # axes[-1].fill_between(downsamplings, max_ent_mean - max_ent_std,
-    #                     max_ent_mean + max_ent_std, color='blue', alpha=0.5)
+    axes[-1].plot(downsamplings, max_ent_mean, label='Max Ent', color='blue')
+    axes[-1].fill_between(downsamplings, max_ent_mean - max_ent_std,
+                        max_ent_mean + max_ent_std, color='blue', alpha=0.5)
     twinax = axes[-1].twinx()
     axes[-1].plot(downsamplings, gnn_mean, label='GNN', color='red')
     axes[-1].fill_between(downsamplings, gnn_mean - gnn_std, gnn_mean + gnn_std,
                         color='red', alpha=0.5)
 
-    twinax.plot(downsamplings, gnn_mse_mean, label='GNN', color='blue')
+    twinax.plot(downsamplings, gnn_mse_mean, label='GNN', color='red')
     twinax.fill_between(downsamplings, gnn_mse_mean - gnn_mse_std,
-                        gnn_mse_mean + gnn_mse_std, color='blue', alpha=0.5)
+                        gnn_mse_mean + gnn_mse_std, color='red', alpha=0.5)
 
     axes[-1].set_xlabel('Downsampling', fontsize=16)
     # axes[-1].set_xscale('log')
@@ -252,10 +267,176 @@ def figure():
 
     plt.close()
 
+def figure_v2():
+    samples = np.arange(201, 211)
+    N = len(samples)
+    downsamplings = [1,5,10,25,50,75,100]
+    dir = '/home/erschultz/downsampling_analysis'
+    GNN_ID = 403
+    m=512
+    gnn_scc = defaultdict(lambda: np.zeros(N)) # downsampling : list of sccs
+    gnn_mse = defaultdict(lambda: np.zeros(N)) # downsampling : list of mses
+    max_ent_scc = defaultdict(lambda: np.zeros(N))
+    max_ent_mse = defaultdict(lambda: np.zeros(N))
+    composite_dict = defaultdict(lambda: np.zeros((N,m,m))) # downsampling: list of gnn composites
+
+    y_list = [] # ground truth y from highly sampled simulation
+    S_list = []
+    for s in samples:
+        long_dir = osp.join(dir, f'samples_long/sample{s}')
+        y = np.loadtxt(osp.join(long_dir, 'production_out/contacts300000.txt'))
+        y /= np.mean(y.diagonal())
+        y_list.append(y)
+
+        S = load_S(long_dir)
+        S_list.append(S)
+
+
+    # collect data
+    scc = SCC()
+    for d in downsamplings:
+        for i, s in enumerate(samples):
+            s_dir = osp.join(dir, f'samples_sim{d}/sample{s}')
+            y_sparse = np.load(osp.join(s_dir, 'y.npy'))
+            y_sparse /= np.mean(y_sparse.diagonal())
+            y_dense = y_list[i]
+            S_gt = S_list[i]
+
+            max_ent_dir = osp.join(s_dir, 'optimize_grid_b_140_phi_0.03-max_ent10')
+            if osp.exists(max_ent_dir):
+                final = get_final_max_ent_folder(max_ent_dir)
+                y_file = osp.join(final, 'y.npy')
+                if osp.exists(y_file):
+                    yhat = np.load(y_file)
+                    corr_scc_var = scc.scc(y_dense, yhat, var_stabilized = True)
+                    max_ent_scc[d][i] = corr_scc_var
+
+                    S = load_max_ent_S(max_ent_dir, True)
+                    mse = mean_squared_error(S_gt, S)
+                    max_ent_mse[d][i] = mse
+
+
+
+            gnn_dir = osp.join(s_dir, f'optimize_grid_b_140_phi_0.03-GNN{GNN_ID}')
+            y_file = osp.join(gnn_dir, 'y.npy')
+            if osp.exists(y_file):
+                yhat = np.load(y_file)
+            else:
+                print(f'WARNING: {y_file} is missing')
+                continue
+            corr_scc_var = scc.scc(y_dense, yhat, var_stabilized = True)
+            gnn_scc[d][i] = corr_scc_var
+
+            S = np.load(osp.join(gnn_dir, 'S.npy'))
+            mse = mean_squared_error(S_gt, S)
+            gnn_mse[d][i] = mse
+
+            # make composite contact map
+            m = len(y)
+            indu = np.triu_indices(m)
+            indl = np.tril_indices(m)
+            composite = np.zeros((m, m))
+            composite[indu] = yhat[indu]
+            composite[indl] = y_sparse[indl]
+            composite_dict[d][i] = composite
+
+    # compute statistics
+    gnn_mean = np.zeros_like(downsamplings, dtype=float)
+    gnn_std = np.zeros_like(downsamplings, dtype=float)
+    max_ent_mean = np.zeros_like(downsamplings, dtype=float)
+    max_ent_std = np.zeros_like(downsamplings, dtype=float)
+    gnn_mse_mean = np.zeros_like(downsamplings, dtype=float)
+    gnn_mse_std = np.zeros_like(downsamplings, dtype=float)
+    max_ent_mse_mean = np.zeros_like(downsamplings, dtype=float)
+    max_ent_mse_std = np.zeros_like(downsamplings, dtype=float)
+    for i, d in enumerate(downsamplings):
+        gnn_mean[i] = np.mean(gnn_scc[d])
+        gnn_std[i] = np.std(gnn_scc[d])
+
+        max_ent_mean[i] = np.mean(max_ent_scc[d])
+        max_ent_std[i] = np.std(max_ent_scc[d])
+
+        gnn_mse_mean[i] = np.mean(gnn_mse[d])
+        gnn_mse_std[i] = np.std(gnn_mse[d])
+
+        max_ent_mse_mean[i] = np.mean(max_ent_mse[d])
+        max_ent_mse_std[i] = np.std(max_ent_mse[d])
+
+
+    ### combined plot ##
+    # select which composites to plot
+    sample_i = 4
+    sample = samples[sample_i]
+    downsamplings_hic = [10, 25, 75]
+
+    plt.figure(figsize=(18, 12))
+    ax1 = plt.subplot(2, 12, (1, 4))
+    ax2 = plt.subplot(2, 12, (5, 8))
+    ax3 = plt.subplot(2, 12, (9, 12))
+    ax4 = plt.subplot(2, 12, (13, 18)) # scc
+    ax5 = plt.subplot(2, 12, (19, 24)) # mse
+    axes = [ax1, ax2, ax3, ax4, ax5]
+    # hic
+    composites = np.zeros((len(downsamplings_hic), m, m))
+    for i, d in enumerate(downsamplings_hic):
+        composites[i] = composite_dict[d][sample_i]
+    vmax = np.mean(composites)
+    for i, (d, composite) in enumerate(zip(downsamplings_hic, composites)):
+        scc = gnn_scc[d][sample_i]
+        scc = np.round(scc, 3)
+        s = sns.heatmap(composite, linewidth = 0, vmin = 0, vmax = vmax, cmap = RED_CMAP,
+                        ax = axes[i], cbar = False)
+        s.set_title(f'Sample {sample}\nDownsampling = {d}\nSCC={scc}', fontsize = 16)
+        axes[i].axline((0,0), slope=1, color = 'k', lw=1)
+        axes[i].text(0.99*m, 0.01*m, 'GNN', fontsize=16, ha='right', va='top')
+        axes[i].text(0.01*m, 0.99*m, 'Reference', fontsize=16)
+
+        if i > 0:
+            s.set_yticks([])
+
+    # scc
+    ax4.plot(downsamplings, max_ent_mean, label='Max Ent', color='blue')
+    ax4.fill_between(downsamplings, max_ent_mean - max_ent_std,
+                        max_ent_mean + max_ent_std, color='blue', alpha=0.5)
+    ax4.plot(downsamplings, gnn_mean, label='GNN', color='red')
+    ax4.fill_between(downsamplings, gnn_mean - gnn_std, gnn_mean + gnn_std,
+                        color='red', alpha=0.5)
+
+    ax4.set_xlabel('Downsampling', fontsize=16)
+    # ax4.set_xscale('log')
+    ax4.set_ylabel('SCC', fontsize=16)
+    ax4.legend()
+
+
+    ax5.plot(downsamplings, gnn_mse_mean, label='GNN', color='red')
+    ax5.fill_between(downsamplings, gnn_mse_mean - gnn_mse_std,
+                        gnn_mse_mean + gnn_mse_std, color='red', alpha=0.5)
+    ax5.plot(downsamplings, max_ent_mse_mean, label='Max Ent', color='blue')
+    ax5.fill_between(downsamplings, max_ent_mse_mean - max_ent_mse_std,
+                        max_ent_mse_mean + max_ent_mse_std, color='blue', alpha=0.5)
+
+    ax5.set_xlabel('Downsampling', fontsize=16)
+    # ax5.set_xscale('log')
+    ax5.set_yscale('log')
+    ax5.set_ylabel('MSE', fontsize=16)
+    ax5.legend()
+
+
+    for n, ax in enumerate([ax1, ax4, ax5]):
+        ax.text(-0.1, 1.1, string.ascii_uppercase[n], transform=ax.transAxes,
+                size=20, weight='bold')
+
+    plt.tight_layout()
+    plt.savefig('/home/erschultz/downsampling_analysis/downsampling_figure_sim.png')
+    plt.savefig('/home/erschultz/TICG-chromatin/figures/downsampling_figure_sim.png')
+
+    plt.close()
+
 
 
 if __name__ == '__main__':
     # run_long_simulation_wrapper()
     # split_long_simulation_wrapper()
-    figure()
+    # figure()
+    figure_v2()
     # smooth_samples()

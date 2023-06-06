@@ -369,7 +369,7 @@ if __name__ == '__main__':
             # "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-untreated_combined_30.hic"]
     files = ["https://www.encodeproject.org/files/ENCFF177TYX/@@download/ENCFF177TYX.hic"]
     # mixed_experimental_dataset('dataset_04_05_23', 10000, 1024*5, files = files, i=263)
-    mixed_experimental_dataset('dataset_05_31_23', 10000, 512*5, files = ALL_FILES_NO_GM12878)
+    mixed_experimental_dataset('dataset_05_31_23', 25000, 512*4, files = ALL_FILES_NO_GM12878)
     # mixed_experimental_dataset('dataset_04_06', 10000, 1024*5)
     # mixed_experimental_dataset('dataset_04_07', 25000, 1024*4)
     # single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",

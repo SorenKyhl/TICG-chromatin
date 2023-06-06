@@ -91,14 +91,14 @@ def main():
     #         mapping.append((dataset, i, GNN_ID))
 
     mapping = []
-    for j in [1, 5, 10, 25, 50, 75, 100]:
+    for j in [1]:
         for i in samples:
             mapping.append((dataset, i, 403, f'samples_sim{j}'))
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(15) as p:
-        p.starmap(fit, mapping)
+    # with mp.Pool(15) as p:
+        # p.starmap(fit, mapping)
 
 
     # #
@@ -109,7 +109,7 @@ def main():
     #     p.starmap(fit, mapping)
     # for i in samples:
         # fit(dataset, i, GNN_ID)
-    # fit(dataset, 1014, 408)
+    fit(dataset, 202, 403, 'samples_sim1')
 
 
 

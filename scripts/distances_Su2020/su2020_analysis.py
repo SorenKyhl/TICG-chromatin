@@ -1059,7 +1059,7 @@ def figure(sample, GNN_ID, b=140, phi=0.03):
     D_no_nan = D[~nan_rows][:, ~nan_rows] # ignore nan_rows
 
     # compare PCs
-    smooth = True; h = 2
+    smooth = True; h = 1
     V_D = get_pcs(D, nan_rows, False, smooth, h)
     V_D_pca = get_pcs(D_pca, nan_rows, smooth=smooth, h = h)
     V_D_gnn = get_pcs(D_gnn, nan_rows, smooth=smooth, h = h)
@@ -1235,4 +1235,4 @@ if __name__ == '__main__':
     # compare_dist_distribution_plaid(1003, None, 261, 0.01)
     # compare_rg()
     # compare_scaling(1003, None, 261, 0.01)
-    figure(1003, 403, b=261, phi=0.01)
+    figure(1002, 403)

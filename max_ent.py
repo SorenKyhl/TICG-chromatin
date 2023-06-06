@@ -75,12 +75,14 @@ def setup_config(dataset, sample, samples='samples'):
     dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
 
     bonded_config = default.bonded_config
-    bonded_config['bond_length'] = 261
-    bonded_config['phi_chromatin'] = 0.01
+    bonded_config['bond_length'] = 224
+    bonded_config['phi_chromatin'] = 0.06
     if bonded_config['bond_length'] == 16.5:
         bonded_config['beadvol'] = 520
     if bonded_config['bond_length'] == 117:
         bonded_config['beadvol'] = 26000
+    elif bonded_config['bond_length'] == 224:
+        bonded_config['beadvol'] = 260000
     else:
         bonded_config['beadvol'] = 130000
     root = f"optimize_{mode}"
@@ -168,7 +170,7 @@ def fit(dataset, sample, samples='samples'):
     sys.stdout = stdout
 
 def main():
-    dataset = 'dataset_04_05_23'; samples = list(range(1001, 1009))
+    dataset = 'dataset_05_31_23'; samples = list(range(1001, 1009))
     # dataset = 'downsampling_analysis'; samples = list(range(201, 211))
     # samples = sorted(np.random.choice(samples, 12, replace = False))
 
@@ -180,7 +182,7 @@ def main():
     print(mapping)
 
     with mp.Pool(8) as p:
-        p.starmap(fit, mapping)
+        p.starmap(setup_config, mapping)
     # # for i in range(1001, 1211):
     #     # fit(i)
 

@@ -27,7 +27,7 @@ from sequences_to_contact_maps.scripts.clean_directories import \
 from sequences_to_contact_maps.scripts.InteractionConverter import \
     InteractionConverter
 from sequences_to_contact_maps.scripts.knightRuiz import knightRuiz
-from sequences_to_contact_maps.scripts.load_utils import (load_L, load_X_psi,
+from sequences_to_contact_maps.scripts.load_utils import (load_L, load_psi,
                                                           load_Y, load_Y_diag)
 from sequences_to_contact_maps.scripts.neural_nets.utils import (
     get_dataset, load_saved_model)
@@ -83,7 +83,7 @@ def getArgs():
 
     if args.m == -1:
         # infer m
-        x, _ = load_X_psi(args.sample_folder, throw_exception = False)
+        x = load_psi(args.sample_folder, throw_exception = False)
         y, _ = load_Y(args.sample_folder, throw_exception = False)
         if x is not None:
             args.m, _ = x.shape
@@ -811,19 +811,15 @@ class GetSeq():
                 seq = self.get_PCA_seq(input, args.normalize, args.binarize,
                                         args.scale, use_kernel = True, kernel = args.kernel)
             elif args.method.startswith('ground_truth'):
-                x, psi = load_X_psi(self.sample_folder, throw_exception = False)
+                x = load_psi(self.sample_folder, throw_exception = False)
 
                 if args.input is None:
                     assert args.use_energy, 'missing input'
-                elif args.input == 'x':
+                elif args.input == 'x' or args.input == 'psi':
                     assert x is not None
                     seq = x
                     print(f'seq loaded with shape {seq.shape}')
-                elif args.input == 'psi':
-                    assert psi is not None
-                    seq = psi
-                    # this input will reproduce ground_truth-S barring random seed
-                    print(f'seq loaded with shape {seq.shape}')
+
                 else:
                     raise Exception(f'Unrecognized input mode {args.input} for method {args.method} '
                                     f'for sample {self.sample_folder}')
@@ -1481,7 +1477,7 @@ class GetEnergy():
                 raise Exception(f'Unkown method: {args.method}')
 
         # if args.project:
-        #     _, psi = load_X_psi(self.sample_folder)
+        #     psi = load_psi(self.sample_folder)
         #     s, e = project_S_to_psi_basis(s, psi)
         if L is not None:
             L = crop(L, self.m)
