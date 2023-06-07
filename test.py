@@ -1,5 +1,6 @@
 import csv
 import json
+import math
 import os
 import os.path as osp
 import shutil
@@ -22,7 +23,7 @@ from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
 from pylib.utils.utils import load_json
 from scipy.ndimage import uniform_filter
 from scripts.data_generation.modify_maxent import get_samples
-from scripts.get_params import GetSeq
+from scripts.get_params import GetEnergy, GetSeq
 from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
 
@@ -857,6 +858,77 @@ def check_bonded_distributions():
     for i in range(4):
         print(i, np.mean(np.diagonal(D_mean, i))**0.5)
 
+def compare_y_exp_vs_sim():
+    sim = '/home/erschultz/dataset_05_28_23/samples/sample324'
+    exp = '/home/erschultz/dataset_04_10_23/samples/sample1002'
+    GNN_ID=411
+    model_path = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{GNN_ID}'
+    config = default.config
+    root = "optimize_grid_b_140_phi_0.03"
+
+    def print_arr(arr, name=None):
+        if isinstance(arr, torch.Tensor):
+            arr = arr.cpu().detach().numpy()
+        if name is not None:
+            print(name)
+        print(arr, arr.shape, np.nanmin(arr), np.nanpercentile(arr, [1,99]), np.nanmax(arr))
+
+    for dir in [sim, exp]:
+        print(dir)
+        y = np.load(osp.join(dir, 'y.npy')).astype(np.float64)
+        y /= np.mean(np.diagonal(y))
+        m = len(y)
+
+
+        config['nbeads'] = len(y)
+        config['grid_size'] = np.loadtxt(osp.join(dir, root, 'grid_size.txt'))
+        getenergy = GetEnergy(config = config)
+
+        model, data, dataset = getenergy.get_energy_gnn(model_path, dir,
+                                    grid_path=osp.join(root, 'grid_size.txt'),
+                                    verbose = False, return_model_data = True)
+
+        print_arr(data.edge_attr[:, 1], 'i-j')
+        print_arr(data.edge_attr[:, 0], 'H_ij')
+        arr = data.edge_attr[:, 0] * 10
+        bin_width=1
+        # plt.hist(arr)
+        # plt.hist(arr, label = osp.split(dir)[1], alpha = 0.5,
+        #             weights = np.ones_like(arr) / len(arr),
+        #             bins = range(math.floor(np.nanmin(arr)), math.ceil(np.nanmax(arr)) + bin_width, bin_width))
+    #
+    # plt.legend()
+    # plt.show()
+
+        # print_arr(hat_S)
+        latent1, latent2 = model.latent(data)
+        print_arr(latent1, 'latent1')
+        print_arr(latent2, 'latent2')
+
+        plaid1 = model.plaid_component(latent1)
+        plaid2 = model.plaid_component(latent2)
+        print_arr(plaid1, 'plaid1')
+        print_arr(plaid2, 'plaid2')
+
+        diag1 = model.diagonal_component(latent1).detach()[0, 0, :]
+        diag1 = np.multiply(np.sign(diag1), np.exp(np.abs(diag1)) - 1)
+        diag2 = model.diagonal_component(latent2).detach()[0, 0, :]
+        diag2 = np.multiply(np.sign(diag2), np.exp(np.abs(diag2)) - 1)
+        print_arr(diag1, 'diag1')
+        print_arr(diag2, 'diag2')
+
+        S1 = plaid1 + diag1
+        S2 = plaid2 + diag2
+        print_arr(S1, 'S1')
+        print_arr(S2, 'S2')
+        #
+        # yhat = model(data)
+        # yhat = yhat.cpu().detach().numpy().reshape((m, m))
+        # print_arr(yhat, 'yhat')
+        # yhat = np.multiply(np.sign(yhat), np.exp(np.abs(yhat)) - 1)
+        # print_arr(yhat, 'yhat_trans')
+
+
 if __name__ == '__main__':
     # test_robust_PCA()
     # check_dataset('dataset_11_18_22')
@@ -870,4 +942,5 @@ if __name__ == '__main__':
     # gnn_of_max_ent([207], 8, 378)
     # check_interpolation()
     # make_dataset_of_converged('dataset_03_21_23')
-    check_bonded_distributions()
+    # check_bonded_distributions()
+    compare_y_exp_vs_sim()

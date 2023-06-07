@@ -48,10 +48,12 @@ class DiagonalPreprocessing():
         Outputs:
             stat_per_diagonal: numpy array where result[d] is the contact frequency/probability stat at distance d
         '''
-        y = y.copy().astype(np.float64)
+        if isinstance(y, np.ndarray):
+            y = y.copy().astype(np.float64)
         if smoothen:
             y = uniform_filter(y, 3, mode = 'constant')
         if mode == 'prob':
+
             y /= np.nanmean(np.diagonal(y))
 
         if zero_diag:

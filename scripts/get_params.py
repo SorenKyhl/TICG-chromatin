@@ -1524,7 +1524,8 @@ class GetEnergy():
                             cmap = 'blue-red', title = 'S')
 
     def get_energy_gnn(self, model_path, sample_path, kr=False, grid_path=None,
-                        sub_dir='samples'):
+                        sub_dir='samples', verbose=True,
+                        return_plaid_diag=False, return_model_data=False):
         '''
         Loads output from GNN model to use as energy matrix
 
@@ -1535,7 +1536,8 @@ class GetEnergy():
         Outputs:
             s: np array of pairwise energies
         '''
-        print('\nget_energy_gnn')
+        if verbose:
+            print('\nget_energy_gnn')
 
         # extract sample info
         sample = osp.split(sample_path)[1]
@@ -1543,13 +1545,15 @@ class GetEnergy():
         sample_path_split = osp.normpath(sample_path).split(os.sep)
         sample_dataset = sample_path_split[-3]
 
-        print(sample, sample_id, sample_dataset)
+        if verbose:
+            print(sample, sample_id, sample_dataset)
 
         # extract model info
         model_path_split = osp.normpath(model_path).split(os.sep)
         model_id = model_path_split[-1]
         model_type = model_path_split[-2]
-        print(f'Model type: {model_type}')
+        if verbose:
+            print(f'Model type: {model_type}')
         assert model_type == 'ContactGNNEnergy', f"Unrecognized model_type: {model_type}"
 
         argparse_path = osp.join(model_path, 'argparse.txt')
@@ -1593,64 +1597,64 @@ class GetEnergy():
         if kr:
             opt.kr = True
             opt.y_preprocessing = f'{opt.y_preprocessing}'
-        print(opt)
+        if verbose:
+            print(opt)
 
         # get model
-        model, _, _ = load_saved_model(opt, True)
+        model, _, _ = load_saved_model(opt, verbose=verbose)
 
         # get dataset
-        dataset = get_dataset(opt, verbose = True, samples = [sample_id],
+        dataset = get_dataset(opt, verbose = verbose, samples = [sample_id],
                                 sub_dir = sub_dir)
-        print('Dataset: ', dataset, len(dataset))
+        if verbose:
+            print('Dataset: ', dataset, len(dataset))
 
         # get prediction
         data = dataset[0]
         data.batch = torch.zeros(data.num_nodes, dtype=torch.int64)
-        print(data)
+
+        if return_model_data:
+            clean_directories(GNN_path = opt.root)
+            return model, data, dataset
+
+        if verbose:
+            print(data)
+            print(f'data first node: {data.x[0]}')
         data = data.to(opt.device)
-        print(f'data first node: {data.x[0]}')
         yhat = model(data)
         yhat = yhat.cpu().detach().numpy().reshape((opt.m,opt.m))
 
         if opt.output_preprocesing == 'log':
             yhat = np.multiply(np.sign(yhat), np.exp(np.abs(yhat)) - 1)
+            # Note that ln(L + D) doesn't simplify
+            # so plaid_hat and diagonal_hat can't be compared to the ground truth
 
-            # ln(L + D) doesn't simplify, so these can't be compared to the ground truth
-            plaid_hat = model.plaid_component(data)
-            diagonal_hat = model.diagonal_component(data)
-        else:
-            plaid_hat = model.plaid_component(data)
-            diagonal_hat = model.diagonal_component(data)
-
-        energy = yhat
-
-        if plaid_hat is not None and diagonal_hat is not None:
-            # plot plaid contribution
-            v_max = max(np.max(energy), -1*np.min(energy))
-            v_min = -1 * v_max
-            # vmin = vmax = 'center'
-            plaid_hat = plaid_hat.cpu().detach().numpy().reshape((opt.m,opt.m))
-            plot_matrix(plaid_hat, 'plaid_hat.png', vmin = v_min,
-                            vmax = v_max, title = 'plaid portion', cmap = 'blue-red')
-            print(f'Rank of plaid_hat: {np.linalg.matrix_rank(plaid_hat)}')
-            w, v = np.linalg.eig(plaid_hat)
-            prcnt = np.abs(w) / np.sum(np.abs(w))
-            print(prcnt[0:4])
-            print(np.sum(prcnt[0:4]))
-            np.savetxt('plaid_hat.txt', plaid_hat)
-
-
-            # plot diag contribution
-            diagonal_hat = diagonal_hat.cpu().detach().numpy().reshape((opt.m,opt.m))
-            plot_matrix(diagonal_hat, 'diagonal_hat.png', vmin = v_min,
-                            vmax = v_max, title = 'diagonal portion', cmap = 'blue-red')
-            np.savetxt('diagonal_hat.txt', diagonal_hat)
+        # if plaid_hat is not None and diagonal_hat is not None and verbose:
+        #     # plot plaid contribution
+        #     v_max = max(np.max(energy), -1*np.min(energy))
+        #     v_min = -1 * v_max
+        #     # vmin = vmax = 'center'
+        #     plaid_hat = plaid_hat.cpu().detach().numpy().reshape((opt.m,opt.m))
+        #     plot_matrix(plaid_hat, 'plaid_hat.png', vmin = v_min,
+        #                     vmax = v_max, title = 'plaid portion', cmap = 'blue-red')
+        #     print(f'Rank of plaid_hat: {np.linalg.matrix_rank(plaid_hat)}')
+        #     w, v = np.linalg.eig(plaid_hat)
+        #     prcnt = np.abs(w) / np.sum(np.abs(w))
+        #     print(prcnt[0:4])
+        #     print(np.sum(prcnt[0:4]))
+        #     np.savetxt('plaid_hat.txt', plaid_hat)
+        #
+        #
+        #     # plot diag contribution
+        #     diagonal_hat = diagonal_hat.cpu().detach().numpy().reshape((opt.m,opt.m))
+        #     plot_matrix(diagonal_hat, 'diagonal_hat.png', vmin = v_min,
+        #                     vmax = v_max, title = 'diagonal portion', cmap = 'blue-red')
+        #     np.savetxt('diagonal_hat.txt', diagonal_hat)
 
         # cleanup
         # opt.root is set in get_dataset
         clean_directories(GNN_path = opt.root)
-
-        return energy
+        return yhat
 
 def main():
     args, unknown = getArgs()

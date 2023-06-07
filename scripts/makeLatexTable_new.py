@@ -110,6 +110,8 @@ def loadData(args):
                 continue
             if '0.006' in fname or '0.06' in fname:
                 continue
+            if 'max_ent' in fname and 'repeat' not in fname:
+                continue
             print(fname)
             method = fname.split('-')[1]
             if method.startswith('GNN'):
@@ -173,7 +175,7 @@ def loadData(args):
                 # times
                 its = len(conv)
                 times = []
-                for it in range(its+1):
+                for it in range(its):
                     times.append(load_time_dir(osp.join(fpath, f'iteration{it}')))
 
                 # S

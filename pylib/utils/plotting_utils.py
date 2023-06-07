@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
+from pylib.utils.energy_utils import calculate_diag_chi_step
 
 RED_CMAP = matplotlib.colors.LinearSegmentedColormap.from_list('custom',
                                          [(0,    'white'),
