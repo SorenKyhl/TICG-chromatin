@@ -8,7 +8,6 @@ import sys
 import tarfile
 from collections import defaultdict
 
-import imageio.v2 as imageio
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
