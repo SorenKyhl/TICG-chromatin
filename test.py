@@ -928,6 +928,32 @@ def compare_y_exp_vs_sim():
         # yhat = np.multiply(np.sign(yhat), np.exp(np.abs(yhat)) - 1)
         # print_arr(yhat, 'yhat_trans')
 
+def edit_setup(dataset, exp_dataset):
+    dir = f'/project2/depablo/erschultz/{dataset}/setup'
+    grid_root = f'optimize_grid_b_140_phi_0.03'
+    for i in range(1, 5001):
+        file = osp.join(dir, f'sample_{i}.txt')
+        rowList = []
+        with open(file, 'r') as f:
+            is_j = False
+            j = -1
+            for line in f:
+                line = line.strip()
+                rowList.append([line])
+                if is_j:
+                    j = int(line)
+                if line.startswith('--exp_max_ent'):
+                    is_j = True
+                else:
+                    is_j = False
+
+        rowList.append(['--diag_chi_experiment'])
+        rowList.append([osp.join(exp_dataset, f'samples/sample{j}', grid_root)])
+
+
+        with open(file, 'w') as f:
+            wr = csv.writer(f)
+            wr.writerows(rowList)
 
 if __name__ == '__main__':
     # test_robust_PCA()
@@ -943,4 +969,6 @@ if __name__ == '__main__':
     # check_interpolation()
     # make_dataset_of_converged('dataset_03_21_23')
     # check_bonded_distributions()
-    compare_y_exp_vs_sim()
+    # compare_y_exp_vs_sim()
+    edit_setup('dataset_05_28_23', 'dataset_04_10_23')
+    edit_setup('dataset_04_28_23', 'dataset_02_04_23')

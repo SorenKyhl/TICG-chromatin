@@ -47,6 +47,11 @@ def getArgs():
                     help='where data will be found when running simulation')
     parser.add_argument('--exp_dataset', type=str, default='dataset_01_26_23',
                     help='dataset where experimental data is located')
+    parser.add_argument('--b', type=int, default=140,
+                        help='bond length')
+    parser.add_argument('--phi', type=float, default=0.03,
+                    help='phi chromatin')
+
 
 
     args = parser.parse_args()
@@ -66,6 +71,9 @@ class DatasetGenerator():
         self.max_L = args.max_L
         self.data_dir = args.data_dir
         self.exp_dataset = args.exp_dataset
+        self.b = args.bug
+        self.phi = args.phi
+        self.grid_root = f'optimize_grid_b_{self.b}_phi_{self.phi}'
 
         if self.exp_dataset == 'dataset_02_04_23':
             self.exp_samples = range(2201, 2216)
@@ -92,6 +100,8 @@ class DatasetGenerator():
         self.odir = osp.join(odir, 'setup')
         if not osp.exists(self.odir):
             os.mkdir(self.odir, mode = 0o755)
+
+        self.exp_dir =  osp.join(self.dir, self.exp_dataset, 'samples')
 
         # sample : dictionary of params
         self.sample_dict = defaultdict(dict)
@@ -248,11 +258,9 @@ class DatasetGenerator():
         self.plot = False
         self.args_file = None
         self.sample = None
-        dataset = osp.join(self.dir, self.exp_dataset, 'samples')
-
 
         for j in self.exp_samples:
-            sample_folder = osp.join(dataset, f'sample{j}')
+            sample_folder = osp.join(self.exp_dir, f'sample{j}')
             _, y_diag = load_Y(sample_folder)
             getseq = GetSeq(self, None, False)
             x = getseq.get_PCA_seq(y_diag, normalize = True)
@@ -274,8 +282,8 @@ class DatasetGenerator():
     def seq_eig_params(self, norm=False):
         x_dict = {} # id : x
         for j in self.exp_samples:
-            sample_folder = osp.join(self.dir, self.exp_dataset,  f'samples/sample{j}')
-            max_ent_folder = osp.join(sample_folder, f'optimize_grid_b_140_phi_0.03-max_ent{self.k}/resources')
+            sample_folder = osp.join(self.exp_dir,  f'sample{j}')
+            max_ent_folder = osp.join(sample_folder, f'{self.grid_root}-max_ent{self.k}/resources')
             if norm:
                 x = np.load(osp.join(max_ent_folder, 'x_eig_norm.npy'))
             else:
@@ -343,10 +351,37 @@ class DatasetGenerator():
             self.sample_dict[i]['max_diag_chi'] = vals[2]
             self.sample_dict[i]['min_diag_chi'] = 0
 
+    def get_converged_samples():
+        converged_samples = []
+        for j in self.exp_samples:
+            sample_folder = osp.join(self.exp_dir, f'sample{j}', f'{self.grid_root}-max_ent{self.k}')
+
+            # check convergence
+            convergence_file = osp.join(sample_folder, 'convergence.txt')
+            eps = 1e-2
+            converged = False
+            if osp.exists(convergence_file):
+                conv = np.loadtxt(convergence_file)
+                for ind in range(1, len(conv)):
+                    diff = conv[ind] - conv[ind-1]
+                    if np.abs(diff) < eps and conv[ind] < conv[0]:
+                        converged = True
+            else:
+                print(f'Warning: {convergence_file} does not exist')
+
+            if converged:
+                converged_samples.append(j)
+            else:
+                print(f'sample{j} did not converge')
+
+        print('converged %:', len(converged_samples) / len(self.exp_samples) * 100)
+
+
+        return converged_samples
+
     def max_ent_params(self):
         diag_dict = {} # id : diag_params
         grid_dict = {} # id : grid_size
-        dataset =  f'/home/erschultz/{self.exp_dataset}/samples'
         get_grid = False
         linear = False
         poly3 = False
@@ -359,46 +394,28 @@ class DatasetGenerator():
         elif 'poly6_log' in self.diag_mode:
             poly6_log = True
 
-        converged_samples = []
-        for j in self.exp_samples:
-            print(j)
-            sample_folder = osp.join(self.dir, self.exp_dataset, f'samples/sample{j}', f'optimize_grid_b_140_phi_0.03-max_ent{self.k}')
+        converged_samples = self.get_converged_samples()
+        for j in converged_samples:
+            sample_folder = osp.join(self.exp_dir, f'sample{j}', f'{self.grid_root}-max_ent{self.k}')
 
-            # check convergence
-            convergence_file = osp.join(sample_folder, 'convergence.txt')
-            eps = 1e-2
-            converged = False
-            if osp.exists(convergence_file):
-                conv = np.loadtxt(convergence_file)
-                for ind in range(1, len(conv)):
-                    diff = conv[ind] - conv[ind-1]
-                    if np.abs(diff) < eps and conv[ind] < conv[0]:
-                        converged = True
+            if linear:
+                diag_chi_step = np.loadtxt(osp.join(sample_folder, 'fitting/linear_fit.txt'))
+            elif poly3:
+                diag_chi_step = np.loadtxt(osp.join(sample_folder, 'fitting/poly3_fit.txt'))
+            elif poly6_log:
+                diag_chi_step = np.loadtxt(osp.join(sample_folder, 'fitting2/poly6_log_fit.txt'))
             else:
-                print(f'Warning: {convergence_file} does not exist')
+                diag_chis = np.loadtxt(osp.join(sample_folder, 'chis_diag.txt'))[-1]
+                with open(osp.join(sample_folder, 'resources/config.json'), 'r') as f:
+                    config = json.load(f)
+                diag_chi_step = calculate_diag_chi_step(config, diag_chis)
+            diag_dict[j] = diag_chi_step
 
-            if converged:
-                converged_samples.append(j)
-                if linear:
-                    diag_chi_step = np.loadtxt(osp.join(sample_folder, 'fitting/linear_fit.txt'))
-                elif poly3:
-                    diag_chi_step = np.loadtxt(osp.join(sample_folder, 'fitting/poly3_fit.txt'))
-                elif poly6_log:
-                    diag_chi_step = np.loadtxt(osp.join(sample_folder, 'fitting2/poly6_log_fit.txt'))
-                else:
-                    diag_chis = np.loadtxt(osp.join(sample_folder, 'chis_diag.txt'))[-1]
-                    with open(osp.join(sample_folder, 'resources/config.json'), 'r') as f:
-                        config = json.load(f)
-                    diag_chi_step = calculate_diag_chi_step(config, diag_chis)
-                diag_dict[j] = diag_chi_step
+            # get grid_size
+            if get_grid:
+                grid_file = osp.join(self.exp_dir, f'sample{j}', f'{self.grid_root}/grid_size.txt')
+                grid_dict[j] = np.loadtxt(grid_file)
 
-                # get grid_size
-                if get_grid:
-                    grid_dict[j] = np.loadtxt(osp.join(self.dir, self.exp_dataset, f'samples/sample{j}', 'optimize_grid_b_140_phi_0.03/grid_size.txt'))
-            else:
-                print(f'sample{j} did not converge')
-
-        print('converged %:', len(converged_samples) / len(self.exp_samples) * 100)
         for i in range(self.N):
             j = np.random.choice(converged_samples)
             diag_chis = diag_dict[j]
@@ -408,7 +425,7 @@ class DatasetGenerator():
 
             diag_file = osp.join(self.data_dir, self.dataset, f'setup/diag_chis_{i+1}.npy')
 
-            self.sample_dict[i]['exp_max_ent'] = j
+            self.sample_dict[i]['diag_chi_experiment'] = osp.join(self.exp_dataset, f'samples/sample{j}', f'{self.grid_root})
             self.sample_dict[i]['diag_chi_method'] = diag_file
 
             if get_grid:
@@ -421,35 +438,16 @@ class DatasetGenerator():
         if 'grid' in self.diag_mode:
             get_grid = True
 
-        converged_samples = []
-        for j in self.exp_samples:
-            sample_folder = osp.join(self.dir, self.exp_dataset, f'samples/sample{j}', f'optimize_grid_b_140_phi_0.03-max_ent{self.k}')
+        converged_samples = self.get_converged_samples()
+        for j in converged_samples:
+            sample_folder = osp.join(self.exp_dir, f'sample{j}', f'{self.grid_root}-max_ent{self.k}')
+            meanDist_S = np.loadtxt(osp.join(sample_folder, 'fitting2/smoothed_fit_meanDist_S.txt'))
+            meanDist_S_dict[j] = meanDist_S
 
-            # check convergence
-            convergence_file = osp.join(sample_folder, 'convergence.txt')
-            eps = 1e-2
-            converged = False
-            if osp.exists(convergence_file):
-                conv = np.loadtxt(convergence_file)
-                for ind in range(1, len(conv)):
-                    diff = conv[ind] - conv[ind-1]
-                    if np.abs(diff) < eps and conv[ind] < conv[0]:
-                        converged = True
-            else:
-                print(f'Warning: {convergence_file} does not exist')
+            # get grid_size
+            if get_grid:
+                grid_dict[j] = np.loadtxt(osp.join(self.exp_dir, f'sample{j}', f'{self.grid_root}/grid_size.txt'))
 
-            if converged:
-                converged_samples.append(j)
-                meanDist_S = np.loadtxt(osp.join(sample_folder, 'fitting2/smoothed_fit_meanDist_S.txt'))
-                meanDist_S_dict[j] = meanDist_S
-
-                # get grid_size
-                if get_grid:
-                    grid_dict[j] = np.loadtxt(osp.join(self.dir, self.exp_dataset, f'samples/sample{j}', 'optimize_grid_b_140_phi_0.03/grid_size.txt'))
-            else:
-                print(f'sample{j} did not converge')
-
-        print('converged %:', len(converged_samples)/ len(self.exp_samples))
         for i in range(self.N):
             j = np.random.choice(converged_samples)
             meanDist_S = meanDist_S_dict[j]
@@ -474,7 +472,6 @@ class DatasetGenerator():
 
             if get_grid:
                 self.sample_dict[i]['grid_size'] = grid_dict[j]
-
 
 
     def grid_params(self):

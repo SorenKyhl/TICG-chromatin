@@ -13,10 +13,11 @@ from pylib.utils.plotting_utils import RED_CMAP, plot_matrix
 from pylib.utils.similarity_measures import SCC
 
 sys.path.append('/home/erschultz')
-from sequences_to_contact_maps.scripts.load_utils import \
-    get_final_max_ent_folder
+from sequences_to_contact_maps.scripts.load_utils import (
+    get_final_max_ent_folder, load_import_log)
 from sequences_to_contact_maps.scripts.utils import triu_to_full
 
+EXP_DATASET='dataset_02_04_23'
 
 def make_samples():
     exponents = np.arange(4, 9)
@@ -26,29 +27,39 @@ def make_samples():
         if not osp.exists(e_dir):
             os.mkdir(e_dir, mode=0o755)
 
+    tot_count_list = []
     for s_exp in range(201, 211):
-        exp_dir = f'/home/erschultz/dataset_02_04_23/samples/sample{s_exp}'
+        print(s_exp)
+        exp_dir = f'/home/erschultz/{EXP_DATASET}/samples/sample{s_exp}'
         y = np.triu(np.load(osp.join(exp_dir, 'y.npy')))
-        p = y / np.sum(y)
         m = len(y)
-        p_flat = p[np.triu_indices(m)]
+        y_flat = y[np.triu_indices(m)]
+        p_flat = y_flat / np.sum(y_flat)
         pos = np.arange(0, len(p_flat))
 
-        for exponent in exponents:
-            e_dir = f'{dir}/samples_exp{exponent}'
-            print(exponent)
-            odir = osp.join(e_dir, f'sample{s_exp}')
-            os.mkdir(odir, mode = 0o755)
-            count = 10**exponent
-            choices = np.random.choice(pos, size = count, p = p_flat)
-            y_i_flat = np.zeros_like(p_flat)
-            for j in choices:
-                # this is really slow
-                y_i_flat[j] += 1
-            print(np.sum(y_i_flat))
-            y_i = triu_to_full(y_i_flat)
-            np.save(osp.join(odir, 'y.npy'), y_i)
-            plot_matrix(y_i, osp.join(odir, 'y.png'), vmax = 'mean')
+        exp_dir = f'/home/erschultz/{EXP_DATASET}/samples_10k/sample{s_exp-200}'
+        y = np.triu(np.load(osp.join(exp_dir, 'y.npy')))
+        tot_count = np.sum(y)
+        print(f'Total Read Count: {tot_count}')
+        tot_count_list.append(tot_count)
+        #
+        # for exponent in exponents:
+        #     e_dir = f'{dir}/samples_exp{exponent}'
+        #     print(exponent)
+        #     odir = osp.join(e_dir, f'sample{s_exp}')
+        #     os.mkdir(odir, mode = 0o755)
+        #     count = 10**exponent
+        #     choices = np.random.choice(pos, size = count, p = p_flat)
+        #     y_i_flat = np.zeros_like(p_flat)
+        #     for j in choices:
+        #         # this is really slow
+        #         y_i_flat[j] += 1
+        #     print(np.sum(y_i_flat))
+        #     y_i = triu_to_full(y_i_flat)
+        #     np.save(osp.join(odir, 'y.npy'), y_i)
+        #     plot_matrix(y_i, osp.join(odir, 'y.png'), vmax = 'mean')
+    tot_count_mean = np.mean(tot_count_list)
+    print(f'Mean Total Read Count: {tot_count_mean}')
 
 def figure():
     samples = np.arange(201, 211)
@@ -64,7 +75,7 @@ def figure():
 
     y_list = [] # ground truth y from highly sampled simulation
     for s in samples:
-        y = np.load(osp.join(dir, f'samples_exp8/sample{s}/y.npy'))
+        y = np.load(f'/home/erschultz/{EXP_DATASET}/samples/sample{s}/y.npy')
         y /= np.mean(y.diagonal())
         y_list.append(y)
 
@@ -114,6 +125,17 @@ def figure():
     sample_i = 4
     sample = samples[sample_i]
     exponents_hic = [5, 6, 7]
+    result = load_import_log(f'/home/erschultz/{EXP_DATASET}/samples/sample{sample}')
+    start = result['start_mb']
+    end = result['end_mb']
+    chrom = result['chrom']
+    print(f'Chr{chrom}:{start}-{end}Mb')
+    resolution = result['resolution']
+    m = len(y)
+    all_labels = np.linspace(start, end, m)
+    all_labels = np.round(all_labels, 1)
+    genome_ticks = [0, m//3, 2*m//3, m-1]
+    genome_labels = [f'{all_labels[i]} Mb' for i in genome_ticks]
 
     fig, axes = plt.subplots(1, len(exponents_hic)+2, gridspec_kw={'width_ratios':[1,1,1,0.01,1.5]})
     fig.set_figheight(6)
@@ -134,7 +156,9 @@ def figure():
         # else:
         s = sns.heatmap(composite, linewidth = 0, vmin = 0, vmax = vmax, cmap = RED_CMAP,
                         ax = axes[i], cbar = False)
-        s.set_title(f'Sample {sample}\nRead Count = 10^{exp}\nSCC={scc}', fontsize = 16)
+        s.set_title(f'Read Count = 10^{exp}\nSCC={scc}', fontsize = 16)
+        s.set_xticks(genome_ticks, labels = genome_labels, rotation = 0)
+        s.set_yticks(genome_ticks, labels = genome_labels, rotation = 0)
         axes[i].axline((0,0), slope=1, color = 'k', lw=1)
         axes[i].text(0.99*m, 0.01*m, 'GNN', fontsize=16, ha='right', va='top')
         axes[i].text(0.01*m, 0.99*m, 'Reference', fontsize=16)

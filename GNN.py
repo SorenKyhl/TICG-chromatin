@@ -82,12 +82,12 @@ def fit(dataset, sample, GNN_ID, sub_dir='samples'):
 def main():
     # dataset='downsampling_analysis'; samples = range(201, 211)
     # dataset='dataset_02_04_23'; samples = range(201, 211)
-    # dataset='dataset_04_10_23'; samples = range(1001, 1011)
-    dataset='dataset_04_05_23'; samples = range(1001, 1011)
+    dataset='dataset_04_10_23'; samples = range(1001, 1011)
+    # dataset='dataset_04_05_23'; samples = range(1001, 1011)
     # dataset='dataset_05_28_23'; samples = [324, 981, 1936, 2834, 3464]
     mapping = []
 
-    GNN_IDs = [410]
+    GNN_IDs = [414, 415]
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID))

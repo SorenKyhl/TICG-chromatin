@@ -6,7 +6,6 @@ import os.path as osp
 import string
 import sys
 
-import cv2
 import matplotlib
 import matplotlib.patheffects as pe
 import matplotlib.pyplot as plt
@@ -18,7 +17,7 @@ import seaborn as sns
 from pylib.utils import epilib
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.plotting_utils import (BLUE_CMAP, RED_BLUE_CMAP, plot_matrix,
-                                        plot_mean_dist)
+                                        plot_mean_dist, rotate_bound)
 from pylib.utils.similarity_measures import SCC
 from scipy.optimize import curve_fit
 from scipy.spatial import ConvexHull
@@ -41,31 +40,6 @@ from sequences_to_contact_maps.scripts.xyz_utils import (calculate_rg,
 
 # plotting functions
 def plot_diagonal(exp, sim, ofile=None):
-    def rotate_bound(image, angle):
-        # grab the dimensions of the image and then determine the
-        # center
-        (h, w) = image.shape[:2]
-        (cX, cY) = (w // 2, h // 2)
-
-        # grab the rotation matrix (applying the negative of the
-        # angle to rotate clockwise), then grab the sine and cosine
-        # (i.e., the rotation components of the matrix)
-        M = cv2.getRotationMatrix2D((cX, cY), -angle, 1.0)
-        cos = np.abs(M[0, 0])
-        sin = np.abs(M[0, 1])
-
-        # compute the new bounding dimensions of the image
-        nW = int((h * sin) + (w * cos))
-        nH = int((h * cos) + (w * sin))
-
-        # adjust the rotation matrix to take into account translation
-        M[0, 2] += (nW / 2) - cX
-        M[1, 2] += (nH / 2) - cY
-
-        # perform the actual rotation and return the image
-        return cv2.warpAffine(image, M, (nW, nH),cv2.INTER_NEAREST)
-
-
     npixels = np.shape(sim)[0]
     indu = np.triu_indices(npixels)
     indl = np.tril_indices(npixels)

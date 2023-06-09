@@ -122,6 +122,7 @@ class Maxent:
         self.resources.mkdir(exist_ok=False)
         np.save(self.resources / "experimental_hic.npy", self.gthic)
         utils.write_json(self.config, self.resources / "config.json")
+        np.save(self.resources / "x.npy", self.seqs)
         # TODO: write seqs, defaultsim.config, goals, gthic to resources.
         # or: maybe just pickle the maxent instance?
 

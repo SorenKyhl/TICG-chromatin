@@ -16,7 +16,7 @@ from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
 from sequences_to_contact_maps.scripts.energy_utils import (
     calculate_D, calculate_diag_chi_step, calculate_L, calculate_S)
 from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_L, load_max_ent_chi, load_Y)
+    get_final_max_ent_folder, load_L, load_max_ent_chi, load_psi, load_Y)
 from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
                                                      load_time_dir,
                                                      triu_to_full)
@@ -110,8 +110,6 @@ def loadData(args):
                 continue
             if '0.006' in fname or '0.06' in fname:
                 continue
-            if 'max_ent' in fname and 'repeat' not in fname:
-                continue
             print(fname)
             method = fname.split('-')[1]
             if method.startswith('GNN'):
@@ -165,8 +163,7 @@ def loadData(args):
                             break
                 temp_dict['converged_it'] = converged_it
                 if converged_it is not None:
-                    converged_path = osp.join(fpath, f'iteration{converged_it+1}')
-                    # converged path is iteration after max ent converged
+                    converged_path = osp.join(fpath, f'iteration{converged_it}')
                 else:
                     print('\tDID NOT CONVERGE')
                     converged_mask[i] = 0
@@ -181,16 +178,7 @@ def loadData(args):
                 # S
                 if converged_it is not None:
                     # load bead types
-                    psi_file = osp.join(fpath, 'resources', 'x.npy')
-                    psi = None
-                    if osp.exists(psi_file):
-                        psi = np.load(psi_file)
-                    else:
-                        psi = []
-                        for j in range(1, k+1):
-                            pcf_i = np.loadtxt(osp.join(converged_path, f'pcf{j}.txt'))
-                            psi.append(pcf_i)
-                        psi = np.array(psi)
+                    psi = load_psi(fpath)
 
                     # load chi
                     chi = load_max_ent_chi(k, converged_path, throw_exception = True)

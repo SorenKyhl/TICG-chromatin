@@ -90,9 +90,6 @@ def import_contactmap_straw(sample_folder, hic_filename, chrom, start,
     if np.max(y_arr) == 0:
         print(f'{sample_folder} had no reads')
         return
-    else:
-        y_arr /= np.max(y_arr)
-
 
     m, _ = y_arr.shape
 
@@ -137,7 +134,7 @@ def single_cell_import():
     with multiprocessing.Pool(15) as p:
         p.starmap(import_contactmap_straw, mapping)
 
-def import_wrapper(data_folder, filename_list, resolution, norm, m,
+def import_wrapper(odir, filename_list, resolution, norm, m,
                     i, ref_genome, chroms):
     if isinstance(filename_list, str):
         filename_list = [filename_list]
@@ -159,7 +156,7 @@ def import_wrapper(data_folder, filename_list, resolution, norm, m,
                         break
                 else:
                     print(f'i={i}: chr{chromosome} {start_mb}-{end_mb}')
-                    sample_folder = osp.join(data_folder, 'samples', f'sample{i}')
+                    sample_folder = osp.join(odir, f'sample{i}')
                     mapping.append((sample_folder, filename, chromosome, start,
                                     end, resolution, norm))
                     i += 1
@@ -246,10 +243,11 @@ def single_experiment_dataset(filename, dataset, resolution, m,
     data_folder = osp.join(dir, dataset)
     if not osp.exists(data_folder):
         os.mkdir(data_folder, mode = 0o755)
-    if not osp.exists(osp.join(data_folder, 'samples')):
-        os.mkdir(osp.join(data_folder, 'samples'), mode = 0o755)
+    odir = osp.join(data_folder, 'samples_10k')
+    if not osp.exists(odir):
+        os.mkdir(odir, mode = 0o755)
 
-    import_wrapper(data_folder, filename, resolution, norm, m, i, ref_genome, chroms)
+    import_wrapper(odir, filename, resolution, norm, m, i, ref_genome, chroms)
 
 def mixed_experimental_dataset(dataset, resolution, m, norm='NONE',
                                 i=1, ref_genome='hg19',
@@ -258,10 +256,11 @@ def mixed_experimental_dataset(dataset, resolution, m, norm='NONE',
     data_folder = osp.join(dir, dataset)
     if not osp.exists(data_folder):
         os.mkdir(data_folder, mode = 0o755)
-    if not osp.exists(osp.join(data_folder, 'samples')):
-        os.mkdir(osp.join(data_folder, 'samples'), mode = 0o755)
+    odir = osp.join(data_folder, 'samples')
+    if not osp.exists(odir):
+        os.mkdir(odir, mode = 0o755)
 
-    import_wrapper(data_folder, files, resolution, norm, m, i , ref_genome, chroms)
+    import_wrapper(odir, files, resolution, norm, m, i , ref_genome, chroms)
 
 def Su2020imr90():
     sample_folder = '/home/erschultz/Su2020/samples/sample3'
@@ -360,8 +359,8 @@ def pool():
 
 
 if __name__ == '__main__':
-    # single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
-    #                             'dataset_02_04_23', 10000, 512*5)
+    single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
+                                'dataset_02_04_23', 10000, 512*5)
     # single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/imr90/in-situ/combined.hic",
     #                             'dataset_02_21_23', 10000, 512*5)
     # mixed_experimental_dataset('dataset_03_21', 10000, 512*5)
@@ -369,7 +368,7 @@ if __name__ == '__main__':
             # "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-untreated_combined_30.hic"]
     files = ["https://www.encodeproject.org/files/ENCFF177TYX/@@download/ENCFF177TYX.hic"]
     # mixed_experimental_dataset('dataset_04_05_23', 10000, 1024*5, files = files, i=263)
-    mixed_experimental_dataset('dataset_05_31_23', 25000, 512*4, files = ALL_FILES_NO_GM12878)
+    # mixed_experimental_dataset('dataset_05_31_23', 25000, 512*4, files = ALL_FILES_NO_GM12878)
     # mixed_experimental_dataset('dataset_04_06', 10000, 1024*5)
     # mixed_experimental_dataset('dataset_04_07', 25000, 1024*4)
     # single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
