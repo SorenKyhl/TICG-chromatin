@@ -928,7 +928,7 @@ def compare_y_exp_vs_sim():
         # print_arr(yhat, 'yhat_trans')
 
 def edit_setup(dataset, exp_dataset):
-    dir = f'/project/depablo/erschultz/{dataset}/setup'
+    dir = f'/project2/depablo/erschultz/{dataset}/setup'
     grid_root = f'optimize_grid_b_140_phi_0.03'
     for i in range(1, 5001):
         file = osp.join(dir, f'sample_{i}.txt')
