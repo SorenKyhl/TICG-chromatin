@@ -929,7 +929,7 @@ def compare_y_exp_vs_sim():
         # print_arr(yhat, 'yhat_trans')
 
 def edit_setup(dataset, exp_dataset):
-    dir = f'/project2/depablo/erschultz/{dataset}/setup'
+    dir = f'/project/depablo/erschultz/{dataset}/setup'
     grid_root = f'optimize_grid_b_140_phi_0.03'
     for i in range(1, 5001):
         file = osp.join(dir, f'sample_{i}.txt')
@@ -955,6 +955,27 @@ def edit_setup(dataset, exp_dataset):
             wr = csv.writer(f)
             wr.writerows(rowList)
 
+def make_small(dataset):
+    dir = f'/home/erschultz/{dataset}/samples'
+    odir = f'/home/erschultz/{dataset}-small'
+    grid_root = f'optimize_grid_b_140_phi_0.03'
+    if not osp.exists(odir):
+        os.mkdir(odir)
+    odir = osp.join(odir, 'samples')
+    if not osp.exists(odir):
+        os.mkdir(odir)
+    for s in os.listdir(dir):
+        s_dir_grid = osp.join(dir, s, grid_root)
+        s_odir = osp.join(odir, s)
+        if not osp.exists(s_odir):
+            os.mkdir(s_odir)
+        s_odir_grid = osp.join(s_odir, grid_root)
+        if not osp.exists(s_odir_grid):
+            os.mkdir(s_odir_grid)
+        for f in ['y.npy', 'grid_size.txt']:
+            shutil.copyfile(osp.join(s_dir_grid, f), osp.join(s_odir_grid, f))
+
+
 if __name__ == '__main__':
     # test_robust_PCA()
     # check_dataset('dataset_11_18_22')
@@ -972,3 +993,4 @@ if __name__ == '__main__':
     # compare_y_exp_vs_sim()
     edit_setup('dataset_05_28_23', 'dataset_04_10_23')
     edit_setup('dataset_04_28_23', 'dataset_02_04_23')
+    # make_small('dataset_02_04_23')
