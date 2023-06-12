@@ -1523,7 +1523,7 @@ class GetEnergy():
                 plot_matrix(S, 'S.png', vmin = 'min', vmax = 'max',
                             cmap = 'blue-red', title = 'S')
 
-    def get_energy_gnn(self, model_path, sample_path, kr=False, grid_path=None,
+    def get_energy_gnn(self, model_path, sample_path, kr=False, bonded_path=None,
                         sub_dir='samples', verbose=True,
                         return_plaid_diag=False, return_model_data=False):
         '''
@@ -1577,7 +1577,7 @@ class GetEnergy():
         sys.argv = [sys.argv[0]] # delete args from get_params, otherwise gnn opt will try and use them
         opt = parser.parse_args(['@{}'.format(argparse_path)])
         opt.id = int(model_id)
-        opt = finalize_opt(opt, parser, local = True, debug = True, grid_path=grid_path)
+        opt = finalize_opt(opt, parser, local = True, debug = True, bonded_path=bonded_path)
         if self.m > 0:
             opt.m = self.m # override m
         opt.data_folder = osp.join('/',*sample_path_split[:-2]) # use sample_dataset not gnn_dataset

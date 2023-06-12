@@ -66,7 +66,7 @@ def fit(dataset, sample, GNN_ID, sub_dir='samples'):
         getenergy = GetEnergy(config = config)
         model_path = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{GNN_ID}'
         S = getenergy.get_energy_gnn(model_path, dir,
-                                    grid_path=osp.join(root, 'grid_size.txt'),
+                                    bonded_path=root,
                                     sub_dir = sub_dir)
         config["smatrix_filename"] = "smatrix.txt"
 
@@ -87,7 +87,7 @@ def main():
     # dataset='dataset_05_28_23'; samples = [324, 981, 1936, 2834, 3464]
     mapping = []
 
-    GNN_IDs = [414, 415]
+    GNN_IDs = [418, 416]
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID))
@@ -99,8 +99,10 @@ def main():
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(11) as p:
+    with mp.Pool(15) as p:
         p.starmap(fit, mapping)
+
+    # fit(*mapping[0])
 
 
 if __name__ == '__main__':

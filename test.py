@@ -928,7 +928,7 @@ def compare_y_exp_vs_sim():
         # print_arr(yhat, 'yhat_trans')
 
 def edit_setup(dataset, exp_dataset):
-    dir = f'/project2/depablo/erschultz/{dataset}/setup'
+    dir = f'/home/erschultz/{dataset}/setup'
     grid_root = f'optimize_grid_b_140_phi_0.03'
     for i in range(1, 5001):
         file = osp.join(dir, f'sample_{i}.txt')
@@ -990,6 +990,7 @@ if __name__ == '__main__':
     # make_dataset_of_converged('dataset_03_21_23')
     # check_bonded_distributions()
     # compare_y_exp_vs_sim()
-    edit_setup('dataset_05_28_23', 'dataset_04_10_23')
+    # edit_setup('dataset_05_28_23', 'dataset_04_10_23')
     edit_setup('dataset_04_28_23', 'dataset_02_04_23')
+    edit_setup('dataset_05_23_23', 'dataset_04_05_23')
     # make_small('dataset_02_04_23')

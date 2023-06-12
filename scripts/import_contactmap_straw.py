@@ -249,6 +249,32 @@ def single_experiment_dataset(filename, dataset, resolution, m,
 
     import_wrapper(odir, filename, resolution, norm, m, i, ref_genome, chroms)
 
+def entire_chromosomes(filename, dataset, resolution,
+                                norm='NONE', ref_genome='hg19',
+                                chroms=range(1,23)):
+    dir = '/home/erschultz'
+    data_folder = osp.join(dir, dataset)
+    if not osp.exists(data_folder):
+        os.mkdir(data_folder, mode = 0o755)
+    odir = osp.join(data_folder, f'chroms_{resolution//1000}k')
+    if not osp.exists(odir):
+        os.mkdir(odir, mode = 0o755)
+
+    chromsizes = bioframe.fetch_chromsizes(ref_genome)
+    mapping = []
+    for i, chromosome in enumerate(chroms):
+        i += 1 # switch to 1-based indexing
+        start = 0
+        end = chromsizes[f'chr{chromosome}']
+        print(f'i={i}: chr{chromosome} {start}-{end}')
+        sample_folder = osp.join(odir, f'sample{i}')
+        mapping.append((sample_folder, filename, chromosome, start,
+                        end, resolution, norm))
+
+    with multiprocessing.Pool(5) as p:
+        p.starmap(import_contactmap_straw, mapping)
+
+
 def mixed_experimental_dataset(dataset, resolution, m, norm='NONE',
                                 i=1, ref_genome='hg19',
                                 chroms=range(1,23), files=ALL_FILES):
@@ -359,8 +385,10 @@ def pool():
 
 
 if __name__ == '__main__':
-    single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
-                                'dataset_02_04_23', 10000, 512*5)
+    # single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
+                                # 'dataset_02_04_23', 10000, 512*5)
+    entire_chromosomes("https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
+                        'dataset_02_04_23', 50000)
     # single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/imr90/in-situ/combined.hic",
     #                             'dataset_02_21_23', 10000, 512*5)
     # mixed_experimental_dataset('dataset_03_21', 10000, 512*5)
