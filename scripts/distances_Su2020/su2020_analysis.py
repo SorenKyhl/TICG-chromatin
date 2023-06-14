@@ -16,7 +16,8 @@ import scipy
 import seaborn as sns
 from pylib.utils import epilib
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
-from pylib.utils.plotting_utils import (BLUE_CMAP, RED_BLUE_CMAP, plot_matrix,
+from pylib.utils.plotting_utils import (BLUE_CMAP, BLUE_RED_CMAP,
+                                        RED_BLUE_CMAP, plot_matrix,
                                         plot_mean_dist, rotate_bound)
 from pylib.utils.similarity_measures import SCC
 from scipy.optimize import curve_fit
@@ -348,7 +349,7 @@ def compare_dist_distribution_a_b(sample):
                 bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width))
     plt.xlabel('Distance between A and B', fontsize=16)
     plt.ylabel('Probability', fontsize=16)
-    plt.legend()
+    plt.legend(fontsize=16)
     plt.title(f'Distance between\n{coords_a} and {coords_b}')
     # plt.title(f'Distance between A and B')
     plt.tight_layout()
@@ -613,7 +614,7 @@ def controls():
             ax[row,col].plot(V_D[i], label = 'simulated dist')
             ax[row,col].plot(V_Y[i], label = 'simulated Hi-C')
             ax[row,col].set_title(f'PC {i+1}')
-            ax[row,col].legend()
+            ax[row,col].legend(fontsize=16)
 
             col += 1
             if col > cols-1:
@@ -724,7 +725,7 @@ def compare_D_to_sim_D(sample, GNN_ID=None):
         ax[row,col].plot(V_D[i], label = 'experimental dist')
         ax[row,col].plot(V_D_sim[i], label = 'simulated dist')
         ax[row,col].set_title(f'PC {i+1}\nCorr={pearson_round(V_D[i], V_D_sim[i])}')
-        ax[row,col].legend()
+        ax[row,col].legend(fontsize=16)
 
         col += 1
         if col > cols-1:
@@ -797,7 +798,7 @@ def test_pcs():
             ax[row].plot(V_D_med[i], label = 'median')
             ax[row].plot(V_D_prox[i], label = 'prox')
             ax[row].set_title(f'PC {i+1}')
-            ax[row].legend()
+            ax[row].legend(fontsize=16)
 
             row += 1
         plt.savefig(osp.join(fdir, 'pc_D.png'))
@@ -828,7 +829,7 @@ def compare_pcs(sample, GNN_ID):
             ax[row].plot(V_D_gnn[i], label = 'GNN', color = 'red')
         ax[row].set_title(f'PC {i+1}')
         if i == 0:
-            ax[row].legend()
+            ax[row].legend(fontsize=16)
 
         col += 1
         if col > cols-1:
@@ -916,7 +917,7 @@ def compare_rg(sample, GNN_ID):
     plt.errorbar(sizes, gnn_rgs[:, 0], gnn_rgs[:, 1], color = 'r', label = 'GNN')
     plt.ylabel('Radius of Gyration', fontsize=16)
     plt.xlabel('Domain Size (beads)', fontsize=16)
-    plt.legend()
+    plt.legend(fontsize=16)
     plt.tight_layout()
     plt.savefig(osp.join(dir, 'rg_comparison.png'))
 
@@ -933,7 +934,7 @@ def compare_scaling(sample, GNN_ID=None, b=140, phi=0.03):
             meanDist = DiagonalPreprocessing.genomic_distance_statistics(D_i, 'freq')
             plt.plot(meanDist, label = label)
 
-    plt.legend()
+    plt.legend(fontsize=16)
     plt.tight_layout()
     plt.savefig(osp.join(dir, 'dist_scaling.png'))
     plt.close()
@@ -944,7 +945,7 @@ def compare_scaling(sample, GNN_ID=None, b=140, phi=0.03):
             plt.plot(meanDist, label = label)
 
     plt.xscale('log')
-    plt.legend()
+    plt.legend(fontsize=16)
     plt.tight_layout()
     plt.savefig(osp.join(dir, 'dist_scaling_log.png'))
     plt.close()
@@ -1007,7 +1008,7 @@ def compare_dist_distribution_plaid(sample, GNN_ID, b=140, phi=0.03):
 
         # ax[i].set_xscale('log')
         ax[i].set_title(method)
-        ax[i].legend()
+        ax[i].legend(fontsize=16)
 
     fig.supxlabel('Distance (nm)')
     fig.supylabel('Probability')
@@ -1029,6 +1030,10 @@ def compare_diagonal(sample, GNN_ID=None):
     plot_diagonal(D_no_nan, D_pca[~nan_rows][:, ~nan_rows], osp.join(dir, 'diagonal.png'))
 
 def figure(sample, GNN_ID, b=140, phi=0.03):
+    label_fontsize=18
+    legend_fontsize=16
+    tick_fontsize=13
+    letter_fontsize=20
     dir = f'/home/erschultz/Su2020/samples/sample{sample}'
     D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=b, phi=phi)
     nan_rows = np.isnan(D[0])
@@ -1091,6 +1096,8 @@ def figure(sample, GNN_ID, b=140, phi=0.03):
         dist_gnn = None
 
     ### combined figure ###
+    print('---'*9)
+    print('Starting Figure')
     plt.figure(figsize=(18, 12))
     ax1 = plt.subplot(2, 24, (1, 6))
     ax2 = plt.subplot(2, 24, (8, 13))
@@ -1102,8 +1109,10 @@ def figure(sample, GNN_ID, b=140, phi=0.03):
 
     # plot dmaps
     vmin = np.nanpercentile(D_no_nan, 1)
+    vmed = np.nanpercentile(D_no_nan, 50)
     vmax = np.nanpercentile(D_no_nan, 99)
-    print(vmin, vmax)
+
+    print(vmin, vmed, vmax)
     npixels = np.shape(D_no_nan)[0]
     indu = np.triu_indices(npixels)
     indl = np.tril_indices(npixels)
@@ -1130,17 +1139,20 @@ def figure(sample, GNN_ID, b=140, phi=0.03):
             s = sns.heatmap(composite, linewidth = 0, vmin = vmin, vmax = vmax, cmap = RED_BLUE_CMAP,
                             ax = axes[i], cbar_ax = ax_cb)
         s.axline((0,0), slope=1, color = 'k', lw=1)
-        s.text(0.99*m, 0.01*m, label, fontsize=16, ha='right', va='top',
+        s.text(0.99*m, 0.01*m, label, fontsize=letter_fontsize, ha='right', va='top',
+                weight = 'bold',
                 path_effects=[pe.withStroke(linewidth=4, foreground="white")])
-        s.text(0.01*m, 0.99*m, 'Experiment', fontsize=16,
+        s.text(0.01*m, 0.99*m, 'Experiment', fontsize=letter_fontsize, weight='bold',
                 path_effects=[pe.withStroke(linewidth=4, foreground="white")])
-        s.set_title(f'\nCorr(Exp, {label})={np.round(corr, 3)}', fontsize = 16)
-        s.set_xticks(genome_ticks, labels = genome_labels, rotation = 0)
+        print(f'\nCorr(Exp, {label})={np.round(corr, 3)}')
+        s.set_xticks(genome_ticks, labels = genome_labels, rotation = 0,
+                    fontsize = tick_fontsize)
 
         if i > 0:
             s.set_yticks([])
         else:
-            s.set_yticks(genome_ticks, labels = genome_labels)
+            s.set_yticks(genome_ticks, labels = genome_labels,
+                        fontsize = tick_fontsize)
 
     # plot scaling
     m = len(D)
@@ -1148,21 +1160,22 @@ def figure(sample, GNN_ID, b=140, phi=0.03):
     print('h', log_labels.shape)
     data = zip([D, D_pca, D_gnn], ['Experiment', 'Max Ent', 'GNN'], ['k', 'b', 'r'])
     for D_i, label, color in data:
-        print(label)
+        # print(label)
         if D_i is not None:
             meanDist = DiagonalPreprocessing.genomic_distance_statistics(D_i, 'freq')
             nan_rows = np.isnan(meanDist)
-            print(meanDist[:10], meanDist.shape)
+            # print(meanDist[:10], meanDist.shape)
             ax3.plot(log_labels[~nan_rows], meanDist[~nan_rows], label = label, color = color)
-    ax3.set_ylabel('Distance (nm)', fontsize=16)
-    ax3.set_xlabel('Genomic Separation (bp)', fontsize = 16)
+    ax3.tick_params(axis='both', which='major', labelsize=tick_fontsize)
+    ax3.set_ylabel('Distance (nm)', fontsize = label_fontsize)
+    ax3.set_xlabel('Genomic Separation (bp)', fontsize = label_fontsize)
     ax3.set_xscale('log')
     # ax3.set_yscale('log')
     # X = np.arange(1*10**5, 9*10**6, resolution)
     # A = .001/resolution
     # Y = A*np.power(X, 1/2) + 200
     # ax3.plot(X, Y, ls='dashed', color = 'grey')
-    ax3.legend()
+    ax3.legend(fontsize=legend_fontsize)
 
     # plot pcs
     ax4.plot(V_D[0], label = 'Experiment', color = 'k')
@@ -1170,10 +1183,10 @@ def figure(sample, GNN_ID, b=140, phi=0.03):
         ax4.plot(V_D_pca[0], label = f'Max Ent (r={pearson_round(V_D[0], V_D_pca[0])})', color = 'blue')
     if V_D_gnn is not None:
         ax4.plot(V_D_gnn[0], label = f'GNN (r={pearson_round(V_D[0], V_D_gnn[0])})', color = 'red')
-    ax4.set_ylabel('PC 1', fontsize=16)
-
+    ax4.set_ylabel('PC 1', fontsize=label_fontsize)
+    ax4.tick_params(axis='both', which='major', labelsize=tick_fontsize)
     ax4.set_xticks(genome_ticks, labels = genome_labels, rotation = 0)
-    ax4.legend()
+    ax4.legend(fontsize=legend_fontsize)
 
     # plot a-b distribution
     bin_width = 50
@@ -1187,14 +1200,16 @@ def figure(sample, GNN_ID, b=140, phi=0.03):
         ax5.hist(arr, label = label, alpha = 0.5, color = color,
                     weights = np.ones_like(arr) / len(arr),
                     bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width))
-    ax5.set_ylabel('Probability', fontsize=16)
-    ax5.legend()
-    ax5.set_xlabel(f'Distance between\n{coords_a_label} and {coords_b_label}', fontsize=16)
+    ax5.set_ylabel('Probability', fontsize=label_fontsize)
+    ax5.tick_params(axis='both', which='major', labelsize=tick_fontsize)
+    ax5.legend(fontsize=legend_fontsize)
+    ax5.set_xlabel('Spatial Distance (nm)', fontsize=label_fontsize)
+    print(f'Distance between\n{coords_a_label} and {coords_b_label}')
 
 
     for n, ax in enumerate([ax1, ax3, ax4, ax5]):
         ax.text(-0.0, 1.05, string.ascii_uppercase[n], transform=ax.transAxes,
-                size=20, weight='bold')
+                size=letter_fontsize, weight='bold')
 
     plt.tight_layout()
     plt.savefig('/home/erschultz/TICG-chromatin/figures/distances.png')

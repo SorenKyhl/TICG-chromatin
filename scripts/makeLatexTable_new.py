@@ -346,7 +346,8 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
             for method, label in keys_labels:
                 dataset = None
                 if 'GNN' in method:
-                    id = method[3:]
+                    pos = method.find('GNN')
+                    id = method[pos+3:]
                     try:
                         with open(f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{id}/argparse.txt', 'r') as f:
                             for line in f:
@@ -532,7 +533,7 @@ def main(data_folder=None, sample=None):
                         sample_id = args.sample, experimental = args.experimental,
                         nan_mask = not_converged_mask)
 
-        boxplot(data, osp.join(odir, f'boxplot_{defn}_convergence.png'))
+        # boxplot(data, osp.join(odir, f'boxplot_{defn}_convergence.png'))
 
 
 if __name__ == '__main__':

@@ -53,7 +53,7 @@ VALIDATION_FILES = [
         "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-untreated_combined_30.hic",
         "https://www.encodeproject.org/files/ENCFF177TYX/@@download/ENCFF177TYX.hic"
         ]
-        # gm12878, HL-60, HCT116
+        # gm12878, HCT116, HL-60,
 
 def intersect(region, bad_region):
     # region/2 is a tuple

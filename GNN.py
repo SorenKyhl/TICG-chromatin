@@ -83,12 +83,14 @@ def main():
     # dataset='downsampling_analysis'; samples = range(201, 211)
     # dataset='dataset_02_04_23'; samples = range(211, 221)
     # dataset='dataset_04_10_23'; samples = range(1001, 1011)
-    dataset='dataset_04_05_23'; samples = range(1001, 1011)
+    # dataset='dataset_04_05_23'; samples = range(1001, 1011)
+    dataset = 'dataset_04_05_23'; samples = [1213, 1214, 1248, 1249, 1285, 1286]
+
     # dataset='dataset_05_28_23'; samples = [324, 981, 1936, 2834, 3464]
     # dataset = 'Su2020'; samples=[1013]
     mapping = []
 
-    GNN_IDs = [421, 422]
+    GNN_IDs = [422, 415]
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID))
@@ -100,7 +102,7 @@ def main():
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(10) as p:
+    with mp.Pool(12) as p:
         p.starmap(fit, mapping)
 
     # fit(*mapping[0])
