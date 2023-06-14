@@ -75,8 +75,8 @@ def setup_config(dataset, sample, samples='samples'):
     dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
 
     bonded_config = default.bonded_config
-    bonded_config['bond_length'] = 140
-    bonded_config['phi_chromatin'] = 0.03
+    bonded_config['bond_length'] = 261
+    bonded_config['phi_chromatin'] = 0.01
     if bonded_config['bond_length'] == 16.5:
         bonded_config['beadvol'] = 520
     if bonded_config['bond_length'] == 117:
@@ -142,7 +142,7 @@ def fit(dataset, sample, samples='samples'):
     config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
 
 
-    root = osp.join(dir, f'{root}-max_ent{k}_repeat')
+    root = osp.join(dir, f'{root}-max_ent{k}')
     if osp.exists(root):
         shutil.rmtree(root)
         print('WARNING: root exists')
@@ -172,7 +172,8 @@ def fit(dataset, sample, samples='samples'):
 def main():
     # dataset = 'dataset_05_31_23'; samples = list(range(1001, 1009))
     # dataset = 'downsampling_analysis'; samples = list(range(201, 211))
-    dataset = 'dataset_02_04_23'; samples = list(range(211, 221))
+    # dataset = 'dataset_02_04_23'; samples = list(range(211, 221))
+    dataset = 'Su2020'; samples = [1013, 1014]
     # samples = sorted(np.random.choice(samples, 12, replace = False))
 
     mapping = []
@@ -182,7 +183,7 @@ def main():
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(11) as p:
+    with mp.Pool(2) as p:
         p.starmap(fit, mapping)
     # # for i in range(1001, 1211):
     #     # fit(i)

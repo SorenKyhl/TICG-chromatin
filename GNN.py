@@ -54,9 +54,9 @@ def fit(dataset, sample, GNN_ID, sub_dir='samples'):
 
     gnn_root = f'{root}-GNN{GNN_ID}'
     if osp.exists(gnn_root):
-        shutil.rmtree(gnn_root)
+        # shutil.rmtree(gnn_root)
         print('WARNING: root exists')
-        # return
+        return
     os.mkdir(gnn_root, mode=0o755)
 
     stdout = sys.stdout
@@ -71,8 +71,8 @@ def fit(dataset, sample, GNN_ID, sub_dir='samples'):
         config["smatrix_filename"] = "smatrix.txt"
 
     with open(osp.join(gnn_root, 'log.log'), 'w') as sys.stdout:
-        sim = Pysim(gnn_root, config, None, y, randomize_seed = True, mkdir = False,
-                    smatrix = S)
+        sim = Pysim(gnn_root, config, None, y, randomize_seed = True,
+                    mkdir = False, smatrix = S)
         t = sim.run_eq(30000, 500000, 1)
         print(f'Simulation took {np.round(t, 2)} seconds')
 
@@ -81,13 +81,14 @@ def fit(dataset, sample, GNN_ID, sub_dir='samples'):
 
 def main():
     # dataset='downsampling_analysis'; samples = range(201, 211)
-    # dataset='dataset_02_04_23'; samples = range(201, 211)
-    dataset='dataset_04_10_23'; samples = range(1001, 1011)
-    # dataset='dataset_04_05_23'; samples = range(1001, 1011)
+    # dataset='dataset_02_04_23'; samples = range(211, 221)
+    # dataset='dataset_04_10_23'; samples = range(1001, 1011)
+    dataset='dataset_04_05_23'; samples = range(1001, 1011)
     # dataset='dataset_05_28_23'; samples = [324, 981, 1936, 2834, 3464]
+    # dataset = 'Su2020'; samples=[1013]
     mapping = []
 
-    GNN_IDs = [418, 416]
+    GNN_IDs = [421, 422]
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID))
@@ -99,7 +100,7 @@ def main():
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(15) as p:
+    with mp.Pool(10) as p:
         p.starmap(fit, mapping)
 
     # fit(*mapping[0])

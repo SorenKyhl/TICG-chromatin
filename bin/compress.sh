@@ -73,24 +73,13 @@ cleanup(){
 
 dir='/home/erschultz'
 
-dir='/project/depablo/erschultz'
-cd $dir
-compress dataset_02_14_23
-compress dataset_02_16_23
-compress dataset_02_20_23
-compress dataset_02_22_23
-
 dir='/project2/depablo/erschultz'
 cd $dir
-cleanup dataset_03_01_23
-cleanup dataset_03_03_23
-cleanup dataset_03_21_23
-cleanup dataset_03_22_23
-cleanup dataset_03_23_23
-cleanup dataset_03_29_23
-cleanup dataset_04_04_23
-cleanup dataset_04_28_23
-cleanup dataset_05_15_23
-cleanup dataset_05_18_23
-cleanup dataset_05_23_23
-cleanup dataset_05_28_23
+compress dataset_02_01_23
+compress dataset_03_01_23
+compress dataset_03_03_23
+compress dataset_03_21_23_max_ent
+compress dataset_03_22_23
+compress dataset_03_23_23
+compress dataset_03_29_23
+rm -r dataset_03_21_23

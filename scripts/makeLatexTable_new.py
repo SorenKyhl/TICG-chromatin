@@ -108,18 +108,20 @@ def loadData(args):
                 continue
             if 'angle' in fname:
                 continue
+            if '_old' in fname:
+                continue
             if '0.006' in fname or '0.06' in fname:
                 continue
             print(fname)
-            method = fname.split('-')[1]
-            if method.startswith('GNN'):
+            method = fname
+            method_type = fname.split('-')[1]
+            if method_type.startswith('GNN'):
                 k = 0
                 converged_it = None
                 converged_path = fpath
                 S = np.load(osp.join(fpath, 'S.npy'))
                 times = [load_time_dir(fpath)]
-            elif method.startswith('max_ent'):
-                method = fname
+            elif method_type.startswith('max_ent'):
                 k = len(triu_to_full(np.loadtxt(osp.join(fpath, 'chis.txt'))))
 
                 # convergence
@@ -414,7 +416,8 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
 def sort_method_keys(keys):
     '''Sorts keys to match order of METHODS and gets corresponding labels from LABELS.'''
     sorted_key_labels = []
-    def format_max_ent(key):
+    def format(key, type):
+        label = type
         key_split = re.split('[-_]', key)
         for i, substr in enumerate(key_split):
             if substr == 'b':
@@ -423,21 +426,24 @@ def sort_method_keys(keys):
                 phi = key_split[i+1]
             if substr.startswith('angle'):
                 angle = substr[5:]
+
+        if 'GNN' in key:
+            pos = key.find('GNN')
+            id = key[pos+3:]
+            label += id
+
         if 'angle' in key:
-            label = f'Max Ent (b={b},phi={phi}, angle{angle})'
+            label += f' (b={b},phi={phi}, angle{angle})'
         else:
-            label = f'Max Ent (b={b},phi={phi})'
+            label += f'  (b={b},phi={phi})'
 
         return label
 
-    def format_gnn(key):
-        return key
-
-    for method, fn in zip(['max_ent', 'gnn'], [format_max_ent, format_gnn]):
+    for method, label in zip(['max_ent', 'gnn'], ['Max Ent', 'GNN']):
         key_labels = [] # list of (key, label) tuples of type method
         for key in keys:
             if method in key.lower():
-                key_labels.append((key, fn(key)))
+                key_labels.append((key, format(key, label)))
 
         sorted_key_labels.extend(sorted(key_labels))
 

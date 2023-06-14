@@ -749,12 +749,14 @@ def load_exp_gnn_pca(dir, GNN_ID=None, mode='mean', b=140, phi=0.03):
     max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, b, phi)
     if osp.exists(max_ent_dir):
         D_pca, _ = sim_xyz_to_dist(max_ent_dir, True)
+        m = len(D_pca)
     else:
         print(f'{max_ent_dir} does not exist')
         D_pca = None
-    m = len(D_pca)
+
     if GNN_ID is not None and osp.exists(gnn_dir):
         D_gnn, _ = sim_xyz_to_dist(gnn_dir, False)
+        m = len(D_gnn)
     else:
         D_gnn = None
 
@@ -1081,7 +1083,7 @@ def figure(sample, GNN_ID, b=140, phi=0.03):
     xyz_max_ent = xyz_load(file, multiple_timesteps = True)
     dist_max_ent = dist_distribution_a_b(xyz_max_ent, a - shift, b - shift)
 
-    if osp.exists(gnn_dir):
+    if gnn_dir is not None and osp.exists(gnn_dir):
         file = osp.join(gnn_dir, 'production_out/output.xyz')
         xyz_gnn = xyz_load(file, multiple_timesteps = True)
         dist_gnn = dist_distribution_a_b(xyz_gnn, a - shift, b - shift)
@@ -1141,25 +1143,34 @@ def figure(sample, GNN_ID, b=140, phi=0.03):
             s.set_yticks(genome_ticks, labels = genome_labels)
 
     # plot scaling
+    m = len(D)
+    log_labels = np.linspace(0, resolution*(m-1), m)
+    print('h', log_labels.shape)
     data = zip([D, D_pca, D_gnn], ['Experiment', 'Max Ent', 'GNN'], ['k', 'b', 'r'])
     for D_i, label, color in data:
+        print(label)
         if D_i is not None:
             meanDist = DiagonalPreprocessing.genomic_distance_statistics(D_i, 'freq')
-            ax3.plot(meanDist, label = label, color = color)
+            nan_rows = np.isnan(meanDist)
+            print(meanDist[:10], meanDist.shape)
+            ax3.plot(log_labels[~nan_rows], meanDist[~nan_rows], label = label, color = color)
     ax3.set_ylabel('Distance (nm)', fontsize=16)
-    # ax3.set_xlabel('Polymer Beads', fontsize=16)
+    ax3.set_xlabel('Genomic Separation (bp)', fontsize = 16)
     ax3.set_xscale('log')
+    # ax3.set_yscale('log')
+    # X = np.arange(1*10**5, 9*10**6, resolution)
+    # A = .001/resolution
+    # Y = A*np.power(X, 1/2) + 200
+    # ax3.plot(X, Y, ls='dashed', color = 'grey')
     ax3.legend()
 
     # plot pcs
     ax4.plot(V_D[0], label = 'Experiment', color = 'k')
     if V_D_pca is not None:
-        ax4.plot(V_D_pca[0], label = 'Max. Ent.', color = 'blue')
+        ax4.plot(V_D_pca[0], label = f'Max Ent (r={pearson_round(V_D[0], V_D_pca[0])})', color = 'blue')
     if V_D_gnn is not None:
-        ax4.plot(V_D_gnn[0], label = 'GNN', color = 'red')
-        ax4.set_title(f'PC 1\nCorr(Exp, GNN)={pearson_round(V_D[0], V_D_gnn[0])}')
-    else:
-        ax4.set_title('PC 1')
+        ax4.plot(V_D_gnn[0], label = f'GNN (r={pearson_round(V_D[0], V_D_gnn[0])})', color = 'red')
+    ax4.set_ylabel('PC 1', fontsize=16)
 
     ax4.set_xticks(genome_ticks, labels = genome_labels, rotation = 0)
     ax4.legend()
@@ -1176,11 +1187,9 @@ def figure(sample, GNN_ID, b=140, phi=0.03):
         ax5.hist(arr, label = label, alpha = 0.5, color = color,
                     weights = np.ones_like(arr) / len(arr),
                     bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width))
-    ax5.set_xlabel('Distance between A and B (nm)', fontsize=16)
     ax5.set_ylabel('Probability', fontsize=16)
     ax5.legend()
-
-    ax5.set_title(f'Distance between\n{coords_a_label} and {coords_b_label}')
+    ax5.set_xlabel(f'Distance between\n{coords_a_label} and {coords_b_label}', fontsize=16)
 
 
     for n, ax in enumerate([ax1, ax3, ax4, ax5]):
@@ -1209,4 +1218,4 @@ if __name__ == '__main__':
     # compare_dist_distribution_plaid(1003, None, 261, 0.01)
     # compare_rg()
     # compare_scaling(1003, None, 261, 0.01)
-    figure(1002, 403)
+    figure(1013, 419, b=261, phi=0.01)
