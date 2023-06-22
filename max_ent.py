@@ -9,6 +9,7 @@ import numpy as np
 import optimize_grid
 from pylib.Maxent import Maxent
 from pylib.utils import default, epilib, utils
+
 from scripts.get_params import GetSeq
 
 
@@ -75,8 +76,8 @@ def setup_config(dataset, sample, samples='samples'):
     dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
 
     bonded_config = default.bonded_config
-    bonded_config['bond_length'] = 140
-    bonded_config['phi_chromatin'] = 0.03
+    bonded_config['bond_length'] = 261
+    bonded_config['phi_chromatin'] = 0.01
     if bonded_config['bond_length'] == 16.5:
         bonded_config['beadvol'] = 520
     if bonded_config['bond_length'] == 117:
@@ -89,7 +90,7 @@ def setup_config(dataset, sample, samples='samples'):
     root = f"{root}_b_{bonded_config['bond_length']}_phi_{bonded_config['phi_chromatin']}"
     print(root)
     root = osp.join(dir, root)
-    if osp.exists(root):
+    if osp.exists(osp.join(root, 'grid_size.txt')):
         bonded_config['grid_size'] = np.loadtxt(osp.join(root, 'grid_size.txt'))
         angle_file = osp.join(root, 'angle.txt')
         if osp.exists(angle_file):
@@ -144,8 +145,9 @@ def fit(dataset, sample, samples='samples'):
 
     root = osp.join(dir, f'{root}-max_ent{k}')
     if osp.exists(root):
-        shutil.rmtree(root)
+        # shutil.rmtree(root)
         print('WARNING: root exists')
+        return
     os.mkdir(root, mode=0o755)
 
     # get sequences
@@ -170,11 +172,11 @@ def fit(dataset, sample, samples='samples'):
     sys.stdout = stdout
 
 def main():
-    # dataset = 'dataset_05_31_23'; samples = list(range(1001, 1009))
+    # dataset = 'dataset_05_31_23'; samples = list(range(1137, 1214))
     # dataset = 'downsampling_analysis'; samples = list(range(201, 211))
-    # dataset = 'dataset_02_04_23'; samples = list(range(211, 221))
-    # dataset = 'Su2020'; samples = [1013, 1014]
-    dataset = 'dataset_04_05_23'; samples = [1213, 1214, 1248, 1249, 1285, 1286]
+    dataset = 'dataset_02_04_23'; samples = list(range(201, 283))
+    # dataset = 'Su2020'; samples = [1004]
+    # dataset = 'dataset_04_05_23'; samples = list(range(1211, 1288))
     # samples = sorted(np.random.choice(samples, 12, replace = False))
 
     mapping = []
@@ -184,13 +186,13 @@ def main():
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(6) as p:
-        p.starmap(fit, mapping)
-    # # for i in range(1001, 1211):
-    #     # fit(i)
+    with mp.Pool(15) as p:
+        p.starmap(setup_config, mapping)
+    # for i in samples:
+    #     setup_config(dataset, i, 'samples')
 
     # dataset = 'Su2020'
-    # fit(dataset, 3)
+    # fit(dataset, 1004, 'samples')
 
 
 

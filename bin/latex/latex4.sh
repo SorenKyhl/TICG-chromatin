@@ -18,10 +18,10 @@ else
 fi
 
 dataset='dataset_04_05_23'
-samples='1001-1002-1003-1004-1005-1006-1007-1008-1009-1010'
-# samples='289-290-291-292'
+# samples='1001-1002-1003-1004-1005-1006-1007-1008-1009-1010'
+samples='1213-1214-1248-1249-1285-1286'
 dataFolder="${dataDir}/${dataset}"
-convergenceDefinition='all'
+convergenceDefinition='normal'
 python3 ~/TICG-chromatin/scripts/makeLatexTable_new.py --data_folder $dataFolder --samples $samples --convergence_definition $convergenceDefinition --experimental --convergence_mask
 
 

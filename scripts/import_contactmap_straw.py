@@ -289,14 +289,13 @@ def mixed_experimental_dataset(dataset, resolution, m, norm='NONE',
     import_wrapper(odir, files, resolution, norm, m, i , ref_genome, chroms)
 
 def Su2020imr90():
-    sample_folder = '/home/erschultz/Su2020/samples/sample3'
+    sample_folder = '/home/erschultz/Su2020/samples/sample4'
     filename='https://hicfiles.s3.amazonaws.com/hiseq/imr90/in-situ/combined.hic'
     filename='/home/erschultz/Su2020/ENCFF281ILS.hic'
 
     resolution = 10000
     start = 14000001
-    end = 46700001
-    # end = start + 1024*5*resolution
+    end = start + 512*5*resolution
     import_contactmap_straw(sample_folder, filename, 'chr21', start, end, resolution, 'NONE')
 
 
@@ -383,12 +382,40 @@ def pool():
         for l in rest:
             f.write(l)
 
+def make_latex_table():
+    files = ALL_FILES_NO_GM12878.copy()
+    files.extend(VALIDATION_FILES)
+    cell_lines = []
+    for f in files:
+        f_split = f.split(os.sep)
+        cell_line = f_split[-3]
+        if cell_line == 'GSE104333':
+            cell_line = 'HCT116'
+        elif cell_line == 'ENCFF177TYX':
+            cell_line = 'HL-60'
+        else:
+            cell_line = cell_line.upper()
+        cell_lines.append(cell_line)
+
+    use_case = ['Training']*len(ALL_FILES_NO_GM12878)
+    use_case.extend(['Validation']*len(VALIDATION_FILES))
+
+    print(len(cell_lines), len(files), len(use_case))
+
+    d = {'Cell Line':cell_lines, "Use": use_case, "File": files, }
+    df = pd.DataFrame(data = d)
+    pd.set_option('display.max_colwidth', -1)
+    print(df)
+    print(df.to_latex(index = False))
+    df.to_csv('/home/erschultz/TICG-chromatin/figures/tableS1.csv', index = False)
+
 
 if __name__ == '__main__':
+    # make_latex_table()
     # single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
                                 # 'dataset_02_04_23', 10000, 512*5)
-    entire_chromosomes("https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
-                        'dataset_02_04_23', 50000)
+    # entire_chromosomes("https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
+    #                     'dataset_02_04_23', 50000)
     # single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/imr90/in-situ/combined.hic",
     #                             'dataset_02_21_23', 10000, 512*5)
     # mixed_experimental_dataset('dataset_03_21', 10000, 512*5)
@@ -410,4 +437,4 @@ if __name__ == '__main__':
     # single_experiment_dataset("https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-treated_6hr_combined_30.hic",
                                 # 'dataset_HCT116_RAD21_KO', 10000, 512*5, i=10, chroms=[2])
 
-    # Su2020imr90()
+    Su2020imr90()

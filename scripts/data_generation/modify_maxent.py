@@ -1294,6 +1294,26 @@ def diag_vs_plaid(dataset):
     plt.show()
 
 
+def get_read_counts(dataset):
+    samples, _ = get_samples(dataset)
+    sweeps = [2,3,4,5]
+    counts = np.zeros((len(samples), 4))
+    for i, s in enumerate(samples):
+        s_path = osp.join('/home/erschultz', dataset, f'samples/sample{s}')
+        for j, sweep in enumerate(sweeps):
+            y = np.loadtxt(osp.join(s_path, f'production_out/contacts{sweep*100000}.txt'))
+            y = np.triu(y)
+            counts[i,j] = np.sum(y)
+
+    print(counts)
+    mean_counts = np.mean(counts, axis = 0)
+    print(mean_counts)
+
+    plt.plot(sweeps, mean_counts)
+    plt.yscale('log')
+    plt.show()
+
+
 
 
 if __name__ == '__main__':
@@ -1303,7 +1323,8 @@ if __name__ == '__main__':
         # plot_modified_max_ent(i, k = 10)
     # diagonal_dist('dataset_02_04_23', 10)
     # grid_dist('dataset_01_26_23')
-    plaid_dist('dataset_04_10_23', 10, True, False, True)
+    # plaid_dist('dataset_04_10_23', 10, True, False, True)
+    get_read_counts('dataset_04_28_23')
     # seq_dist('dataset_01_26_23', 4, True, False, True)
     # modify_plaid_chis('dataset_11_14_22', 8)
     # plot_params_test()

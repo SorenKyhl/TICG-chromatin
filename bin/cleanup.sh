@@ -25,12 +25,12 @@
 #   done
 # done
 
-dir='/home/erschultz/dataset_02_04_23/samples'
+dir='/home/erschultz/dataset_04_05_23/samples'
 cd $dir
 
-for i in {211..221}
+for i in {1200..1300}
 do
   cd  "${dir}/sample${i}"
-  mv optimize_grid_b_140_phi_0.03-max_ent10_repeat optimize_grid_b_140_phi_0.03-max_ent10
+  rm -r optimize_grid_b_140_phi_0.03-GNN419
 
 done

@@ -509,10 +509,6 @@ def xyz_to_xyz():
     plt.savefig(osp.join(dir, f'dist_scaling_avg.png'))
     plt.close()
 
-
-
-
-
 def sim_xyz_to_dist(dir, max_ent=True):
     if max_ent:
         final_dir = get_final_max_ent_folder(dir)
@@ -877,27 +873,56 @@ def compare_d_maps(sample, GNN_ID):
     plt.savefig(osp.join(dir, 'D_PCA_vs_GNN.png'))
     plt.close()
 
-def compare_rg(sample, GNN_ID):
-    dir = '/home/erschultz/Su2020/samples/sample'
-    xyz_file = osp.join(dir, 'xyz.npy')
+def compare_rg(sample, GNN_ID, b=140, phi=0.03):
+    label_fontsize=18
+    legend_fontsize=16
+    tick_fontsize=13
+    letter_fontsize=20
+    dir = f'/home/erschultz/Su2020/samples/sample{sample}'
+
+    result = load_import_log(dir)
+    start = result['start']
+    end = result['end']
+    start_mb = result['start_mb']
+    end_mb = result['end_mb']
+    chrom = int(result['chrom'])
+    resolution = result['resolution']
+
+    # distance distribution
+    if chrom == 21:
+        exp_dir = '/home/erschultz/Su2020/samples/sample1'
+    elif chrom == 2:
+        exp_dir = '/home/erschultz/Su2020/samples/sample10'
+    coords_a = f"chr{chrom}:15500001-15550001"
+    coords_b = f"chr{chrom}:20000001-20050001"
+    coords_a_label =  f"chr{chrom}:15.5 -15.55 Mb"
+    coords_b_label = f"chr{chrom}:20-20.05 Mb"
+    xyz_file = osp.join(exp_dir, 'xyz.npy')
     xyz = np.load(xyz_file)
-    coords_file = osp.join(dir, 'coords.json')
+    coords_file = osp.join(exp_dir, 'coords.json')
     with open(coords_file) as f:
         coords_dict = json.load(f)
-    i = coords_dict['chr21:14000001-14050001']
-    xyz = xyz[:, i:i+512, :]
 
-    dir = f'/home/erschultz/Su2020/samples/sample{sample}'
+    a = coords_dict[coords_a]
+    b = coords_dict[coords_b]
+    dist = dist_distribution_a_b(xyz, a, b)
+
+    # shift ind such that start is at 0
+    shift = coords_dict[f"chr{chrom}:{start}-{start+resolution}"]
+
     max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID)
     final_dir = get_final_max_ent_folder(max_ent_dir)
-
     file = osp.join(final_dir, 'production_out/output.xyz')
     xyz_max_ent = xyz_load(file, multiple_timesteps = True)
 
-    file = osp.join(gnn_dir, 'production_out/output.xyz')
-    xyz_gnn = xyz_load(file, multiple_timesteps = True)
+    if gnn_dir is not None and osp.exists(gnn_dir):
+        file = osp.join(gnn_dir, 'production_out/output.xyz')
+        xyz_gnn = xyz_load(file, multiple_timesteps = True)
+    else:
+        xyz_gnn = None
 
-    sizes = [64, 128, 256, 512]
+    sizes = [16, 32, 64, 128, 256, 512]
+    log_labels = [i*resolution for i in sizes]
     ref_rgs = np.zeros((len(sizes), 2))
     max_ent_rgs = np.zeros((len(sizes), 2))
     gnn_rgs = np.zeros((len(sizes), 2))
@@ -912,12 +937,25 @@ def compare_rg(sample, GNN_ID):
         max_ent_rgs[i] = calculate_rg(xyz_max_ent_size)
         gnn_rgs[i] = calculate_rg(xyz_gnn_size)
 
-    plt.errorbar(sizes, ref_rgs[:, 0], ref_rgs[:, 1], color = 'k', label = 'Experiment')
-    plt.errorbar(sizes, max_ent_rgs[:, 0], max_ent_rgs[:, 1], color = 'b', label = 'Max Ent')
-    plt.errorbar(sizes, gnn_rgs[:, 0], gnn_rgs[:, 1], color = 'r', label = 'GNN')
+
+    print(ref_rgs[:, 0])
+    plt.errorbar(log_labels, ref_rgs[:, 0], ref_rgs[:, 1], color = 'k', label = 'Experiment')
+    plt.errorbar(log_labels, max_ent_rgs[:, 0], max_ent_rgs[:, 1], color = 'b', label = 'Max Ent')
+    plt.errorbar(log_labels, gnn_rgs[:, 0], gnn_rgs[:, 1], color = 'r', label = 'GNN')
+
+    X = np.linspace(log_labels[0], log_labels[-1], 100)
+    Y = np.power(X, 1/4)
+    Y = Y * ref_rgs[0, 0] / np.min(Y)
+    plt.plot(X, Y, label = '1/4', ls='dashed', color = 'gray')
+    Y = np.power(X, 1/3)
+    Y = Y * ref_rgs[0, 0] / np.min(Y)
+    plt.plot(X, Y, label = '1/3', ls='dotted', color = 'gray')
+
     plt.ylabel('Radius of Gyration', fontsize=16)
-    plt.xlabel('Domain Size (beads)', fontsize=16)
+    plt.xlabel('Domain Size (bp)', fontsize=16)
     plt.legend(fontsize=16)
+    plt.xscale('log')
+    plt.yscale('log')
     plt.tight_layout()
     plt.savefig(osp.join(dir, 'rg_comparison.png'))
 
@@ -963,7 +1001,7 @@ def compare_dist_distribution_plaid(sample, GNN_ID, b=140, phi=0.03):
 
     file = osp.join(final_dir, 'production_out/output.xyz')
     xyz_max_ent = xyz_load(file, multiple_timesteps = True)
-    D_max_ent = xyz_to_distance(xyz_max_ent, False)
+    D_pca = xyz_to_distance(xyz_max_ent, False)
 
 
     if gnn_dir is not None:
@@ -1029,22 +1067,12 @@ def compare_diagonal(sample, GNN_ID=None):
 
     plot_diagonal(D_no_nan, D_pca[~nan_rows][:, ~nan_rows], osp.join(dir, 'diagonal.png'))
 
-def figure(sample, GNN_ID, b=140, phi=0.03):
-    label_fontsize=18
-    legend_fontsize=16
-    tick_fontsize=13
-    letter_fontsize=20
+def compare_dist_ij(sample, GNN_ID=None, b=140, phi=0.03):
     dir = f'/home/erschultz/Su2020/samples/sample{sample}'
     D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=b, phi=phi)
     nan_rows = np.isnan(D[0])
     D_no_nan = D[~nan_rows][:, ~nan_rows] # ignore nan_rows
-
-    # compare PCs
-    smooth = True; h = 1
-    V_D = get_pcs(D, nan_rows, False, smooth, h)
-    V_D_pca = get_pcs(D_pca, nan_rows, smooth=smooth, h = h)
-    V_D_gnn = get_pcs(D_gnn, nan_rows, smooth=smooth, h = h)
-
+    D_pca_no_nan = D_pca[~nan_rows][:, ~nan_rows]
 
     result = load_import_log(dir)
     start = result['start']
@@ -1059,6 +1087,41 @@ def figure(sample, GNN_ID, b=140, phi=0.03):
     all_labels = np.round(all_labels, 1)
     genome_ticks = [0, m-1]
     genome_labels = [f'{all_labels[i]} Mb' for i in genome_ticks]
+
+    print(D)
+    D_flat = D_no_nan.flatten()
+    print(D_flat)
+    plt.scatter(D_no_nan.flatten(), D_pca_no_nan.flatten())
+    plt.axline((0,0), slope=1, color = 'k')
+    plt.xlabel(r'$D_{ij}$', fontsize=16)
+    plt.ylabel(r'$D^{PCA}_{ij}$', fontsize=16)
+    plt.tight_layout()
+    plt.show()
+
+def figure(sample, GNN_ID, b=140, phi=0.03):
+    label_fontsize=18
+    legend_fontsize=16
+    tick_fontsize=13
+    letter_fontsize=20
+    dir = f'/home/erschultz/Su2020/samples/sample{sample}'
+    D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=b, phi=phi)
+    nan_rows = np.isnan(D[0])
+    D_no_nan = D[~nan_rows][:, ~nan_rows] # ignore nan_rows
+
+    # compare PCs
+    smooth = False; h = 1
+    V_D = get_pcs(D, nan_rows, smooth=smooth, h = h)
+    V_D_pca = get_pcs(D_pca, nan_rows, smooth=smooth, h = h)
+    V_D_gnn = get_pcs(D_gnn, nan_rows, smooth=smooth, h = h)
+
+
+    result = load_import_log(dir)
+    start = result['start']
+    end = result['end']
+    start_mb = result['start_mb']
+    end_mb = result['end_mb']
+    chrom = int(result['chrom'])
+    resolution = result['resolution']
 
     # distance distribution
     if chrom == 21:
@@ -1095,10 +1158,16 @@ def figure(sample, GNN_ID, b=140, phi=0.03):
     else:
         dist_gnn = None
 
+    m = len(D[~nan_rows][:, ~nan_rows])
+    all_labels = np.linspace(start_mb, end_mb, m)
+    all_labels = np.round(all_labels, 1)
+    genome_ticks = [0, m-1]
+    genome_labels = [f'{all_labels[i]} Mb' for i in genome_ticks]
+
     ### combined figure ###
     print('---'*9)
     print('Starting Figure')
-    plt.figure(figsize=(18, 12))
+    plt.figure(figsize=(20, 12))
     ax1 = plt.subplot(2, 24, (1, 6))
     ax2 = plt.subplot(2, 24, (8, 13))
     ax_cb = plt.subplot(2, 48, 29)
@@ -1180,8 +1249,10 @@ def figure(sample, GNN_ID, b=140, phi=0.03):
     # plot pcs
     ax4.plot(V_D[0], label = 'Experiment', color = 'k')
     if V_D_pca is not None:
+        V_D_pca[0] *= np.sign(pearson_round(V_D[0], V_D_pca[0]))
         ax4.plot(V_D_pca[0], label = f'Max Ent (r={pearson_round(V_D[0], V_D_pca[0])})', color = 'blue')
     if V_D_gnn is not None:
+        V_D_gnn[0] *= np.sign(pearson_round(V_D[0], V_D_gnn[0]))
         ax4.plot(V_D_gnn[0], label = f'GNN (r={pearson_round(V_D[0], V_D_gnn[0])})', color = 'red')
     ax4.set_ylabel('PC 1', fontsize=label_fontsize)
     ax4.tick_params(axis='both', which='major', labelsize=tick_fontsize)
@@ -1230,7 +1301,8 @@ if __name__ == '__main__':
     # compare_pcs(1013)
     # compare_d_maps(1003, None)
     # compare_dist_distribution_a_b()
-    # compare_dist_distribution_plaid(1003, None, 261, 0.01)
-    # compare_rg()
-    # compare_scaling(1003, None, 261, 0.01)
-    figure(1013, 419, b=261, phi=0.01)
+    # compare_dist_distribution_plaid(1013, None, 261, 0.01)
+    # compare_rg(1014, 423, b=261, phi=0.01)
+    # compare_scaling(1013, 419, 261, 0.01)
+    figure(1004, 419, b=261, phi=0.01)
+    # compare_dist_ij(1014, 423, b=261, phi=0.01)

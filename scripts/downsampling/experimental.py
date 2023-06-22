@@ -40,7 +40,7 @@ def make_samples():
         exp_dir = f'/home/erschultz/{EXP_DATASET}/samples_10k/sample{s_exp-200}'
         y = np.triu(np.load(osp.join(exp_dir, 'y.npy')))
         tot_count = np.sum(y)
-        print(f'Total Read Count: {tot_count}')
+        print(f'Total Read Depth: {tot_count}')
         tot_count_list.append(tot_count)
         #
         # for exponent in exponents:
@@ -59,9 +59,14 @@ def make_samples():
         #     np.save(osp.join(odir, 'y.npy'), y_i)
         #     plot_matrix(y_i, osp.join(odir, 'y.png'), vmax = 'mean')
     tot_count_mean = np.mean(tot_count_list)
-    print(f'Mean Total Read Count: {tot_count_mean}')
+    print(f'Mean Total Read Depth: {tot_count_mean}')
 
 def figure():
+    label_fontsize=18
+    legend_fontsize=16
+    tick_fontsize=13
+    letter_fontsize=20
+
     samples = np.arange(201, 211)
     N = len(samples)
     exponents = np.arange(4, 9)
@@ -156,12 +161,12 @@ def figure():
         # else:
         s = sns.heatmap(composite, linewidth = 0, vmin = 0, vmax = vmax, cmap = RED_CMAP,
                         ax = axes[i], cbar = False)
-        s.set_title(f'Read Count = 10^{exp}\nSCC={scc}', fontsize = 16)
-        s.set_xticks(genome_ticks, labels = genome_labels, rotation = 0)
-        s.set_yticks(genome_ticks, labels = genome_labels, rotation = 0)
+        s.set_title(f'Read Depth = $10^{{{exp}}}$\nSCC={scc}', fontsize = 16)
+        s.set_xticks(genome_ticks, labels = genome_labels, rotation = 0, fontsize = tick_fontsize)
+        s.set_yticks(genome_ticks, labels = genome_labels, rotation = 0, fontsize = tick_fontsize)
         axes[i].axline((0,0), slope=1, color = 'k', lw=1)
-        axes[i].text(0.99*m, 0.01*m, 'GNN', fontsize=16, ha='right', va='top')
-        axes[i].text(0.01*m, 0.99*m, 'Reference', fontsize=16)
+        axes[i].text(0.99*m, 0.01*m, 'GNN', fontsize=letter_fontsize, ha='right', va='top', weight='bold')
+        axes[i].text(0.01*m, 0.99*m, 'Reference', fontsize=letter_fontsize, weight='bold')
 
         if i > 0:
             s.set_yticks([])
@@ -176,10 +181,12 @@ def figure():
     axes[-1].plot(read_counts, gnn_mean, label='GNN', color='red')
     axes[-1].fill_between(read_counts, gnn_mean - gnn_std, gnn_mean + gnn_std, color='red', alpha=0.5)
 
-    axes[-1].set_xlabel('Read Count', fontsize=16)
+    axes[-1].set_xlabel('Read Depth', fontsize=label_fontsize)
     axes[-1].set_xscale('log')
-    axes[-1].set_ylabel('SCC', fontsize=16)
-    axes[-1].legend()
+    axes[-1].set_ylabel('SCC', fontsize=label_fontsize)
+    axes[-1].tick_params(axis='both', which='major', labelsize=tick_fontsize)
+
+    axes[-1].legend(fontsize=legend_fontsize)
 
     for n, ax in enumerate([axes[0], axes[-1]]):
         ax.text(-0.1, 1.1, string.ascii_uppercase[n], transform=ax.transAxes,

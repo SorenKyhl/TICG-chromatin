@@ -1619,7 +1619,6 @@ class GetEnergy():
 
         if verbose:
             print(data)
-            print(f'data first node: {data.x[0]}')
         data = data.to(opt.device)
         yhat = model(data)
         yhat = yhat.cpu().detach().numpy().reshape((opt.m,opt.m))

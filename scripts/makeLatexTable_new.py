@@ -4,21 +4,25 @@ import os
 import os.path as osp
 import re
 import sys
+import time
 from collections import defaultdict
 
 import matplotlib.pyplot as plt
 import numpy as np
 from compare_contact import plotDistanceStratifiedPearsonCorrelation
+from pylib.utils import epilib
+from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
+from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
+                                      calculate_L, calculate_S)
+from pylib.utils.similarity_measures import SCC
+from scipy.stats import pearsonr
 from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
-from sequences_to_contact_maps.scripts.energy_utils import (
-    calculate_D, calculate_diag_chi_step, calculate_L, calculate_S)
 from sequences_to_contact_maps.scripts.load_utils import (
     get_final_max_ent_folder, load_L, load_max_ent_chi, load_psi, load_Y)
-from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
-                                                     load_time_dir,
+from sequences_to_contact_maps.scripts.utils import (load_time_dir, print_time,
                                                      triu_to_full)
 
 
@@ -40,6 +44,8 @@ def getArgs(data_folder = None, sample = None, samples = None):
                         help='key to define convergence {strict, normal, param} ("all" for all 3) (None to skip)')
     parser.add_argument('--convergence_mask', action='store_true',
                         help="True to mask samples for which max ent didn't converge")
+    parser.add_argument('--gnn_id', type=AC.str2int,
+                        help="only consider given gnn_id")
 
     args = parser.parse_args()
 
@@ -69,7 +75,7 @@ def nested_list_to_array(nested_list):
 
     return np.array(nested_list, dtype=float)
 
-def loadData(args):
+def load_data(args):
     '''
     Loads data from args.data_folder for each sample <i> in args.samples.
 
@@ -99,6 +105,7 @@ def loadData(args):
             ground_truth_S = calculate_S(L, D)
         ground_truth_y, ground_truth_ydiag = load_Y(sample_folder)
         ground_truth_meanDist = DiagonalPreprocessing.genomic_distance_statistics(ground_truth_y, 'prob')
+        ground_truth_pcs = epilib.get_pcs(ground_truth_ydiag, 12, align = True).T
 
         for fname in os.listdir(sample_folder):
             temp_dict = defaultdict(lambda: np.NaN)
@@ -112,16 +119,23 @@ def loadData(args):
                 continue
             if '0.006' in fname or '0.06' in fname:
                 continue
-            print(fname)
+            # if '261' in fname:
+                # continue
+
             method = fname
             method_type = fname.split('-')[1]
             if method_type.startswith('GNN'):
+                GNN_ID = int(fname[-3:])
+                if args.gnn_id is not None and GNN_ID != args.gnn_id:
+                    continue
+                print(fname)
                 k = 0
                 converged_it = None
                 converged_path = fpath
                 S = np.load(osp.join(fpath, 'S.npy'))
                 times = [load_time_dir(fpath)]
             elif method_type.startswith('max_ent'):
+                print(fname)
                 k = len(triu_to_full(np.loadtxt(osp.join(fpath, 'chis.txt'))))
 
                 # convergence
@@ -204,7 +218,7 @@ def loadData(args):
 
             # time
             if converged_it is None:
-                converge_time = None
+                converge_time = np.sum(times) / 60
             else:
                 converge_time = np.sum(times[:converged_it])
                 converge_time /= 60 # to minutes
@@ -219,19 +233,21 @@ def loadData(args):
                     yhat = np.load(y_file)
                 else:
                     yhat = np.loadtxt(osp.join(converged_path, 'production_out/contacts.txt'))
-                meanDist = DiagonalPreprocessing.genomic_distance_statistics(yhat)
-                yhat_diag = DiagonalPreprocessing.process(yhat, meanDist, verbose = False)
-                result = plotDistanceStratifiedPearsonCorrelation(ground_truth_y,
-                                yhat, ground_truth_ydiag, yhat_diag, converged_path)
-                overall_corr, corr_scc, corr_scc_var, avg_diag = result
-                temp_dict['overall_pearson'] = overall_corr
-                temp_dict['scc'] = corr_scc
+                yhat_meanDist = DiagonalPreprocessing.genomic_distance_statistics(yhat)
+                yhat_diag = DiagonalPreprocessing.process(yhat, yhat_meanDist, verbose = False)
+                scc = SCC()
+                corr_scc_var = scc.scc(ground_truth_ydiag, yhat_diag, var_stabilized = True)
+                print(corr_scc_var)
+                # result = plotDistanceStratifiedPearsonCorrelation(ground_truth_y,
+                                # yhat, converged_path)
+                # overall_corr, corr_scc, corr_scc_var, avg_diag = result
+                # temp_dict['overall_pearson'] = overall_corr
+                # temp_dict['scc'] = corr_scc
                 temp_dict['scc_var'] = corr_scc_var
-                temp_dict['avg_dist_pearson'] = avg_diag
+                # temp_dict['avg_dist_pearson'] = avg_diag
 
                 # rmse-diag
-                meanDist = DiagonalPreprocessing.genomic_distance_statistics(yhat, 'prob')
-                rmse_diag = mean_squared_error(ground_truth_meanDist, meanDist, squared = False)
+                rmse_diag = mean_squared_error(ground_truth_meanDist, yhat_meanDist, squared = False)
                 temp_dict['rmse-diag'] = rmse_diag
 
 
@@ -240,11 +256,19 @@ def loadData(args):
                 temp_dict['rmse-S'] = rmse_S
 
             rmse_y = None
+            pearson_pc_1 = None
             if yhat is not None:
                 # normalize yhat
                 yhat = yhat.astype(np.float64) / np.mean(np.diagonal(yhat))
                 rmse_y = mean_squared_error(ground_truth_y, yhat, squared = False)
                 temp_dict['rmse-y'] = rmse_y
+
+                pcs = epilib.get_pcs(yhat_diag, 12, align = True).T
+                pearson_pc_1, _ = pearsonr(pcs[0], ground_truth_pcs[0])
+                pearson_pc_1 *= np.sign(pearson_pc_1) # ensure positive pearson
+                assert pearson_pc_1 > 0
+                temp_dict['pearson_pc_1'] = pearson_pc_1
+
 
             # append temp_dict to data
             data[k][method]['overall_pearson'].append(temp_dict['overall_pearson'])
@@ -253,6 +277,7 @@ def loadData(args):
             data[k][method]['avg_dist_pearson'].append(temp_dict['avg_dist_pearson'])
             data[k][method]['rmse-S'].append(temp_dict['rmse-S'])
             data[k][method]['rmse-y'].append(temp_dict['rmse-y'])
+            data[k][method]['pearson_pc_1'].append(temp_dict['pearson_pc_1'])
             data[k][method]['rmse-diag'].append(temp_dict['rmse-diag'])
             data[k][method]['converged_time'].append(temp_dict['converged_time'])
             data[k][method]['total_time'].append(temp_dict['total_time'])
@@ -269,7 +294,7 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
     Writes data to ofile in latex table format.
 
     Inputs:
-        data: dictionary containing data from loadData
+        data: dictionary containing data from load_data
         ofile: location to write data
         small: True to output smaller table with fewer metrics')
         mode: file mode (e.g. 'w', 'a')
@@ -277,13 +302,14 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
         experimental: True if ground_truth won't be present
         na_mask: mask for sample_results, True to set to nan
     '''
+
     metric_labels = {'scc':'SCC', 'scc_var':'SCC var',
-                    'rmse-S':'RMSE-Energy', 'rmse-y':'RMSE-Y',
+                    'rmse-S':'RMSE-Energy', 'rmse-y':'RMSE-Y', 'pearson_pc_1':'Corr PC 1',
                     'rmse-diag':'RMSE-P(s)', 'avg_dist_pearson':'SCC mean',
                     'total_time':'Total Time', 'converged_it':'Converged It.',
                     'converged_time':'Converged Time'}
     if small:
-        metrics = ['scc', 'scc_var', 'avg_dist_pearson', 'rmse-S', 'rmse-diag', 'rmse-y']
+        metrics = ['scc_var', 'rmse-diag', 'pearson_pc_1', 'converged_time']
     else:
         metrics = ['converged_it', 'converged_time', 'total_time']
 
@@ -395,6 +421,7 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
 
                     if len(result) > 1:
                         result_mean = np.nanmean(result)
+                        print(metric, result, result_mean)
                         if result_mean is not None:
                             result_mean = np.round(result_mean, roundoff)
                         result_std = np.round(np.nanstd(result), roundoff)
@@ -488,8 +515,9 @@ def boxplot(data, ofile):
 
 
 
-def main(data_folder=None, sample=None):
-    args = getArgs(data_folder = data_folder, sample = sample)
+def main(args=None):
+    if args is None:
+        args = getArgs()
     assert args.sample is None or args.samples is None
     print('-'*100, '\n', args)
 
@@ -507,6 +535,8 @@ def main(data_folder=None, sample=None):
 
     if args.convergence_definition == 'all':
         convergence_def_list = ['normal', 'strict', None]
+    elif args.convergence_definition == 'both':
+        convergence_def_list = ['normal', None]
     else:
         convergence_def_list = [args.convergence_definition]
 
@@ -514,7 +544,10 @@ def main(data_folder=None, sample=None):
     for defn in convergence_def_list:
         args.convergence_definition = defn
         temp_label = label + f' {defn} convergence'
-        data, converged_mask = loadData(args)
+        data, converged_mask = load_data(args)
+        with open(osp.join(odir, f'data_{defn}_convergence.json'), 'w') as f:
+            json.dump(data, f)
+
         print('Data loaded')
         not_converged_mask = np.logical_not(converged_mask) # now 1 if not converged
         if not args.convergence_mask:
@@ -537,12 +570,17 @@ def main(data_folder=None, sample=None):
 
 
 if __name__ == '__main__':
-    main()
-    # data_dir = '/home/erschultz/dataset_02_04_23'
-    # samples = range(201, 211)
-    # samples = [201, 202, 203, 204, 205, 206]
-    # args = getArgs(data_folder = data_dir, samples = samples)
-    # args.experimental = True
-    # args.convergence_definition = 'normal'
-    # data, converged_mask = loadData(args)
+    # main()
+    # dataset = 'dataset_04_05_23'
+    # samples = range(1001, 1011)
+    # samples = [1001, 1039, 1065, 1093, 1122, 1137, 1166, 1185]
+    # samples = [1213, 1214, 1248, 1249, 1285, 1286]
+    dataset = 'dataset_02_04_23'; samples = list(range(201, 211))
+    data_dir = osp.join('/home/erschultz', dataset)
+    args = getArgs(data_folder = data_dir, samples = samples)
+    args.experimental = True
+    args.convergence_definition = 'both'
+    # args.gnn_id=419
+    main(args)
+    # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

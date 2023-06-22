@@ -26,7 +26,7 @@ compress(){
 
     wait
 
-    cd data_out
+    cd production_out
     rm *.traj
   done
 
@@ -75,11 +75,4 @@ dir='/home/erschultz'
 
 dir='/project2/depablo/erschultz'
 cd $dir
-compress dataset_02_01_23
-compress dataset_03_01_23
-compress dataset_03_03_23
-compress dataset_03_21_23_max_ent
-compress dataset_03_22_23
-compress dataset_03_23_23
-compress dataset_03_29_23
-rm -r dataset_03_21_23
+compress dataset_05_15_23
