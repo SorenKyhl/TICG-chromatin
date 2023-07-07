@@ -6,7 +6,7 @@ double Cell::beadvol;
 int Cell::ntypes;
 int Cell::diag_nbins;
 int Cell::diag_binsize;
-bool Cell::diagonal_linear;
+bool Cell::diagonal_linear; //TODO this is deprecated
 double Cell::phi_solvent_max;
 double Cell::phi_chromatin;
 double Cell::kappa;

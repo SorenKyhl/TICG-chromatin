@@ -475,8 +475,15 @@ void Sim::readInput() {
     } else {
       contact_bead_skipping = false;
     }
+
     assert(config.contains("boundary_type"));
     boundary_type = config["boundary_type"];
+
+	if (boundary_type == "spheroid")
+	{
+		assert(config.contains("aspect_ratio"));
+		grid.aspect_ratio = config["aspect_ratio"];
+	}
 
     if (config.contains("angles_on")){
       angles_on = config["angles_on"];
@@ -592,7 +599,10 @@ bool Sim::outside_boundary(Eigen::RowVector3d r) {
         is_out = (r.minCoeff() < 0 || r.maxCoeff() > grid.side_length);
     } else if (grid.spherical_boundary) {
         is_out = (r - grid.sphere_center).norm() > grid.radius;
-    }
+    } else if (grid.spheroid_boundary) {
+		auto p = r - grid.sphere_center;
+		is_out = ((p[0]*p[0] + p[1]*p[1])/std::pow(grid.equitorial_radius,2) + p[2]*p[2]/std::pow(grid.polar_radius,2)) > 1;
+	}
 
     return is_out;
 }
@@ -660,19 +670,27 @@ void Sim::volParameters_new() {
     if (boundary_type == "cube" || boundary_type == "cubic") {
         grid.cubic_boundary = true;
         grid.spherical_boundary = false;
+		grid.spheroid_boundary = false;
     }
 
     if (boundary_type == "sphere" || boundary_type == "spherical") {
-        grid.spherical_boundary = true;
         grid.cubic_boundary = false;
+        grid.spherical_boundary = true;
+		grid.spheroid_boundary = false;
     }
+
+	if (boundary_type == "spheroid")
+	{
+        grid.cubic_boundary = false;
+		grid.spherical_boundary = false;
+		grid.spheroid_boundary = true;
+	}
 
     if (grid.cubic_boundary) {
         std::cout << "cubic boundary" << std::endl;
         grid.side_length = std::pow(vol, 1.0 / 3.0);
 
-        grid.L =
-            std::ceil(grid.side_length /
+        grid.L = std::ceil(grid.side_length /
                       grid.delta); // number of grid cells per side // ROUNDED,
                                    // won't exactly equal a desired volume frac
 
@@ -685,9 +703,7 @@ void Sim::volParameters_new() {
                   << nbeads * Cell::beadvol /
                          (total_volume * 1000 * 1000 * 1000)
                   << std::endl;
-    }
-
-    if (grid.spherical_boundary) {
+    } else if (grid.spherical_boundary) {
         std::cout << "spherical boundary" << std::endl;
         // float total_volume = 3*vol/(4*M_PI);
         total_volume = vol;
@@ -702,7 +718,23 @@ void Sim::volParameters_new() {
                   << total_volume / 1000 / 1000 / 1000 << " um^3" << std::endl;
         // std::cout << "sphere_center is : " << grid.sphere_center[0] << " nm "
         // << std::endl;
-    }
+    } else if (grid.spheroid_boundary) {
+        std::cout << "spheroid boundary" << std::endl;
+
+        total_volume = vol;
+        grid.equitorial_radius = std::pow(3 * vol / (4 * M_PI * grid.aspect_ratio), 1.0/3.0);
+		grid.polar_radius = grid.equitorial_radius * grid.aspect_ratio;
+
+		std::cout << "equitorial radius: " << grid.equitorial_radius << " polar radius: " << grid.polar_radius << std::endl;
+
+		double larger_radius = std::max(grid.equitorial_radius, grid.polar_radius);
+		grid.L = std::ceil( 2 * larger_radius / grid.delta );
+		grid.sphere_center = {larger_radius, larger_radius, larger_radius};
+
+        std::cout << "grid.L is: " << grid.L << std::endl;
+        std::cout << "simulation volume is: "
+                  << total_volume / 1000 / 1000 / 1000 << " um^3" << std::endl;
+	}
 }
 
 // calculate all derived physical parameters relevant to simulation
@@ -802,16 +834,17 @@ void Sim::generateRandomCoil(double bondlength) {
     if (grid.cubic_boundary) {
         std::cout << " cubic centering" << std::endl;
         center = grid.delta * grid.L / 2;
+		beads[0].r = {center, center, center}; // start in middlle of the box
     } else if (grid.spherical_boundary) {
         std::cout << " sphere centering" << std::endl;
-        std::cout << "  assigning center" << std::endl;
-        center = grid.sphere_center[0];
-        std::cout << "  center is " << center << std::endl;
+		beads[0].r = grid.sphere_center; // start in middlle of the box
+	} else if (grid.spheroid_boundary) {
+        std::cout << " spheroid centering centering" << std::endl;
+		beads[0].r = grid.sphere_center; // start in middlle of the box
     } else {
         std::cout << " did not center" << std::endl;
     }
 
-    beads[0].r = {center, center, center}; // start in middlle of the box
     beads[0].u = unit_vec(beads[0].u);
     beads[0].id = 0;
 

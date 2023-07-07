@@ -8,6 +8,15 @@ bool Grid::parallel;
 bool Grid::cell_volumes;
 
 void Grid::generate() {
+	/*
+	 * The grid origin and coordinate origin are not the same thing.
+	 * The coordinate origin is fixed at {0,0,0}
+	 * The grid origin moves in a periodic box defined by the corners:
+	 * {-delta, -delta, -delta} and {0,0,0}, 
+	 * and is initialized in the center of this box. 
+	 * The grid origin is moved during the course of the simulation in
+	 * order to remove artifacts of the discrete grid (see: Sim::MCmove_grid)
+	 */
 
     origin = {-delta / 2.0, -delta / 2.0, -delta / 2.0};
 
@@ -56,6 +65,21 @@ void Grid::setActiveCells() {
                     Eigen::RowVector3d difference = cell_corner - sphere_center;
 
                     if (difference.norm() < radius + 2 * sqrt(3) * delta) {
+                        active_cells.insert(&cells[i][j][k]);
+                    }
+                } else if (spheroid_boundary) {
+					// this is an inefficient implementation: use the 
+					// same criterion as the spherical boundary, with 
+					// the largest axis acting as the radius.
+					// the further the aspect ratio is from 1, the more inefficient.
+                    Eigen::RowVector3d cell_corner;
+                    cell_corner(0) = i * delta;
+                    cell_corner(1) = j * delta;
+                    cell_corner(2) = k * delta;
+
+                    Eigen::RowVector3d difference = cell_corner - sphere_center;
+
+                    if (difference.norm() < std::max(equitorial_radius, polar_radius) + 2 * sqrt(3) * delta) {
                         active_cells.insert(&cells[i][j][k]);
                     }
                 }

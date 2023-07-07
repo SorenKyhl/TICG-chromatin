@@ -19,11 +19,15 @@ public:
 	double side_length;           // size of cubic boundary in units of nm
 	double radius;                // radius of simulation volume in [nanometers]
 	int boundary_radius;          // radius of boundary in units of grid cells
-	Eigen::RowVector3d sphere_center; // center of spherical boundary
+	double equitorial_radius;     // radius of spheroidal boundary 
+	double polar_radius;          // radius of spheroidal boundary
+	double aspect_ratio;          // aspect ratio of spheroidal boundary
+	Eigen::RowVector3d sphere_center; // fixed: center of spherical (or spheroidal) boundary
 	static bool parallel;
 	static bool cell_volumes;
 	bool cubic_boundary;
 	bool spherical_boundary;
+	bool spheroid_boundary;
 
 	// origin is the bottom-left-most grid cell for cubic simulations
 	// With grid moves on, it will diffuse with periodic boundaries
