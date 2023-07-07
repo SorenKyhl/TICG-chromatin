@@ -2,6 +2,7 @@ import copy
 import os
 import pickle
 import shutil
+import logging
 from pathlib import Path
 from typing import Optional, Union
 
@@ -37,7 +38,9 @@ class Maxent:
         initial_chis: Optional[bool] = None,
         dampen_first_step: bool = True,
         final_it_sweeps: int = 0,
-        plaid_diagonly: bool = False
+        plaid_diagonly: bool = False,
+        norm: bool = False,
+        fast_analysis: bool = False
     ):
         """
         root: root of maxent filesystem

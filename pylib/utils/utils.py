@@ -161,15 +161,22 @@ def plot_image(x, dark=False):
 
 
 
-def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method):
+def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method,norm=False):
     """newton's method"""
     obj_goal = np.array(obj_goal)
     lam = np.array(lam)
+
+    if norm:
+        obj_goal /= obj_goal
+        lam /= obj_goal
+        B /= np.outer(obj_goal, obj_goal)
 
     difference = obj_goal - lam  # pyright: ignore
     Binv = np.linalg.pinv(B)
     if method == "n":
         step = Binv @ difference
+        if norm:
+            step /= obj_goal
     elif method == "g":
         step = difference
     elif method == "n_new":

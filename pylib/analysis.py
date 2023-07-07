@@ -1,9 +1,10 @@
 import csv
 import json
 import logging
-
 import matplotlib.pyplot as plt
 import numpy as np
+from codetiming import Timer
+
 import pylib.utils.epilib as ep
 import pylib.utils.utils as utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
@@ -14,10 +15,15 @@ from pylib.utils.similarity_measures import SCC
 from scipy.stats import pearsonr
 from sklearn.decomposition import PCA
 
+import matplotlib
+matplotlib.use('Agg')
 plt.rcParams["figure.figsize"] = [8, 6]
 plt.rcParams.update({"font.size": 18})
 
-def sim_analysis(sim):
+
+
+#@Timer("sim analysis took {:.2f} seconds", logger=logging.info)
+def sim_analysis(sim, fast_analysis):
     """analyze data from simulation only (doesn't require ground truth hic)"""
     error = sim.plot_consistency()
     if error > 0.01:
@@ -31,7 +37,9 @@ def sim_analysis(sim):
     plt.savefig("energy.png")
     plt.close()
 
+    plt.figure()
     sim.plot_obs(diag=False)
+    plt.close()
 
     if sim.config['diagonal_on']:
         plt.figure()
@@ -45,19 +53,18 @@ def sim_analysis(sim):
         plt.savefig("chis.png")
         plt.close()
 
-        plt.figure()
-        plot_chi_matrix(sim)
-        plt.close()
-
-        try:
-            plot_energy_matrices(sim)
-        except ValueError:
-            if sim.config["contact_resolution"] > 1:
-                logging.warn("energy matrices could not be created because contact map has been pooled (contact map resolution > 1)")
-            else:
-                raise ValueError
-        except NotImplementedError:
-            logging.warn("energy matrices not implemented for this situation")
+        if fast_analysis is False:
+            try:
+                # don't run if the matrices are big
+                if sim.config["nbeads"] <= 2048:
+                    plot_energy_matrices(sim, save=True)
+            except ValueError:
+                if sim.config["contact_resolution"] > 1:
+                    logging.warn("energy matrices could not be created because contact map has been pooled (contact map resolution > 1)")
+                else:
+                    raise ValueError
+            except NotImplementedError:
+                logging.warn("energy matrices not implemented for this situation")
 
     plt.figure()
     sim.plot_oe()
@@ -74,18 +81,20 @@ def sim_analysis(sim):
     plt.savefig("diagonal-log.png")
     plt.close()
 
-    plot_mean_vs_genomic_distance(sim.hic, '', 'meanDist_log.png', logx = True, ref = sim.gthic)
+    if fast_analysis is False:
+        plot_mean_vs_genomic_distance(sim.hic, '', 'meanDist_log.png', logx = True, ref = sim.gthic)
 
 
-def compare_analysis(sim):
+def compare_analysis(sim, fast_analysis):
     """analyze comparison of simulation with ground truth contact map"""
 
-    ep.eric_plot_tri(sim.hic, sim.gthic, "tri.png")
-    ep.eric_plot_tri(sim.hic, sim.gthic, "tri_log.png", log = True)
-    ep.eric_plot_tri(sim.hic, sim.gthic, "tri_dark.png", np.mean(sim.gthic)/2)
+    if fast_analysis is False:
+        ep.eric_plot_tri(sim.hic, sim.gthic, "tri.png")
+        ep.eric_plot_tri(sim.hic, sim.gthic, "tri_log.png", log = True)
+        ep.eric_plot_tri(sim.hic, sim.gthic, "tri_dark.png", np.mean(sim.gthic)/2)
 
-    plot_dist_stratified_pearson_r(sim.hic, sim.gthic)
-    compare_top_PCs(sim.hic, sim.gthic)
+        plot_dist_stratified_pearson_r(sim.hic, sim.gthic)
+        compare_top_PCs(sim.hic, sim.gthic)
 
     plt.figure()
     ep.plot_tri(sim.hic, sim.gthic, oe=True)
@@ -163,24 +172,23 @@ def maxent_analysis(sim):
     plt.figure()
     sim.plot_obs_vs_goal()
     plt.savefig("obs_vs_goal.png")
+    plt.close()
 
 
-def plot_chi_matrix(sim):
-    utils.plot_image(np.array(sim.config["chis"]))
-
-
-def plot_energy_matrices(sim):
+def plot_energy_matrices(sim, save=True):
     # energy matrices
     L, D, S = calculate_all_energy(
         sim.config, sim.seqs, np.array(sim.config["chis"])
     )
+
     plot_matrix(L, 'matrix_L.png', "L", cmap='bluered')
     plot_matrix(D, 'matrix_D.png', "D")
     plot_matrix(S, 'matrix_S.png', "S", cmap='bluered')
 
-    np.save('S.npy', S)
-    np.save('D.npy', D)
-    np.save('L.npy', L)
+    if save:
+        np.save('S.npy', S)
+        np.save('D.npy', D)
+        np.save('L.npy', L)
 
 def compare_top_PCs(y, yhat):
     # y
@@ -332,16 +340,16 @@ def main_no_maxent():
     compare_analysis(sim)
     logging.info("compare analysis done")
 
-def main():
+def main(fast_analysis = False):
     sim = ep.Sim("production_out")
     logging.info("sim created")
-    sim_analysis(sim)
+    sim_analysis(sim, fast_analysis)
     logging.info("sim analysis done")
-    compare_analysis(sim)
+    compare_analysis(sim, fast_analysis)
     logging.info("compare analysis done")
     maxent_analysis(sim)
     logging.info("maxent analysis done")
-
+    plt.close('all')
 
 if __name__ == "__main__":
     main()
