@@ -9,6 +9,16 @@ module for running ideal chain simulations
 """
 
 
+def ideal_chain_factory(config, root=None):
+    config["nonbonded_on"] = False
+    config["load_bead_types"] = False
+    nbeads = config["nbeads"]
+    if root is None:
+        root = f"ideal-chain-{nbeads}"
+    sim = Pysim(root, config=config, seqs=None)
+    return sim
+
+
 def ideal_chain_simulation(nbeads: int, grid_bond_ratio: Optional[float] = None, base="gaussian-20k"):
     """return simulation object with only bonded interactions
 
