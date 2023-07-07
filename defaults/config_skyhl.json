@@ -5,7 +5,7 @@
   "k_angle": 0,
   "cell_volumes": false,
   "compressibility_on": false,
-  "kappa": 20,
+  "kappa": 0,
   "parallel": false,
   "boundary_type": "sphere",
   "contact_bead_skipping": false,
@@ -25,14 +25,14 @@
   "constant_chi": 0,
   "constant_chi_on": false,
 
-  "lmatrix_on": true,
-  "smatrix_on": true,
-  "dmatrix_on": true,
+  "lmatrix_on": false,
+  "smatrix_on": false,
+  "dmatrix_on": false,
 
   "decay_length": 500,
   "nSweeps": 50000,
   "dump_frequency": 50000,
-  "dump_stats_frequency": 100,
+  "dump_stats_frequency": 10,
   "nEquilibSweeps": 1,
 
   "bonded_on": true,
@@ -59,10 +59,10 @@
   "diag_start": 0,
   "dense_diagonal_on": true,
   "diag_pseudobeads_on": true,
-  "dense_diagonal_cutoff": 0.0625,
-  "dense_diagonal_loading": 0.5,
+  "dense_diagonal_cutoff": 0.03125,
+  "dense_diagonal_loading": 0.6666667,
   "diagonal_linear": true,
-  "diag_chis": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+  "diag_chis":[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ], 
 
   "load_configuration": false,
   "load_configuration_filename": "equilibrated.xyz",
@@ -79,3 +79,4 @@
     [0.0, 0.0, 0.0, 0.0, 0.0]
   ]
 }
+
