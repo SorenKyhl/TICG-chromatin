@@ -2,7 +2,7 @@ from os import PathLike
 
 import numpy as np
 
-from pylib import utils
+from pylib.utils import utils
 
 
 class Config:
