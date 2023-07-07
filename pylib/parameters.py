@@ -88,6 +88,13 @@ def get_config(
         config["bond_length"] = baseb * factor
         config["beadvol"] = basev * baseN / nbeads
         config["diag_cutoff"] = nbeads
+    elif scale == "gaussian-scalegrid":
+        factor = (nbeads / baseN) ** (-1 / 2)
+        config["nbeads"] = nbeads
+        config["bond_length"] = baseb * factor
+        config["grid_size"] = baseg * factor
+        config["beadvol"] = basev * baseN / nbeads
+        config["diag_cutoff"] = nbeads
     else:
         raise ValueError("scale must be onethird or gaussian")
 
