@@ -114,21 +114,32 @@ def tune_stiffness(nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method,
 
 
 def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large = True, zerodiag = False, match_ideal_large_grid=False,
-            cell="HCT116_auxin", hic_base = "gaussian-5k"):
+        cell="HCT116_auxin", hic_base = "gaussian-5k", norm=False, adjust_diag_chis=None, boundary_type="sphere", aspect_ratio=1):
     """optimize chis on small system, and scale up parameters to large system
 
     requires tuning the grid size and stiffness at small scale,
     in order for the chi parameters to be transferrable
     """
-
     if pool_large:
         large_contact_pooling_factor = int(nbeads_large/nbeads_small)
     else:
         large_contact_pooling_factor = 1
 
     config_small = parameters.get_config(nbeads_small, base=hic_base)
-
+    config_small["boundary_type"] = boundary_type
+    config_small["aspect_ratio"] = aspect_ratio
     gthic_small = hic_utils.load_hic(nbeads_small, pool_fn, cell=cell)
+
+
+    if adjust_diag_chis == "dense":
+        config_small["diag_chis"] = [0]*int(config_small["dense_diagonal_cutoff"]*config_small["nbeads"]/config_small["dense_diagonal_loading"])
+    elif adjust_diag_chis == "bins":
+        config_small["n_small_bins"] = int(config_small["nbeads"]/2)
+        config_small["n_big_bins"] = int(config_small["nbeads"]/2)
+        config_small["small_binsize"] = 1
+        config_small["big_binsize"] = 1
+        config_small["diag_chis"] = [0]*config_small["nbeads"]
+    
 
     if pool_large:
         gthic_large = gthic_small
@@ -185,9 +196,10 @@ def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large =
     params = default.params
     params["goals"] = goals
 
+
     me_root = "me-" + str(nbeads_small)
     try:
-        me = Maxent(me_root, params, config_small, seqs_small, gthic_small)
+        me = Maxent(me_root, params, config_small, seqs_small, gthic_small, norm=norm)
         me.fit()
     except FileExistsError:
         pass
@@ -199,6 +211,11 @@ def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large =
     config_large = parameters.get_config(
         nbeads_large, config_opt.config, grid_bond_ratio=grid_bond_ratio, base=hic_base
     )
+    config_large["boundary_type"] = boundary_type
+    config_large["aspect_ratio"] = aspect_ratio
+
+    if adjust_diag_chis == "dense":
+        config_large["diag_chis"] = config_small["diag_chis"]
 
     def scale_chis(config, scaling_ratio):
         config["chis"] = (scaling_ratio * np.array(config["chis"])).tolist()
@@ -213,10 +230,14 @@ def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large =
     config_large["contact_resolution"] = large_contact_pooling_factor
     config_large["k_angle"] = 0
     config_large["angles_on"] = False
+    config_large["dump_frequency"] = 500
 
     if zerodiag:
         config_large["diag_chis"][1] = 0
-
+        
+    sim_large_root = f"final-{nbeads_large}"
+    sim_large = Pysim(sim_large_root, config_large, seqs_large, gthic=gthic_large)
+    sim_large.run_eq(10000, 50000, 7)
 
 if __name__ == "__main__":
     scaleup(2048, 1024, hic_utils.pool)
