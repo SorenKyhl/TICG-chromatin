@@ -111,8 +111,8 @@ def optimize_config(config, gthic, mode, low_bound, high_bound,
 
     config = copy.deepcopy(config)
     config["load_configuration"] = False
-    # config["nonbonded_on"] = False
-    # config["load_bead_types"] = False
+    config["nonbonded_on"] = False
+    config["load_bead_types"] = False
     gthic /= np.mean(np.diagonal(gthic))
     sim_engine = Pysim(root, config, seqs=None, overwrite=False)
 
