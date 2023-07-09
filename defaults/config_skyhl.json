@@ -32,7 +32,7 @@
   "decay_length": 500,
   "nSweeps": 50000,
   "dump_frequency": 50000,
-  "dump_stats_frequency": 10,
+  "dump_stats_frequency": 100,
   "nEquilibSweeps": 1,
 
   "bonded_on": true,
@@ -59,10 +59,10 @@
   "diag_start": 0,
   "dense_diagonal_on": true,
   "diag_pseudobeads_on": true,
-  "dense_diagonal_cutoff": 0.03125,
-  "dense_diagonal_loading": 0.6666667,
+  "dense_diagonal_cutoff": 0.0625,
+  "dense_diagonal_loading": 0.5,
   "diagonal_linear": true,
-  "diag_chis":[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ], 
+  "diag_chis":[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
 
   "load_configuration": false,
   "load_configuration_filename": "equilibrated.xyz",
