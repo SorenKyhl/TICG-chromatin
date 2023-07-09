@@ -239,5 +239,80 @@ def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large =
     sim_large = Pysim(sim_large_root, config_large, seqs_large, gthic=gthic_large)
     sim_large.run_eq(10000, 50000, 7)
 
+
+def scaleup_debug(nbeads_large, nbeads_small, pool_fn, method="notbayes", cell="HCT116_auxin", hic_base = "gaussian-5k", norm=False):
+    """optimize chis on small system, and scale up parameters to large system
+
+    requires tuning the grid size and stiffness at small scale,
+    in order for the chi parameters to be transferrable
+    """
+    config_small = parameters.get_config(nbeads_small, base=hic_base)
+    gthic_small = hic_utils.load_hic(nbeads_small, pool_fn, cell=cell)
+    gthic_large = hic_utils.load_hic(nbeads_large, pool_fn, cell=cell)
+    large_contact_pooling_factor = 1
+    match_ideal_large_grid = False
+
+    seqs_large = hic_utils.load_seqs(nbeads_large, 10)
+    seqs_small = hic_utils.load_seqs(nbeads_small, 10)
+
+    # tune grid size
+    try:
+        optimal_grid_size = optimize_config(config_small, gthic_large, 'grid', 0.5, 2.5)
+    except FileExistsError:
+        optimal_grid_size = utils.load_json("optimize-grid/config.json")[
+            "grid_size"
+        ]
+
+    config_small["grid_size"] = optimal_grid_size
+    grid_bond_ratio = (
+        optimal_grid_size / config_small["bond_length"]
+    )  # for later, when getting large sim config
+
+    # tune stiffness
+    try:
+        k_angle_opt = tune_stiffness(
+            nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method, large_contact_pooling_factor, hic_base, match_ideal_large_grid
+        )
+    except FileExistsError:
+        stiff_opt_config = utils.load_json("optimize-stiffness/config.json")
+        k_angle_opt = stiff_opt_config["k_angle"]
+
+    config_small["k_angle"] = k_angle_opt
+
+    # plot results
+    final_it_stiff = utils.get_last_iteration("optimize-stiffness")
+    ideal_small = epilib.Sim(final_it_stiff)
+    ideal_large = epilib.Sim(f"ideal-chain-{str(nbeads_large)}/data_out")
+    plot_stiffness_error(ideal_small, ideal_large, gthic_large)
+
+    # maxent at small size
+    goals = epilib.get_goals(gthic_small, seqs_small, config_small)
+    params = default.params
+    params["goals"] = goals
+
+    me_root = "me-" + str(nbeads_small)
+    try:
+        me = Maxent(me_root, params, config_small, seqs_small, gthic_small, norm=norm)
+        me.fit()
+    except FileExistsError:
+        pass
+
+    # production at large simulation size
+    final_it = utils.get_last_iteration(me_root)
+    config_opt = Config(final_it / "config.json")
+
+    config_large = parameters.get_config(
+        nbeads_large, config_opt.config, grid_bond_ratio=grid_bond_ratio, base=hic_base
+    )
+
+    config_large["contact_resolution"] = large_contact_pooling_factor
+    config_large["k_angle"] = 0
+    config_large["angles_on"] = False
+    config_large["dump_frequency"] = 500
+        
+    sim_large_root = f"final-{nbeads_large}"
+    sim_large = Pysim(sim_large_root, config_large, seqs_large, gthic=gthic_large)
+    sim_large.run_eq(10000, 50000, 7)
+
 if __name__ == "__main__":
     scaleup(2048, 1024, hic_utils.pool)
