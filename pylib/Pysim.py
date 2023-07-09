@@ -311,7 +311,8 @@ class Pysim:
         )
         production.setup()  # save config, seqs to production_out
 
-        # TODO: add delete old files option
+        # delete redundant contact files. these have been aggregated into production/contacts.txt
+        [contact_file.unlink(missing_ok=False) for contact_file in contact_files]
 
     def combine_contactmaps(
         self, contact_files: Sequence[PathLike], output_file: Optional[PathLike] = None
