@@ -120,8 +120,9 @@ class Sim:
 
             # if contact map pools, also pool sequences
             if gthic_loaded and self.config["contact_resolution"] > 1:
-                self.seqs = hic.pool_seqs(self.seqs, self.config["contact_resolution"])
-                self.gthic = hic.pool_sum(self.gthic, self.config["contact_resolution"])
+                pass
+                #self.seqs = hic.pool_seqs(self.seqs, self.config["contact_resolution"])
+                #self.gthic = hic.pool_sum(self.gthic, self.config["contact_resolution"])
 
             obj_goal_path = resources_path / "obj_goal.txt"
             if obj_goal_path.exists():

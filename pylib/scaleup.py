@@ -10,17 +10,17 @@ from pylib.config import Config
 from pylib.pysim import Pysim
 
 
-def plot_stiffness_error(ideal_small, ideal_large, gthic_big):
+def plot_stiffness_error(ideal_small, ideal_large, gthic_big, pool_fn):
     """
     ideal_small: small sim with stiffness
     ideal_large: big sim without stiffness
     gthic_big: ground truth hic at big scale
     """
     factor = int(len(gthic_big) / len(ideal_small.hic))
-    gthic_small = hic.pool_sum(gthic_big, factor)
+    gthic_small = pool_fn(gthic_big, factor)
 
     factor = int(len(ideal_large.hic) / len(ideal_small.hic))
-    id_pooled = hic.pool_sum(ideal_large.hic, factor)
+    id_pooled = pool_fn(ideal_large.hic, factor)
 
     ratio_pooled = epilib.get_diagonal(id_pooled) / epilib.get_diagonal(gthic_small)
     ratio_sim = ideal_small.d / epilib.get_diagonal(gthic_small)
@@ -39,6 +39,7 @@ def plot_stiffness_error(ideal_small, ideal_large, gthic_big):
     plt.legend()
     plt.title("p(s) stiff vs pooled")
     plt.savefig("stiff_p.png")
+    plt.close()
 
     plt.figure()
     epilib.plot_diagonal(ratio_sim, label="stiff", scale="loglog")
@@ -46,12 +47,14 @@ def plot_stiffness_error(ideal_small, ideal_large, gthic_big):
     plt.legend()
     plt.title("p(s) ratio stiff vs pooled")
     plt.savefig("stiff_ratios.png")
+    plt.close()
 
     plt.figure()
     epilib.plot_diagonal(ratio2, scale="loglog")
     epilib.plot_diagonal(np.ones(1024), "k")
     plt.title(f"ratio of ratios, mean: {error}")
     plt.savefig("stiff_ratio_ratios.png")
+    plt.close()
 
 
 def tune_stiffness(nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method, large_contact_pooling_factor, match_ideal_large_grid=False):
@@ -101,8 +104,9 @@ def tune_stiffness(nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method,
 
         small_config["grid_size"] = optimal_grid_size
 
+
     k_angle_opt = optimize_stiffness(
-        small_config, large_ideal_hic_pooled, low_bound=0, high_bound=2.5, method=method
+        small_config, large_ideal_hic_pooled, low_bound=0, high_bound=5, method=method
     )
 
     if match_ideal_large_grid:
@@ -123,10 +127,11 @@ def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large =
         large_contact_pooling_factor = 1
 
     config_small = parameters.get_config(nbeads_small)
-
     gthic_small = hic.load_hic(nbeads_small, pool_fn)
 
     if pool_large:
+        if config_small["conservative_contact_pooling"] == False:
+            raise Error("conservative contact pooling must be turned on if pooling large hic")
         gthic_large = gthic_small
     else:
         gthic_large = hic.load_hic(nbeads_large, pool_fn)
@@ -160,11 +165,14 @@ def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large =
     except FileExistsError:
         stiff_opt_config = utils.load_json("optimize-stiffness/config.json")
         k_angle_opt = stiff_opt_config["k_angle"]
+        new_bond_length = stiff_opt_config["bond_length"] # if manually tuning
 
         if match_ideal_large_grid:
             small_optimal_grid_size = stiff_opt_config["grid_size"]
 
     config_small["k_angle"] = k_angle_opt
+    config_small["bond_length"] = new_bond_length
+
 
     if match_ideal_large_grid:
         logging.info(f"optimal small grid size is : {small_optimal_grid_size}")
@@ -174,7 +182,7 @@ def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large =
     final_it_stiff = utils.get_last_iteration("optimize-stiffness")
     ideal_small = epilib.Sim(final_it_stiff)
     ideal_large = epilib.Sim(f"ideal-chain-{str(nbeads_large)}/data_out")
-    plot_stiffness_error(ideal_small, ideal_large, gthic_large)
+    plot_stiffness_error(ideal_small, ideal_large, gthic_large, pool_fn)
 
     # maxent at small size
     goals = epilib.get_goals(gthic_small, seqs_small, config_small)
