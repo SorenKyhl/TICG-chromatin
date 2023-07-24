@@ -43,7 +43,9 @@ def sim_analysis(sim):
     plt.close()
 
     try:
-        plot_energy_matrices(sim)
+        if sim.config["nbeads"] <  10240:
+            pass
+            #plot_energy_matrices(sim)
     except ValueError:
         if sim.config["contact_resolution"] > 1:
             logging.warn("energy matrices could not be created because contact map has been pooled (contact map resolution > 1)")
@@ -150,6 +152,7 @@ def maxent_analysis(sim):
     plt.figure()
     sim.plot_obs_vs_goal()
     plt.savefig("obs_vs_goal.png")
+    plt.close()
 
 
 def plot_chi_matrix(sim):
