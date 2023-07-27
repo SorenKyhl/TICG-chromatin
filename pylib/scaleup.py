@@ -3,7 +3,7 @@ import logging
 import matplotlib.pyplot as plt
 
 from pylib import default, epilib, parameters, hic, utils
-from pylib.optimize import optimize_stiffness, optimize_grid_size
+from pylib.optimize import optimize_stiffness, optimize_grid_size, optimize_bond_length
 from pylib.ideal_chain import ideal_chain_simulation
 from pylib.maxent import Maxent
 from pylib.config import Config
@@ -57,7 +57,8 @@ def plot_stiffness_error(ideal_small, ideal_large, gthic_big, pool_fn):
     plt.close()
 
 
-def tune_stiffness(nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method, large_contact_pooling_factor, match_ideal_large_grid=False):
+def tune_stiffness(nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method, 
+                   large_contact_pooling_factor, match_ideal_large_grid=False, optimize_bond=False):
     """optimize chain stiffness of small system to match p(s) curve of large system
 
     simualte ideal chain at large scale and pool large ideal hic down to small scale,
@@ -105,17 +106,29 @@ def tune_stiffness(nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method,
         small_config["grid_size"] = optimal_grid_size
 
 
+    if optimize_bond:
+        try:
+            new_bond_length = optimize_bond_length(small_config, large_ideal_hic_pooled, low_bound=0.5, high_bound=1.5)
+        except FileExistsError:
+            config_bond_opt = utils.load_json("optimize-bond-length/config.json")
+            new_bond_length = config_bond_opt["bond_length"]
+
+    small_config["bond_length"] = new_bond_length
+
     k_angle_opt = optimize_stiffness(
         small_config, large_ideal_hic_pooled, low_bound=0, high_bound=5, method=method
     )
 
     if match_ideal_large_grid:
         return k_angle_opt, optimal_grid_size   
+    if optimize_bond:
+        return k_angle_opt, new_bond_length
     else:
         return k_angle_opt
 
 
-def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large = True, zerodiag = False, match_ideal_large_grid=False):
+def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large = True, 
+            zerodiag = False, match_ideal_large_grid=False, optimize_bond=False):
     """optimize chis on small system, and scale up parameters to large system
 
     requires tuning the grid size and stiffness at small scale,
@@ -158,6 +171,9 @@ def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large =
             k_angle_opt, small_optimal_grid_size = tune_stiffness(
                 nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method, large_contact_pooling_factor, match_ideal_large_grid
             )
+        if optimize_bond:
+            k_angle_opt, new_bond_length = tune_stiffness(
+                nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method, large_contact_pooling_factor, match_ideal_large_grid, optimize_bond)
         else:
             k_angle_opt = tune_stiffness(
                 nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method, large_contact_pooling_factor, match_ideal_large_grid
