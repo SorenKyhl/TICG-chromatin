@@ -5,6 +5,9 @@ import logging
 from pylib import epilib as ep
 from pylib import utils, energy_utils
 
+import matplotlib
+matplotlib.use('agg')
+
 plt.rcParams["figure.figsize"] = [8, 6]
 plt.rcParams.update({"font.size": 18})
 
