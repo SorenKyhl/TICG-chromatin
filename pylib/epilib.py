@@ -1250,6 +1250,7 @@ def plot_consistency(sim):
     computed from simulation contact map"""
 
     if len(sim.hic) != len(sim.seqs[0]):
+        return 0
         size = np.shape(sim.seqs[0])[0]
         hic = resize_contactmap(sim.hic, size, size)
     else:
