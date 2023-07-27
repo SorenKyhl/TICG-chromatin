@@ -130,6 +130,7 @@ class DataPipeline:
                 print("file extension must either be .bigWig or .wig")
                 raise ValueError
 
+
     def load_chipseq_from_directory(self, directory, method):
         """
         filenames: list of paths to chipseq files (.bigWig or .wig)
@@ -152,5 +153,6 @@ class DataPipeline:
             else:
                 print("file extension must either be .bigWig or .wig")
                 raise ValueError
+            print(f'loaded {name}')
 
         return seqs
