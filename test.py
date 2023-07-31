@@ -21,10 +21,11 @@ from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
                                       calculate_diag_chi_step, calculate_S)
 from pylib.utils.utils import load_json
 from scipy.ndimage import uniform_filter
-from scripts.data_generation.modify_maxent import get_samples
-from scripts.get_params import GetEnergy, GetSeq
 from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
+
+from scripts.data_generation.modify_maxent import get_samples
+from scripts.get_params import GetEnergy, GetSeq
 
 sys.path.append('/home/erschultz')
 
@@ -271,100 +272,6 @@ def time_comparison():
     ax.legend(loc='upper left')
     plt.tight_layout()
     plt.savefig(osp.join(dir, 'time.png'))
-    plt.close()
-
-def convergence_check():
-    dir = '/home/erschultz/dataset_09_30_22/samples'
-    results_1 = {} # param convergence
-    results_2 = {} # loss convergence
-    for file in os.listdir(dir):
-        sample = osp.join(dir, file)
-        if file.startswith('sample') and osp.isdir(sample):
-            id = int(file[6:])
-            for file in os.listdir(sample):
-                if file.startswith('GNN-') or file.startswith('PCA-'):
-                    method = osp.join(sample, file)
-                    if 'MLP' in method and 'GNN' in method:
-                        continue
-                    for file in os.listdir(method):
-                        if file.startswith('k'):
-                            k = file[1:]
-                            k_folder = osp.join(method, file)
-                            for file in os.listdir(k_folder):
-                                rep = file[-1]
-                                if file[-1] == '2':
-                                    continue
-                                replicate = osp.join(k_folder, file)
-                                label = f'{id}_{osp.split(method)[1]}_k{k}_r{rep}'
-
-                                chis_diag_file = osp.join(replicate, 'chis_diag.txt')
-                                if osp.exists(chis_diag_file):
-                                    params = np.loadtxt(chis_diag_file)
-
-                                chis_file = osp.join(replicate, 'chis.txt')
-                                if osp.exists(chis_file):
-                                    chis = np.loadtxt(chis_file)
-                                    params = np.concatenate((params, chis), axis = 1)
-                                else:
-                                    continue
-
-                                vals = []
-                                for i in range(2, len(params)):
-                                    diff = params[i] - params[i-1]
-                                    vals.append(np.linalg.norm(diff, ord = 2))
-                                results_1[label] = vals
-
-
-                                conv_file = osp.join(replicate, 'convergence.txt')
-                                if osp.exists(conv_file):
-                                    conv = np.loadtxt(conv_file)
-                                else:
-                                    continue
-
-                                vals = []
-                                for i in range(1, len(conv)):
-                                    diff = conv[i] - conv[i-1]
-                                    vals.append(np.abs(diff))
-                                results_2[label] = vals
-
-
-    cmap = matplotlib.cm.get_cmap('tab10')
-    ls_arr = ['solid', 'dotted', 'dashed', 'dashdot']
-    for label, vals in results_1.items():
-        print(label)
-        id = int(label.split('_')[0])
-        k = int(label[-4])
-
-        plt.plot(vals, label = label, ls = ls_arr[k // 2])
-
-    eps = 1
-    plt.axhline(eps, c = 'k')
-    plt.yscale('log')
-    plt.xlabel('Iteration', fontsize=16)
-    plt.ylabel(r'$||x_t - x_{t-1}||_2$', fontsize=16)
-    plt.legend()
-    plt.title(r'$||x_t - x_{t-1}||_2 < $'+f'{eps}')
-    plt.savefig(osp.join(dir, 'param_convergence.png'))
-    plt.close()
-
-
-    cmap = matplotlib.cm.get_cmap('tab10')
-    ls_arr = ['solid', 'dotted', 'dashed', 'dashdot']
-    for label, vals in results_2.items():
-        print(label)
-        id = int(label.split('_')[0])
-        k = int(label[-4])
-
-        plt.plot(vals, label = label, ls = ls_arr[k // 2])
-
-    eps = 1e-3
-    plt.axhline(eps, c = 'k')
-    plt.yscale('log')
-    plt.xlabel('Iteration', fontsize=16)
-    plt.ylabel(r'$|f(x_t) - f(x_{t-1})|$', fontsize=16)
-    plt.legend(loc = 'upper right')
-    plt.title(r'$|f(x_t) - f(x_{t-1})| < 10^{-3}$')
-    plt.savefig(osp.join(dir, 'loss_convergence.png'))
     plt.close()
 
 def plot_sc_p_s():
@@ -980,7 +887,6 @@ if __name__ == '__main__':
     # check_dataset('dataset_11_18_22')
     # time_comparison()
     # time_comparison_dmatrix()
-    # convergence_check()
     # main()
     # compare_scc_bio_replicates()
     # max_ent_loss_for_gnn('dataset_11_14_22', 2201)
@@ -992,5 +898,5 @@ if __name__ == '__main__':
     # compare_y_exp_vs_sim()
     # edit_setup('dataset_05_28_23', 'dataset_04_10_23')
     # edit_setup('dataset_04_28_23', 'dataset_02_04_23')
-    edit_setup('dataset_05_15_23', 'dataset_02_04_23')
+    # edit_setup('dataset_05_15_23', 'dataset_02_04_23')
     # make_small('dataset_04_05_23')

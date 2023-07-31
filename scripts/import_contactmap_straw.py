@@ -135,7 +135,8 @@ def single_cell_import():
         p.starmap(import_contactmap_straw, mapping)
 
 def import_wrapper(odir, filename_list, resolution, norm, m,
-                    i, ref_genome, chroms):
+                    i, ref_genome, chroms, seed):
+    rng = np.random.default_rng(seed)
     if isinstance(filename_list, str):
         filename_list = [filename_list]
     chromsizes = bioframe.fetch_chromsizes(ref_genome)
@@ -152,7 +153,7 @@ def import_wrapper(odir, filename_list, resolution, norm, m,
                     region = [int(d) for d in region]
                     if intersect((start_mb, end_mb), region):
                         start_mb = region[1] # skip to end of bad region
-                        start_mb += np.random.choice(np.arange(6)) # add random shift
+                        start_mb += rng.choice(np.arange(6)) # add random shift
                         break
                 else:
                     print(f'i={i}: chr{chromosome} {start_mb}-{end_mb}')
@@ -238,7 +239,7 @@ def dataset_11_14():
 
 def single_experiment_dataset(filename, dataset, resolution, m,
                                 norm='NONE', i=1, ref_genome='hg19',
-                                chroms=range(1,23)):
+                                chroms=range(1,23), seed=None):
     dir = '/home/erschultz'
     data_folder = osp.join(dir, dataset)
     if not osp.exists(data_folder):
@@ -247,7 +248,7 @@ def single_experiment_dataset(filename, dataset, resolution, m,
     if not osp.exists(odir):
         os.mkdir(odir, mode = 0o755)
 
-    import_wrapper(odir, filename, resolution, norm, m, i, ref_genome, chroms)
+    import_wrapper(odir, filename, resolution, norm, m, i, ref_genome, chroms, seed)
 
 def entire_chromosomes(filename, dataset, resolution,
                                 norm='NONE', ref_genome='hg19',
@@ -277,7 +278,8 @@ def entire_chromosomes(filename, dataset, resolution,
 
 def mixed_experimental_dataset(dataset, resolution, m, norm='NONE',
                                 i=1, ref_genome='hg19',
-                                chroms=range(1,23), files=ALL_FILES):
+                                chroms=range(1,23), files=ALL_FILES,
+                                seed=None):
     dir = '/home/erschultz'
     data_folder = osp.join(dir, dataset)
     if not osp.exists(data_folder):
@@ -286,7 +288,7 @@ def mixed_experimental_dataset(dataset, resolution, m, norm='NONE',
     if not osp.exists(odir):
         os.mkdir(odir, mode = 0o755)
 
-    import_wrapper(odir, files, resolution, norm, m, i , ref_genome, chroms)
+    import_wrapper(odir, files, resolution, norm, m, i , ref_genome, chroms, seed)
 
 def Su2020imr90():
     sample_folder = '/home/erschultz/Su2020/samples/sample4'
@@ -421,9 +423,9 @@ if __name__ == '__main__':
     # mixed_experimental_dataset('dataset_03_21', 10000, 512*5)
     # files = ["https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
             # "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-untreated_combined_30.hic"]
-    files = ["https://www.encodeproject.org/files/ENCFF177TYX/@@download/ENCFF177TYX.hic"]
+    # files = ["https://www.encodeproject.org/files/ENCFF177TYX/@@download/ENCFF177TYX.hic"]
     # mixed_experimental_dataset('dataset_04_05_23', 10000, 1024*5, files = files, i=263)
-    # mixed_experimental_dataset('dataset_05_31_23', 25000, 512*4, files = ALL_FILES_NO_GM12878)
+    mixed_experimental_dataset('dataset_06_29_23', 10000, 512*5, files = ALL_FILES_NO_GM12878)
     # mixed_experimental_dataset('dataset_04_06', 10000, 1024*5)
     # mixed_experimental_dataset('dataset_04_07', 25000, 1024*4)
     # single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
@@ -437,4 +439,4 @@ if __name__ == '__main__':
     # single_experiment_dataset("https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-treated_6hr_combined_30.hic",
                                 # 'dataset_HCT116_RAD21_KO', 10000, 512*5, i=10, chroms=[2])
 
-    Su2020imr90()
+    # Su2020imr90()

@@ -30,7 +30,7 @@ from scripts.get_params import Tester
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (
     get_final_max_ent_folder, load_L, load_max_ent_D, load_max_ent_L,
-    load_max_ent_S)
+    load_max_ent_S, load_psi)
 from sequences_to_contact_maps.scripts.plotting_utils import \
     plot_seq_continuous
 from sequences_to_contact_maps.scripts.utils import pearson_round, triu_to_full
@@ -71,9 +71,12 @@ def get_samples(dataset):
 
 def modify_plaid_chis(dataset, k):
     samples, _ = get_samples(dataset)
-    for sample in tqdm.tqdm(samples):
+    for sample in samples:
         dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
-        max_ent_dir = osp.join(dir, f'optimize_grid_b_140_phi_0.03-max_ent{k}')
+        max_ent_dir = osp.join(dir, f'optimize_grid_b_261_phi_0.006-max_ent{k}')
+        if not osp.exists(max_ent_dir):
+            print(f'{max_ent_dir} does not exist')
+            continue
         chis = np.loadtxt(osp.join(max_ent_dir, 'chis.txt'))
         chis = triu_to_full(chis)
         plot_matrix(chis, osp.join(max_ent_dir, 'chis.png'), cmap = 'blue-red')
@@ -112,7 +115,7 @@ def modify_plaid_chis(dataset, k):
         plot_matrix(chis_zeroed, osp.join(max_ent_dir, 'chis_zero.png'), cmap = 'blue-red')
 
         # shuffle seq
-        x = np.load(osp.join(max_ent_dir, 'iteration0/x.npy'))
+        x = load_psi(max_ent_dir)
         if x.shape[1] > x.shape[0]:
             x = x.T
         x_shuffle = np.copy(x)
@@ -181,7 +184,7 @@ def modify_maxent_diag_chi(dataset, k = 10, edit = True):
         print(f'sample{sample}, k{k}')
         # try different modifications to diag chis learned by max ent
         dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
-        max_ent_dir = osp.join(dir, f'optimize_grid_b_140_phi_0.03-max_ent{k}')
+        max_ent_dir = osp.join(dir, f'optimize_grid_b_261_phi_0.01-max_ent{k}')
         if not osp.exists(max_ent_dir):
             print(f'{max_ent_dir} does not exist')
             continue
@@ -871,6 +874,10 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
         #     print(hat)
 
     if plot:
+        label_fontsize=24
+        legend_fontsize=16
+        tick_fontsize=22
+        letter_fontsize=26
         x_list = seq_dist(dataset, k, plot, eig, eig_norm)
         # plot plaid chi parameters
         if not (eig or eig_norm):
@@ -1022,9 +1029,12 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
         ind = np.arange(k) % cmap.N
         colors = cmap(ind.astype(int))
         # per chi ii
-        rows = math.ceil(k / 4)
-        cols = min(4, k)
+        rows = math.ceil(k / 5)
+        cols = min(5, k)
         fig, ax = plt.subplots(rows, cols)
+        fig.set_figheight(5)
+        fig.set_figwidth(10)
+
         if rows == 1:
             ax = [ax]
         c = 0
@@ -1070,6 +1080,9 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
             ax[row][col].plot(bins, y, ls = '--', color = 'k')
             # ax[row][col].set_title(r'$\alpha=$' + f'{params[0]}\n' + r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
             ax[row][col].set_xlabel(rf'$\chi${LETTERS[i]+LETTERS[i]}')
+            ax[row][col].set_xlabel(rf'$\lambda_{{{i+1}}}$', fontsize=16)
+            # ax[row][col].tick_params(axis='both', which='major', labelsize=tick_fontsize)
+
 
             col += 1
             if col == cols:
@@ -1077,8 +1090,7 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
                 row += 1
             c += 1
 
-        fig.supxlabel(r'$\chi_{ii}$', fontsize=16)
-        fig.supylabel('probability', fontsize=16)
+        fig.supylabel('Probability', fontsize=16)
         plt.tight_layout()
         plt.savefig(osp.join(odir, f'k{k}_chi_per_ii_dist.png'))
         plt.close()
@@ -1317,14 +1329,14 @@ def get_read_counts(dataset):
 
 
 if __name__ == '__main__':
-    # modify_plaid_chis('dataset_04_10_23', k = 10)
-    # modify_maxent_diag_chi('dataset_04_10_23', 10, False)
+    # modify_plaid_chis('dataset_02_04_23', k = 12)
+    # modify_maxent_diag_chi('dataset_02_04_23', 12, False)
     # for i in range(221, 222):
         # plot_modified_max_ent(i, k = 10)
     # diagonal_dist('dataset_02_04_23', 10)
     # grid_dist('dataset_01_26_23')
-    # plaid_dist('dataset_04_10_23', 10, True, False, True)
-    get_read_counts('dataset_04_28_23')
+    plaid_dist('dataset_02_04_23', 10, True, False, True)
+    # get_read_counts('dataset_04_28_23')
     # seq_dist('dataset_01_26_23', 4, True, False, True)
     # modify_plaid_chis('dataset_11_14_22', 8)
     # plot_params_test()

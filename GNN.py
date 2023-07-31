@@ -10,7 +10,6 @@ import optimize_grid
 import pylib.analysis as analysis
 from pylib.Pysim import Pysim
 from pylib.utils import default, epilib, utils
-
 from scripts.get_params import GetEnergy
 
 
@@ -51,13 +50,13 @@ def fit(dataset, sample, GNN_ID, sub_dir='samples'):
     config['load_bead_types'] = False
     config['lmatrix_on'] = False
     config['dmatrix_on'] = False
-    config['dump_frequency'] = 10000
+    config['dump_frequency'] = 1000
 
     gnn_root = f'{root}-GNN{GNN_ID}'
     if osp.exists(gnn_root):
-        # shutil.rmtree(gnn_root)
+        shutil.rmtree(gnn_root)
         print('WARNING: root exists')
-        return
+        # return
     os.mkdir(gnn_root, mode=0o755)
 
     stdout = sys.stdout
@@ -82,17 +81,17 @@ def fit(dataset, sample, GNN_ID, sub_dir='samples'):
 
 def main():
     # dataset='downsampling_analysis'; samples = range(201, 211)
-    dataset='dataset_02_04_23'; samples = range(201, 221)
+    dataset='dataset_02_04_23'; samples = range(201, 211)
     # dataset='dataset_04_10_23'; samples = range(1001, 1011)
     # dataset='dataset_04_05_23'; samples = range(1001, 1011)
     # dataset = 'dataset_04_05_23'; samples = list(range(1011, 1021))
     # dataset = 'dataset_04_05_23'; samples = [1001, 1039, 1065, 1093, 1122, 1137, 1166, 1185]
     # dataset='dataset_05_28_23'; samples = [324, 981, 1936, 2834, 3464]
-    # dataset = 'dataset_05_31_23'; samples = list(range(1196, 1206))
-    # dataset = 'Su2020'; samples=[1004]
+    # dataset = 'dataset_05_31_23'; samples = [1002, 1037, 1198]
+    # dataset = 'Su2020'; samples=[1013]
     mapping = []
 
-    GNN_IDs = [427]
+    GNN_IDs = [426]
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID))
@@ -104,7 +103,7 @@ def main():
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(5) as p:
+    with mp.Pool(2) as p:
         p.starmap(fit, mapping)
 
     # fit(*mapping[0])

@@ -17,7 +17,7 @@ import seaborn as sns
 from pylib.utils import epilib
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.plotting_utils import (BLUE_CMAP, BLUE_RED_CMAP,
-                                        RED_BLUE_CMAP, plot_matrix,
+                                        RED_BLUE_CMAP, RED_CMAP, plot_matrix,
                                         plot_mean_dist, rotate_bound)
 from pylib.utils.similarity_measures import SCC
 from scipy.optimize import curve_fit
@@ -72,7 +72,6 @@ def plot_diagonal(exp, sim, ofile=None):
         plt.close()
     else:
         plt.show()
-
 
 def plot_distance_map(input, dir, label):
     plot_matrix(input, osp.join(dir, f'D_{label}.png'), f'D_{label}', vmax = 'max', cmap=RED_BLUE_CMAP)
@@ -196,7 +195,6 @@ def tsv_to_npy():
     os.mkdir(odir, mode=0o755)
     np.save(osp.join(odir, 'y.npy'), y_512)
     plot_matrix(y_512, osp.join(odir, 'y.png'), vmax='mean')
-
 
 def to_proximity(D, cutoff=500):
     N, _, _ = D.shape
@@ -742,6 +740,7 @@ def load_exp_gnn_pca(dir, GNN_ID=None, mode='mean', b=140, phi=0.03):
     start = result['start']
     resolution = result['resolution']
     chrom = int(result['chrom'])
+    genome = result['genome']
 
     max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, b, phi)
     if osp.exists(max_ent_dir):
@@ -758,48 +757,50 @@ def load_exp_gnn_pca(dir, GNN_ID=None, mode='mean', b=140, phi=0.03):
         D_gnn = None
 
     # process experimental distance map
-    if chrom == 21:
-        exp_dir = '/home/erschultz/Su2020/samples/sample1'
-    elif chrom == 2:
-        exp_dir = '/home/erschultz/Su2020/samples/sample10'
+    if genome == 'hg38':
+        if chrom == 21:
+            exp_dir = '/home/erschultz/Su2020/samples/sample1'
+        elif chrom == 2:
+            exp_dir = '/home/erschultz/Su2020/samples/sample10'
+        else:
+            raise Exception(f'Unrecognized chrom: {chrom}')
+        D_file = osp.join(exp_dir, 'dist_mean.npy')
+        D = np.load(D_file)
+        D = crop_hg38(exp_dir, D, f'chr{chrom}:{start}-{start+resolution}', m)
+        np.save(osp.join(dir, 'D_crop.npy'), D)
     else:
-        raise Exception(f'Unrecognized chrom: {chrom}')
-    D_file = osp.join(exp_dir, 'dist_mean.npy')
-    D = np.load(D_file)
-    D = crop_hg38(exp_dir, D, f'chr{chrom}:{start}-{start+resolution}', m)
-    np.save(osp.join(dir, 'D_crop.npy'), D)
+        D = None
 
     return D, D_gnn, D_pca
 
-def test_pcs():
-    dir = '/home/erschultz/Su2020/samples'
-    for f in ['sample10']:
-        fdir = osp.join(dir, f)
-        D_mean = np.load(osp.join(fdir, 'dist_mean.npy'))
-        D_med = np.load(osp.join(fdir, 'dist_median.npy'))
-        D_prox = np.load(osp.join(fdir, 'dist_proximity.npy'))
-        nan_rows = np.isnan(D_mean[0])
+def load_exp_gnn_pca_contact_maps(dir, GNN_ID=None, b=140, phi=0.03):
+    result = load_import_log(dir)
+    start = result['start']
+    resolution = result['resolution']
+    chrom = int(result['chrom'])
+    genome = result['genome']
 
-        V_D_mean = get_pcs(D_mean, nan_rows)
-        V_D_med = get_pcs(D_med, nan_rows)
-        V_D_prox = get_pcs(D_prox, nan_rows)
+    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, b, phi)
+    if osp.exists(max_ent_dir):
+        final = get_final_max_ent_folder(max_ent_dir)
+        y_pca, _ = load_Y(final)
+        y_pca /= np.mean(np.diagonal(y_pca))
+        m = len(y_pca)
+    else:
+        print(f'{max_ent_dir} does not exist')
+        y_pca = None
 
-        rows = 2; cols = 1
-        row = 0; col = 0
-        fig, ax = plt.subplots(rows, cols)
-        fig.set_figheight(12)
-        fig.set_figwidth(16)
-        for i in range(rows*cols):
-            ax[row].plot(V_D_mean[i], label = 'mean')
-            ax[row].plot(V_D_med[i], label = 'median')
-            ax[row].plot(V_D_prox[i], label = 'prox')
-            ax[row].set_title(f'PC {i+1}')
-            ax[row].legend(fontsize=16)
+    if GNN_ID is not None and osp.exists(gnn_dir):
+        y_gnn, _ = load_Y(gnn_dir)
+        y_gnn /= np.mean(np.diagonal(y_gnn))
+        m = len(y_gnn)
+    else:
+        y_gnn = None
 
-            row += 1
-        plt.savefig(osp.join(fdir, 'pc_D.png'))
-        plt.close()
+    y, _ = load_Y(dir)
+    y /= np.mean(np.diagonal(y))
 
+    return y, y_gnn, y_pca
 
 def compare_pcs(sample, GNN_ID):
     dir = f'/home/erschultz/Su2020/samples/sample{sample}'
@@ -910,7 +911,7 @@ def compare_rg(sample, GNN_ID, b=140, phi=0.03):
     # shift ind such that start is at 0
     shift = coords_dict[f"chr{chrom}:{start}-{start+resolution}"]
 
-    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID)
+    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, b, phi)
     final_dir = get_final_max_ent_folder(max_ent_dir)
     file = osp.join(final_dir, 'production_out/output.xyz')
     xyz_max_ent = xyz_load(file, multiple_timesteps = True)
@@ -962,7 +963,7 @@ def compare_rg(sample, GNN_ID, b=140, phi=0.03):
 def compare_scaling(sample, GNN_ID=None, b=140, phi=0.03):
     dir = f'/home/erschultz/Su2020/samples/sample{sample}'
     D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=b, phi=phi)
-    nan_rows = np.isnan(D[0])
+    print(D_pca)
     D_list = [D, D_pca, D_gnn]
     labels = ['Experiment', 'Max Ent', 'GNN']
     colors = ['k', 'b', 'r']
@@ -1056,7 +1057,7 @@ def compare_dist_distribution_plaid(sample, GNN_ID, b=140, phi=0.03):
 
 def compare_diagonal(sample, GNN_ID=None):
     dir = f'/home/erschultz/Su2020/samples/sample{sample}'
-    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID)
+    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, b, phi)
     D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID)
 
     m = len(D_pca)
@@ -1098,13 +1099,13 @@ def compare_dist_ij(sample, GNN_ID=None, b=140, phi=0.03):
     plt.tight_layout()
     plt.show()
 
-def figure(sample, GNN_ID, b=140, phi=0.03):
-    label_fontsize=18
-    legend_fontsize=16
-    tick_fontsize=13
-    letter_fontsize=20
+def figure(sample, GNN_ID, bl=140, phi=0.03):
+    label_fontsize=24
+    tick_fontsize=22
+    letter_fontsize=26
     dir = f'/home/erschultz/Su2020/samples/sample{sample}'
-    D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=b, phi=phi)
+    D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=bl, phi=phi)
+    y, y_gnn, y_pca = load_exp_gnn_pca_contact_maps(dir, GNN_ID, b=bl, phi=phi)
     nan_rows = np.isnan(D[0])
     D_no_nan = D[~nan_rows][:, ~nan_rows] # ignore nan_rows
 
@@ -1145,14 +1146,17 @@ def figure(sample, GNN_ID, b=140, phi=0.03):
     # shift ind such that start is at 0
     shift = coords_dict[f"chr{chrom}:{start}-{start+resolution}"]
 
-    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID)
+    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, bl, phi)
     final_dir = get_final_max_ent_folder(max_ent_dir)
     file = osp.join(final_dir, 'production_out/output.xyz')
+    print(file)
     xyz_max_ent = xyz_load(file, multiple_timesteps = True)
+    print(xyz_max_ent.shape)
     dist_max_ent = dist_distribution_a_b(xyz_max_ent, a - shift, b - shift)
 
     if gnn_dir is not None and osp.exists(gnn_dir):
         file = osp.join(gnn_dir, 'production_out/output.xyz')
+        print(file)
         xyz_gnn = xyz_load(file, multiple_timesteps = True)
         dist_gnn = dist_distribution_a_b(xyz_gnn, a - shift, b - shift)
     else:
@@ -1162,18 +1166,19 @@ def figure(sample, GNN_ID, b=140, phi=0.03):
     all_labels = np.linspace(start_mb, end_mb, m)
     all_labels = np.round(all_labels, 1)
     genome_ticks = [0, m-1]
-    genome_labels = [f'{all_labels[i]} Mb' for i in genome_ticks]
+    genome_labels = [f'{all_labels[i]}' for i in genome_ticks]
 
     ### combined figure ###
     print('---'*9)
     print('Starting Figure')
-    plt.figure(figsize=(20, 12))
+    plt.figure(figsize=(18, 10))
     ax1 = plt.subplot(2, 24, (1, 6))
-    ax2 = plt.subplot(2, 24, (8, 13))
-    ax_cb = plt.subplot(2, 48, 29)
-    ax3 = plt.subplot(2, 24, (18, 24))
-    ax4 = plt.subplot(2, 12, (13, 18)) # pc
-    ax5 = plt.subplot(2, 12, (20, 24)) # dist a-b
+    ax2 = plt.subplot(2, 24, (9, 14))
+    ax_cb = plt.subplot(2, 48, 31)
+    ax_legend = plt.subplot(2, 48, (35, 48))
+    ax3 = plt.subplot(2, 24, (25, 30))
+    ax4 = plt.subplot(2, 24, (33, 40)) # pc
+    ax5 = plt.subplot(2, 12, (22, 24)) # dist a-b
     axes = [ax1, ax2]
 
     # plot dmaps
@@ -1223,10 +1228,12 @@ def figure(sample, GNN_ID, b=140, phi=0.03):
             s.set_yticks(genome_ticks, labels = genome_labels,
                         fontsize = tick_fontsize)
 
+    ax_cb.tick_params(labelsize=tick_fontsize)
+
     # plot scaling
     m = len(D)
     log_labels = np.linspace(0, resolution*(m-1), m)
-    print('h', log_labels.shape)
+    # print('h1204', log_labels.shape)
     data = zip([D, D_pca, D_gnn], ['Experiment', 'Max Ent', 'GNN'], ['k', 'b', 'r'])
     for D_i, label, color in data:
         # print(label)
@@ -1244,25 +1251,29 @@ def figure(sample, GNN_ID, b=140, phi=0.03):
     # A = .001/resolution
     # Y = A*np.power(X, 1/2) + 200
     # ax3.plot(X, Y, ls='dashed', color = 'grey')
-    ax3.legend(fontsize=legend_fontsize)
+    # ax3.legend(fontsize=legend_fontsize)
 
     # plot pcs
     ax4.plot(V_D[0], label = 'Experiment', color = 'k')
     if V_D_pca is not None:
         V_D_pca[0] *= np.sign(pearson_round(V_D[0], V_D_pca[0]))
-        ax4.plot(V_D_pca[0], label = f'Max Ent (r={pearson_round(V_D[0], V_D_pca[0])})', color = 'blue')
+        ax4.plot(V_D_pca[0], label = f'Maximum Entropy', color = 'blue')
+        print(f'Max Ent (r={pearson_round(V_D[0], V_D_pca[0])})')
     if V_D_gnn is not None:
         V_D_gnn[0] *= np.sign(pearson_round(V_D[0], V_D_gnn[0]))
-        ax4.plot(V_D_gnn[0], label = f'GNN (r={pearson_round(V_D[0], V_D_gnn[0])})', color = 'red')
+        ax4.plot(V_D_gnn[0], label = f'GNN', color = 'red')
+        print(f'GNN (r={pearson_round(V_D[0], V_D_gnn[0])})')
     ax4.set_ylabel('PC 1', fontsize=label_fontsize)
     ax4.tick_params(axis='both', which='major', labelsize=tick_fontsize)
     ax4.set_xticks(genome_ticks, labels = genome_labels, rotation = 0)
-    ax4.legend(fontsize=legend_fontsize)
+    ax4.set_yticks([])
+    ax4.set_xlabel('Genomic Distance (Mb)', fontsize=label_fontsize)
+    # ax4.legend(fontsize=legend_fontsize)
 
     # plot a-b distribution
     bin_width = 50
     arrs = [dist[~np.isnan(dist)], dist_max_ent, dist_gnn]
-    labels = ['Experiment', 'Max Ent', 'GNN']
+    labels = ['Experiment', 'Maximum Entropy', 'GNN']
     colors = ['k', 'b', 'r']
     data = zip(arrs, labels, colors)
     for arr, label, color in data:
@@ -1273,17 +1284,78 @@ def figure(sample, GNN_ID, b=140, phi=0.03):
                     bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width))
     ax5.set_ylabel('Probability', fontsize=label_fontsize)
     ax5.tick_params(axis='both', which='major', labelsize=tick_fontsize)
-    ax5.legend(fontsize=legend_fontsize)
+    # ax5.legend(fontsize=legend_fontsize)
     ax5.set_xlabel('Spatial Distance (nm)', fontsize=label_fontsize)
+    ax5.set_xlim(None, 3000)
+    ax5.set_yticks([])
     print(f'Distance between\n{coords_a_label} and {coords_b_label}')
 
+    h, l = ax4.get_legend_handles_labels()
+    ax_legend.legend(h, l, borderaxespad=0, fontsize=label_fontsize, loc='center')
+    ax_legend.axis("off")
 
     for n, ax in enumerate([ax1, ax3, ax4, ax5]):
         ax.text(-0.0, 1.05, string.ascii_uppercase[n], transform=ax.transAxes,
                 size=letter_fontsize, weight='bold')
 
+
+    plt.subplots_adjust(bottom=0.1, top = 0.95, left = 0.1, right = 0.95,
+                    hspace = 0.25, wspace = 0.25)
     plt.tight_layout()
     plt.savefig('/home/erschultz/TICG-chromatin/figures/distances.png')
+    plt.close()
+
+def supp_figure(sample, GNN_ID, bl=140, phi=0.03):
+    label_fontsize=24
+    tick_fontsize=22
+    letter_fontsize=26
+    dir = f'/home/erschultz/Su2020/samples/sample{sample}'
+    y, y_gnn, y_pca = load_exp_gnn_pca_contact_maps(dir, GNN_ID, b=bl, phi=phi)
+    m = len(y)
+
+    ### supp figure with hicmaps ###
+    print('---'*9)
+    print('Starting Supp Figure')
+    fig, axes = plt.subplots(1, 2)
+    fig.set_figheight(6.15)
+    fig.set_figwidth(12)
+
+    npixels = np.shape(y)[0]
+    indu = np.triu_indices(npixels)
+    indl = np.tril_indices(npixels)
+    composites = []
+    for y_i in [y_gnn, y_pca]:
+        # make composite contact map
+        composite = np.zeros((npixels, npixels))
+        composite[indu] = y_i[indu]
+        composite[indl] = y[indl]
+        composites.append(composite)
+
+    # plot cmaps
+    arr = np.array(composites)
+    vmax = np.mean(arr)
+    data = zip(composites, ['GNN', 'Max Ent'])
+    for i, (composite, label) in enumerate(data):
+        print(i)
+        ax = axes[i]
+        s = sns.heatmap(composite, linewidth = 0, vmin = 0, vmax = vmax, cmap = RED_CMAP,
+                        ax = ax, cbar = False)
+        ax.axline((0,0), slope=1, color = 'k', lw=1)
+        ax.text(0.99*m, 0.01*m, label, fontsize=letter_fontsize, ha='right', va='top',
+                weight='bold')
+        ax.text(0.01*m, 0.99*m, 'Experiment', fontsize=letter_fontsize, weight='bold')
+        # s.set_xticks(genome_ticks, labels = genome_labels, rotation = 0)
+        # s.set_yticks(genome_ticks, labels = genome_labels)
+        s.set_xticks([])
+        s.set_yticks([])
+        s.tick_params(axis='both', which='major', labelsize=tick_fontsize)
+
+    for n, ax in enumerate(axes):
+        ax.text(-0.1, 1.05, string.ascii_uppercase[n], transform=ax.transAxes,
+                size=letter_fontsize, weight='bold')
+
+    plt.tight_layout()
+    plt.savefig('/home/erschultz/TICG-chromatin/figures/distances_hic.png')
     plt.close()
 
 
@@ -1303,6 +1375,8 @@ if __name__ == '__main__':
     # compare_dist_distribution_a_b()
     # compare_dist_distribution_plaid(1013, None, 261, 0.01)
     # compare_rg(1014, 423, b=261, phi=0.01)
-    # compare_scaling(1013, 419, 261, 0.01)
-    figure(1004, 419, b=261, phi=0.01)
+    # compare_scaling(1002, None, 261, 0.006)
+    # figure(1013, 419, bl=261, phi=0.01)
+    supp_figure(1013, 419, bl=261, phi=0.01)
+
     # compare_dist_ij(1014, 423, b=261, phi=0.01)

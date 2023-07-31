@@ -64,7 +64,7 @@ def plot_matrix(arr, ofile=None, title=None, vmin=0, vmax='max',
                 size_in=6, minVal=None, maxVal=None, prcnt=False,
                 cmap=RED_CMAP, x_tick_locs=None, x_ticks=None,
                 y_tick_locs=None, y_ticks=None, triu=False, lines=[],
-                percentile=1):
+                percentile=1, use_cbar=True):
     """
     Plotting function for 2D arrays.
 
@@ -155,9 +155,11 @@ def plot_matrix(arr, ofile=None, title=None, vmin=0, vmax='max',
         elif vmax == 'abs_max':
             vmax = np.max(arr)
 
-    ax = sns.heatmap(arr, linewidth = 0, vmin = vmin, vmax = vmax, cmap = cmap)
-    cbar = ax.collections[0].colorbar
-    cbar.ax.tick_params(labelsize=10)
+    ax = sns.heatmap(arr, linewidth = 0, vmin = vmin, vmax = vmax,
+                    cmap = cmap, cbar = use_cbar)
+    if use_cbar:
+        cbar = ax.collections[0].colorbar
+        cbar.ax.tick_params(labelsize=10)
     if x_ticks is None:
         pass
     elif len(x_ticks) == 0:

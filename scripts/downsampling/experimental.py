@@ -62,21 +62,22 @@ def make_samples():
     print(f'Mean Total Read Depth: {tot_count_mean}')
 
 def figure():
-    label_fontsize=18
-    legend_fontsize=16
-    tick_fontsize=13
-    letter_fontsize=20
+    label_fontsize=24
+    tick_fontsize=22
+    letter_fontsize=26
 
     samples = np.arange(201, 211)
     N = len(samples)
     exponents = np.arange(4, 9)
     read_counts = 10**exponents
     dir = '/home/erschultz/downsampling_analysis'
-    GNN_ID = 403
+    GNN_ID = 403 # TODO
     m=512
     gnn_scc = defaultdict(lambda: np.zeros(N)) # exponent : list of sccs
     max_ent_scc = defaultdict(lambda: np.zeros(N))
+    experiment_scc = defaultdict(lambda: np.zeros(N))
     composite_dict = defaultdict(lambda: np.zeros((N,m,m))) # exponent: list of gnn composites
+    max_ent_composite_dict = defaultdict(lambda: np.zeros((N,m,m))) # exponent: list of gnn composites
 
     y_list = [] # ground truth y from highly sampled simulation
     for s in samples:
@@ -92,38 +93,54 @@ def figure():
             y_sparse = np.load(osp.join(s_dir, 'y.npy'))
             y_sparse /= np.mean(y_sparse.diagonal())
             y_dense = y_list[i]
+            m = len(y_sparse)
+            indu = np.triu_indices(m)
+            indl = np.tril_indices(m)
 
-            max_ent_dir = osp.join(s_dir, 'optimize_grid_b_140_phi_0.03-max_ent10')
-            final = get_final_max_ent_folder(max_ent_dir)
-            yhat = np.load(osp.join(final, 'y.npy'))
-            corr_scc_var = scc.scc(y_dense, yhat, var_stabilized = True)
-            max_ent_scc[exp][i] = corr_scc_var
+            # experiment
+            corr_scc_var = scc.scc(y_dense, y_sparse, var_stabilized = True)
+            experiment_scc[exp][i] = corr_scc_var
 
+            # gnn
             gnn_dir = osp.join(s_dir, f'optimize_grid_b_140_phi_0.03-GNN{GNN_ID}')
             yhat = np.load(osp.join(gnn_dir, 'y.npy'))
             corr_scc_var = scc.scc(y_dense, yhat, var_stabilized = True)
             gnn_scc[exp][i] = corr_scc_var
 
             # make composite contact map
-            m = len(y)
-            indu = np.triu_indices(m)
-            indl = np.tril_indices(m)
             composite = np.zeros((m, m))
             composite[indu] = yhat[indu]
             composite[indl] = y_sparse[indl]
             composite_dict[exp][i] = composite
 
+            # max ent
+            max_ent_dir = osp.join(s_dir, 'optimize_grid_b_140_phi_0.03-max_ent10')
+            final = get_final_max_ent_folder(max_ent_dir)
+            yhat = np.load(osp.join(final, 'y.npy'))
+            corr_scc_var = scc.scc(y_dense, yhat, var_stabilized = True)
+            max_ent_scc[exp][i] = corr_scc_var
+
+            # make max ent composite contact map
+            composite = np.zeros((m, m))
+            composite[indu] = yhat[indu]
+            composite[indl] = y_sparse[indl]
+            max_ent_composite_dict[exp][i] = composite
+
     # compute statistics
     gnn_mean = np.zeros_like(exponents, dtype=float)
     max_ent_mean = np.zeros_like(exponents, dtype=float)
+    experiment_mean = np.zeros_like(exponents, dtype=float)
     gnn_std = np.zeros_like(exponents, dtype=float)
     max_ent_std = np.zeros_like(exponents, dtype=float)
+    experiment_std = np.zeros_like(exponents, dtype=float)
     for i, exp in enumerate(exponents):
         gnn_mean[i] = np.mean(gnn_scc[exp])
         max_ent_mean[i] = np.mean(max_ent_scc[exp])
+        experiment_mean[i] = np.mean(experiment_scc[exp])
 
         gnn_std[i] = np.std(gnn_scc[exp])
         max_ent_std[i] = np.std(max_ent_scc[exp])
+        experiment_std[i] = np.std(experiment_scc[exp])
 
     ### combined plot ##
     # select which composites to plot
@@ -140,11 +157,18 @@ def figure():
     all_labels = np.linspace(start, end, m)
     all_labels = np.round(all_labels, 1)
     genome_ticks = [0, m//3, 2*m//3, m-1]
-    genome_labels = [f'{all_labels[i]} Mb' for i in genome_ticks]
+    genome_labels = [f'{all_labels[i]}' for i in genome_ticks]
 
-    fig, axes = plt.subplots(1, len(exponents_hic)+2, gridspec_kw={'width_ratios':[1,1,1,0.01,1.5]})
-    fig.set_figheight(6)
-    fig.set_figwidth(6*3.5)
+    fig = plt.figure(figsize=(14, 16))
+    ax1 = plt.subplot(3, 24, (1, 8))
+    ax2 = plt.subplot(3, 24, (9, 16))
+    ax3 = plt.subplot(3, 24, (17, 24))
+    ax4 = plt.subplot(3, 24, (25, 32))
+    ax5 = plt.subplot(3, 24, (33, 40))
+    ax6 = plt.subplot(3, 24, (41, 48))
+    ax7 = plt.subplot(3, 24, (49, 61)) # pc
+    ax8 = plt.subplot(3, 24, (62, 72)) # legend
+    axes = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8]
 
     # hic
     composites = np.zeros((len(exponents_hic), m, m))
@@ -152,47 +176,67 @@ def figure():
         composites[i] = composite_dict[exp][sample_i]
     vmax = np.mean(composites)
     for i, (exp, composite) in enumerate(zip(exponents_hic, composites)):
-        read_count = 10**exp
         scc = gnn_scc[exp][sample_i]
         scc = np.round(scc, 3)
-        # if i == len(ind)-1:
-        #     s = sns.heatmap(composite, linewidth = 0, vmin = 0, vmax = vmax, cmap = RED_CMAP,
-        #                     ax = axes[i], cbar_ax = axes[i+1])
-        # else:
         s = sns.heatmap(composite, linewidth = 0, vmin = 0, vmax = vmax, cmap = RED_CMAP,
                         ax = axes[i], cbar = False)
-        s.set_title(f'Read Depth = $10^{{{exp}}}$\nSCC={scc}', fontsize = 16)
-        s.set_xticks(genome_ticks, labels = genome_labels, rotation = 0, fontsize = tick_fontsize)
-        s.set_yticks(genome_ticks, labels = genome_labels, rotation = 0, fontsize = tick_fontsize)
+        s.set_title(f'Read Depth = $10^{{{exp}}}$\nSCC={scc}', fontsize = label_fontsize)
+        # s.set_xticks(genome_ticks, labels = genome_labels, rotation = 0, fontsize = tick_fontsize)
+        # s.set_yticks(genome_ticks, labels = genome_labels, rotation = 0, fontsize = tick_fontsize)
+        s.set_xticks([])
+        s.set_yticks([])
         axes[i].axline((0,0), slope=1, color = 'k', lw=1)
         axes[i].text(0.99*m, 0.01*m, 'GNN', fontsize=letter_fontsize, ha='right', va='top', weight='bold')
         axes[i].text(0.01*m, 0.99*m, 'Reference', fontsize=letter_fontsize, weight='bold')
 
-        if i > 0:
-            s.set_yticks([])
-
-    # filler subplot
-    axes[-2].axis('off')
+    composites = np.zeros((len(exponents_hic), m, m))
+    for i, exp in enumerate(exponents_hic):
+        composites[i] = max_ent_composite_dict[exp][sample_i]
+    vmax = np.mean(composites)
+    for i, (exp, composite) in enumerate(zip(exponents_hic, composites)):
+        ax = axes[i+3]
+        scc = max_ent_scc[exp][sample_i]
+        scc = np.round(scc, 3)
+        s = sns.heatmap(composite, linewidth = 0, vmin = 0, vmax = vmax, cmap = RED_CMAP,
+                        ax = ax, cbar = False)
+        s.set_title(f'SCC={scc}', fontsize = label_fontsize)
+        # s.set_xticks(genome_ticks, labels = genome_labels, rotation = 0, fontsize = tick_fontsize)
+        # s.set_yticks(genome_ticks, labels = genome_labels, rotation = 0, fontsize = tick_fontsize)
+        s.set_xticks([])
+        s.set_yticks([])
+        ax.axline((0,0), slope=1, color = 'k', lw=1)
+        ax.text(0.99*m, 0.01*m, 'Max Ent', fontsize=letter_fontsize, ha='right', va='top', weight='bold')
+        ax.text(0.01*m, 0.99*m, 'Reference', fontsize=letter_fontsize, weight='bold')
 
     # scc
-    axes[-1].plot(read_counts, max_ent_mean, label='Max Ent', color='blue')
-    axes[-1].fill_between(read_counts, max_ent_mean - max_ent_std, max_ent_mean + max_ent_std, color='blue', alpha=0.5)
+    print(experiment_mean)
+    axes[-2].plot(read_counts, experiment_mean, label='Subsampled Experiment', color='k')
+    axes[-2].fill_between(read_counts, experiment_mean - experiment_std, experiment_mean + experiment_std, color='k', alpha=0.5)
 
-    axes[-1].plot(read_counts, gnn_mean, label='GNN', color='red')
-    axes[-1].fill_between(read_counts, gnn_mean - gnn_std, gnn_mean + gnn_std, color='red', alpha=0.5)
+    axes[-2].plot(read_counts, max_ent_mean, label='Maximum Entropy', color='blue')
+    axes[-2].fill_between(read_counts, max_ent_mean - max_ent_std, max_ent_mean + max_ent_std, color='blue', alpha=0.5)
 
-    axes[-1].set_xlabel('Read Depth', fontsize=label_fontsize)
-    axes[-1].set_xscale('log')
-    axes[-1].set_ylabel('SCC', fontsize=label_fontsize)
-    axes[-1].tick_params(axis='both', which='major', labelsize=tick_fontsize)
+    axes[-2].plot(read_counts, gnn_mean, label='GNN', color='red')
+    axes[-2].fill_between(read_counts, gnn_mean - gnn_std, gnn_mean + gnn_std, color='red', alpha=0.5)
 
-    axes[-1].legend(fontsize=legend_fontsize)
+    axes[-2].set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1])
+    axes[-2].set_xlabel('Read Depth', fontsize=label_fontsize)
+    axes[-2].set_xscale('log')
+    axes[-2].set_ylabel('SCC', fontsize=label_fontsize)
 
-    for n, ax in enumerate([axes[0], axes[-1]]):
-        ax.text(-0.1, 1.1, string.ascii_uppercase[n], transform=ax.transAxes,
-                size=20, weight='bold')
+    axes[-2].tick_params(axis='both', which='major', labelsize=tick_fontsize)
 
-    plt.tight_layout(h_pad=-0.5)
+    h, l = axes[-2].get_legend_handles_labels()
+    axes[-1].legend(h, l, borderaxespad=0, fontsize=label_fontsize, loc='center')
+    axes[-1].axis("off")
+
+    for i, ax in enumerate([ax1, ax4, axes[-2]]):
+        ax.text(-0.1, 1.1, string.ascii_uppercase[i], transform=ax.transAxes,
+                size=letter_fontsize, weight='bold')
+
+
+    # plt.subplots_adjust(hspace=0.3)
+    plt.tight_layout()
     plt.savefig('/home/erschultz/downsampling_analysis/downsampling_figure_exp.png')
     plt.savefig('/home/erschultz/TICG-chromatin/figures/downsampling_figure_exp.png')
 

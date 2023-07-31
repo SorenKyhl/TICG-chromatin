@@ -548,7 +548,8 @@ def get_pcs(input, k, normalize=False, binarize=False, scale=False,
 
 
     if manual:
-        W, V = np.linalg.eig(np.corrcoef(input))
+        C = np.corrcoef(input)
+        W, V = np.linalg.eig(C)
         V = V.T
     elif soren:
         U, S, V = scipy.linalg.svd(np.corrcoef(input))
