@@ -5,7 +5,6 @@
 #SBATCH --partition=depablo-gpu
 #SBATCH --mail-type=END
 #SBATCH --mail-user=erschultz@uchicago.edu
-#SBATCH --qos=depablo-debug
 #SBATCH --nodelist=midway3-0372
 
 cd ~/TICG-chromatin
