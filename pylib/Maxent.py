@@ -143,10 +143,12 @@ class Maxent:
         np.save(self.root / "plaid_chis.npy", self.track_plaid_chis)
         np.save(self.root / "diag_chis.npy", self.track_diag_chis)
 
-        self.plot_convergence()
+        converged = self.plot_convergence()
         self.plot_plaid_chis()
         self.plot_plaid_chis(True)
         self.plot_diag_chis()
+
+        return converged
 
     def plot_convergence(self):
         plt.figure()
@@ -158,16 +160,21 @@ class Maxent:
         converged_it = None
         for i in range(1, len(self.loss)):
             diff = self.loss[i] - self.loss[i-1]
-            if np.abs(diff) < 1e-2 and self.loss[i] < self.loss[0]:
+            if np.abs(diff) < self.eps and self.loss[i] < self.loss[0]:
                 converged_it = iterations[i]
                 break
 
         if converged_it is not None:
             plt.axvline(converged_it, color = 'k', label = 'converged')
             plt.legend()
+            converged = True
+        else:
+            converged = False
 
         plt.tight_layout()
         plt.savefig(self.root / "loss.png")
+
+        return converged
 
     def plot_plaid_chis(self, legend=False):
         k = sympy.Symbol('k')
@@ -213,7 +220,20 @@ class Maxent:
         newchis = self.initial_chis
         utils.write_json(self.params, self.resources / "params.json")
 
-        for it in range(self.params["iterations"]):
+        max_iterations = self.params["iterations"]
+        self.eps = 1e-2
+        if 'conv_defn' in self.params:
+            conv_defn = self.params['conv_defn']
+            if conv_defn == 'strict':
+                self.eps = 1e-3
+            elif conv_defn == 'normal':
+                self.eps = 1e-2
+        if 'stop_at_convergence' in self.params:
+            stop_at_convergence = self.params['stop_at_convergence']
+        else:
+            stop_at_convergence = False
+
+        for it in range(max_iterations):
             print(f'Iteration {it}')
             self.save_state()
 
@@ -259,13 +279,15 @@ class Maxent:
                 method=self.params["method"],
             )
 
-            self.track_progress(newchis, newloss, sim)
+            converged = self.track_progress(newchis, newloss, sim)
             os.symlink(
                 self.resources / "experimental_hic.npy",
                 sim.root / "experimental_hic.npy",
             )
 
             self.analyze(sim.root)
+            if converged and stop_at_convergence:
+                break
 
         if self.final_it_sweeps > 0:
             self.run_final_iteration(newchis)

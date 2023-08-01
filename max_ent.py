@@ -69,22 +69,25 @@ def modify_soren():
                 final_it_sweeps=500000)
     me.fit()
 
-def setup_config(dataset, sample, samples='samples'):
+def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None):
     mode = 'grid'
     print(sample, mode)
     dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
 
     bonded_config = default.bonded_config
-    bonded_config['bond_length'] = 140
-    bonded_config['phi_chromatin'] = 0.03
-    if bonded_config['bond_length'] == 16.5:
-        bonded_config['beadvol'] = 520
-    if bonded_config['bond_length'] == 117:
-        bonded_config['beadvol'] = 26000
-    elif bonded_config['bond_length'] == 224:
-        bonded_config['beadvol'] = 260000
+    bonded_config['bond_length'] = bl
+    bonded_config['phi_chromatin'] = phi
+    if vb is not None:
+        bonded_config['beadvol'] = vb
     else:
-        bonded_config['beadvol'] = 130000
+        if bonded_config['bond_length'] == 16.5:
+            bonded_config['beadvol'] = 520
+        if bonded_config['bond_length'] == 117:
+            bonded_config['beadvol'] = 26000
+        elif bonded_config['bond_length'] == 224:
+            bonded_config['beadvol'] = 260000
+        else:
+            bonded_config['beadvol'] = 130000
     root = f"optimize_{mode}"
     root = f"{root}_b_{bonded_config['bond_length']}_phi_{bonded_config['phi_chromatin']}"
     print(root)
@@ -106,7 +109,7 @@ def setup_config(dataset, sample, samples='samples'):
     return root, config
 
 
-def fit(dataset, sample, samples='samples'):
+def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None):
     print(sample)
     mode = 'grid'
     dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
@@ -114,7 +117,7 @@ def fit(dataset, sample, samples='samples'):
     y /= np.mean(np.diagonal(y))
     np.fill_diagonal(y, 1)
 
-    root, config = setup_config(dataset, sample, samples)
+    root, config = setup_config(dataset, sample, samples, bl, phi, vb)
 
     k = 10
     config['nspecies'] = k
@@ -126,22 +129,32 @@ def fit(dataset, sample, samples='samples'):
     config['diagonal_on'] = True
     config['dense_diagonal_on'] = True
     config["small_binsize"] = 1
-    if len(y) == 1024:
-        config['n_small_bins'] = 64
-        config["n_big_bins"] = 32
-        config["big_binsize"] = 30
-    elif len(y) == 512:
+    if len(y) == 512:
         config['n_small_bins'] = 64
         config["n_big_bins"] = 16
         config["big_binsize"] = 28
+    elif len(y) == 256:
+        config['n_small_bins'] = 64
+        config["n_big_bins"] = 12
+        config["big_binsize"] = 16
+    elif len(y) == 1024:
+        config['n_small_bins'] = 64
+        config["n_big_bins"] = 32
+        config["big_binsize"] = 30
+    elif len(y) == 2560:
+        config['n_small_bins'] = 64
+        config["n_big_bins"] = 96
+        config["big_binsize"] = 26
     elif len(y) == 3270:
         config['n_small_bins'] = 70
         config["n_big_bins"] = 32
         config["big_binsize"] = 100
+    else:
+        raise Exception(f'Need to specify bin sizes for size={len(y)}')
 
     config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
 
-    root = osp.join(dir, f'{root}-max_ent{k}')
+    root = osp.join(dir, f'{root}-max_ent{k}_stop')
     if osp.exists(root):
         # shutil.rmtree(root)
         print('WARNING: root exists')
@@ -155,15 +168,16 @@ def fit(dataset, sample, samples='samples'):
     params = default.params
     goals = epilib.get_goals(y, seqs, config)
     params["goals"] = goals
-    params['iterations'] = 20
+    params['iterations'] = 15
     params['parallel'] = 1
     params['equilib_sweeps'] = 30000
-    params['production_sweeps'] = 400000
+    params['production_sweeps'] = 300000
+    params['stop_at_convergence'] = True
 
     stdout = sys.stdout
     with open(osp.join(root, 'log.log'), 'w') as sys.stdout:
         me = Maxent(root, params, config, seqs, y,
-                    final_it_sweeps=0, mkdir=False)
+                    final_it_sweeps=500000, mkdir=False)
         t = me.fit()
         print(f'Simulation took {np.round(t, 2)} seconds')
     sys.stdout = stdout
@@ -171,21 +185,20 @@ def fit(dataset, sample, samples='samples'):
 def main():
     # dataset = 'dataset_05_31_23'; samples = list(range(1137, 1214))
     # dataset = 'downsampling_analysis'; samples = list(range(201, 211))
-    # dataset = 'dataset_02_04_23'; samples = list(range(201, 270))
+    dataset = 'dataset_02_04_23'; samples = list(range(201, 221))
     # dataset = 'Su2020'; samples = [1013]
     # dataset = 'dataset_04_05_23'; samples = list(range(1211, 1288))
     # dataset = 'dataset_06_29_23'; samples = list(range(1, 16))
     # samples = sorted(np.random.choice(samples, 12, replace = False))
-    dataset = 'timing_analysis/512'; samples = list(range(1, 16))
+    # dataset = 'timing_analysis/512'; samples = list(range(1, 16))
 
     mapping = []
-    # for j in [10]:
     for i in samples:
         mapping.append((dataset, i, f'samples'))
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(15) as p:
+    with mp.Pool(10) as p:
         p.starmap(fit, mapping)
     # for i in samples:
     #     setup_config(dataset, i, 'samples')

@@ -244,7 +244,7 @@ def single_experiment_dataset(filename, dataset, resolution, m,
     data_folder = osp.join(dir, dataset)
     if not osp.exists(data_folder):
         os.mkdir(data_folder, mode = 0o755)
-    odir = osp.join(data_folder, 'samples_10k')
+    odir = osp.join(data_folder, 'samples')
     if not osp.exists(odir):
         os.mkdir(odir, mode = 0o755)
 

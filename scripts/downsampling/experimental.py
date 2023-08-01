@@ -17,6 +17,9 @@ from sequences_to_contact_maps.scripts.load_utils import (
     get_final_max_ent_folder, load_import_log)
 from sequences_to_contact_maps.scripts.utils import triu_to_full
 
+sys.path.append('/home/erschultz/TICG-chromatin')
+from GNN import fit
+
 EXP_DATASET='dataset_02_04_23'
 
 def make_samples():
@@ -60,6 +63,22 @@ def make_samples():
         #     plot_matrix(y_i, osp.join(odir, 'y.png'), vmax = 'mean')
     tot_count_mean = np.mean(tot_count_list)
     print(f'Mean Total Read Depth: {tot_count_mean}')
+
+def fit_gnn():
+    dataset='downsampling_analysis'; samples = range(201, 211)
+    mapping = []
+
+    GNN_IDs = [427]
+    for downsampling in [4, 5, 6, 7, 8]:
+        for GNN_ID in GNN_IDs:
+            for i in samples:
+                mapping.append((dataset, i, GNN_ID, f'samples_exp{downsampling}'))
+
+    print(len(mapping))
+    print(mapping)
+
+    # with mp.Pool(4) as p:
+        # p.starmap(fit, mapping)
 
 def figure():
     label_fontsize=24
@@ -247,4 +266,5 @@ def figure():
 
 if __name__ == '__main__':
     # make_samples()
-    figure()
+    fit_gnn()
+    # figure()

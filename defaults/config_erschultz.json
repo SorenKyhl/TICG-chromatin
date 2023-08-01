@@ -23,7 +23,6 @@
   "smatrix_on": true,
   "dmatrix_on": true,
 
-  "decay_length": 500,
   "nSweeps": 500000,
   "dump_frequency": 10000,
   "dump_stats_frequency": 100,

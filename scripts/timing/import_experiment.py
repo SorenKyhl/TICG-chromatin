@@ -3,6 +3,7 @@ import sys
 from pylib.utils.plotting_utils import plot_matrix
 
 sys.path.append('/home/erschultz/TICG-chromatin')
+from max_ent import fit, setup_config
 from scripts.import_contactmap_straw import *
 
 
@@ -12,29 +13,26 @@ def main():
     if not osp.exists(odir):
         os.mkdir(odir, mode=0o755)
     kb=25600
-    resolutions = [50, 25, 10, 5, 1]
-    for i in range(4):
+    resolutions = [5, 1]
+    m_list = []
+    for i in range(len(resolutions)-1):
         print(i)
         resolution = resolutions[i]
         m = kb / resolution
         print(m)
         m = int(m)
+        m_list.append(m)
         single_experiment_dataset(fname, osp.join('timing_analysis', str(m)),
                                 resolution * 1000, m, chroms=[1,2], seed=23)
 
-def plot():
-    dir = '/home/erschultz/timing_analysis'
-    for m in [512, 1024, 2560, 5120]:
+    for m in m_list:
         print(m)
-        samples_dir = osp.join(dir, str(m), 'samples')
+        samples_dir = osp.join(odir, str(m), 'samples')
         for i in range(1, 16):
-            s_dir = osp.join(dir, str(m), 'samples', f'sample{i}')
+            s_dir = osp.join(odir, str(m), 'samples', f'sample{i}')
             y = np.load(osp.join(s_dir, 'y.npy'))
             plot_matrix(y, osp.join(s_dir, 'y.png'), vmax='mean')
 
 
-
-
 if __name__ == '__main__':
-    # main()
-    plot()
+    main()

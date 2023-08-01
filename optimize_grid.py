@@ -23,7 +23,7 @@ def main(root, config, mode='grid_angle10'):
     config['nbeads'] = len(gthic)
 
     if mode.startswith('grid'):
-        optimum = optimize_config(config, gthic, 'grid', 0.7, 2.0, root)
+        optimum = optimize_config(config, gthic, 'grid', 0.8, 2.0, root)
         plot_max_ent(root)
         print(f"optimal grid size is: {optimum}")
         with open(osp.join(root, 'grid_size.txt'), 'w') as f:

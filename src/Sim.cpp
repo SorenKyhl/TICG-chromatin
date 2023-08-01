@@ -338,8 +338,11 @@ void Sim::readInput() {
     std::cout << "grid move is : " << gridmove_on << std::endl;
 
     // MC move params
-    assert(config.contains("decay_length"));
-    decay_length = config["decay_length"];
+    if(config.contains("decay_length")){
+      decay_length = config["decay_length"];
+    } else {
+      decay_length = nbeads / 2;
+    }
     assert(config.contains("displacement_on"));
     displacement_on = config["displacement_on"];
     assert(config.contains("translation_on"));
@@ -724,6 +727,7 @@ void Sim::calculateParameters() {
     // grid.sphere_center = {grid.boundary_radius*grid.delta,
     // grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta};
 
+    assert(decay_length < nbeads);
     exp_decay = nbeads / decay_length; // size of exponential falloff for MCmove
                                        // second bead choice
     exp_decay_crank = nbeads / decay_length;

@@ -80,8 +80,8 @@ def fit(dataset, sample, GNN_ID, sub_dir='samples'):
     sys.stdout = stdout
 
 def main():
-    # dataset='downsampling_analysis'; samples = range(201, 211)
-    dataset='dataset_02_04_23'; samples = range(201, 211)
+    dataset='downsampling_analysis'; samples = range(201, 211)
+    # dataset='dataset_02_04_23'; samples = range(201, 211)
     # dataset='dataset_04_10_23'; samples = range(1001, 1011)
     # dataset='dataset_04_05_23'; samples = range(1001, 1011)
     # dataset = 'dataset_04_05_23'; samples = list(range(1011, 1021))
@@ -91,19 +91,15 @@ def main():
     # dataset = 'Su2020'; samples=[1013]
     mapping = []
 
-    GNN_IDs = [426]
+    GNN_IDs = [427]
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID))
 
-
-    # for j in [1]:
-    # for i in samples:
-        # mapping.append((dataset, i, 403, f'samples'))
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(2) as p:
+    with mp.Pool(4) as p:
         p.starmap(fit, mapping)
 
     # fit(*mapping[0])
