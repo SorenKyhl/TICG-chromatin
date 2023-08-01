@@ -10,9 +10,9 @@
 
 cd ~/TICG-chromatin
 
-conda activate python3.9_pytorch1.9
+source activate python3.9_pytorch1.9
 python3 test_midway3_0372.py
-conda deactivate
+source deactivate
 
-conda activate pytorch_H100
+source activate pytorch_H100
 python3 test_midway3_0372.py
