@@ -1,12 +1,12 @@
 #! /bin/bash
 #SBATCH --job-name=test
-#SBATCH --output=test_midway3_0304.out
+#SBATCH --output=test_midway3_0372.out
 #SBATCH --account=pi-depablo
 #SBATCH --gres=gpu:1
 #SBATCH --partition=depablo-gpu
 #SBATCH --mail-type=END
 #SBATCH --mail-user=erschultz@uchicago.edu
-#SBATCH --nodelist=midway3-0304
+#SBATCH --nodelist=midway3-0372
 
 cd ~/TICG-chromatin
 
