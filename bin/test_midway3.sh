@@ -10,6 +10,8 @@
 
 cd ~/TICG-chromatin
 
+nvidia-smi
+
 source activate python3.9_pytorch1.9
 python3 test_midway3.py
 conda deactivate

@@ -67,19 +67,19 @@ def make_samples():
 
 def fit_gnn():
     dataset='downsampling_analysis'; samples = range(201, 211)
-    mapping = []
 
     GNN_IDs = [427]
     for downsampling in [4, 5, 6, 7, 8]:
+        mapping = []
         for GNN_ID in GNN_IDs:
             for i in samples:
                 mapping.append((dataset, i, GNN_ID, f'samples_exp{downsampling}'))
 
-    print(len(mapping))
-    print(mapping)
+        print(len(mapping))
+        print(mapping)
 
-    with mp.Pool(15) as p:
-        p.starmap(fit, mapping)
+        with mp.Pool(10) as p:
+            p.starmap(fit, mapping)
 
 def figure():
     label_fontsize=24
