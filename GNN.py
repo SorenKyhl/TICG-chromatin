@@ -54,9 +54,9 @@ def fit(dataset, sample, GNN_ID, sub_dir='samples'):
 
     gnn_root = f'{root}-GNN{GNN_ID}'
     if osp.exists(gnn_root):
-        shutil.rmtree(gnn_root)
+        # shutil.rmtree(gnn_root)
         print('WARNING: root exists')
-        # return
+        return
     os.mkdir(gnn_root, mode=0o755)
 
     stdout = sys.stdout

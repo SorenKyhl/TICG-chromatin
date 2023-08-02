@@ -78,7 +78,7 @@ def fit_gnn():
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(10) as p:
+    with mp.Pool(15) as p:
         p.starmap(fit, mapping)
 
 def figure():
