@@ -1,4 +1,4 @@
--#! /bin/bash
+#! /bin/bash
 #SBATCH --job-name=test
 #SBATCH --output=test_midway3_0304.out
 #SBATCH --account=pi-depablo
