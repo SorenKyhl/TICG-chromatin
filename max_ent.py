@@ -154,7 +154,7 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None):
 
     config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
 
-    root = osp.join(dir, f'{root}-max_ent{k}_stop')
+    root = osp.join(dir, f'{root}-max_ent{k}')
     if osp.exists(root):
         # shutil.rmtree(root)
         print('WARNING: root exists')

@@ -1,4 +1,5 @@
 import json
+import multiprocessing as mp
 import os
 import os.path as osp
 import string
@@ -77,8 +78,8 @@ def fit_gnn():
     print(len(mapping))
     print(mapping)
 
-    # with mp.Pool(4) as p:
-        # p.starmap(fit, mapping)
+    with mp.Pool(10) as p:
+        p.starmap(fit, mapping)
 
 def figure():
     label_fontsize=24

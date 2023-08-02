@@ -38,7 +38,7 @@ def main():
         print(len(mapping))
         print(mapping)
 
-        with mp.Pool(15) as p:
+        with mp.Pool(5) as p:
             p.starmap(fit, mapping)
 
 
