@@ -25,12 +25,13 @@
 #   done
 # done
 
-dir='/home/erschultz/dataset_02_04_23/samples'
+dir='/home/erschultz/timing_analysis/2560/samples'
 cd $dir
 
-for i in {201..300}
+for i in {1..15}
 do
   cd  "${dir}/sample${i}"
-  rm -r GNN-364-E
+  pwd
+  rm -r optimize_grid_b_63_phi_0.03-max_ent10
 
 done

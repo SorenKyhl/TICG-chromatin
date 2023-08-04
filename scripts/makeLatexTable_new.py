@@ -136,16 +136,19 @@ def load_data(args):
                 times = [load_time_dir(fpath)]
             elif method_type.startswith('max_ent'):
                 print(fname)
-                k = len(triu_to_full(np.loadtxt(osp.join(fpath, 'chis.txt'))))
+                chi_path = osp.join(fpath, 'chis.txt')
+                if not osp.exists(chi_path):
+                    # presumabely it is still running
+                    continue
+                k = len(triu_to_full(np.loadtxt(chi_path)))
 
                 # convergence
                 convergence_file = osp.join(fpath, 'convergence.txt')
                 assert osp.exists(convergence_file)
-                conv = np.loadtxt(convergence_file)
+                conv = np.atleast_1d(np.loadtxt(convergence_file))
                 converged_it = None
                 if args.convergence_definition is None:
                     _, converged_it = get_final_max_ent_folder(fpath, return_it = True)
-                    converged_it -= 1
                 elif args.convergence_definition == 'param':
                     raise Exception('Deprecated')
                     # "chis_diag.txt" and "chis.txt" no longer contain chis per iteration
@@ -229,10 +232,14 @@ def load_data(args):
                 # SCC
                 data_file = osp.join(converged_path, 'production_out')
                 y_file = osp.join(converged_path, 'y.npy')
+                y_file2 = osp.join(converged_path, 'production_out/contacts.txt')
                 if osp.exists(y_file):
                     yhat = np.load(y_file)
+                elif osp.exists(y_file2):
+                    yhat = np.loadtxt(y_file2)
                 else:
-                    yhat = np.loadtxt(osp.join(converged_path, 'production_out/contacts.txt'))
+                    # presumably max ent is still running
+                    continue
                 yhat_meanDist = DiagonalPreprocessing.genomic_distance_statistics(yhat)
                 yhat_diag = DiagonalPreprocessing.process(yhat, yhat_meanDist, verbose = False)
                 scc = SCC()
@@ -465,6 +472,9 @@ def sort_method_keys(keys):
         else:
             label += f'  (b={b},phi={phi})'
 
+        if 'stop' in key:
+            label += ' stop'
+
         return label
 
     for method, label in zip(['max_ent', 'gnn'], ['Max Ent', 'GNN']):
@@ -571,16 +581,12 @@ def main(args=None):
 
 if __name__ == '__main__':
     # main()
-    # dataset = 'dataset_04_05_23'
-    # samples = range(1001, 1011)
-    # samples = [1001, 1039, 1065, 1093, 1122, 1137, 1166, 1185]
-    # samples = [1213, 1214, 1248, 1249, 1285, 1286]
-    dataset = 'dataset_02_04_23'; samples = list(range(201, 211))
+    dataset = 'dataset_02_04_23'; samples = [208, 209, 210, 211, 212, 213, 214, 215]
     data_dir = osp.join('/home/erschultz', dataset)
     args = getArgs(data_folder = data_dir, samples = samples)
     args.experimental = True
-    args.convergence_definition = 'both'
-    # args.gnn_id=419
+    args.convergence_definition = None
+    args.gnn_id=434
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

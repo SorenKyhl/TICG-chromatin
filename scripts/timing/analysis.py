@@ -17,10 +17,10 @@ def main():
     gnn_times_dict = defaultdict(list) # m : list of total times
     samples = range(1, 16)
     for m in m_list:
-        print(m)
+        # print(m)
         m_times = []
         for sample in samples:
-            print('\t', sample)
+            # print('\t', sample)
             s_dir = osp.join(dir, str(m), 'samples', f'sample{sample}')
             for f in os.listdir(s_dir):
                 if f.startswith('optimize_grid') and f.endswith('max_ent10'):
@@ -35,7 +35,7 @@ def main():
                     times.append(load_time_dir(f))
             tot_time = np.sum(times) / 60 # to mins
             times_dict[m].append(tot_time)
-            print('\t', times)
+            # print('\t', times)
             gnn_times_dict[m].append(times[-1] / 60)
 
     means = []
@@ -63,13 +63,25 @@ def main():
     print(gnn_means)
     print(ratio)
 
-    plt.errorbar(m_list, means, stds, color = 'b', label = 'Maximum Entropy')
-    plt.errorbar(m_list, gnn_means, gnn_stds, color = 'r', label = 'GNN')
-    plt.ylabel('Time (mins)', fontsize=16)
-    plt.xlabel('Number of particles (m)', fontsize=16)
-    plt.legend(loc='upper left')
-    plt.xticks(m_list)
-    plt.show()
+
+    label_fontsize=16
+    tick_fontsize=14
+    fig, ax = plt.subplots()
+    ax.errorbar(m_list, means, stds, color = 'b', label = 'Maximum Entropy')
+    ax.errorbar(m_list, gnn_means, gnn_stds, color = 'r', label = 'GNN')
+
+    ax2 = ax.twinx()
+    ax2.plot(m_list, ratio, color = 'k')
+    ax2.set_ylabel('Ratio', fontsize=label_fontsize)
+
+    ax.set_ylabel('Time (mins)', fontsize=label_fontsize)
+    ax.set_xlabel('Number of particles (m)', fontsize=label_fontsize)
+    ax.legend(loc='upper left', fontsize=label_fontsize)
+    ax.set_xticks(m_list)
+    ax.tick_params(axis='both', which='major', labelsize=tick_fontsize)
+    ax2.tick_params(axis='both', which='major', labelsize=tick_fontsize)
+    plt.tight_layout()
+    plt.savefig('/home/erschultz/TICG-chromatin/figures/timing.png')
 
 
 

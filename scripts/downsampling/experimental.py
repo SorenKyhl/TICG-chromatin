@@ -68,7 +68,7 @@ def make_samples():
 def fit_gnn():
     dataset='downsampling_analysis'; samples = range(201, 211)
 
-    GNN_IDs = [427]
+    GNN_IDs = [434]
     for downsampling in [4, 5, 6, 7, 8]:
         mapping = []
         for GNN_ID in GNN_IDs:
@@ -78,10 +78,10 @@ def fit_gnn():
         print(len(mapping))
         print(mapping)
 
-        with mp.Pool(10) as p:
+        with mp.Pool(15) as p:
             p.starmap(fit, mapping)
 
-def figure():
+def figure(GNN_ID):
     label_fontsize=24
     tick_fontsize=22
     letter_fontsize=26
@@ -91,13 +91,15 @@ def figure():
     exponents = np.arange(4, 9)
     read_counts = 10**exponents
     dir = '/home/erschultz/downsampling_analysis'
-    GNN_ID = 403 # TODO
     m=512
-    gnn_scc = defaultdict(lambda: np.zeros(N)) # exponent : list of sccs
-    max_ent_scc = defaultdict(lambda: np.zeros(N))
-    experiment_scc = defaultdict(lambda: np.zeros(N))
-    composite_dict = defaultdict(lambda: np.zeros((N,m,m))) # exponent: list of gnn composites
-    max_ent_composite_dict = defaultdict(lambda: np.zeros((N,m,m))) # exponent: list of gnn composites
+    gnn_scc_dense = defaultdict(lambda: np.zeros(N))
+                    # exponent : list of sccs
+    max_ent_scc_dense = defaultdict(lambda: np.zeros(N))
+    experiment_scc_dense = defaultdict(lambda: np.zeros(N))
+    gnn_scc_sparse = defaultdict(lambda: np.zeros(N))
+    max_ent_scc_sparse = defaultdict(lambda: np.zeros(N))
+    composite_dict = defaultdict(lambda: np.zeros((N,m,m)))
+    max_ent_composite_dict = defaultdict(lambda: np.zeros((N,m,m)))
 
     y_list = [] # ground truth y from highly sampled simulation
     for s in samples:
@@ -106,7 +108,7 @@ def figure():
         y_list.append(y)
 
     # collect data
-    scc = SCC()
+    scc = SCC(h=1)
     for exp in exponents:
         for i, s in enumerate(samples):
             s_dir = osp.join(dir, f'samples_exp{exp}/sample{s}')
@@ -117,15 +119,16 @@ def figure():
             indu = np.triu_indices(m)
             indl = np.tril_indices(m)
 
+
             # experiment
-            corr_scc_var = scc.scc(y_dense, y_sparse, var_stabilized = True)
-            experiment_scc[exp][i] = corr_scc_var
+            corr_scc_var = scc.scc(y_dense, y_sparse)
+            experiment_scc_dense[exp][i] = corr_scc_var
 
             # gnn
             gnn_dir = osp.join(s_dir, f'optimize_grid_b_140_phi_0.03-GNN{GNN_ID}')
             yhat = np.load(osp.join(gnn_dir, 'y.npy'))
-            corr_scc_var = scc.scc(y_dense, yhat, var_stabilized = True)
-            gnn_scc[exp][i] = corr_scc_var
+            gnn_scc_dense[exp][i] = scc.scc(y_dense, yhat)
+            gnn_scc_sparse[exp][i] = scc.scc(y_sparse, yhat)
 
             # make composite contact map
             composite = np.zeros((m, m))
@@ -137,8 +140,8 @@ def figure():
             max_ent_dir = osp.join(s_dir, 'optimize_grid_b_140_phi_0.03-max_ent10')
             final = get_final_max_ent_folder(max_ent_dir)
             yhat = np.load(osp.join(final, 'y.npy'))
-            corr_scc_var = scc.scc(y_dense, yhat, var_stabilized = True)
-            max_ent_scc[exp][i] = corr_scc_var
+            max_ent_scc_dense[exp][i] = scc.scc(y_dense, yhat)
+            max_ent_scc_sparse[exp][i] = scc.scc(y_sparse, yhat)
 
             # make max ent composite contact map
             composite = np.zeros((m, m))
@@ -147,20 +150,32 @@ def figure():
             max_ent_composite_dict[exp][i] = composite
 
     # compute statistics
-    gnn_mean = np.zeros_like(exponents, dtype=float)
-    max_ent_mean = np.zeros_like(exponents, dtype=float)
-    experiment_mean = np.zeros_like(exponents, dtype=float)
-    gnn_std = np.zeros_like(exponents, dtype=float)
-    max_ent_std = np.zeros_like(exponents, dtype=float)
-    experiment_std = np.zeros_like(exponents, dtype=float)
+    gnn_scc_stats = defaultdict(
+                            lambda: defaultdict(
+                            lambda: np.zeros_like(exponents, dtype=float)))
+                            # {sparse, dense} : {mean, std} : list of values
+    max_ent_scc_stats = defaultdict(
+                            lambda: defaultdict(
+                            lambda: np.zeros_like(exponents, dtype=float)))
+    experiment_scc_stats = defaultdict(
+                            lambda: defaultdict(
+                            lambda: np.zeros_like(exponents, dtype=float)))
     for i, exp in enumerate(exponents):
-        gnn_mean[i] = np.mean(gnn_scc[exp])
-        max_ent_mean[i] = np.mean(max_ent_scc[exp])
-        experiment_mean[i] = np.mean(experiment_scc[exp])
+        # sparse
+        gnn_scc_stats['sparse']['mean'][i] = np.mean(gnn_scc_sparse[exp])
+        max_ent_scc_stats['sparse']['mean'][i] = np.mean(max_ent_scc_sparse[exp])
+        gnn_scc_stats['sparse']['std'][i] = np.std(gnn_scc_sparse[exp])
+        max_ent_scc_stats['sparse']['std'][i] = np.std(max_ent_scc_sparse[exp])
 
-        gnn_std[i] = np.std(gnn_scc[exp])
-        max_ent_std[i] = np.std(max_ent_scc[exp])
-        experiment_std[i] = np.std(experiment_scc[exp])
+        # dense
+        gnn_scc_stats['dense']['mean'][i] = np.mean(gnn_scc_dense[exp])
+        max_ent_scc_stats['dense']['mean'][i]= np.mean(max_ent_scc_dense[exp])
+        experiment_scc_stats['dense']['mean'][i] = np.mean(experiment_scc_dense[exp])
+        gnn_scc_stats['dense']['std'][i] = np.std(gnn_scc_dense[exp])
+        max_ent_scc_stats['dense']['std'][i]= np.std(max_ent_scc_dense[exp])
+        experiment_scc_stats['dense']['std'][i] = np.std(experiment_scc_dense[exp])
+    print(experiment_scc_stats['dense'])
+    print(gnn_scc_stats['sparse'])
 
     ### combined plot ##
     # select which composites to plot
@@ -186,8 +201,8 @@ def figure():
     ax4 = plt.subplot(3, 24, (25, 32))
     ax5 = plt.subplot(3, 24, (33, 40))
     ax6 = plt.subplot(3, 24, (41, 48))
-    ax7 = plt.subplot(3, 24, (49, 61)) # pc
-    ax8 = plt.subplot(3, 24, (62, 72)) # legend
+    ax7 = plt.subplot(3, 2, 5) # scc sparse
+    ax8 = plt.subplot(3, 2, 6) # scc dense
     axes = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8]
 
     # hic
@@ -196,18 +211,23 @@ def figure():
         composites[i] = composite_dict[exp][sample_i]
     vmax = np.mean(composites)
     for i, (exp, composite) in enumerate(zip(exponents_hic, composites)):
-        scc = gnn_scc[exp][sample_i]
+        scc = gnn_scc_sparse[exp][sample_i]
         scc = np.round(scc, 3)
-        s = sns.heatmap(composite, linewidth = 0, vmin = 0, vmax = vmax, cmap = RED_CMAP,
-                        ax = axes[i], cbar = False)
-        s.set_title(f'Read Depth = $10^{{{exp}}}$\nSCC={scc}', fontsize = label_fontsize)
-        # s.set_xticks(genome_ticks, labels = genome_labels, rotation = 0, fontsize = tick_fontsize)
-        # s.set_yticks(genome_ticks, labels = genome_labels, rotation = 0, fontsize = tick_fontsize)
+        s = sns.heatmap(composite, linewidth = 0, vmin = 0, vmax = vmax,
+                        cmap = RED_CMAP, ax = axes[i], cbar = False)
+        s.set_title(f'Read Depth = $10^{{{exp}}}$\nSCC={scc}',
+                    fontsize = label_fontsize)
+        # s.set_xticks(genome_ticks, labels = genome_labels, rotation = 0,
+        #             fontsize = tick_fontsize)
+        # s.set_yticks(genome_ticks, labels = genome_labels, rotation = 0,
+        #             fontsize = tick_fontsize)
         s.set_xticks([])
         s.set_yticks([])
         axes[i].axline((0,0), slope=1, color = 'k', lw=1)
-        axes[i].text(0.99*m, 0.01*m, 'GNN', fontsize=letter_fontsize, ha='right', va='top', weight='bold')
-        axes[i].text(0.01*m, 0.99*m, 'Reference', fontsize=letter_fontsize, weight='bold')
+        axes[i].text(0.99*m, 0.01*m, 'GNN', fontsize=letter_fontsize, ha='right',
+                    va='top', weight='bold')
+        axes[i].text(0.01*m, 0.99*m, 'Reference', fontsize=letter_fontsize,
+                    weight='bold')
 
     composites = np.zeros((len(exponents_hic), m, m))
     for i, exp in enumerate(exponents_hic):
@@ -215,42 +235,58 @@ def figure():
     vmax = np.mean(composites)
     for i, (exp, composite) in enumerate(zip(exponents_hic, composites)):
         ax = axes[i+3]
-        scc = max_ent_scc[exp][sample_i]
+        scc = max_ent_scc_sparse[exp][sample_i]
         scc = np.round(scc, 3)
-        s = sns.heatmap(composite, linewidth = 0, vmin = 0, vmax = vmax, cmap = RED_CMAP,
-                        ax = ax, cbar = False)
+        s = sns.heatmap(composite, linewidth = 0, vmin = 0, vmax = vmax,
+                        cmap = RED_CMAP, ax = ax, cbar = False)
         s.set_title(f'SCC={scc}', fontsize = label_fontsize)
-        # s.set_xticks(genome_ticks, labels = genome_labels, rotation = 0, fontsize = tick_fontsize)
-        # s.set_yticks(genome_ticks, labels = genome_labels, rotation = 0, fontsize = tick_fontsize)
+        # s.set_xticks(genome_ticks, labels = genome_labels, rotation = 0,
+        #             fontsize = tick_fontsize)
+        # s.set_yticks(genome_ticks, labels = genome_labels, rotation = 0,
+        #             fontsize = tick_fontsize)
         s.set_xticks([])
         s.set_yticks([])
         ax.axline((0,0), slope=1, color = 'k', lw=1)
-        ax.text(0.99*m, 0.01*m, 'Max Ent', fontsize=letter_fontsize, ha='right', va='top', weight='bold')
+        ax.text(0.99*m, 0.01*m, 'Max Ent', fontsize=letter_fontsize, ha='right',
+                va='top', weight='bold')
         ax.text(0.01*m, 0.99*m, 'Reference', fontsize=letter_fontsize, weight='bold')
 
     # scc
-    print(experiment_mean)
-    axes[-2].plot(read_counts, experiment_mean, label='Subsampled Experiment', color='k')
-    axes[-2].fill_between(read_counts, experiment_mean - experiment_std, experiment_mean + experiment_std, color='k', alpha=0.5)
+    for ax, mode in zip([ax7, ax8], ['sparse', 'dense']):
+        if mode == 'dense':
+            experiment_mean = experiment_scc_stats[mode]['mean']
+            experiment_std = experiment_scc_stats[mode]['std']
+            ax.errorbar(read_counts, experiment_mean, experiment_std,
+                    color='k', label='Subsampled Experiment')
 
-    axes[-2].plot(read_counts, max_ent_mean, label='Maximum Entropy', color='blue')
-    axes[-2].fill_between(read_counts, max_ent_mean - max_ent_std, max_ent_mean + max_ent_std, color='blue', alpha=0.5)
+        max_ent_mean = max_ent_scc_stats[mode]['mean']
+        max_ent_std = max_ent_scc_stats[mode]['std']
+        ax.errorbar(read_counts, max_ent_mean, max_ent_std,
+                        color='blue', label = 'Maximum Entropy')
 
-    axes[-2].plot(read_counts, gnn_mean, label='GNN', color='red')
-    axes[-2].fill_between(read_counts, gnn_mean - gnn_std, gnn_mean + gnn_std, color='red', alpha=0.5)
+        gnn_mean = gnn_scc_stats[mode]['mean']
+        gnn_std = gnn_scc_stats[mode]['std']
+        ax.errorbar(read_counts, gnn_mean, gnn_std,
+                        color='red', label='GNN')
 
-    axes[-2].set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1])
-    axes[-2].set_xlabel('Read Depth', fontsize=label_fontsize)
-    axes[-2].set_xscale('log')
-    axes[-2].set_ylabel('SCC', fontsize=label_fontsize)
 
-    axes[-2].tick_params(axis='both', which='major', labelsize=tick_fontsize)
+        ax.set_xlabel('Read Depth', fontsize=label_fontsize)
+        ax.set_xscale('log')
+        ax.set_xticks(read_counts)
 
-    h, l = axes[-2].get_legend_handles_labels()
-    axes[-1].legend(h, l, borderaxespad=0, fontsize=label_fontsize, loc='center')
-    axes[-1].axis("off")
+        ax.tick_params(axis='both', which='major', labelsize=tick_fontsize)
 
-    for i, ax in enumerate([ax1, ax4, axes[-2]]):
+    ax7.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1])
+    ax8.set_yticks([])
+    ax7.set_ylabel('SCC (subsampled)', fontsize=label_fontsize)
+    ax8.set_ylabel('SCC (original)', fontsize=label_fontsize)
+
+    ax8.legend(bbox_to_anchor=(-0.15, -0.25), loc="upper center",
+                fontsize = label_fontsize,
+                borderaxespad=0, ncol = 3)
+
+
+    for i, ax in enumerate([ax1, ax4, ax7, ax8]):
         ax.text(-0.1, 1.1, string.ascii_uppercase[i], transform=ax.transAxes,
                 size=letter_fontsize, weight='bold')
 
@@ -267,5 +303,5 @@ def figure():
 
 if __name__ == '__main__':
     # make_samples()
-    fit_gnn()
-    # figure()
+    # fit_gnn()
+    figure(434)

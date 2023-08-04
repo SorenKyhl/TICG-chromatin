@@ -143,8 +143,8 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None):
         config["big_binsize"] = 30
     elif len(y) == 2560:
         config['n_small_bins'] = 64
-        config["n_big_bins"] = 96
-        config["big_binsize"] = 26
+        config["n_big_bins"] = 48
+        config["big_binsize"] = 52
     elif len(y) == 3270:
         config['n_small_bins'] = 70
         config["n_big_bins"] = 32
@@ -185,10 +185,11 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None):
 def main():
     # dataset = 'dataset_05_31_23'; samples = list(range(1137, 1214))
     # dataset = 'downsampling_analysis'; samples = list(range(201, 211))
-    dataset = 'dataset_02_04_23'; samples = list(range(201, 221))
+    # dataset = 'dataset_02_04_23'; samples = list(range(201, 221))
+    dataset = 'dataset_02_04_23'; samples = [211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224]
     # dataset = 'Su2020'; samples = [1013]
     # dataset = 'dataset_04_05_23'; samples = list(range(1211, 1288))
-    # dataset = 'dataset_06_29_23'; samples = list(range(1, 16))
+    # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     # samples = sorted(np.random.choice(samples, 12, replace = False))
     # dataset = 'timing_analysis/512'; samples = list(range(1, 16))
 
@@ -198,13 +199,11 @@ def main():
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(10) as p:
+    with mp.Pool(14) as p:
         p.starmap(fit, mapping)
     # for i in samples:
     #     setup_config(dataset, i, 'samples')
 
-    # dataset = 'Su2020'
-    # fit(dataset, 1013, 'samples')
 
 
 

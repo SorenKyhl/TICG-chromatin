@@ -1376,7 +1376,7 @@ if __name__ == '__main__':
     # compare_dist_distribution_plaid(1013, None, 261, 0.01)
     # compare_rg(1014, 423, b=261, phi=0.01)
     # compare_scaling(1002, None, 261, 0.006)
-    # figure(1013, 419, bl=261, phi=0.01)
-    supp_figure(1013, 419, bl=261, phi=0.01)
+    figure(1013, 434, bl=261, phi=0.01)
+    supp_figure(1013, 434, bl=261, phi=0.01)
 
     # compare_dist_ij(1014, 423, b=261, phi=0.01)

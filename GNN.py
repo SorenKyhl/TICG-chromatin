@@ -12,6 +12,9 @@ from pylib.Pysim import Pysim
 from pylib.utils import default, epilib, utils
 from scripts.get_params import GetEnergy
 
+sys.path.append('/home/erschultz')
+from sequences_to_contact_maps.scripts.load_utils import load_import_log
+
 
 def fit(dataset, sample, GNN_ID, sub_dir='samples'):
     print(sample)
@@ -54,9 +57,9 @@ def fit(dataset, sample, GNN_ID, sub_dir='samples'):
 
     gnn_root = f'{root}-GNN{GNN_ID}'
     if osp.exists(gnn_root):
-        shutil.rmtree(gnn_root)
+        # shutil.rmtree(gnn_root)
         print('WARNING: root exists')
-        # return
+        return
     os.mkdir(gnn_root, mode=0o755)
 
     stdout = sys.stdout
@@ -80,8 +83,8 @@ def fit(dataset, sample, GNN_ID, sub_dir='samples'):
     sys.stdout = stdout
 
 def main():
-    dataset='downsampling_analysis'; samples = range(201, 211)
-    # dataset='dataset_02_04_23'; samples = range(201, 211)
+    # dataset='downsampling_analysis'; samples = range(201, 211)
+    dataset='dataset_02_04_23'; all_samples = range(201, 283)
     # dataset='dataset_04_10_23'; samples = range(1001, 1011)
     # dataset='dataset_04_05_23'; samples = range(1001, 1011)
     # dataset = 'dataset_04_05_23'; samples = list(range(1011, 1021))
@@ -89,20 +92,36 @@ def main():
     # dataset='dataset_05_28_23'; samples = [324, 981, 1936, 2834, 3464]
     # dataset = 'dataset_05_31_23'; samples = [1002, 1037, 1198]
     # dataset = 'Su2020'; samples=[1013]
+    # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     mapping = []
 
-    GNN_IDs = [427]
+    odd_samples = []
+    even_samples = []
+    for s in all_samples:
+        s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{s}')
+        result = load_import_log(s_dir)
+        chrom = int(result['chrom'])
+        if chrom % 2 == 0:
+            even_samples.append(s)
+        else:
+            odd_samples.append(s)
+    samples = odd_samples[:10]
+
+
+
+    GNN_IDs = [434, 440, 448, 442, 443, 447, 449, 446, 444, 445, 441]
+    # GNN_IDs = [434]
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID))
 
+    print(samples)
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(4) as p:
+    with mp.Pool(15) as p:
         p.starmap(fit, mapping)
 
-    # fit(*mapping[0])
 
 
 if __name__ == '__main__':
