@@ -394,8 +394,8 @@ def new_figure(sample, GNN_ID, bl=140, phi=0.03):
                 size=letter_fontsize, weight='bold')
 
 
-    plt.subplots_adjust(bottom=0.275, top = 0.9, left = 0.15, right = 0.95,
-                    hspace = 0.25, wspace = 0.45)
+    plt.subplots_adjust(bottom=0.275, top = 0.9, left = 0.15, right = 0.925,
+                    hspace = 0.25, wspace = 0.25)
     plt.tight_layout()
     plt.savefig('/home/erschultz/TICG-chromatin/figures/distances.png')
     plt.close()
