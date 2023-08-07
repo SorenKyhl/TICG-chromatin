@@ -773,35 +773,6 @@ def load_exp_gnn_pca(dir, GNN_ID=None, mode='mean', b=140, phi=0.03):
 
     return D, D_gnn, D_pca
 
-def load_exp_gnn_pca_contact_maps(dir, GNN_ID=None, b=140, phi=0.03):
-    result = load_import_log(dir)
-    start = result['start']
-    resolution = result['resolution']
-    chrom = int(result['chrom'])
-    genome = result['genome']
-
-    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, b, phi)
-    if osp.exists(max_ent_dir):
-        final = get_final_max_ent_folder(max_ent_dir)
-        y_pca, _ = load_Y(final)
-        y_pca /= np.mean(np.diagonal(y_pca))
-        m = len(y_pca)
-    else:
-        print(f'{max_ent_dir} does not exist')
-        y_pca = None
-
-    if GNN_ID is not None and osp.exists(gnn_dir):
-        y_gnn, _ = load_Y(gnn_dir)
-        y_gnn /= np.mean(np.diagonal(y_gnn))
-        m = len(y_gnn)
-    else:
-        y_gnn = None
-
-    y, _ = load_Y(dir)
-    y /= np.mean(np.diagonal(y))
-
-    return y, y_gnn, y_pca
-
 def compare_pcs(sample, GNN_ID):
     dir = f'/home/erschultz/Su2020/samples/sample{sample}'
     D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID)
