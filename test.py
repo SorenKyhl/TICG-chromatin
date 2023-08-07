@@ -882,8 +882,45 @@ def make_small(dataset):
             shutil.copyfile(osp.join(s_dir_grid, f), osp.join(s_odir_grid, f))
 
 
+def test_param_convergence(dataset):
+    dir = f'/home/erschultz/{dataset}/samples'
+    for i in range(20):
+        s_dir = osp.join(dir, f'sample{i}')
+        fpath = osp.join(dir, 'optimize_grid_b_140_phi_0.03-maxent10')
+
+        all_chis = []
+        all_diag_chis = []
+        for i in range(30):
+            it_path = osp.join(fpath, f'iteration{i}')
+            if osp.exists(it_path):
+                config_file = osp.join(it_path, 'production_out/config.json')
+                config = json.load(config_file)
+                chis = np.array(config['chis'])
+                chis = chis[np.triu_indices(len(chis))] # grab upper triangle
+                diag_chis = np.array(config['diag_chis'])
+
+        params = np.concatenate((diag_chis, chis), axis = 1)
+        print(params, params.shape)
+
+        convergence = []
+        eps = 1e-2
+        for j in range(1, len(params)):
+            diff = params[j] - params[j-1]
+            conv = np.linalg.norm(diff, ord = 2)
+            convergence.append(conv)
+
+        plt.plot(convergence)
+
+    plt.yscale('log')
+    plt.axhline(1e-1)
+    plt.axhline(1e-2)
+
+    plt.savefig('/home/erschultz/TICG-chromatin/figures/conv.png')
+
+
 if __name__ == '__main__':
     # test_robust_PCA()
+    test_param_convergence('dataset_02_04_23')
     # check_dataset('dataset_11_18_22')
     # time_comparison()
     # time_comparison_dmatrix()

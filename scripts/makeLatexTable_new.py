@@ -150,15 +150,22 @@ def load_data(args):
                 if args.convergence_definition is None:
                     _, converged_it = get_final_max_ent_folder(fpath, return_it = True)
                 elif args.convergence_definition == 'param':
-                    raise Exception('Deprecated')
-                    # "chis_diag.txt" and "chis.txt" no longer contain chis per iteration
-
                     # param convergence
-                    diag_chis = np.loadtxt(osp.join(fpath, 'chis_diag.txt'))
-                    chis = np.loadtxt(osp.join(fpath, 'chis.txt'))
-                    params = np.concatenate((diag_chis, chis), axis = 1)
+                    all_chis = []
+                    all_diag_chis = []
+                    for i in range(30):
+                        it_path = osp.join(fpath, f'iteration{i}')
+                        if osp.exists(it_path):
+                            config_file = osp.join(it_path, 'production_out/config.json')
+                            config = json.load(config_file)
+                            chis = np.array(config['chis'])
+                            chis = chis[np.triu_indices(len(chis))] # grab upper triangle
+                            diag_chis = np.array(config['diag_chis'])
 
-                    eps = 1
+                    params = np.concatenate((diag_chis, chis), axis = 1)
+                    print(params, params.shape)
+
+                    eps = 1e-2
                     for j in range(1, len(params)):
                         diff = params[j] - params[j-1]
                         if np.linalg.norm(diff, ord = 2) < eps:
@@ -581,7 +588,7 @@ def main(args=None):
 
 if __name__ == '__main__':
     # main()
-    dataset = 'dataset_02_04_23'; samples = [208, 209, 210, 211, 212, 213, 214, 215]
+    dataset = 'dataset_02_04_23'; samples = [215]
     data_dir = osp.join('/home/erschultz', dataset)
     args = getArgs(data_folder = data_dir, samples = samples)
     args.experimental = True
