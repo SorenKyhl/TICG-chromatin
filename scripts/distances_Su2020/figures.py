@@ -324,7 +324,7 @@ def new_figure(sample, GNN_ID, bl=140, phi=0.03):
     ### combined figure ###
     print('---'*9)
     print('Starting Figure')
-    plt.figure(figsize=(12, 6))
+    plt.figure(figsize=(18, 6))
     ax3 = plt.subplot(1, 24, (1, 6))
     ax4 = plt.subplot(1, 24, (8, 16)) # pc
     ax5 = plt.subplot(1, 12, (10, 12)) # dist a-b
