@@ -269,6 +269,7 @@ def new_figure(sample, GNN_ID, bl=140, phi=0.03):
     letter_fontsize=26
     dir = f'/home/erschultz/Su2020/samples/sample{sample}'
     D, D_gnn, _ = load_exp_gnn_pca(dir, GNN_ID, b=bl, phi=phi)
+    nan_rows = np.isnan(D[0])
 
     # compare PCs
     smooth = False; h = 1
