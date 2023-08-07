@@ -26,7 +26,7 @@ from sequences_to_contact_maps.scripts.utils import pearson_round
 from sequences_to_contact_maps.scripts.xyz_utils import xyz_load
 
 sys.path.append('/home/erschultz/TICG-chromatin')
-from scripts.distances_Su2020.su2020_analysis import get_dirs, load_exp_gnn_pca, get_pcs
+from scripts.distances_Su2020.su2020_analysis import get_dirs, load_exp_gnn_pca, get_pcs, dist_distribution_a_b
 
 
 def load_exp_gnn_pca_contact_maps(dir, GNN_ID=None, b=140, phi=0.03):
