@@ -389,7 +389,7 @@ def new_figure(sample, GNN_ID, bl=140, phi=0.03):
                 fontsize = label_fontsize,
                 borderaxespad=0, ncol = 3)
 
-    for n, ax in enumerate([ax1, ax3, ax4, ax5]):
+    for n, ax in enumerate([ax3, ax4, ax5]):
         ax.text(-0.0, 1.05, string.ascii_uppercase[n], transform=ax.transAxes,
                 size=letter_fontsize, weight='bold')
 
