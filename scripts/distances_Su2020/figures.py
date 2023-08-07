@@ -328,7 +328,6 @@ def new_figure(sample, GNN_ID, bl=140, phi=0.03):
     ax3 = plt.subplot(1, 24, (1, 6))
     ax4 = plt.subplot(1, 24, (8, 16)) # pc
     ax5 = plt.subplot(1, 12, (10, 12)) # dist a-b
-    axes = [ax1, ax2]
 
     # plot scaling
     m = len(D)
