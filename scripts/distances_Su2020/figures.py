@@ -26,9 +26,6 @@ from sequences_to_contact_maps.scripts.utils import pearson_round
 from sequences_to_contact_maps.scripts.xyz_utils import xyz_load
 
 
-def load_data(sample, GNN_ID, bl, phi):
-
-
 def old_figure(sample, GNN_ID, bl=140, phi=0.03):
     label_fontsize=24
     tick_fontsize=22
@@ -429,21 +426,5 @@ def supp_figure(sample, GNN_ID, bl=140, phi=0.03):
 
 
 if __name__ == '__main__':
-    # tsv_to_npy()
-    # test_pcs()
-    # load_exp_gnn_pca('/home/erschultz/Su2020/samples/sample1002')
-    # find_hg38_positions()
-    # xyz_to_dist()
-    # xyz_to_xyz()
-    # compare_D_to_sim_D(1014)
-    # compare_diagonal(1003)
-    # sim_xyz_to_dist('/home/erschultz/Su2020/samples/sample1011/optimize_grid_b_140_phi_0.03-GNN403', False)
-    # find_volume()
-    # compare_pcs(1013)
-    # compare_d_maps(1003, None)
-    # compare_dist_distribution_a_b()
-    # compare_dist_distribution_plaid(1013, None, 261, 0.01)
-    # compare_rg(1014, 423, b=261, phi=0.01)
-    # compare_scaling(1002, None, 261, 0.006)
-    figure(1013, 434, bl=261, phi=0.01)
-    supp_figure(1013, 434, bl=261, phi=0.01)
+    new_figure(1013, 434, bl=261, phi=0.01)
+    # supp_figure(1013, 434, bl=261, phi=0.01)
