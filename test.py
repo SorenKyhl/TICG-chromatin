@@ -884,9 +884,10 @@ def make_small(dataset):
 
 def test_param_convergence(dataset):
     dir = f'/home/erschultz/{dataset}/samples'
-    for i in range(20):
+    for i in range(201, 220):
         s_dir = osp.join(dir, f'sample{i}')
-        fpath = osp.join(dir, 'optimize_grid_b_140_phi_0.03-maxent10')
+        fpath = osp.join(s_dir, 'optimize_grid_b_140_phi_0.03-max_ent10')
+        assert osp.exists(fpath), fpath
 
         all_chis = []
         all_diag_chis = []
@@ -894,12 +895,16 @@ def test_param_convergence(dataset):
             it_path = osp.join(fpath, f'iteration{i}')
             if osp.exists(it_path):
                 config_file = osp.join(it_path, 'production_out/config.json')
-                config = json.load(config_file)
+                with open(config_file) as f:
+                    config = json.load(f)
                 chis = np.array(config['chis'])
                 chis = chis[np.triu_indices(len(chis))] # grab upper triangle
                 diag_chis = np.array(config['diag_chis'])
 
-        params = np.concatenate((diag_chis, chis), axis = 1)
+                all_chis.append(chis)
+                all_diag_chis.append(diag_chis)
+
+        params = np.concatenate((all_diag_chis, all_chis), axis = 1)
         print(params, params.shape)
 
         convergence = []
