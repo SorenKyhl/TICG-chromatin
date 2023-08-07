@@ -917,8 +917,8 @@ def test_param_convergence(dataset):
         plt.plot(convergence)
 
     plt.yscale('log')
-    plt.axhline(1e-1)
-    plt.axhline(1e-2)
+    plt.axhline(1)
+    plt.axhline(10)
 
     plt.savefig('/home/erschultz/TICG-chromatin/figures/conv.png')
 
