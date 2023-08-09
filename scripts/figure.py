@@ -302,9 +302,9 @@ def figure(test=False):
     # ax5.legend(loc='upper right', fontsize=legend_fontsize)
 
     # time and scc
-    labels = ['Max Ent', 'Max Ent (long)', 'GNN']
+    labels = ['Max Ent', 'GNN']
     ticks = range(1, 4)
-    data = [max_ent_sccs, max_ent_sccs_strict, gnn_sccs]
+    data = [max_ent_sccs, gnn_sccs]
     print(max_ent_sccs, np.mean(max_ent_sccs))
     print(gnn_sccs, np.mean(gnn_sccs))
     b1 = ax6.boxplot(data, vert = True,
@@ -314,14 +314,14 @@ def figure(test=False):
 
 
 
-    data = [max_ent_pearsons_strict, max_ent_pearsons, gnn_pearsons]
+    data = [max_ent_pearsons, gnn_pearsons]
     print(max_ent_pearsons_strict)
     b3 = ax7.boxplot(data, vert = True,
                         patch_artist = True, labels = labels)
     # axes[1].set_yscale('log')
     ax7.set_ylabel(r'Pearson(PC1$^{\rm sim}$, PC1$^{\rm exp}$)', fontsize=label_fontsize)
 
-    data = [max_ent_times, max_ent_times_strict, gnn_times]
+    data = [max_ent_times, gnn_times]
     b2 = ax8.boxplot(data,  vert = True,
                         patch_artist = True, labels = labels)
     # ax8.set_yticks([10, 50, 100])
@@ -385,7 +385,7 @@ def supp_figure():
     ax1.set_ylabel(r'SCC(H$^{\rm sim}$, H$^{\rm exp}$)', fontsize=label_fontsize)
 
 
-    data = [max_ent_pearsons_strict, max_ent_pearsons, gnn_pearsons]
+    data = [max_ent_pearsons, max_ent_pearsons_strict, gnn_pearsons]
     print(max_ent_pearsons_strict)
     b3 = ax2.boxplot(data, vert = True,
                         patch_artist = True, labels = labels)
