@@ -87,8 +87,7 @@ S = calculate_S(L, D)
 with open(osp.join(gnn_dir, 'distance_pearson.json'), 'r') as f:
     gnn_results = json.load(f)
     gnn_scc = np.round(gnn_results["scc_var"], 3)
-meanDist = DiagonalPreprocessing.genomic_distance_statistics(y_gnn)
-y_gnn_diag = DiagonalPreprocessing.process(y_gnn, meanDist)
+
 
 S_gnn = np.load(osp.join(gnn_dir, 'S.npy'))
 
@@ -281,10 +280,10 @@ def figure(test=False):
 
 
     # compare P(s)
-    log_labels = np.linspace(0, resolution*(len(meanDist)-1), len(meanDist))
     meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
     meanDist_pca = DiagonalPreprocessing.genomic_distance_statistics(y_pca, 'prob')
     meanDist_gnn = DiagonalPreprocessing.genomic_distance_statistics(y_gnn, 'prob')
+    log_labels = np.linspace(0, resolution*(len(meanDist)-1), len(meanDist))
     data = zip([meanDist, meanDist_pca, meanDist_gnn],
                 ['Experiment', 'Max Ent', f'GNN'],
                 ['k', 'b', 'r'])
