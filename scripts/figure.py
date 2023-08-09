@@ -326,7 +326,6 @@ def figure(test=False):
                         patch_artist = True, labels = labels)
     # ax8.set_yticks([10, 50, 100])
     # ax8.set_yscale('log')
-    ax8.set_ylim(0, 90)
     ax8.set_ylabel('Time (mins)', fontsize=label_fontsize)
 
     # fill with colors
