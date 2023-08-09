@@ -16,6 +16,7 @@ from scripts.load_utils import (get_final_max_ent_folder,
 from scripts.utils import DiagonalPreprocessing, pearson_round
 from scripts.xyz_utils import xyz_load, xyz_write
 
+test=False
 label_fontsize=24
 tick_fontsize=22
 letter_fontsize=26
@@ -425,5 +426,5 @@ def supp_figure():
 
 
 if __name__ == '__main__':
-    figure(False)
+    figure()
     supp_figure()
