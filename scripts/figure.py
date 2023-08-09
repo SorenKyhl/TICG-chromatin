@@ -4,6 +4,7 @@ import numpy as np
 import scipy
 import matplotlib.pyplot as plt
 
+import seaborn as sns
 from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
                                       calculate_diag_chi_step, calculate_L,
                                       calculate_S)
@@ -16,6 +17,7 @@ from scripts.load_utils import (get_final_max_ent_folder,
                                 load_import_log, load_L)
 from scripts.utils import DiagonalPreprocessing, pearson_round
 from scripts.xyz_utils import xyz_load, xyz_write
+from scripts.plotting_utils import RED_CMAP
 
 test=False
 label_fontsize=24
