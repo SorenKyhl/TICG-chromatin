@@ -1,6 +1,7 @@
 import sys
 import os.path as osp
 import numpy as np
+import scipy
 import matplotlib.pyplot as plt
 
 from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
@@ -10,7 +11,7 @@ from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
 sys.path.append('/home/erschultz/TICG-chromatin/scripts')
 from makeLatexTable_new import *
 
-sys.path.append('/home/erschultz/sequences_to_contact_maps/scripts')
+sys.path.append('/home/erschultz/sequences_to_contact_maps')
 from scripts.load_utils import (get_final_max_ent_folder,
                                 load_import_log, load_L)
 from scripts.utils import DiagonalPreprocessing, pearson_round
