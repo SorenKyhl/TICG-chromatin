@@ -335,7 +335,7 @@ def figure(test=False):
     for bplot in [b1, b2, b3]:
         for patch, color in zip(bplot['boxes'], colors):
             patch.set_facecolor(color)
-            patch.set(edgecolor='black', linewidth=2)
+            
 
     # rotate xticks
     # Create offset transform by 5 points in x direction
@@ -406,7 +406,7 @@ def supp_figure():
     for bplot in [b1, b2, b3]:
         for patch, color in zip(bplot['boxes'], colors):
             patch.set_facecolor(color)
-            patch.set(edgecolor='black', linewidth=2)
+          
 
     # rotate xticks
     # Create offset transform by 5 points in x direction
