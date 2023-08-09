@@ -2,8 +2,9 @@ import sys
 import os.path as osp
 import numpy as np
 import scipy
+import matplotlib
 import matplotlib.pyplot as plt
-
+import string
 import seaborn as sns
 from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
                                       calculate_diag_chi_step, calculate_L,
@@ -367,7 +368,7 @@ def supp_figure():
     ### combined figure ###
     print('---'*9)
     print('Starting Figure')
-    fig, axes = plt.subfigures(1, 3)
+    fig, axes = plt.subplots(1, 3)
     fig.set_figheight(5.5)
     fig.set_figwidth(18)
     ax1, ax2, ax3 = axes
@@ -392,12 +393,12 @@ def supp_figure():
     ax2.set_ylabel(r'Pearson(PC1$^{\rm sim}$, PC1$^{\rm exp}$)', fontsize=label_fontsize)
 
     data = [max_ent_times, max_ent_times_strict, gnn_times]
-    b2 = ax7.boxplot(data,  vert = True,
+    b2 = ax3.boxplot(data,  vert = True,
                         patch_artist = True, labels = labels)
     # ax8.set_yticks([10, 50, 100])
     # ax8.set_yscale('log')
-    ax7.set_ylim(0, 90)
-    ax7.set_ylabel('Time (mins)', fontsize=label_fontsize)
+    ax3.set_ylim(0, 90)
+    ax3.set_ylabel('Time (mins)', fontsize=label_fontsize)
 
     # fill with colors
     colors = ['b', 'b', 'r']
