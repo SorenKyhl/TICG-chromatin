@@ -303,7 +303,7 @@ def figure(test=False):
 
     # time and scc
     labels = ['Max Ent', 'GNN']
-    ticks = range(1, 4)
+    ticks = range(1, len(labels)+1)
     data = [max_ent_sccs, gnn_sccs]
     print(max_ent_sccs, np.mean(max_ent_sccs))
     print(gnn_sccs, np.mean(gnn_sccs))
@@ -330,7 +330,7 @@ def figure(test=False):
     ax8.set_ylabel('Time (mins)', fontsize=label_fontsize)
 
     # fill with colors
-    colors = ['b', 'b', 'r']
+    colors = ['b', 'r']
     for bplot in [b1, b2, b3]:
         for patch, color in zip(bplot['boxes'], colors):
             patch.set_facecolor(color)
