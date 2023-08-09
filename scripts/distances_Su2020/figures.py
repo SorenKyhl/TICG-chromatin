@@ -26,8 +26,7 @@ from sequences_to_contact_maps.scripts.utils import pearson_round
 from sequences_to_contact_maps.scripts.xyz_utils import xyz_load
 
 sys.path.append('/home/erschultz/TICG-chromatin')
-from scripts.distances_Su2020.su2020_analysis import get_dirs, load_exp_gnn_pca, get_pcs, dist_distribution_a_b
-
+from scripts.distances_Su2020.su2020_analysis import get_dirs, load_exp_gnn_pca, get_pcs, dist_distribution_a_b, min_MSE
 
 def load_exp_gnn_pca_contact_maps(dir, GNN_ID=None, b=140, phi=0.03):
     result = load_import_log(dir)
@@ -64,6 +63,10 @@ def old_figure(sample, GNN_ID, bl=140, phi=0.03):
     letter_fontsize=26
     dir = f'/home/erschultz/Su2020/samples/sample{sample}'
     D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=bl, phi=phi)
+    alpha = min_MSE(D, D_pca)
+    D_pca * alpha
+    alpha = min_MSE(D, D_gnn)
+    D_gnn * alpha
     nan_rows = np.isnan(D[0])
     D_no_nan = D[~nan_rows][:, ~nan_rows] # ignore nan_rows
 
