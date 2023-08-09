@@ -11,7 +11,7 @@ sys.path.append('/home/erschultz/TICG-chromatin/scripts')
 from makeLatexTable_new import *
 
 sys.path.append('/home/erschultz/sequences_to_contact_maps/scripts')
-from scripts.load_utils import (get_final_max_ent_folder, ,
+from scripts.load_utils import (get_final_max_ent_folder,
                                 load_import_log, load_L)
 from scripts.utils import DiagonalPreprocessing, pearson_round
 from scripts.xyz_utils import xyz_load, xyz_write
