@@ -68,9 +68,9 @@ def old_figure(sample, GNN_ID, bl=140, phi=0.03):
     # D_pca = rescale_mu_sigma(D, D_pca)
     # D_gnn = rescale_mu_sigma(D, D_gnn)
     alpha = min_MSE(D_no_nan, D_pca[~nan_rows][:, ~nan_rows])
-    D_pca * alpha
+    D_pca = D_pca * alpha
     alpha = min_MSE(D_no_nan, D_gnn[~nan_rows][:, ~nan_rows])
-    D_gnn * alpha
+    D_gnn = D_gnn * alpha
 
 
     # compare PCs
