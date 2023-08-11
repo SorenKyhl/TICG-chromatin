@@ -157,7 +157,7 @@ def min_MSE(D, D_sim):
     def metric(D, D_sim, alpha):
         return mean_squared_error(D, D_sim*alpha)
 
-    popt, pcov = curve_fit(metric, D, D_sim, p0 = 1, maxfev = 2000)
+    popt, pcov = curve_fit(metric, D, D_sim, p0 = [1], maxfev = 2000)
     print(f'popt', popt)
 
     return popt

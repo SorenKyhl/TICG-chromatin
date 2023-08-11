@@ -65,12 +65,12 @@ def old_figure(sample, GNN_ID, bl=140, phi=0.03):
     D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=bl, phi=phi)
     nan_rows = np.isnan(D[0])
     D_no_nan = D[~nan_rows][:, ~nan_rows] # ignore nan_rows
-    D_pca = rescale_mu_sigma(D, D_pca)
-    D_gnn = rescale_mu_sigma(D, D_gnn)
-    # alpha = min_MSE(D_no_nan, D_pca[~nan_rows][:, ~nan_rows])
-    # D_pca * alpha
-    # alpha = min_MSE(D_no_nan, D_gnn[~nan_rows][:, ~nan_rows])
-    # D_gnn * alpha
+    # D_pca = rescale_mu_sigma(D, D_pca)
+    # D_gnn = rescale_mu_sigma(D, D_gnn)
+    alpha = min_MSE(D_no_nan, D_pca[~nan_rows][:, ~nan_rows])
+    D_pca * alpha
+    alpha = min_MSE(D_no_nan, D_gnn[~nan_rows][:, ~nan_rows])
+    D_gnn * alpha
 
 
     # compare PCs
