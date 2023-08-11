@@ -65,11 +65,14 @@ def old_figure(sample, GNN_ID, bl=140, phi=0.03):
     D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=bl, phi=phi)
     nan_rows = np.isnan(D[0])
     D_no_nan = D[~nan_rows][:, ~nan_rows] # ignore nan_rows
-    # D_pca = rescale_mu_sigma(D, D_pca)
-    # D_gnn = rescale_mu_sigma(D, D_gnn)
-    alpha_pca = min_MSE(D_no_nan, D_pca[~nan_rows][:, ~nan_rows])
+    D_pca = rescale_mu_sigma(D, D_pca)
+    D_gnn = rescale_mu_sigma(D, D_gnn)
+    mu_D_pca, sigma_D_pca, mu_D, sigma_D = rescale_mu_sigma(D, D_pca)
+    mu_D_gnn, sigma_D_gnn, _, _ = rescale_mu_sigma(D, D_gnn)
+    # alpha_pca = min_MSE(D_no_nan, D_pca[~nan_rows][:, ~nan_rows])
+    # alpha_gnn = min_MSE(D_no_nan, D_gnn[~nan_rows][:, ~nan_rows])
+    alpha_pca = 1; alpha_gnn = 1
     D_pca = D_pca * alpha_pca
-    alpha_gnn = min_MSE(D_no_nan, D_gnn[~nan_rows][:, ~nan_rows])
     D_gnn = D_gnn * alpha_gnn
 
 
@@ -115,12 +118,14 @@ def old_figure(sample, GNN_ID, bl=140, phi=0.03):
     file = osp.join(final_dir, 'production_out/output.xyz')
     xyz_max_ent = xyz_load(file, multiple_timesteps = True) * alpha_pca
     dist_max_ent = dist_distribution_a_b(xyz_max_ent, a - shift, b - shift)
+    dist_max_ent = (dist_max_ent - mu_D_pca)/sigma_D_pca * sigma_D + mu_D
 
     if gnn_dir is not None and osp.exists(gnn_dir):
         file = osp.join(gnn_dir, 'production_out/output.xyz')
         print(file)
         xyz_gnn = xyz_load(file, multiple_timesteps = True) * alpha_gnn
         dist_gnn = dist_distribution_a_b(xyz_gnn, a - shift, b - shift)
+        dist_gnn = (dist_gnn - mu_D_gnn)/sigma_D_gnn * sigma_D + mu_D
     else:
         dist_gnn = None
 

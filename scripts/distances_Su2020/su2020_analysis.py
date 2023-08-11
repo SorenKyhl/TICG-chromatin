@@ -163,13 +163,16 @@ def min_MSE(D, D_sim):
 
     return result.x
 
-def rescale_mu_sigma(D, D_sim):
+def rescale_mu_sigma(D, D_sim, return_params = False):
     mu_D_sim = np.nanmean(D_sim)
     mu_D = np.nanmean(D)
     sigma_D_sim = np.nanstd(D_sim)
     sigma_D = np.nanstd(D)
 
-    return (D_sim - mu_D_sim)/sigma_D_sim * sigma_D + mu_D
+    if return_params:
+        return mu_D_sim, sigma_D_sim, mu_D, sigma_D
+    else:
+        return (D_sim - mu_D_sim)/sigma_D_sim * sigma_D + mu_D
 
 def get_pcs(input, nan_rows=None, verbose=False, smooth=False, h=1):
     if input is None:
