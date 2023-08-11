@@ -54,7 +54,6 @@ def plot_diagonal(exp, sim, ofile=None):
     # Rotate 45 degs
     resized = rotate_bound(composite,-45)
     print(resized, resized.shape)
-    vmax = np.nanmean(composite)
 
     # crop
     center = resized.shape[0] // 2
@@ -62,9 +61,11 @@ def plot_diagonal(exp, sim, ofile=None):
     resized = resized[center-height:center+height, :]
 
 
+    vmin = np.nanpercentile(exp, 1)
+    vmax = np.nanpercentile(exp, 99)
     fig, ax = plt.subplots(figsize=(6, 3),dpi=600)
     # _pf = ax.imshow(resized, vmin=200, vmax=1000, cmap='seismic')
-    sns.heatmap(resized, ax = ax, linewidth = 0, vmin = 0, vmax = vmax, cmap = BLUE_CMAP)
+    sns.heatmap(resized, ax = ax, linewidth = 0, vmin = vmin, vmax = vmax, cmap = RED_BLUE_CMAP)
     ax.set_yticks([])
 
     if ofile is not None:
