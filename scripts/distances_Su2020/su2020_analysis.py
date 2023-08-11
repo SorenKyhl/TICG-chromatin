@@ -1052,7 +1052,8 @@ def compare_diagonal(sample, GNN_ID=None, b=140, phi=0.03):
     nan_rows = np.isnan(D[0])
     D_no_nan = D[~nan_rows][:, ~nan_rows]
 
-    plot_diagonal(D_no_nan, D_pca[~nan_rows][:, ~nan_rows], osp.join(dir, 'diagonal.png'))
+    plot_diagonal(D_no_nan, D_pca[~nan_rows][:, ~nan_rows], osp.join(dir, 'diagonal_pca.png'))
+    plot_diagonal(D_no_nan, D_gnn[~nan_rows][:, ~nan_rows], osp.join(dir, 'diagonal_gnn.png'))
 
 def compare_dist_ij(sample, GNN_ID=None, b=140, phi=0.03):
     dir = f'/home/erschultz/Su2020/samples/sample{sample}'
