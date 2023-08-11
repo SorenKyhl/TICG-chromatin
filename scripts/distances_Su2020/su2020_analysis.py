@@ -20,7 +20,7 @@ from pylib.utils.plotting_utils import (BLUE_CMAP, BLUE_RED_CMAP,
                                         RED_BLUE_CMAP, RED_CMAP, plot_matrix,
                                         plot_mean_dist, rotate_bound)
 from pylib.utils.similarity_measures import SCC
-from scipy.optimize import curve_fit
+from scipy.optimize import minimize
 from scipy.spatial import ConvexHull
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
@@ -154,11 +154,11 @@ def hg38_to_hg19(coords, chr=21):
         return f.readlines()[i]
 
 def min_MSE(D, D_sim):
-    def metric(D, D_sim, alpha):
+    def metric(alpha, D, D_sim):
         return mean_squared_error(D, D_sim*alpha)
 
-    popt, pcov = curve_fit(metric, D, D_sim, p0 = [1], maxfev = 2000)
-    print(f'popt', popt)
+    popt, pcov = curve_fit(metric, x0=1, args=(D, D_sim), maxfev = 2000)
+    print(f'popt', minimize)
 
     return popt
 
