@@ -1042,6 +1042,13 @@ def compare_diagonal(sample, GNN_ID=None, b=140, phi=0.03):
     dir = f'/home/erschultz/Su2020/samples/sample{sample}'
     max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, b, phi)
     D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=b, phi=phi)
+    nan_rows = np.isnan(D[0])
+    D_no_nan = D[~nan_rows][:, ~nan_rows] # ignore nan_rows
+    alpha_pca = min_MSE(D_no_nan, D_pca[~nan_rows][:, ~nan_rows])
+    alpha_gnn = min_MSE(D_no_nan, D_gnn[~nan_rows][:, ~nan_rows])
+    # alpha_pca = 1; alpha_gnn = 1
+    D_pca = D_pca * alpha_pca
+    D_gnn = D_gnn * alpha_gnn
     # np.save(osp.join(dir, 'D.npy'), D)
     # np.save(osp.join(dir, 'D_gnn.npy'), D_gnn)
     # np.save(osp.join(dir, 'D_pca.npy'), D_pca)
