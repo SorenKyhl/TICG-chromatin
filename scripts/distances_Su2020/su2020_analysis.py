@@ -162,6 +162,14 @@ def min_MSE(D, D_sim):
 
     return popt
 
+def rescale_mu_sigma(D, D_sim):
+    mu_D_sim = np.mean(D_sim)
+    mu_D = np.mean(D)
+    sigma_D_sim = np.std(D_sim)
+    sigma_D = np.std(D)
+
+    return (D_sim - mu_D_sim)/sigma_D_sim * sigma_D + mu_D
+
 def get_pcs(input, nan_rows=None, verbose=False, smooth=False, h=1):
     if input is None:
         return None
@@ -647,7 +655,6 @@ def compare_D_to_sim_D(sample, GNN_ID=None):
     plot_distance_map(D, sim_dir, 'exp')
     plot_distance_map(D_sim, sim_dir, 'sim')
 
-    # min_MSE(D, D_sim)
     triu_ind = np.triu_indices(len(D))
     overall_corr = pearson_round(D[triu_ind], D_sim[triu_ind], stat = 'nan_pearson')
     overall_corr2 = pearson_round(D, D_sim, stat = 'nan_pearson')
