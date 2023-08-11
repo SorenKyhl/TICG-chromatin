@@ -3,7 +3,7 @@ import math
 import os
 import os.path as osp
 
-# import cv2
+import cv2
 import imageio
 import matplotlib.cm
 import matplotlib.colors
