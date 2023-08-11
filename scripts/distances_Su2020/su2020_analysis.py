@@ -1094,7 +1094,7 @@ if __name__ == '__main__':
     # xyz_to_dist()
     # xyz_to_xyz()
     # compare_D_to_sim_D(1014)
-    compare_diagonal(1013, 434, 261, 0.01)
+    compare_diagonal(1013, 434)
     # sim_xyz_to_dist('/home/erschultz/Su2020/samples/sample1011/optimize_grid_b_140_phi_0.03-GNN403', False)
     # find_volume()
     # compare_pcs(1013)
