@@ -163,10 +163,10 @@ def min_MSE(D, D_sim):
     return popt
 
 def rescale_mu_sigma(D, D_sim):
-    mu_D_sim = np.mean(D_sim)
-    mu_D = np.mean(D)
-    sigma_D_sim = np.std(D_sim)
-    sigma_D = np.std(D)
+    mu_D_sim = np.nanmean(D_sim)
+    mu_D = np.nanmean(D)
+    sigma_D_sim = np.nanstd(D_sim)
+    sigma_D = np.nanstd(D)
 
     return (D_sim - mu_D_sim)/sigma_D_sim * sigma_D + mu_D
 
