@@ -157,10 +157,11 @@ def min_MSE(D, D_sim):
     def metric(alpha, D, D_sim):
         return mean_squared_error(D, D_sim*alpha)
 
-    popt, pcov = curve_fit(metric, x0=1, args=(D, D_sim), maxfev = 2000)
-    print(f'popt', minimize)
+    result = minimize(metric, x0=1, args=(D, D_sim))
+    print(f'resultt {result}')
 
-    return popt
+
+    return result.x
 
 def rescale_mu_sigma(D, D_sim):
     mu_D_sim = np.nanmean(D_sim)
