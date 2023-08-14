@@ -144,6 +144,7 @@ public:
 	std::vector<std::vector<int>> contact_map;
 	int contact_resolution; //= 500;
 	bool dump_density;
+	bool dump_observables;
 	bool visit_tracking;
 	bool update_contacts_distance;
 	double distance_cutoff;

@@ -7,6 +7,8 @@ import sys
 from collections import defaultdict
 
 import numpy as np
+from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
+from pylib.utils.energy_utils import calculate_diag_chi_step, calculate_L
 from scipy.stats import laplace, multivariate_normal, norm, qmc, skewnorm
 
 sys.path.insert(0, '/home/erschultz/TICG-chromatin')
@@ -14,9 +16,7 @@ from scripts.data_generation.ECDF import Ecdf
 from scripts.get_params import GetSeq
 
 sys.path.insert(0, '/home/erschultz')
-from sequences_to_contact_maps.scripts.energy_utils import \
-    calculate_diag_chi_step
-from sequences_to_contact_maps.scripts.load_utils import load_Y
+from sequences_to_contact_maps.scripts.load_utils import load_max_ent_S, load_Y
 from sequences_to_contact_maps.scripts.utils import pearson_round, triu_to_full
 
 LETTERS='ABCDEFGHIJKLMN'
@@ -45,6 +45,14 @@ def getArgs():
                     help='How to determine grid size')
     parser.add_argument('--data_dir', type=str, default='/project/depablo/erschultz',
                     help='where data will be found when running simulation')
+    parser.add_argument('--exp_dataset', type=str, default='dataset_01_26_23',
+                    help='dataset where experimental data is located')
+    parser.add_argument('--b', type=int, default=140,
+                        help='bond length')
+    parser.add_argument('--phi', type=float, default=0.03,
+                    help='phi chromatin')
+
+
 
     args = parser.parse_args()
     return args
@@ -62,6 +70,28 @@ class DatasetGenerator():
         self.chi_param_version = args.chi_param_version
         self.max_L = args.max_L
         self.data_dir = args.data_dir
+        self.exp_dataset = args.exp_dataset
+        self.b = args.bug
+        self.phi = args.phi
+        self.grid_root = f'optimize_grid_b_{self.b}_phi_{self.phi}'
+
+        if self.exp_dataset == 'dataset_02_04_23':
+            self.exp_samples = range(2201, 2216)
+            assert self.m == 512
+        elif self.exp_dataset == 'dataset_11_14_22':
+            self.exp_samples = range(201, 283)
+            assert self.m == 512
+        elif self.exp_dataset == 'dataset_01_26_23':
+            self.exp_samples = range(201, 250)
+            assert self.m == 512
+        elif self.exp_dataset == 'dataset_04_05_23':
+            self.exp_samples = range(1001, 1211)
+            assert self.m == 1024
+        elif self.exp_dataset == 'dataset_04_10_23':
+            self.exp_samples = range(1001, 1027)
+            assert self.m == 1024
+        else:
+            raise Exception(f'unrecognized dataset {self.exp_dataset}')
 
         self.dir = '/home/erschultz'
         odir = osp.join(self.dir, self.dataset)
@@ -70,6 +100,8 @@ class DatasetGenerator():
         self.odir = osp.join(odir, 'setup')
         if not osp.exists(self.odir):
             os.mkdir(self.odir, mode = 0o755)
+
+        self.exp_dir =  osp.join(self.dir, self.exp_dataset, 'samples')
 
         # sample : dictionary of params
         self.sample_dict = defaultdict(dict)
@@ -190,11 +222,11 @@ class DatasetGenerator():
                 chi_ii = np.zeros(self.k)
                 for j in range(self.k):
                     l = LETTERS[j]
-                    assert self.m == 512
-                    with open(osp.join(f'/home/erschultz/dataset_02_04_23/plaid_param_distributions_eig_norm/k{self.k}_chi{l}{l}.pickle'), 'rb') as f:
+                    with open(osp.join(self.dir, self.exp_dataset, f'plaid_param_distributions_eig_norm/k{self.k}_chi{l}{l}.pickle'), 'rb') as f:
                         dict_j = pickle.load(f)
                     chi_ii[j] =  skewnorm.rvs(dict_j['alpha'], dict_j['mu'], dict_j['sigma'])
                 chi_ij = np.zeros(int(self.k*(self.k-1)/2))
+
 
             if self.chi_param_version not in {'v4', 'v5'}:
                 chi = np.zeros((self.k, self.k))
@@ -226,15 +258,9 @@ class DatasetGenerator():
         self.plot = False
         self.args_file = None
         self.sample = None
-        if self.m == 1024:
-            dataset = '/home/erschultz/dataset_11_14_22/samples'
-            samples = range(2201, 2216)
-        elif self.m == 512:
-            dataset = f'/home/erschultz/dataset_01_26_23/samples'
-            samples = range(201, 250)
 
-        for j in samples:
-            sample_folder = osp.join(dataset, f'sample{j}')
+        for j in self.exp_samples:
+            sample_folder = osp.join(self.exp_dir, f'sample{j}')
             _, y_diag = load_Y(sample_folder)
             getseq = GetSeq(self, None, False)
             x = getseq.get_PCA_seq(y_diag, normalize = True)
@@ -242,7 +268,7 @@ class DatasetGenerator():
 
 
         for i in range(self.N):
-            j = np.random.choice(samples)
+            j = np.random.choice(self.exp_samples)
             x = x_dict[j]
             if shuffle:
                 np.random.shuffle(x)
@@ -255,20 +281,9 @@ class DatasetGenerator():
 
     def seq_eig_params(self, norm=False):
         x_dict = {} # id : x
-        if self.m == 1024:
-            dataset = '/home/erschultz/dataset_11_14_22/samples'
-            samples = range(2201, 2216)
-        elif self.m == 512:
-            if 'v2' in self.seq_mode:
-                dataset = '/home/erschultz/dataset_02_04_23/samples'
-                samples = range(201, 283)
-            else:
-                dataset = '/home/erschultz/dataset_01_26_23/samples'
-                samples = range(201, 250)
-
-        for j in samples:
-            sample_folder = osp.join(dataset, f'sample{j}')
-            max_ent_folder = osp.join(sample_folder, 'optimize_grid_b_140_phi_0.03-max_ent/resources')
+        for j in self.exp_samples:
+            sample_folder = osp.join(self.exp_dir,  f'sample{j}')
+            max_ent_folder = osp.join(sample_folder, f'{self.grid_root}-max_ent{self.k}/resources')
             if norm:
                 x = np.load(osp.join(max_ent_folder, 'x_eig_norm.npy'))
             else:
@@ -276,7 +291,7 @@ class DatasetGenerator():
             x_dict[j] = x
 
         for i in range(self.N):
-            j = np.random.choice(samples)
+            j = np.random.choice(self.exp_samples)
             x = x_dict[j]
 
             seq_file = osp.join(self.odir, f'x_{i+1}.npy')
@@ -287,10 +302,7 @@ class DatasetGenerator():
 
     def linear_params(self):
         if self.m == 512:
-            if self.diag_mode == 'linear_v2':
-                dir = osp.join(self.dir, 'dataset_02_04_23/diagonal_param_distributions')
-            else:
-                dir = osp.join(self.dir, 'dataset_01_26_23/diagonal_param_distributions')
+            dir = osp.join(self.dir, self.exp_dataset, 'diagonal_param_distributions')
 
             if self.k == 0:
                 k = 8
@@ -339,34 +351,10 @@ class DatasetGenerator():
             self.sample_dict[i]['max_diag_chi'] = vals[2]
             self.sample_dict[i]['min_diag_chi'] = 0
 
-    def max_ent_params(self):
-        diag_dict = {} # id : diag_params
-        grid_dict = {} # id : grid_size
-        if self.m == 1024:
-            dataset = '/home/erschultz/dataset_11_14_22/samples'
-            samples = range(2201, 2216)
-        elif self.m == 512:
-            if 'v2' in self.diag_mode:
-                dataset = '/home/erschultz/dataset_02_04_23/samples'
-                samples = range(201, 283)
-            else:
-                dataset = '/home/erschultz/dataset_01_26_23/samples'
-                samples = range(201, 250)
-        get_grid = False
-        linear = False
-        poly3 = False
-        if 'grid' in self.diag_mode:
-            get_grid = True
-        if 'linear' in self.diag_mode:
-            linear = True
-        elif 'poly3' in self.diag_mode:
-            poly3 = True
-        elif 'poly6_log' in self.diag_mode:
-            poly6_log = True
-
+    def get_converged_samples():
         converged_samples = []
-        for j in samples:
-            sample_folder = osp.join(dataset, f'sample{j}', 'optimize_grid_b_140_phi_0.03-max_ent')
+        for j in self.exp_samples:
+            sample_folder = osp.join(self.exp_dir, f'sample{j}', f'{self.grid_root}-max_ent{self.k}')
 
             # check convergence
             convergence_file = osp.join(sample_folder, 'convergence.txt')
@@ -383,26 +371,51 @@ class DatasetGenerator():
 
             if converged:
                 converged_samples.append(j)
-                if linear:
-                    diag_chi_step = np.loadtxt(osp.join(sample_folder, 'fitting/linear_fit.txt'))
-                elif poly3:
-                    diag_chi_step = np.loadtxt(osp.join(sample_folder, 'fitting/poly3_fit.txt'))
-                elif poly6_log:
-                    diag_chi_step = np.loadtxt(osp.join(sample_folder, 'fitting2/poly6_log_fit.txt'))
-                else:
-                    diag_chis = np.loadtxt(osp.join(sample_folder, 'chis_diag.txt'))[-1]
-                    with open(osp.join(sample_folder, 'resources/config.json'), 'r') as f:
-                        config = json.load(f)
-                    diag_chi_step = calculate_diag_chi_step(config, diag_chis)
-                diag_dict[j] = diag_chi_step
-
-                # get grid_size
-                if get_grid:
-                    grid_dict[j] = np.loadtxt(osp.join(dataset, f'sample{j}', 'optimize_grid_b_140_phi_0.03/grid_size.txt'))
             else:
                 print(f'sample{j} did not converge')
 
-        print('converged %:', len(converged_samples)/ len(samples))
+        print('converged %:', len(converged_samples) / len(self.exp_samples) * 100)
+
+
+        return converged_samples
+
+    def max_ent_params(self):
+        diag_dict = {} # id : diag_params
+        grid_dict = {} # id : grid_size
+        get_grid = False
+        linear = False
+        poly3 = False
+        if 'grid' in self.diag_mode:
+            get_grid = True
+        if 'linear' in self.diag_mode:
+            linear = True
+        elif 'poly3' in self.diag_mode:
+            poly3 = True
+        elif 'poly6_log' in self.diag_mode:
+            poly6_log = True
+
+        converged_samples = self.get_converged_samples()
+        for j in converged_samples:
+            sample_folder = osp.join(self.exp_dir, f'sample{j}', f'{self.grid_root}-max_ent{self.k}')
+
+            if linear:
+                diag_chi_step = np.loadtxt(osp.join(sample_folder, 'fitting/linear_fit.txt'))
+            elif poly3:
+                diag_chi_step = np.loadtxt(osp.join(sample_folder, 'fitting/poly3_fit.txt'))
+            elif poly6_log:
+                diag_chi_step = np.loadtxt(osp.join(sample_folder, 'fitting2/poly6_log_fit.txt'))
+            else:
+                diag_chis = np.loadtxt(osp.join(sample_folder, 'chis_diag.txt'))[-1]
+                with open(osp.join(sample_folder, 'resources/config.json'), 'r') as f:
+                    config = json.load(f)
+                diag_chi_step = calculate_diag_chi_step(config, diag_chis)
+            diag_dict[j] = diag_chi_step
+
+            # get grid_size
+            if get_grid:
+                grid_file = osp.join(self.exp_dir, f'sample{j}', f'{self.grid_root}/grid_size.txt')
+                grid_dict[j] = np.loadtxt(grid_file)
+
         for i in range(self.N):
             j = np.random.choice(converged_samples)
             diag_chis = diag_dict[j]
@@ -410,6 +423,48 @@ class DatasetGenerator():
             diag_file = osp.join(self.odir, f'diag_chis_{i+1}.npy')
             np.save(diag_file, diag_chis)
 
+            diag_file = osp.join(self.data_dir, self.dataset, f'setup/diag_chis_{i+1}.npy')
+
+            self.sample_dict[i]['diag_chi_experiment'] = osp.join(self.exp_dataset, f'samples/sample{j}', f'{self.grid_root})
+            self.sample_dict[i]['diag_chi_method'] = diag_file
+
+            if get_grid:
+                self.sample_dict[i]['grid_size'] = grid_dict[j]
+
+    def meanDist_S_params(self):
+        meanDist_S_dict = {} # id : meanDist_S
+        grid_dict = {} # id : grid_size
+        get_grid = False
+        if 'grid' in self.diag_mode:
+            get_grid = True
+
+        converged_samples = self.get_converged_samples()
+        for j in converged_samples:
+            sample_folder = osp.join(self.exp_dir, f'sample{j}', f'{self.grid_root}-max_ent{self.k}')
+            meanDist_S = np.loadtxt(osp.join(sample_folder, 'fitting2/smoothed_fit_meanDist_S.txt'))
+            meanDist_S_dict[j] = meanDist_S
+
+            # get grid_size
+            if get_grid:
+                grid_dict[j] = np.loadtxt(osp.join(self.exp_dir, f'sample{j}', f'{self.grid_root}/grid_size.txt'))
+
+        for i in range(self.N):
+            j = np.random.choice(converged_samples)
+            meanDist_S = meanDist_S_dict[j]
+
+            file = osp.split(self.sample_dict[i]['method'])[-1]
+            path = osp.join(f'/home/erschultz/{self.dataset}/setup/', file)
+            seq = np.load(path)
+            file = osp.split(self.sample_dict[i]['chi_method'])[-1]
+            path = osp.join(f'/home/erschultz/{self.dataset}/setup/', file)
+            chi = np.load(path)
+            L = calculate_L(seq, chi)
+
+            meanDist_L = DiagonalPreprocessing.genomic_distance_statistics(L, 'freq')
+            diag_chis = meanDist_S - meanDist_L
+
+            diag_file = osp.join(self.odir, f'diag_chis_{i+1}.npy')
+            np.save(diag_file, diag_chis)
             diag_file = osp.join(self.data_dir, self.dataset, f'setup/diag_chis_{i+1}.npy')
 
             self.sample_dict[i]['exp_max_ent'] = j
@@ -428,13 +483,6 @@ class DatasetGenerator():
             self.sample_dict[i]['grid_size'] = grid_size
 
     def get_dataset(self):
-        if self.diag_mode.startswith('linear'):
-            self.linear_params()
-        elif self.diag_mode == 'logistic':
-            self.logistic_params()
-        elif self.diag_mode.startswith('max_ent'):
-            self.max_ent_params()
-
         if self.seq_mode == 'markov':
             self.seq_markov_params()
         elif self.seq_mode == 'pcs':
@@ -447,6 +495,15 @@ class DatasetGenerator():
             self.seq_pc_params(True)
 
         self.plaid_params()
+
+        if self.diag_mode.startswith('linear'):
+            self.linear_params()
+        elif self.diag_mode == 'logistic':
+            self.logistic_params()
+        elif self.diag_mode.startswith('max_ent'):
+            self.max_ent_params()
+        elif self.diag_mode.startswith('meanDist_S'):
+            self.meanDist_S_params()
 
         if self.max_L is not None:
             for i in range(self.N):

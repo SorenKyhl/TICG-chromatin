@@ -14,7 +14,8 @@ from sklearn.metrics import mean_squared_error
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.similarity_measures import SCC
 from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
-                                                     calc_dist_strat_corr)
+                                                     calc_dist_strat_corr,
+                                                     triu_to_full)
 
 
 def meanDist_comparison():
@@ -67,35 +68,24 @@ def p_s_comparison(dataset, ID=None, k=8, max_ent=False):
         fig.set_figheight(6*2)
         fig.set_figwidth(6*3)
         row = 0; col=0
-        meanDist_list = molar_contact_ratio(dataset, None, False)
-        print(samples, len(meanDist_list))
-        for sample, meanDist_exp in zip(samples, meanDist_list):
+        for sample in samples:
             print('s', sample)
             s_dir = osp.join(data_dir, f'samples/sample{sample}')
-            if max_ent:
-                dir = osp.join(s_dir, f'PCA-normalize-S/k{k}/replicate1/samples/sample{sample}_copy')
-                if not osp.exists(dir):
-                    dir = osp.join(s_dir, f'PCA-normalize-E/k{k}/replicate1/samples/sample{sample}_copy')
-            else:
-                dir = s_dir
+            y_exp = np.load(osp.join(s_dir, 'y.npy'))
+            y_exp = y_exp.astype(float)
+            y_exp /= np.mean(np.diagonal(y_exp))
+            meanDist_exp = DiagonalPreprocessing.genomic_distance_statistics(y_exp)
 
             if plot_GNN:
-                y = np.load(osp.join(dir ,f'GNN-{ID}-S/k0/replicate1/y.npy'))
+                y = np.load(osp.join(s_dir ,f'optimize_grid_b_140_phi_0.03-GNN{ID}/y.npy'))
                 y = y.astype(float)
                 y /= np.mean(np.diagonal(y))
                 meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
                 rmse = mean_squared_error(meanDist, meanDist_exp, squared = False)
 
-            y_file = osp.join(dir ,f'PCA-normalize-S/k{k}/replicate1/y.npy')
-            y_file2 = osp.join(dir ,f'PCA-normalize-E/k{k}/replicate1/y.npy')
-            if osp.exists(y_file):
-                y_pca = np.load(y_file)
-                y_pca = y_pca.astype(float)
-                y_pca /= np.mean(np.diagonal(y_pca))
-                meanDist_pca = DiagonalPreprocessing.genomic_distance_statistics(y_pca)
-                plot_PCA = True
-            elif osp.exists(y_file2):
-                y_pca = np.load(y_file2)
+            max_ent_dir = osp.join(s_dir, f'optimize_grid_b_140_phi_0.03-max_ent{k}')
+            if osp.exists(max_ent_dir):
+                y_pca = np.load(osp.join(max_ent_dir, 'iteration14/y.npy'))
                 y_pca = y_pca.astype(float)
                 y_pca /= np.mean(np.diagonal(y_pca))
                 meanDist_pca = DiagonalPreprocessing.genomic_distance_statistics(y_pca)
@@ -355,10 +345,39 @@ def l_ij_comparison(dataset, dataset_exp, k=8):
     plt.savefig(osp.join(data_dir, 'S_dist_comparison.png'))
     plt.close()
 
+    # plot frob(L)
+    print('\nL frob norm')
+    cmap = matplotlib.cm.get_cmap('tab10')
+    ind = np.arange(len(L_list)) % cmap.N
+    colors = cmap(ind)
+    dist = norm
+    bin_width = 100
+    for i, (sublist, label) in enumerate(zip(L_list, label_list)):
+        arr = []
+        for L in sublist:
+            L = triu_to_full(L)
+            arr.append(np.linalg.norm(L, ord='fro'))
+
+        arr = np.array(arr).reshape(-1)
+        print(arr)
+        print(np.min(arr), np.max(arr))
+        _, bins, _ = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
+                                    bins=range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width),
+                                    alpha = 0.5, label = label, color = colors[i])
+        params = dist.fit(arr)
+        y = dist.pdf(bins, *params) * bin_width
+        plt.plot(bins, y, ls = '--', color = colors[i])
+
+    plt.legend()
+    plt.ylabel('probability', fontsize=16)
+    plt.xlabel('Frob(L)', fontsize=16)
+    plt.savefig(osp.join(data_dir, 'frob_L_comparison.png'))
+    plt.close()
+
 
 if __name__ == '__main__':
     # main()
-    meanDist_comparison()
+    # meanDist_comparison()
     # l_ij_comparison('dataset_04_28_23', 'dataset_02_04_23', 10)
-    # p_s_comparison('dataset_02_04_23', 396, 12)
+    p_s_comparison('dataset_02_04_23', 427, 10)
     # scc_comparison('dataset_02_04_23', 392, 8, True)

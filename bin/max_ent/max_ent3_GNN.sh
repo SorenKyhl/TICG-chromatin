@@ -16,13 +16,13 @@ then
   dir="/home/erschultz"
   scratchDir='/home/erschultz/scratch'
   numIterations=1
-  finalSimProductionSweeps=50000
+  finalSimProductionSweeps=1000
   source activate python3.9_pytorch1.9
 fi
 
 STARTTIME=$(date +%s)
 i=2001
-dataset='dataset_HCT116'
+dataset='dataset_02_04_23'
 useL='false'
 useS='true'
 useD='false'
@@ -32,15 +32,21 @@ mode='none'
 goalSpecified=0
 
 bondtype='gaussian'
-bondLength=16.5 # TODO make sure this is correct !!!
+bondLength=140 # TODO make sure this is correct !!!
+phiChromatin=0.03
+beadVol=130000
+TICGSeed=12
+dumpFrequency=100
+dumpStatsFrequency=1
+
 
 k=0
 method='GNN'
 jobs=0
 waitCount=0
-for sample in 1010
+for sample in 203
 do
-  for GNNModelID in 392
+  for GNNModelID in 403
   do
     echo $sample $m
     max_ent

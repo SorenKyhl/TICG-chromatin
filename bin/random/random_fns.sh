@@ -119,13 +119,15 @@ random_inner() {
 
 	# run simulation
 	~/TICG-chromatin/TICG-engine > log.log
+	mv data_out production_out
 
 	# calculate contact map
-	python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --save_npy --random_mode --plot > contact_map.log
+	python3 ~/TICG-chromatin/scripts/contact_map.py --m $m --save_npy --random_mode --plot --sample_folder $scratchDirI > contact_map.log
 
-	# move inputs and outputs to own folder
+	move inputs and outputs to own folder
 	mkdir -p $dir
-	mv config.json data_out *.log *.npy *.png *.txt $dir
+	mv config.json production_out *.log *.npy *.png *.txt $dir
+
 }
 
 random() {

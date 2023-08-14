@@ -16,13 +16,13 @@
   "track_contactmap": false,
   "diagonal_linear": true,
   "dump_density": false,
+  "dump_observables": false,
   "update_contacts_distance": false,
 
   "lmatrix_on": true,
   "smatrix_on": true,
   "dmatrix_on": true,
 
-  "decay_length": 500,
   "nSweeps": 500000,
   "dump_frequency": 10000,
   "dump_stats_frequency": 100,

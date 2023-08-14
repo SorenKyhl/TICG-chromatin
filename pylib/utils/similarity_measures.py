@@ -16,8 +16,11 @@ class SCC():
     Calculate Stratified Correlation Coefficient (SCC)
     as defined by https://pubmed.ncbi.nlm.nih.gov/28855260/.
     """
-    def __init__(self):
+    def __init__(self, h=1, K=None, var_stabilized=True):
         self.r_2k_dict = {} # memoized solution for var_stabilized r_2k
+        self.h = h
+        self.K = K
+        self.var_stabilized = var_stabilized
 
     def r_2k(self, x_k, y_k, var_stabilized):
         '''
@@ -28,6 +31,9 @@ class SCC():
             y: contact map of same shape as x
             var_stabilized: True to use var_stabilized version
         '''
+        if var_stabilized is None:
+            var_stabilized = self.var_stabilized
+
         # x and y are stratums
         if var_stabilized:
             # var_stabilized computes variance of ranks
@@ -45,7 +51,7 @@ class SCC():
         else:
             return math.sqrt(np.var(x_k) * np.var(y_k))
 
-    def scc_file(self, xfile, yfile, h=1, K=None, var_stabilized=True,
+    def scc_file(self, xfile, yfile, h=None, K=None, var_stabilized=None,
                 verbose=False, distance=False):
         '''
         Wrapper for scc that takes file path as input. Must be .npy file.
@@ -72,7 +78,7 @@ class SCC():
     def mean_filter(self, x, size):
         return scipy.ndimage.uniform_filter(x, size, mode="constant") / (size) ** 2
 
-    def scc(self, x, y, h=1, K=None, var_stabilized=False, verbose=False,
+    def scc(self, x, y, h=None, K=None, var_stabilized=None, verbose=False,
             debug=False, distance=False):
         '''
         Compute scc between contact map x and y.
@@ -93,8 +99,13 @@ class SCC():
             y = triu_to_full(y)
 
         if K is None:
-            K = len(y) - 2
+            if self.K is None:
+                K = len(y) - 2
+            else:
+                K = self.K
 
+        if h is None:
+            h = self.h
         x = self.mean_filter(x.astype(np.float64), 1+2*h)
         y = self.mean_filter(y.astype(np.float64), 1+2*h)
 

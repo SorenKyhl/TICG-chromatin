@@ -31,6 +31,8 @@ def calculate_Lp(x, chi):
     return Lp
 
 def calculate_L(psi, chi):
+    if psi is None or chi is None:
+        return None
     assert len(chi.shape) == 2, f"chi has shape {chi.shape}"
     if psi.shape[1] > psi.shape[0]:
         psi = psi.T

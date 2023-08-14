@@ -17,6 +17,7 @@ from pylib.utils import hic_utils, utils
 from pylib.utils.goals import *
 from pylib.utils.plotting_utils import plot_matrix
 from pylib.utils.similarity_measures import *
+from sklearn.decomposition import PCA, KernelPCA
 from tqdm import tqdm
 
 from pylib.utils.hic_utils import get_diagonal
@@ -517,6 +518,75 @@ def randomized_svd(X, r, q=10, p=1):
     U = Q @ UY
 
     return U, S, VT
+
+def get_pcs(input, k, normalize=False, binarize=False, scale=False,
+            use_kernel=False, kernel=None, manual=False, soren=False,
+            randomized=False, smooth=False, h=3, align=False):
+    '''
+    Defines seq based on PCs of input.
+
+    Inputs:
+        input: matrix to perform PCA on
+        normalize: True to normalize pcs to [-1, 1]
+        binarize: True to binarize pcs (will normalize and then set any value > 0 as 1)
+        use_kernel: True to use kernel PCA
+        kernel: type of kernel to use
+        align: flip sign such that all pcs start positive
+
+    Outputs:
+        seq: array of particle types
+    '''
+    m = len(input)
+    if binarize:
+        normalize = True # reusing normalize code in binarize
+    if smooth:
+        input = scipy.ndimage.gaussian_filter(input, (h, h))
+
+    if use_kernel:
+        assert kernel is not None
+        pca = KernelPCA(kernel = kernel)
+    else:
+        pca = PCA()
+
+
+    if manual:
+        C = np.corrcoef(input)
+        W, V = np.linalg.eig(C)
+        V = V.T
+    elif soren:
+        U, S, V = scipy.linalg.svd(np.corrcoef(input))
+    else:
+        if scale:
+            pca.fit(input/np.std(input, axis = 0))
+        else:
+            pca.fit(input)
+        if use_kernel:
+            V = pca.eigenvectors_.T
+        else:
+            V = pca.components_
+
+    seq = np.zeros((m, k))
+    for j in range(k):
+        pc = V[j]
+        if normalize:
+            val = np.max(np.abs(pc))
+            # multiply by scale such that val x scale = 1
+            scale = 1/val
+            pc *= scale
+
+        if binarize:
+            # pc has already been normalized to [-1, 1]
+            pc[pc < 0] = 0
+            pc[pc > 0] = 1
+
+        seq[:,j] = pc
+
+    if align:
+        cutoff = int(0.2 * m)
+        for j in range(k):
+            seq[:, j] *= np.sign(np.mean(seq[:cutoff, j]))
+
+    return seq
 
 
 def get_sequences(

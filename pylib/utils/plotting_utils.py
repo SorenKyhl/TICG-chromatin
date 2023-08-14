@@ -3,6 +3,7 @@ import math
 import os
 import os.path as osp
 
+import cv2
 import imageio
 import matplotlib.cm
 import matplotlib.colors
@@ -10,6 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
+from pylib.utils.energy_utils import calculate_diag_chi_step
 
 RED_CMAP = matplotlib.colors.LinearSegmentedColormap.from_list('custom',
                                          [(0,    'white'),
@@ -25,12 +27,44 @@ RED_BLUE_CMAP = matplotlib.colors.LinearSegmentedColormap.from_list('custom',
                                          [(0, 'red'),
                                          (0.5, 'white'),
                                           (1, 'blue')], N=126)
+YELLOW_BLUE_CMAP = matplotlib.colors.LinearSegmentedColormap.from_list('custom',
+                                         [(0, 'yellow'),
+                                         (0.5, 'white'),
+                                          (1, 'blue')], N=126)
+RED_GREEN_CMAP = matplotlib.colors.LinearSegmentedColormap.from_list('custom',
+                                         [(0, 'red'),
+                                         (0.5, 'white'),
+                                          (1, 'green')], N=126)
 
+def rotate_bound(image, angle):
+    # grab the dimensions of the image and then determine the
+    # center
+    (h, w) = image.shape[:2]
+    (cX, cY) = (w // 2, h // 2)
+
+    # grab the rotation matrix (applying the negative of the
+    # angle to rotate clockwise), then grab the sine and cosine
+    # (i.e., the rotation components of the matrix)
+    M = cv2.getRotationMatrix2D((cX, cY), -angle, 1.0)
+    cos = np.abs(M[0, 0])
+    sin = np.abs(M[0, 1])
+
+    # compute the new bounding dimensions of the image
+    nW = int((h * sin) + (w * cos))
+    nH = int((h * cos) + (w * sin))
+
+    # adjust the rotation matrix to take into account translation
+    M[0, 2] += (nW / 2) - cX
+    M[1, 2] += (nH / 2) - cY
+
+    # perform the actual rotation and return the image
+    return cv2.warpAffine(image, M, (nW, nH),cv2.INTER_NEAREST)
 
 def plot_matrix(arr, ofile=None, title=None, vmin=0, vmax='max',
                 size_in=6, minVal=None, maxVal=None, prcnt=False,
                 cmap=RED_CMAP, x_tick_locs=None, x_ticks=None,
-                y_tick_locs=None, y_ticks=None, triu=False, lines=[]):
+                y_tick_locs=None, y_ticks=None, triu=False, lines=[],
+                percentile=1, use_cbar=True):
     """
     Plotting function for 2D arrays.
 
@@ -93,13 +127,13 @@ def plot_matrix(arr, ofile=None, title=None, vmin=0, vmax='max',
 
     # set min and max
     if vmin == 'center':
-        vmin = np.nanpercentile(arr, 1)
-        vmax = np.nanpercentile(arr, 99)
+        vmin = np.nanpercentile(arr, percentile)
+        vmax = np.nanpercentile(arr, 100-percentile)
         vmax = max(vmax, vmin * -1)
         vmin = vmax * -1
     elif vmin == 'center1':
-        vmin = np.nanpercentile(arr, 1)
-        vmax = np.nanpercentile(arr, 99)
+        vmin = np.nanpercentile(arr, percentile)
+        vmax = np.nanpercentile(arr, 100-percentile)
         d_vmin = 1-vmin
         d_vmax = vmax-1
         d = max(d_vmax, d_vmin)
@@ -107,7 +141,7 @@ def plot_matrix(arr, ofile=None, title=None, vmin=0, vmax='max',
         vmax = 1 + d
     else:
         if vmin == 'min':
-            vmin = np.nanpercentile(arr, 1)
+            vmin = np.nanpercentile(arr, percentile)
             print(vmin)
             # uses 1st percentile instead of absolute min
         elif vmin == 'abs_min':
@@ -116,14 +150,16 @@ def plot_matrix(arr, ofile=None, title=None, vmin=0, vmax='max',
         if vmax == 'mean':
             vmax = np.mean(arr)
         elif vmax == 'max':
-            vmax = np.nanpercentile(arr, 99)
+            vmax = np.nanpercentile(arr, 100-percentile)
             # uses 99th percentile instead of absolute max
         elif vmax == 'abs_max':
             vmax = np.max(arr)
 
-    ax = sns.heatmap(arr, linewidth = 0, vmin = vmin, vmax = vmax, cmap = cmap)
-    cbar = ax.collections[0].colorbar
-    cbar.ax.tick_params(labelsize=10)
+    ax = sns.heatmap(arr, linewidth = 0, vmin = vmin, vmax = vmax,
+                    cmap = cmap, cbar = use_cbar)
+    if use_cbar:
+        cbar = ax.collections[0].colorbar
+        cbar.ax.tick_params(labelsize=10)
     if x_ticks is None:
         pass
     elif len(x_ticks) == 0:
@@ -227,6 +263,11 @@ def plot_mean_dist(meanDist, path, ofile, diag_chis_step, logx, logy=True,
     #     x = np.arange(10, 100).astype(np.float64)
     #     ax.plot(x, np.power(x, -1.5), color = 'grey', ls = ':', label='-3/2')
     #     ax.legend(loc='upper right')
+
+    # if np.min(meanDist[meanDist != 0]) < 1e-6:
+    #     plt.ylim(1e-6, 2)
+    # else:
+    #     plt.ylim(None, 2)
 
     ax.set_ylabel(ylabel, fontsize = 16)
     ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)

@@ -27,7 +27,7 @@ from sequences_to_contact_maps.scripts.clean_directories import \
 from sequences_to_contact_maps.scripts.InteractionConverter import \
     InteractionConverter
 from sequences_to_contact_maps.scripts.knightRuiz import knightRuiz
-from sequences_to_contact_maps.scripts.load_utils import (load_L, load_X_psi,
+from sequences_to_contact_maps.scripts.load_utils import (load_L, load_psi,
                                                           load_Y, load_Y_diag)
 from sequences_to_contact_maps.scripts.neural_nets.utils import (
     get_dataset, load_saved_model)
@@ -83,7 +83,7 @@ def getArgs():
 
     if args.m == -1:
         # infer m
-        x, _ = load_X_psi(args.sample_folder, throw_exception = False)
+        x = load_psi(args.sample_folder, throw_exception = False)
         y, _ = load_Y(args.sample_folder, throw_exception = False)
         if x is not None:
             args.m, _ = x.shape
@@ -811,19 +811,15 @@ class GetSeq():
                 seq = self.get_PCA_seq(input, args.normalize, args.binarize,
                                         args.scale, use_kernel = True, kernel = args.kernel)
             elif args.method.startswith('ground_truth'):
-                x, psi = load_X_psi(self.sample_folder, throw_exception = False)
+                x = load_psi(self.sample_folder, throw_exception = False)
 
                 if args.input is None:
                     assert args.use_energy, 'missing input'
-                elif args.input == 'x':
+                elif args.input == 'x' or args.input == 'psi':
                     assert x is not None
                     seq = x
                     print(f'seq loaded with shape {seq.shape}')
-                elif args.input == 'psi':
-                    assert psi is not None
-                    seq = psi
-                    # this input will reproduce ground_truth-S barring random seed
-                    print(f'seq loaded with shape {seq.shape}')
+
                 else:
                     raise Exception(f'Unrecognized input mode {args.input} for method {args.method} '
                                     f'for sample {self.sample_folder}')
@@ -1355,7 +1351,7 @@ class GetDiagChi():
         model, _, _ = load_saved_model(opt, False)
 
         # get dataset
-        dataset = get_dataset(opt, verbose = True, samples = [sample_id])
+        dataset = get_dataset(opt, verbose = True, samples = [sample_id], )
         print(dataset)
 
         # get prediction
@@ -1481,7 +1477,7 @@ class GetEnergy():
                 raise Exception(f'Unkown method: {args.method}')
 
         # if args.project:
-        #     _, psi = load_X_psi(self.sample_folder)
+        #     psi = load_psi(self.sample_folder)
         #     s, e = project_S_to_psi_basis(s, psi)
         if L is not None:
             L = crop(L, self.m)
@@ -1527,7 +1523,9 @@ class GetEnergy():
                 plot_matrix(S, 'S.png', vmin = 'min', vmax = 'max',
                             cmap = 'blue-red', title = 'S')
 
-    def get_energy_gnn(self, model_path, sample_path, kr=False):
+    def get_energy_gnn(self, model_path, sample_path, kr=False, bonded_path=None,
+                        sub_dir='samples', verbose=True,
+                        return_plaid_diag=False, return_model_data=False):
         '''
         Loads output from GNN model to use as energy matrix
 
@@ -1538,7 +1536,8 @@ class GetEnergy():
         Outputs:
             s: np array of pairwise energies
         '''
-        print('\nget_energy_gnn')
+        if verbose:
+            print('\nget_energy_gnn')
 
         # extract sample info
         sample = osp.split(sample_path)[1]
@@ -1546,13 +1545,15 @@ class GetEnergy():
         sample_path_split = osp.normpath(sample_path).split(os.sep)
         sample_dataset = sample_path_split[-3]
 
-        print(sample, sample_id, sample_dataset)
+        if verbose:
+            print(sample, sample_id, sample_dataset)
 
         # extract model info
         model_path_split = osp.normpath(model_path).split(os.sep)
         model_id = model_path_split[-1]
         model_type = model_path_split[-2]
-        print(f'Model type: {model_type}')
+        if verbose:
+            print(f'Model type: {model_type}')
         assert model_type == 'ContactGNNEnergy', f"Unrecognized model_type: {model_type}"
 
         argparse_path = osp.join(model_path, 'argparse.txt')
@@ -1576,8 +1577,7 @@ class GetEnergy():
         sys.argv = [sys.argv[0]] # delete args from get_params, otherwise gnn opt will try and use them
         opt = parser.parse_args(['@{}'.format(argparse_path)])
         opt.id = int(model_id)
-        print(opt)
-        opt = finalize_opt(opt, parser, local = True, debug = True)
+        opt = finalize_opt(opt, parser, local = True, debug = True, bonded_path=bonded_path)
         if self.m > 0:
             opt.m = self.m # override m
         opt.data_folder = osp.join('/',*sample_path_split[:-2]) # use sample_dataset not gnn_dataset
@@ -1589,6 +1589,7 @@ class GetEnergy():
         opt.scratch = '/home/erschultz/scratch' # use local scratch
         opt.plaid_score_cutoff = None # no cutoff at test time
 
+
         if opt.y_preprocessing.startswith('sweep'):
             _, *opt.y_preprocessing = opt.y_preprocessing.split('_')
             if isinstance(opt.y_preprocessing, list):
@@ -1596,63 +1597,63 @@ class GetEnergy():
         if kr:
             opt.kr = True
             opt.y_preprocessing = f'{opt.y_preprocessing}'
-        print(opt)
+        if verbose:
+            print(opt)
 
         # get model
-        model, _, _ = load_saved_model(opt, True)
+        model, _, _ = load_saved_model(opt, verbose=verbose)
 
         # get dataset
-        dataset = get_dataset(opt, verbose = True, samples = [sample_id])
-        print('Dataset: ', dataset, len(dataset))
+        dataset = get_dataset(opt, verbose = verbose, samples = [sample_id],
+                                sub_dir = sub_dir)
+        if verbose:
+            print('Dataset: ', dataset, len(dataset))
 
         # get prediction
         data = dataset[0]
         data.batch = torch.zeros(data.num_nodes, dtype=torch.int64)
-        print(data)
+
+        if return_model_data:
+            clean_directories(GNN_path = opt.root)
+            return model, data, dataset
+
+        if verbose:
+            print(data)
         data = data.to(opt.device)
-        print(f'data first node: {data.x[0]}')
         yhat = model(data)
         yhat = yhat.cpu().detach().numpy().reshape((opt.m,opt.m))
 
         if opt.output_preprocesing == 'log':
             yhat = np.multiply(np.sign(yhat), np.exp(np.abs(yhat)) - 1)
+            # Note that ln(L + D) doesn't simplify
+            # so plaid_hat and diagonal_hat can't be compared to the ground truth
 
-            # ln(L + D) doesn't simplify, so these can't be compared to the ground truth
-            plaid_hat = model.plaid_component(data)
-            diagonal_hat = model.diagonal_component(data)
-        else:
-            plaid_hat = model.plaid_component(data)
-            diagonal_hat = model.diagonal_component(data)
-
-        energy = yhat
-
-        if plaid_hat is not None and diagonal_hat is not None:
-            # plot plaid contribution
-            v_max = max(np.max(energy), -1*np.min(energy))
-            v_min = -1 * v_max
-            # vmin = vmax = 'center'
-            plaid_hat = plaid_hat.cpu().detach().numpy().reshape((opt.m,opt.m))
-            plot_matrix(plaid_hat, 'plaid_hat.png', vmin = v_min,
-                            vmax = v_max, title = 'plaid portion', cmap = 'blue-red')
-            print(f'Rank of plaid_hat: {np.linalg.matrix_rank(plaid_hat)}')
-            w, v = np.linalg.eig(plaid_hat)
-            prcnt = np.abs(w) / np.sum(np.abs(w))
-            print(prcnt[0:4])
-            print(np.sum(prcnt[0:4]))
-            np.savetxt('plaid_hat.txt', plaid_hat)
-
-
-            # plot diag contribution
-            diagonal_hat = diagonal_hat.cpu().detach().numpy().reshape((opt.m,opt.m))
-            plot_matrix(diagonal_hat, 'diagonal_hat.png', vmin = v_min,
-                            vmax = v_max, title = 'diagonal portion', cmap = 'blue-red')
-            np.savetxt('diagonal_hat.txt', diagonal_hat)
+        # if plaid_hat is not None and diagonal_hat is not None and verbose:
+        #     # plot plaid contribution
+        #     v_max = max(np.max(energy), -1*np.min(energy))
+        #     v_min = -1 * v_max
+        #     # vmin = vmax = 'center'
+        #     plaid_hat = plaid_hat.cpu().detach().numpy().reshape((opt.m,opt.m))
+        #     plot_matrix(plaid_hat, 'plaid_hat.png', vmin = v_min,
+        #                     vmax = v_max, title = 'plaid portion', cmap = 'blue-red')
+        #     print(f'Rank of plaid_hat: {np.linalg.matrix_rank(plaid_hat)}')
+        #     w, v = np.linalg.eig(plaid_hat)
+        #     prcnt = np.abs(w) / np.sum(np.abs(w))
+        #     print(prcnt[0:4])
+        #     print(np.sum(prcnt[0:4]))
+        #     np.savetxt('plaid_hat.txt', plaid_hat)
+        #
+        #
+        #     # plot diag contribution
+        #     diagonal_hat = diagonal_hat.cpu().detach().numpy().reshape((opt.m,opt.m))
+        #     plot_matrix(diagonal_hat, 'diagonal_hat.png', vmin = v_min,
+        #                     vmax = v_max, title = 'diagonal portion', cmap = 'blue-red')
+        #     np.savetxt('diagonal_hat.txt', diagonal_hat)
 
         # cleanup
         # opt.root is set in get_dataset
         clean_directories(GNN_path = opt.root)
-
-        return energy
+        return yhat
 
 def main():
     args, unknown = getArgs()

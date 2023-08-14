@@ -186,6 +186,7 @@ class Pysim:
 
     def run(self, name=None):
         """run simulation"""
+        t0 = time.time()
         self.data_out = name
         self.setup()
         with cd(self.root):
@@ -196,6 +197,8 @@ class Pysim:
                 self.data_out = "data_out"  # don't set earlier...
                 # in this case, use default constructor so engine.run() pipes to stdout
             engine.run()
+        tf = time.time()
+        return tf - t0
 
     def run_eq(
         self,
@@ -211,13 +214,15 @@ class Pysim:
             production_sweeps: number of production simulation sweeps (per core)
             parallel_simulations: number of parallel production simulations to execute
         """
+        t0 = time.time()
         equilibration_dir = "equilibration"
         production_dir = "production_out"
 
         # equilibration
         self.config["nSweeps"] = equilibrium_sweeps
         self.config["load_configuration"] = False
-        self.run(equilibration_dir)
+        t_eq = self.run(equilibration_dir)
+        print(f'Equillibration took {np.round(t_eq, 2)} seconds')
 
         # production. copy the last structure to initialize production simulations
         equilibrated_structure = "equilibrated.xyz"
@@ -232,9 +237,14 @@ class Pysim:
         self.config["load_configuration_filename"] = equilibrated_structure
 
         if parallel_simulations == 1:
-            self.run(production_dir)
+            t_prod = self.run(production_dir)
         else:
-            self.run_parallel(production_dir, parallel_simulations)
+            print(f'Running in parallel with {parallel_simulations} runs')
+            t_prod = self.run_parallel(production_dir, parallel_simulations)
+        print(f'Production took {np.round(t_prod, 2)} seconds')
+
+        tf = time.time()
+        return tf - t0
 
     def run_parallel(self, name: str, cores: int):
         """run production, using parallel simulations with different initial seeds
@@ -246,6 +256,7 @@ class Pysim:
             name: name of output file for aggregated simulation data
             cores: number of parallel simulations to execute
         """
+        t0 = time.time()
         self.data_out = name
         processes = []
         # create processes
@@ -272,6 +283,8 @@ class Pysim:
             p.terminate()
 
         self.aggregate_production_files()
+        tf = time.time()
+        return tf - t0
 
     def aggregate_production_files(self):
         """aggregate simulation data from each core into final production folder.

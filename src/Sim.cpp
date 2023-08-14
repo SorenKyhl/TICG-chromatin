@@ -338,8 +338,11 @@ void Sim::readInput() {
     std::cout << "grid move is : " << gridmove_on << std::endl;
 
     // MC move params
-    assert(config.contains("decay_length"));
-    decay_length = config["decay_length"];
+    if(config.contains("decay_length")){
+      decay_length = config["decay_length"];
+    } else {
+      decay_length = nbeads / 2;
+    }
     assert(config.contains("displacement_on"));
     displacement_on = config["displacement_on"];
     assert(config.contains("translation_on"));
@@ -369,6 +372,7 @@ void Sim::readInput() {
       }
     } else {
       constant_chi_on = false;
+      constant_chi = 0;
     }
     smatrix_filename = "none";
     lmatrix_filename = "none";
@@ -409,6 +413,12 @@ void Sim::readInput() {
     dump_stats_frequency = config["dump_stats_frequency"];
     assert(config.contains("dump_density"));
     dump_density = config["dump_density"];
+    if (config.contains("dump_observables")) {
+      dump_observables = config["dump_observables"];
+    } else {
+      dump_observables = true;
+    }
+
 
     assert(config.contains("nSweeps"));
     nSweeps = config["nSweeps"];
@@ -756,6 +766,7 @@ void Sim::calculateParameters() {
     // grid.sphere_center = {grid.boundary_radius*grid.delta,
     // grid.boundary_radius*grid.delta, grid.boundary_radius*grid.delta};
 
+    assert(decay_length < nbeads);
     exp_decay = nbeads / decay_length; // size of exponential falloff for MCmove
                                        // second bead choice
     exp_decay_crank = nbeads / decay_length;
@@ -998,10 +1009,12 @@ Sim::getNonBondedEnergy(const std::unordered_set<Cell *> &flagged_cells) {
   			U += grid.energy(flagged_cells, chis);
   		}
   	}
-    if (constant_chi > 0)
+
+    if (constant_chi_on)
     {
       U += grid.constantEnergy(flagged_cells, constant_chi);
     }
+
     if (diagonal_on) {
         if (dmatrix_on) {
             U += grid.DmatrixEnergy(flagged_cells, dmatrix);
@@ -1022,12 +1035,6 @@ Sim::getNonBondedEnergy(const std::unordered_set<Cell *> &flagged_cells) {
     return U;
 }
 
-double
-Sim::getJustPlaidEnergy(const std::unordered_set<Cell *> &flagged_cells) {
-    // for when dumping energy;
-    double U = grid.energy(flagged_cells, chis);
-    return U;
-}
 
 double
 Sim::getJustBoundaryEnergy(const std::unordered_set<Cell *> &flagged_cells) {
@@ -1116,7 +1123,9 @@ void Sim::MC() {
         if (sweep % dump_stats_frequency == 0) {
             saveEnergy(sweep);
             updateContacts();
-            saveObservables(sweep);
+            if (dump_observables) {
+              saveObservables(sweep);
+            }
         }
     }
 
@@ -1129,17 +1138,17 @@ void Sim::printAcceptanceRates(int sweep) {
     std::cout << "acceptance rate: "
               << (float)acc / ((sweep + 1) * nSteps) * 100.0 << "%"
               << std::endl;
-    if (displacement_on)
-        std::cout << "disp: " << (float)acc_disp / (sweep * n_disp) * 100
-                  << "% \t";
-    if (translation_on)
-        std::cout << "trans: " << (float)acc_trans / (sweep * n_trans) * 100
+    if (pivot_on)
+        std::cout << "pivot: " << (float)acc_pivot / (sweep * n_pivot) * 100
                   << "% \t";
     if (crankshaft_on)
         std::cout << "crank: " << (float)acc_crank / (sweep * n_crank) * 100
                   << "% \t";
-    if (pivot_on)
-        std::cout << "pivot: " << (float)acc_pivot / (sweep * n_pivot) * 100
+    if (translation_on)
+        std::cout << "trans: " << (float)acc_trans / (sweep * n_trans) * 100
+                  << "% \t";
+    if (displacement_on)
+        std::cout << "disp: " << (float)acc_disp / (sweep * n_disp) * 100
                   << "% \t";
     if (rotate_on)
         std::cout << "rot: " << (float)acc_rot / (sweep * n_rot) * 100

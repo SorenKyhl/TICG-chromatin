@@ -1,5 +1,6 @@
 import csv
 import json
+import math
 import os
 import os.path as osp
 import shutil
@@ -7,7 +8,6 @@ import sys
 import tarfile
 from collections import defaultdict
 
-import imageio.v2 as imageio
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -22,7 +22,7 @@ from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
 from pylib.utils.utils import load_json
 from scipy.ndimage import uniform_filter
 from scripts.data_generation.modify_maxent import get_samples
-from scripts.get_params import GetSeq
+from scripts.get_params import GetEnergy, GetSeq
 from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
 
@@ -271,100 +271,6 @@ def time_comparison():
     ax.legend(loc='upper left')
     plt.tight_layout()
     plt.savefig(osp.join(dir, 'time.png'))
-    plt.close()
-
-def convergence_check():
-    dir = '/home/erschultz/dataset_09_30_22/samples'
-    results_1 = {} # param convergence
-    results_2 = {} # loss convergence
-    for file in os.listdir(dir):
-        sample = osp.join(dir, file)
-        if file.startswith('sample') and osp.isdir(sample):
-            id = int(file[6:])
-            for file in os.listdir(sample):
-                if file.startswith('GNN-') or file.startswith('PCA-'):
-                    method = osp.join(sample, file)
-                    if 'MLP' in method and 'GNN' in method:
-                        continue
-                    for file in os.listdir(method):
-                        if file.startswith('k'):
-                            k = file[1:]
-                            k_folder = osp.join(method, file)
-                            for file in os.listdir(k_folder):
-                                rep = file[-1]
-                                if file[-1] == '2':
-                                    continue
-                                replicate = osp.join(k_folder, file)
-                                label = f'{id}_{osp.split(method)[1]}_k{k}_r{rep}'
-
-                                chis_diag_file = osp.join(replicate, 'chis_diag.txt')
-                                if osp.exists(chis_diag_file):
-                                    params = np.loadtxt(chis_diag_file)
-
-                                chis_file = osp.join(replicate, 'chis.txt')
-                                if osp.exists(chis_file):
-                                    chis = np.loadtxt(chis_file)
-                                    params = np.concatenate((params, chis), axis = 1)
-                                else:
-                                    continue
-
-                                vals = []
-                                for i in range(2, len(params)):
-                                    diff = params[i] - params[i-1]
-                                    vals.append(np.linalg.norm(diff, ord = 2))
-                                results_1[label] = vals
-
-
-                                conv_file = osp.join(replicate, 'convergence.txt')
-                                if osp.exists(conv_file):
-                                    conv = np.loadtxt(conv_file)
-                                else:
-                                    continue
-
-                                vals = []
-                                for i in range(1, len(conv)):
-                                    diff = conv[i] - conv[i-1]
-                                    vals.append(np.abs(diff))
-                                results_2[label] = vals
-
-
-    cmap = matplotlib.cm.get_cmap('tab10')
-    ls_arr = ['solid', 'dotted', 'dashed', 'dashdot']
-    for label, vals in results_1.items():
-        print(label)
-        id = int(label.split('_')[0])
-        k = int(label[-4])
-
-        plt.plot(vals, label = label, ls = ls_arr[k // 2])
-
-    eps = 1
-    plt.axhline(eps, c = 'k')
-    plt.yscale('log')
-    plt.xlabel('Iteration', fontsize=16)
-    plt.ylabel(r'$||x_t - x_{t-1}||_2$', fontsize=16)
-    plt.legend()
-    plt.title(r'$||x_t - x_{t-1}||_2 < $'+f'{eps}')
-    plt.savefig(osp.join(dir, 'param_convergence.png'))
-    plt.close()
-
-
-    cmap = matplotlib.cm.get_cmap('tab10')
-    ls_arr = ['solid', 'dotted', 'dashed', 'dashdot']
-    for label, vals in results_2.items():
-        print(label)
-        id = int(label.split('_')[0])
-        k = int(label[-4])
-
-        plt.plot(vals, label = label, ls = ls_arr[k // 2])
-
-    eps = 1e-3
-    plt.axhline(eps, c = 'k')
-    plt.yscale('log')
-    plt.xlabel('Iteration', fontsize=16)
-    plt.ylabel(r'$|f(x_t) - f(x_{t-1})|$', fontsize=16)
-    plt.legend(loc = 'upper right')
-    plt.title(r'$|f(x_t) - f(x_{t-1})| < 10^{-3}$')
-    plt.savefig(osp.join(dir, 'loss_convergence.png'))
     plt.close()
 
 def plot_sc_p_s():
@@ -857,13 +763,202 @@ def check_bonded_distributions():
     for i in range(4):
         print(i, np.mean(np.diagonal(D_mean, i))**0.5)
 
+def compare_y_exp_vs_sim():
+    sim = '/home/erschultz/dataset_05_28_23/samples/sample324'
+    exp = '/home/erschultz/dataset_04_10_23/samples/sample1002'
+    GNN_ID=411
+    model_path = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{GNN_ID}'
+    config = default.config
+    root = "optimize_grid_b_140_phi_0.03"
+
+    def print_arr(arr, name=None):
+        if isinstance(arr, torch.Tensor):
+            arr = arr.cpu().detach().numpy()
+        if name is not None:
+            print(name)
+        print(arr, arr.shape, np.nanmin(arr), np.nanpercentile(arr, [1,99]), np.nanmax(arr))
+
+    for dir in [sim, exp]:
+        print(dir)
+        y = np.load(osp.join(dir, 'y.npy')).astype(np.float64)
+        y /= np.mean(np.diagonal(y))
+        m = len(y)
+
+
+        config['nbeads'] = len(y)
+        config['grid_size'] = np.loadtxt(osp.join(dir, root, 'grid_size.txt'))
+        getenergy = GetEnergy(config = config)
+
+        model, data, dataset = getenergy.get_energy_gnn(model_path, dir,
+                                    grid_path=osp.join(root, 'grid_size.txt'),
+                                    verbose = False, return_model_data = True)
+
+        print_arr(data.edge_attr[:, 1], 'i-j')
+        print_arr(data.edge_attr[:, 0], 'H_ij')
+        arr = data.edge_attr[:, 0] * 10
+        bin_width=1
+        # plt.hist(arr)
+        # plt.hist(arr, label = osp.split(dir)[1], alpha = 0.5,
+        #             weights = np.ones_like(arr) / len(arr),
+        #             bins = range(math.floor(np.nanmin(arr)), math.ceil(np.nanmax(arr)) + bin_width, bin_width))
+    #
+    # plt.legend()
+    # plt.show()
+
+        # print_arr(hat_S)
+        latent1, latent2 = model.latent(data)
+        print_arr(latent1, 'latent1')
+        print_arr(latent2, 'latent2')
+
+        plaid1 = model.plaid_component(latent1)
+        plaid2 = model.plaid_component(latent2)
+        print_arr(plaid1, 'plaid1')
+        print_arr(plaid2, 'plaid2')
+
+        diag1 = model.diagonal_component(latent1).detach()[0, 0, :]
+        diag1 = np.multiply(np.sign(diag1), np.exp(np.abs(diag1)) - 1)
+        diag2 = model.diagonal_component(latent2).detach()[0, 0, :]
+        diag2 = np.multiply(np.sign(diag2), np.exp(np.abs(diag2)) - 1)
+        print_arr(diag1, 'diag1')
+        print_arr(diag2, 'diag2')
+
+        S1 = plaid1 + diag1
+        S2 = plaid2 + diag2
+        print_arr(S1, 'S1')
+        print_arr(S2, 'S2')
+        #
+        # yhat = model(data)
+        # yhat = yhat.cpu().detach().numpy().reshape((m, m))
+        # print_arr(yhat, 'yhat')
+        # yhat = np.multiply(np.sign(yhat), np.exp(np.abs(yhat)) - 1)
+        # print_arr(yhat, 'yhat_trans')
+
+def edit_setup(dataset, exp_dataset):
+    dir = f'/home/erschultz/{dataset}/setup'
+    grid_root = f'optimize_grid_b_140_phi_0.03'
+    for i in range(1, 5001):
+        file = osp.join(dir, f'sample_{i}.txt')
+        rowList = []
+        with open(file, 'r') as f:
+            is_j = False
+            j = -1
+            for line in f:
+                line = line.strip()
+                rowList.append([line])
+                if is_j:
+                    j = int(line)
+                if line.startswith('--exp_max_ent'):
+                    is_j = True
+                else:
+                    is_j = False
+
+        rowList.append(['--diag_chi_experiment'])
+        rowList.append([osp.join(exp_dataset, f'samples/sample{j}', grid_root)])
+
+
+        with open(file, 'w') as f:
+            wr = csv.writer(f)
+            wr.writerows(rowList)
+
+def make_small(dataset):
+    dir = f'/home/erschultz/{dataset}/samples'
+    odir = f'/home/erschultz/{dataset}-small'
+    grid_root = f'optimize_grid_b_140_phi_0.03'
+    if not osp.exists(odir):
+        os.mkdir(odir)
+    odir = osp.join(odir, 'samples')
+    if not osp.exists(odir):
+        os.mkdir(odir)
+    for s in os.listdir(dir):
+        s_dir_grid = osp.join(dir, s, grid_root)
+        s_odir = osp.join(odir, s)
+        if not osp.exists(s_odir):
+            os.mkdir(s_odir)
+        s_odir_grid = osp.join(s_odir, grid_root)
+        if not osp.exists(s_odir_grid):
+            os.mkdir(s_odir_grid)
+        for f in ['y.npy', 'grid_size.txt']:
+            shutil.copyfile(osp.join(s_dir_grid, f), osp.join(s_odir_grid, f))
+
+
+def test_param_convergence(dataset):
+    dir = f'/home/erschultz/{dataset}/samples'
+    for i in range(201, 220):
+        s_dir = osp.join(dir, f'sample{i}')
+        fpath = osp.join(s_dir, 'optimize_grid_b_140_phi_0.03-max_ent10')
+        assert osp.exists(fpath), fpath
+
+        all_chis = []
+        all_diag_chis = []
+        for i in range(30):
+            it_path = osp.join(fpath, f'iteration{i}')
+            if osp.exists(it_path):
+                config_file = osp.join(it_path, 'production_out/config.json')
+                with open(config_file) as f:
+                    config = json.load(f)
+                chis = np.array(config['chis'])
+                chis = chis[np.triu_indices(len(chis))] # grab upper triangle
+                diag_chis = np.array(config['diag_chis'])
+
+                all_chis.append(chis)
+                all_diag_chis.append(diag_chis)
+
+        params = np.concatenate((all_diag_chis, all_chis), axis = 1)
+        print(params, params.shape)
+
+        convergence = []
+        eps = 1e-2
+        for j in range(1, len(params)):
+            diff = params[j] - params[j-1]
+            conv = np.linalg.norm(diff, ord = 2)
+            convergence.append(conv)
+
+        plt.plot(convergence)
+
+    plt.yscale('log')
+    plt.axhline(1)
+    plt.axhline(10)
+
+    plt.savefig('/home/erschultz/TICG-chromatin/figures/conv.png')
+
+
+def compare_bonded():
+    data_dir = '/home/erschultz/Su2020/samples/sample1013'
+    def load_data(dir):
+        y = np.load(osp.join(dir, 'y.npy')).astype(float)
+        y /= np.mean(y.diagonal())
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
+        return meanDist
+
+    meanDist = load_data(data_dir)
+    plt.plot(meanDist, color = 'k', label = 'Experiment')
+
+
+    b=261
+    for phi in [0.001, 0.0025, 0.004, 0.005, 0.0075, 0.01]:
+        grid_dir = osp.join(data_dir, f'optimize_grid_b_{b}_phi_{phi}')
+        meanDist = load_data(grid_dir)
+        plt.plot(meanDist, label = f'b_{b}_phi_{phi}')
+
+
+    b = 140; phi = 0.03
+    grid_dir = osp.join(data_dir, f'optimize_grid_b_{b}_phi_{phi}')
+    meanDist = load_data(grid_dir)
+    plt.plot(meanDist, label = f'b_{b}_phi_{phi}', ls='--')
+
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.legend()
+    plt.show()
+
 if __name__ == '__main__':
     # test_robust_PCA()
+    compare_bonded()
+    # test_param_convergence('dataset_02_04_23')
     # check_dataset('dataset_11_18_22')
     # time_comparison()
     # time_comparison_dmatrix()
-    # convergence_check()
-    main()
+    # main()
     # compare_scc_bio_replicates()
     # max_ent_loss_for_gnn('dataset_11_14_22', 2201)
     # plot_mean_dist_S('dataset_04_28_23')
@@ -871,3 +966,8 @@ if __name__ == '__main__':
     # check_interpolation()
     # make_dataset_of_converged('dataset_03_21_23')
     # check_bonded_distributions()
+    # compare_y_exp_vs_sim()
+    # edit_setup('dataset_05_28_23', 'dataset_04_10_23')
+    # edit_setup('dataset_04_28_23', 'dataset_02_04_23')
+    # edit_setup('dataset_05_15_23', 'dataset_02_04_23')
+    # make_small('dataset_04_05_23')

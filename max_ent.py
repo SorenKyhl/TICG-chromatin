@@ -2,6 +2,7 @@ import json
 import multiprocessing as mp
 import os
 import os.path as osp
+import shutil
 import sys
 
 import numpy as np
@@ -15,7 +16,6 @@ def soren():
     dir = '/home/erschultz/dataset_test/samples/sample5003'
 
     y = np.load(osp.join(dir, 'y.npy'))
-    nbeads = len(y)
     seqs = np.load(osp.join(dir, 'x_soren.npy')).T
     with open(osp.join(dir, 'config.json')) as f:
         config = json.load(f)
@@ -43,7 +43,6 @@ def modify_soren():
     sample = 5003
     dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
     y = np.load(osp.join(dir, 'y.npy'))
-    nbeads = len(y)
 
     root = osp.join(dir, 'soren_me_0-seq')
     print(root)
@@ -70,25 +69,30 @@ def modify_soren():
                 final_it_sweeps=500000)
     me.fit()
 
-def fit(sample):
-    print(sample)
+def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None):
     mode = 'grid'
-    dataset = 'downsampling_analysis'
-    dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
-    y = np.load(osp.join(dir, 'y.npy'))
-    y /= np.mean(np.diagonal(y))
-    np.fill_diagonal(y, 1)
-    nbeads = len(y)
+    print(sample, mode)
+    dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
 
     bonded_config = default.bonded_config
-    bonded_config['beadvol'] = 130000
-    bonded_config['bond_length'] = 140
-    bonded_config['phi_chromatin'] = 0.03
+    bonded_config['bond_length'] = bl
+    bonded_config['phi_chromatin'] = phi
+    if vb is not None:
+        bonded_config['beadvol'] = vb
+    else:
+        if bonded_config['bond_length'] == 16.5:
+            bonded_config['beadvol'] = 520
+        if bonded_config['bond_length'] == 117:
+            bonded_config['beadvol'] = 26000
+        elif bonded_config['bond_length'] == 224:
+            bonded_config['beadvol'] = 260000
+        else:
+            bonded_config['beadvol'] = 130000
     root = f"optimize_{mode}"
     root = f"{root}_b_{bonded_config['bond_length']}_phi_{bonded_config['phi_chromatin']}"
     print(root)
     root = osp.join(dir, root)
-    if osp.exists(root):
+    if osp.exists(osp.join(root, 'grid_size.txt')):
         bonded_config['grid_size'] = np.loadtxt(osp.join(root, 'grid_size.txt'))
         angle_file = osp.join(root, 'angle.txt')
         if osp.exists(angle_file):
@@ -96,48 +100,112 @@ def fit(sample):
             bonded_config['angles_on'] = True
     else:
         root, bonded_config = optimize_grid.main(root, bonded_config, mode)
+
     config = default.config
     for key in ['beadvol', 'bond_length', 'phi_chromatin', 'grid_size',
                 'k_angle', 'angles_on']:
         config[key] = bonded_config[key]
+
+    return root, config
+
+
+def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None):
+    print(sample)
+    mode = 'grid'
+    dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
+    y = np.load(osp.join(dir, 'y.npy'))
+    y /= np.mean(np.diagonal(y))
+    np.fill_diagonal(y, 1)
+
+    root, config = setup_config(dataset, sample, samples, bl, phi, vb)
+
     k = 10
     config['nspecies'] = k
     config['chis'] = np.zeros((k,k))
-    config['dump_frequency'] = 30000
-
-    # get sequences
-    config['nbeads'] = len(y)
-    getSeq = GetSeq(config = config)
-    seqs = getSeq.get_PCA_seq(epilib.get_oe(y), normalize = True)
-    # seqs = epilib.get_sequences(y, k, randomized=True)
+    config['dump_frequency'] = 10000
+    config['dump_observables'] = True
 
     # set up diag chis
     config['diagonal_on'] = True
     config['dense_diagonal_on'] = True
-    config['n_small_bins'] = 64
-    config["n_big_bins"] = 16
     config["small_binsize"] = 1
-    config["big_binsize"] = 28
+    if len(y) == 512:
+        config['n_small_bins'] = 64
+        config["n_big_bins"] = 16
+        config["big_binsize"] = 28
+    elif len(y) == 256:
+        config['n_small_bins'] = 64
+        config["n_big_bins"] = 12
+        config["big_binsize"] = 16
+    elif len(y) == 1024:
+        config['n_small_bins'] = 64
+        config["n_big_bins"] = 32
+        config["big_binsize"] = 30
+    elif len(y) == 2560:
+        config['n_small_bins'] = 64
+        config["n_big_bins"] = 48
+        config["big_binsize"] = 52
+    elif len(y) == 3270:
+        config['n_small_bins'] = 70
+        config["n_big_bins"] = 32
+        config["big_binsize"] = 100
+    else:
+        raise Exception(f'Need to specify bin sizes for size={len(y)}')
+
     config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
+
+    root = osp.join(dir, f'{root}-max_ent{k}_run_longer')
+    if osp.exists(root):
+        # shutil.rmtree(root)
+        print('WARNING: root exists')
+        return
+    os.mkdir(root, mode=0o755)
+
+    # get sequences
+    seqs = epilib.get_pcs(epilib.get_oe(y), k, normalize = True)
+    # seqs = epilib.get_sequences(y, k, randomized=True)
 
     params = default.params
     goals = epilib.get_goals(y, seqs, config)
     params["goals"] = goals
     params['iterations'] = 15
     params['parallel'] = 1
-    params['production_sweeps'] = 300000
     params['equilib_sweeps'] = 30000
+    params['production_sweeps'] = 300000
+    params['stop_at_convergence'] = False
+    params['run_longer_at_convergence'] = True
 
-    me = Maxent(osp.join(dir, f'{root}-max_ent'), params, config, seqs, y,
-                final_it_sweeps=500000, overwrite = True)
-    me.fit()
+    stdout = sys.stdout
+    with open(osp.join(root, 'log.log'), 'w') as sys.stdout:
+        me = Maxent(root, params, config, seqs, y,
+                    final_it_sweeps=500000, mkdir=False)
+        t = me.fit()
+        print(f'Simulation took {np.round(t, 2)} seconds')
+    sys.stdout = stdout
 
 def main():
-    with mp.Pool(14) as p:
-        p.map(fit, [1, 2, 3, 4, 5, 10, 25, 50, 75, 100])
-    # for i in range(202, 283):
-        # fit(i)
-    # fit(201)
+    # dataset = 'dataset_05_31_23'; samples = list(range(1137, 1214))
+    # dataset = 'downsampling_analysis'; samples = list(range(201, 211))
+    # dataset = 'dataset_02_04_23'; samples = list(range(201, 221))
+    # dataset = 'dataset_02_04_23'; samples = [211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224]
+    dataset = 'Su2020'; samples = [1013]
+    # dataset = 'dataset_04_05_23'; samples = list(range(1211, 1288))
+    # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
+    # samples = sorted(np.random.choice(samples, 12, replace = False))
+    # dataset = 'timing_analysis/512'; samples = list(range(1, 16))
+
+    mapping = []
+    for i in samples:
+        for phi in [0.001, 0.0025, 0.005, 0.004]:
+            mapping.append((dataset, i, f'samples', 261, phi))
+    print(len(mapping))
+    print(mapping)
+
+    with mp.Pool(4) as p:
+        p.starmap(fit, mapping)
+    # for i in samples:
+    #     setup_config(dataset, i, 'samples')
+
 
 
 
