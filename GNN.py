@@ -16,7 +16,7 @@ sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import load_import_log
 
 
-def fit(dataset, sample, GNN_ID, sub_dir='samples'):
+def fit(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03):
     print(sample)
     mode = 'grid'
     dir = f'/home/erschultz/{dataset}/{sub_dir}/sample{sample}'
@@ -26,15 +26,15 @@ def fit(dataset, sample, GNN_ID, sub_dir='samples'):
     nbeads = len(y)
 
     bonded_config = default.bonded_config
-    bonded_config['bond_length'] = 140
-    bonded_config['phi_chromatin'] = 0.03
-    if bonded_config['bond_length'] == 16.5:
+    bonded_config['bond_length'] = b
+    bonded_config['phi_chromatin'] = phi
+    if b == 16.5:
         bonded_config['beadvol'] = 520
     else:
         bonded_config['beadvol'] = 130000
     bonded_config["nSweeps"] = 20000
     root = f"optimize_{mode}"
-    root = f"{root}_b_{bonded_config['bond_length']}_phi_{bonded_config['phi_chromatin']}"
+    root = f"{root}_b_{b}_phi_{phi}"
     print(root)
     root = osp.join(dir, root)
     if osp.exists(root):
@@ -91,35 +91,37 @@ def main():
     # dataset = 'dataset_04_05_23'; samples = [1001, 1039, 1065, 1093, 1122, 1137, 1166, 1185]
     # dataset='dataset_05_28_23'; samples = [324, 981, 1936, 2834, 3464]
     # dataset = 'dataset_05_31_23'; samples = [1002, 1037, 1198]
-    # dataset = 'Su2020'; samples=[1013]
+    dataset = 'Su2020'; samples=[1004]
     # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     mapping = []
 
-    odd_samples = []
-    even_samples = []
-    for s in all_samples:
-        s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{s}')
-        result = load_import_log(s_dir)
-        chrom = int(result['chrom'])
-        if chrom % 2 == 0:
-            even_samples.append(s)
-        else:
-            odd_samples.append(s)
-    samples = odd_samples[:10]
+    # odd_samples = []
+    # even_samples = []
+    # for s in all_samples:
+    #     s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{s}')
+    #     result = load_import_log(s_dir)
+    #     chrom = int(result['chrom'])
+    #     if chrom % 2 == 0:
+    #         even_samples.append(s)
+    #     else:
+    #         odd_samples.append(s)
+    # samples = odd_samples[:10]
 
 
 
-    GNN_IDs = [434, 440, 448, 442, 443, 447, 449, 446, 444, 445, 441]
-    # GNN_IDs = [434]
+    # GNN_IDs = [434, 440, 448, 442, 443, 447, 449, 446, 444, 445, 441]
+    GNN_IDs = [434]
     for GNN_ID in GNN_IDs:
+        # for i in samples:
+        #     mapping.append((dataset, i, GNN_ID))
         for i in samples:
-            mapping.append((dataset, i, GNN_ID))
-
+            for phi in [0.03]:
+                mapping.append((dataset, i, GNN_ID, f'samples', 140, phi))
     print(samples)
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(15) as p:
+    with mp.Pool(1) as p:
         p.starmap(fit, mapping)
 
 

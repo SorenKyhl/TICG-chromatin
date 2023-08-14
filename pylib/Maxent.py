@@ -199,6 +199,7 @@ class Maxent:
             plt.savefig(self.root / "track_plaid_chis_legend.png")
         else:
             plt.savefig(self.root / "track_plaid_chis.png")
+        plt.tight_layout()
         plt.close()
 
     def plot_diag_chis(self):
@@ -232,6 +233,10 @@ class Maxent:
             stop_at_convergence = self.params['stop_at_convergence']
         else:
             stop_at_convergence = False
+        if 'run_longer_at_convergence' in self.params:
+            run_longer_at_convergence = self.params['run_longer_at_convergence']
+        else:
+            run_longer_at_convergence = False
 
         for it in range(max_iterations):
             print(f'Iteration {it}')
@@ -286,8 +291,11 @@ class Maxent:
             )
 
             self.analyze(sim.root)
-            if converged and stop_at_convergence:
-                break
+            if converged:
+                if stop_at_convergence:
+                    break
+                elif run_longer_at_convergence:
+                    self.params["production_sweeps"] = self.final_it_sweeps
 
         if self.final_it_sweeps > 0:
             self.run_final_iteration(newchis)

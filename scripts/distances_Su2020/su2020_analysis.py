@@ -75,16 +75,19 @@ def plot_diagonal(exp, sim, ofile=None):
         plt.show()
 
 def plot_distance_map(input, dir, label):
-    plot_matrix(input, osp.join(dir, f'D_{label}.png'), f'D_{label}', vmax = 'max', cmap=RED_BLUE_CMAP)
+    plot_matrix(input, osp.join(dir, f'D_{label}.png'), f'D_{label}', vmax = 'max',
+                cmap=RED_BLUE_CMAP)
     # normalize by genomic distance
     meanDist = DiagonalPreprocessing.genomic_distance_statistics(input)
     input_diag = DiagonalPreprocessing.process(input, meanDist)
 
-    plot_matrix(input_diag, osp.join(dir, f'D_diag_{label}.png'), f'D_diag_{label}', vmin = 'center1', cmap='bluered')
+    plot_matrix(input_diag, osp.join(dir, f'D_diag_{label}.png'), f'D_diag_{label}',
+                vmin = 'center1', cmap='bluered')
 
     if np.sum(np.isnan(input_diag)) == 0:
         input_diag_corr = np.corrcoef(input_diag)
-        plot_matrix(input_diag_corr, osp.join(dir, f'D_diag_corr_{label}.png'), f'D_diag_corr_{label}', vmin = -1, vmax= 1, cmap='bluered')
+        plot_matrix(input_diag_corr, osp.join(dir, f'D_diag_corr_{label}.png'),
+                    f'D_diag_corr_{label}', vmin = -1, vmax= 1, cmap='bluered')
 
 # utility functions
 def dist_distribution_a_b(xyz, a, b):
@@ -266,41 +269,66 @@ def find_hg38_positions():
 
 def find_volume():
     '''Find average volume of cells in dataset.'''
-    dir = '/home/erschultz/Su2020/samples/sample1'
-    xyz_file = osp.join(dir, 'xyz.npy')
-    xyz = np.load(xyz_file)
+    dir = '/home/erschultz/Su2020/samples'
+    xyz_file = osp.join(dir, 'sample10/xyz.npy')
+    xyz_exp = np.load(xyz_file)
+    b = 261; phi=0.0025
+    xyz_file = osp.join(dir, f'sample1013/optimize_grid_b_{b}_phi_{phi}-max_ent10_long',
+                        'iteration15/production_out/output.xyz')
+    xyz_sim = xyz_load(xyz_file, multiple_timesteps = True)
 
-    print(xyz.shape, xyz.dtype)
-    num_cells, num_coords, _ = xyz.shape
-    vols = np.zeros(num_cells)
-    for i in range(num_cells):
-        xyz_i = xyz[i]
-        xyz_i = xyz_i[~np.isnan(xyz_i)].reshape(-1, 3)
-        points = len(xyz_i)
-        if points < 100:
-            print(f'Insufficient points for cell {i}')
-            vols[i] = np.NaN
-        else:
-            try:
-                hull = ConvexHull(xyz_i)
-            except Exception:
-                print(xyz[i])
-                print(i, xyz_i.shape)
-                raise
-            vols[i] = hull.volume * 1e-9 # convert to um^3
+    def get_vols(xyz):
+        print(xyz.shape, xyz.dtype)
+        num_cells, num_coords, _ = xyz.shape
+        vols = np.zeros(num_cells)
+        for i in range(num_cells):
+            xyz_i = xyz[i]
+            xyz_i = xyz_i[~np.isnan(xyz_i)].reshape(-1, 3)
+            points = len(xyz_i)
+            if points < 100:
+                print(f'Insufficient points for cell {i}')
+                vols[i] = np.NaN
+            else:
+                try:
+                    hull = ConvexHull(xyz_i)
+                except Exception:
+                    print(xyz[i])
+                    print(i, xyz_i.shape)
+                    raise
+                vols[i] = hull.volume * 1e-9 # convert to um^3
 
-    plt.hist(vols, bins = 50)
+        mean_vol = np.nanmean(vols)
+        median_vol = np.nanmedian(vols)
+        std_vol = np.nanstd(vols)
+        print(f'median vol {mean_vol} um^3')
+        print(f'mean vol {median_vol} um^3')
+        print(f'std vol {std_vol}')
+        r_sphere = (3/4 * mean_vol / np.pi)**(1/3)
+        r_sphere *= 1e3
+        print(f'spherical radius {r_sphere} nm')
+        return vols
+
+    arr = get_vols(xyz_exp)
+    bin_width = 1
+    plt.hist(arr, alpha=0.5, label = 'Experiment',
+                weights = np.ones_like(arr) / len(arr),
+                bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width,
+                            bin_width))
+
+    arr = get_vols(xyz_sim)
+    plt.hist(arr, alpha=0.5, label = 'Simulation',
+                weights = np.ones_like(arr) / len(arr),
+                bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width,
+                            bin_width))
+
+    plt.title(f'b={b}, phi={phi}')
     plt.xlabel(r'Volume $\mu m^3$')
-    plt.show()
-    mean_vol = np.nanmean(vols)
-    median_vol = np.nanmedian(vols)
-    std_vol = np.nanstd(vols)
-    print(f'median vol {mean_vol} um^3')
-    print(f'mean vol {median_vol} um^3')
-    print(f'std vol {std_vol}')
-    r_sphere = (3/4 * mean_vol / np.pi)**(1/3)
-    r_sphere *= 1e3
-    print(f'spherical radius {r_sphere} nm')
+    plt.ylabel('Probability')
+    plt.xlabel('Convex Hull of Structure')
+    plt.legend()
+    plt.savefig('/home/erschultz/TICG-chromatin/figures/volumes.png')
+    plt.close()
+    # plt.show()
 
 def compare_dist_distribution_a_b(sample):
     '''Compare distributions of A-B distances between sim and experiment.'''
@@ -353,11 +381,13 @@ def compare_dist_distribution_a_b(sample):
     arr = dist[~np.isnan(dist)]
     plt.hist(arr, label = 'Experiment', alpha = 0.5, color = 'black',
                 weights = np.ones_like(arr) / len(arr),
-                bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width))
+                bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width,
+                            bin_width))
     arr = dist_sim
     plt.hist(arr, label = 'Max. Ent.', alpha = 0.5, color = 'blue',
                 weights = np.ones_like(arr) / len(arr),
-                bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width))
+                bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width,
+                            bin_width))
     plt.xlabel('Distance between A and B', fontsize=16)
     plt.ylabel('Probability', fontsize=16)
     plt.legend(fontsize=16)
@@ -512,7 +542,8 @@ def xyz_to_xyz():
 
     x = np.arange(0, len(meanDist))
     ax.plot(x, meanDist, label = i, color = 'b')
-    ax.fill_between(x, meanDist - meanDist_std, meanDist + meanDist_std, color = 'b', alpha = 0.5)
+    ax.fill_between(x, meanDist - meanDist_std, meanDist + meanDist_std,
+                    color = 'b', alpha = 0.5)
     # ax.set_xscale('log')
     ax.set_ylabel('Distance (nm)', fontsize = 16)
     ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
@@ -666,8 +697,9 @@ def compare_D_to_sim_D(sample, GNN_ID=None):
     print(overall_corr, overall_corr2)
 
 
-    epilib.eric_plot_tri(D_sim, D, osp.join(sim_dir, 'dist_triu.png'), vmaxp = np.nanmax(D),
-            title = f'Corr = {overall_corr}', cmap = BLUE_CMAP)
+    epilib.eric_plot_tri(D_sim, D, osp.join(sim_dir, 'dist_triu.png'),
+                        vmaxp = np.nanmax(D),
+                        title = f'Corr = {overall_corr}', cmap = BLUE_CMAP)
 
     title = f'b={bl}, gs={delta}, vb={vb}'
     meanDist_gt = DiagonalPreprocessing.genomic_distance_statistics(D)
@@ -841,10 +873,11 @@ def compare_d_maps(sample, GNN_ID):
         #     s = sns.heatmap(D_i, linewidth = 0, vmin = vmin, vmax = vmax, cmap = BLUE_CMAP,
         #                     ax = ax[i], cbar_ax = ax[3])
         # else:
-        s = sns.heatmap(D_i, linewidth = 0, vmin = 0, vmax = np.nanmean(D_i), cmap = BLUE_CMAP,
-                        ax = ax[i], cbar = False)
+        s = sns.heatmap(D_i, linewidth = 0, vmin = 0, vmax = np.nanmean(D_i),
+                        cmap = BLUE_CMAP, ax = ax[i], cbar = False)
 
-        corr = pearson_round(D[~nan_rows][:, ~nan_rows][triu_ind], D_i[triu_ind], stat = 'nan_pearson')
+        corr = pearson_round(D[~nan_rows][:, ~nan_rows][triu_ind], D_i[triu_ind],
+                            stat = 'nan_pearson')
         title = (f'{label}'
                 f'\nCorr={np.round(corr, 3)}')
         s.set_title(title, fontsize = 16)
@@ -923,9 +956,12 @@ def compare_rg(sample, GNN_ID, b=140, phi=0.03):
 
 
     print(ref_rgs[:, 0])
-    plt.errorbar(log_labels, ref_rgs[:, 0], ref_rgs[:, 1], color = 'k', label = 'Experiment')
-    plt.errorbar(log_labels, max_ent_rgs[:, 0], max_ent_rgs[:, 1], color = 'b', label = 'Max Ent')
-    plt.errorbar(log_labels, gnn_rgs[:, 0], gnn_rgs[:, 1], color = 'r', label = 'GNN')
+    plt.errorbar(log_labels, ref_rgs[:, 0], ref_rgs[:, 1], color = 'k',
+                label = 'Experiment')
+    plt.errorbar(log_labels, max_ent_rgs[:, 0], max_ent_rgs[:, 1], color = 'b',
+                label = 'Max Ent')
+    plt.errorbar(log_labels, gnn_rgs[:, 0], gnn_rgs[:, 1], color = 'r',
+                label = 'GNN')
 
     X = np.linspace(log_labels[0], log_labels[-1], 100)
     Y = np.power(X, 1/4)
@@ -1093,17 +1129,73 @@ def compare_dist_ij(sample, GNN_ID=None, b=140, phi=0.03):
     plt.tight_layout()
     plt.show()
 
+def compare_bonded():
+    data_dir = '/home/erschultz/Su2020/samples/sample1013'
+    m=512
+    result = load_import_log(data_dir)
+    start = result['start']
+    resolution = result['resolution']
+    chrom = int(result['chrom'])
+    genome = result['genome']
+
+    # process experimental distance map
+    if genome == 'hg38':
+        if chrom == 21:
+            exp_dir = '/home/erschultz/Su2020/samples/sample1'
+        elif chrom == 2:
+            exp_dir = '/home/erschultz/Su2020/samples/sample10'
+        else:
+            raise Exception(f'Unrecognized chrom: {chrom}')
+        D_file = osp.join(exp_dir, 'dist_mean.npy')
+        D = np.load(D_file)
+        D = crop_hg38(exp_dir, D, f'chr{chrom}:{start}-{start+resolution}', m)
+
+    meanDist = DiagonalPreprocessing.genomic_distance_statistics(D, 'freq')
+    nan_rows = np.isnan(meanDist)
+    plt.plot(meanDist, color = 'k', label = 'Experiment')
+
+    def load_data(b, phi):
+        max_ent_dir, _ = get_dirs(data_dir, None, b, phi)
+        if osp.exists(max_ent_dir + '_run_longer'):
+            max_ent_dir += '_run_longer'
+        if osp.exists(max_ent_dir):
+            D_pca, _ = sim_xyz_to_dist(max_ent_dir, True)
+            assert m == len(D_pca)
+        else:
+            print(f'{max_ent_dir} does not exist')
+            D_pca = None
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(D_pca, 'freq')
+        return meanDist
+
+    b=261
+    for phi in [0.001, 0.0025, 0.004, 0.005]:
+        meanDist = load_data(b, phi)
+        plt.plot(meanDist, label = f'b_{b}_phi_{phi}')
+
+
+    b = 140; phi = 0.03
+    meanDist = load_data(b, phi)
+    plt.plot(meanDist, label = f'b_{b}_phi_{phi}', ls='--')
+
+    plt.xscale('log')
+    # plt.yscale('log')
+    plt.legend()
+    plt.show()
+
 if __name__ == '__main__':
+    dir = '/home/erschultz/Su2020'
     # tsv_to_npy()
     # test_pcs()
-    # load_exp_gnn_pca('/home/erschultz/Su2020/samples/sample1002')
+    # load_exp_gnn_pca(osp.join(dir, 'samples/sample1002'))
     # find_hg38_positions()
     # xyz_to_dist()
     # xyz_to_xyz()
     # compare_D_to_sim_D(1014)
-    compare_diagonal(1013, 434)
-    # sim_xyz_to_dist('/home/erschultz/Su2020/samples/sample1011/optimize_grid_b_140_phi_0.03-GNN403', False)
+    # compare_diagonal(1013, 434)
+    # sim_xyz_to_dist(osp.join(dir, 'samples/sample1011/optimize_grid_b_140_phi_0.03-GNN403'),
+    #                 False)
     # find_volume()
+    compare_bonded()
     # compare_pcs(1013)
     # compare_d_maps(1003, None)
     # compare_dist_distribution_a_b()

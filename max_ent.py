@@ -154,7 +154,7 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None):
 
     config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
 
-    root = osp.join(dir, f'{root}-max_ent{k}')
+    root = osp.join(dir, f'{root}-max_ent{k}_run_longer')
     if osp.exists(root):
         # shutil.rmtree(root)
         print('WARNING: root exists')
@@ -172,7 +172,8 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None):
     params['parallel'] = 1
     params['equilib_sweeps'] = 30000
     params['production_sweeps'] = 300000
-    params['stop_at_convergence'] = True
+    params['stop_at_convergence'] = False
+    params['run_longer_at_convergence'] = True
 
     stdout = sys.stdout
     with open(osp.join(root, 'log.log'), 'w') as sys.stdout:
@@ -186,8 +187,8 @@ def main():
     # dataset = 'dataset_05_31_23'; samples = list(range(1137, 1214))
     # dataset = 'downsampling_analysis'; samples = list(range(201, 211))
     # dataset = 'dataset_02_04_23'; samples = list(range(201, 221))
-    dataset = 'dataset_02_04_23'; samples = [211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224]
-    # dataset = 'Su2020'; samples = [1013]
+    # dataset = 'dataset_02_04_23'; samples = [211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224]
+    dataset = 'Su2020'; samples = [1013]
     # dataset = 'dataset_04_05_23'; samples = list(range(1211, 1288))
     # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     # samples = sorted(np.random.choice(samples, 12, replace = False))
@@ -195,11 +196,12 @@ def main():
 
     mapping = []
     for i in samples:
-        mapping.append((dataset, i, f'samples'))
+        for phi in [0.001, 0.0025, 0.005, 0.004]:
+            mapping.append((dataset, i, f'samples', 261, phi))
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(14) as p:
+    with mp.Pool(4) as p:
         p.starmap(fit, mapping)
     # for i in samples:
     #     setup_config(dataset, i, 'samples')

@@ -21,11 +21,10 @@ from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
                                       calculate_diag_chi_step, calculate_S)
 from pylib.utils.utils import load_json
 from scipy.ndimage import uniform_filter
-from sklearn.decomposition import PCA
-from sklearn.metrics import mean_squared_error
-
 from scripts.data_generation.modify_maxent import get_samples
 from scripts.get_params import GetEnergy, GetSeq
+from sklearn.decomposition import PCA
+from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
 
@@ -923,9 +922,39 @@ def test_param_convergence(dataset):
     plt.savefig('/home/erschultz/TICG-chromatin/figures/conv.png')
 
 
+def compare_bonded():
+    data_dir = '/home/erschultz/Su2020/samples/sample1013'
+    def load_data(dir):
+        y = np.load(osp.join(dir, 'y.npy')).astype(float)
+        y /= np.mean(y.diagonal())
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
+        return meanDist
+
+    meanDist = load_data(data_dir)
+    plt.plot(meanDist, color = 'k', label = 'Experiment')
+
+
+    b=261
+    for phi in [0.001, 0.0025, 0.004, 0.005, 0.0075, 0.01]:
+        grid_dir = osp.join(data_dir, f'optimize_grid_b_{b}_phi_{phi}')
+        meanDist = load_data(grid_dir)
+        plt.plot(meanDist, label = f'b_{b}_phi_{phi}')
+
+
+    b = 140; phi = 0.03
+    grid_dir = osp.join(data_dir, f'optimize_grid_b_{b}_phi_{phi}')
+    meanDist = load_data(grid_dir)
+    plt.plot(meanDist, label = f'b_{b}_phi_{phi}', ls='--')
+
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.legend()
+    plt.show()
+
 if __name__ == '__main__':
     # test_robust_PCA()
-    test_param_convergence('dataset_02_04_23')
+    compare_bonded()
+    # test_param_convergence('dataset_02_04_23')
     # check_dataset('dataset_11_18_22')
     # time_comparison()
     # time_comparison_dmatrix()
