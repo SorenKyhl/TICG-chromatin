@@ -21,6 +21,8 @@ int Cell::small_binsize;
 int Cell::big_binsize;
 int Cell::diag_cutoff;
 int Cell::diag_start;
+bool Cell::diagonal_binning;
+std::vector<int> Cell::diagonal_bin_lookup;
 
 void Cell::print() {
     std::cout << r << "     N: " << contains.size() << std::endl;
@@ -179,6 +181,9 @@ int Cell::binDiagonal(int d) {
         } else {
             bin_index = std::floor(d / Cell::small_binsize);
         }
+    } 
+    else if (diagonal_binning){
+        return diagonal_bin_lookup[d];
     } else {
         // diagonal chis are linearly spaced from d=0 to d=nbeads
         bin_index = std::floor(d / Cell::diag_binsize);

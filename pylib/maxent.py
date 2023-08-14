@@ -233,6 +233,8 @@ class Maxent:
             else:
                 loaded_maxent.gthic = np.load("experimental_hic.npy")
 
+            loaded_maxent.initial_chis = loaded_maxent.chis[-1]
+
             return loaded_maxent
 
     @classmethod

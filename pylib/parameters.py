@@ -1,5 +1,6 @@
 import numpy as np
 import copy
+import math
 
 from pylib import default
 
@@ -23,6 +24,8 @@ def get_config(
         if persistent-5k, the persistent chain is gaussian renormalized up to 5kbp/bead resolution
     scale (str): scaling method. 
     """
+    config = copy.deepcopy(config)
+
     if nbeads is None:
         nbeads = config["nbeads"]
     else:
@@ -32,7 +35,10 @@ def get_config(
             config["nbeads"] / nbeads * np.array(config["diag_chis"])
         ).tolist()
 
-    config = copy.deepcopy(config)
+    if config["diagonal_binning"]:
+        x = np.array(config["diagonal_bin_boundaries"])
+        config["diagonal_bin_boundaries"] = np.ceil(x * int(nbeads/config["nbeads"])).tolist()
+
 
     # if nbeads > 10241:
     #    config['contact_resolution'] = 5

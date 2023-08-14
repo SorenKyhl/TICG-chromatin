@@ -273,6 +273,8 @@ void Sim::readInput() {
         Cell::diag_cutoff = config["diag_cutoff"];
         assert(config.contains("diag_start"));
         Cell::diag_start = config["diag_start"];
+        assert(config.contains("diagonal_binning"));
+        Cell::diagonal_binning = config["diagonal_binning"];
 
         assert(config.contains("diag_chis"));
         for (auto e : config["diag_chis"]) {
@@ -323,7 +325,25 @@ void Sim::readInput() {
             assert(Cell::small_binsize * Cell::n_small_bins +
                        Cell::big_binsize * Cell::n_big_bins ==
                    ndiag_beads);
-        } else {
+        }
+        else if (Cell::diagonal_binning) 
+        {
+            std::cout << "DIAGONAL BINNING" << std::endl;
+            assert(config.contains("diagonal_bin_boundaries"));
+            std::vector<int> diagonal_bin_boundaries;
+            for(auto e: config["diagonal_bin_boundaries"])
+            {
+                diagonal_bin_boundaries.push_back(e);
+            }
+
+            if (diagonal_bin_boundaries.size() != diag_chis.size())
+            {
+                throw std::logic_error("number of diag chis must be equal to number of diagonal bin boundaries");
+            }
+
+            Cell::diagonal_bin_lookup = generate_diagonal_bin_lookup(diagonal_bin_boundaries, nbeads);
+        }
+        else {
             std::cout << "number of bins: " << Cell::diag_nbins << std::endl;
             Cell::diag_binsize = ndiag_beads / diag_chis.size();
             std::cout << "binsize " << Cell::diag_binsize << std::endl;
@@ -533,6 +553,31 @@ void Sim::makeOutputFiles() {
         const int result = system(command.c_str());
     }
 }
+
+std::vector<int> Sim::generate_diagonal_bin_lookup(std::vector<int> diag_bin_boundaries, int nbeads)
+{
+    //
+    if (diag_bin_boundaries[diag_bin_boundaries.size()-1] != nbeads)
+    {
+        throw std::logic_error("diagonal binning error; the end of the last diagonal bin must be equal to the numbeer of beads");
+    }
+
+    std::vector<int> diag_bin_lookup = std::vector<int>(nbeads, 0);
+
+    int curr = 0;
+    int bin_id = 0;
+    for (int i = 0; i < nbeads; i++)
+    {
+        if (i >= diag_bin_boundaries[curr])
+        {
+            bin_id += 1;
+            curr += 1;
+        }
+        diag_bin_lookup[i] = bin_id;
+    }
+    return diag_bin_lookup;
+}
+
 
 // check if vector r is inside simulation boundary
 bool Sim::outside_boundary(Eigen::RowVector3d r) {

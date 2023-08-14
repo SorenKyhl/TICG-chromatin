@@ -9,6 +9,7 @@ import copy
 import json
 import matplotlib.colors
 import logging
+import bisect
 
 from numba import njit
 from tqdm import tqdm
@@ -876,9 +877,9 @@ def compare_diagonal(
     return diag_sim, diag_exp, diag_mask, correction
 
 
-@njit
+#@njit
 def make_mask(
-    size, b, cutoff, loading, ndiag_bins, dense_diagonal_on, double_diagonal=True
+    size, b, cutoff, loading, ndiag_bins, dense_diagonal_on, double_diagonal=True, diagonal_binning=False, diagonal_bin_boundaries=None
 ):
     """makes a mask with 1's in subdiagonals inside
 
@@ -889,9 +890,14 @@ def make_mask(
     for r in range(rows):
         for c in range(cols):
             # if int((r-c)/binsize) == b:
-            bin_index = binDiagonal(
-                r, c, cutoff, loading, ndiag_bins, rows, dense_diagonal_on
-            )
+            if diagonal_binning:
+                s = abs(r-c)
+                bin_index = bisect.bisect_right(diagonal_bin_boundaries, s)
+            else:
+                bin_index = binDiagonal(
+                    r, c, cutoff, loading, ndiag_bins, rows, dense_diagonal_on
+                )
+
             if bin_index == b:
                 mask[r, c] = 1
                 mask[c, r] = 1
@@ -911,9 +917,9 @@ def make_mask_fast(size, binsize, b):
     return mask
 
 
-@njit
+#@njit
 def mask_diagonal(
-    contact, cutoff, loading, ndiag_bins, dense_diagonal_on, double_diagonal
+    contact, cutoff, loading, ndiag_bins, dense_diagonal_on, double_diagonal, diagonal_binning, diagonal_bin_boundaries
 ):
     """Returns weighted averages of contact map"""
     rows, cols = contact.shape
@@ -936,7 +942,7 @@ def mask_diagonal(
                         mask[r,r] = 2
         """
         mask = make_mask(
-            nbeads, b, cutoff, loading, ndiag_bins, dense_diagonal_on, double_diagonal
+            nbeads, b, cutoff, loading, ndiag_bins, dense_diagonal_on, double_diagonal, diagonal_binning, diagonal_bin_boundaries
         )
         # measure.append(np.mean((mask*contact).flatten()))
         # correction.append(np.sum(mask)/nbeads**2)
@@ -955,7 +961,7 @@ def mask_diagonal(
     return measure, correction
 
 
-@njit
+#@njit
 def binDiagonal(i, j, cutoff, loading, ndiag_bins, nbeads, dense_diagonal_on):
     s = abs(i - j)
 
@@ -1078,7 +1084,7 @@ def get_goal_diag(
     dense_diagonal_on = config["dense_diagonal_on"]
     double_diagonal = config["double_count_main_diagonal"]
     diag_mask, correction = mask_diagonal(
-        hic, cutoff, loading, ndiag_bins, dense_diagonal_on, double_diagonal
+        hic, cutoff, loading, ndiag_bins, dense_diagonal_on, double_diagonal, config["diagonal_binning"], config["diagonal_bin_boundaries"]
     )
 
     if get_ps:

@@ -37,6 +37,8 @@ public:
 	static int big_binsize;
 	static int diag_cutoff;
 	static int diag_start;
+    static bool diagonal_binning;
+    static std::vector<int> diagonal_bin_lookup;
 
 	void print();
 	void reset();

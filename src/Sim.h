@@ -173,6 +173,7 @@ public:
 	void readInput();
 	bool outside_boundary(Eigen::RowVector3d r);
 	bool allBeadsInBoundary();
+    std::vector<int> generate_diagonal_bin_lookup(std::vector<int> diag_bin_boundaries, int nbeads);
 	void setInitialConfiguration();
 	void initializeObjects();
 	void calculateParameters();

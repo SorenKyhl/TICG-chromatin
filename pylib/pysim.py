@@ -53,8 +53,11 @@ class Pysim:
         """
         sim_dir = Path(sim_dir).absolute()
         config = utils.load_json(sim_dir / "config.json")
-        with utils.cd(sim_dir):
-            seqs = utils.load_sequences(config)
+        if config["load_bead_types"]:
+            with utils.cd(sim_dir):
+                seqs = utils.load_sequences(config)
+        else:
+            seqs = None
 
         if new_root is None:
             return cls(sim_dir, config, seqs, mkdir=False, setup_needed=False)

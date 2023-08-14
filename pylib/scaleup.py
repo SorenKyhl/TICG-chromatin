@@ -113,7 +113,7 @@ def tune_stiffness(nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method,
             config_bond_opt = utils.load_json("optimize-bond-length/config.json")
             new_bond_length = config_bond_opt["bond_length"]
 
-    small_config["bond_length"] = new_bond_length
+        small_config["bond_length"] = new_bond_length
 
     k_angle_opt = optimize_stiffness(
         small_config, large_ideal_hic_pooled, low_bound=0, high_bound=5, method=method
