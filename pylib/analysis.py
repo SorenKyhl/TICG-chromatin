@@ -188,6 +188,8 @@ def maxent_analysis(sim):
     plt.savefig("obs_vs_goal.png")
     plt.close()
 
+def plot_chi_matrix(sim):
+    utils.plot_image(np.array(sim.config["chis"]))
 
 def plot_energy_matrices(sim, save=True):
     # energy matrices
