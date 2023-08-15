@@ -42,7 +42,7 @@ class Maxent:
         final_it_sweeps: int = 0,
         plaid_diagonly: bool = False,
         norm: bool = False,
-        fast_analysis: bool = False
+        fast_analysis: bool = False,
         mkdir: bool = True
     ):
         """
@@ -217,7 +217,7 @@ class Maxent:
 
     def analyze(self, dir):
         if self.analysis_on:
-            analysis.main(dir)
+            analysis.main(dir=dir)
 
     def fit(self):
         """execute maxent optimization"""

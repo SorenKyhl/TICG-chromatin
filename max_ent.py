@@ -69,7 +69,7 @@ def modify_soren():
                 final_it_sweeps=500000)
     me.fit()
 
-def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None):
+def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None, aspect_ratio=1):
     mode = 'grid'
     print(sample, mode)
     dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
@@ -88,8 +88,13 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None):
             bonded_config['beadvol'] = 260000
         else:
             bonded_config['beadvol'] = 130000
+    if aspect_ratio != 1:
+        bonded_config['boundary_type'] = 'spheroid'
+        bonded_config['aspect_ratio'] = aspect_ratio
     root = f"optimize_{mode}"
     root = f"{root}_b_{bonded_config['bond_length']}_phi_{bonded_config['phi_chromatin']}"
+    if bonded_config['boundary_type'] == 'spheroid':
+        root += f'_spheroid_{aspect_ratio}'
     print(root)
     root = osp.join(dir, root)
     if osp.exists(osp.join(root, 'grid_size.txt')):
@@ -107,7 +112,6 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None):
         config[key] = bonded_config[key]
 
     return root, config
-
 
 def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None):
     print(sample)
@@ -168,12 +172,12 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None):
     params = default.params
     goals = epilib.get_goals(y, seqs, config)
     params["goals"] = goals
-    params['iterations'] = 15
+    params['iterations'] = 30
     params['parallel'] = 1
     params['equilib_sweeps'] = 30000
-    params['production_sweeps'] = 300000
+    params['production_sweeps'] = 500000
     params['stop_at_convergence'] = False
-    params['run_longer_at_convergence'] = True
+    params['run_longer_at_convergence'] = False
 
     stdout = sys.stdout
     with open(osp.join(root, 'log.log'), 'w') as sys.stdout:
@@ -196,12 +200,12 @@ def main():
 
     mapping = []
     for i in samples:
-        for phi in [0.001, 0.0025, 0.005, 0.004]:
+        for phi in [0.01]:
             mapping.append((dataset, i, f'samples', 261, phi))
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(4) as p:
+    with mp.Pool(1) as p:
         p.starmap(fit, mapping)
     # for i in samples:
     #     setup_config(dataset, i, 'samples')

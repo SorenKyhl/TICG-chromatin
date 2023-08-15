@@ -110,7 +110,7 @@ def main():
 
 
     # GNN_IDs = [434, 440, 448, 442, 443, 447, 449, 446, 444, 445, 441]
-    GNN_IDs = [434]
+    GNN_IDs = [419]
     for GNN_ID in GNN_IDs:
         # for i in samples:
         #     mapping.append((dataset, i, GNN_ID))

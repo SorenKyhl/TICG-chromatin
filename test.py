@@ -934,18 +934,21 @@ def compare_bonded():
     plt.plot(meanDist, color = 'k', label = 'Experiment')
 
 
-    b=261
-    for phi in [0.001, 0.0025, 0.004, 0.005, 0.0075, 0.01]:
-        grid_dir = osp.join(data_dir, f'optimize_grid_b_{b}_phi_{phi}')
-        meanDist = load_data(grid_dir)
-        plt.plot(meanDist, label = f'b_{b}_phi_{phi}')
+    for b, ls in zip([140, 261], ['--', '-']):
+        for phi in [0.01, 0.03]:
+            for ar in [0.5, 1.0, 1.5, 2.0, 4.0]:
+                if ar == 1.0:
+                    grid_dir = osp.join(data_dir, f'optimize_grid_b_{b}_phi_{phi}')
+                    label = f'b_{b}_phi_{phi}'
+                else:
+                    grid_dir = osp.join(data_dir, f'optimize_grid_b_{b}_phi_{phi}_spheroid_{ar}')
+                    label = f'b_{b}_phi_{phi}_ar_{ar}'
+                if not osp.exists(grid_dir):
+                    continue
+                meanDist = load_data(grid_dir)
+                plt.plot(meanDist, label = label, ls=ls)
 
-
-    b = 140; phi = 0.03
-    grid_dir = osp.join(data_dir, f'optimize_grid_b_{b}_phi_{phi}')
-    meanDist = load_data(grid_dir)
-    plt.plot(meanDist, label = f'b_{b}_phi_{phi}', ls='--')
-
+    plt.ylabel('Bonded Contact Probability')
     plt.xscale('log')
     plt.yscale('log')
     plt.legend()
