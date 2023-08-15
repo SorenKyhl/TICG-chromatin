@@ -113,7 +113,7 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None, 
 
     return root, config
 
-def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None):
+def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None, aspect_ratio=1):
     print(sample)
     mode = 'grid'
     dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
@@ -121,7 +121,7 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None):
     y /= np.mean(np.diagonal(y))
     np.fill_diagonal(y, 1)
 
-    root, config = setup_config(dataset, sample, samples, bl, phi, vb)
+    root, config = setup_config(dataset, sample, samples, bl, phi, vb, aspect_ratio)
 
     k = 10
     config['nspecies'] = k
@@ -158,7 +158,7 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None):
 
     config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
 
-    root = osp.join(dir, f'{root}-max_ent{k}_run_longer')
+    root = osp.join(dir, f'{root}-max_ent{k}_longer')
     if osp.exists(root):
         # shutil.rmtree(root)
         print('WARNING: root exists')
@@ -175,7 +175,7 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None):
     params['iterations'] = 30
     params['parallel'] = 1
     params['equilib_sweeps'] = 30000
-    params['production_sweeps'] = 500000
+    params['production_sweeps'] = 50000
     params['stop_at_convergence'] = False
     params['run_longer_at_convergence'] = False
 
@@ -201,7 +201,8 @@ def main():
     mapping = []
     for i in samples:
         for phi in [0.01]:
-            mapping.append((dataset, i, f'samples', 261, phi))
+            for ar in [1.0]:
+                mapping.append((dataset, i, f'samples', 261, phi, None, ar))
     print(len(mapping))
     print(mapping)
 

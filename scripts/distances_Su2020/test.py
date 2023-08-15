@@ -87,5 +87,48 @@ def hg19_vs_hg38():
     plt.show()
     plt.close()
 
+def compare_dist_distribution():
+    data_dir = f'/home/erschultz/Su2020/samples/sample1013'
+
+    def load_data(b, phi, ar=1.0):
+        if ar == 1.0:
+            max_ent_dir = osp.join(data_dir, f'optimize_grid_b_{b}_phi_{phi}')
+        else:
+            max_ent_dir = osp.join(data_dir, f'optimize_grid_b_{b}_phi_{phi}_spheroid_{ar}')
+        # max_ent_dir, _ = get_dirs(data_dir, None, b, phi, ar)
+        if osp.exists(max_ent_dir + '_run_longer'):
+            max_ent_dir += '_run_longer'
+        if osp.exists(max_ent_dir):
+            final_dir = get_final_max_ent_folder(max_ent_dir)
+            file = osp.join(final_dir, 'output.xyz')
+            xyz = xyz_load(file, multiple_timesteps = True, N_min = 5)
+            D = xyz_to_distance(xyz)
+        else:
+            return None
+
+        return D.flatten()
+
+    bin_width = 50
+    for b in [261]:
+        for phi in [0.01, 0.03]:
+            for ar in [1.0, 1.5, 2.0, 4.0]:
+                D = load_data(b, phi, ar)
+                if D is None:
+                    continue
+                label = f'b_{b}_phi_{phi}'
+                if ar != 1.0:
+                    label += f'_ar={ar}'
+                arr = D
+                plt.hist(arr, label = label, alpha = 0.5,
+                            weights = np.ones_like(arr) / len(arr),
+                            bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width,
+                                        bin_width))
+    plt.ylabel('Probability')
+    plt.xlabel('Spatial Distance (nm)')
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
 if __name__ == '__main__':
-    hg19_vs_hg38()
+    # hg19_vs_hg38()
+    compare_dist_distribution()
