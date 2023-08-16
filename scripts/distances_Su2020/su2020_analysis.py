@@ -272,7 +272,7 @@ def find_volume():
     dir = '/home/erschultz/Su2020/samples'
     xyz_file = osp.join(dir, 'sample10/xyz.npy')
     xyz_exp = np.load(xyz_file)
-    b = 261; phi=0.0025
+    b = 261; phi = 0.001
     xyz_file = osp.join(dir, f'sample1013/optimize_grid_b_{b}_phi_{phi}-max_ent10_long',
                         'iteration15/production_out/output.xyz')
     xyz_sim = xyz_load(xyz_file, multiple_timesteps = True)
@@ -1135,6 +1135,39 @@ def compare_dist_ij(sample, GNN_ID=None, b=140, phi=0.03):
     plt.tight_layout()
     plt.show()
 
+def compare_bonded_p_s():
+    data_dir = '/home/erschultz/Su2020/samples/sample1013'
+    def load_data(dir):
+        y = np.load(osp.join(dir, 'y.npy')).astype(float)
+        y /= np.mean(y.diagonal())
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
+        return meanDist
+
+    meanDist = load_data(data_dir)
+    plt.plot(meanDist, color = 'k', label = 'Experiment')
+
+
+    for b, ls in zip([261, 140], ['-', '--']):
+        for phi in [0.005, 0.01, 0.03]:
+            for ar in [1.0]:
+                if ar == 1.0:
+                    grid_dir = osp.join(data_dir, f'optimize_grid_b_{b}_phi_{phi}')
+                    label = f'b_{b}_phi_{phi}'
+                else:
+                    grid_dir = osp.join(data_dir, f'optimize_grid_b_{b}_phi_{phi}_spheroid_{ar}')
+                    label = f'b_{b}_phi_{phi}_ar_{ar}'
+                if not osp.exists(grid_dir):
+                    print(f'Warning {grid_dir} does not exist')
+                    continue
+                meanDist = load_data(grid_dir)
+                plt.plot(meanDist, label = label, ls=ls)
+
+    plt.ylabel('Bonded Contact Probability')
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.legend()
+    plt.show()
+
 def compare_bonded():
     data_dir = '/home/erschultz/Su2020/samples/sample1013'
     m=512
@@ -1161,12 +1194,16 @@ def compare_bonded():
     nan_rows = np.isnan(meanDist)
     plt.plot(log_labels[~nan_rows], meanDist[~nan_rows], color = 'k', label = 'Experiment')
 
-    def load_data(b, phi, ar=1.0):
+    def load_data(b, phi, ar=1.0, max_ent=False):
         if ar == 1.0:
             max_ent_dir = osp.join(data_dir, f'optimize_grid_b_{b}_phi_{phi}')
+            label = f'b_{b}_phi_{phi}'
         else:
             max_ent_dir = osp.join(data_dir, f'optimize_grid_b_{b}_phi_{phi}_spheroid_{ar}')
-        # max_ent_dir, _ = get_dirs(data_dir, None, b, phi, ar)
+            label = f'b_{b}_phi_{phi}_ar_{ar}'
+        if max_ent:
+            max_ent_dir, _ = get_dirs(data_dir, None, b, phi, ar)
+            label += '_maxent'
         if osp.exists(max_ent_dir + '_run_longer'):
             max_ent_dir += '_run_longer'
         if osp.exists(max_ent_dir):
@@ -1174,28 +1211,23 @@ def compare_bonded():
             assert m == len(D_pca)
         else:
             print(f'{max_ent_dir} does not exist')
-            D_pca = None
+            return None, None
         meanDist = DiagonalPreprocessing.genomic_distance_statistics(D_pca, 'freq')
-        return meanDist
+        return meanDist, label
 
     b=261
-    for phi in [0.01]:
-        for ar in [1.0, 1.5, 2.0, 4.0]:
-            meanDist = load_data(b, phi, ar)
-            label = f'b_{b}_phi_{phi}'
-            if ar != 1.0:
-                label += f'_ar={ar}'
-            plt.plot(log_labels, meanDist, label = label)
-
-
-    b = 140; phi = 0.03
-    meanDist = load_data(b, phi)
-    plt.plot(log_labels, meanDist, label = f'b_{b}_phi_{phi}', ls='--')
+    for max_ent in [False, True]:
+        for b, ls in zip([261, 140], ['-', '--']):
+            for phi in [0.01]:
+                for ar in [1.0]:
+                    meanDist, label = load_data(b, phi, ar, max_ent)
+                    if meanDist is None:
+                        continue
+                    plt.plot(log_labels, meanDist, label = label, ls=ls)
 
     plt.xscale('log')
-    # plt.yscale('log')
-    plt.ylabel('Spatial Distance (nm)')
-    plt.xlabel('Genomic Distance (bp)')
+    plt.ylabel('Spatial Distance (nm)', fontsize=16)
+    plt.xlabel('Genomic Distance (bp)', fontsize=16)
     plt.legend()
     plt.show()
 
@@ -1211,7 +1243,7 @@ if __name__ == '__main__':
     # compare_diagonal(1013, 434)
     # sim_xyz_to_dist(osp.join(dir, 'samples/sample1011/optimize_grid_b_140_phi_0.03-GNN403'),
     #                 False)
-    # find_volume()
+    find_volume()
     # compare_bonded()
     # compare_pcs(1013)
     # compare_d_maps(1003, None)
@@ -1219,4 +1251,4 @@ if __name__ == '__main__':
     # compare_dist_distribution_plaid(1013, None, 261, 0.01)
     # compare_rg(1014, 423, b=261, phi=0.01)
     # compare_scaling(1002, None, 261, 0.006)
-    compare_dist_ij(1013, 434, b=261, phi=0.01)
+    # compare_dist_ij(1013, 434, b=261, phi=0.01)

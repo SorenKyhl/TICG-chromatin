@@ -26,7 +26,7 @@ plt.rcParams.update({"font.size": 18})
 
 
 #@Timer("sim analysis took {:.2f} seconds", logger=logging.info)
-def sim_analysis(sim, fast_analysis):
+def sim_analysis(sim, fast_analysis=False):
     """analyze data from simulation only (doesn't require ground truth hic)"""
     error = sim.plot_consistency()
     if error > 0.01:
@@ -99,7 +99,7 @@ def sim_analysis(sim, fast_analysis):
         plot_mean_vs_genomic_distance(sim.hic, '', 'meanDist_log.png', logx = True, ref = sim.gthic)
 
 
-def compare_analysis(sim, fast_analysis):
+def compare_analysis(sim, fast_analysis=False):
     """analyze comparison of simulation with ground truth contact map"""
 
     if fast_analysis is False:

@@ -13,12 +13,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.stats as ss
+import seaborn as sns
 import sympy
 import torch
 import torch_geometric
 from pylib.utils import default, epilib, hic_utils
 from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
                                       calculate_diag_chi_step, calculate_S)
+from pylib.utils.plotting_utils import BLUE_RED_CMAP
 from pylib.utils.utils import load_json
 from scipy.ndimage import uniform_filter
 from scripts.data_generation.modify_maxent import get_samples
@@ -883,14 +885,14 @@ def make_small(dataset):
 
 def test_param_convergence(dataset):
     dir = f'/home/erschultz/{dataset}/samples'
-    for i in range(201, 220):
-        s_dir = osp.join(dir, f'sample{i}')
-        fpath = osp.join(s_dir, 'optimize_grid_b_140_phi_0.03-max_ent10')
+    for s in range(240, 246):
+        s_dir = osp.join(dir, f'sample{s}')
+        fpath = osp.join(s_dir, 'optimize_grid_b_261_phi_0.01-max_ent10_longer')
         assert osp.exists(fpath), fpath
 
         all_chis = []
         all_diag_chis = []
-        for i in range(30):
+        for i in range(31):
             it_path = osp.join(fpath, f'iteration{i}')
             if osp.exists(it_path):
                 config_file = osp.join(it_path, 'production_out/config.json')
@@ -913,51 +915,74 @@ def test_param_convergence(dataset):
             conv = np.linalg.norm(diff, ord = 2)
             convergence.append(conv)
 
-        plt.plot(convergence)
+        plt.plot(convergence, label = f'sample {s}')
 
     plt.yscale('log')
-    plt.axhline(1)
-    plt.axhline(10)
-
+    plt.axhline(100, c='k', ls='--')
+    plt.ylabel(r'$|\chi_{i}-\chi_{i-1}|$ (L2 norm)', fontsize=16)
+    plt.xlabel('Iteration', fontsize=16)
+    plt.legend()
+    plt.tight_layout()
     plt.savefig('/home/erschultz/TICG-chromatin/figures/conv.png')
+    plt.close()
 
+def compare_s_per_iteration():
+    dir = '/home/erschultz/Su2020/samples/sample1013'
+    max_ent_dir = osp.join(dir, 'optimize_grid_b_261_phi_0.01-max_ent10_longer')
+    assert osp.exists(max_ent_dir)
+    S_10 = np.load(osp.join(max_ent_dir, 'iteration10/S.npy'))
+    S_20 = np.load(osp.join(max_ent_dir, 'iteration20/S.npy'))
+    diff = S_20 - S_10
 
-def compare_bonded():
-    data_dir = '/home/erschultz/Su2020/samples/sample1013'
-    def load_data(dir):
-        y = np.load(osp.join(dir, 'y.npy')).astype(float)
-        y /= np.mean(y.diagonal())
+    fig, (ax1, ax2, ax3, axcb) = plt.subplots(1, 4,
+                                gridspec_kw={'width_ratios':[1,1,1,0.08]})
+    fig.set_figheight(6)
+    fig.set_figwidth(6*2.5)
+    arr = np.array([S_10, S_20])
+    vmin = np.nanpercentile(arr, 1)
+    vmax = np.nanpercentile(arr, 99)
+    vmax = max(vmax, vmin * -1)
+    vmin = vmax * -1
+    s1 = sns.heatmap(S_10, linewidth = 0, vmin = vmin, vmax = vmax, cmap = BLUE_RED_CMAP,
+                    ax = ax1, cbar = False)
+    s1.set_title(f'$S$ iteration 10', fontsize = 16)
+    s1.set_yticks([])
+    s2 = sns.heatmap(S_20, linewidth = 0, vmin = vmin, vmax = vmax, cmap = BLUE_RED_CMAP,
+                    ax = ax2, cbar = False)
+    s2.set_title(f'$S$ iteration 20', fontsize = 16)
+    s2.set_yticks([])
+    s3 = sns.heatmap(diff, linewidth = 0, vmin = vmin, vmax = vmax, cmap = BLUE_RED_CMAP,
+                    ax = ax3, cbar_ax = axcb)
+    title = ('Difference\n'
+            '20 - 10')
+    s3.set_title(title, fontsize = 16)
+    s3.set_yticks([])
+    plt.show()
+
+def compare_p_s():
+    dir = '/home/erschultz'
+    datasets = ['Su2020', 'dataset_02_04_23']
+    samples = [1013, 243]
+    cell_lines = ['IMR90', 'GM12878']
+
+    for dataset, sample, cell_line in zip(datasets, samples, cell_lines):
+        s_dir = osp.join(dir, dataset, f'samples/sample{sample}')
+        y = np.load(osp.join(s_dir, 'y.npy')).astype(float)
+        y /= np.mean(np.diagonal(y))
         meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
-        return meanDist
+        plt.plot(meanDist, label = f'{cell_line} sample {sample}')
 
-    meanDist = load_data(data_dir)
-    plt.plot(meanDist, color = 'k', label = 'Experiment')
-
-
-    for b, ls in zip([140, 261], ['--', '-']):
-        for phi in [0.01, 0.03]:
-            for ar in [0.5, 1.0, 1.5, 2.0, 4.0]:
-                if ar == 1.0:
-                    grid_dir = osp.join(data_dir, f'optimize_grid_b_{b}_phi_{phi}')
-                    label = f'b_{b}_phi_{phi}'
-                else:
-                    grid_dir = osp.join(data_dir, f'optimize_grid_b_{b}_phi_{phi}_spheroid_{ar}')
-                    label = f'b_{b}_phi_{phi}_ar_{ar}'
-                if not osp.exists(grid_dir):
-                    continue
-                meanDist = load_data(grid_dir)
-                plt.plot(meanDist, label = label, ls=ls)
-
-    plt.ylabel('Bonded Contact Probability')
-    plt.xscale('log')
     plt.yscale('log')
+    # plt.xscale('log')
+    plt.ylabel('Probability', fontsize=16)
+    plt.xlabel('Beads', fontsize=16)
     plt.legend()
     plt.show()
 
+
 if __name__ == '__main__':
     # test_robust_PCA()
-    compare_bonded()
-    # test_param_convergence('dataset_02_04_23')
+    test_param_convergence('dataset_02_04_23')
     # check_dataset('dataset_11_18_22')
     # time_comparison()
     # time_comparison_dmatrix()
@@ -974,3 +999,5 @@ if __name__ == '__main__':
     # edit_setup('dataset_04_28_23', 'dataset_02_04_23')
     # edit_setup('dataset_05_15_23', 'dataset_02_04_23')
     # make_small('dataset_04_05_23')
+    # compare_s_per_iteration()
+    # compare_p_s()

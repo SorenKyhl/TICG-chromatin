@@ -150,20 +150,26 @@ class Maxent:
 
         converged = self.plot_convergence()
         self.plot_plaid_chis()
-        self.plot_plaid_chis(True)
+        # self.plot_plaid_chis(True)
         self.plot_diag_chis()
 
         return converged
 
     def plot_convergence(self):
+        max_it = len(self.loss)
+        iterations = np.arange(1, max_it+1)
+        if max_it < 2:
+            return False
+
+        # plot loss
         plt.figure()
         plt.xlabel('Iteration', fontsize=16)
         plt.ylabel('Loss', fontsize=16)
-        iterations = np.arange(1, len(self.loss)+1)
         plt.plot(iterations, self.loss, ".-")
 
+        # convergence based on loss
         converged_it = None
-        for i in range(1, len(self.loss)):
+        for i in range(1, max_it):
             diff = self.loss[i] - self.loss[i-1]
             if np.abs(diff) < self.eps and self.loss[i] < self.loss[0]:
                 converged_it = iterations[i]
@@ -178,6 +184,23 @@ class Maxent:
 
         plt.tight_layout()
         plt.savefig(self.root / "loss.png")
+        plt.close()
+
+        # convergence in parameter space
+        convergence = []
+        for j in range(1, max_it+1):
+            diff = self.chis[j] - self.chis[j-1]
+            conv = np.linalg.norm(diff, ord = 2)
+            convergence.append(conv)
+        plt.plot(iterations, convergence)
+        plt.yscale('log')
+        plt.axhline(100, c='k', ls='--')
+        plt.axhline(10, c='k', ls='--')
+        plt.ylabel(r'$|\chi_{i}-\chi_{i-1}|$ (L2 norm)', fontsize=16)
+        plt.xlabel('Iteration', fontsize=16)
+        plt.tight_layout()
+        plt.savefig(self.root / "param_convergence.png")
+        plt.close()
 
         return converged
 
@@ -198,13 +221,12 @@ class Maxent:
                 counter += 1
         plt.xlabel('Iteration', fontsize=16)
         plt.ylabel(r'$\chi_{IJ}$ value', fontsize=16)
+        plt.tight_layout()
         if legend:
             plt.legend(loc=(1.04,0), ncol = 3)
-            plt.tight_layout()
             plt.savefig(self.root / "track_plaid_chis_legend.png")
         else:
             plt.savefig(self.root / "track_plaid_chis.png")
-        plt.tight_layout()
         plt.close()
 
     def plot_diag_chis(self):

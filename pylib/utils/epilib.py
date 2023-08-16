@@ -15,12 +15,11 @@ import seaborn as sns
 from numba import njit
 from pylib.utils import hic_utils, utils
 from pylib.utils.goals import *
+from pylib.utils.hic_utils import get_diagonal
 from pylib.utils.plotting_utils import plot_matrix
 from pylib.utils.similarity_measures import *
 from sklearn.decomposition import PCA, KernelPCA
 from tqdm import tqdm
-
-from pylib.utils.hic_utils import get_diagonal
 
 # import palettable
 # from palettable.colorbrewer.sequential import Reds_3
@@ -400,8 +399,8 @@ def plot_contactmap(contact, vmaxp=0.1, absolute=False, imshow=True, cbar=True,
         contact = np.log10(contact + 1e-20)
         vmin = np.min(contact[np.where(contact > -19)])
         vmax = vmin / 3
-        print("vmiin", vmin)
-        print("vmax", vmax)
+        # print("vmin", vmin)
+        # print("vmax", vmax)
 
     plot_fn(contact, cmap=cmap, vmin=vmin, vmax=vmax)
 
@@ -1197,5 +1196,3 @@ def clean_contactmap(contact):
     deleted = len(inds)
 
     return contact[mask].reshape(N - deleted, N - deleted), inds
-
-

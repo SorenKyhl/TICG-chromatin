@@ -79,19 +79,20 @@ def fit(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03):
         t = sim.run_eq(30000, 500000, 1)
         print(f'Simulation took {np.round(t, 2)} seconds')
 
-        analysis.main_no_maxent(sim.root)
+        analysis.main_no_maxent(dir=sim.root)
     sys.stdout = stdout
 
 def main():
     # dataset='downsampling_analysis'; samples = range(201, 211)
-    dataset='dataset_02_04_23'; all_samples = range(201, 283)
+    dataset='dataset_02_04_23'; samples = [243]
+    # dataset='dataset_02_04_23'; all_samples = range(201, 283)
     # dataset='dataset_04_10_23'; samples = range(1001, 1011)
     # dataset='dataset_04_05_23'; samples = range(1001, 1011)
     # dataset = 'dataset_04_05_23'; samples = list(range(1011, 1021))
     # dataset = 'dataset_04_05_23'; samples = [1001, 1039, 1065, 1093, 1122, 1137, 1166, 1185]
     # dataset='dataset_05_28_23'; samples = [324, 981, 1936, 2834, 3464]
     # dataset = 'dataset_05_31_23'; samples = [1002, 1037, 1198]
-    dataset = 'Su2020'; samples=[1004]
+    # dataset = 'Su2020'; samples=[1013]
     # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     mapping = []
 
@@ -110,13 +111,13 @@ def main():
 
 
     # GNN_IDs = [434, 440, 448, 442, 443, 447, 449, 446, 444, 445, 441]
-    GNN_IDs = [419]
+    GNN_IDs = [434]
     for GNN_ID in GNN_IDs:
         # for i in samples:
         #     mapping.append((dataset, i, GNN_ID))
         for i in samples:
-            for phi in [0.03]:
-                mapping.append((dataset, i, GNN_ID, f'samples', 140, phi))
+            for phi in [0.01]:
+                mapping.append((dataset, i, GNN_ID, f'samples', 261, phi))
     print(samples)
     print(len(mapping))
     print(mapping)
