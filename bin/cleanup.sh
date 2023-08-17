@@ -25,13 +25,13 @@
 #   done
 # done
 
-dir='/home/erschultz/timing_analysis/2560/samples'
+dir='/home/erschultz/dataset_02_04_23/samples'
 cd $dir
 
-for i in {1..15}
+for i in {201..282}
 do
   cd  "${dir}/sample${i}"
   pwd
-  rm -r optimize_grid_b_63_phi_0.03-max_ent10
+  rm -r optimize_grid_b_261_phi_0.01-max_ent8
 
 done

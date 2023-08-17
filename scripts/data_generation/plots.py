@@ -21,7 +21,7 @@ from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
 def meanDist_comparison():
     # datasets = ['dataset_01_26_23', 'dataset_02_16_23']
     # datasets = ['dataset_01_26_23', 'dataset_02_04_23', 'dataset_02_21_23']
-    datasets = ['dataset_02_04_23', 'dataset_04_28_23']
+    datasets = ['dataset_02_04_23', 'dataset_08_17_23']
     labels = ['Experiment', 'Synthetic']
     data_dir = osp.join('/home/erschultz', datasets[0])
 
@@ -49,12 +49,12 @@ def meanDist_comparison():
     plt.savefig(osp.join(data_dir, 'meanDist_comparison.png'))
     plt.close()
 
-def p_s_comparison(dataset, ID=None, k=8, max_ent=False):
-    samples, experimental = get_samples(dataset)
+def p_s_comparison(dataset, GNN_ID, b, phi, k=8, max_ent=False):
+    samples, experimental = get_samples(dataset, True)
     data_dir = osp.join('/home/erschultz', dataset)
     samples = np.array(samples)[:10] # cap at 10
 
-    if ID is None:
+    if GNN_ID is None:
         plot_GNN = False
     else:
         plot_GNN = True
@@ -77,15 +77,15 @@ def p_s_comparison(dataset, ID=None, k=8, max_ent=False):
             meanDist_exp = DiagonalPreprocessing.genomic_distance_statistics(y_exp)
 
             if plot_GNN:
-                y = np.load(osp.join(s_dir ,f'optimize_grid_b_140_phi_0.03-GNN{ID}/y.npy'))
+                y = np.load(osp.join(s_dir ,f'optimize_grid_b_{b}_phi_{phi}-GNN{GNN_ID}/y.npy'))
                 y = y.astype(float)
                 y /= np.mean(np.diagonal(y))
                 meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
                 rmse = mean_squared_error(meanDist, meanDist_exp, squared = False)
 
-            max_ent_dir = osp.join(s_dir, f'optimize_grid_b_140_phi_0.03-max_ent{k}')
+            max_ent_dir = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}-max_ent{k}')
             if osp.exists(max_ent_dir):
-                y_pca = np.load(osp.join(max_ent_dir, 'iteration14/y.npy'))
+                y_pca = np.load(osp.join(max_ent_dir, 'iteration30/y.npy'))
                 y_pca = y_pca.astype(float)
                 y_pca /= np.mean(np.diagonal(y_pca))
                 meanDist_pca = DiagonalPreprocessing.genomic_distance_statistics(y_pca)
@@ -122,9 +122,9 @@ def p_s_comparison(dataset, ID=None, k=8, max_ent=False):
         fig.supylabel('Contact Probability', fontsize = 16)
         fig.supxlabel('Polymer Distance (beads)', fontsize = 16)
         if max_ent:
-            fig.suptitle(f'{dataset}_max_ent\nGNN={ID}\nk={k}', fontsize=16)
+            fig.suptitle(f'{dataset}_max_ent\nGNN={GNN_ID}\nk={k}', fontsize=16)
         else:
-            fig.suptitle(f'{dataset}\nGNN={ID}\nk={k}', fontsize=16)
+            fig.suptitle(f'{dataset}\nGNN={GNN_ID}\nk={k}', fontsize=16)
         plt.tight_layout()
         if log:
             plt.savefig(osp.join(data_dir, 'p_s_comparison_log.png'))
@@ -377,7 +377,7 @@ def l_ij_comparison(dataset, dataset_exp, k=8):
 
 if __name__ == '__main__':
     # main()
-    # meanDist_comparison()
+    meanDist_comparison()
     # l_ij_comparison('dataset_04_28_23', 'dataset_02_04_23', 10)
-    p_s_comparison('dataset_02_04_23', 427, 10)
+    # p_s_comparison('dataset_02_04_23', None, 261, 0.01, 10)
     # scc_comparison('dataset_02_04_23', 392, 8, True)

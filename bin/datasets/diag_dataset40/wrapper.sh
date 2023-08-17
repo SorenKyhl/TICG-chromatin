@@ -20,21 +20,21 @@ source activate python3.8_pytorch1.9
 # necessary to ensure log files are in right place
 cd ~/TICG-chromatin
 
-dataset="dataset_06_05_23"
+dataset="dataset_08_17_23"
 echo "generate_params for ${dataset}"
 # uses poly6 fit to max ent params + grid
-# python  ~/TICG-chromatin/bin/datasets/generate_params.py --samples 20000 --k 10 --m 1024 --dataset $dataset --seq_mode 'eig_norm_v2' --chi_param_version 'v13' --diag_mode 'max_ent_poly6_log_v2_grid' --data_dir '/project2/depablo/erschultz' --exp_dataset 'dataset_04_05_23'
+python  ~/TICG-chromatin/bin/datasets/generate_params.py --samples 5000 --b 261 --phi 0.01 --k 10 --m 512 --dataset $dataset --seq_mode 'eig_norm_v2' --diag_mode 'max_ent_poly6_log_v2_grid' --data_dir '/project2/depablo/erschultz'
 #
-# cd "/home/erschultz/${dataset}"
-# tar -czvf setup.tar.gz setup
+cd "/home/erschultz/${dataset}"
+tar -czvf setup.tar.gz setup
 #
 # cd "/project2/depablo/erschultz/${dataset}"
 # tar -xzf setup.tar.gz
 # rm -r samples
-
-sourceFile=~/TICG-chromatin/bin/datasets/diag_dataset40/diag_dataset_fns.sh
-for i in 1 2 3 4 5 6 7 8 9 10
-do
-  echo $i
-  sbatch ~/TICG-chromatin/bin/datasets/diag_dataset${i}.sh $sourceFile
-done
+#
+# sourceFile=~/TICG-chromatin/bin/datasets/diag_dataset40/diag_dataset_fns.sh
+# for i in 1 2 3 4 5 6 7 8 9 10
+# do
+#   echo $i
+#   sbatch ~/TICG-chromatin/bin/datasets/diag_dataset${i}.sh $sourceFile
+# done

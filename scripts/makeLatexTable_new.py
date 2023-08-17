@@ -21,7 +21,8 @@ from sklearn.metrics import mean_squared_error
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
 from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_L, load_max_ent_chi, load_psi, load_Y)
+    get_final_max_ent_folder, load_import_log, load_L, load_max_ent_chi,
+    load_psi, load_Y)
 from sequences_to_contact_maps.scripts.utils import (load_time_dir, print_time,
                                                      triu_to_full)
 
@@ -479,8 +480,11 @@ def sort_method_keys(keys):
         else:
             label += f'  (b={b},phi={phi})'
 
-        if 'stop' in key:
-            label += ' stop'
+        left, right = key.split('-')
+        other = right.split('_')
+        if len(other) > 2:
+            label += ' '
+            label += '\_'.join(other[2:])
 
         return label
 
@@ -587,12 +591,23 @@ def main(args=None):
 
 
 if __name__ == '__main__':
-    # main()
-    dataset = 'dataset_02_04_23'; samples = [215]
+    dataset = 'dataset_02_04_23'
+    samples = range(201, 283)
+
+    odd_samples = []
+    for s in samples:
+        s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{s}')
+        result = load_import_log(s_dir)
+        chrom = int(result['chrom'])
+        if chrom % 2 == 1:
+            odd_samples.append(s)
+
+    samples = odd_samples[:10]
+
     data_dir = osp.join('/home/erschultz', dataset)
     args = getArgs(data_folder = data_dir, samples = samples)
     args.experimental = True
-    args.convergence_definition = None
+    args.convergence_definition = 'strict'
     args.gnn_id=434
     main(args)
     # data, converged_mask = load_data(args)

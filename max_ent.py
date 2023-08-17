@@ -11,6 +11,9 @@ from pylib.Maxent import Maxent
 from pylib.utils import default, epilib, utils
 from scripts.get_params import GetSeq
 
+sys.path.append('/home/erschultz')
+from sequences_to_contact_maps.scripts.load_utils import load_import_log
+
 
 def soren():
     dir = '/home/erschultz/dataset_test/samples/sample5003'
@@ -69,7 +72,8 @@ def modify_soren():
                 final_it_sweeps=500000)
     me.fit()
 
-def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None, aspect_ratio=1):
+def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
+                aspect_ratio=1):
     mode = 'grid'
     print(sample, mode)
     dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
@@ -158,7 +162,7 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None, aspect_ra
 
     config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
 
-    root = osp.join(dir, f'{root}-max_ent{k}_test_tr')
+    root = osp.join(dir, f'{root}-max_ent{k}')
     if osp.exists(root):
         # shutil.rmtree(root)
         print('WARNING: root exists')
@@ -172,17 +176,18 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None, aspect_ra
     params = default.params
     goals = epilib.get_goals(y, seqs, config)
     params["goals"] = goals
-    params['iterations'] = 3
+    params['iterations'] = 30
     params['parallel'] = 1
-    params['equilib_sweeps'] = 3000
-    params['production_sweeps'] = 2500
-    params['stop_at_convergence'] = False
-    params['run_longer_at_convergence'] = True
+    params['equilib_sweeps'] = 10000
+    params['production_sweeps'] = 350000
+    params['stop_at_convergence'] = True
+    params['conv_defn'] = 'strict'
+    params['run_longer_at_convergence'] = False
 
     stdout = sys.stdout
     with open(osp.join(root, 'log.log'), 'w') as sys.stdout:
         me = Maxent(root, params, config, seqs, y,
-                    final_it_sweeps=0, mkdir=False)
+                    final_it_sweeps=350000, mkdir=False)
         t = me.fit()
         print(f'Simulation took {np.round(t, 2)} seconds')
     sys.stdout = stdout
@@ -190,13 +195,27 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None, aspect_ra
 def main():
     # dataset = 'dataset_05_31_23'; samples = list(range(1137, 1214))
     # dataset = 'downsampling_analysis'; samples = list(range(201, 211))
-    dataset = 'dataset_02_04_23'; samples = list(range(240, 241))
-    # dataset = 'dataset_02_04_23'; samples = [211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224]
+    dataset = 'dataset_02_04_23'; all_samples = range(201, 283)
+    # dataset = 'dataset_02_04_23'; samples = [211, 212, 213, 214, 215, 216, 217,
+                                                # 218, 219, 220, 221, 222, 223, 224]
     # dataset = 'Su2020'; samples = [1013]
     # dataset = 'dataset_04_05_23'; samples = list(range(1211, 1288))
-    # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
+    # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105,
+                                                # 601,602,603,604,605]
     # samples = sorted(np.random.choice(samples, 12, replace = False))
     # dataset = 'timing_analysis/512'; samples = list(range(1, 16))
+
+    odd_samples = []
+    even_samples = []
+    for s in all_samples:
+        s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{s}')
+        result = load_import_log(s_dir)
+        chrom = int(result['chrom'])
+        if chrom % 2 == 0:
+            even_samples.append(s)
+        else:
+            odd_samples.append(s)
+    samples = odd_samples
 
     mapping = []
     for i in samples:
@@ -206,7 +225,7 @@ def main():
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(1) as p:
+    with mp.Pool(15) as p:
         p.starmap(fit, mapping)
     # for i in samples:
     #     setup_config(dataset, i, 'samples')

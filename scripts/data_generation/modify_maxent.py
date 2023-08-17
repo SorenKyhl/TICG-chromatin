@@ -29,15 +29,20 @@ from scripts.get_params import Tester
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_L, load_max_ent_D, load_max_ent_L,
-    load_max_ent_S, load_psi)
+    get_final_max_ent_folder, load_import_log, load_L, load_max_ent_D,
+    load_max_ent_L, load_max_ent_S, load_psi)
 from sequences_to_contact_maps.scripts.plotting_utils import \
     plot_seq_continuous
 from sequences_to_contact_maps.scripts.utils import pearson_round, triu_to_full
 
 LETTERS = 'ABCDEFGHIJKLMN'
 
-def get_samples(dataset):
+def get_samples(dataset, train=False):
+    '''
+    Inputs:
+        dataset: data directory
+        train: True to only return sample from odd chrom (training samples)
+    '''
     experimental = False
     if dataset == 'dataset_11_14_22':
         samples = range(2201, 2214)
@@ -64,16 +69,30 @@ def get_samples(dataset):
         samples = range(1001, 1286)
     elif dataset == 'dataset_04_07_23':
         samples = range(1021, 1027)
+    elif dataset == 'dataset_08_17_23':
+        samples = range(1, 11)
     else:
         samples = [1, 2, 3, 4, 5, 324, 981, 1936, 2834, 3464]
 
+    if train and experimental:
+        odd_samples = []
+        for s in samples:
+            s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{s}')
+            result = load_import_log(s_dir)
+            chrom = int(result['chrom'])
+            if chrom % 2 == 1:
+                odd_samples.append(s)
+        samples = odd_samples
+
     return samples, experimental
 
-def modify_plaid_chis(dataset, k):
-    samples, _ = get_samples(dataset)
+def modify_plaid_chis(dataset, b, phi, k):
+    samples, _ = get_samples(dataset, True)
     for sample in samples:
-        dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
-        max_ent_dir = osp.join(dir, f'optimize_grid_b_261_phi_0.006-max_ent{k}')
+        s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{sample}')
+        print(sample)
+
+        max_ent_dir = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}-max_ent{k}')
         if not osp.exists(max_ent_dir):
             print(f'{max_ent_dir} does not exist')
             continue
@@ -171,20 +190,18 @@ def modify_plaid_chis(dataset, k):
         assert np.allclose(L, L_eig), L - L_eig
 
 
-def modify_maxent_diag_chi(dataset, k = 10, edit = True):
+def modify_maxent_diag_chi(dataset, b, phi, k, edit=True):
     '''
     Inputs:
         k: number of marks
         edit: True to modify maxent result so that is is flat at start
     '''
-    samples, _ = get_samples(dataset)
+    samples, _ = get_samples(dataset, True)
     for sample in samples:
-        # if sample != 221:
-            # continue
-        print(f'sample{sample}, k{k}')
+        s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{sample}')
+
         # try different modifications to diag chis learned by max ent
-        dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
-        max_ent_dir = osp.join(dir, f'optimize_grid_b_261_phi_0.01-max_ent{k}')
+        max_ent_dir = osp.join(s_dir, f'optimize_grid_b_261_phi_0.01-max_ent{k}')
         if not osp.exists(max_ent_dir):
             print(f'{max_ent_dir} does not exist')
             continue
@@ -589,9 +606,9 @@ def simple_scatter(arr_x, arr_y, label_x, label_y, color=None, odir=None, ofname
     plt.close()
 
 
-def diagonal_dist(dataset, k, plot=True):
+def diagonal_dist(dataset, b, phi, k, plot=True):
     # distribution of diagonal params
-    samples, experimental = get_samples(dataset)
+    samples, experimental = get_samples(dataset, True)
     dir = '/project2/depablo/erschultz/'
     if not osp.exists(dir):
         dir = '/home/erschultz'
@@ -601,8 +618,8 @@ def diagonal_dist(dataset, k, plot=True):
     linear_popt_list = []
     # logistic_popt_list = []
     for sample in samples:
-        dir = osp.join(data_dir, f'samples/sample{sample}')
-        max_ent_dir = osp.join(dir, f'optimize_grid_b_140_phi_0.03-max_ent{k}')
+        s_dir = osp.join(data_dir, f'samples/sample{sample}')
+        max_ent_dir = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}-max_ent{k}')
         if not osp.exists(max_ent_dir):
             continue
         fitting_dir = osp.join(max_ent_dir, 'fitting')
@@ -685,16 +702,14 @@ def diagonal_dist(dataset, k, plot=True):
         plt.close()
 
 
-def seq_dist(dataset, k, plot=True, eig=False, eig_norm=False):
+def seq_dist(dataset, k, plot=True, eig_norm=False):
     # distribution of seq params
     samples, experimental = get_samples(dataset)
     dir = '/project2/depablo/erschultz/'
     if not osp.exists(dir):
         dir = '/home/erschultz'
     data_dir = osp.join(dir, dataset)
-    if eig:
-        odir = osp.join(data_dir, 'seq_param_distributions_eig')
-    elif eig_norm:
+    if eig_norm:
         odir = osp.join(data_dir, 'seq_param_distributions_eig_norm')
     else:
         odir = osp.join(data_dir, 'seq_param_distributions')
@@ -714,9 +729,7 @@ def seq_dist(dataset, k, plot=True, eig=False, eig_norm=False):
             continue
 
         # get seq
-        if eig:
-            x = np.load(osp.join(dir, 'resources/x_eig.npy'))
-        elif eig_norm:
+        if eig_norm:
             x = np.load(osp.join(dir, 'resources/x_eig_norm.npy'))
         elif experimental:
             x = np.load(osp.join(dir, 'resources/x.npy'))
@@ -774,19 +787,21 @@ def seq_dist(dataset, k, plot=True, eig=False, eig_norm=False):
 
     return x_list
 
-def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
+def plaid_dist(dataset, b, phi, k, plot=True, eig_norm=False):
     # distribution of plaid params
-    samples, experimental = get_samples(dataset)
+    samples, experimental = get_samples(dataset, True)
     dir = '/project2/depablo/erschultz/'
     if not osp.exists(dir):
         dir = '/home/erschultz'
     data_dir = osp.join(dir, dataset)
-    if eig:
-        odir = osp.join(data_dir, 'plaid_param_distributions_eig')
-    elif eig_norm:
-        odir = osp.join(data_dir, 'plaid_param_distributions_eig_norm')
+
+    odir = osp.join(data_dir, f'b_{b}_phi_{phi}_distributions')
+    if not osp.exists(odir):
+        os.mkdir(odir, mode = 0o755)
+    if eig_norm:
+        odir = osp.join(odir, 'plaid_param_distributions_eig_norm')
     else:
-        odir = osp.join(data_dir, 'plaid_param_distributions')
+        odir = osp.join(odir, 'plaid_param_distributions')
     print(odir)
 
     if not osp.exists(odir):
@@ -801,28 +816,29 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
     chi_flat_list = []
     grid_size_arr = grid_dist(dataset, False)
     for sample in samples:
-        dir = osp.join(data_dir, f'samples/sample{sample}')
+        print(sample)
+        s_dir = osp.join(data_dir, f'samples/sample{sample}')
         if experimental:
-            dir = osp.join(dir, f'optimize_grid_b_140_phi_0.03-max_ent{k}')
-        if not osp.exists(dir):
+            s_dir = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}-max_ent{k}')
+        if not osp.exists(s_dir):
             continue
 
         # get L
         if experimental:
-            L = load_max_ent_L(dir)
+            L = load_max_ent_L(s_dir, True)
         else:
-            L = load_L(dir)
+            L = load_L(s_dir)
         L = (L+L.T)/2 # ensure L is symmetric
 
         # get D
         if experimental:
-            D = load_max_ent_D(dir)
+            D = load_max_ent_D(s_dir)
         else:
-            diag_chis_file = osp.join(dir, 'diag_chis_continuous.npy')
+            diag_chis_file = osp.join(s_dir, 'diag_chis_continuous.npy')
             if osp.exists(diag_chis_file):
                 diag_chis = np.load(diag_chis_file)
             else:
-                diag_chis = np.load(osp.join(dir, 'diag_chis.npy'))
+                diag_chis = np.load(osp.join(s_dir, 'diag_chis.npy'))
             D = calculate_D(diag_chis)
         S = calculate_S(L, D)
 
@@ -832,17 +848,15 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
         S_list.append(S[np.triu_indices(m)])
 
         # get chi
-        if eig:
-            chi = np.load(osp.join(dir, 'chis_eig.npy'))
-        elif eig_norm:
-            chi = np.load(osp.join(dir, 'chis_eig_norm.npy'))
+        if eig_norm:
+            chi = np.load(osp.join(s_dir, 'chis_eig_norm.npy'))
         elif experimental:
-            chi = np.loadtxt(osp.join(dir, 'chis.txt'))
+            chi = np.loadtxt(osp.join(s_dir, 'chis.txt'))
             chi = np.atleast_2d(chi)[-1]
             chi_flat_list.append(chi)
             chi = triu_to_full(chi)
         else:
-            chi_file = osp.join(dir, 'chis.npy')
+            chi_file = osp.join(s_dir, 'chis.npy')
             if osp.exists(chi_file):
                 chi = np.load(chi_file)
             else:
@@ -878,9 +892,9 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
         legend_fontsize=16
         tick_fontsize=22
         letter_fontsize=26
-        x_list = seq_dist(dataset, k, plot, eig, eig_norm)
+        x_list = seq_dist(dataset, k, plot, eig_norm)
         # plot plaid chi parameters
-        if not (eig or eig_norm):
+        if not eig_norm:
             simple_histogram(chi_ij_list, r'$\chi_{ij}$', odir,
                                 f'k{k}_chi_ij_dist.png', dist = laplace)
 
@@ -896,7 +910,7 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
         # simple_histogram(s_list, r'$S_{ij}$', odir,
         #                     f'k{k}_S_dist.png')
 
-        # if not (eig or eig_norm):
+        # if not eig_norm:
         #     # corr(A,B) vs chi_AB
         #     for log in [True, False]:
         #         X = []
@@ -1096,7 +1110,7 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
         plt.close()
 
         # per chi all
-        if not (eig or eig_norm):
+        if not eig_norm:
             print('Starting per chi all')
             ind = np.arange(k*(k-1)/2 + k) % cmap.N
             colors = cmap(ind.astype(int))
@@ -1217,7 +1231,7 @@ def plaid_dist(dataset, k=None, plot=True, eig=False, eig_norm=False):
 
 def grid_dist(dataset, plot=True):
     # distribution of plaid params
-    samples, experimental = get_samples(dataset)
+    samples, experimental = get_samples(dataset, True)
     if not experimental:
         if plot:
             raise Exception('must be experimental')
@@ -1329,15 +1343,14 @@ def get_read_counts(dataset):
 
 
 if __name__ == '__main__':
-    # modify_plaid_chis('dataset_02_04_23', k = 12)
-    # modify_maxent_diag_chi('dataset_02_04_23', 12, False)
+    # modify_plaid_chis('dataset_02_04_23', b=261, phi=0.01, k=10)
+    # modify_maxent_diag_chi('dataset_02_04_23', b=261, phi=0.01, k=10, edit=False)
     # for i in range(221, 222):
         # plot_modified_max_ent(i, k = 10)
-    # diagonal_dist('dataset_02_04_23', 10)
+    # diagonal_dist('dataset_02_04_23', b=261, phi=0.01, k=10)
     # grid_dist('dataset_01_26_23')
-    plaid_dist('dataset_02_04_23', 10, True, False, True)
+    plaid_dist('dataset_02_04_23', b=261, phi=0.01, k=10, plot=True, eig_norm=True)
     # get_read_counts('dataset_04_28_23')
-    # seq_dist('dataset_01_26_23', 4, True, False, True)
-    # modify_plaid_chis('dataset_11_14_22', 8)
+    # seq_dist('dataset_01_26_23', 4, True, True)
     # plot_params_test()
     # diag_vs_plaid('dataset_02_04_23')

@@ -201,7 +201,7 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
 
     # plot distributions
     if plot:
-        L_list, _, _, _ = plaid_dist(dataset, 4, False)
+        L_list, _, _, _ = plaid_dist(dataset, 261, 0.01, 10, False)
         # plot histograms
         for arr, label in zip([k_means_rab, pca_rab, pca_b_rab, pca_var],
                                 ['kmeans_Rab', 'PCA_Rab', 'PCA_binary_Rab','PCA_var']):
@@ -312,4 +312,5 @@ if __name__ == '__main__':
     # molar_contact_ratio('dataset_01_26_23', True)
     # molar_contact_ratio('dataset_02_06_23', 363)
     # molar_contact_ratio('dataset_02_13_23', 372)
-    molar_contact_ratio('dataset_03_03_23', 387)
+    # molar_contact_ratio('dataset_03_03_23', 387)
+    molar_contact_ratio('dataset_08_17_23', None)
