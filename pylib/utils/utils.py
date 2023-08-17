@@ -203,7 +203,7 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method,norm=Fals
     logging.debug("========= step after gamma: ", steplength)
     logging.debug("step: ", step)
 
-    if steplength > trust_region:
+    if trust_region is not None and steplength > trust_region:
         step /= steplength
         step *= trust_region
         steplength = np.sqrt(step @ step)

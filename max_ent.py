@@ -158,7 +158,7 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None, aspect_ra
 
     config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
 
-    root = osp.join(dir, f'{root}-max_ent{k}_test')
+    root = osp.join(dir, f'{root}-max_ent{k}_test_tr')
     if osp.exists(root):
         # shutil.rmtree(root)
         print('WARNING: root exists')
@@ -175,10 +175,9 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None, aspect_ra
     params['iterations'] = 3
     params['parallel'] = 1
     params['equilib_sweeps'] = 3000
-    params['production_sweeps'] = 3000
+    params['production_sweeps'] = 2500
     params['stop_at_convergence'] = False
-    params['run_longer_at_convergence'] = False
-    params['trust_region'] = 1000
+    params['run_longer_at_convergence'] = True
 
     stdout = sys.stdout
     with open(osp.join(root, 'log.log'), 'w') as sys.stdout:
@@ -191,8 +190,7 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None, aspect_ra
 def main():
     # dataset = 'dataset_05_31_23'; samples = list(range(1137, 1214))
     # dataset = 'downsampling_analysis'; samples = list(range(201, 211))
-    dataset = 'dataset_02_04_23'; samples = [243]
-    # list(range(240, 246))
+    dataset = 'dataset_02_04_23'; samples = list(range(240, 241))
     # dataset = 'dataset_02_04_23'; samples = [211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224]
     # dataset = 'Su2020'; samples = [1013]
     # dataset = 'dataset_04_05_23'; samples = list(range(1211, 1288))
@@ -208,7 +206,7 @@ def main():
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(6) as p:
+    with mp.Pool(1) as p:
         p.starmap(fit, mapping)
     # for i in samples:
     #     setup_config(dataset, i, 'samples')

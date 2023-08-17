@@ -885,41 +885,84 @@ def make_small(dataset):
 
 def test_param_convergence(dataset):
     dir = f'/home/erschultz/{dataset}/samples'
+    b=140; phi=0.03
+    samples = list(range(201, 210))
+    cmap = matplotlib.cm.get_cmap('tab10')
+    fig, ax = plt.subplots()
+
+    for ls, max_ent_mode in zip(['--', '-'], ['', None]):
+        if max_ent_mode is None:
+            continue
+        for i, s in enumerate(samples):
+            s_dir = osp.join(dir, f'sample{s}')
+            fpath = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}-max_ent10{max_ent_mode}')
+            assert osp.exists(fpath), fpath
+
+            all_chis = []
+            all_diag_chis = []
+            for j in range(31):
+                it_path = osp.join(fpath, f'iteration{j}')
+                if osp.exists(it_path):
+                    config_file = osp.join(it_path, 'production_out/config.json')
+                    with open(config_file) as f:
+                        config = json.load(f)
+                    chis = np.array(config['chis'])
+                    chis = chis[np.triu_indices(len(chis))] # grab upper triangle
+                    diag_chis = np.array(config['diag_chis'])
+
+                    all_chis.append(chis)
+                    all_diag_chis.append(diag_chis)
+
+            params = np.concatenate((all_diag_chis, all_chis), axis = 1)
+
+            convergence = []
+            for j in range(1, len(params)):
+                diff = params[j] - params[j-1]
+                conv = np.linalg.norm(diff, ord = 2)
+                convergence.append(conv)
+
+            ax.plot(convergence, ls = ls, c = cmap(i % cmap.N))
+
+    ax2 = ax.twinx()
+    for i, s in enumerate(samples):
+        ax2.plot(np.NaN, np.NaN, c = cmap(i % cmap.N), label = f'sample {s}')
+    ax2.get_yaxis().set_visible(False)
+    ax2.legend(title='sample')
+
+    ax.set_yscale('log')
+    ax.axhline(100, c='k', ls='--')
+    ax.set_ylabel(r'$|\chi_{i}-\chi_{i-1}|$ (L2 norm)', fontsize=16)
+    ax.set_xlabel('Iteration', fontsize=16)
+    plt.tight_layout()
+    plt.savefig('/home/erschultz/TICG-chromatin/figures/conv_params.png')
+    plt.close()
+
+def test_convergence(dataset):
+    dir = f'/home/erschultz/{dataset}/samples'
     for s in range(240, 246):
         s_dir = osp.join(dir, f'sample{s}')
-        fpath = osp.join(s_dir, 'optimize_grid_b_261_phi_0.01-max_ent10_longer')
+        fpath = osp.join(s_dir, 'optimize_grid_b_261_phi_0.01-max_ent10_loger_at_conv_tr1000')
         assert osp.exists(fpath), fpath
 
-        all_chis = []
-        all_diag_chis = []
-        for i in range(31):
-            it_path = osp.join(fpath, f'iteration{i}')
-            if osp.exists(it_path):
-                config_file = osp.join(it_path, 'production_out/config.json')
-                with open(config_file) as f:
-                    config = json.load(f)
-                chis = np.array(config['chis'])
-                chis = chis[np.triu_indices(len(chis))] # grab upper triangle
-                diag_chis = np.array(config['diag_chis'])
-
-                all_chis.append(chis)
-                all_diag_chis.append(diag_chis)
-
-        params = np.concatenate((all_diag_chis, all_chis), axis = 1)
-        print(params, params.shape)
+        conv = np.loadtxt(osp.join(fpath, 'convergence.txt'))
+        max_it = len(conv)
 
         convergence = []
         eps = 1e-2
-        for j in range(1, len(params)):
-            diff = params[j] - params[j-1]
-            conv = np.linalg.norm(diff, ord = 2)
-            convergence.append(conv)
+        converged_it = None
+        for j in range(1, max_it):
+            diff = conv[j] - conv[j-1]
+            convergence.append(np.abs(diff))
+            # if np.abs(diff) < self.eps and self.loss[i] < self.loss[0]:
+            #     converged_it = iterations[i]
+            #     break
 
         plt.plot(convergence, label = f'sample {s}')
 
     plt.yscale('log')
-    plt.axhline(100, c='k', ls='--')
-    plt.ylabel(r'$|\chi_{i}-\chi_{i-1}|$ (L2 norm)', fontsize=16)
+    plt.axhline(1e-2, c='k', ls='--')
+    plt.axhline(1e-3, c='k', ls='--')
+    plt.ylabel(r'$|f(\chi)_{i}-f(\chi)_{i-1}|$', fontsize=16)
     plt.xlabel('Iteration', fontsize=16)
     plt.legend()
     plt.tight_layout()
@@ -983,6 +1026,7 @@ def compare_p_s():
 if __name__ == '__main__':
     # test_robust_PCA()
     test_param_convergence('dataset_02_04_23')
+    # test_convergence('dataset_02_04_23')
     # check_dataset('dataset_11_18_22')
     # time_comparison()
     # time_comparison_dmatrix()
