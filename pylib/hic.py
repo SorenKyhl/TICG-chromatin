@@ -145,8 +145,11 @@ def smooth_hic(x, smooth_size=10):
     return ndimage.gaussian_filter(x, (smooth_size, smooth_size))
 
 
-def load_hic(nbeads, pool_fn=pool_sum, chrom=2, cell="HCT116_auxin", start=None, end=None):
+def load_hic(nbeads, pool_fn=pool, chrom=2, cell="HCT116_auxin", start=None, end=None):
     """load hic by pooling preloaded high resolution map"""
+
+    large_beads = {"HCT116_auxin": 20480, "enormous": 20480}
+
     chrom = str(chrom)
 
     if not default.data_dir.exists():
@@ -161,7 +164,10 @@ def load_hic(nbeads, pool_fn=pool_sum, chrom=2, cell="HCT116_auxin", start=None,
     hic_file = Path(default.data_dir, hic_file_suffix)
 
     if not hic_file.exists():
-        nbeads_large = 20480
+        if cell in large_beads:
+            nbeads_large = large_beads[cell]
+        else:
+            nbeads_large = 20480
         pipe = copy.deepcopy(default.data_pipeline)
         pipe.set_chrom(chrom)
 
@@ -191,7 +197,7 @@ def load_seqs(nbeads, k, chrom="2", cell="HCT116_auxin"):
         nbeads_large = 20480
         gthic = load_hic(nbeads_large, chrom=chrom, cell=cell)
         gthic = smooth_hic(gthic)  # this step is very important
-        seqs = epilib.get_sequences(gthic, k, randomized=True)
+        seqs = epilib.get_sequences(gthic, k, randomized=True, correct_PCA=True)
         np.save(seqs_file, seqs)
     else:
         seqs = np.load(seqs_file)

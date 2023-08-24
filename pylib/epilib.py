@@ -10,6 +10,7 @@ import json
 import matplotlib.colors
 import logging
 import bisect
+from sklearn.decomposition import PCA
 
 from numba import njit
 from tqdm import tqdm
@@ -584,7 +585,8 @@ def get_sequences(
     randomized=False,
     scaleby_singular_values=False,
     scaleby_sqrt_singular_values=False,
-    print_singular_values = True,
+    print_singular_values = False,
+    correct_PCA=False,
 ):
     """
     calculate polymer bead sequences using k principal components
@@ -593,14 +595,21 @@ def get_sequences(
     scaleby_singular_values: (bool): scales principal components by their singular value
     """
     OEmap = get_oe(hic)
-    if randomized:
-        print("getting sequences with RANDOMIZED SVD")
-        U, S, VT = randomized_svd(np.corrcoef(OEmap), 2 * k)
+    if correct_PCA:
+        if randomized:
+            mypca = PCA(2*k) # will automatically select randomized solver
+        else:
+            mypca = PCA(2*k, solver="full")
+        mypca.fit(OEmap)
+        VT = mypca.components_
     else:
-        print("getting sequences with np.linalg.svd")
-        U, S, VT = np.linalg.svd(np.corrcoef(OEmap), full_matrices=0)
+        if randomized:
+            print("getting sequences with RANDOMIZED SVD")
+            U, S, VT = randomized_svd(np.corrcoef(OEmap), 2 * k)
+        else:
+            print("getting sequences with np.linalg.svd")
+            U, S, VT = np.linalg.svd(np.corrcoef(OEmap), full_matrices=0)
 
-    # return VT can return here if you want
 
     pcs = []
     for i in range(k):
