@@ -7,7 +7,7 @@ from pylib import default
 
 
 def get_config(
-    nbeads=None, config=default.config, grid_bond_ratio=0.95, base="gaussian-5k", scale="onethird"
+    nbeads=None, config=default.config, grid_bond_ratio=0.95, base="gaussian-5k", scale="onethird", scale_diag_bins=False
 ):
     """
     calculates physical parameters for a simulation with nbeads beads,
@@ -23,8 +23,12 @@ def get_config(
         if gaussian-5k, the gaussian chain is gaussian renormalized up to 5kbp/bead resolution
         if persistent-5k, the persistent chain is gaussian renormalized up to 5kbp/bead resolution
     scale (str): scaling method. 
+    scale_diag_bins: if on, keep the same diagonal bins, just scale them up to match the new nbeads.
+                        if off, generate new bins using np.geomspace. doing this at different nbeads
+                                will not necessarily generate the same nubmer of diagonal bins.
     """
     config = copy.deepcopy(config)
+    nbeads_orig = config["nbeads"]
 
     if nbeads is None:
         nbeads = config["nbeads"]
@@ -35,9 +39,15 @@ def get_config(
             config["nbeads"] / nbeads * np.array(config["diag_chis"])
         ).tolist()
 
-    if config["diagonal_binning"]:
-        x = np.array(config["diagonal_bin_boundaries"])
-        config["diagonal_bin_boundaries"] = np.ceil(x * int(nbeads/config["nbeads"])).tolist()
+
+    
+    #if config["diagonal_binning"]:
+        #bin_boundaries = np.geomspace(1,config["nbeads"], 32)
+        #config["diagonal_bin_boundaries"] = sorted(list(set(bin_boundaries)))
+        #config["diag_chis"] = list(np.zeros(len(config["diagonal_bin_boundaries"])))
+        #x = np.array(config["diagonal_bin_boundaries"])
+        #config["diagonal_bin_boundaries"] = np.ceil(x * int(nbeads/config["nbeads"])).tolist()
+
 
 
     # if nbeads > 10241:
@@ -89,5 +99,14 @@ def get_config(
         config["diag_cutoff"] = nbeads
     else:
         raise ValueError("scale must be onethird or gaussian")
+
+    if config["diagonal_binning"]:
+        if scale_diag_bins:
+            x = np.array(config["diagonal_bin_boundaries"])
+            config["diagonal_bin_boundaries"] = np.ceil(x * int(nbeads/nbeads_orig)).tolist()
+        else:
+            bin_boundaries = np.geomspace(1,config["nbeads"], 32, dtype=int).tolist()
+            config["diagonal_bin_boundaries"] = sorted(list(set(bin_boundaries)))
+            config["diag_chis"] = np.zeros(len(config["diagonal_bin_boundaries"])).tolist()
 
     return config
