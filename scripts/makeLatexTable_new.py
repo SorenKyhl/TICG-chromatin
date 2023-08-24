@@ -45,7 +45,7 @@ def getArgs(data_folder = None, sample = None, samples = None):
                         help='key to define convergence {strict, normal, param} ("all" for all 3) (None to skip)')
     parser.add_argument('--convergence_mask', action='store_true',
                         help="True to mask samples for which max ent didn't converge")
-    parser.add_argument('--gnn_id', type=AC.str2int,
+    parser.add_argument('--gnn_id', type=AC.str2list,
                         help="only consider given gnn_id")
 
     args = parser.parse_args()
@@ -127,7 +127,7 @@ def load_data(args):
             method_type = fname.split('-')[1]
             if method_type.startswith('GNN'):
                 GNN_ID = int(fname[-3:])
-                if args.gnn_id is not None and GNN_ID != args.gnn_id:
+                if args.gnn_id is not None and GNN_ID not in args.gnn_id:
                     continue
                 print(fname)
                 k = 0
@@ -607,8 +607,8 @@ if __name__ == '__main__':
     data_dir = osp.join('/home/erschultz', dataset)
     args = getArgs(data_folder = data_dir, samples = samples)
     args.experimental = True
-    args.convergence_definition = 'strict'
-    args.gnn_id=434
+    args.convergence_definition = 'normal'
+    args.gnn_id=[434, 450]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

@@ -35,12 +35,19 @@ def meanDist_comparison():
     for i, (dataset, label) in enumerate(zip(datasets, labels)):
         meanDist_list = molar_contact_ratio(dataset, None, False)
         print(f'Retrieved meanDist_list for dataset {dataset}')
+        arr = []
         for meanDist in meanDist_list:
+            print(meanDist[:10])
+            arr.append(meanDist[10])
             ax.plot(meanDist, c = colors[i], alpha=0.6)
+        mean = np.mean(arr); std = np.std(arr)
+        print(mean + std)
         ax2.plot(np.NaN, np.NaN, label = label, c = colors[i])
 
     ax.set_yscale('log')
     ax.set_xscale('log')
+    ax.axvline(10, c='k')
+    ax.axhline(0.06, c='k')
     ax.set_ylabel('Contact Probability', fontsize = 16)
     ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
 

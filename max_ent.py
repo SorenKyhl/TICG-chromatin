@@ -215,7 +215,7 @@ def main():
             even_samples.append(s)
         else:
             odd_samples.append(s)
-    samples = odd_samples
+    samples = even_samples[:10]
 
     mapping = []
     for i in samples:
@@ -225,12 +225,10 @@ def main():
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(15) as p:
+    with mp.Pool(10) as p:
         p.starmap(fit, mapping)
     # for i in samples:
     #     setup_config(dataset, i, 'samples')
-
-
 
 
 if __name__ == '__main__':

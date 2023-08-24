@@ -77,7 +77,8 @@ def old_figure(sample, GNN_ID, bl=140, phi=0.03):
     # alpha_gnn = min_MSE(D_no_nan, D_gnn[~nan_rows][:, ~nan_rows])
     alpha_pca = 1; alpha_gnn = 1
     D_pca = D_pca * alpha_pca
-    D_gnn = D_gnn * alpha_gnn
+    if D_gnn is not None:
+        D_gnn = D_gnn * alpha_gnn
 
 
     # compare PCs
@@ -137,7 +138,7 @@ def old_figure(sample, GNN_ID, bl=140, phi=0.03):
 
     m = len(D[~nan_rows][:, ~nan_rows])
     all_labels = np.linspace(start_mb, end_mb, m)
-    all_labels = np.round(all_labels, 1)
+    all_labels = np.round(all_labels, 0).astype(int)
     genome_ticks = [0, m-1]
     genome_labels = [f'{all_labels[i]}' for i in genome_ticks]
 
@@ -333,7 +334,7 @@ def new_figure(sample, GNN_ID, bl=140, phi=0.03):
 
     m = len(D[~nan_rows][:, ~nan_rows])
     all_labels = np.linspace(start_mb, end_mb, m)
-    all_labels = np.round(all_labels, 1)
+    all_labels = np.round(all_labels, 0).astype(int)
     genome_ticks = [0, m-1]
     genome_labels = [f'{all_labels[i]}' for i in genome_ticks]
 
@@ -472,5 +473,5 @@ def supp_figure(sample, GNN_ID, bl=140, phi=0.03):
 
 
 if __name__ == '__main__':
-    old_figure(1013, 434, bl=261, phi=0.005)
+    old_figure(1014, None, bl=261, phi=0.01)
     # supp_figure(1013, 434, bl=261, phi=0.01)

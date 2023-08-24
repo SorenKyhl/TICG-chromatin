@@ -20,6 +20,7 @@ from scipy.stats import (beta, gamma, laplace, multivariate_normal, norm,
                          skewnorm, weibull_max, weibull_min)
 from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
+from sklearn.neighbors import KernelDensity
 
 sys.path.append('/home/erschultz/TICG-chromatin')
 from scripts.data_generation.ECDF import Ecdf
@@ -70,7 +71,11 @@ def get_samples(dataset, train=False):
     elif dataset == 'dataset_04_07_23':
         samples = range(1021, 1027)
     elif dataset == 'dataset_08_17_23':
+        samples = range(1, 21)
+    elif dataset in {'dataset_08_22_23', 'dataset_08_24_23'}:
         samples = range(1, 11)
+    elif dataset in {'dataset_08_24_23_v2', 'dataset_08_24_23_v3'}:
+        samples = range(1, 16)
     else:
         samples = [1, 2, 3, 4, 5, 324, 981, 1936, 2834, 3464]
 
@@ -214,11 +219,24 @@ def modify_maxent_diag_chi(dataset, b, phi, k, edit=True):
 
         diag_chis = np.loadtxt(osp.join(max_ent_dir, 'chis_diag.txt'))
         diag_chis = np.atleast_2d(diag_chis)[-1]
+
+        ifile = osp.join(max_ent_dir, 'resources/config.json')
+        with open(ifile, 'r') as f:
+            config = json.load(f)
+
+        diag_chi_step = calculate_diag_chi_step(config, diag_chis)
+        m = len(diag_chi_step)
+        x = np.arange(0, 2*m)
+
         S = load_max_ent_S(max_ent_dir)
         meanDist_S = DiagonalPreprocessing.genomic_distance_statistics(S, 'freq')
-        smoothed_fit = gaussian_filter(meanDist_S[3:], sigma = 1)
-        smoothed_fit = np.append(meanDist_S[:3], smoothed_fit)
-        np.savetxt(osp.join(odir, 'smoothed_fit_meanDist_S.txt'), smoothed_fit)
+        poly6_log_fit = curve_fit_helper(Curves.poly6_curve, np.log(x[:m]), meanDist_S,
+                                        'poly6_log_meanDist_S', odir, [1, 1, 1, 1, 1, 1, 1], start = 2)
+        continue
+
+        # smoothed_fit = gaussian_filter(meanDist_S[3:], sigma = 1)
+        # smoothed_fit = np.append(meanDist_S[:3], smoothed_fit)
+        # np.savetxt(osp.join(odir, 'smoothed_fit_meanDist_S.txt'), smoothed_fit)
 
 
         if edit:
@@ -232,16 +250,6 @@ def modify_maxent_diag_chi(dataset, b, phi, k, edit=True):
             diag_chis_zero = np.copy(diag_chis)
             diag_chis_zero -= np.min(diag_chis_zero)
             np.savetxt(osp.join(odir, 'chis_diag_edit_zero.txt'), diag_chis_zero)
-
-
-        ifile = osp.join(max_ent_dir, 'resources/config.json')
-        with open(ifile, 'r') as f:
-            config = json.load(f)
-
-        diag_chi_step = calculate_diag_chi_step(config, diag_chis)
-
-        m = len(diag_chi_step)
-        x = np.arange(0, 2*m)
 
         smoothed_fit = gaussian_filter(diag_chi_step[3:], sigma = 1)
         smoothed_fit = np.append(diag_chi_step[:3], smoothed_fit)
@@ -902,149 +910,78 @@ def plaid_dist(dataset, b, phi, k, plot=True, eig_norm=False):
         simple_histogram(chi_ii_list, r'$\chi_{ii}$', odir,
                             f'k{k}_chi_ii_dist.png', dist = skewnorm)
 
-        # plot plaid Lij parameters
-        # simple_histogram(L_list, r'$L_{ij}$', odir,
-        #                     f'k{k}_L_dist.png')
-
-        # plot net energy parameters
-        # simple_histogram(s_list, r'$S_{ij}$', odir,
-        #                     f'k{k}_S_dist.png')
-
-        # if not eig_norm:
-        #     # corr(A,B) vs chi_AB
-        #     for log in [True, False]:
-        #         X = []
-        #         Y = []
-        #         for i in range(k):
-        #             for j in range(i+1,k):
-        #                 for s in range(len(samples)):
-        #                     chi = chi_list[s]
-        #                     chi_ij = chi[i,j]
-        #                     if log:
-        #                         chi_ij = np.sign(chi_ij) * np.log(np.abs(chi_ij)+1)
-        #                     X.append(chi_ij)
-        #                     corr = pearson_round(x_list[s][:, i], x_list[s][:, j])
-        #                     # if log:
-        #                         # corr = np.log(corr + 1)
-        #                     Y.append(corr)
-        #
-        #         est = sm.OLS(Y, X)
-        #         est = est.fit()
-        #         params = np.round(est.params, 3)
-        #         plt.plot(X, est.predict(X), ls='--', c = 'k')
-        #         plt.axhline(0, c = 'gray')
-        #         plt.axvline(0, c = 'gray')
-        #
-        #         plt.title(f'y={params[0]}x\n'+r'$R^2=$'+f'{np.round(est.rsquared, 2)}')
-        #         plt.scatter(X, Y)
-        #         plt.ylabel(r'Pearson($\psi_A$, $\psi_B$)', fontsize=16)
-        #         if log:
-        #             plt.xlabel(r'sign$(\chi_{AB})$*ln(|$\chi_{AB}$|+1)', fontsize=16)
-        #         else:
-        #             plt.xlabel(r'$\chi_{AB}$', fontsize=16)
-        #         plt.xlim(-5 ,5)
-        #         plt.tight_layout()
-        #         if log:
-        #             plt.savefig(osp.join(odir, f'chi_ij_ln_vs_corr_ij.png'))
-        #         else:
-        #             plt.savefig(osp.join(odir, f'chi_ij_vs_corr_ij.png'))
-        #         plt.close()
-        #
-        #     # plot chi_ij conditioned on corr(psi_i, psi_j)
-        #     X_neg = []
-        #     X_pos = []
-        #     for i in range(k):
-        #         for j in range(i+1,k):
-        #             for s in range(len(samples)):
-        #                 chi = chi_list[s]
-        #                 chi_ij = chi[i,j]
-        #                 corr = pearson_round(x_list[s][:, i], x_list[s][:, j])
-        #                 if corr > 0:
-        #                     X_neg.append(chi_ij)
-        #                 else:
-        #                     X_pos.append(chi_ij)
-        #
-        #     simple_histogram(X_neg, dist = skewnorm, label='negative')
-        #     simple_histogram(X_pos, r'$\chi_{AB}$', odir,
-        #                         f'k{k}_chi_ij_dist_conditioned.png', dist = skewnorm,
-        #                         label = 'positive', legend_title = r'Pearson($\psi_A$, $\psi_B$)')
-        #
-        #     # bivariate distributions
-        #     triples = [(2, 3, 'CD'), (1, 2, 'BC'), (1, 3, 'BD')]
-        #     X = []
-        #     for s in range(len(samples)):
-        #         chi = chi_list[s]
-        #         X.append(chi[0,1])
-        #     fig, ax = plt.subplots(1, 3, sharex = True)
-        #     for col, (i, j, label) in enumerate(triples):
-        #         Y = []
-        #         for s in range(len(samples)):
-        #             chi = chi_list[s]
-        #             Y.append(chi[i,j])
-        #
-        #         ax[col].scatter(X, Y)
-        #         ax[col].set_xlabel(r'$\chi_{AB}$', fontsize=16)
-        #         ax[col].set_ylabel(r'$\chi$'+label, fontsize=16)
-        #
-        #     plt.tight_layout()
-        #     plt.savefig(osp.join(odir, f'chi_AB_bivariates.png'))
-        #     plt.close()
-        # else:
-        #     log = False
-        #     X = []
-        #     Y_mean = []
-        #     Y_f = []
-        #     Y_lambda = []
-        #     for i in range(k):
-        #         for s in range(len(samples)):
-        #             chi = chi_list[s]
-        #             chi_ij = chi[i,i]
-        #             if log:
-        #                 chi_ij = np.sign(chi_ij) * np.log(np.abs(chi_ij)+1)
-        #             X.append(chi_ij)
-        #
-        #             Y_mean.append(np.mean(x_list[s][:, i]))
-        #             f, lmbda = Tester.infer_lambda(x_list[s][:, i], True)
-        #             if np.isnan(lmbda):
-        #                 lmbda = 0
-        #             Y_f.append(f)
-        #             Y_lambda.append(lmbda)
-        #
-        #     for Y, label in zip([Y_mean, Y_f, Y_lambda], ['mean', 'f', 'lambda']):
-        #         print(len(X), len(Y))
-        #         est = sm.OLS(Y, X)
-        #         est = est.fit()
-        #         params = np.round(est.params, 3)
-        #         plt.plot(X, est.predict(X), ls='--', c = 'k')
-        #         plt.axhline(0, c = 'gray')
-        #         plt.axvline(0, c = 'gray')
-        #
-        #         # plt.title(f'y={params[0]}x\n'+r'$R^2=$'+f'{np.round(est.rsquared, 2)}')
-        #         print(len(X), len(Y), X[:2], Y[:2])
-        #         plt.scatter(X, Y)
-        #         plt.ylabel(label, fontsize=16)
-        #         if log:
-        #             plt.xlabel(r'sign$(\chi_{ii})$*ln(|$\chi_{ii}$|+1)', fontsize=16)
-        #         else:
-        #             plt.xlabel(r'$\chi_{ii}$', fontsize=16)
-        #         # plt.xlim(-5 ,5)
-        #         plt.tight_layout()
-        #         if log:
-        #             plt.savefig(osp.join(odir, f'k{k}_chi_ii_ln_vs_{label}.png'))
-        #         else:
-        #             plt.savefig(osp.join(odir, f'k{k}_chi_ii_vs_{label}.png'))
-        #         plt.close()
-        #
-
         # plaid per chi
         print("Starting plaid per chi")
-        bin_width = 1
+        bin_width = 10
         cmap = matplotlib.cm.get_cmap('tab10')
         ind = np.arange(k) % cmap.N
         colors = cmap(ind.astype(int))
         # per chi ii
         rows = math.ceil(k / 5)
         cols = min(5, k)
+        fig, ax = plt.subplots(rows, cols)
+        fig.set_figheight(5)
+        fig.set_figwidth(10)
+
+        if rows == 1:
+            ax = [ax]
+        c = 0
+        row = 0
+        col = 0
+        for i in range(k):
+            print(f'k={i}')
+            data = []
+            for chi in chi_list:
+                data.append(chi[i,i])
+            arr = np.array(data).reshape(-1)
+
+            # remove outliers by 1.5 * IQR
+            iqr = np.percentile(arr, 75) - np.percentile(arr, 25)
+            width = 1.5
+            l_cutoff = np.percentile(arr, 25) - width * iqr
+            u_cutoff = np.percentile(arr, 75) + width * iqr
+            delete_arr = np.logical_or(arr < l_cutoff, arr > u_cutoff)
+            print(i, iqr, (l_cutoff, u_cutoff))
+            arr = np.delete(arr, delete_arr, axis = None)
+            #
+            # remove outliers by zscore
+            # mean = np.mean(arr)
+            # std = np.std(arr)
+            # delete_arr = np.abs(arr - mean)/ std > 2
+            # print(np.sum(delete_arr))
+            # arr = np.delete(arr, delete_arr, axis = None)
+
+            dist = skewnorm
+
+            bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width)
+            n, bins, patches = ax[row][col].hist(arr, weights = np.ones_like(arr) / len(arr),
+                                        bins = bins, alpha = 0.5, color = colors[c])
+
+            params = dist.fit(arr)
+            y = dist.pdf(bins, *params) * bin_width
+            params = np.round(params, 1)
+            with open(osp.join(odir, f'k{k}_chi{LETTERS[i]}{LETTERS[i]}.pickle'), 'wb') as f:
+                dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
+                pickle.dump(dict, f)
+
+
+            ax[row][col].plot(bins, y, ls = '--', color = 'k')
+            # ax[row][col].set_title(r'$\alpha=$' + f'{params[0]}\n' + r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
+            ax[row][col].set_xlabel(rf'$\chi${LETTERS[i]+LETTERS[i]}')
+            ax[row][col].set_xlabel(rf'$\lambda_{{{i+1}}}$', fontsize=16)
+            # ax[row][col].tick_params(axis='both', which='major', labelsize=tick_fontsize)
+
+            col += 1
+            if col == cols:
+                col = 0
+                row += 1
+            c += 1
+
+        fig.supylabel('Probability', fontsize=16)
+        plt.tight_layout()
+        plt.savefig(osp.join(odir, f'k{k}_chi_per_ii_dist.png'))
+        plt.close()
+
         fig, ax = plt.subplots(rows, cols)
         fig.set_figheight(5)
         fig.set_figwidth(10)
@@ -1077,26 +1014,29 @@ def plaid_dist(dataset, b, phi, k, plot=True, eig_norm=False):
             print(np.sum(delete_arr))
             arr = np.delete(arr, delete_arr, axis = None)
 
-            dist = skewnorm
-
             bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width)
             n, bins, patches = ax[row][col].hist(arr, weights = np.ones_like(arr) / len(arr),
                                         bins = bins, alpha = 0.5, color = colors[c])
+            ax2 = ax[row][col].twinx()
 
-            params = dist.fit(arr)
-            y = dist.pdf(bins, *params) * bin_width
-            params = np.round(params, 1)
-            with open(osp.join(odir, f'k{k}_chi{LETTERS[i]}{LETTERS[i]}.pickle'), 'wb') as f:
-                dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
-                pickle.dump(dict, f)
+            kde = KernelDensity(kernel='gaussian', bandwidth=10)
+            bins = np.array((range(math.floor(min(arr)), math.ceil(max(arr)) + 1, 1)))
+
+            kde.fit(arr.reshape(-1, 1))
+            y = kde.score_samples(bins.reshape(-1, 1)) * 1
+            y = np.exp(y)
+
+            with open(osp.join(odir, f'k{k}_chi{LETTERS[i]}{LETTERS[i]}_KDE.pickle'), 'wb') as f:
+                pickle.dump(kde, f)
 
 
-            ax[row][col].plot(bins, y, ls = '--', color = 'k')
+            ax2.plot(bins, y, ls = '--', color = 'k')
+            ax2.set_yticks([])
+            ax[row][col].set_yticks([])
             # ax[row][col].set_title(r'$\alpha=$' + f'{params[0]}\n' + r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
             ax[row][col].set_xlabel(rf'$\chi${LETTERS[i]+LETTERS[i]}')
             ax[row][col].set_xlabel(rf'$\lambda_{{{i+1}}}$', fontsize=16)
             # ax[row][col].tick_params(axis='both', which='major', labelsize=tick_fontsize)
-
 
             col += 1
             if col == cols:
@@ -1106,8 +1046,9 @@ def plaid_dist(dataset, b, phi, k, plot=True, eig_norm=False):
 
         fig.supylabel('Probability', fontsize=16)
         plt.tight_layout()
-        plt.savefig(osp.join(odir, f'k{k}_chi_per_ii_dist.png'))
+        plt.savefig(osp.join(odir, f'k{k}_chi_per_ii_KDE.png'))
         plt.close()
+
 
         # per chi all
         if not eig_norm:
@@ -1156,44 +1097,6 @@ def plaid_dist(dataset, b, phi, k, plot=True, eig_norm=False):
             plt.savefig(osp.join(odir, f'k{k}_chi_per_dist.png'))
             plt.close()
 
-        # plaid per pc
-        bin_width = 1
-        cmap = matplotlib.cm.get_cmap('tab10')
-        ind = np.arange(k) % cmap.N
-        colors = cmap(ind)
-        cols = math.ceil(k/2)
-        fig, ax = plt.subplots(2, cols, sharey = True, sharex = True)
-        row = 0
-        col = 0
-        for i in range(k):
-            data = []
-            for chi in chi_list:
-                data.extend(chi[i,:])
-
-            dist = norm
-            arr = np.array(data).reshape(-1)
-            bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width)
-            n, bins, patches = ax[row][col].hist(arr, weights = np.ones_like(arr) / len(arr),
-                                        bins = bins, alpha = 0.5, color = colors[i])
-
-            params = dist.fit(arr)
-            y = dist.pdf(bins, *params) * bin_width
-            params = np.round(params, 3)
-            ax[row][col].plot(bins, y, ls = '--', color = colors[i])
-            ax[row][col].set_title(f'PC{i}\n'+r'$\mu$='+f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
-
-            col += 1
-            if col == cols:
-                row += 1
-                col = 0
-
-        fig.supylabel('probability', fontsize=16)
-        fig.supxlabel(r'$\chi_{ij}$', fontsize=16)
-        # plt.xlim(-20, 20)
-        plt.tight_layout()
-        plt.savefig(osp.join(odir, f'k{k}_chi_pc_dist.png'))
-        plt.close()
-
         if grid_size_arr is not None:
             # grid_size vs chi_aa
             data = []
@@ -1229,7 +1132,7 @@ def plaid_dist(dataset, b, phi, k, plot=True, eig_norm=False):
 
     return L_list, S_list, D_list, chi_ij_list
 
-def grid_dist(dataset, plot=True):
+def grid_dist(dataset, plot=True, b=140, phi=0.03):
     # distribution of plaid params
     samples, experimental = get_samples(dataset, True)
     if not experimental:
@@ -1237,19 +1140,19 @@ def grid_dist(dataset, plot=True):
             raise Exception('must be experimental')
         return
     data_dir = osp.join('/home/erschultz', dataset)
-    odir = osp.join(data_dir, 'grid_size_distributions')
 
+    odir = osp.join(data_dir, f'b_{b}_phi_{phi}_distributions')
     if not osp.exists(odir):
         os.mkdir(odir, mode = 0o755)
 
     grid_size_arr = np.zeros(len(samples))
     for i, sample in enumerate(samples):
-        dir = osp.join(data_dir, f'samples/sample{sample}/none/k0/replicate1')
+        dir = osp.join(data_dir, f'samples/sample{sample}/optimize_grid_b_{b}_phi_{phi}')
         if not osp.exists(dir) or len(os.listdir(dir)) == 0:
             continue
 
         # get grid_size
-        grid_size_arr[i] = np.loadtxt(osp.join(dir, 'grid_size.txt'))[-1]
+        grid_size_arr[i] = np.loadtxt(osp.join(dir, 'grid_size.txt'))
 
     if plot:
         # plot plaid chi parameters
@@ -1344,12 +1247,12 @@ def get_read_counts(dataset):
 
 if __name__ == '__main__':
     # modify_plaid_chis('dataset_02_04_23', b=261, phi=0.01, k=10)
-    # modify_maxent_diag_chi('dataset_02_04_23', b=261, phi=0.01, k=10, edit=False)
+    modify_maxent_diag_chi('dataset_02_04_23', b=261, phi=0.01, k=10, edit=False)
     # for i in range(221, 222):
         # plot_modified_max_ent(i, k = 10)
     # diagonal_dist('dataset_02_04_23', b=261, phi=0.01, k=10)
-    # grid_dist('dataset_01_26_23')
-    plaid_dist('dataset_02_04_23', b=261, phi=0.01, k=10, plot=True, eig_norm=True)
+    # grid_dist('dataset_02_04_23', b=261, phi=0.01)
+    # plaid_dist('dataset_02_04_23', b=261, phi=0.01, k=10, plot=True, eig_norm=True)
     # get_read_counts('dataset_04_28_23')
     # seq_dist('dataset_01_26_23', 4, True, True)
     # plot_params_test()

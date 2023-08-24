@@ -10,6 +10,7 @@ import seaborn as sns
 import torch
 import torch_geometric
 from modify_maxent import get_samples, plaid_dist
+from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 
@@ -21,8 +22,7 @@ from sequences_to_contact_maps.scripts.clean_directories import \
 from sequences_to_contact_maps.scripts.load_utils import load_Y
 from sequences_to_contact_maps.scripts.neural_nets.utils import (
     get_dataset, load_saved_model)
-from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
-                                                     pearson_round)
+from sequences_to_contact_maps.scripts.utils import pearson_round
 
 
 def molar_contact_ratio(dataset, model_ID=None, plot=True):
@@ -130,12 +130,14 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
 
     samples, experimental = get_samples(dataset)
     samples = np.array(samples)[:500] # cap at 500
+    print('samples:', samples)
 
     N = len(samples)
     k_means_rab = np.zeros(N)
     pca_rab = np.zeros(N)
     pca_b_rab = np.zeros(N)
     pca_var = np.zeros(N)
+    L1_arr = np.zeros(N)
     y_list = []
     # L_list_exp, _ = plaid_dist('dataset_01_26_23', 4, False)
     meanDist_file = osp.join(odir, 'meanDist.npy')
@@ -157,6 +159,10 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
 
         if plot:
             m = len(y)
+
+            # L1 chi
+            chi = np.load(osp.join(sample_dir, 'chis.npy'))
+            L1_arr[i] = np.linalg.norm(chi, ord='nuc') # sum of |singular vales|
 
             # kmeans
             seq = get_seq_kmeans()
@@ -224,13 +230,15 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
 
 
         # crop samples for plotting
-        plot_n = 8
-        y_arr = np.array(y_list[:8])
-        L_arr = np.array(L_list[:8])
-        k_means_rab = k_means_rab[:8]
-        meanDist_arr = np.array(meanDist_list[:8])
+        plot_n = 10
+        rows=2; cols=5
+        y_arr = np.array(y_list[:plot_n])
+        L_arr = np.array(L_list[:plot_n])
+        k_means_rab = k_means_rab[:plot_n]
+        L1_arr = L1_arr[:plot_n]
+        meanDist_arr = np.array(meanDist_list[:plot_n])
         print(meanDist_arr)
-        samples = samples[:8]
+        samples = samples[:plot_n]
 
         # plot contact maps orderd by rab
         cmap = matplotlib.colors.LinearSegmentedColormap.from_list('custom',
@@ -238,8 +246,8 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
                                                   (1,    'red')], N=126)
         ind = np.argsort(k_means_rab)
         y_arr = np.array(y_list)
-        fig, ax = plt.subplots(2, 5,
-                                gridspec_kw={'width_ratios':[1,1,1,1,0.08]})
+        fig, ax = plt.subplots(rows, cols+1,
+                                gridspec_kw={'width_ratios':[1,1,1,1,1,0.08]})
         fig.set_figheight(6*2)
         fig.set_figwidth(6*3)
         vmin = 0; vmax = np.mean(y_arr)
@@ -247,7 +255,7 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
         for y, val, sample in zip(y_arr[ind], k_means_rab[ind], samples[ind]):
             if col == 0:
                 s = sns.heatmap(y, linewidth = 0, vmin = vmin, vmax = vmax, cmap = cmap,
-                    ax = ax[row][col], cbar_ax = ax[row][4])
+                    ax = ax[row][col], cbar_ax = ax[row][-1])
             else:
                 s = sns.heatmap(y, linewidth = 0, vmin = vmin, vmax = vmax, cmap = cmap,
                     ax = ax[row][col], cbar = False)
@@ -256,7 +264,7 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
             s.set_yticks([])
 
             col += 1
-            if col == 4:
+            if col == cols:
                 col = 0
                 row += 1
 
@@ -266,7 +274,7 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
 
 
         # plot L_ij ordered by rab
-        fig, ax = plt.subplots(2, 4)
+        fig, ax = plt.subplots(rows, cols)
         fig.set_figheight(6*2)
         fig.set_figwidth(6*3)
         row = 0; col=0
@@ -285,7 +293,7 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
             ax[row][col].set_title(f'Sample {sample}\nPlaid Score = {np.round(val, 1)}', fontsize = 16)
 
             col += 1
-            if col == 4:
+            if col == cols:
                 col = 0
                 row += 1
 
@@ -295,12 +303,22 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
 
         # plot meanDist colored by plaid score
         for meanDist, val, sample in zip(meanDist_arr[ind], k_means_rab[ind], samples[ind]):
-            plt.plot(meanDist, label = np.round(val, 1))
+            plt.plot(meanDist, label = f'sample{sample}: {np.round(val, 1)}')
         plt.legend()
         plt.yscale('log')
         plt.xscale('log')
         plt.tight_layout()
         plt.savefig(osp.join(data_dir, 'meanDist_plaid_score.png'))
+        plt.close()
+
+        # plot meanDist colored by L1 score
+        for meanDist, val, sample in zip(meanDist_arr[ind], L1_arr[ind], samples[ind]):
+            plt.plot(meanDist, label = f'sample{sample}: {np.round(val, 1)}')
+        plt.legend()
+        plt.yscale('log')
+        plt.xscale('log')
+        plt.tight_layout()
+        plt.savefig(osp.join(data_dir, 'meanDist_L1_score.png'))
         plt.close()
 
     np.save(meanDist_file, meanDist_list)
@@ -313,4 +331,4 @@ if __name__ == '__main__':
     # molar_contact_ratio('dataset_02_06_23', 363)
     # molar_contact_ratio('dataset_02_13_23', 372)
     # molar_contact_ratio('dataset_03_03_23', 387)
-    molar_contact_ratio('dataset_08_17_23', None)
+    molar_contact_ratio('dataset_08_24_23_v3', None)

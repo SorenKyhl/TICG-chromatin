@@ -41,6 +41,7 @@ from sequences_to_contact_maps.scripts.R_pca import R_pca
 from sequences_to_contact_maps.scripts.similarity_measures import SCC
 from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
                                                      pearson_round,
+                                                     rescale_matrix,
                                                      triu_to_full)
 from sequences_to_contact_maps.scripts.xyz_utils import (xyz_load,
                                                          xyz_to_distance)
@@ -74,6 +75,29 @@ def check_dataset(dataset):
                 ids.add(id)
                 continue
 
+    print(ids, len(ids))
+
+def check_dataset_p_s(dataset):
+    dir = osp.join("/project2/depablo/erschultz", dataset, "samples")
+    # dir = osp.join("/home/erschultz", dataset, "samples")
+    ids = set()
+    for file in os.listdir(dir):
+        if file.startswith('sample'):
+            id = int(file[6:])
+            file_dir = osp.join(dir, file)
+            try:
+                y, _ = load_Y(file_dir)
+                y /= np.mean(y.diagonal())
+                meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
+                if meanDist[10] > 0.06:
+                    ids.add(id)
+
+            except Exception as e:
+                print(f'id={id}: {e}')
+                ids.add(id)
+                continue
+
+    np.savetxt(osp.join(dir, 'ids.txt'), ids)
     print(ids, len(ids))
 
 def test_robust_PCA():
@@ -884,12 +908,13 @@ def make_small(dataset):
 
 def test_convergence(dataset, mode='loss'):
     dir = f'/home/erschultz/{dataset}/samples'
-    b=261; phi=0.01
-    samples = list(range(240, 246))
+    b=140; phi=0.03
+    # samples, _ = get_samples(dataset, True)
+    samples = range(201, 211)
     cmap = matplotlib.cm.get_cmap('tab10')
     fig, ax = plt.subplots()
 
-    for ls, max_ent_mode in zip(['--', '-'], ['_long_tr1000', '_loger_at_conv_tr1000']):
+    for ls, max_ent_mode in zip(['-'], ['']):
         if max_ent_mode is None:
             continue
         for i, s in enumerate(samples):
@@ -908,28 +933,28 @@ def test_convergence(dataset, mode='loss'):
                     diff = conv[j] - conv[j-1]
                     convergence.append(np.abs(diff))
             elif mode == 'param':
-                    all_chis = []
-                    all_diag_chis = []
-                    for j in range(31):
-                        it_path = osp.join(fpath, f'iteration{j}')
-                        if osp.exists(it_path):
-                            config_file = osp.join(it_path, 'production_out/config.json')
-                            with open(config_file) as f:
-                                config = json.load(f)
-                            chis = np.array(config['chis'])
-                            chis = chis[np.triu_indices(len(chis))] # grab upper triangle
-                            diag_chis = np.array(config['diag_chis'])
+                all_chis = []
+                all_diag_chis = []
+                for j in range(31):
+                    it_path = osp.join(fpath, f'iteration{j}')
+                    if osp.exists(it_path):
+                        config_file = osp.join(it_path, 'production_out/config.json')
+                        with open(config_file) as f:
+                            config = json.load(f)
+                        chis = np.array(config['chis'])
+                        chis = chis[np.triu_indices(len(chis))] # grab upper triangle
+                        diag_chis = np.array(config['diag_chis'])
 
-                            all_chis.append(chis)
-                            all_diag_chis.append(diag_chis)
+                        all_chis.append(chis)
+                        all_diag_chis.append(diag_chis)
 
-                    params = np.concatenate((all_diag_chis, all_chis), axis = 1)
+                params = np.concatenate((all_diag_chis, all_chis), axis = 1)
 
-                    convergence = []
-                    for j in range(1, len(params)):
-                        diff = params[j] - params[j-1]
-                        conv = np.linalg.norm(diff, ord = 2)
-                        convergence.append(conv)
+                convergence = []
+                for j in range(1, len(params)):
+                    diff = params[j] - params[j-1]
+                    conv = np.linalg.norm(diff, ord = 2)
+                    convergence.append(conv)
 
             ax.plot(convergence, ls = ls, c = cmap(i % cmap.N))
 
@@ -937,7 +962,8 @@ def test_convergence(dataset, mode='loss'):
     for i, s in enumerate(samples):
         ax2.plot(np.NaN, np.NaN, c = cmap(i % cmap.N), label = f'sample {s}')
     ax2.get_yaxis().set_visible(False)
-    ax2.legend(title='sample')
+    if len(samples) < 20:
+        ax2.legend(title='sample')
 
     ax.set_yscale('log')
     if mode == 'param':
@@ -1005,12 +1031,24 @@ def compare_p_s():
     plt.legend()
     plt.show()
 
+def test_pooling():
+    dir = '/home/erschultz/timing_analysis'
+    y_256 = np.load(osp.join(dir, '256', 'samples/sample1/y.npy'))
+    for i in [512, 1024]:
+        y_i = np.load(osp.join(dir, str(i), 'samples/sample1/y.npy'))
+        y_rescale = rescale_matrix(y_i, int(i/256))
+        print(y_rescale.shape)
+        print(np.allclose(y_256, y_rescale))
+
+
 
 if __name__ == '__main__':
     # test_robust_PCA()
-    test_convergence('dataset_02_04_23')
-    # test_convergence('dataset_02_04_23')
+    # test_pooling()
+    # test_convergence('dataset_02_04_23', 'loss')
+    # test_convergence('dataset_02_04_23', 'param')
     # check_dataset('dataset_11_18_22')
+    check_dataset_p_s('dataset_08_17_23')
     # time_comparison()
     # time_comparison_dmatrix()
     # main()

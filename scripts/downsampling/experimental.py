@@ -65,15 +65,15 @@ def make_samples():
     tot_count_mean = np.mean(tot_count_list)
     print(f'Mean Total Read Depth: {tot_count_mean}')
 
-def fit_gnn():
+def fit_gnn(GNN_id):
     dataset='downsampling_analysis'; samples = range(201, 211)
 
-    GNN_IDs = [434]
+    GNN_IDs = [GNN_id]
     for downsampling in [4, 5, 6, 7, 8]:
         mapping = []
         for GNN_ID in GNN_IDs:
             for i in samples:
-                mapping.append((dataset, i, GNN_ID, f'samples_exp{downsampling}'))
+                mapping.append((dataset, i, GNN_ID, f'samples_exp{downsampling}', 261, 0.01))
 
         print(len(mapping))
         print(mapping)
@@ -303,5 +303,5 @@ def figure(GNN_ID):
 
 if __name__ == '__main__':
     # make_samples()
-    # fit_gnn()
-    figure(434)
+    # fit_gnn(450)
+    figure(450)

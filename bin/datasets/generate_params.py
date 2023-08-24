@@ -10,6 +10,7 @@ import numpy as np
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import calculate_diag_chi_step, calculate_L
 from scipy.stats import laplace, multivariate_normal, norm, qmc, skewnorm
+from sklearn.neighbors import KernelDensity
 
 sys.path.insert(0, '/home/erschultz/TICG-chromatin')
 from scripts.data_generation.ECDF import Ecdf
@@ -53,6 +54,8 @@ def getArgs():
                         help='bond length')
     parser.add_argument('--phi', type=float, default=0.03,
                     help='phi chromatin')
+    parser.add_argument('--conv_defn', type=str, default='loss')
+    parser.add_argument('--plaid_mode', type=str, default='skewnorm')
 
 
 
@@ -75,6 +78,8 @@ class DatasetGenerator():
         self.exp_dataset = args.exp_dataset
         self.b = args.b
         self.phi = args.phi
+        self.conv_defn = args.conv_defn
+        self.plaid_mode = args.plaid_mode
         self.grid_root = f'optimize_grid_b_{self.b}_phi_{self.phi}'
 
         self.get_exp_samples()
@@ -120,11 +125,18 @@ class DatasetGenerator():
             chi_ii = np.zeros(self.k)
             for j in range(self.k):
                 l = LETTERS[j]
-                with open(osp.join(self.dir, self.exp_dataset, f'b_{self.b}_phi_{self.phi}_distributions',
-                                    'plaid_param_distributions_eig_norm',
-                                    f'k{self.k}_chi{l}{l}.pickle'), 'rb') as f:
-                    dict_j = pickle.load(f)
-                chi_ii[j] =  skewnorm.rvs(dict_j['alpha'], dict_j['mu'], dict_j['sigma'])
+                if self.plaid_mode == 'skewnorm':
+                    with open(osp.join(self.dir, self.exp_dataset, f'b_{self.b}_phi_{self.phi}_distributions',
+                                        'plaid_param_distributions_eig_norm',
+                                        f'k{self.k}_chi{l}{l}.pickle'), 'rb') as f:
+                        dict_j = pickle.load(f)
+                    chi_ii[j] =  skewnorm.rvs(dict_j['alpha'], dict_j['mu'], dict_j['sigma'])
+                elif self.plaid_mode == 'KDE':
+                    with open(osp.join(self.dir, self.exp_dataset, f'b_{self.b}_phi_{self.phi}_distributions',
+                                        'plaid_param_distributions_eig_norm',
+                                        f'k{self.k}_chi{l}{l}_KDE.pickle'), 'rb') as f:
+                        kde = pickle.load(f)
+                    chi_ii[j] = kde.sample(1).reshape(-1)
             chi_ij = np.zeros(int(self.k*(self.k-1)/2))
 
             chi = np.zeros((self.k, self.k))
@@ -248,26 +260,53 @@ class DatasetGenerator():
 
     def get_converged_samples(self):
         converged_samples = []
-        for j in self.exp_samples:
-            sample_folder = osp.join(self.exp_dir, f'sample{j}', f'{self.grid_root}-max_ent{self.k}')
+        for i in self.exp_samples:
+            sample_folder = osp.join(self.exp_dir, f'sample{i}', f'{self.grid_root}-max_ent{self.k}')
+            converged = False
 
             # check convergence
-            convergence_file = osp.join(sample_folder, 'convergence.txt')
-            eps = 1e-2
-            converged = False
-            if osp.exists(convergence_file):
-                conv = np.loadtxt(convergence_file)
-                for ind in range(1, len(conv)):
-                    diff = conv[ind] - conv[ind-1]
-                    if np.abs(diff) < eps and conv[ind] < conv[0]:
+            if self.conv_defn == 'loss':
+                convergence_file = osp.join(sample_folder, 'convergence.txt')
+                eps = 1e-2
+                if osp.exists(convergence_file):
+                    conv = np.loadtxt(convergence_file)
+                    for j in range(1, len(conv)):
+                        diff = conv[j] - conv[j-1]
+                        if np.abs(diff) < eps and conv[j] < conv[0]:
+                            converged = True
+                else:
+                    print(f'Warning: {convergence_file} does not exist')
+            elif self.conv_defn == 'param':
+                all_chis = []
+                all_diag_chis = []
+                for j in range(31):
+                    it_path = osp.join(sample_folder, f'iteration{j}')
+                    if osp.exists(it_path):
+                        config_file = osp.join(it_path, 'production_out/config.json')
+                        with open(config_file) as f:
+                            config = json.load(f)
+                        chis = np.array(config['chis'])
+                        chis = chis[np.triu_indices(len(chis))] # grab upper triangle
+                        diag_chis = np.array(config['diag_chis'])
+
+                        all_chis.append(chis)
+                        all_diag_chis.append(diag_chis)
+
+                params = np.concatenate((all_diag_chis, all_chis), axis = 1)
+
+                convergence = []
+                eps = 1e2
+                for j in range(5, len(params)):
+                    diff = params[j] - params[j-1]
+                    diff = np.linalg.norm(diff, ord = 2)
+                    if diff < eps:
                         converged = True
-            else:
-                print(f'Warning: {convergence_file} does not exist')
+
 
             if converged:
-                converged_samples.append(j)
+                converged_samples.append(i)
             else:
-                print(f'sample{j} did not converge')
+                print(f'sample{i} did not converge')
 
         print('converged %:', len(converged_samples) / len(self.exp_samples) * 100)
 
@@ -279,7 +318,7 @@ class DatasetGenerator():
         grid_dict = {} # id : grid_size
         get_grid = False
         linear = False
-        poly3 = False
+        poly3 = False; poly6_log = False
         if 'grid' in self.diag_mode:
             get_grid = True
         if 'linear' in self.diag_mode:
@@ -290,6 +329,7 @@ class DatasetGenerator():
             poly6_log = True
 
         converged_samples = self.get_converged_samples()
+        print(converged_samples, len(converged_samples))
         for j in converged_samples:
             sample_folder = osp.join(self.exp_dir, f'sample{j}', f'{self.grid_root}-max_ent{self.k}')
 
@@ -300,7 +340,7 @@ class DatasetGenerator():
             elif poly6_log:
                 diag_chi_step = np.loadtxt(osp.join(sample_folder, 'fitting2/poly6_log_fit.txt'))
             else:
-                diag_chis = np.loadtxt(osp.join(sample_folder, 'chis_diag.txt'))[-1]
+                diag_chis = np.loadtxt(osp.join(sample_folder, 'chis_diag.txt'))
                 with open(osp.join(sample_folder, 'resources/config.json'), 'r') as f:
                     config = json.load(f)
                 diag_chi_step = calculate_diag_chi_step(config, diag_chis)
@@ -338,7 +378,7 @@ class DatasetGenerator():
         converged_samples = self.get_converged_samples()
         for j in converged_samples:
             sample_folder = osp.join(self.exp_dir, f'sample{j}', f'{self.grid_root}-max_ent{self.k}')
-            meanDist_S = np.loadtxt(osp.join(sample_folder, 'fitting2/smoothed_fit_meanDist_S.txt'))
+            meanDist_S = np.loadtxt(osp.join(sample_folder, 'fitting2/poly6_log_meanDist_S_fit.txt'))
             meanDist_S_dict[j] = meanDist_S
 
             # get grid_size
