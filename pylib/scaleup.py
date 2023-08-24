@@ -128,8 +128,16 @@ def tune_stiffness(nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method,
 
 
 def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large = True, 
-            zerodiag = False, match_ideal_large_grid=False, optimize_bond=False):
+            zerodiag = False, match_ideal_large_grid=False, optimize_bond=False, cell="HCT116_auxin"):
     """optimize chis on small system, and scale up parameters to large system
+
+    in order for the chi parameters to be transferrable from the coarse system to the fine system,
+    they have to have the same ideal chain behavior. In other words, an ideal chain simulation
+    of the fine system - when pooled to the coarse resolution - should have the same p(s) curve as 
+    the coarse ideal chain system. 
+
+    First, the grid size is tuned so that p(s=1/N) matches for both the coarse and fine grain systems.
+    
 
     requires tuning the grid size and stiffness at small scale,
     in order for the chi parameters to be transferrable
@@ -140,17 +148,17 @@ def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large =
         large_contact_pooling_factor = 1
 
     config_small = parameters.get_config(nbeads_small)
-    gthic_small = hic.load_hic(nbeads_small, pool_fn)
+    gthic_small = hic.load_hic(nbeads_small, pool_fn, cell=cell)
 
     if pool_large:
         if config_small["conservative_contact_pooling"] == False:
             raise Error("conservative contact pooling must be turned on if pooling large hic")
         gthic_large = gthic_small
     else:
-        gthic_large = hic.load_hic(nbeads_large, pool_fn)
+        gthic_large = hic.load_hic(nbeads_large, pool_fn, cell=cell)
 
-    seqs_large = hic.load_seqs(nbeads_large, 10)
-    seqs_small = hic.load_seqs(nbeads_small, 10)
+    seqs_large = hic.load_seqs(nbeads_large, 10, cell=cell)
+    seqs_small = hic.load_seqs(nbeads_small, 10, cell=cell)
 
     # tune grid size
     try:
@@ -217,7 +225,7 @@ def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large =
     config_opt = Config(final_it / "config.json")
 
     config_large = parameters.get_config(
-        nbeads_large, config_opt.config, grid_bond_ratio=grid_bond_ratio
+        nbeads_large, config_opt.config, grid_bond_ratio=grid_bond_ratio, scale_diag_bins=True
     )
 
     def scale_chis(config, scaling_ratio):
