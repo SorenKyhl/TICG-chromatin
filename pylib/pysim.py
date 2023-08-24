@@ -301,11 +301,14 @@ class Pysim:
         Returns:
             contact map, or saves contact map to file if specified
         """
-        combined = np.loadtxt(contact_files[0])
+        combined = np.array(
+            pd.read_csv(contact_files[0], header=None, sep=" ", dtype=int)
+        )  # much faster than np.loadtxt
         for file in contact_files[1:]:
-            combined += np.array(
-                pd.read_csv(file, header=None, sep=" ")
+            tt = np.array(
+                pd.read_csv(file, header=None, sep=" ", dtype=int)
             )  # much faster than np.loadtxt
+            combined += tt
             # combined += np.loadtxt(file)
 
         if output_file:
