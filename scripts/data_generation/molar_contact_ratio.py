@@ -331,4 +331,4 @@ if __name__ == '__main__':
     # molar_contact_ratio('dataset_02_06_23', 363)
     # molar_contact_ratio('dataset_02_13_23', 372)
     # molar_contact_ratio('dataset_03_03_23', 387)
-    molar_contact_ratio('dataset_08_24_23_v3', None)
+    molar_contact_ratio('dataset_08_24_23_v4', None)

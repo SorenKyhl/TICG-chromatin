@@ -2,12 +2,12 @@
 
 source ~/TICG-chromatin/bin/datasets/dataset_fns.sh
 
-dataset=dataset_08_24_23_v4
-# dataFolder="/project2/depablo/erschultz/${dataset}"
-# scratchDir='/home/erschultz/scratch'
-#
-dataFolder="/home/erschultz/${dataset}"
+dataset=dataset_08_25_23
+dataFolder="/project2/depablo/erschultz/${dataset}"
 scratchDir='/home/erschultz/scratch'
+#
+# dataFolder="/home/erschultz/${dataset}"
+# scratchDir='/home/erschultz/scratch'
 
 m=512
 overwrite=1

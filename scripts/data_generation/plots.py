@@ -46,8 +46,8 @@ def meanDist_comparison():
 
     ax.set_yscale('log')
     ax.set_xscale('log')
-    ax.axvline(10, c='k')
-    ax.axhline(0.06, c='k')
+    # ax.axvline(10, c='k')
+    # ax.axhline(0.06, c='k')
     ax.set_ylabel('Contact Probability', fontsize = 16)
     ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
 
