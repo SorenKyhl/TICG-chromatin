@@ -33,8 +33,17 @@ tar -czvf setup.tar.gz setup
 # rm -r samples
 # #
 sourceFile=~/TICG-chromatin/bin/datasets/diag_dataset45/diag_dataset_fns.sh
+<<<<<<< HEAD
 #for i in 1 2 3 4 5 6 7 8 9 10
 #do
 #  echo $i
 #  sbatch ~/TICG-chromatin/bin/datasets/diag_dataset${i}.sh $sourceFile
 #done
+=======
+for i in 9 10
+	# 1 2 3 4 5 6 7 8 9 10
+do
+  echo $i
+  sbatch ~/TICG-chromatin/bin/datasets/diag_dataset${i}.sh $sourceFile
+done
+>>>>>>> 59fc402a26f604481bc0cd190b7fc1a17b831241
