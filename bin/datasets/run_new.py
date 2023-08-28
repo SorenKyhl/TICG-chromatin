@@ -64,8 +64,14 @@ def run(args, i):
     stdout = sys.stdout
     with open(osp.join(odir_scratch, 'params.log'), 'w') as sys.stdout:
         args_file = osp.join(args.data_folder, f'setup/sample_{i}.txt')
-        with open(args_file, 'a') as f:
-            f.write(f'--diag_bins\n{args.m}')
+        found=False
+        with open(args_file, 'r') as f:
+            for line in f:
+                if '--diag_bins' in line:
+                    found = True
+        if not found:
+            with open(args_file, 'a') as f:
+                f.write(f'--diag_bins\n{args.m}')
         get_params.main(args_file)
     sys.stdout = stdout
 
