@@ -15,7 +15,7 @@ from sequences_to_contact_maps.scripts.plotting_utils import plot_matrix
 from sequences_to_contact_maps.scripts.utils import LETTERS, crop
 
 
-def getArgs():
+def getArgs(args_file=None, args_tmp=None):
     parser = argparse.ArgumentParser(description='Base parser', fromfile_prefix_chars='@',
                                 allow_abbrev = False)
     AC = ArgparserConverter()
@@ -78,11 +78,11 @@ def getArgs():
                         help='constant chi parameter between all beads')
 
     # energy config params
-    parser.add_argument('--use_smatrix', type=AC.str2bool, default=False,
+    parser.add_argument('--use_smatrix', type=AC.str2bool, default=True,
                         help='True to use s_matrix')
-    parser.add_argument('--use_dmatrix', type=AC.str2bool, default=False,
+    parser.add_argument('--use_dmatrix', type=AC.str2bool, default=True,
                         help='True to use d_matrix')
-    parser.add_argument('--use_lmatrix', type=AC.str2bool, default=False,
+    parser.add_argument('--use_lmatrix', type=AC.str2bool, default=True,
                         help='True to use l_matrix')
 
     parser.add_argument('--e_constant', type=float, default=0,
@@ -103,7 +103,9 @@ def getArgs():
                         help='mode for max_ent')
 
 
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
+    if args.args_file is None and args_file is not None:
+        args.args_file = args_file
     if args.args_file is not None:
         assert osp.exists(args.args_file), f'{args.args_file} does not exist'
         print(f'parsing {args.args_file}')
@@ -112,6 +114,16 @@ def getArgs():
         argv.pop(0) # remove program name
         args, unknown = parser.parse_known_args(argv)
         print(unknown)
+
+    if args_tmp is not None:
+        # hacky solution
+        args.n_sweeps = args_tmp.n_sweeps
+        args.dump_frequency = args_tmp.dump_frequency
+        args.TICG_seed = args_tmp.TICG_seed
+        args.phi_chromatin = args_tmp.phi_chromatin
+        args.bead_vol = args_tmp.bead_vol
+        args.bond_length = args_tmp.bond_length
+        args.track_contactmap = args_tmp.track_contactmap
 
     return args
 
@@ -183,8 +195,8 @@ def writeSeq(seq, format='%.8e'):
     for j in range(k):
         np.savetxt(f'pcf{j+1}.txt', seq[:, j], fmt = format)
 
-def main():
-    args = getArgs()
+def main(args_file=None, args_tmp=None):
+    args = getArgs(args_file, args_tmp)
     print(args)
 
     with open(args.config_ifile, 'rb') as f:

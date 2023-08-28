@@ -29,7 +29,7 @@ def split_samples(dataset):
     return good, bad
 
 def compare_diag_params():
-    dataset = 'dataset_08_17_23'
+    dataset = 'dataset_08_24_23_v4'
     data_dir = osp.join('/home/erschultz', dataset)
     good, bad = split_samples(dataset)
     print(f'good = {len(good)}, bad = {len(bad)}')
@@ -47,22 +47,34 @@ def compare_diag_params():
                 if line.startswith('--diag_chi_experiment'):
                     line = f.readline()
                     exp = line.strip()
+                elif line.startswith('--exp_max_ent'):
+                    line = f.readline()
+                    exp_j = line.strip()
+                    exp = osp.join('dataset_02_04_23/samples', f'sample{exp_j}', 'optimize_grid_b_261_phi_0.01')
 
         exp_chis = np.load(osp.join('/home/erschultz', exp+'-max_ent10/chis_eig_norm.npy'))
         exp_chis = exp_chis.diagonal()
         return diag_chis, chis, exp_chis, config
 
-    for i in good:
-        diag_chis, chis, exp_chis, config = get_data(i)
-        plt.plot(chis, c='g')
+    for c, data in zip(['g', 'r'], [good, bad]):
+        for i in data:
+            diag_chis, chis, exp_chis, config = get_data(i)
+            plt.plot(chis, c=c)
 
-    for i in bad:
-        diag_chis, chis, exp_chis, config = get_data(i)
-        plt.plot(chis, c='r')
     plt.xlabel('Chi')
     plt.ylabel('Value')
-    # plt.xscale('log')
     plt.savefig('/home/erschultz/TICG-chromatin/figures/bad_vs_good_chis.png')
+    plt.close()
+
+    for c, data in zip(['g', 'r'], [good, bad]):
+        for i in data:
+            diag_chis, chis, exp_chis, config = get_data(i)
+            plt.plot(diag_chis, c=c)
+
+    plt.xlabel('Diag Chi')
+    plt.ylabel('Value')
+    plt.xscale('log')
+    plt.savefig('/home/erschultz/TICG-chromatin/figures/bad_vs_good_diag_chis.png')
     plt.close()
 
 

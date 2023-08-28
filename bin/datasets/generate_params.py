@@ -364,9 +364,11 @@ class DatasetGenerator():
                                                                 f'samples/sample{j}',
                                                                 f'{self.grid_root}')
             self.sample_dict[i]['diag_chi_method'] = diag_file
+            self.sample_dict[i]['diag_bins'] = self.m
 
             if get_grid:
                 self.sample_dict[i]['grid_size'] = grid_dict[j]
+
 
     def meanDist_S_params(self):
         meanDist_S_dict = {} # id : meanDist_S
@@ -404,8 +406,12 @@ class DatasetGenerator():
             np.save(diag_file, diag_chis)
             diag_file = osp.join(self.data_dir, self.dataset, f'setup/diag_chis_{i+1}.npy')
 
-            self.sample_dict[i]['exp_max_ent'] = j
+            self.sample_dict[i]['diag_chi_experiment'] = osp.join(self.exp_dataset,
+                                                                f'samples/sample{j}',
+                                                                f'{self.grid_root}')
             self.sample_dict[i]['diag_chi_method'] = diag_file
+            self.sample_dict[i]['diag_bins'] = self.m
+
 
             if get_grid:
                 self.sample_dict[i]['grid_size'] = grid_dict[j]

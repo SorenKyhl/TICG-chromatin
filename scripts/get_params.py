@@ -39,8 +39,9 @@ from sequences_to_contact_maps.scripts.utils import (LETTERS,
                                                      crop, triu_to_full)
 
 
-def getArgs():
-    parser = argparse.ArgumentParser(description='Base parser', fromfile_prefix_chars='@',
+def getArgs(args_file=None):
+    parser = argparse.ArgumentParser(description='Base parser',
+                                fromfile_prefix_chars='@',
                                 allow_abbrev = False)
     AC = ArgparserConverter()
 
@@ -70,6 +71,8 @@ def getArgs():
 
 
     args, unknown = parser.parse_known_args()
+    if args.args_file is None and args_file is not None:
+        args.args_file = args_file
     if args.args_file is not None:
         assert osp.exists(args.args_file), f'{args.args_file} does not exist'
         print(f'parsing {args.args_file}')
@@ -1134,7 +1137,8 @@ class GetDiagChi():
         if args.diag_chi_method is not None:
             self.get_bin_sizes()
             self.d_arr = np.arange(args.m_continuous)
-            args.diag_chi_slope /= 1000
+            if args.diag_chi_slope is not None:
+                args.diag_chi_slope /= 1000
 
 
             if osp.exists(args.diag_chi_method):
@@ -1655,8 +1659,8 @@ class GetEnergy():
         clean_directories(GNN_path = opt.root)
         return yhat
 
-def main():
-    args, unknown = getArgs()
+def main(args_file=None):
+    args, unknown = getArgs(args_file)
     print(args)
     getSeq = GetSeq(args, unknown)
     print(f'Method recognized: {getSeq.method_recognized}')
