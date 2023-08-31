@@ -43,10 +43,7 @@
 
   "density_cap_on": true,
   "phi_solvent_max": 0.5,
-  "phi_chromatin": 0.06,
 
-  "beadvol": 520,
-  "bond_type": "gaussian",
-  "bond_length": 16.5,
-  "grid_size": 28.7
+  "bond_type": "gaussian"
+
 }

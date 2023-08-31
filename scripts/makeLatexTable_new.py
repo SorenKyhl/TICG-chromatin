@@ -591,24 +591,25 @@ def main(args=None):
 
 
 if __name__ == '__main__':
-    dataset = 'dataset_02_04_23'
-    samples = range(201, 283)
+    # dataset = 'dataset_08_25_23'; samples = range(1, 16)
+    dataset = 'dataset_04_28_23'; samples = [1,2,3,4,5,324,981,1753,1936,2834,3464]
 
-    odd_samples = []
-    for s in samples:
-        s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{s}')
-        result = load_import_log(s_dir)
-        chrom = int(result['chrom'])
-        if chrom % 2 == 1:
-            odd_samples.append(s)
 
-    samples = odd_samples[:10]
+    # odd_samples = []
+    # for s in samples:
+    #     s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{s}')
+    #     result = load_import_log(s_dir)
+    #     chrom = int(result['chrom'])
+    #     if chrom % 2 == 1:
+    #         odd_samples.append(s)
+    #
+    # samples = odd_samples[:10]
 
     data_dir = osp.join('/home/erschultz', dataset)
     args = getArgs(data_folder = data_dir, samples = samples)
     args.experimental = True
     args.convergence_definition = 'normal'
-    args.gnn_id=[434, 450]
+    args.gnn_id=[434, 451]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

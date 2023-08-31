@@ -70,7 +70,7 @@ def get_samples(dataset, train=False):
         samples = range(1001, 1286)
     elif dataset == 'dataset_04_07_23':
         samples = range(1021, 1027)
-    elif dataset == 'dataset_08_17_23':
+    elif dataset in {'dataset_08_17_23', 'dataset_08_25_23'}:
         samples = range(1, 21)
     elif dataset in {'dataset_08_22_23', 'dataset_08_24_23'}:
         samples = range(1, 11)
@@ -230,8 +230,46 @@ def modify_maxent_diag_chi(dataset, b, phi, k, edit=True):
 
         S = load_max_ent_S(max_ent_dir)
         meanDist_S = DiagonalPreprocessing.genomic_distance_statistics(S, 'freq')
+        poly4_log_fit = curve_fit_helper(Curves.poly4_curve, np.log(x[:m]), meanDist_S,
+                                        'poly4_log_meanDist_S', odir, [1, 1, 1, 1, 1], start = 2)
         poly6_log_fit = curve_fit_helper(Curves.poly6_curve, np.log(x[:m]), meanDist_S,
                                         'poly6_log_meanDist_S', odir, [1, 1, 1, 1, 1, 1, 1], start = 2)
+        poly6_fit = curve_fit_helper(Curves.poly6_curve, x[:m], meanDist_S,
+                                        'poly6_log_meanDist_S', odir, [1, 1, 1, 1, 1, 1, 1], start = 2)
+        poly8_log_fit = curve_fit_helper(Curves.poly8_curve, np.log(x[:m]), meanDist_S,
+                                        'poly8_log_meanDist_S', odir, [1, 1, 1, 1, 1, 1, 1, 1, 1], start = 2)
+        poly9_log_fit = curve_fit_helper(Curves.poly9_curve, np.log(x[:m]), meanDist_S,
+                                        'poly9_log_meanDist_S', odir, [1, 1, 1, 1, 1, 1, 1, 1, 1, 1], start = 2)
+        poly12_log_fit = curve_fit_helper(Curves.poly12_curve, np.log(x[:m]), meanDist_S,
+                                        'poly12_log_meanDist_S', odir, [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], start = 2)
+
+
+        X = x[:m]
+        plt.plot(X, meanDist_S, ls='-', c='k', label=r'$\delta^{ME(i)}$')
+        plt.plot(X[2:], poly4_log_fit[2:], ls=':', c='g', label=r'$\hat{\delta}^{ME(i)}$ (4th order in log space)')
+        plt.plot(X[2:], poly6_log_fit[2:], ls=':', c='b', label=r'$\hat{\delta}^{ME(i)}$ (6th order in log space)')
+        plt.plot(X[2:], poly8_log_fit[2:], ls=':', c='orange', label=r'$\hat{\delta}^{ME(i)}$ (8th order in log space)')
+        plt.plot(X[2:], poly9_log_fit[2:], ls=':', c='magenta', label=r'$\hat{\delta}^{ME(i)}$ (9th order in log space)')
+        plt.plot(X[2:], poly12_log_fit[2:], ls=':', c='cyan', label=r'$\hat{\delta}^{ME(i)}$ (12th order in log space)')
+        plt.plot(X[2:], poly6_fit[2:], ls='--', c='b', label=r'$\hat{\delta}^{ME(i)}$ (6th order in linear space)')
+
+        plt.xlabel('d',fontsize=16)
+        plt.legend()
+        plt.savefig(osp.join(odir, 'delta_vs_delta_hat.png'))
+        plt.close()
+
+        X = np.log(X)
+        plt.plot(X, meanDist_S, ls='-', c='k', label=r'$\delta^{ME(i)}$')
+        plt.plot(X[2:], poly4_log_fit[2:], ls=':', c='g', label=r'$\hat{\delta}^{ME(i)}$ (4th order in log space)')
+        plt.plot(X[2:], poly6_log_fit[2:], ls=':', c='b', label=r'$\hat{\delta}^{ME(i)}$ (6th order in log space)')
+        plt.plot(X[2:], poly8_log_fit[2:], ls=':', c='orange', label=r'$\hat{\delta}^{ME(i)}$ (8th order in log space)')
+        plt.plot(X[2:], poly9_log_fit[2:], ls=':', c='magenta', label=r'$\hat{\delta}^{ME(i)}$ (9th order in log space)')
+        plt.plot(X[2:], poly12_log_fit[2:], ls=':', c='cyan', label=r'$\hat{\delta}^{ME(i)}$ (12th order in log space)')
+        plt.plot(X[2:], poly6_fit[2:], ls='--', c='b', label=r'$\hat{\delta}^{ME(i)}$ (6th order in linear space)')
+        plt.xlabel('log(d)',fontsize=16)
+        plt.legend()
+        plt.savefig(osp.join(odir, 'delta_vs_delta_hat_log.png'))
+        plt.close()
         continue
 
         # smoothed_fit = gaussian_filter(meanDist_S[3:], sigma = 1)
@@ -408,6 +446,18 @@ class Curves():
 
     def poly6_curve(x, A, B, C, D, E, F, G):
         result = A + B*x + C*x**2 + D*x**3 + E*x**4 + F*x**5 + G*x**6
+        return result
+
+    def poly8_curve(x, A, B, C, D, E, F, G, H, I):
+        result = A + B*x + C*x**2 + D*x**3 + E*x**4 + F*x**5 + G*x**6  + H*x**7 + I*x**8
+        return result
+
+    def poly9_curve(x, A, B, C, D, E, F, G, H, I, J):
+        result = A + B*x + C*x**2 + D*x**3 + E*x**4 + F*x**5 + G*x**6  + H*x**7 + I*x**8 + J*x**9
+        return result
+
+    def poly12_curve(x, A, B, C, D, E, F, G, H, I, J, K, L, M):
+        result = A + B*x + C*x**2 + D*x**3 + E*x**4 + F*x**5 + G*x**6  + H*x**7 + I*x**8 + J*x**9 + K*x**10 + L*x**11 + M*x**12
         return result
 
 

@@ -1,15 +1,17 @@
 import copy
 import functools
+import os
 import os.path as osp
 
 import numpy as np
 from bayes_opt import BayesianOptimization
-from scipy import optimize
-from sklearn.metrics import mean_squared_error
-
 from pylib.Pysim import Pysim
 from pylib.utils import default, hic_utils, utils
+from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.epilib import Sim
+from pylib.utils.xyz import xyz_load, xyz_to_contact_grid
+from scipy import optimize
+from sklearn.metrics import mean_squared_error
 
 """
 module for optimizing simulation parameters
@@ -31,23 +33,25 @@ Context:
     frequent contact simply becuase the grid spacing is too large or too small relative
     to the bond length. In this case, the maximum entropy method does not converge.
 
-    To ameliroate these issues, the grid size can be optimized prior to maximum entropy,
+    To ameliorate these issues, the grid size can be optimized prior to maximum entropy,
     to ensure stable behavior of the maximum entropy optimization.
 """
 
 class ErrorMetric():
     """Calculate difference between sim and exp p(s) for different metrics."""
-    def __init__(self, metric, mode, gthic):
+    def __init__(self, metric, mode, gthic, config, sim_engine):
         self.counter = 0 # number of iterations
         self.metric = metric
         self.mode = mode # what is being optimized
         self.gthic = gthic # experiment
+        self.config = config
+        self.xyz = get_bonded_simulation_xyz(config, False) # bonded xyz
+        self.sim_engine = sim_engine
 
-    def __call__(self, val, sim_engine):
+    def __call__(self, val):
         '''
         Inputs:
             val [float]: current value of optimization
-            sim_engine [Pysim]: object to call simulation runs
 
         Outut:
             error [float]: difference between simulated and experimental contact frequency
@@ -58,30 +62,38 @@ class ErrorMetric():
         print(f"optimizing {self.mode}, {output}")
 
         if self.mode.startswith("grid"):
-            sim_engine.config["grid_size"] = sim_engine.config["bond_length"] * float(val)
-            print(sim_engine.config["grid_size"])
-        elif self.mode == 'angle':
-            sim_engine.config["k_angle"] = float(val)
-            print(sim_engine.config["k_angle"])
+            grid_size = self.config["bond_length"] * float(val)
+            angle = self.config["k_angle"]
+        elif self.mode.startswith("angle"):
+            angle = float(val)
+            grid_size = self.config["grid_size"]
         else:
             raise Exception(f'Unrecognized mode {self.mode}')
 
-        # run simulation
-        sim_engine.run(output)
-        output_dir = osp.join(sim_engine.root, output)
-        self.sim_analysis = Sim(output_dir, maxent_analysis=False)
+        if self.xyz is not None and self.mode.startswith("grid"):
+            y = xyz_to_contact_grid(self.xyz, grid_size, dtype=float)
+            y /= np.mean(np.diagonal(y))
+            self.mean_dist = DiagonalPreprocessing.genomic_distance_statistics(y)
+        else:
+            self.sim_engine.config["grid_size"] = grid_size
+            self.sim_engine.config["k_angle"] = angle
+
+            # run simulation
+            self.sim_engine.run(output)
+            output_dir = osp.join(self.sim_engine.root, output)
+            self.sim_analysis = Sim(output_dir, maxent_analysis=False)
+            self.mean_dist = self.sim_analysis.d
 
         if self.metric.startswith('neighbor'):
             error = self.neighbor_error()
         elif self.metric == 'mse':
             error = self.mse_error()
 
-        print(f"error, {error}")
         return error
 
     def neighbor_error(self):
         i = int(self.metric.split('_')[1])
-        p_i_sim = self.sim_analysis.d[i]
+        p_i_sim = self.mean_dist[i]
         p_i_exp = hic_utils.get_diagonal(self.gthic)[i]
         error = p_i_sim - p_i_exp
         return error
@@ -91,6 +103,22 @@ class ErrorMetric():
         p_s_exp = DiagonalPreprocessing.genomic_distance_statistics(self.gthic, 'prob')
         error = mean_squared_error(p_s_sim, p_s_exp)
         return error
+
+def get_bonded_simulation_xyz(config, throw_exception=False):
+    dataset = osp.join(default.root, 'dataset_bonded')
+    m = config['nbeads']
+    b = config['bond_length']
+    phi = config['phi_chromatin']
+    dir = osp.join(dataset, f'm_{m}/bond_length_{b}/phi_{phi}')
+    if not osp.exists(dir):
+        if throw_exception:
+            raise Exception(f'{dir} does not exist')
+        else:
+            return None
+
+    xyz_file = osp.join(dir, 'production_out/output.xyz')
+    xyz = xyz_load(xyz_file, multiple_timesteps=True)
+    return xyz
 
 def optimize_config(config, gthic, mode, low_bound, high_bound,
                         root=None, metric='neighbor_1'):
@@ -108,22 +136,25 @@ def optimize_config(config, gthic, mode, low_bound, high_bound,
     """
     if root is None:
         root = f'optimize-{mode}'
+    if not osp.exists(root):
+        os.mkdir(root, mode=0o755)
 
     config = copy.deepcopy(config)
     config["load_configuration"] = False
     config["nonbonded_on"] = False
     config["load_bead_types"] = False
     gthic /= np.mean(np.diagonal(gthic))
-    sim_engine = Pysim(root, config, seqs=None, overwrite=False)
 
-    error_metric = ErrorMetric(metric, mode, gthic)
+
+
+    sim_engine = Pysim(root, config, seqs=None, overwrite=False, mkdir=False)
+    error_metric = ErrorMetric(metric, mode, gthic, config, sim_engine)
     if metric.startswith('neighbor'):
         try:
             result = optimize.brentq(
                 error_metric,
                 low_bound,
                 high_bound,
-                args=(sim_engine),
                 xtol=1e-3,
                 maxiter=15,
             )
@@ -137,7 +168,6 @@ def optimize_config(config, gthic, mode, low_bound, high_bound,
                 error_metric,
                 low_bound,
                 high_bound,
-                args=(sim_engine),
                 xtol=1e-3,
                 maxiter=15,
             )

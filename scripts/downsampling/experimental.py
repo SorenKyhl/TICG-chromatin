@@ -19,7 +19,9 @@ from sequences_to_contact_maps.scripts.load_utils import (
 from sequences_to_contact_maps.scripts.utils import triu_to_full
 
 sys.path.append('/home/erschultz/TICG-chromatin')
-from GNN import fit
+import GNN
+import max_ent
+from scripts.data_generation.modify_maxent import get_samples
 
 EXP_DATASET='dataset_02_04_23'
 
@@ -32,7 +34,8 @@ def make_samples():
             os.mkdir(e_dir, mode=0o755)
 
     tot_count_list = []
-    for s_exp in range(201, 211):
+    samples, _ = get_samples(EXP_DATASET, True)
+    for s_exp in samples[:10]:
         print(s_exp)
         exp_dir = f'/home/erschultz/{EXP_DATASET}/samples/sample{s_exp}'
         y = np.triu(np.load(osp.join(exp_dir, 'y.npy')))
@@ -42,31 +45,36 @@ def make_samples():
         pos = np.arange(0, len(p_flat))
 
         exp_dir = f'/home/erschultz/{EXP_DATASET}/samples_10k/sample{s_exp-200}'
+
         y = np.triu(np.load(osp.join(exp_dir, 'y.npy')))
         tot_count = np.sum(y)
         print(f'Total Read Depth: {tot_count}')
         tot_count_list.append(tot_count)
-        #
-        # for exponent in exponents:
-        #     e_dir = f'{dir}/samples_exp{exponent}'
-        #     print(exponent)
-        #     odir = osp.join(e_dir, f'sample{s_exp}')
-        #     os.mkdir(odir, mode = 0o755)
-        #     count = 10**exponent
-        #     choices = np.random.choice(pos, size = count, p = p_flat)
-        #     y_i_flat = np.zeros_like(p_flat)
-        #     for j in choices:
-        #         # this is really slow
-        #         y_i_flat[j] += 1
-        #     print(np.sum(y_i_flat))
-        #     y_i = triu_to_full(y_i_flat)
-        #     np.save(osp.join(odir, 'y.npy'), y_i)
-        #     plot_matrix(y_i, osp.join(odir, 'y.png'), vmax = 'mean')
+
+        for exponent in exponents:
+            e_dir = f'{dir}/samples_exp{exponent}'
+            print(exponent)
+            odir = osp.join(e_dir, f'sample{s_exp}')
+            if osp.exists(odir):
+                continue
+            os.mkdir(odir, mode = 0o755)
+            count = 10**exponent
+            choices = np.random.choice(pos, size = count, p = p_flat)
+            y_i_flat = np.zeros_like(p_flat)
+            for j in choices:
+                # this is really slow
+                y_i_flat[j] += 1
+            print(np.sum(y_i_flat))
+            y_i = triu_to_full(y_i_flat)
+            np.save(osp.join(odir, 'y.npy'), y_i)
+            plot_matrix(y_i, osp.join(odir, 'y.png'), vmax = 'mean')
     tot_count_mean = np.mean(tot_count_list)
     print(f'Mean Total Read Depth: {tot_count_mean}')
 
 def fit_gnn(GNN_id):
-    dataset='downsampling_analysis'; samples = range(201, 211)
+    dataset='downsampling_analysis'
+    samples, _ = get_samples(EXP_DATASET, True)
+    samples = samples[:10]
 
     GNN_IDs = [GNN_id]
     for downsampling in [4, 5, 6, 7, 8]:
@@ -79,7 +87,24 @@ def fit_gnn(GNN_id):
         print(mapping)
 
         with mp.Pool(15) as p:
-            p.starmap(fit, mapping)
+            p.starmap(GNN.fit, mapping)
+
+def fit_max_ent():
+    dataset='downsampling_analysis'
+    samples, _ = get_samples(EXP_DATASET, True)
+    samples = samples[:10]
+
+    for downsampling in [4, 5, 6, 7, 8]:
+        mapping = []
+        for i in samples:
+            mapping.append((dataset, i, f'samples_exp{downsampling}', 261, 0.01))
+
+        print(len(mapping))
+        print(mapping)
+
+        with mp.Pool(15) as p:
+            p.starmap(max_ent.fit, mapping)
+
 
 def figure(GNN_ID):
     label_fontsize=24
@@ -303,5 +328,6 @@ def figure(GNN_ID):
 
 if __name__ == '__main__':
     # make_samples()
+    fit_max_ent()
     # fit_gnn(450)
-    figure(450)
+    # figure(450)

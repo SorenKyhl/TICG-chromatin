@@ -93,7 +93,10 @@ def main():
     # dataset='dataset_05_28_23'; samples = [324, 981, 1936, 2834, 3464]
     # dataset = 'dataset_05_31_23'; samples = [1002, 1037, 1198]
     # dataset = 'Su2020'; samples=[1013]
-    dataset = 'dataset_06_29_23'; samples = [2, 103, 604]
+    # dataset = 'dataset_06_29_23'; samples = [2, 103, 604]
+    # dataset = 'dataset_08_25_23'; samples=range(1,21)
+    dataset = 'dataset_04_28_23'; samples = [1,2,3,4,5,324,981,1753,1936,2834,3464]
+
     # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     mapping = []
 
@@ -112,18 +115,18 @@ def main():
 
 
     # GNN_IDs = [434, 440, 448, 442, 443, 447, 449, 446, 444, 445, 441]
-    GNN_IDs = [450]
+    GNN_IDs = [434]
     for GNN_ID in GNN_IDs:
         # for i in samples:
         #     mapping.append((dataset, i, GNN_ID))
         for i in samples:
-            for phi in [0.01]:
-                mapping.append((dataset, i, GNN_ID, f'samples', 261, phi))
+            for phi in [0.03]:
+                mapping.append((dataset, i, GNN_ID, f'samples', 140, phi))
     print(samples)
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(2) as p:
+    with mp.Pool(11) as p:
         p.starmap(fit, mapping)
 
 

@@ -232,19 +232,18 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
         # crop samples for plotting
         plot_n = 10
         rows=2; cols=5
-        y_arr = np.array(y_list[:plot_n])
-        L_arr = np.array(L_list[:plot_n])
-        k_means_rab = k_means_rab[:plot_n]
+        y_arr = np.array(y_list)
+        L_arr = np.array(L_list)
+        k_means_rab = k_means_rab
         L1_arr = L1_arr[:plot_n]
-        meanDist_arr = np.array(meanDist_list[:plot_n])
-        print(meanDist_arr)
-        samples = samples[:plot_n]
+        meanDist_arr = np.array(meanDist_list)
+        samples = samples
 
         # plot contact maps orderd by rab
         cmap = matplotlib.colors.LinearSegmentedColormap.from_list('custom',
                                                  [(0,    'white'),
                                                   (1,    'red')], N=126)
-        ind = np.argsort(k_means_rab)
+        ind = np.argsort(k_means_rab[:plot_n])
         y_arr = np.array(y_list)
         fig, ax = plt.subplots(rows, cols+1,
                                 gridspec_kw={'width_ratios':[1,1,1,1,1,0.08]})
@@ -301,6 +300,15 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
         plt.savefig(osp.join(data_dir, 'L_dist_ordered.png'))
         plt.close()
 
+        # plot all meanDist
+        for meanDist, sample in zip(meanDist_arr, samples):
+            plt.plot(meanDist)
+        plt.yscale('log')
+        plt.xscale('log')
+        plt.tight_layout()
+        plt.savefig(osp.join(data_dir, 'meanDist.png'))
+        plt.close()
+
         # plot meanDist colored by plaid score
         for meanDist, val, sample in zip(meanDist_arr[ind], k_means_rab[ind], samples[ind]):
             plt.plot(meanDist, label = f'sample{sample}: {np.round(val, 1)}')
@@ -331,4 +339,4 @@ if __name__ == '__main__':
     # molar_contact_ratio('dataset_02_06_23', 363)
     # molar_contact_ratio('dataset_02_13_23', 372)
     # molar_contact_ratio('dataset_03_03_23', 387)
-    molar_contact_ratio('dataset_08_24_23_v4', None)
+    molar_contact_ratio('dataset_08_25_23', None)

@@ -219,8 +219,9 @@ def plot_matrix_gif(arr, dir, ofile=None, title=None, vmin=0, vmax=1,
         os.remove(filename)
 
 def plot_mean_dist(meanDist, path, ofile, diag_chis_step, logx, logy=True,
-                    ref=None, ref_label='reference', label='',
-                    color='blue', title=None,
+                    ref=None, ref_label='reference', ref_color='k',
+                    ref2=None, ref2_label='refernce 2', ref2_color='k',
+                    label='', color='blue', title=None,
                     ylabel='Contact Probability'):
     '''
     Inputs:
@@ -239,10 +240,16 @@ def plot_mean_dist(meanDist, path, ofile, diag_chis_step, logx, logy=True,
     meanDist = meanDist.copy()
     if ref is not None:
         ref = ref.copy()
+    if ref2 is not None:
+        print('ref2', ref2[:5])
+        ref2 = ref2.copy()
 
     fig, ax = plt.subplots()
     if ref is not None:
-        ax.plot(ref, label = ref_label, color = 'k')
+        ax.plot(ref, label = ref_label, color = ref_color)
+    if ref2 is not None:
+        print(ref2[:10])
+        ax.plot(ref2, label = ref2_label, color = ref2_color)
     ax.plot(meanDist, label = label, color = color)
     ax.legend(loc='upper left')
     if logy:

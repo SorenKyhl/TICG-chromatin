@@ -78,7 +78,7 @@ def sim_analysis(sim, fast_analysis=False):
         meanDist_S = DiagonalPreprocessing.genomic_distance_statistics(S, mode='freq')
         plot_mean_dist(meanDist_S, '', 'meanDist_S_log.png', None,
                         logx = True, logy = False,
-                        ylabel = 'mean(S_ii)')
+                        ylabel = 'mean(diagonal(S, d))')
 
     plt.figure()
     sim.plot_oe()

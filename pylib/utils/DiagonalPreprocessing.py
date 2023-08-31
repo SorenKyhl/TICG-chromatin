@@ -53,7 +53,6 @@ class DiagonalPreprocessing():
         if smoothen:
             y = uniform_filter(y, 3, mode = 'constant')
         if mode == 'prob':
-
             y /= np.nanmean(np.diagonal(y))
 
         if zero_diag:
