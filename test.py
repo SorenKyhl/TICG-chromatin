@@ -23,10 +23,11 @@ from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
 from pylib.utils.plotting_utils import BLUE_RED_CMAP
 from pylib.utils.utils import load_json
 from scipy.ndimage import uniform_filter
-from scripts.data_generation.modify_maxent import get_samples
-from scripts.get_params import GetEnergy, GetSeq
 from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
+
+from scripts.data_generation.modify_maxent import get_samples
+from scripts.get_params import GetEnergy, GetSeq
 
 sys.path.append('/home/erschultz')
 
@@ -709,19 +710,6 @@ def make_dataset_of_converged(dataset):
                 else:
                     count += 1
     print(f'{converged_count} out of {converged_count+count} converged')
-
-def check_bonded_distributions():
-    dir = '/home/erschultz/dataset_grid/samples/sample3'
-    xyz = xyz_load(osp.join(dir, 'data_out/output.xyz'), multiple_timesteps = True)
-    D = xyz_to_distance(xyz) ** 2
-
-    with open(osp.join(dir, 'config.json')) as f:
-        config = json.load(f)
-        print(f"bond_length = {config['bond_length']}")
-
-    D_mean = np.mean(D, axis = 0)
-    for i in range(4):
-        print(i, np.mean(np.diagonal(D_mean, i))**0.5)
 
 def compare_y_exp_vs_sim():
     sim = '/home/erschultz/dataset_05_28_23/samples/sample324'

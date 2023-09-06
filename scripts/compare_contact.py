@@ -6,14 +6,13 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
+from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.similarity_measures import SCC
 from scipy.stats import pearsonr
 from sklearn.decomposition import PCA
 
 sys.path.append('/home/erschultz')
-from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
-                                                     calc_dist_strat_corr,
-                                                     crop)
+from sequences_to_contact_maps.scripts.utils import calc_dist_strat_corr, crop
 
 
 def getArgs():

@@ -9,6 +9,7 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
+import scipy.stats as ss
 import seaborn as sns
 from pylib.utils.plotting_utils import RED_CMAP, plot_matrix
 from pylib.utils.similarity_measures import SCC
@@ -21,6 +22,7 @@ from sequences_to_contact_maps.scripts.utils import triu_to_full
 sys.path.append('/home/erschultz/TICG-chromatin')
 import GNN
 import max_ent
+
 from scripts.data_generation.modify_maxent import get_samples
 
 EXP_DATASET='dataset_02_04_23'
@@ -34,7 +36,7 @@ def make_samples():
             os.mkdir(e_dir, mode=0o755)
 
     tot_count_list = []
-    samples, _ = get_samples(EXP_DATASET, True)
+    samples, _ = get_samples(EXP_DATASET, test=True)
     for s_exp in samples[:10]:
         print(s_exp)
         exp_dir = f'/home/erschultz/{EXP_DATASET}/samples/sample{s_exp}'
@@ -73,37 +75,41 @@ def make_samples():
 
 def fit_gnn(GNN_id):
     dataset='downsampling_analysis'
-    samples, _ = get_samples(EXP_DATASET, True)
-    samples = samples[:10]
+    samples, _ = get_samples(EXP_DATASET, test=True)
+    N = 10
+    samples = samples[:N]
 
     GNN_IDs = [GNN_id]
     for downsampling in [4, 5, 6, 7, 8]:
         mapping = []
+
         for GNN_ID in GNN_IDs:
             for i in samples:
-                mapping.append((dataset, i, GNN_ID, f'samples_exp{downsampling}', 261, 0.01))
+                mapping.append((dataset, i, GNN_ID, f'samples_exp{downsampling}', 140, 0.03))
 
         print(len(mapping))
         print(mapping)
 
-        with mp.Pool(15) as p:
+        # this must be nested because of how GNN uses scratch
+        with mp.Pool(N) as p:
             p.starmap(GNN.fit, mapping)
 
 def fit_max_ent():
     dataset='downsampling_analysis'
-    samples, _ = get_samples(EXP_DATASET, True)
-    samples = samples[:10]
+    samples, _ = get_samples(EXP_DATASET, test=True)
+    N = 10
+    samples = samples[:N]
 
+    mapping = []
     for downsampling in [4, 5, 6, 7, 8]:
-        mapping = []
         for i in samples:
-            mapping.append((dataset, i, f'samples_exp{downsampling}', 261, 0.01))
+            mapping.append((dataset, i, f'samples_exp{downsampling}', 140, 0.03))
 
-        print(len(mapping))
-        print(mapping)
+    print(len(mapping))
+    print(mapping)
 
-        with mp.Pool(15) as p:
-            p.starmap(max_ent.fit, mapping)
+    with mp.Pool(15) as p:
+        p.starmap(max_ent.fit, mapping)
 
 
 def figure(GNN_ID):
@@ -111,8 +117,9 @@ def figure(GNN_ID):
     tick_fontsize=22
     letter_fontsize=26
 
-    samples = np.arange(201, 211)
-    N = len(samples)
+    samples, _ = get_samples(EXP_DATASET, test=True)
+    N = 10
+    samples = samples[:N]
     exponents = np.arange(4, 9)
     read_counts = 10**exponents
     dir = '/home/erschultz/downsampling_analysis'
@@ -189,16 +196,22 @@ def figure(GNN_ID):
         # sparse
         gnn_scc_stats['sparse']['mean'][i] = np.mean(gnn_scc_sparse[exp])
         max_ent_scc_stats['sparse']['mean'][i] = np.mean(max_ent_scc_sparse[exp])
-        gnn_scc_stats['sparse']['std'][i] = np.std(gnn_scc_sparse[exp])
-        max_ent_scc_stats['sparse']['std'][i] = np.std(max_ent_scc_sparse[exp])
+        gnn_scc_stats['sparse']['std'][i] = np.std(gnn_scc_sparse[exp], ddof=1)
+        max_ent_scc_stats['sparse']['std'][i] = np.std(max_ent_scc_sparse[exp], ddof=1)
+        gnn_scc_stats['sparse']['sem'][i] = ss.sem(gnn_scc_sparse[exp])
+        max_ent_scc_stats['sparse']['sem'][i] = ss.sem(max_ent_scc_sparse[exp])
 
         # dense
         gnn_scc_stats['dense']['mean'][i] = np.mean(gnn_scc_dense[exp])
         max_ent_scc_stats['dense']['mean'][i]= np.mean(max_ent_scc_dense[exp])
         experiment_scc_stats['dense']['mean'][i] = np.mean(experiment_scc_dense[exp])
-        gnn_scc_stats['dense']['std'][i] = np.std(gnn_scc_dense[exp])
-        max_ent_scc_stats['dense']['std'][i]= np.std(max_ent_scc_dense[exp])
-        experiment_scc_stats['dense']['std'][i] = np.std(experiment_scc_dense[exp])
+        gnn_scc_stats['dense']['std'][i] = np.std(gnn_scc_dense[exp], ddof=1)
+        max_ent_scc_stats['dense']['std'][i]= np.std(max_ent_scc_dense[exp], ddof=1)
+        gnn_scc_stats['dense']['sem'][i] = ss.sem(gnn_scc_dense[exp])
+        max_ent_scc_stats['dense']['sem'][i] = ss.sem(max_ent_scc_dense[exp])
+        experiment_scc_stats['dense']['std'][i] = np.std(experiment_scc_dense[exp], ddof=1)
+        experiment_scc_stats['dense']['sem'][i] = ss.sem(experiment_scc_dense[exp])
+
     print(experiment_scc_stats['dense'])
     print(gnn_scc_stats['sparse'])
 
@@ -278,6 +291,7 @@ def figure(GNN_ID):
 
     # scc
     for ax, mode in zip([ax7, ax8], ['sparse', 'dense']):
+        print(mode)
         if mode == 'dense':
             experiment_mean = experiment_scc_stats[mode]['mean']
             experiment_std = experiment_scc_stats[mode]['std']
@@ -285,12 +299,14 @@ def figure(GNN_ID):
                     color='k', label='Subsampled Experiment')
 
         max_ent_mean = max_ent_scc_stats[mode]['mean']
-        max_ent_std = max_ent_scc_stats[mode]['std']
+        print(max_ent_mean)
+        max_ent_std = max_ent_scc_stats[mode]['sem']
         ax.errorbar(read_counts, max_ent_mean, max_ent_std,
                         color='blue', label = 'Maximum Entropy')
 
         gnn_mean = gnn_scc_stats[mode]['mean']
-        gnn_std = gnn_scc_stats[mode]['std']
+        print(gnn_mean)
+        gnn_std = gnn_scc_stats[mode]['sem']
         ax.errorbar(read_counts, gnn_mean, gnn_std,
                         color='red', label='GNN')
 
@@ -328,6 +344,6 @@ def figure(GNN_ID):
 
 if __name__ == '__main__':
     # make_samples()
-    fit_max_ent()
-    # fit_gnn(450)
-    # figure(450)
+    # fit_max_ent()
+    # fit_gnn(434)
+    figure(434)

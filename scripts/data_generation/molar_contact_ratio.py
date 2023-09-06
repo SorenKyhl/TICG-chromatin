@@ -11,6 +11,8 @@ import torch
 import torch_geometric
 from modify_maxent import get_samples, plaid_dist
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
+from pylib.utils.plotting_utils import RED_BLUE_CMAP, RED_CMAP
+from pylib.utils.utils import pearson_round
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 
@@ -22,7 +24,7 @@ from sequences_to_contact_maps.scripts.clean_directories import \
 from sequences_to_contact_maps.scripts.load_utils import load_Y
 from sequences_to_contact_maps.scripts.neural_nets.utils import (
     get_dataset, load_saved_model)
-from sequences_to_contact_maps.scripts.utils import pearson_round
+from sequences_to_contact_maps.scripts.utils import triu_to_full
 
 
 def molar_contact_ratio(dataset, model_ID=None, plot=True):
@@ -207,7 +209,8 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
 
     # plot distributions
     if plot:
-        L_list, _, _, _ = plaid_dist(dataset, 261, 0.01, 10, False)
+        L_list, S_list, _, _ = plaid_dist(dataset, 261, 0.01, 10, False)
+        S_list = [triu_to_full(S) for S in S_list]
         # plot histograms
         for arr, label in zip([k_means_rab, pca_rab, pca_b_rab, pca_var],
                                 ['kmeans_Rab', 'PCA_Rab', 'PCA_binary_Rab','PCA_var']):
@@ -234,17 +237,14 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
         rows=2; cols=5
         y_arr = np.array(y_list)
         L_arr = np.array(L_list)
+        S_arr = np.array(S_list)
         k_means_rab = k_means_rab
         L1_arr = L1_arr[:plot_n]
         meanDist_arr = np.array(meanDist_list)
         samples = samples
 
         # plot contact maps orderd by rab
-        cmap = matplotlib.colors.LinearSegmentedColormap.from_list('custom',
-                                                 [(0,    'white'),
-                                                  (1,    'red')], N=126)
         ind = np.argsort(k_means_rab[:plot_n])
-        y_arr = np.array(y_list)
         fig, ax = plt.subplots(rows, cols+1,
                                 gridspec_kw={'width_ratios':[1,1,1,1,1,0.08]})
         fig.set_figheight(6*2)
@@ -253,10 +253,10 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
         row = 0; col=0
         for y, val, sample in zip(y_arr[ind], k_means_rab[ind], samples[ind]):
             if col == 0:
-                s = sns.heatmap(y, linewidth = 0, vmin = vmin, vmax = vmax, cmap = cmap,
+                s = sns.heatmap(y, linewidth = 0, vmin = vmin, vmax = vmax, cmap = RED_CMAP,
                     ax = ax[row][col], cbar_ax = ax[row][-1])
             else:
-                s = sns.heatmap(y, linewidth = 0, vmin = vmin, vmax = vmax, cmap = cmap,
+                s = sns.heatmap(y, linewidth = 0, vmin = vmin, vmax = vmax, cmap = RED_CMAP,
                     ax = ax[row][col], cbar = False)
             s.set_title(f'Sample {sample}\nPlaid Score = {np.round(val, 1)}', fontsize = 16)
             s.set_xticks([])
@@ -270,6 +270,68 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
         plt.tight_layout()
         plt.savefig(osp.join(data_dir, 'y_ordered.png'))
         plt.close()
+
+        # plot S orderd by rab
+        fig, ax = plt.subplots(rows, cols+1,
+                                gridspec_kw={'width_ratios':[1,1,1,1,1,0.08]})
+        fig.set_figheight(6*2)
+        fig.set_figwidth(6*3)
+        vmin = np.nanpercentile(S_arr, 1)
+        vmax = np.nanpercentile(S_arr, 99)
+        vmax = max(vmax, vmin * -1)
+        vmin = vmax * -1
+        row = 0; col=0
+        for S, val, sample in zip(S_arr[ind], k_means_rab[ind], samples[ind]):
+            if col == 0:
+                s = sns.heatmap(S, linewidth = 0, vmin = vmin, vmax = vmax, cmap = RED_BLUE_CMAP,
+                    ax = ax[row][col], cbar_ax = ax[row][-1])
+            else:
+                s = sns.heatmap(S, linewidth = 0, vmin = vmin, vmax = vmax, cmap = RED_BLUE_CMAP,
+                    ax = ax[row][col], cbar = False)
+            s.set_title(f'Sample {sample}\nPlaid Score = {np.round(val, 1)}', fontsize = 16)
+            s.set_xticks([])
+            s.set_yticks([])
+
+            col += 1
+            if col == cols:
+                col = 0
+                row += 1
+
+        plt.tight_layout()
+        plt.savefig(osp.join(data_dir, 'S_ordered.png'))
+        plt.close()
+
+        # plot S_dag orderd by rab
+        S_dag_arr = np.array([np.sign(S) * np.log(np.abs(S)+1) for S in S_arr])
+        fig, ax = plt.subplots(rows, cols+1,
+                                gridspec_kw={'width_ratios':[1,1,1,1,1,0.08]})
+        fig.set_figheight(6*2)
+        fig.set_figwidth(6*3)
+        vmin = np.nanpercentile(S_dag_arr, 1)
+        vmax = np.nanpercentile(S_dag_arr, 99)
+        vmax = max(vmax, vmin * -1)
+        vmin = vmax * -1
+        row = 0; col=0
+        for S_dag, val, sample in zip(S_dag_arr[ind], k_means_rab[ind], samples[ind]):
+            if col == 0:
+                s = sns.heatmap(S_dag, linewidth = 0, vmin = vmin, vmax = vmax, cmap = RED_BLUE_CMAP,
+                    ax = ax[row][col], cbar_ax = ax[row][-1])
+            else:
+                s = sns.heatmap(S_dag, linewidth = 0, vmin = vmin, vmax = vmax, cmap = RED_BLUE_CMAP,
+                    ax = ax[row][col], cbar = False)
+            s.set_title(f'Sample {sample}\nPlaid Score = {np.round(val, 1)}', fontsize = 16)
+            s.set_xticks([])
+            s.set_yticks([])
+
+            col += 1
+            if col == cols:
+                col = 0
+                row += 1
+
+        plt.tight_layout()
+        plt.savefig(osp.join(data_dir, 'S_dag_ordered.png'))
+        plt.close()
+
 
 
         # plot L_ij ordered by rab
@@ -339,4 +401,5 @@ if __name__ == '__main__':
     # molar_contact_ratio('dataset_02_06_23', 363)
     # molar_contact_ratio('dataset_02_13_23', 372)
     # molar_contact_ratio('dataset_03_03_23', 387)
+    molar_contact_ratio('dataset_04_28_23', None)
     molar_contact_ratio('dataset_08_25_23', None)

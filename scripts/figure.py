@@ -1,33 +1,37 @@
-import sys
 import os.path as osp
-import numpy as np
-import scipy
+import string
+import sys
+
 import matplotlib
 import matplotlib.pyplot as plt
-import string
+import numpy as np
+import scipy
 import seaborn as sns
+from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
                                       calculate_diag_chi_step, calculate_L,
                                       calculate_S)
+from pylib.utils.plotting_utils import RED_CMAP
+from pylib.utils.utils import pearson_round
+from pylib.utils.xyz import xyz_load, xyz_write
 
 sys.path.append('/home/erschultz/TICG-chromatin/scripts')
+from data_generation.modify_maxent import get_samples
 from makeLatexTable_new import *
 
-sys.path.append('/home/erschultz/sequences_to_contact_maps')
-from scripts.load_utils import (get_final_max_ent_folder,
-                                load_import_log, load_L)
-from scripts.utils import DiagonalPreprocessing, pearson_round
-from scripts.xyz_utils import xyz_load, xyz_write
-from scripts.plotting_utils import RED_CMAP
+sys.path.append('/home/erschultz')
+from sequences_to_contact_maps.scripts.load_utils import (
+    get_final_max_ent_folder, load_import_log, load_L)
 
 test=False
 label_fontsize=24
 tick_fontsize=22
 letter_fontsize=26
-dataset = 'dataset_02_04_23'; sample = 208; GNN_ID = 434
+dataset = 'dataset_02_04_23'; sample = 208; GNN_ID = [434]
 # dataset = 'dataset_04_05_23'; sample = 1001; GN_ID = 407
 # dataset = 'dataset_04_05_23'; sample = 1001; GNN_ID = 423
-samples_list = [208, 209, 210, 211, 212, 213, 214, 215, 223, 224]
+samples, _ = get_samples(dataset, test=True)
+samples_list = samples[:10]
 
 k=10
 def get_dirs(sample_dir):
@@ -335,7 +339,7 @@ def figure(test=False):
     for bplot in [b1, b2, b3]:
         for patch, color in zip(bplot['boxes'], colors):
             patch.set_facecolor(color)
-            
+
 
     # rotate xticks
     # Create offset transform by 5 points in x direction
@@ -406,7 +410,7 @@ def supp_figure():
     for bplot in [b1, b2, b3]:
         for patch, color in zip(bplot['boxes'], colors):
             patch.set_facecolor(color)
-          
+
 
     # rotate xticks
     # Create offset transform by 5 points in x direction

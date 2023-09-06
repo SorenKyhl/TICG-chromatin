@@ -10,17 +10,19 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
+from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
+                                      calculate_S)
+from pylib.utils.plotting_utils import (plot_matrix, plot_mean_dist,
+                                        plot_mean_vs_genomic_distance)
 from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
-from sequences_to_contact_maps.scripts.energy_utils import (
-    calculate_D, calculate_diag_chi_step, calculate_S)
 from sequences_to_contact_maps.scripts.load_utils import (
     get_final_max_ent_folder, load_L, load_max_ent_L)
-from sequences_to_contact_maps.scripts.plotting_utils import (
-    plot_diag_chi, plot_matrix, plot_mean_dist, plot_mean_vs_genomic_distance)
-from sequences_to_contact_maps.scripts.utils import DiagonalPreprocessing, crop
+from sequences_to_contact_maps.scripts.plotting_utils import plot_diag_chi
+from sequences_to_contact_maps.scripts.utils import crop
 
 
 def getArgs(sample_folder=''):

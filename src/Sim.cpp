@@ -849,7 +849,7 @@ void Sim::generateRandomCoil(double bondlength) {
     } else if (grid.spherical_boundary) {
         std::cout << " sphere centering" << std::endl;
 		beads[0].r = grid.sphere_center; // start in middlle of the box
-	} else if (grid.spheroid_boundary) {
+  	} else if (grid.spheroid_boundary) {
         std::cout << " spheroid centering centering" << std::endl;
 		beads[0].r = grid.sphere_center; // start in middlle of the box
     } else {

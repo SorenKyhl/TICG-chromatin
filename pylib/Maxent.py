@@ -175,7 +175,7 @@ class Maxent:
                 converged_it = iterations[i]
                 break
 
-        if converged_it is not None:
+        if converged_it is not None and max_it > 2:
             plt.axvline(converged_it, color = 'k', label = 'converged')
             plt.legend()
             converged = True

@@ -48,6 +48,7 @@ class DiagonalPreprocessing():
         Outputs:
             stat_per_diagonal: numpy array where result[d] is the contact frequency/probability stat at distance d
         '''
+        assert len(y.shape) == 2, f'input is shape {y.shape}'
         if isinstance(y, np.ndarray):
             y = y.copy().astype(np.float64)
         if smoothen:

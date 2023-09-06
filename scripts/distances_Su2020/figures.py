@@ -15,14 +15,14 @@ from pylib.utils.plotting_utils import (BLUE_CMAP, BLUE_RED_CMAP,
                                         RED_BLUE_CMAP, RED_CMAP, plot_matrix,
                                         plot_mean_dist, rotate_bound)
 from pylib.utils.similarity_measures import SCC
+from pylib.utils.utils import pearson_round
+from pylib.utils.xyz import xyz_load
 from sklearn.decomposition import PCA
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
 from sequences_to_contact_maps.scripts.load_utils import (
     get_final_max_ent_folder, load_import_log, load_Y)
-from sequences_to_contact_maps.scripts.utils import pearson_round
-from sequences_to_contact_maps.scripts.xyz_utils import xyz_load
 
 sys.path.append('/home/erschultz/TICG-chromatin')
 from scripts.distances_Su2020.su2020_analysis import (dist_distribution_a_b,
@@ -66,7 +66,8 @@ def old_figure(sample, GNN_ID, bl=140, phi=0.03):
     tick_fontsize=22
     letter_fontsize=26
     dir = f'/home/erschultz/Su2020/samples/sample{sample}'
-    D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=bl, phi=phi)
+    D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=bl, phi=phi, mode='mean')
+    D2 = np.load('/home/erschultz/Su2020/samples/sample1/dist2_mean.npy')
     nan_rows = np.isnan(D[0])
     D_no_nan = D[~nan_rows][:, ~nan_rows] # ignore nan_rows
     # mu_D_pca, sigma_D_pca, mu_D, sigma_D = rescale_mu_sigma(D, D_pca, True)
@@ -156,9 +157,9 @@ def old_figure(sample, GNN_ID, bl=140, phi=0.03):
     axes = [ax1, ax2]
 
     # plot dmaps
-    vmin = np.nanpercentile(D_no_nan, 1)
+    vmin = np.nanpercentile(D_no_nan, 5)
     vmed = np.nanpercentile(D_no_nan, 50)
-    vmax = np.nanpercentile(D_no_nan, 99)
+    vmax = np.nanpercentile(D_no_nan, 95)
 
     print(vmin, vmed, vmax)
     npixels = np.shape(D_no_nan)[0]
@@ -181,10 +182,12 @@ def old_figure(sample, GNN_ID, bl=140, phi=0.03):
         corr = pearson_round(D_no_nan[triu_ind], D_sim[triu_ind], stat = 'nan_pearson')
 
         if i == 0:
-            s = sns.heatmap(composite, linewidth = 0, vmin = vmin, vmax = vmax, cmap = RED_BLUE_CMAP,
+            s = sns.heatmap(composite, linewidth = 0, vmin = vmin, vmax = vmax,
+                            cmap = RED_BLUE_CMAP,
                             ax = axes[i], cbar = False)
         else:
-            s = sns.heatmap(composite, linewidth = 0, vmin = vmin, vmax = vmax, cmap = RED_BLUE_CMAP,
+            s = sns.heatmap(composite, linewidth = 0, vmin = vmin, vmax = vmax,
+                            cmap = RED_BLUE_CMAP,
                             ax = axes[i], cbar_ax = ax_cb)
         s.axline((0,0), slope=1, color = 'k', lw=1)
         s.text(0.99*m, 0.01*m, label, fontsize=letter_fontsize, ha='right', va='top',
@@ -208,15 +211,23 @@ def old_figure(sample, GNN_ID, bl=140, phi=0.03):
     m = len(D)
     log_labels = np.linspace(0, resolution*(m-1), m)
     # print('h1204', log_labels.shape)
-    data = zip([D, D_pca, D_gnn], ['Experiment', 'Max Ent', 'GNN'], ['k', 'b', 'r'])
+    data = zip([D,D_pca, D_gnn], ['Experiment', 'Max Ent', 'GNN'], ['k', 'b', 'r'])
     for D_i, label, color in data:
         # print(label)
         if D_i is not None:
             meanDist = DiagonalPreprocessing.genomic_distance_statistics(D_i, 'freq')
-            print('mean_dist', meanDist)
             nan_rows = np.isnan(meanDist)
             # print(meanDist[:10], meanDist.shape)
-            ax3.plot(log_labels[~nan_rows], meanDist[~nan_rows], label = label, color = color)
+            ax3.plot(log_labels[~nan_rows], meanDist[~nan_rows], label = label,
+                        color = color)
+
+    meanDist = DiagonalPreprocessing.genomic_distance_statistics(D2, 'freq')
+    log_labels = np.linspace(0, 30000*(len(meanDist)-1), len(meanDist))
+    nan_rows = np.isnan(meanDist)
+    print(meanDist[:10], meanDist.shape)
+    ax3.plot(log_labels[~nan_rows], meanDist[~nan_rows], label = 'Experiment2',
+                color = 'k', ls=':')
+
     ax3.tick_params(axis='both', which='major', labelsize=tick_fontsize)
     ax3.set_ylabel('Distance (nm)', fontsize = label_fontsize)
     ax3.set_xlabel('Genomic Separation (bp)', fontsize = label_fontsize)
@@ -473,5 +484,5 @@ def supp_figure(sample, GNN_ID, bl=140, phi=0.03):
 
 
 if __name__ == '__main__':
-    old_figure(1013, 434, bl=261, phi=0.01)
+    old_figure(1004, 434, bl=261, phi=0.01)
     # supp_figure(1013, 434, bl=261, phi=0.01)

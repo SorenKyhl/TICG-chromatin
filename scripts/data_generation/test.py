@@ -10,12 +10,11 @@ from modify_maxent import get_samples
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import calculate_diag_chi_step
 from pylib.utils.plotting_utils import BLUE_RED_CMAP, plot_mean_dist
+from pylib.utils.xyz import xyz_load, xyz_to_contact_grid, xyz_to_distance
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (
     get_final_max_ent_folder, load_max_ent_S, load_Y)
-from sequences_to_contact_maps.scripts.xyz_utils import (xyz_load,
-                                                         xyz_to_contact_grid)
 
 
 def split_samples(dataset):
@@ -144,7 +143,8 @@ def compare_S(dataset):
         plt.close()
 
 def compare_p_s_bonded():
-    dir = '/home/erschultz/dataset_bonded/m_512/bond_length_140/phi_0.01'
+    '''Compare c++ to python implementation'''
+    dir = '/home/erschultz/dataset_bonded/bond_type_DSS/m_512/bond_length_140/phi_0.01'
     y = np.loadtxt(osp.join(dir, 'production_out/contacts.txt'))
     y = y.astype(float)
     y /= np.mean(np.diagonal(y))
@@ -168,6 +168,104 @@ def compare_p_s_bonded():
     plt.legend()
     plt.savefig(osp.join(dir, 'p_s.png'))
     plt.close()
+
+def compare_p_s_bonded2():
+    '''Compare p(s) curves in dataset_bonded'''
+    dataset = '/home/erschultz/dataset_bonded'
+    m=1024; phi=0.06; b=140; bond_type='gaussian'
+    for boundary_type, ar, c in [('spherical', 1.0, 'b'), ('spheroid', 1.5, 'r'), ('spheroid', 2.0, 'g')]:
+        if boundary_type == 'spheroid':
+            boundary_type += f'_{ar}'
+        for k_angle, ls in zip([0, 1.5], ['-', '--']):
+            dir = osp.join(dataset, f'boundary_{boundary_type}',
+                        f'bond_type_{bond_type}/m_{m}/bond_length_{b}/phi_{phi}')
+            if k_angle != 0:
+                dir = osp.join(dir, f'angle_{k_angle}')
+            xyz_file = osp.join(dir, 'production_out/output.xyz')
+            xyz = xyz_load(xyz_file, multiple_timesteps=True)
+
+            gs=300
+            y = xyz_to_contact_grid(xyz, gs, dtype=float)
+            y /= np.mean(np.diagonal(y))
+            meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
+            plt.plot(meanDist, ls = ls, c = c, label = f'ar_{ar}_k_angle_{k_angle}')
+
+    plt.yscale('log')
+    plt.xscale('log')
+    plt.xlabel('s')
+    plt.ylabel(rf'P(s) w/ $\Delta=${gs} nm')
+    plt.legend(title='bonded params')
+    plt.savefig(osp.join(dataset, 'p_s_bonded.png'))
+    plt.close()
+
+def compare_d_s():
+    '''Compare p(s) curves in dataset_bonded'''
+    dataset = '/home/erschultz/dataset_bonded'
+    m=512; phi=0.01; b=261; bond_type='gaussian'
+    for boundary_type, ar, c in [('spherical', 1.0, 'b'), ('spheroid', 1.5, 'r'), ('spheroid', 2.0, 'g')]:
+        if boundary_type == 'spheroid':
+            boundary_type += f'_{ar}'
+        for k_angle, ls in zip([0], ['-']):
+            dir = osp.join(dataset, f'boundary_{boundary_type}',
+                        f'bond_type_{bond_type}/m_{m}/bond_length_{b}/phi_{phi}')
+            if k_angle != 0:
+                dir = osp.join(dir, f'angle_{k_angle}')
+            xyz_file = osp.join(dir, 'production_out/output.xyz')
+            xyz = xyz_load(xyz_file, multiple_timesteps=True)
+            D = xyz_to_distance(xyz)
+            log_labels = np.linspace(0, (m-1), m)
+            D = np.nanmean(D, axis = 0)
+            meanDist_D = DiagonalPreprocessing.genomic_distance_statistics(D, mode='freq')
+            plt.plot(log_labels, meanDist_D, ls = ls, c = c, label = f'ar_{ar}_k_angle_{k_angle}')
+
+    D_exp = np.load('/home/erschultz/Su2020/samples/sample1013/D_crop.npy')
+    meanDist_D_exp = DiagonalPreprocessing.genomic_distance_statistics(D_exp, mode='freq')
+    nan_rows = np.isnan(meanDist_D_exp)
+    plt.plot(log_labels[~nan_rows], meanDist_D_exp[~nan_rows],
+                label='Experiment', color='k')
+
+    plt.yscale('log')
+    plt.xscale('log')
+    plt.ylabel('Distance (nm)')
+    plt.xlabel('Polymer Distance (m)')
+    plt.legend(title='bonded params')
+    plt.savefig(osp.join(dataset, 'd_s_bonded.png'))
+    plt.close()
+
+
+def compare_p_s_bonded3():
+    '''Compare p(s) after optimizing grid size for specific experiment'''
+    data_dir = '/home/erschultz/Su2020/samples/sample1013'
+    b=261; phi=0.01
+    for ar in [1, 1.5, 2.0, 4.0]:
+        if ar == 1:
+            dir = osp.join(data_dir, f'optimize_grid_b_{b}_phi_{phi}')
+        else:
+            dir = osp.join(data_dir, f'optimize_grid_b_{b}_phi_{phi}_spheroid_{ar}')
+        y = np.load(osp.join(dir, 'y.npy'))
+        y = y.astype(float)
+        y /= np.mean(np.diagonal(y))
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
+        meanDist /= meanDist[1]
+        plt.plot(meanDist, label = f'b_{b}_phi_{phi}_ar_{ar}')
+
+    y = np.load(osp.join(data_dir, 'y.npy'))
+    y = y.astype(float)
+    y /= np.mean(np.diagonal(y))
+    meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
+    meanDist /= meanDist[1]
+    plt.plot(meanDist, label = 'Experiment', c='k')
+
+
+    plt.yscale('log')
+    plt.xscale('log')
+    plt.xlabel('s')
+    plt.ylabel('P(s)')
+    plt.legend()
+    plt.savefig(osp.join(data_dir, 'p_s_bonded.png'))
+    plt.close()
+
+
 
 def compare_xyz():
     dir1 = '/home/erschultz/Su2020/samples/sample1004/optimize_grid_b_261_phi_0.01 (copy)/iteration6'
@@ -196,5 +294,6 @@ def compare_xyz():
 if __name__ == '__main__':
     # compare_diag_params()
     # compare_S('dataset_04_28_23')
-    # compare_p_s_bonded()
-    compare_xyz()
+    # compare_p_s_bonded2()
+    compare_d_s()
+    # compare_xyz()

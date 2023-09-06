@@ -9,7 +9,9 @@ from collections import defaultdict
 
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.stats as ss
 from compare_contact import plotDistanceStratifiedPearsonCorrelation
+from data_generation.modify_maxent import get_samples
 from pylib.utils import epilib
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
@@ -368,17 +370,16 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                     print(f'key 1: {key}, key 2: {data[key].keys()}')
 
         GNN_ref = None
-        GNN_ref_id = float('inf')
-        # if 0 in data.keys():
-        #     for method in data[0].keys():
-        #         if 'GNN' in method:
-        #             id = int(method[3:])
-        #             if id < GNN_ref_id:
-        #                 GNN_ref = data[0][method]
-        #                 GNN_ref_id = id
+        GNN_ref_method = None
+        if 0 in data.keys():
+            for method in sorted(data[0].keys()):
+                if 'GNN' in method:
+                    GNN_ref = data[0][method]
+                    GNN_ref_method = method
+                    break # takes first GNN found
 
         if GNN_ref is not None:
-            print(f'GNN found: using GNN {GNN_ref_id}')
+            print(f'GNN found: using GNN {GNN_ref_method}')
             print(GNN_ref)
 
         for k in sorted(data.keys()):
@@ -422,6 +423,7 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                     significant = False # two sided t test
                     result = np.array(data[k][method][metric], dtype=np.float64)
 
+
                     if nan_mask is not None:
                         result[nan_mask] = np.NaN
 
@@ -436,13 +438,23 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
 
                     if len(result) > 1:
                         result_mean = np.nanmean(result)
-                        print(metric, result, result_mean)
-                        if result_mean is not None:
-                            result_mean = np.round(result_mean, roundoff)
-                        result_std = np.round(np.nanstd(result), roundoff)
-                        text += f" & {result_mean} $\pm$ {result_std}"
+                        # print(metric, result, result_mean)
+                        ref_result = np.array(GNN_ref[metric], dtype=np.float64)
+                        if nan_mask is not None:
+                            ref_result[nan_mask] = np.nan
+                        stat, pval = ss.ttest_rel(ref_result, result)
+                        if pval < 0.05:
+                            print('Significant:', metric, pval)
+                            significant = True
+
+                        result_mean = np.round(result_mean, roundoff)
+                        result_std = np.nanstd(result, ddof=1)
+                        result_sem = ss.sem(result, nan_policy = 'omit')
+                        result_std = np.round(result_std, roundoff)
+                        result_sem = np.round(result_sem, roundoff)
+                        text += f" & {result_mean} $\pm$ {result_sem}"
                         if significant:
-                            text += f' *{np.round(pval, roundoff)}'
+                            text += f' *{np.round(pval, 5)}'
                     else:
                         result = result[0]
                         if result is not None:
@@ -591,25 +603,20 @@ def main(args=None):
 
 
 if __name__ == '__main__':
+    dataset = 'dataset_02_04_23'
     # dataset = 'dataset_08_25_23'; samples = range(1, 16)
-    dataset = 'dataset_04_28_23'; samples = [1,2,3,4,5,324,981,1753,1936,2834,3464]
+    # dataset = 'dataset_04_28_23'; samples = [1,2,3,4,5,324,981,1753,1936,2834,3464]
+    # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5,101,102,103,104,105,601,602,603,604,605]
+    # dataset='Su2020'; samples = [1013]
 
-
-    # odd_samples = []
-    # for s in samples:
-    #     s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{s}')
-    #     result = load_import_log(s_dir)
-    #     chrom = int(result['chrom'])
-    #     if chrom % 2 == 1:
-    #         odd_samples.append(s)
-    #
-    # samples = odd_samples[:10]
+    samples, _ = get_samples(dataset, test = True)
+    samples = samples[:10]
 
     data_dir = osp.join('/home/erschultz', dataset)
     args = getArgs(data_folder = data_dir, samples = samples)
     args.experimental = True
     args.convergence_definition = 'normal'
-    args.gnn_id=[434, 451]
+    args.gnn_id=[434]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

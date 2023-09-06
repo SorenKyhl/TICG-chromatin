@@ -8,6 +8,7 @@ from pathlib import Path
 import jsbeautifier
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.stats import pearsonr, spearmanr
 
 """
 utility functions
@@ -159,7 +160,37 @@ def plot_image(x, dark=False):
     plt.imshow(x, vmin=-lim, vmax=lim, cmap="bwr")
     plt.colorbar()
 
+def nan_pearsonr(x, y):
+    na_ind = np.logical_or(np.isnan(x), np.isnan(y))
+    return pearsonr(x[~na_ind], y[~na_ind])
 
+def pearson_round(x, y, stat = 'pearson', round = 2):
+    "Wrapper function that combines np.round and pearsonr."
+    if stat == 'pearson':
+        fn = pearsonr
+    elif stat == 'nan_pearson':
+        fn = nan_pearsonr
+    elif stat == 'spearman':
+        fn = spearmanr
+    x = np.array(x)
+    y = np.array(y)
+    assert x.shape == y.shape, f'shape mismatch, {x.shape} != {y.shape}'
+    stat, _ = fn(x, y)
+    return np.round(stat, round)
+
+def make_composite(lower, upper):
+    m, _ = lower.shape
+    assert m == upper.shape[0]
+    indu = np.triu_indices(m)
+    indl = np.tril_indices(m)
+
+    # make composite contact map
+    composite = np.zeros((m, m))
+    composite[indu] = upper[indu]
+    composite[indl] = lower[indl]
+    np.fill_diagonal(composite, 1)
+
+    return composite
 
 def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method,norm=False):
     """newton's method"""

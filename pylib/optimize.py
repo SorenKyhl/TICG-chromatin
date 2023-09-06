@@ -109,7 +109,17 @@ def get_bonded_simulation_xyz(config, throw_exception=False):
     m = config['nbeads']
     b = config['bond_length']
     phi = config['phi_chromatin']
-    dir = osp.join(dataset, f'm_{m}/bond_length_{b}/phi_{phi}')
+    bond_type = config['bond_type']
+    boundary_type = config['boundary_type']
+    if boundary_type == 'spheroid':
+        boundary_type += f'_{config["aspect_ratio"]}'
+    beadvol = config['beadvol']
+    assert beadvol == 130000, f'not supported for {beadvol}'
+    dir = osp.join(dataset, f'boundary_{boundary_type}/bond_type_{bond_type}/m_{m}/bond_length_{b}/phi_{phi}')
+    if config['angles_on']:
+        k_angle = config['k_angle']
+        dir = osp.join(dir, f'angle_{k_angle}')
+
     if not osp.exists(dir):
         if throw_exception:
             raise Exception(f'{dir} does not exist')

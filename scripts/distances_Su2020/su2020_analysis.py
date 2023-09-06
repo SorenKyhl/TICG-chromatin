@@ -20,6 +20,8 @@ from pylib.utils.plotting_utils import (BLUE_CMAP, BLUE_RED_CMAP,
                                         RED_BLUE_CMAP, RED_CMAP, plot_matrix,
                                         plot_mean_dist, rotate_bound)
 from pylib.utils.similarity_measures import SCC
+from pylib.utils.utils import pearson_round
+from pylib.utils.xyz import calculate_rg, xyz_load, xyz_to_distance, xyz_write
 from scipy.optimize import minimize
 from scipy.spatial import ConvexHull
 from sklearn.cluster import KMeans
@@ -31,12 +33,7 @@ from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
 from sequences_to_contact_maps.scripts.load_utils import (
     get_final_max_ent_folder, load_import_log, load_Y)
 from sequences_to_contact_maps.scripts.utils import (calc_dist_strat_corr,
-                                                     nan_pearsonr,
-                                                     pearson_round)
-from sequences_to_contact_maps.scripts.xyz_utils import (calculate_rg,
-                                                         xyz_load,
-                                                         xyz_to_distance,
-                                                         xyz_write)
+                                                     nan_pearsonr)
 
 
 # plotting functions
@@ -270,17 +267,40 @@ def find_hg38_positions():
 def find_volume():
     '''Find average volume of cells in dataset.'''
     dir = '/home/erschultz/Su2020/samples'
-    xyz_file = osp.join(dir, 'sample10/xyz.npy')
-    xyz_exp = np.load(xyz_file)
-    b = 261; phi = 0.001
-    xyz_file = osp.join(dir, f'sample1013/optimize_grid_b_{b}_phi_{phi}-max_ent10_long',
+    s_dir = osp.join(dir, 'sample1013')
+    b = 261; phi = 0.01
+    xyz_file = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}-max_ent10',
                         'iteration15/production_out/output.xyz')
     xyz_sim = xyz_load(xyz_file, multiple_timesteps = True)
+    N, m, _ = xyz_sim.shape
+    result = load_import_log(s_dir)
+    start = result['start']
+    resolution = result['resolution']
+    chrom = int(result['chrom'])
+    genome = result['genome']
+
+    if genome == 'hg38':
+        if chrom == 21:
+            exp_dir = osp.join(dir, 'sample1')
+        elif chrom == 2:
+            exp_dir = osp.join(dir, 'sample10')
+        else:
+            raise Exception(f'Unrecognized chrom: {chrom}')
+    coords_file = osp.join(exp_dir, 'coords.json')
+    with open(coords_file) as f:
+        coords_dict = json.load(f)
+
+    i = coords_dict[f'chr{chrom}:{start}-{start+resolution}']
+    xyz_file = osp.join(exp_dir, 'xyz.npy')
+    xyz_exp = np.load(xyz_file)
+    xyz_exp = xyz_exp[:, i:i+m, :]
 
     def get_vols(xyz):
-        print(xyz.shape, xyz.dtype)
+        print('xyz', xyz.shape, xyz.dtype)
+        D = xyz_to_distance(xyz)
         num_cells, num_coords, _ = xyz.shape
         vols = np.zeros(num_cells)
+        r_spheres = np.zeros(num_cells)
         for i in range(num_cells):
             xyz_i = xyz[i]
             xyz_i = xyz_i[~np.isnan(xyz_i)].reshape(-1, 3)
@@ -297,28 +317,37 @@ def find_volume():
                     raise
                 vols[i] = hull.volume * 1e-9 # convert to um^3
 
+            D_i = D[i]
+            r_sphere = np.nanmax(D_i)
+            # this is a (very) approximate solution to
+            # the bounding spheres problem
+            r_spheres[i] = r_sphere
+
         mean_vol = np.nanmean(vols)
         median_vol = np.nanmedian(vols)
         std_vol = np.nanstd(vols)
         print(f'median vol {mean_vol} um^3')
         print(f'mean vol {median_vol} um^3')
         print(f'std vol {std_vol}')
-        r_sphere = (3/4 * mean_vol / np.pi)**(1/3)
-        r_sphere *= 1e3
-        print(f'spherical radius {r_sphere} nm')
-        return vols
+        mean_r_sphere = np.nanmean(r_spheres) / 2
+        print(f'mean spherical radius {r_sphere} nm')
+        return vols, r_spheres
 
-    arr = get_vols(xyz_exp)
+    print('---Experiment---')
+    arr, vols_arr1 = get_vols(xyz_exp)
     bin_width = 1
     plt.hist(arr, alpha=0.5, label = 'Experiment',
                 weights = np.ones_like(arr) / len(arr),
-                bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width,
+                bins = np.arange(math.floor(min(arr)),
+                            math.ceil(max(arr)) + bin_width,
                             bin_width))
 
-    arr = get_vols(xyz_sim)
+    print('---Simulation---')
+    arr, vols_arr2 = get_vols(xyz_sim)
     plt.hist(arr, alpha=0.5, label = 'Simulation',
                 weights = np.ones_like(arr) / len(arr),
-                bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width,
+                bins = np.arange(math.floor(min(arr)),
+                            math.ceil(max(arr)) + bin_width,
                             bin_width))
 
     plt.title(f'b={b}, phi={phi}')
@@ -328,7 +357,20 @@ def find_volume():
     plt.legend()
     plt.savefig('/home/erschultz/TICG-chromatin/figures/volumes.png')
     plt.close()
-    # plt.show()
+
+    bin_width = 100
+    for arr, label in zip([vols_arr1, vols_arr2], ['Experiment', 'Simulation']):
+        plt.hist(arr, alpha=0.5, label = label,
+                    weights = np.ones_like(arr) / len(arr),
+                    bins = np.arange(math.floor(min(arr)),
+                                math.ceil(max(arr)) + bin_width,
+                                bin_width))
+    plt.title(f'b={b}, phi={phi}')
+    plt.xlabel(r'Spherical Radius nm')
+    plt.ylabel('Probability')
+    plt.legend()
+    plt.savefig('/home/erschultz/TICG-chromatin/figures/spherical_radii.png')
+    plt.close()
 
 def compare_dist_distribution_a_b(sample):
     '''Compare distributions of A-B distances between sim and experiment.'''
@@ -396,6 +438,65 @@ def compare_dist_distribution_a_b(sample):
     plt.tight_layout()
     plt.savefig(osp.join(dir, 'distance_distribution.png'))
     plt.close()
+
+def xyz_to_dist2():
+    '''Convert experimental xyz to distance map.'''
+    chr=21
+    dir = '/home/erschultz/Su2020/samples/sample1'
+    log_file = osp.join(dir, 'xyz_to_dist2.log')
+    log_file = open(log_file, 'w')
+    file = osp.join(dir, f'chromosome{chr}-28-30Mb.csv')
+    xyz_file = osp.join(dir, 'xyz2.npy')
+    coords_file = osp.join(dir, 'coords2.json')
+
+    num_coords=65
+
+    # create xyz_file
+    # count number of cells
+    all_numbers = set()
+    with open(file, 'r') as f:
+        f.readline(); f.readline()
+        reader = csv.reader(f)
+        for line in reader:
+            cell = int(line[0])
+            all_numbers.add(cell)
+
+    num_cells = len(all_numbers)
+    assert num_cells == sorted(all_numbers)[-1]
+    print(f'found {num_coords} coords and {num_cells} cells')
+
+
+    AC = ArgparserConverter()
+    xyz = np.empty((num_cells, num_coords, 3))
+    xyz[:] = np.NaN
+    with open(file, 'r') as f:
+        f.readline(); f.readline()
+        reader = csv.reader(f)
+        for line in reader:
+            cell, i, z, x, y = line
+            cell, i, z, x, y = [AC.str2int(j) for j in [cell, i, z, x, y]]
+
+            # convert to 0-based indexing
+            i -= 1
+            cell -= 1
+
+            xyz[cell, i, :] = [x, y, z]
+    np.save(xyz_file, xyz)
+
+    print(xyz[0])
+    print(xyz.shape, xyz.dtype, file = log_file)
+    num_cells, num_coords, _ = xyz.shape
+
+    D = xyz_to_distance(xyz, False)
+    np.save(osp.join(dir, 'dist2.npy'), D)
+
+    D_mean = np.nanmean(D, axis = 0)
+    print(D_mean, file = log_file)
+    print('mean', np.nanmean(np.diagonal(D_mean, 1)), file = log_file)
+    np.save(osp.join(dir, 'dist2_mean.npy'), D_mean)
+
+
+    log_file.close()
 
 def xyz_to_dist():
     '''Convert experimental xyz to distance map.'''
@@ -497,16 +598,6 @@ def xyz_to_dist():
     print('median', np.nanmean(np.diagonal(D_median, 1)), file = log_file)
 
     np.save(osp.join(dir, 'dist_median.npy'), D_median)
-    #
-    # # create negative control
-    # D1 = D[:len(D)//2]
-    # D1_mean = np.nanmean(D1, axis = 0)
-    # np.save(osp.join(dir, 'dist_mean_first_half.npy'), D1_mean)
-    #
-    # D2 = D[len(D)//2:]
-    # D2_mean = np.nanmean(D2, axis = 0)
-    # np.save(osp.join(dir, 'dist_mean_second_half.npy'), D2_mean)
-
     log_file.close()
 
 def xyz_to_xyz():
@@ -794,17 +885,19 @@ def load_exp_gnn_pca(dir, GNN_ID=None, mode='mean', b=140, phi=0.03):
 
     max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, b, phi)
     if osp.exists(max_ent_dir):
-        D_pca, _ = sim_xyz_to_dist(max_ent_dir, True)
+        D_pca, D_med_pca = sim_xyz_to_dist(max_ent_dir, True)
         m = len(D_pca)
     else:
         print(f'{max_ent_dir} does not exist')
         D_pca = None
+        D_med_pca = None
 
     if GNN_ID is not None and osp.exists(gnn_dir):
-        D_gnn, _ = sim_xyz_to_dist(gnn_dir, False)
+        D_gnn, D_med_gnn = sim_xyz_to_dist(gnn_dir, False)
         m = len(D_gnn)
     else:
         D_gnn = None
+        D_med_gnn = None
 
     # process experimental distance map
     if genome == 'hg38':
@@ -814,14 +907,18 @@ def load_exp_gnn_pca(dir, GNN_ID=None, mode='mean', b=140, phi=0.03):
             exp_dir = '/home/erschultz/Su2020/samples/sample10'
         else:
             raise Exception(f'Unrecognized chrom: {chrom}')
-        D_file = osp.join(exp_dir, 'dist_mean.npy')
-        D = np.load(D_file)
+        D = np.load(osp.join(exp_dir, 'dist_mean.npy'))
+        D_med = np.load(osp.join(exp_dir, 'dist_median.npy'))
         D = crop_hg38(exp_dir, D, f'chr{chrom}:{start}-{start+resolution}', m)
+        D_med = crop_hg38(exp_dir, D_med, f'chr{chrom}:{start}-{start+resolution}', m)
         np.save(osp.join(dir, 'D_crop.npy'), D)
     else:
         D = None
 
-    return D, D_gnn, D_pca
+    if mode == 'mean':
+        return D, D_gnn, D_pca
+    elif mode == 'median':
+        return D_med, D_med_gnn, D_med_pca
 
 def compare_pcs(sample, GNN_ID):
     dir = f'/home/erschultz/Su2020/samples/sample{sample}'
@@ -1237,13 +1334,13 @@ if __name__ == '__main__':
     # test_pcs()
     # load_exp_gnn_pca(osp.join(dir, 'samples/sample1002'))
     # find_hg38_positions()
-    # xyz_to_dist()
+    xyz_to_dist2()
     # xyz_to_xyz()
     # compare_D_to_sim_D(1014)
     # compare_diagonal(1013, 434)
     # sim_xyz_to_dist(osp.join(dir, 'samples/sample1011/optimize_grid_b_140_phi_0.03-GNN403'),
     #                 False)
-    find_volume()
+    # find_volume()
     # compare_bonded()
     # compare_pcs(1013)
     # compare_d_maps(1003, None)

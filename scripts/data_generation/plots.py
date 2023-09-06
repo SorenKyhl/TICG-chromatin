@@ -5,16 +5,21 @@ import sys
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 from modify_maxent import get_samples, plaid_dist, simple_histogram
 from molar_contact_ratio import molar_contact_ratio
+from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
+from pylib.utils.plotting_utils import RED_BLUE_CMAP, RED_CMAP
+from pylib.utils.similarity_measures import SCC
+from pylib.utils.utils import make_composite
 from scipy.stats import norm, skewnorm
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
-from sequences_to_contact_maps.scripts.similarity_measures import SCC
-from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
-                                                     calc_dist_strat_corr,
+from sequences_to_contact_maps.scripts.load_utils import (
+    get_final_max_ent_folder, load_Y)
+from sequences_to_contact_maps.scripts.utils import (calc_dist_strat_corr,
                                                      triu_to_full)
 
 
@@ -84,7 +89,9 @@ def p_s_comparison(dataset, GNN_ID, b, phi, k=8, max_ent=False):
             meanDist_exp = DiagonalPreprocessing.genomic_distance_statistics(y_exp)
 
             if plot_GNN:
-                y = np.load(osp.join(s_dir ,f'optimize_grid_b_{b}_phi_{phi}-GNN{GNN_ID}/y.npy'))
+                y = np.load(osp.join(s_dir,
+                                    f'optimize_grid_b_{b}_phi_{phi}-GNN{GNN_ID}',
+                                    'y.npy'))
                 y = y.astype(float)
                 y /= np.mean(np.diagonal(y))
                 meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
@@ -102,7 +109,8 @@ def p_s_comparison(dataset, GNN_ID, b, phi, k=8, max_ent=False):
 
             ax = axes[row][col]
             if plot_GNN:
-                ax.set_title(f'sample{sample}\nGNN RMSE={np.round(rmse, 5)}', fontsize=16)
+                ax.set_title(f'sample{sample}\nGNN RMSE={np.round(rmse, 5)}',
+                            fontsize=16)
             else:
                 ax.set_title(f'sample{sample}', fontsize=16)
 
@@ -164,9 +172,11 @@ def scc_comparison(dataset, ID=None, k=8, max_ent=False):
         for sample in samples:
             s_dir = osp.join(data_dir, f'samples/sample{sample}')
             if max_ent:
-                dir = osp.join(s_dir, f'PCA-normalize-S/k{k}/replicate1/samples/sample{sample}_copy')
+                dir = osp.join(s_dir, f'PCA-normalize-S/k{k}',
+                                f'replicate1/samples/sample{sample}_copy')
                 if not osp.exists(dir):
-                    dir = osp.join(s_dir, f'PCA-normalize-E/k{k}/replicate1/samples/sample{sample}_copy')
+                    dir = osp.join(s_dir, f'PCA-normalize-E/k{k}',
+                                f'/replicate1/samples/sample{sample}_copy')
             else:
                 dir = s_dir
             y = np.load(osp.join(dir, 'y.npy'))
@@ -202,9 +212,13 @@ def scc_comparison(dataset, ID=None, k=8, max_ent=False):
 
             ax = axes[row][col]
             if plot_PCA and plot_GNN:
-                ax.set_title(f'sample{sample}\nGNN SCC: {np.round(corr_scc_var, 3)}\nPCA SCC: {np.round(corr_scc_var_pca, 3)}', fontsize=16)
+                title = f'sample{sample}\n'
+                title += f'GNN SCC: {np.round(corr_scc_var, 3)}\n'
+                title += f'PCA SCC: {np.round(corr_scc_var_pca, 3)}'
+                ax.set_title(title, fontsize=16)
             elif plot_GNN:
-                ax.set_title(f'sample{sample}\nGNN SCC: {np.round(corr_scc_var, 3)}', fontsize=16)
+                ax.set_title(f'sample{sample}\nGNN SCC: {np.round(corr_scc_var, 3)}',
+                            fontsize=16)
             else:
                 ax.set_title(f'sample{sample}', fontsize=16)
             if plot_GNN:
@@ -273,8 +287,11 @@ def l_ij_comparison(dataset, dataset_exp, k=8):
         arr = np.array(arr).reshape(-1)
         print(arr)
         print(np.min(arr), np.max(arr))
+        bin_positions = range(math.floor(min(arr)),
+                                math.ceil(max(arr)) + bin_width,
+                                bin_width)
         _, bins, _ = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
-                                    bins=range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width),
+                                    bins=bin_positions,
                                     alpha = 0.5, label = label, color = colors[i])
         params = dist.fit(arr)
         y = dist.pdf(bins, *params) * bin_width
@@ -287,21 +304,6 @@ def l_ij_comparison(dataset, dataset_exp, k=8):
     plt.savefig(osp.join(data_dir, 'L_dist_comparison.png'))
     plt.close()
 
-    # plot plaid chi parameters
-    # bin_width = 1
-    # for i, (arr, label) in enumerate(zip(chi_list, l_list)):
-    #     arr = np.array(arr).reshape(-1)
-    #     print(np.min(arr), np.max(arr))
-    #     n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
-    #                                 bins=range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width),
-    #                                 alpha = 0.5, label = label, color = colors[i])
-    # plt.legend()
-    # plt.ylabel('probability', fontsize=16)
-    # plt.xlabel(r'$\chi_{ij}$', fontsize=16)
-    # plt.xlim(-20, 20)
-    # plt.savefig(osp.join(data_dir, 'chi_dist_comparison.png'))
-    # plt.close()
-
     # plot D_ij parameters
     print('\nD')
     cmap = matplotlib.cm.get_cmap('tab10')
@@ -313,8 +315,12 @@ def l_ij_comparison(dataset, dataset_exp, k=8):
         arr = np.array(arr).reshape(-1)
         print(label)
         print(np.min(arr), np.max(arr))
+        bin_positions = range(math.floor(min(arr)),
+                                math.ceil(max(arr)) + bin_width,
+                                bin_width)
+
         _, bins, _ = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
-                                    bins=range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width),
+                                    bins=bin_positions,
                                     alpha = 0.5, label = label, color = colors[i])
         params = dist.fit(arr)
         y = dist.pdf(bins, *params) * bin_width
@@ -338,8 +344,11 @@ def l_ij_comparison(dataset, dataset_exp, k=8):
         arr = np.array(arr).reshape(-1)
         print(arr)
         print(np.min(arr), np.max(arr))
+        bin_positions = range(math.floor(min(arr)),
+                                math.ceil(max(arr)) + bin_width,
+                                bin_width)
         _, bins, _ = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
-                                    bins=range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width),
+                                    bins=bin_positions,
                                     alpha = 0.5, label = label, color = colors[i])
         params = dist.fit(arr)
         y = dist.pdf(bins, *params) * bin_width
@@ -368,9 +377,12 @@ def l_ij_comparison(dataset, dataset_exp, k=8):
         arr = np.array(arr).reshape(-1)
         print(arr)
         print(np.min(arr), np.max(arr))
+        bin_positions = range(math.floor(min(arr)),
+                                math.ceil(max(arr)) + bin_width,
+                                bin_width)
         _, bins, _ = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
-                                    bins=range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width),
-                                    alpha = 0.5, label = label, color = colors[i])
+                                bins=bin_positions,
+                                alpha = 0.5, label = label, color = colors[i])
         params = dist.fit(arr)
         y = dist.pdf(bins, *params) * bin_width
         plt.plot(bins, y, ls = '--', color = colors[i])
@@ -381,10 +393,244 @@ def l_ij_comparison(dataset, dataset_exp, k=8):
     plt.savefig(osp.join(data_dir, 'frob_L_comparison.png'))
     plt.close()
 
+def plot_y_S(dataset, b, phi):
+    dir = '/project2/depablo/erschultz/'
+    if not osp.exists(dir):
+        dir = '/home/erschultz'
+    data_dir = osp.join(dir, dataset)
+
+    odir = osp.join(data_dir, f'b_{b}_phi_{phi}_distributions')
+    if not osp.exists(odir):
+        os.mkdir(odir, mode=0o755)
+
+    samples, _ = get_samples(dataset, train=True)
+    N = 10
+    samples = np.array(samples)[:N]
+
+    y_list = []
+    composite_list = []
+    S_list = []
+    for i, sample in enumerate(samples):
+        sample_dir = osp.join(data_dir, f'samples/sample{sample}')
+
+        y, y_diag = load_Y(sample_dir)
+        y /= np.mean(np.diagonal(y))
+        y_list.append(y)
+
+
+        max_ent_dir = osp.join(sample_dir, f'optimize_grid_b_{b}_phi_{phi}-max_ent10')
+        final = get_final_max_ent_folder(max_ent_dir)
+        S = np.load(osp.join(final, 'S.npy'))
+        S_list.append(S)
+        y_hat = np.load(osp.join(final, 'y.npy'))
+
+        composite = make_composite(y, y_hat)
+        composite_list.append(composite)
+
+
+    S_dag_list = [np.sign(S) * np.log(np.abs(S)+1) for S in S_list]
+
+    # plot contact maps
+    rows=2; cols=5
+    fig, ax = plt.subplots(rows, cols+1,
+                            gridspec_kw={'width_ratios':[1,1,1,1,1,0.08]})
+    fig.set_figheight(6*2)
+    fig.set_figwidth(6*3)
+    vmin = 0; vmax = np.mean(y_list)
+    row = 0; col=0
+    for y, sample in zip(y_list, samples):
+        if col == 0:
+            s = sns.heatmap(y, linewidth = 0, vmin = vmin, vmax = vmax,
+                        cmap = RED_CMAP, ax = ax[row][col], cbar_ax = ax[row][-1])
+        else:
+            s = sns.heatmap(y, linewidth = 0, vmin = vmin, vmax = vmax,
+                        cmap = RED_CMAP, ax = ax[row][col], cbar = False)
+        s.set_title(f'Sample {sample}', fontsize = 16)
+        s.set_xticks([])
+        s.set_yticks([])
+
+        col += 1
+        if col == cols:
+            col = 0
+            row += 1
+
+    plt.tight_layout()
+    plt.savefig(osp.join(data_dir, 'y_list.png'))
+    plt.close()
+
+    # # plot composite contact maps
+    # rows=2; cols=5
+    # fig, ax = plt.subplots(rows, cols+1,
+    #                         gridspec_kw={'width_ratios':[1,1,1,1,1,0.08]})
+    # fig.set_figheight(6*2)
+    # fig.set_figwidth(6*3)
+    # vmin = 0; vmax = np.mean(y_list)
+    # row = 0; col=0
+    # for y, sample in zip(composite_list, samples):
+    #     if col == 0:
+    #         s = sns.heatmap(y, linewidth = 0, vmin = vmin, vmax = vmax,
+    #                     cmap = RED_CMAP, ax = ax[row][col], cbar_ax = ax[row][-1])
+    #     else:
+    #         s = sns.heatmap(y, linewidth = 0, vmin = vmin, vmax = vmax,
+    #                     cmap = RED_CMAP, ax = ax[row][col], cbar = False)
+    #
+    #     s.axline((0,0), slope=1, color = 'k', lw=1)
+    #     m, _ = y.shape
+    #     s.text(0.99*m, 0.01*m, 'Max Ent', fontsize=16, ha='right', va='top')
+    #     s.text(0.01*m, 0.99*m, 'Experiment', fontsize=16)
+    #     s.set_title(f'Sample {sample}', fontsize = 16)
+    #     s.set_xticks([])
+    #     s.set_yticks([])
+    #
+    #     col += 1
+    #     if col == cols:
+    #         col = 0
+    #         row += 1
+    #
+    # plt.tight_layout()
+    # plt.savefig(osp.join(odir, 'y_composite_list.png'))
+    # plt.close()
+    #
+    # # plot S orderd by rab
+    # fig, ax = plt.subplots(rows, cols+1,
+    #                         gridspec_kw={'width_ratios':[1,1,1,1,1,0.08]})
+    # fig.set_figheight(6*2)
+    # fig.set_figwidth(6*3)
+    # vmin = np.nanpercentile(S_list, 1)
+    # vmax = np.nanpercentile(S_list, 99)
+    # vmax = max(vmax, vmin * -1)
+    # vmin = vmax * -1
+    # row = 0; col=0
+    # for S, sample in zip(S_list, samples):
+    #     if col == 0:
+    #         s = sns.heatmap(S, linewidth = 0, vmin = vmin, vmax = vmax,
+    #                         cmap = RED_BLUE_CMAP,
+    #             ax = ax[row][col], cbar_ax = ax[row][-1])
+    #     else:
+    #         s = sns.heatmap(S, linewidth = 0, vmin = vmin, vmax = vmax,
+    #                         cmap = RED_BLUE_CMAP,
+    #             ax = ax[row][col], cbar = False)
+    #     s.set_title(f'Sample {sample}', fontsize = 16)
+    #     s.set_xticks([])
+    #     s.set_yticks([])
+    #
+    #     col += 1
+    #     if col == cols:
+    #         col = 0
+    #         row += 1
+    #
+    # plt.tight_layout()
+    # plt.savefig(osp.join(odir, 'S_list.png'))
+    # plt.close()
+    #
+    # # plot S_dag orderd by rab
+    # S_dag_arr = np.array([np.sign(S) * np.log(np.abs(S)+1) for S in S_list])
+    # fig, ax = plt.subplots(rows, cols+1,
+    #                         gridspec_kw={'width_ratios':[1,1,1,1,1,0.08]})
+    # fig.set_figheight(6*2)
+    # fig.set_figwidth(6*3)
+    # vmin = np.nanpercentile(S_dag_arr, 1)
+    # vmax = np.nanpercentile(S_dag_arr, 99)
+    # vmax = max(vmax, vmin * -1)
+    # vmin = vmax * -1
+    # row = 0; col=0
+    # for S_dag, sample in zip(S_dag_list, samples):
+    #     if col == 0:
+    #         s = sns.heatmap(S_dag, linewidth = 0, vmin = vmin, vmax = vmax,
+    #                         cmap = RED_BLUE_CMAP,
+    #             ax = ax[row][col], cbar_ax = ax[row][-1])
+    #     else:
+    #         s = sns.heatmap(S_dag, linewidth = 0, vmin = vmin, vmax = vmax,
+    #                         cmap = RED_BLUE_CMAP,
+    #             ax = ax[row][col], cbar = False)
+    #     s.set_title(f'Sample {sample}', fontsize = 16)
+    #     s.set_xticks([])
+    #     s.set_yticks([])
+    #
+    #     col += 1
+    #     if col == cols:
+    #         col = 0
+    #         row += 1
+    #
+    # plt.tight_layout()
+    # plt.savefig(osp.join(odir, 'S_dag_list.png'))
+    # plt.close()
+
+    # plot S_center orderd by rab
+    S_center_arr = np.array([S - np.mean(S) for S in S_list])
+    fig, ax = plt.subplots(rows, cols+1,
+                            gridspec_kw={'width_ratios':[1,1,1,1,1,0.08]})
+    fig.set_figheight(6*2)
+    fig.set_figwidth(6*3)
+    vmin = np.nanpercentile(S_center_arr, 1)
+    vmax = np.nanpercentile(S_center_arr, 99)
+    vmax = max(vmax, vmin * -1)
+    vmin = vmax * -1
+    row = 0; col=0
+    for S, sample in zip(S_center_arr, samples):
+        if col == 0:
+            s = sns.heatmap(S, linewidth = 0, vmin = vmin, vmax = vmax,
+                            cmap = RED_BLUE_CMAP,
+                ax = ax[row][col], cbar_ax = ax[row][-1])
+        else:
+            s = sns.heatmap(S, linewidth = 0, vmin = vmin, vmax = vmax,
+                            cmap = RED_BLUE_CMAP,
+                ax = ax[row][col], cbar = False)
+        s.set_title(f'Sample {sample}', fontsize = 16)
+        s.set_xticks([])
+        s.set_yticks([])
+
+        col += 1
+        if col == cols:
+            col = 0
+            row += 1
+
+    plt.tight_layout()
+    plt.savefig(osp.join(odir, 'S_center_list.png'))
+    plt.close()
+
+    # plot S_center_dag ordered by rab
+    S_center_dag_arr = np.array([np.sign(S) * np.log(np.abs(S)+1) for S in S_center_arr])
+    fig, ax = plt.subplots(rows, cols+1,
+                            gridspec_kw={'width_ratios':[1,1,1,1,1,0.08]})
+    fig.set_figheight(6*2)
+    fig.set_figwidth(6*3)
+    vmin = np.nanpercentile(S_center_dag_arr, 1)
+    vmax = np.nanpercentile(S_center_dag_arr, 99)
+    vmax = max(vmax, vmin * -1)
+    vmin = vmax * -1
+    row = 0; col=0
+    for S_dag, sample in zip(S_center_dag_arr, samples):
+        if col == 0:
+            s = sns.heatmap(S_dag, linewidth = 0, vmin = vmin, vmax = vmax,
+                            cmap = RED_BLUE_CMAP,
+                ax = ax[row][col], cbar_ax = ax[row][-1])
+        else:
+            s = sns.heatmap(S_dag, linewidth = 0, vmin = vmin, vmax = vmax,
+                            cmap = RED_BLUE_CMAP,
+                ax = ax[row][col], cbar = False)
+        s.set_title(f'Sample {sample}', fontsize = 16)
+        s.set_xticks([])
+        s.set_yticks([])
+
+        col += 1
+        if col == cols:
+            col = 0
+            row += 1
+
+    plt.tight_layout()
+    plt.savefig(osp.join(odir, 'S_center_dag_list.png'))
+    plt.close()
+
+
+
 
 if __name__ == '__main__':
     # main()
-    meanDist_comparison()
+    # plot_y_S('dataset_02_04_23', 140, 0.03)
+    plot_y_S('dataset_02_04_23', 261, 0.01)
+
+    # meanDist_comparison()
     # l_ij_comparison('dataset_04_28_23', 'dataset_02_04_23', 10)
     # p_s_comparison('dataset_02_04_23', None, 261, 0.01, 10)
     # scc_comparison('dataset_02_04_23', 392, 8, True)

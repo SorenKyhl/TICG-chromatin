@@ -14,6 +14,7 @@ from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
                                       calculate_L, calculate_S)
 from pylib.utils.plotting_utils import plot_matrix
+from pylib.utils.utils import pearson_round
 from scipy.ndimage import gaussian_filter
 from scipy.optimize import curve_fit
 from scipy.stats import (beta, gamma, laplace, multivariate_normal, norm,
@@ -34,11 +35,11 @@ from sequences_to_contact_maps.scripts.load_utils import (
     load_max_ent_L, load_max_ent_S, load_psi)
 from sequences_to_contact_maps.scripts.plotting_utils import \
     plot_seq_continuous
-from sequences_to_contact_maps.scripts.utils import pearson_round, triu_to_full
+from sequences_to_contact_maps.scripts.utils import triu_to_full
 
 LETTERS = 'ABCDEFGHIJKLMN'
 
-def get_samples(dataset, train=False):
+def get_samples(dataset, train=False, test=False):
     '''
     Inputs:
         dataset: data directory
@@ -79,15 +80,20 @@ def get_samples(dataset, train=False):
     else:
         samples = [1, 2, 3, 4, 5, 324, 981, 1936, 2834, 3464]
 
-    if train and experimental:
-        odd_samples = []
+    if experimental:
+        odd_samples = []; even_samples = []
         for s in samples:
             s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{s}')
             result = load_import_log(s_dir)
             chrom = int(result['chrom'])
             if chrom % 2 == 1:
                 odd_samples.append(s)
-        samples = odd_samples
+            else:
+                even_samples.append(s)
+        if train:
+            samples = odd_samples
+        if test:
+            samples = even_samples
 
     return samples, experimental
 
@@ -614,28 +620,36 @@ def test_shuffle():
 def simple_histogram(arr, xlabel='X', odir=None, ofname=None, dist=skewnorm,
                     label=None, legend_title=''):
     title = []
-    if arr is not None:
-        arr = np.array(arr).reshape(-1)
-        n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
-                                    bins = 50, alpha = 0.5, label = label)
-        bin_width = bins[1] - bins[0]
-        params = dist.fit(arr)
-        y = dist.pdf(bins, *params) * bin_width
-        params = [np.round(p, 3) for p in params]
-        print(ofname, params)
-        if dist == skewnorm and ofname is not None:
-            with open(osp.join(odir, ofname[:-9]+'.pickle'), 'wb') as f:
-                dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
-                pickle.dump(dict, f)
-        plt.plot(bins, y, ls = '--', color = 'k')
+    if arr is None:
+        return
+    arr = np.array(arr).reshape(-1)
+    n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
+                                bins = 50, alpha = 0.5, label = label)
+    bin_width = bins[1] - bins[0]
+    params = dist.fit(arr)
+    y = dist.pdf(bins, *params) * bin_width
+    params = [np.round(p, 3) for p in params]
+    print(ofname, params)
+    if dist == skewnorm and ofname is not None:
+        with open(osp.join(odir, ofname[:-9]+'.pickle'), 'wb') as f:
+            dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
+            pickle.dump(dict, f)
+    plt.plot(bins, y, ls = '--', color = 'k')
     if not (odir is None or ofname is None):
         if label is not None:
             plt.legend(title = legend_title)
         plt.ylabel('probability', fontsize=16)
         plt.xlabel(xlabel, fontsize=16)
         # plt.xlim(-20, 20)
-        if dist == skewnorm and arr is not None:
-            plt.title(r'$\alpha=$' + f'{params[0]}\n' + r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
+        if dist == skewnorm:
+            title = r'$\alpha=$' + f'{params[0]}\n'
+            title += r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}'
+            plt.title(title)
+        elif dist == norm:
+            title = r'$\mu$=' + f'{params[0]:.2f} '
+            title += r'$\sigma$=' + f'{params[-1]:.2f}'
+            plt.title(title)
+
         plt.savefig(osp.join(odir, ofname))
         plt.close()
 
@@ -833,7 +847,9 @@ def seq_dist(dataset, k, plot=True, eig_norm=False):
 
 
                 ax[i].plot(bins, y, ls = '--', color = 'k')
-                ax[i].set_title(r'$\alpha=$' + f'{params[0]}\n' + r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
+                title = r'$\alpha=$' + f'{params[0]}\n'
+                title += r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}'
+                ax[i].set_title(title)
                 c += 1
 
             fig.supxlabel(f'{label}', fontsize=16)
@@ -1016,7 +1032,9 @@ def plaid_dist(dataset, b, phi, k, plot=True, eig_norm=False):
 
 
             ax[row][col].plot(bins, y, ls = '--', color = 'k')
-            # ax[row][col].set_title(r'$\alpha=$' + f'{params[0]}\n' + r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
+            title = r'$\alpha=$' + f'{params[0]}\n'
+            title += r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}'
+            # ax[row][col].set_title(title)
             ax[row][col].set_xlabel(rf'$\chi${LETTERS[i]+LETTERS[i]}')
             ax[row][col].set_xlabel(rf'$\lambda_{{{i+1}}}$', fontsize=16)
             # ax[row][col].tick_params(axis='both', which='major', labelsize=tick_fontsize)
@@ -1083,7 +1101,9 @@ def plaid_dist(dataset, b, phi, k, plot=True, eig_norm=False):
             ax2.plot(bins, y, ls = '--', color = 'k')
             ax2.set_yticks([])
             ax[row][col].set_yticks([])
-            # ax[row][col].set_title(r'$\alpha=$' + f'{params[0]}\n' + r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
+            title = r'$\alpha=$' + f'{params[0]}\n'
+            title += r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}'
+            # ax[row][col].set_title(title)
             ax[row][col].set_xlabel(rf'$\chi${LETTERS[i]+LETTERS[i]}')
             ax[row][col].set_xlabel(rf'$\lambda_{{{i+1}}}$', fontsize=16)
             # ax[row][col].tick_params(axis='both', which='major', labelsize=tick_fontsize)
@@ -1137,7 +1157,9 @@ def plaid_dist(dataset, b, phi, k, plot=True, eig_norm=False):
                         pickle.dump(dict, f)
 
                     ax.plot(bins, y, ls = '--', color = 'k')
-                    # ax.set_title(r'$\alpha=$' + f'{params[0]}\n' + r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}')
+                    title = r'$\alpha=$' + f'{params[0]}\n'
+                    title += r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}'
+                    ax.set_title(title)
                     c += 1
 
             fig.supxlabel(r'$\chi_{ij}$', fontsize=16)
@@ -1162,7 +1184,8 @@ def plaid_dist(dataset, b, phi, k, plot=True, eig_norm=False):
             delete_arr = np.logical_or(data < l_cutoff, data > u_cutoff) # ind to delete
             data = np.delete(data, delete_arr, axis = None)
             data2 = np.delete(grid_size_arr, delete_arr, axis = None)
-            simple_scatter(data, data2, r'$\chi_{AA}$', 'grid_size', None, odir, 'chi_AA_vs_grid_size.png')
+            simple_scatter(data, data2, r'$\chi_{AA}$', 'grid_size', None, odir,
+                            'chi_AA_vs_grid_size.png')
 
             # grid_size vs chi_bb
             data = []
@@ -1178,7 +1201,8 @@ def plaid_dist(dataset, b, phi, k, plot=True, eig_norm=False):
             delete_arr = np.logical_or(data < l_cutoff, data > u_cutoff)
             data = np.delete(data, delete_arr, axis = None)
             data2 = np.delete(grid_size_arr, delete_arr, axis = None)
-            simple_scatter(data, data2, r'$\chi_{BB}$', 'grid_size', None, odir, 'chi_BB_vs_grid_size.png')
+            simple_scatter(data, data2, r'$\chi_{BB}$', 'grid_size', None, odir,
+                            'chi_BB_vs_grid_size.png')
 
     return L_list, S_list, D_list, chi_ij_list
 
