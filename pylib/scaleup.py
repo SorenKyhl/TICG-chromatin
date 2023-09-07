@@ -189,13 +189,17 @@ def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large =
     except FileExistsError:
         stiff_opt_config = utils.load_json("optimize-stiffness/config.json")
         k_angle_opt = stiff_opt_config["k_angle"]
-        new_bond_length = stiff_opt_config["bond_length"] # if manually tuning
+
+        if optimize_bond:
+            new_bond_length = stiff_opt_config["bond_length"] # if manually tuning
 
         if match_ideal_large_grid:
             small_optimal_grid_size = stiff_opt_config["grid_size"]
 
     config_small["k_angle"] = k_angle_opt
-    config_small["bond_length"] = new_bond_length
+
+    if optimize_bond:
+        config_small["bond_length"] = new_bond_length
 
 
     if match_ideal_large_grid:
