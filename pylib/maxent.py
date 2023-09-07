@@ -35,6 +35,7 @@ class Maxent:
         analysis_on: bool = True,
         initial_chis: Optional[bool] = None,
         dampen_first_step: bool = True,
+        diag_only: bool = False,
     ):
         """
         root: root of maxent filesystem
@@ -56,7 +57,10 @@ class Maxent:
         if "goals" not in self.params:
             raise ValueError("goals are not specified in parameters")
 
-        self.update_default_config()
+        if not diag_only:
+            # this only pertains to plaid settings in the default config
+            self.update_default_config()
+
         self.defaultsim = Pysim(self.resources, self.config, self.seqs, mkdir=False)
         if initial_chis is None:
             self.initial_chis = self.defaultsim.flatten_chis()
@@ -75,6 +79,10 @@ class Maxent:
         self.dampen_first_step = dampen_first_step
         self.lengthen_iterations = lengthen_iterations
         self.analysis_on = analysis_on
+
+        self.diag_only = diag_only
+        if self.diag_only:
+            self.defaultsim.config["plaid_on"] = False
 
     def set_root(self, root: PathLike):
         """

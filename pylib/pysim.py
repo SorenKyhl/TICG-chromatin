@@ -108,11 +108,15 @@ class Pysim:
         """restructure chi parameters into a 1-dimensional list
         Returns: [1 x n] list = [plaid_chis, diag_chis]
         """
-        indices = np.triu_indices(self.config["nspecies"])
-        plaid_chis = np.array(self.config["chis"])[indices]
-        diag_chis = np.array(self.config["diag_chis"])
-        flat_chis = np.hstack((plaid_chis, diag_chis))
-        return flat_chis
+        if self.config["plaid_on"]:
+            indices = np.triu_indices(self.config["nspecies"])
+            plaid_chis = np.array(self.config["chis"])[indices]
+            diag_chis = np.array(self.config["diag_chis"])
+            flat_chis = np.hstack((plaid_chis, diag_chis))
+            return flat_chis
+        else:
+            # no plaid chis, just return diag
+            return self.config["diag_chis"]
 
     def chis_to_matrix(self, flat_chis):
         """restructure 1-D list of plaid chis into matrix
@@ -132,9 +136,12 @@ class Pysim:
 
     def set_chis(self, allchis):
         """takes 1d vector of all chis and updates config chi parameters"""
-        plaid_chis_flat, diag_chis = self.split_chis(allchis)
-        self.config["chis"] = self.chis_to_matrix(plaid_chis_flat).tolist()
-        self.config["diag_chis"] = diag_chis.tolist()
+        if self.config["plaid_on"]:
+            plaid_chis_flat, diag_chis = self.split_chis(allchis)
+            self.config["chis"] = self.chis_to_matrix(plaid_chis_flat).tolist()
+            self.config["diag_chis"] = diag_chis.tolist()
+        else:
+            self.config["diag_chis"] = allchis
 
     def load_observables(self, jacobian=False):
         """load observable trajectories from simulation output.
@@ -145,7 +152,8 @@ class Pysim:
             raise ValueError("data out member variable has not been initialized")
 
         obs_files = []
-        obs_files.append(self.root / self.data_out / "observables.traj")
+        if self.config["plaid_on"]:
+            obs_files.append(self.root / self.data_out / "observables.traj")
         obs_files.append(self.root / self.data_out / "diag_observables.traj")
 
         df_total = pd.DataFrame()

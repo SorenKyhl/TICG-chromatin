@@ -74,14 +74,17 @@ class Sim:
             self.k = np.shape(self.seqs)[0]
         except OSError:
             logging.error("error loading sequences")
+            self.seqs = []
 
         try:
             self.obs_full = pd.read_csv(
                 self.path / "observables.traj", sep="\t", header=None
             )
             self.obs = np.array(self.obs_full.mean().values[1:])
-        except FileNotFoundError:
+        except (FileNotFoundError, pd.errors.EmptyDataError) as e:
             logging.error("error loading plaid observables")
+            self.obs = []
+            self.obs_full = []
 
         try:
             self.diag_obs_full = pd.read_csv(
@@ -90,6 +93,8 @@ class Sim:
             self.diag_obs = np.array(self.diag_obs_full.mean().values[1:])
         except FileNotFoundError:
             logging.error("error loading diag observables")
+            self.diag_obs = []
+            self.diag_obs_full = []
 
         try:
             self.obs_tot = np.hstack((self.obs, self.diag_obs))
@@ -215,10 +220,13 @@ class Sim:
                     self.config["chi" + letters[i] + letters[j]] = self.chi[j, i]
 
     def load_seqs(self):
-        seqs = []
-        for file in self.config["bead_type_files"]:
-            seqs.append(np.loadtxt(self.path / file))
-        seqs = np.array(seqs)
+        if self.config["bead_type_files"]:
+            seqs = []
+            for file in self.config["bead_type_files"]:
+                seqs.append(np.loadtxt(self.path / file))
+            seqs = np.array(seqs)
+        else:
+            seqs = []
         return seqs
 
     def get_smatrix(self):
@@ -394,14 +402,23 @@ def get_contactmap(filename, norm=True, log=False, rawcounts=False, normtype="me
 
 
 @njit
-def get_diagonal(contact):
+def get_diagonal(contact, std=False):
     """Returns the probablity of contact as a function of genomic distance"""
     rows, cols = np.shape(contact)
     d = np.zeros(rows)
     for k in range(rows):
         d[k] = np.mean(np.diag(contact, k))
+
     return d
 
+@njit
+def get_diagonal_error(contact, std=False):
+    """Returns the standard deviation in the probablity of contact as a function of genomic distance"""
+    rows, cols = np.shape(contact)
+    error = np.zeros(rows)
+    for k in range(rows):
+        error[k] = np.std(np.diag(contact, k))
+    return error
 
 @njit
 def get_oe(contact, diagonal=None):
@@ -475,16 +492,19 @@ def plot_contactmap(
         plt.title(title)
 
 
-def plot_diagonal(diag, *args, scale="semilogy", label=None):
+def plot_diagonal(diag, *args, scale="semilogy", error=False, label=None):
     if diag.ndim == 2:
         diag = get_diagonal(
             diag
         )  # in case the input is a full matrix instead of just the diagonal
 
     if scale == "semilogy":
-        plt.semilogy(np.linspace(1 / len(diag), 1, len(diag)), diag, *args, label=label)
+        plot_fn = plt.semilogy
     elif scale == "loglog":
-        plt.loglog(np.linspace(1 / len(diag), 1, len(diag)), diag, *args, label=label)
+        plot_fn = plt.loglog
+    
+    x_vec = np.linspace(1 / len(diag), 1, len(diag))
+    plot_fn(x_vec, diag, *args, label=label)
 
 
 def plot_energy(sim):
@@ -510,9 +530,11 @@ def plot_energy(sim):
 
 
 def plot_obs(sim, diag=True):
-    o = np.array(sim.obs_full.T)
+    if len(sim.obs_full):
+        o = np.array(sim.obs_full.T)
+        plt.plot(o[1:].T)
+
     d = np.array(sim.diag_obs_full.T)
-    plt.plot(o[1:].T)
     if diag:
         plt.figure()
         plt.semilogy(d[1:].T)
@@ -1246,11 +1268,16 @@ def fill_subdiagonal(a, offset, fn):
 
 def get_goals(hic, seqs, config, save_path=None):
     """get maximum entropy goals for simulation observables"""
-    plaid = get_goal_plaid(hic, seqs, config)
+    if len(seqs) > 0:
+        plaid = get_goal_plaid(hic, seqs, config)
+    else:
+        plaid = []
+
     diag = get_goal_diag(hic, config)
 
     if save_path is not None:
-        np.savetxt(save_path, plaid, newline=" ", fmt="%.8f")
+        if plaid:
+            np.savetxt(save_path, plaid, newline=" ", fmt="%.8f")
         np.savetxt(save_path, diag, newline=" ", fmt="%.8f")
 
     return np.hstack((plaid, diag))
@@ -1264,9 +1291,9 @@ def plot_consistency(sim):
     """ensure simulation observables are consistent with goals
     computed from simulation contact map"""
 
-    if len(sim.hic) != len(sim.seqs[0]):
+    if len(sim.hic) != sim.config["nbeads"]:
         return 0
-        size = np.shape(sim.seqs[0])[0]
+        size = sim.config["nbeads"]
         hic = resize_contactmap(sim.hic, size, size)
     else:
         hic = sim.hic
@@ -1411,7 +1438,7 @@ def load_contactmap_hicstraw(hicfile, res, chrom, start, end, clean=False, KR=Tr
 
 def load_contactmap_with_buffers(mzd, start, end, res):
     """have to buffer getRecordsAsMatrix otherwise bad things happen"""
-    bufsize = 5_000_000  # increment
+    bufsize = int(1000*res)  # increment
     width = end - start
 
     print(width)
