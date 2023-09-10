@@ -11,6 +11,7 @@ from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import calculate_diag_chi_step
 from pylib.utils.plotting_utils import BLUE_RED_CMAP, plot_mean_dist
 from pylib.utils.xyz import xyz_load, xyz_to_contact_grid, xyz_to_distance
+from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (
@@ -142,6 +143,41 @@ def compare_S(dataset):
         plt.savefig(osp.join(s_dir, 'S_vs_max_ent_S.png'))
         plt.close()
 
+def compare_S2():
+    S1 = np.load('/home/erschultz/dataset_02_04_23/samples/sample204/optimize_grid_b_261_phi_0.01-max_ent10/iteration30/S.npy')
+    S2 = np.load('/home/erschultz/dataset_02_04_23/samples/sample204/optimize_grid_b_261_phi_0.01-max_ent10-init_diag/iteration30/S.npy')
+
+
+    fig, (ax1, ax2, ax3, axcb) = plt.subplots(1, 4,
+                            gridspec_kw={'width_ratios':[1,1,1,0.08]})
+    fig.set_figheight(6)
+    fig.set_figwidth(6*2.5)
+    arr = np.array([S1, S2])
+    vmin = np.nanpercentile(arr, 1)
+    vmax = np.nanpercentile(arr, 99)
+    vmax = max(vmax, vmin * -1)
+    vmin = vmax * -1
+    s1 = sns.heatmap(S1, linewidth = 0, vmin = vmin, vmax = vmax, cmap = BLUE_RED_CMAP,
+                    ax = ax1, cbar = False)
+    s1.set_title(f'$S1$', fontsize = 16)
+    s1.set_yticks([])
+    s2 = sns.heatmap(S2, linewidth = 0, vmin = vmin, vmax = vmax, cmap = BLUE_RED_CMAP,
+                    ax = ax2, cbar = False)
+    s2.set_title(r'$S2$', fontsize = 16)
+    s2.set_yticks([])
+    diff = S1 - S2
+    rmse = mean_squared_error(S1, S2, squared=False)
+    s3 = sns.heatmap(diff, linewidth = 0, vmin = vmin, vmax = vmax, cmap = BLUE_RED_CMAP,
+                    ax = ax3, cbar_ax = axcb)
+    title = (f'Difference (RMSE: {rmse:.2f})\n'
+            r'($S1$ - $S2$)')
+    s3.set_title(title, fontsize = 16)
+    s3.set_yticks([])
+
+    plt.tight_layout()
+    plt.savefig(osp.join('/home/erschultz/dataset_02_04_23/samples/sample204/', 'S_vs_S.png'))
+    plt.close()
+
 def compare_p_s_bonded():
     '''Compare c++ to python implementation'''
     dir = '/home/erschultz/dataset_bonded/bond_type_DSS/m_512/bond_length_140/phi_0.01'
@@ -198,7 +234,7 @@ def compare_p_s_bonded2():
     plt.savefig(osp.join(dataset, 'p_s_bonded.png'))
     plt.close()
 
-def compare_d_s():
+def compare_d_s_bonded():
     '''Compare p(s) curves in dataset_bonded'''
     dataset = '/home/erschultz/dataset_bonded'
     m=512; phi=0.01; b=261; bond_type='gaussian'
@@ -265,6 +301,88 @@ def compare_p_s_bonded3():
     plt.savefig(osp.join(data_dir, 'p_s_bonded.png'))
     plt.close()
 
+def compare_d_s_max_ent():
+    '''Compare p(s) curves in dataset_bonded'''
+    s_dir = '/home/erschultz/Su2020/samples/sample1013'
+    m=512
+    for ar in [1, 2.0, 4.0]:
+        if ar == 1.0:
+            f = 'optimize_grid_b_261_phi_0.01-max_ent10'
+        else:
+            f = f'optimize_grid_b_261_phi_0.01_spheroid_{ar}-max_ent10'
+        dir = osp.join(s_dir, f)
+        final = get_final_max_ent_folder(dir)
+        xyz = xyz_load(osp.join(final, 'production_out/output.xyz'), multiple_timesteps=True)
+        D = xyz_to_distance(xyz)
+        log_labels = np.linspace(0, (m-1), m)
+        D = np.nanmean(D, axis = 0)
+        meanDist_D = DiagonalPreprocessing.genomic_distance_statistics(D, mode='freq')
+        plt.plot(log_labels, meanDist_D, label=f'Max Ent ar={ar}')
+
+
+    D_exp = np.load('/home/erschultz/Su2020/samples/sample1013/D_crop.npy')
+    meanDist_D_exp = DiagonalPreprocessing.genomic_distance_statistics(D_exp, mode='freq')
+    nan_rows = np.isnan(meanDist_D_exp)
+    plt.plot(log_labels[~nan_rows], meanDist_D_exp[~nan_rows],
+                label='Experiment', color='k')
+
+    plt.yscale('log')
+    plt.xscale('log')
+    plt.ylabel('Distance (nm)')
+    plt.xlabel('Polymer Distance (m)')
+    plt.legend()
+    plt.savefig(osp.join(s_dir, 'd_s_max_ent.png'))
+    plt.close()
+
+
+def compare_meanDist_S():
+    sample = 2
+    data_dir = '/home/erschultz/dataset_08_25_23/samples'
+    s_dir = osp.join(data_dir, f'sample{sample}')
+    Sgnn = np.load(osp.join(s_dir, 'optimize_grid_b_261_phi_0.01-GNN457/S.npy'))
+    Sgt = np.load(osp.join(s_dir, 'S.npy'))
+    for S, label in zip([Sgt, Sgnn],['Ground Truth', 'GNN']):
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(S, 'freq')
+        plt.plot(meanDist, label = label)
+    plt.legend()
+    plt.xscale('log')
+    plt.ylabel('Mean', fontsize=16)
+    plt.xlabel('Off-diagonal Index', fontsize=16)
+    plt.savefig(osp.join(s_dir, 'meanDist_S.png'))
+    plt.close()
+
+def compare_p_s_modified():
+    dataset='dataset_02_04_23'
+    data_dir = osp.join('/home/erschultz', dataset)
+    fig, ax = plt.subplots()
+    ax2 = ax.twinx()
+    for sample in range(201, 211):
+        s_dir = osp.join(data_dir, 'samples', f'sample{sample}')
+        y_exp = np.load(osp.join(s_dir, 'y.npy'))
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(y_exp, 'prob')
+        ax.plot(meanDist, c = 'k')
+
+        b=261; phi=0.01; k=10
+        max_ent_dir = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}-max_ent{k}')
+        for f in ['copy_S_delta']:
+            f_dir = osp.join(max_ent_dir, f)
+            y = np.load(osp.join(f_dir, 'y.npy'))
+            meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+            ax.plot(meanDist, label = sample)
+
+            S = np.load(osp.join(f_dir, 'S.npy'))
+            meanDist_S = DiagonalPreprocessing.genomic_distance_statistics(S, 'freq')
+            ax2.plot(meanDist_S)
+    ax.set_yscale('log')
+    ax.set_xscale('log')
+    ax.set_xlabel('Genomic Distance (s)')
+    ax.set_ylabel('P(s)')
+    ax.set_ylabel(r'Mean$(S_{|i-j|=s}$ ')
+    ax.legend()
+    plt.tight_layout()
+    plt.savefig(osp.join(data_dir, 'meanDist_modified.png'))
+    plt.close()
+
 
 
 def compare_xyz():
@@ -294,6 +412,10 @@ def compare_xyz():
 if __name__ == '__main__':
     # compare_diag_params()
     # compare_S('dataset_04_28_23')
+    compare_S2()
     # compare_p_s_bonded2()
-    compare_d_s()
+    # compare_d_s()
+    # compare_d_s_max_ent()
+    # compare_meanDist_S()
+    # compare_p_s_modified()
     # compare_xyz()

@@ -15,8 +15,3 @@ source $sourceFile
 
 
 python3 ~/TICG-chromatin/bin/datasets/run_new.py --start 3001 --end 3500 --jobs 125 --data_folder $dataFolder --scratch $scratchDir --m $m --n_sweeps $nSweeps --dump_frequency $dumpFrequency --TICG_seed $TICGSeed --phi_chromatin $phiChromatin --bead_vol $beadVol --bond_length $bondLength --track_contactmap $trackContactMap --overwrite
-
-
-echo $waitCount
-
-wait

@@ -42,7 +42,7 @@ def bonded_simulations():
     config['grid_size'] = 1000
 
     mapping = []
-    for boundary_type, ar in [('spherical', 1.0), ('spheroid', 1.5), ('spheroid', 2.0)]:
+    for boundary_type, ar in [('spherical', 1.0)]:
         boundary_dir = f'boundary_{boundary_type}'
         if ar != 1.0:
             boundary_dir += f'_{ar}'
@@ -53,7 +53,7 @@ def bonded_simulations():
             bond_dir = osp.join(boundary_dir, f'bond_type_{bond_type}')
             if not osp.exists(bond_dir):
                 os.mkdir(bond_dir, mode=0o755)
-            for m in [2048]:
+            for m in [64]:
                 m_dir = osp.join(bond_dir, f'm_{m}')
                 if not osp.exists(m_dir):
                     os.mkdir(m_dir, mode=0o755)
@@ -61,12 +61,11 @@ def bonded_simulations():
                     b_dir = osp.join(m_dir, f'bond_length_{b}')
                     if not osp.exists(b_dir):
                         os.mkdir(b_dir, mode=0o755)
-                    for phi in [0.06]:
+                    for phi in [1e-5]:
                         phi_dir = osp.join(b_dir, f'phi_{phi}')
                         if not osp.exists(phi_dir):
                             os.mkdir(phi_dir, mode=0o755)
-                        for k_angle in [0, 1.5]:
-                            k_angle = np.round(k_angle, 1)
+                        for k_angle in [0, 1, 10, 100]:
                             config = config.copy()
                             config['bond_length'] = b
                             config['phi_chromatin'] = phi
@@ -85,6 +84,7 @@ def bonded_simulations():
                                 os.mkdir(k_angle_dir, mode=0o755)
                             mapping.append((k_angle_dir, config))
 
+    print(len(mapping))
     with mp.Pool(min(len(mapping), 10)) as p:
         p.starmap(run, mapping)
 
@@ -92,52 +92,51 @@ def plot_bond_length():
     dataset = osp.join(default.root, 'dataset_bonded')
     X = []
     Y = []
-    for boundary_type, ar in [('spherical', 1.0), ('spheroid', 1.5), ('spheroid', 2.0)]:
+    for boundary_type, ar in [('spherical', 1.0)]:
         if boundary_type == 'spheroid':
             boundary_type += f'_{ar}'
         for bond_type in ['gaussian']:
-            for m in [512]:
+            for m in [64]:
                 for b in [261]:
-                    for phi in [0.01]:
-                        for k_angle in [0]:
-                            # np.arange(0, 1.1, 0.1)
-                            k_angle = np.round(k_angle, 1)
+                    for phi in [1e-5]:
+                        for k_angle in [0, 1, 10, 100]:
+                            # k_angle = np.round(k_angle, 1)
                             dir = osp.join(dataset, f'boundary_{boundary_type}/bond_type_{bond_type}/m_{m}/bond_length_{b}/phi_{phi}')
                             if k_angle != 0:
                                 dir = osp.join(dir, f'angle_{k_angle}')
                             xyz = xyz_load(osp.join(dir, 'production_out/output.xyz'),
                                             multiple_timesteps=True, N_min=1)
                             xyz = xyz.reshape(-1, m, 3)
-                            D = xyz_to_distance(xyz)
+                            D = xyz_to_distance(xyz) **2
                             N = len(D)
-                            # data = []
-                            # for i in range(N):
-                                # data.append(np.diagonal(D[i], 1))
-                            # simple_histogram(data, xlabel='Bond Length', odir=dir,
-                            #                 ofname='bond_length_dist.png', dist=norm)
+                            data = []
+                            for i in range(N):
+                                data.append(np.diagonal(D[i], 1))
+                            simple_histogram(data, xlabel='Bond Length', odir=dir,
+                                            ofname='bond_length_dist.png', dist=norm)
                             #
-                            # angles = xyz_to_angles(xyz).flatten()
-                            # simple_histogram(angles, xlabel=r'Angle $\theta$',
-                            #                 odir=dir,
-                            #                 ofname='angle_dist.png', dist=norm)
+                            angles = xyz_to_angles(xyz).flatten()
+                            simple_histogram(angles, xlabel=r'Angle $\theta$',
+                                            odir=dir,
+                                            ofname='angle_dist.png', dist=norm)
 
-                            log_labels = np.linspace(0, (m-1), m)
-                            D = np.nanmean(D, axis = 0)
-                            meanDist_D = DiagonalPreprocessing.genomic_distance_statistics(D, mode='freq')
-                            plt.plot(log_labels, meanDist_D, label='Simulation')
-
-                            D_exp = np.load('/home/erschultz/Su2020/samples/sample1013/D_crop.npy')
-                            meanDist_D_exp = DiagonalPreprocessing.genomic_distance_statistics(D_exp, mode='freq')
-                            nan_rows = np.isnan(meanDist_D_exp)
-                            plt.plot(log_labels[~nan_rows], meanDist_D_exp[~nan_rows],
-                                        label='Experiment', color='k')
-                            plt.legend()
-                            plt.ylabel('Distance (nm)')
-                            plt.xlabel('Polymer Distance (m)')
-                            plt.xscale('log')
-                            plt.tight_layout()
-                            plt.savefig(osp.join(dir, 'meanDist_D.png'))
-                            plt.close()
+                            # log_labels = np.linspace(0, (m-1), m)
+                            # D = np.nanmean(D, axis = 0)
+                            # meanDist_D = DiagonalPreprocessing.genomic_distance_statistics(D, mode='freq')
+                            # plt.plot(log_labels, meanDist_D, label='Simulation')
+                            #
+                            # D_exp = np.load('/home/erschultz/Su2020/samples/sample1013/D_crop.npy')
+                            # meanDist_D_exp = DiagonalPreprocessing.genomic_distance_statistics(D_exp, mode='freq')
+                            # nan_rows = np.isnan(meanDist_D_exp)
+                            # plt.plot(log_labels[~nan_rows], meanDist_D_exp[~nan_rows],
+                            #             label='Experiment', color='k')
+                            # plt.legend()
+                            # plt.ylabel('Distance (nm)')
+                            # plt.xlabel('Polymer Distance (m)')
+                            # plt.xscale('log')
+                            # plt.tight_layout()
+                            # plt.savefig(osp.join(dir, 'meanDist_D.png'))
+                            # plt.close()
 
     #                         with open(osp.join(k_angle_dir, 'production_out/log.log')) as f:
     #                             for line in f.readlines():
@@ -146,16 +145,17 @@ def plot_bond_length():
     #                                     print(vol)
     #                                     break
     #                         X.append(phi)
-    #                         Y.append(np.sqrt(np.mean(data)))
+                            X.append(k_angle)
+                            Y.append(np.sqrt(np.mean(data)))
     #
     #
     # plt.plot(X, Y)
-    # plt.axhline(b, ls='--', c='k')
+    # # plt.axhline(b, ls='--', c='k')
     # # plt.xlabel('Simulation Volume um^3')
-    # plt.xlabel('Phi')
+    # plt.xlabel('k_angle')
     # plt.ylabel('Root Mean Square Bond Length')
     # plt.xscale('log')
-    # plt.savefig('/home/erschultz/TICG-chromatin/figures/bond_length.png')
+    # plt.savefig('/home/erschultz/TICG-chromatin/figures/bond_length2.png')
     # plt.close()
 
 def main(root, config, mode='grid_angle10'):

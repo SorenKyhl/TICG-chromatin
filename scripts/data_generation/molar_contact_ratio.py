@@ -11,7 +11,7 @@ import torch
 import torch_geometric
 from modify_maxent import get_samples, plaid_dist
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
-from pylib.utils.plotting_utils import RED_BLUE_CMAP, RED_CMAP
+from pylib.utils.plotting_utils import BLUE_RED_CMAP, RED_BLUE_CMAP, RED_CMAP
 from pylib.utils.utils import pearson_round
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
@@ -131,7 +131,7 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
         return mse_dict
 
     samples, experimental = get_samples(dataset)
-    samples = np.array(samples)[:500] # cap at 500
+    samples = np.array(samples)[:100] # cap at 100
     print('samples:', samples)
 
     N = len(samples)
@@ -233,8 +233,10 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
 
 
         # crop samples for plotting
-        plot_n = 10
-        rows=2; cols=5
+        plot_n = 12
+        rows=2; cols=6
+        height = 6*rows; width = 3*cols
+        width_ratios = [1]*cols+[0.08]
         y_arr = np.array(y_list)
         L_arr = np.array(L_list)
         S_arr = np.array(S_list)
@@ -246,9 +248,9 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
         # plot contact maps orderd by rab
         ind = np.argsort(k_means_rab[:plot_n])
         fig, ax = plt.subplots(rows, cols+1,
-                                gridspec_kw={'width_ratios':[1,1,1,1,1,0.08]})
-        fig.set_figheight(6*2)
-        fig.set_figwidth(6*3)
+                                gridspec_kw={'width_ratios':width_ratios})
+        fig.set_figheight(height)
+        fig.set_figwidth(width)
         vmin = 0; vmax = np.mean(y_arr)
         row = 0; col=0
         for y, val, sample in zip(y_arr[ind], k_means_rab[ind], samples[ind]):
@@ -273,9 +275,9 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
 
         # plot S orderd by rab
         fig, ax = plt.subplots(rows, cols+1,
-                                gridspec_kw={'width_ratios':[1,1,1,1,1,0.08]})
-        fig.set_figheight(6*2)
-        fig.set_figwidth(6*3)
+                                gridspec_kw={'width_ratios':width_ratios})
+        fig.set_figheight(height)
+        fig.set_figwidth(width)
         vmin = np.nanpercentile(S_arr, 1)
         vmax = np.nanpercentile(S_arr, 99)
         vmax = max(vmax, vmin * -1)
@@ -283,10 +285,10 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
         row = 0; col=0
         for S, val, sample in zip(S_arr[ind], k_means_rab[ind], samples[ind]):
             if col == 0:
-                s = sns.heatmap(S, linewidth = 0, vmin = vmin, vmax = vmax, cmap = RED_BLUE_CMAP,
+                s = sns.heatmap(S, linewidth = 0, vmin = vmin, vmax = vmax, cmap = BLUE_RED_CMAP,
                     ax = ax[row][col], cbar_ax = ax[row][-1])
             else:
-                s = sns.heatmap(S, linewidth = 0, vmin = vmin, vmax = vmax, cmap = RED_BLUE_CMAP,
+                s = sns.heatmap(S, linewidth = 0, vmin = vmin, vmax = vmax, cmap = BLUE_RED_CMAP,
                     ax = ax[row][col], cbar = False)
             s.set_title(f'Sample {sample}\nPlaid Score = {np.round(val, 1)}', fontsize = 16)
             s.set_xticks([])
@@ -304,9 +306,9 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
         # plot S_dag orderd by rab
         S_dag_arr = np.array([np.sign(S) * np.log(np.abs(S)+1) for S in S_arr])
         fig, ax = plt.subplots(rows, cols+1,
-                                gridspec_kw={'width_ratios':[1,1,1,1,1,0.08]})
-        fig.set_figheight(6*2)
-        fig.set_figwidth(6*3)
+                                gridspec_kw={'width_ratios':width_ratios})
+        fig.set_figheight(height)
+        fig.set_figwidth(width)
         vmin = np.nanpercentile(S_dag_arr, 1)
         vmax = np.nanpercentile(S_dag_arr, 99)
         vmax = max(vmax, vmin * -1)
@@ -314,10 +316,10 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
         row = 0; col=0
         for S_dag, val, sample in zip(S_dag_arr[ind], k_means_rab[ind], samples[ind]):
             if col == 0:
-                s = sns.heatmap(S_dag, linewidth = 0, vmin = vmin, vmax = vmax, cmap = RED_BLUE_CMAP,
+                s = sns.heatmap(S_dag, linewidth = 0, vmin = vmin, vmax = vmax, cmap = BLUE_RED_CMAP,
                     ax = ax[row][col], cbar_ax = ax[row][-1])
             else:
-                s = sns.heatmap(S_dag, linewidth = 0, vmin = vmin, vmax = vmax, cmap = RED_BLUE_CMAP,
+                s = sns.heatmap(S_dag, linewidth = 0, vmin = vmin, vmax = vmax, cmap = BLUE_RED_CMAP,
                     ax = ax[row][col], cbar = False)
             s.set_title(f'Sample {sample}\nPlaid Score = {np.round(val, 1)}', fontsize = 16)
             s.set_xticks([])
@@ -401,5 +403,5 @@ if __name__ == '__main__':
     # molar_contact_ratio('dataset_02_06_23', 363)
     # molar_contact_ratio('dataset_02_13_23', 372)
     # molar_contact_ratio('dataset_03_03_23', 387)
-    molar_contact_ratio('dataset_04_28_23', None)
+    # molar_contact_ratio('dataset_04_28_23', None)
     molar_contact_ratio('dataset_08_25_23', None)

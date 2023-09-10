@@ -85,7 +85,10 @@ def run(args, i):
         config = utils.load_json('config.json')
 
         # get sequences
-        seqs = np.load('x.npy')
+        if osp.exists('x.npy'):
+            seqs = np.load('x.npy')
+        else:
+            seqs = None
 
         sim = Pysim('', config, seqs, randomize_seed = False, mkdir = False)
 

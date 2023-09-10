@@ -82,6 +82,7 @@ class Sim:
         self.chi = None
         self.seqs = None
         self.obs_full = None
+        self.obs_tot = None
         if self.config['plaid_on']:
             self.k = self.config['nspecies']
             if self.k > 0:
@@ -1070,6 +1071,8 @@ def plot_tri(first, second, vmaxp=None, oe=False, title="", dark=False, log=Fals
 
 def plot_obs_vs_goal(sim):
     """compare observables versus maxent goals"""
+    if sim.obs_tot is None:
+        return
     fig, axs = plt.subplots(2, figsize=(12, 14))
     obs = sim.obs_tot
     goal = sim.obj_goal_tot

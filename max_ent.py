@@ -5,16 +5,144 @@ import os.path as osp
 import shutil
 import sys
 
+import matplotlib.pyplot as plt
 import numpy as np
 import optimize_grid
+import pylib.analysis as analysis
 from pylib.Maxent import Maxent
+from pylib.Pysim import Pysim
 from pylib.utils import default, epilib, utils
-
+from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
+from pylib.utils.energy_utils import *
+from scripts.contact_map import getArgs, plot_all
+from scripts.data_generation.modify_maxent import get_samples
 from scripts.get_params import GetSeq
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import load_import_log
 
+
+def run(dir, config, x=None, S=None):
+    print(dir)
+    print(S.shape)
+    sim = Pysim(dir, config, x, randomize_seed = False, overwrite = True,
+                smatrix = S)
+    sim.run_eq(10000, config['nSweeps'], 1)
+    analysis.main_no_maxent(dir=dir)
+
+
+def modify_maxent():
+    dataset = 'dataset_02_04_23'
+    mapping = []
+    dir = f'/home/erschultz/{dataset}/samples/sample201'
+    dir = osp.join(dir, 'optimize_grid_b_261_phi_0.01-max_ent10')
+    config = utils.load_json(osp.join(dir, 'iteration30/production_out/config.json'))
+    S_ref = np.load(osp.join(dir, 'iteration30/S.npy'))
+    meanDist_S_ref = DiagonalPreprocessing.genomic_distance_statistics(S_ref, 'freq')
+    diag_chis_init1 = meanDist_S_ref -  meanDist_S_ref[1]
+    diag_chis_init1[0] = 0
+    print(diag_chis_init1[:10])
+    diag_chis_init1_dense = diag_chi_step_to_dense(diag_chis_init1, 64, 1, 16, 28)
+    np.save(osp.join(dir, 'diag_chis_init1.npy'), diag_chis_init1_dense)
+
+    diag_chis_init2 = meanDist_S_ref -  meanDist_S_ref[3]
+    diag_chis_init2[0:2] = 0
+    print(diag_chis_init2[:10])
+    return
+
+    for sample in range(201,205):
+        dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
+        dir = osp.join(dir, 'optimize_grid_b_261_phi_0.01-max_ent10')
+        config = utils.load_json(osp.join(dir, 'iteration30/production_out/config.json'))
+        S = np.load(osp.join(dir, 'iteration30/S.npy'))
+        x = np.load(osp.join(dir, 'resources/x.npy'))
+        chis = np.array(config['chis'])
+        diag_chis = calculate_diag_chi_step(config)
+        D = calculate_D(diag_chis)
+        L = calculate_L(x, chis)
+        S2 = calculate_S(L, D)
+
+        meanDist_S = DiagonalPreprocessing.genomic_distance_statistics(S, 'freq')
+        meanDist_L = DiagonalPreprocessing.genomic_distance_statistics(L, 'freq')
+        S_center = S - np.mean(S)
+        S_center2 = S - np.mean(S.diagonal())
+        S_center3 = S - diag_chis[1]
+        S_meanDist = calculate_D(meanDist_S)
+
+        diag_chis_init1 = meanDist_S - meanDist_S[1]
+        diag_chis_init1[0] = 0
+        D_init1 = calculate_D(diag_chis_init1)
+
+        diag_chis_init2 = meanDist_S -  meanDist_S[3]
+        diag_chis_init2[0:2] = 0
+        D_init2 = calculate_D(diag_chis_init2)
+
+        meanDist_delta = meanDist_S_ref - meanDist_S
+        D_delta = calculate_D(meanDist_delta)
+        S_delta = S + D_delta
+        L_meanDist = calculate_D(meanDist_L)
+
+        assert np.allclose(S, S2, 1e-3, 1e-3), f'{S-S2}'
+
+        for arr, label in zip([L,D,S],['L', 'D', 'S']):
+            meanDist = DiagonalPreprocessing.genomic_distance_statistics(arr, 'freq')
+            plt.plot(meanDist, label = label)
+        plt.xscale('log')
+        plt.ylabel('mean along diagonal')
+        plt.xlabel('diagonal')
+        plt.legend()
+        plt.savefig(osp.join(dir, 'MeanDist_LDS.png'))
+        plt.close()
+
+
+        config['nSweeps'] = 350000
+        s_config = config.copy()
+        s_config['chis'] = None
+        s_config['nspecies'] = 0
+        s_config['diag_chis'] = None
+        s_config['load_bead_types'] = False
+        s_config['bead_type_files'] = None
+        s_config['smatrix_filename'] = 'smatrix.txt'
+        s_config['diagonal_on'] = False
+        s_config['plaid_on'] = True
+        s_config['lmatrix_on'] = False
+        s_config['dmatrix_on'] = False
+
+        # root = osp.join(dir, 'copy')
+        # mapping.append([root, config.copy(), x, None])
+
+        # root = osp.join(dir, 'copy_S')
+        # mapping.append([root, s_config.copy(), None, S])
+
+        # root = osp.join(dir, 'copy_S_center')
+        # mapping.append([root, s_config.copy(), None, S_center])
+        # #
+        # root = osp.join(dir, 'copy_S_center2')
+        # mapping.append([root, s_config.copy(), None, S_center2])
+        #
+        # root = osp.join(dir, 'copy_S_center3')
+        # mapping.append([root, s_config.copy(), None, S_center3])
+
+        root = osp.join(dir, 'copy_D_init1')
+        mapping.append([root, s_config.copy(), None, D_init1])
+
+        root = osp.join(dir, 'copy_D_init2')
+        mapping.append([root, s_config.copy(), None, D_init2])
+
+        # root = osp.join(dir, 'copy_S_meanDist')
+        # mapping.append([root, s_config.copy(), None, S_meanDist])
+
+        # root = osp.join(dir, 'copy_S_delta')
+        # mapping.append([root, s_config.copy(), None, S_delta])
+
+
+        # root = osp.join(dir, 'copy_D')
+        # mapping.append([root, s_config.copy(), None, D])
+
+    print(len(mapping))
+    if len(mapping) > 1:
+        with mp.Pool(min(len(mapping), 5)) as p:
+            p.starmap(run, mapping)
 
 def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
                 aspect_ratio=1, bond_type='gaussian'):
@@ -108,9 +236,10 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
     else:
         raise Exception(f'Need to specify bin sizes for size={len(y)}')
 
-    config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
+    # config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
+    config['diag_chis'] = np.load('/home/erschultz/dataset_02_04_23/samples/sample201/optimize_grid_b_261_phi_0.01-max_ent10/diag_chis_init1.npy')
 
-    root = osp.join(dir, f'{root}-max_ent{k}')
+    root = osp.join(dir, f'{root}-max_ent{k}-init_diag')
     if osp.exists(root):
         # shutil.rmtree(root)
         print('WARNING: root exists')
@@ -129,13 +258,13 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
     params['equilib_sweeps'] = 10000
     params['production_sweeps'] = 350000
     params['stop_at_convergence'] = True
-    params['conv_defn'] = 'normal'
+    params['conv_defn'] = 'strict'
     params['run_longer_at_convergence'] = False
 
     stdout = sys.stdout
     with open(osp.join(root, 'log.log'), 'w') as sys.stdout:
         me = Maxent(root, params, config, seqs, y,
-                    final_it_sweeps=350000, mkdir=False)
+                    final_it_sweeps=350000, mkdir=False, bound_diag_chis=False)
         t = me.fit()
         print(f'Simulation took {np.round(t, 2)} seconds')
     sys.stdout = stdout
@@ -143,43 +272,34 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
 def main():
     # dataset = 'dataset_05_31_23'; samples = list(range(1137, 1214))
     # dataset = 'downsampling_analysis'; samples = list(range(201, 211))
-    # dataset = 'dataset_02_04_23'; all_samples = range(201, 283)
+    dataset = 'dataset_02_04_23';
     # dataset = 'dataset_02_04_23'; samples = [211, 212, 213, 214, 215, 216, 217,
                                                 # 218, 219, 220, 221, 222, 223, 224]
-    dataset = 'Su2020'; samples = [1013]
+    # dataset = 'Su2020'; samples = [1013]
     # dataset = 'dataset_04_28_23'; samples = [1,2,3,4,5,324,981,1753,1936,2834,3464]
     # dataset = 'dataset_04_05_23'; samples = list(range(1211, 1288))
     # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105,
                                                 # 601,602,603,604,605]
-    # dataset = 'dataset_08_25_23'; samples=range(1,16)
+    # dataset = 'dataset_08_25_23'; samples=[981]
     # samples = sorted(np.random.choice(samples, 12, replace = False))
     # dataset = 'timing_analysis/512'; samples = list(range(1, 16))
 
-    # odd_samples = []
-    # even_samples = []
-    # for s in all_samples:
-    #     s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{s}')
-    #     result = load_import_log(s_dir)
-    #     chrom = int(result['chrom'])
-    #     if chrom % 2 == 0:
-    #         even_samples.append(s)
-    #     else:
-    #         odd_samples.append(s)
-    # samples = even_samples[:10]
+    samples, _ = get_samples(dataset, train=True)
+    samples = samples
 
     mapping = []
     for i in samples:
         for phi in [0.01]:
-            for ar in [2.0, 4.0]:
+            for ar in [1.0]:
                 mapping.append((dataset, i, f'samples', 261, phi, None, ar, 'gaussian'))
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(2) as p:
+    with mp.Pool(5) as p:
+        # p.starmap(setup_config, mapping)
         p.starmap(fit, mapping)
-    # for i in samples:
-    #     setup_config(dataset, i, 'samples')
 
 
 if __name__ == '__main__':
+    # modify_maxent()
     main()

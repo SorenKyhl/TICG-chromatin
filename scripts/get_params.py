@@ -1626,10 +1626,26 @@ class GetEnergy():
         yhat = model(data)
         yhat = yhat.cpu().detach().numpy().reshape((opt.m,opt.m))
 
-        if opt.output_preprocesing == 'log':
+        if 'log' in opt.output_preprocesing:
             yhat = np.multiply(np.sign(yhat), np.exp(np.abs(yhat)) - 1)
             # Note that ln(L + D) doesn't simplify
             # so plaid_hat and diagonal_hat can't be compared to the ground truth
+
+        if 'center' in opt.output_preprocesing and 'norm' in opt.output_preprocesing:
+            ref = np.load(osp.join(data.path, 'S.npy'))
+            ref_mean = np.mean(ref)
+            ref_center = ref - ref_mean
+            ref_max = np.max(np.abs(ref_center))
+            yhat *= ref_max
+            yhat += ref_mean
+        elif 'norm' in opt.output_preprocesing:
+            ref = np.load(osp.join(data.path, 'S.npy'))
+            ref_max = np.max(np.abs(ref))
+            yhat *= ref_max
+        elif 'center' in opt.output_preprocesing:
+            ref = np.load(osp.join(data.path, 'S.npy'))
+            ref_mean = np.mean(ref)
+            yhat += ref_mean
 
         # if plaid_hat is not None and diagonal_hat is not None and verbose:
         #     # plot plaid contribution

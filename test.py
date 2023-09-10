@@ -23,11 +23,10 @@ from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
 from pylib.utils.plotting_utils import BLUE_RED_CMAP
 from pylib.utils.utils import load_json
 from scipy.ndimage import uniform_filter
-from sklearn.decomposition import PCA
-from sklearn.metrics import mean_squared_error
-
 from scripts.data_generation.modify_maxent import get_samples
 from scripts.get_params import GetEnergy, GetSeq
+from sklearn.decomposition import PCA
+from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
 
@@ -588,40 +587,6 @@ def compare_scc_bio_replicates():
     corr_scc = scc.scc(y_a, y_b, var_stabilized = False)
     corr_scc_var = scc.scc(y_a, y_b, var_stabilized = True)
     print(corr_scc, corr_scc_var)
-
-def main():
-    dir = '/home/erschultz/dataset_02_06_23/molar_contact_ratio'
-    def simple_plot(arr, fname, bins=np.logspace(np.log10(1),np.log10(1000), 50)):
-        n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
-                                    bins = bins,
-                                    alpha = 0.5)
-        plt.ylabel('probability', fontsize=16)
-        plt.xscale('log')
-        plt.savefig(osp.join(dir, fname))
-        plt.close()
-
-
-    mse_arr = np.load(osp.join(dir, 'mse.npy'))
-    simple_plot(mse_arr, 'mse_distribution.png', np.logspace(np.log10(0.01),np.log10(1), 50))
-
-    kmeans_arr = np.load(osp.join(dir, 'kmeans_Rab.npy'))
-    simple_plot(kmeans_arr, 'kmeans_distribution.png')
-    result = pearson_round(kmeans_arr, mse_arr, stat = 'spearman')
-    print(result)
-
-    kmeans_exp = np.load('/home/erschultz/dataset_01_26_23/molar_contact_ratio/kmeans_Rab.npy')
-    for arr, label in zip([kmeans_arr, kmeans_exp], ['Synthetic', 'Experiment']):
-        print(label)
-        print(np.min(arr), np.max(arr))
-        n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
-                                    bins = np.logspace(np.log10(1),np.log10(1000), 50),
-                                    alpha = 0.5, label = label)
-    plt.legend()
-    plt.ylabel('probability', fontsize=16)
-    plt.xlabel('KMeans Plaid Score', fontsize=16)
-    plt.xscale('log')
-    plt.savefig(osp.join(dir, f'kmeans_vs_exp_distribution.png'))
-    plt.close()
 
 def gnn_of_max_ent(samples, k, ID):
     '''Analysis of results for running GNN on max ent of experimental data'''

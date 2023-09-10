@@ -9,6 +9,7 @@ from collections import defaultdict
 import numpy as np
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import calculate_diag_chi_step, calculate_L
+from pylib.utils.utils import pearson_round
 from scipy.stats import laplace, multivariate_normal, norm, qmc, skewnorm
 from sklearn.neighbors import KernelDensity
 
@@ -20,7 +21,7 @@ sys.path.insert(0, '/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (load_import_log,
                                                           load_max_ent_S,
                                                           load_Y)
-from sequences_to_contact_maps.scripts.utils import pearson_round, triu_to_full
+from sequences_to_contact_maps.scripts.utils import triu_to_full
 
 LETTERS='ABCDEFGHIJKLMN'
 
@@ -115,6 +116,11 @@ class DatasetGenerator():
         self.exp_samples = odd_samples
 
     def plaid_params(self):
+        if self.plaid_mode == 'none':
+            for i in range(self.N):
+                self.sample_dict[i]['k'] = 0
+                self.sample_dict[i]['chi_method'] = 'none'
+            return
         for i in range(self.N):
             self.sample_dict[i]['k'] = self.k
             if self.k == 0:
@@ -391,16 +397,20 @@ class DatasetGenerator():
             j = np.random.choice(converged_samples)
             meanDist_S = meanDist_S_dict[j]
 
-            file = osp.split(self.sample_dict[i]['method'])[-1]
-            path = osp.join(f'/home/erschultz/{self.dataset}/setup/', file)
-            seq = np.load(path)
-            file = osp.split(self.sample_dict[i]['chi_method'])[-1]
-            path = osp.join(f'/home/erschultz/{self.dataset}/setup/', file)
-            chi = np.load(path)
-            L = calculate_L(seq, chi)
+            # adjust based on L
+            if 'method' in self.sample_dict[i]:
+                file = osp.split(self.sample_dict[i]['method'])[-1]
+                path = osp.join(f'/home/erschultz/{self.dataset}/setup/', file)
+                seq = np.load(path)
+                file = osp.split(self.sample_dict[i]['chi_method'])[-1]
+                path = osp.join(f'/home/erschultz/{self.dataset}/setup/', file)
+                chi = np.load(path)
+                L = calculate_L(seq, chi)
 
-            meanDist_L = DiagonalPreprocessing.genomic_distance_statistics(L, 'freq')
-            diag_chis = meanDist_S - meanDist_L
+                meanDist_L = DiagonalPreprocessing.genomic_distance_statistics(L, 'freq')
+                diag_chis = meanDist_S - meanDist_L
+            else:
+                diag_chis = meanDist_S
 
             diag_file = osp.join(self.odir, f'diag_chis_{i+1}.npy')
             np.save(diag_file, diag_chis)
@@ -418,11 +428,14 @@ class DatasetGenerator():
 
 
     def grid_params(self):
+        b, phi = self.grid_mode.split('_')
+        with open(osp.join(self.dir, self.exp_dataset,
+                            f'b_{b}_phi_{phi}_distributions',
+                            'grid_size.pickle'), 'rb') as f:
+            dict_grid = pickle.load(f)
+
         for i in range(self.N):
-            if self.grid_mode == 'v1':
-                with open(osp.join(f'/home/erschultz/dataset_02_04_23/grid_size_distributions/grid_size.pickle'), 'rb') as f:
-                    dict_grid = pickle.load(f)
-                grid_size = skewnorm.rvs(dict_grid['alpha'], dict_grid['mu'], dict_grid['sigma'])
+            grid_size = skewnorm.rvs(dict_grid['alpha'], dict_grid['mu'], dict_grid['sigma'])
             self.sample_dict[i]['grid_size'] = grid_size
 
     def get_dataset(self):

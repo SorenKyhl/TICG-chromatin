@@ -616,7 +616,8 @@ if __name__ == '__main__':
     args = getArgs(data_folder = data_dir, samples = samples)
     args.experimental = True
     args.convergence_definition = 'normal'
-    args.gnn_id=[434]
+    # args.gnn_id=[451, 457, 460, 461, 462]
+    args.gnn_id=[461]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

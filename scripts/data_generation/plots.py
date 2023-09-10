@@ -26,8 +26,8 @@ from sequences_to_contact_maps.scripts.utils import (calc_dist_strat_corr,
 def meanDist_comparison():
     # datasets = ['dataset_01_26_23', 'dataset_02_16_23']
     # datasets = ['dataset_01_26_23', 'dataset_02_04_23', 'dataset_02_21_23']
-    datasets = ['dataset_02_04_23', 'dataset_08_17_23']
-    labels = ['Experiment', 'Synthetic']
+    datasets = ['dataset_06_29_23', 'dataset_02_04_23']
+    labels = ['Experiment', 'Experiment2']
     data_dir = osp.join('/home/erschultz', datasets[0])
 
     cmap = matplotlib.cm.get_cmap('tab10')
@@ -254,7 +254,7 @@ def scc_comparison(dataset, ID=None, k=8, max_ent=False):
     print(f'GNN={np.mean(scc_GNN)}, PCA={np.mean(scc_PCA)}')
 
 
-def l_ij_comparison(dataset, dataset_exp, k=8):
+def l_ij_comparison(dataset, dataset_exp, b, phi, k):
     data_dir = osp.join('/home/erschultz', dataset)
 
     L_list = []
@@ -262,14 +262,14 @@ def l_ij_comparison(dataset, dataset_exp, k=8):
     S_list = []
     chi_list = []
     label_list = []
-    L_max_ent, S_max_ent, D_max_ent, chi_max_ent = plaid_dist(dataset_exp, k, False)
+    L_max_ent, S_max_ent, D_max_ent, chi_max_ent = plaid_dist(dataset_exp, b, phi, k, False)
     L_list.append(L_max_ent)
     D_list.append(D_max_ent)
     S_list.append(S_max_ent)
     # chi_list.append(chi_max_ent)
     label_list.append('Max Ent')
 
-    L_sim, S_sim, D_sim, chi_sim = plaid_dist(dataset, None, False)
+    L_sim, S_sim, D_sim, chi_sim = plaid_dist(dataset, b, phi, None, False)
     L_list.append(L_sim)
     D_list.append(D_sim)
     S_list.append(S_sim)
@@ -300,7 +300,7 @@ def l_ij_comparison(dataset, dataset_exp, k=8):
     plt.legend()
     plt.ylabel('probability', fontsize=16)
     plt.xlabel(r'$L_{ij}$', fontsize=16)
-    plt.xlim(-20, 20)
+    plt.xlim(np.percentile(arr, 1), np.percentile(arr, 99))
     plt.savefig(osp.join(data_dir, 'L_dist_comparison.png'))
     plt.close()
 
@@ -329,7 +329,7 @@ def l_ij_comparison(dataset, dataset_exp, k=8):
     plt.legend()
     plt.ylabel('probability', fontsize=16)
     plt.xlabel(r'$D_{ij}$', fontsize=16)
-    plt.xlim(-20, 25)
+    plt.xlim(np.percentile(arr, 1), np.percentile(arr, 99))
     plt.savefig(osp.join(data_dir, 'D_dist_comparison.png'))
     plt.close()
 
@@ -357,7 +357,7 @@ def l_ij_comparison(dataset, dataset_exp, k=8):
     plt.legend()
     plt.ylabel('probability', fontsize=16)
     plt.xlabel(r'$S_{ij}$', fontsize=16)
-    plt.xlim(-20, 25)
+    plt.xlim(np.percentile(arr, 1), np.percentile(arr, 99))
     plt.savefig(osp.join(data_dir, 'S_dist_comparison.png'))
     plt.close()
 
@@ -458,50 +458,116 @@ def plot_y_S(dataset, b, phi):
     plt.savefig(osp.join(data_dir, 'y_list.png'))
     plt.close()
 
-    # # plot composite contact maps
-    # rows=2; cols=5
+    # plot composite contact maps
+    rows=2; cols=5
+    fig, ax = plt.subplots(rows, cols+1,
+                            gridspec_kw={'width_ratios':[1,1,1,1,1,0.08]})
+    fig.set_figheight(6*2)
+    fig.set_figwidth(6*3)
+    vmin = 0; vmax = np.mean(y_list)
+    row = 0; col=0
+    for y, sample in zip(composite_list, samples):
+        if col == 0:
+            s = sns.heatmap(y, linewidth = 0, vmin = vmin, vmax = vmax,
+                        cmap = RED_CMAP, ax = ax[row][col], cbar_ax = ax[row][-1])
+        else:
+            s = sns.heatmap(y, linewidth = 0, vmin = vmin, vmax = vmax,
+                        cmap = RED_CMAP, ax = ax[row][col], cbar = False)
+
+        s.axline((0,0), slope=1, color = 'k', lw=1)
+        m, _ = y.shape
+        s.text(0.99*m, 0.01*m, 'Max Ent', fontsize=16, ha='right', va='top')
+        s.text(0.01*m, 0.99*m, 'Experiment', fontsize=16)
+        s.set_title(f'Sample {sample}', fontsize = 16)
+        s.set_xticks([])
+        s.set_yticks([])
+
+        col += 1
+        if col == cols:
+            col = 0
+            row += 1
+
+    plt.tight_layout()
+    plt.savefig(osp.join(odir, 'y_composite_list.png'))
+    plt.close()
+
+    # plot S orderd by rab
+    fig, ax = plt.subplots(rows, cols+1,
+                            gridspec_kw={'width_ratios':[1,1,1,1,1,0.08]})
+    fig.set_figheight(6*2)
+    fig.set_figwidth(6*3)
+    vmin = np.nanpercentile(S_list, 1)
+    vmax = np.nanpercentile(S_list, 99)
+    vmax = max(vmax, vmin * -1)
+    vmin = vmax * -1
+    row = 0; col=0
+    for S, sample in zip(S_list, samples):
+        if col == 0:
+            s = sns.heatmap(S, linewidth = 0, vmin = vmin, vmax = vmax,
+                            cmap = BLUE_RED_CMAP,
+                ax = ax[row][col], cbar_ax = ax[row][-1])
+        else:
+            s = sns.heatmap(S, linewidth = 0, vmin = vmin, vmax = vmax,
+                            cmap = BLUE_RED_CMAP,
+                ax = ax[row][col], cbar = False)
+        s.set_title(f'Sample {sample}', fontsize = 16)
+        s.set_xticks([])
+        s.set_yticks([])
+
+        col += 1
+        if col == cols:
+            col = 0
+            row += 1
+
+    plt.tight_layout()
+    plt.savefig(osp.join(odir, 'S_list.png'))
+    plt.close()
+
+    # plot S_dag orderd by rab
+    S_dag_arr = np.array([np.sign(S) * np.log(np.abs(S)+1) for S in S_list])
+    fig, ax = plt.subplots(rows, cols+1,
+                            gridspec_kw={'width_ratios':[1,1,1,1,1,0.08]})
+    fig.set_figheight(6*2)
+    fig.set_figwidth(6*3)
+    vmin = np.nanpercentile(S_dag_arr, 1)
+    vmax = np.nanpercentile(S_dag_arr, 99)
+    vmax = max(vmax, vmin * -1)
+    vmin = vmax * -1
+    row = 0; col=0
+    for S_dag, sample in zip(S_dag_list, samples):
+        if col == 0:
+            s = sns.heatmap(S_dag, linewidth = 0, vmin = vmin, vmax = vmax,
+                            cmap = BLUE_RED_CMAP,
+                ax = ax[row][col], cbar_ax = ax[row][-1])
+        else:
+            s = sns.heatmap(S_dag, linewidth = 0, vmin = vmin, vmax = vmax,
+                            cmap = BLUE_RED_CMAP,
+                ax = ax[row][col], cbar = False)
+        s.set_title(f'Sample {sample}', fontsize = 16)
+        s.set_xticks([])
+        s.set_yticks([])
+
+        col += 1
+        if col == cols:
+            col = 0
+            row += 1
+
+    plt.tight_layout()
+    plt.savefig(osp.join(odir, 'S_dag_list.png'))
+    plt.close()
+
+    # # plot S_center orderd by rab
+    # S_center_arr = np.array([S - np.mean(S) for S in S_list])
     # fig, ax = plt.subplots(rows, cols+1,
     #                         gridspec_kw={'width_ratios':[1,1,1,1,1,0.08]})
     # fig.set_figheight(6*2)
     # fig.set_figwidth(6*3)
-    # vmin = 0; vmax = np.mean(y_list)
-    # row = 0; col=0
-    # for y, sample in zip(composite_list, samples):
-    #     if col == 0:
-    #         s = sns.heatmap(y, linewidth = 0, vmin = vmin, vmax = vmax,
-    #                     cmap = RED_CMAP, ax = ax[row][col], cbar_ax = ax[row][-1])
-    #     else:
-    #         s = sns.heatmap(y, linewidth = 0, vmin = vmin, vmax = vmax,
-    #                     cmap = RED_CMAP, ax = ax[row][col], cbar = False)
-    #
-    #     s.axline((0,0), slope=1, color = 'k', lw=1)
-    #     m, _ = y.shape
-    #     s.text(0.99*m, 0.01*m, 'Max Ent', fontsize=16, ha='right', va='top')
-    #     s.text(0.01*m, 0.99*m, 'Experiment', fontsize=16)
-    #     s.set_title(f'Sample {sample}', fontsize = 16)
-    #     s.set_xticks([])
-    #     s.set_yticks([])
-    #
-    #     col += 1
-    #     if col == cols:
-    #         col = 0
-    #         row += 1
-    #
-    # plt.tight_layout()
-    # plt.savefig(osp.join(odir, 'y_composite_list.png'))
-    # plt.close()
-    #
-    # # plot S orderd by rab
-    # fig, ax = plt.subplots(rows, cols+1,
-    #                         gridspec_kw={'width_ratios':[1,1,1,1,1,0.08]})
-    # fig.set_figheight(6*2)
-    # fig.set_figwidth(6*3)
-    # vmin = np.nanpercentile(S_list, 1)
-    # vmax = np.nanpercentile(S_list, 99)
+    # vmin = np.nanpercentile(S_center_arr, 1)
+    # vmax = np.nanpercentile(S_center_arr, 99)
     # vmax = max(vmax, vmin * -1)
     # vmin = vmax * -1
     # row = 0; col=0
-    # for S, sample in zip(S_list, samples):
+    # for S, sample in zip(S_center_arr, samples):
     #     if col == 0:
     #         s = sns.heatmap(S, linewidth = 0, vmin = vmin, vmax = vmax,
     #                         cmap = RED_BLUE_CMAP,
@@ -520,21 +586,21 @@ def plot_y_S(dataset, b, phi):
     #         row += 1
     #
     # plt.tight_layout()
-    # plt.savefig(osp.join(odir, 'S_list.png'))
+    # plt.savefig(osp.join(odir, 'S_center_list.png'))
     # plt.close()
     #
-    # # plot S_dag orderd by rab
-    # S_dag_arr = np.array([np.sign(S) * np.log(np.abs(S)+1) for S in S_list])
+    # # plot S_center_dag ordered by rab
+    # S_center_dag_arr = np.array([np.sign(S) * np.log(np.abs(S)+1) for S in S_center_arr])
     # fig, ax = plt.subplots(rows, cols+1,
     #                         gridspec_kw={'width_ratios':[1,1,1,1,1,0.08]})
     # fig.set_figheight(6*2)
     # fig.set_figwidth(6*3)
-    # vmin = np.nanpercentile(S_dag_arr, 1)
-    # vmax = np.nanpercentile(S_dag_arr, 99)
+    # vmin = np.nanpercentile(S_center_dag_arr, 1)
+    # vmax = np.nanpercentile(S_center_dag_arr, 99)
     # vmax = max(vmax, vmin * -1)
     # vmin = vmax * -1
     # row = 0; col=0
-    # for S_dag, sample in zip(S_dag_list, samples):
+    # for S_dag, sample in zip(S_center_dag_arr, samples):
     #     if col == 0:
     #         s = sns.heatmap(S_dag, linewidth = 0, vmin = vmin, vmax = vmax,
     #                         cmap = RED_BLUE_CMAP,
@@ -553,74 +619,8 @@ def plot_y_S(dataset, b, phi):
     #         row += 1
     #
     # plt.tight_layout()
-    # plt.savefig(osp.join(odir, 'S_dag_list.png'))
+    # plt.savefig(osp.join(odir, 'S_center_dag_list.png'))
     # plt.close()
-
-    # plot S_center orderd by rab
-    S_center_arr = np.array([S - np.mean(S) for S in S_list])
-    fig, ax = plt.subplots(rows, cols+1,
-                            gridspec_kw={'width_ratios':[1,1,1,1,1,0.08]})
-    fig.set_figheight(6*2)
-    fig.set_figwidth(6*3)
-    vmin = np.nanpercentile(S_center_arr, 1)
-    vmax = np.nanpercentile(S_center_arr, 99)
-    vmax = max(vmax, vmin * -1)
-    vmin = vmax * -1
-    row = 0; col=0
-    for S, sample in zip(S_center_arr, samples):
-        if col == 0:
-            s = sns.heatmap(S, linewidth = 0, vmin = vmin, vmax = vmax,
-                            cmap = RED_BLUE_CMAP,
-                ax = ax[row][col], cbar_ax = ax[row][-1])
-        else:
-            s = sns.heatmap(S, linewidth = 0, vmin = vmin, vmax = vmax,
-                            cmap = RED_BLUE_CMAP,
-                ax = ax[row][col], cbar = False)
-        s.set_title(f'Sample {sample}', fontsize = 16)
-        s.set_xticks([])
-        s.set_yticks([])
-
-        col += 1
-        if col == cols:
-            col = 0
-            row += 1
-
-    plt.tight_layout()
-    plt.savefig(osp.join(odir, 'S_center_list.png'))
-    plt.close()
-
-    # plot S_center_dag ordered by rab
-    S_center_dag_arr = np.array([np.sign(S) * np.log(np.abs(S)+1) for S in S_center_arr])
-    fig, ax = plt.subplots(rows, cols+1,
-                            gridspec_kw={'width_ratios':[1,1,1,1,1,0.08]})
-    fig.set_figheight(6*2)
-    fig.set_figwidth(6*3)
-    vmin = np.nanpercentile(S_center_dag_arr, 1)
-    vmax = np.nanpercentile(S_center_dag_arr, 99)
-    vmax = max(vmax, vmin * -1)
-    vmin = vmax * -1
-    row = 0; col=0
-    for S_dag, sample in zip(S_center_dag_arr, samples):
-        if col == 0:
-            s = sns.heatmap(S_dag, linewidth = 0, vmin = vmin, vmax = vmax,
-                            cmap = RED_BLUE_CMAP,
-                ax = ax[row][col], cbar_ax = ax[row][-1])
-        else:
-            s = sns.heatmap(S_dag, linewidth = 0, vmin = vmin, vmax = vmax,
-                            cmap = RED_BLUE_CMAP,
-                ax = ax[row][col], cbar = False)
-        s.set_title(f'Sample {sample}', fontsize = 16)
-        s.set_xticks([])
-        s.set_yticks([])
-
-        col += 1
-        if col == cols:
-            col = 0
-            row += 1
-
-    plt.tight_layout()
-    plt.savefig(osp.join(odir, 'S_center_dag_list.png'))
-    plt.close()
 
 
 
@@ -628,9 +628,10 @@ def plot_y_S(dataset, b, phi):
 if __name__ == '__main__':
     # main()
     # plot_y_S('dataset_02_04_23', 140, 0.03)
-    plot_y_S('dataset_02_04_23', 261, 0.01)
+    # plot_y_S('dataset_02_04_23', 261, 0.01)
+    # plot_y_S('dataset_')
 
-    # meanDist_comparison()
-    # l_ij_comparison('dataset_04_28_23', 'dataset_02_04_23', 10)
+    meanDist_comparison()
+    # l_ij_comparison('dataset_08_25_23', 'dataset_02_04_23', 261, 0.01, 10)
     # p_s_comparison('dataset_02_04_23', None, 261, 0.01, 10)
     # scc_comparison('dataset_02_04_23', 392, 8, True)

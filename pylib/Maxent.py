@@ -43,7 +43,8 @@ class Maxent:
         plaid_diagonly: bool = False,
         norm: bool = False,
         fast_analysis: bool = False,
-        mkdir: bool = True
+        mkdir: bool = True,
+        bound_diag_chis: bool = False
     ):
         """
         root: root of maxent filesystem
@@ -52,6 +53,7 @@ class Maxent:
         seqs: simulation sequences
         gthic: ground truth hic
         overwrite: will overwrite existing files
+        bound_diag_chis: will ensure that diag chis start at 0
         """
 
         # maxent things
@@ -66,6 +68,7 @@ class Maxent:
         self.gthic = gthic
         self.overwrite = overwrite
         self.mkdir = mkdir
+        self.bound_diag_chis = bound_diag_chis
 
         if "goals" not in self.params:
             raise ValueError("goals are not specified in parameters")
@@ -320,6 +323,13 @@ class Maxent:
                 trust_region=self.params["trust_region"],
                 method=self.params["method"],
             )
+
+            if self.bound_diag_chis:
+                plaid, diag = sim.split_chis(newchis) # these are a view (reference type)
+                assert diag[0] < 1e-5, f'diag[0] = {diag[0]}'
+                diag -= diag[1] # push diag chis down s.t. first diag chi is zero
+                diag[0] = 0 # zeroth diag chi should stay at zero
+
 
             if self.plaid_diagonly:
                 new_chis_diagonly[inds] = newchis

@@ -137,10 +137,11 @@ def plot_all(args):
     S = None
     if L is not None:
         S = calculate_S(L, D)
-    elif args.replicate_folder is not None:
-        file = osp.join(args.replicate_folder, 'resources/S.npy')
-        if osp.exists(file):
-            S = np.load(file)
+        print(S)
+    else:
+        S_file = osp.join(args.sample_folder, 'S.npy')
+        if osp.exists(S_file):
+            S = np.load(S_file)
 
     if args.plot:
         plot_matrix(y, ofile = osp.join(args.save_folder, 'y.png'), vmax = 'mean')

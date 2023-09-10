@@ -49,6 +49,9 @@ def get_samples(dataset, train=False, test=False):
     if dataset == 'dataset_11_14_22':
         samples = range(2201, 2214)
         experimental = True
+    elif dataset == 'dataset_06_29_23':
+        samples = range(1,636)
+        experimental = True
     elif dataset in {'dataset_01_26_23', 'dataset_02_04_23', 'dataset_02_21_23'}:
         samples = range(201, 283)
         # samples = range(284, 293)
@@ -71,8 +74,10 @@ def get_samples(dataset, train=False, test=False):
         samples = range(1001, 1286)
     elif dataset == 'dataset_04_07_23':
         samples = range(1021, 1027)
-    elif dataset in {'dataset_08_17_23', 'dataset_08_25_23'}:
+    elif dataset in {'dataset_08_17_23', 'dataset_09_07_23'}:
         samples = range(1, 21)
+    elif dataset == 'dataset_08_25_23':
+        samples = list(range(1, 12)) + [981]
     elif dataset in {'dataset_08_22_23', 'dataset_08_24_23'}:
         samples = range(1, 11)
     elif dataset in {'dataset_08_24_23_v2', 'dataset_08_24_23_v3', 'dataset_08_24_23_v4'}:
@@ -207,12 +212,12 @@ def modify_maxent_diag_chi(dataset, b, phi, k, edit=True):
         k: number of marks
         edit: True to modify maxent result so that is is flat at start
     '''
-    samples, _ = get_samples(dataset, True)
+    samples, _ = get_samples(dataset, train=True)
     for sample in samples:
         s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{sample}')
 
         # try different modifications to diag chis learned by max ent
-        max_ent_dir = osp.join(s_dir, f'optimize_grid_b_261_phi_0.01-max_ent{k}')
+        max_ent_dir = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}-max_ent{k}')
         if not osp.exists(max_ent_dir):
             print(f'{max_ent_dir} does not exist')
             continue
@@ -236,47 +241,46 @@ def modify_maxent_diag_chi(dataset, b, phi, k, edit=True):
 
         S = load_max_ent_S(max_ent_dir)
         meanDist_S = DiagonalPreprocessing.genomic_distance_statistics(S, 'freq')
-        poly4_log_fit = curve_fit_helper(Curves.poly4_curve, np.log(x[:m]), meanDist_S,
-                                        'poly4_log_meanDist_S', odir, [1, 1, 1, 1, 1], start = 2)
-        poly6_log_fit = curve_fit_helper(Curves.poly6_curve, np.log(x[:m]), meanDist_S,
-                                        'poly6_log_meanDist_S', odir, [1, 1, 1, 1, 1, 1, 1], start = 2)
-        poly6_fit = curve_fit_helper(Curves.poly6_curve, x[:m], meanDist_S,
-                                        'poly6_log_meanDist_S', odir, [1, 1, 1, 1, 1, 1, 1], start = 2)
-        poly8_log_fit = curve_fit_helper(Curves.poly8_curve, np.log(x[:m]), meanDist_S,
-                                        'poly8_log_meanDist_S', odir, [1, 1, 1, 1, 1, 1, 1, 1, 1], start = 2)
-        poly9_log_fit = curve_fit_helper(Curves.poly9_curve, np.log(x[:m]), meanDist_S,
-                                        'poly9_log_meanDist_S', odir, [1, 1, 1, 1, 1, 1, 1, 1, 1, 1], start = 2)
-        poly12_log_fit = curve_fit_helper(Curves.poly12_curve, np.log(x[:m]), meanDist_S,
-                                        'poly12_log_meanDist_S', odir, [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], start = 2)
-
-
-        X = x[:m]
-        plt.plot(X, meanDist_S, ls='-', c='k', label=r'$\delta^{ME(i)}$')
-        plt.plot(X[2:], poly4_log_fit[2:], ls=':', c='g', label=r'$\hat{\delta}^{ME(i)}$ (4th order in log space)')
-        plt.plot(X[2:], poly6_log_fit[2:], ls=':', c='b', label=r'$\hat{\delta}^{ME(i)}$ (6th order in log space)')
-        plt.plot(X[2:], poly8_log_fit[2:], ls=':', c='orange', label=r'$\hat{\delta}^{ME(i)}$ (8th order in log space)')
-        plt.plot(X[2:], poly9_log_fit[2:], ls=':', c='magenta', label=r'$\hat{\delta}^{ME(i)}$ (9th order in log space)')
-        plt.plot(X[2:], poly12_log_fit[2:], ls=':', c='cyan', label=r'$\hat{\delta}^{ME(i)}$ (12th order in log space)')
-        plt.plot(X[2:], poly6_fit[2:], ls='--', c='b', label=r'$\hat{\delta}^{ME(i)}$ (6th order in linear space)')
-
-        plt.xlabel('d',fontsize=16)
-        plt.legend()
-        plt.savefig(osp.join(odir, 'delta_vs_delta_hat.png'))
-        plt.close()
-
-        X = np.log(X)
-        plt.plot(X, meanDist_S, ls='-', c='k', label=r'$\delta^{ME(i)}$')
-        plt.plot(X[2:], poly4_log_fit[2:], ls=':', c='g', label=r'$\hat{\delta}^{ME(i)}$ (4th order in log space)')
-        plt.plot(X[2:], poly6_log_fit[2:], ls=':', c='b', label=r'$\hat{\delta}^{ME(i)}$ (6th order in log space)')
-        plt.plot(X[2:], poly8_log_fit[2:], ls=':', c='orange', label=r'$\hat{\delta}^{ME(i)}$ (8th order in log space)')
-        plt.plot(X[2:], poly9_log_fit[2:], ls=':', c='magenta', label=r'$\hat{\delta}^{ME(i)}$ (9th order in log space)')
-        plt.plot(X[2:], poly12_log_fit[2:], ls=':', c='cyan', label=r'$\hat{\delta}^{ME(i)}$ (12th order in log space)')
-        plt.plot(X[2:], poly6_fit[2:], ls='--', c='b', label=r'$\hat{\delta}^{ME(i)}$ (6th order in linear space)')
-        plt.xlabel('log(d)',fontsize=16)
-        plt.legend()
-        plt.savefig(osp.join(odir, 'delta_vs_delta_hat_log.png'))
-        plt.close()
-        continue
+        # poly4_log_fit = curve_fit_helper(Curves.poly4_curve, np.log(x[:m]), meanDist_S,
+        #                                 'poly4_log_meanDist_S', odir, [1, 1, 1, 1, 1], start = 2)
+        # poly6_log_fit = curve_fit_helper(Curves.poly6_curve, np.log(x[:m]), meanDist_S,
+        #                                 'poly6_log_meanDist_S', odir, [1, 1, 1, 1, 1, 1, 1], start = 2)
+        # poly6_fit = curve_fit_helper(Curves.poly6_curve, x[:m], meanDist_S,
+        #                                 'poly6_log_meanDist_S', odir, [1, 1, 1, 1, 1, 1, 1], start = 2)
+        # poly8_log_fit = curve_fit_helper(Curves.poly8_curve, np.log(x[:m]), meanDist_S,
+        #                                 'poly8_log_meanDist_S', odir, [1, 1, 1, 1, 1, 1, 1, 1, 1], start = 2)
+        # poly9_log_fit = curve_fit_helper(Curves.poly9_curve, np.log(x[:m]), meanDist_S,
+        #                                 'poly9_log_meanDist_S', odir, [1, 1, 1, 1, 1, 1, 1, 1, 1, 1], start = 2)
+        # poly12_log_fit = curve_fit_helper(Curves.poly12_curve, np.log(x[:m]), meanDist_S,
+        #                                 'poly12_log_meanDist_S', odir, [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], start = 2)
+        #
+        #
+        # X = x[:m]
+        # plt.plot(X, meanDist_S, ls='-', c='k', label=r'$\delta^{ME(i)}$')
+        # plt.plot(X[2:], poly4_log_fit[2:], ls=':', c='g', label=r'$\hat{\delta}^{ME(i)}$ (4th order in log space)')
+        # plt.plot(X[2:], poly6_log_fit[2:], ls=':', c='b', label=r'$\hat{\delta}^{ME(i)}$ (6th order in log space)')
+        # plt.plot(X[2:], poly8_log_fit[2:], ls=':', c='orange', label=r'$\hat{\delta}^{ME(i)}$ (8th order in log space)')
+        # plt.plot(X[2:], poly9_log_fit[2:], ls=':', c='magenta', label=r'$\hat{\delta}^{ME(i)}$ (9th order in log space)')
+        # plt.plot(X[2:], poly12_log_fit[2:], ls=':', c='cyan', label=r'$\hat{\delta}^{ME(i)}$ (12th order in log space)')
+        # plt.plot(X[2:], poly6_fit[2:], ls='--', c='b', label=r'$\hat{\delta}^{ME(i)}$ (6th order in linear space)')
+        #
+        # plt.xlabel('d',fontsize=16)
+        # plt.legend()
+        # plt.savefig(osp.join(odir, 'delta_vs_delta_hat.png'))
+        # plt.close()
+        #
+        # X = np.log(X)
+        # plt.plot(X, meanDist_S, ls='-', c='k', label=r'$\delta^{ME(i)}$')
+        # plt.plot(X[2:], poly4_log_fit[2:], ls=':', c='g', label=r'$\hat{\delta}^{ME(i)}$ (4th order in log space)')
+        # plt.plot(X[2:], poly6_log_fit[2:], ls=':', c='b', label=r'$\hat{\delta}^{ME(i)}$ (6th order in log space)')
+        # plt.plot(X[2:], poly8_log_fit[2:], ls=':', c='orange', label=r'$\hat{\delta}^{ME(i)}$ (8th order in log space)')
+        # plt.plot(X[2:], poly9_log_fit[2:], ls=':', c='magenta', label=r'$\hat{\delta}^{ME(i)}$ (9th order in log space)')
+        # plt.plot(X[2:], poly12_log_fit[2:], ls=':', c='cyan', label=r'$\hat{\delta}^{ME(i)}$ (12th order in log space)')
+        # plt.plot(X[2:], poly6_fit[2:], ls='--', c='b', label=r'$\hat{\delta}^{ME(i)}$ (6th order in linear space)')
+        # plt.xlabel('log(d)',fontsize=16)
+        # plt.legend()
+        # plt.savefig(osp.join(odir, 'delta_vs_delta_hat_log.png'))
+        # plt.close()
 
         # smoothed_fit = gaussian_filter(meanDist_S[3:], sigma = 1)
         # smoothed_fit = np.append(meanDist_S[:3], smoothed_fit)
@@ -1204,6 +1208,25 @@ def plaid_dist(dataset, b, phi, k, plot=True, eig_norm=False):
             simple_scatter(data, data2, r'$\chi_{BB}$', 'grid_size', None, odir,
                             'chi_BB_vs_grid_size.png')
 
+
+        # meanDist_S
+        for S in S_list:
+            S = triu_to_full(S)
+            meanDist = DiagonalPreprocessing.genomic_distance_statistics(S, 'freq')
+            plt.plot(meanDist)
+        plt.xscale('log')
+        plt.savefig(osp.join(odir, 'meanDist_S.png'))
+        plt.close()
+
+        # meanDist_S
+        for D in D_list:
+            D = triu_to_full(D)
+            meanDist = DiagonalPreprocessing.genomic_distance_statistics(D, 'freq')
+            plt.plot(meanDist)
+        plt.xscale('log')
+        plt.savefig(osp.join(odir, 'meanDist_D.png'))
+        plt.close()
+
     return L_list, S_list, D_list, chi_ij_list
 
 def grid_dist(dataset, plot=True, b=140, phi=0.03):
@@ -1319,14 +1342,15 @@ def get_read_counts(dataset):
 
 
 
+
 if __name__ == '__main__':
-    # modify_plaid_chis('dataset_02_04_23', b=261, phi=0.01, k=10)
-    modify_maxent_diag_chi('dataset_02_04_23', b=261, phi=0.01, k=10, edit=False)
+    # modify_plaid_chis('dataset_02_04_23', b=140, phi=0.01, k=10)
+    # modify_maxent_diag_chi('dataset_02_04_23', b=140, phi=0.03, k=10, edit=False)
     # for i in range(221, 222):
         # plot_modified_max_ent(i, k = 10)
     # diagonal_dist('dataset_02_04_23', b=261, phi=0.01, k=10)
-    # grid_dist('dataset_02_04_23', b=261, phi=0.01)
-    # plaid_dist('dataset_02_04_23', b=261, phi=0.01, k=10, plot=True, eig_norm=True)
+    # grid_dist('dataset_02_04_23', b=140, phi=0.03)
+    plaid_dist('dataset_02_04_23', b=140, phi=0.03, k=10, plot=True, eig_norm=True)
     # get_read_counts('dataset_04_28_23')
     # seq_dist('dataset_01_26_23', 4, True, True)
     # plot_params_test()
