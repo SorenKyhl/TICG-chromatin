@@ -97,6 +97,9 @@ class DatasetGenerator():
 
         # sample : dictionary of params
         self.sample_dict = defaultdict(dict)
+        for i in range(self.N):
+            self.sample_dict[i]['m'] = self.m
+
 
     def get_exp_samples(self):
         if self.exp_dataset == 'dataset_02_04_23':
@@ -354,7 +357,7 @@ class DatasetGenerator():
 
             # get grid_size
             if get_grid:
-                grid_file = osp.join(self.exp_dir, f'sample{j}', f'{self.grid_root}/grid_size.txt')
+                grid_file = osp.join(self.exp_dir, f'sample{j}', f'{self.grid_root}/grid.txt')
                 grid_dict[j] = np.loadtxt(grid_file)
 
         for i in range(self.N):
@@ -391,7 +394,7 @@ class DatasetGenerator():
 
             # get grid_size
             if get_grid:
-                grid_dict[j] = np.loadtxt(osp.join(self.exp_dir, f'sample{j}', f'{self.grid_root}/grid_size.txt'))
+                grid_dict[j] = np.loadtxt(osp.join(self.exp_dir, f'sample{j}', f'{self.grid_root}/grid.txt'))
 
         for i in range(self.N):
             j = np.random.choice(converged_samples)

@@ -60,18 +60,11 @@ def run(args, i):
                     osp.join(odir_scratch, 'default_config.json'))
     check_dir(odir, args.overwrite)
 
+    args_file = osp.join(args.data_folder, f'setup/sample_{i}.txt')
+
 
     stdout = sys.stdout
     with open(osp.join(odir_scratch, 'params.log'), 'w') as sys.stdout:
-        args_file = osp.join(args.data_folder, f'setup/sample_{i}.txt')
-        found=False
-        with open(args_file, 'r') as f:
-            for line in f:
-                if '--diag_bins' in line:
-                    found = True
-        if not found:
-            with open(args_file, 'a') as f:
-                f.write(f'--diag_bins\n{args.m}')
         get_params.main(args_file)
     sys.stdout = stdout
 

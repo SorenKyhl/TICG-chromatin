@@ -18,6 +18,8 @@ def calculate_S(L, D):
     # S is symmetric net energy
     if D is None:
         return L
+    elif L is None:
+        return D
     else:
         S = L + D
         return S

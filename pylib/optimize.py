@@ -9,7 +9,8 @@ from pylib.Pysim import Pysim
 from pylib.utils import default, hic_utils, utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.epilib import Sim
-from pylib.utils.xyz import xyz_load, xyz_to_contact_grid
+from pylib.utils.xyz import (xyz_load, xyz_to_contact_distance,
+                             xyz_to_contact_grid)
 from scipy import optimize
 from sklearn.metrics import mean_squared_error
 
@@ -64,6 +65,8 @@ class ErrorMetric():
         if self.mode.startswith("grid"):
             grid_size = self.config["bond_length"] * float(val)
             angle = self.config["k_angle"]
+        elif self.mode.startswith("distance"):
+            distance = self.config["bond_length"] * float(val)
         elif self.mode.startswith("angle"):
             angle = float(val)
             grid_size = self.config["grid_size"]
@@ -72,6 +75,10 @@ class ErrorMetric():
 
         if self.xyz is not None and self.mode.startswith("grid"):
             y = xyz_to_contact_grid(self.xyz, grid_size, dtype=float)
+            y /= np.mean(np.diagonal(y))
+            self.mean_dist = DiagonalPreprocessing.genomic_distance_statistics(y)
+        elif self.xyz is not None and self.mode.startswith("distance"):
+            y = xyz_to_contact_distance(self.xyz, distance, dtype=float)
             y /= np.mean(np.diagonal(y))
             self.mean_dist = DiagonalPreprocessing.genomic_distance_statistics(y)
         else:
@@ -214,13 +221,11 @@ def stiffness_root_error(hic, gthic):
     return hic_utils.get_diagonal(hic)[index] - hic_utils.get_diagonal(gthic)[index]
     # return np.mean(hic_utils.get_diagonal(hic) - hic_utils.get_diagonal(gthic))
 
-
 def stiffness_bayes_error(hic, gthic):
     """error used for bayesian optimization"""
     sim = hic_utils.get_diagonal(hic)
     exp = hic_utils.get_diagonal(gthic)
     return mean_squared_error(sim, exp, squared=False)
-
 
 def simulate_stiffness_error(k_angle, sim_engine, gthic, method):
     """simulate and calculate the difference between simulated and experimental p(s)
@@ -256,7 +261,6 @@ def simulate_stiffness_error(k_angle, sim_engine, gthic, method):
         error = stiffness_root_error(sim_analysis.hic, gthic)
         print(f"root error, {error}")
     return error
-
 
 def optimize_stiffness(config, gthic, low_bound=0, high_bound=1, method="notbayes", root="optimize-stiffness"):
     """tune angle stiffness until simulated p(s) diagonal probabity

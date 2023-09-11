@@ -145,15 +145,20 @@ def modify_maxent():
             p.starmap(run, mapping)
 
 def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
-                aspect_ratio=1, bond_type='gaussian'):
-    mode = 'grid'
-    print(sample, mode)
+                aspect_ratio=1, bond_type='gaussian', k=None, contact_distance=False):
+    print(sample)
     dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
 
     bonded_config = default.bonded_config
     bonded_config['bond_length'] = bl
     bonded_config['phi_chromatin'] = phi
     bonded_config['bond_type'] = bond_type
+    bonded_config['update_contacts_distance'] = contact_distance
+    if bonded_config['update_contacts_distance']:
+        mode = 'distance'
+    else:
+        mode = 'grid'
+
     if vb is not None:
         bonded_config['beadvol'] = vb
     else:
@@ -173,11 +178,18 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
     if bonded_config['boundary_type'] == 'spheroid':
         root += f'_spheroid_{aspect_ratio}'
     if bonded_config['bond_type'] == 'DSS':
-        root += f'_DSS'
+        root += '_DSS'
+    if bonded_config['update_contacts_distance']:
+        root += '_distance'
+
     print(root)
     root = osp.join(dir, root)
-    if osp.exists(osp.join(root, 'grid_size.txt')):
-        bonded_config['grid_size'] = np.loadtxt(osp.join(root, 'grid_size.txt'))
+    optimimum_file = osp.join(root, f'{mode}.txt')
+    if osp.exists(optimimum_file):
+        if mode == 'grid':
+            bonded_config['grid_size'] = np.loadtxt(optimimum_file)
+        elif mode == 'distance':
+            bonded_config["distance_cutoff"] = np.loadtxt(optimimum_file)
         angle_file = osp.join(root, 'angle.txt')
         if osp.exists(angle_file):
             bonded_config['k_angle'] = np.loadtxt(angle_file)
@@ -193,7 +205,7 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
     return root, config
 
 def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
-        aspect_ratio=1, bond_type='gaussian'):
+        aspect_ratio=1, bond_type='gaussian', k=10, contact_distance=False):
     print(sample)
     dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
     y = np.load(osp.join(dir, 'y.npy')).astype(float)
@@ -201,11 +213,11 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
     np.fill_diagonal(y, 1)
 
     root, config = setup_config(dataset, sample, samples, bl, phi, vb,
-                                aspect_ratio, bond_type)
+                                aspect_ratio, bond_type, k, contact_distance)
 
-    k = 10
     config['nspecies'] = k
-    config['chis'] = np.zeros((k,k))
+    if k > 0:
+        config['chis'] = np.zeros((k,k))
     config['dump_frequency'] = 10000
     config['dump_observables'] = True
 
@@ -236,10 +248,10 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
     else:
         raise Exception(f'Need to specify bin sizes for size={len(y)}')
 
-    # config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
-    config['diag_chis'] = np.load('/home/erschultz/dataset_02_04_23/samples/sample201/optimize_grid_b_261_phi_0.01-max_ent10/diag_chis_init1.npy')
+    config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
+    # config['diag_chis'] = np.load('/home/erschultz/dataset_02_04_23/samples/sample201/optimize_grid_b_261_phi_0.01-max_ent10/diag_chis_init1.npy')
 
-    root = osp.join(dir, f'{root}-max_ent{k}-init_diag')
+    root = osp.join(dir, f'{root}-max_ent{k}')
     if osp.exists(root):
         # shutil.rmtree(root)
         print('WARNING: root exists')
@@ -269,6 +281,20 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
         print(f'Simulation took {np.round(t, 2)} seconds')
     sys.stdout = stdout
 
+def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
+        aspect_ratio=1, bond_type='gaussian', k=10, contact_distance=False):
+    print(sample)
+    dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
+    root, _ = setup_config(dataset, sample, samples, bl, phi, vb,
+                                aspect_ratio, bond_type, k, contact_distance)
+
+    root = osp.join(dir, f'{root}-max_ent{k}')
+    if osp.exists(root):
+        if not osp.exists(osp.join(root, 'iteration1')):
+            shutil.rmtree(root)
+
+
+
 def main():
     # dataset = 'dataset_05_31_23'; samples = list(range(1137, 1214))
     # dataset = 'downsampling_analysis'; samples = list(range(201, 211))
@@ -286,19 +312,21 @@ def main():
 
     samples, _ = get_samples(dataset, train=True)
     samples = samples
+    print(samples)
 
     mapping = []
+    b=261;k=0
     for i in samples:
         for phi in [0.01]:
             for ar in [1.0]:
-                mapping.append((dataset, i, f'samples', 261, phi, None, ar, 'gaussian'))
+                mapping.append((dataset, i, f'samples', b, phi, None, ar, 'gaussian', k, False))
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(5) as p:
+    with mp.Pool(15) as p:
         # p.starmap(setup_config, mapping)
         p.starmap(fit, mapping)
-
+        # p.starmap(cleanup, mapping)
 
 if __name__ == '__main__':
     # modify_maxent()

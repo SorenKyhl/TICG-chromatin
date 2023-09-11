@@ -112,7 +112,8 @@ class Maxent:
         self.config["nbeads"] = self.n
         self.config["diag_cutoff"] = self.n
         # if (np.shape(self.config['chis']) != (self.k, self.k)):
-        self.config["chis"] = np.zeros((self.k, self.k))
+        if self.k > 0:
+            self.config["chis"] = np.zeros((self.k, self.k))
 
         self.config["nspecies"] = self.k
 
@@ -142,19 +143,20 @@ class Maxent:
         self.loss = np.append(self.loss, newloss)
 
         plaid, diag = sim.split_chis(newchis)
-        self.track_plaid_chis = np.vstack((self.track_plaid_chis, plaid))
+
+        if plaid is not None:
+            self.track_plaid_chis = np.vstack((self.track_plaid_chis, plaid))
+            np.savetxt(self.root / "chis.txt", plaid, fmt="%.4f", newline=" ")
+            np.save(self.root / "plaid_chis.npy", self.track_plaid_chis)
+            self.plot_plaid_chis()
+
         self.track_diag_chis = np.vstack((self.track_diag_chis, diag))
-
-        np.savetxt(self.root / "chis.txt", plaid, fmt="%.4f", newline=" ")
         np.savetxt(self.root / "chis_diag.txt", diag, fmt="%.4f", newline=" ")
-        np.savetxt(self.root / "convergence.txt", self.loss, fmt="%.16f")
-        np.save(self.root / "plaid_chis.npy", self.track_plaid_chis)
         np.save(self.root / "diag_chis.npy", self.track_diag_chis)
-
-        converged = self.plot_convergence()
-        self.plot_plaid_chis()
-        # self.plot_plaid_chis(True)
         self.plot_diag_chis()
+
+        np.savetxt(self.root / "convergence.txt", self.loss, fmt="%.16f")
+        converged = self.plot_convergence()
 
         return converged
 
@@ -195,6 +197,7 @@ class Maxent:
             diff = self.chis[j] - self.chis[j-1]
             conv = np.linalg.norm(diff, ord = 2)
             convergence.append(conv)
+        print(convergence)
         plt.plot(iterations, convergence)
         plt.yscale('log')
         plt.axhline(100, c='k', ls='--')
@@ -239,6 +242,7 @@ class Maxent:
         plt.plot(self.track_diag_chis, ".-")
         plt.tight_layout()
         plt.savefig(self.root / "track_diag_chis.png")
+        plt.close()
 
     def analyze(self, dir):
         if self.analysis_on:

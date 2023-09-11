@@ -17,10 +17,9 @@ from pylib.utils.xyz import (xyz_load, xyz_to_angles, xyz_to_contact_grid,
                              xyz_to_distance)
 from scipy import optimize
 from scipy.stats import norm
-from sklearn.metrics import mean_squared_error
-
 from scripts.contact_map import plot_max_ent
 from scripts.data_generation.modify_maxent import simple_histogram
+from sklearn.metrics import mean_squared_error
 
 
 def run(dir, config):
@@ -166,8 +165,8 @@ def main(root, config, mode='grid_angle10'):
     # config["dump_frequency"] = 100
     # config["dump_stats_frequency"] = 100
 
-    if mode.startswith('grid'):
-        optimum = optimize_config(config, gthic, 'grid', 0.8, 2.0, root)
+    if mode.startswith('grid') or mode.startswith('distance'):
+        optimum = optimize_config(config, gthic, mode, 0.5, 2.0, root)
         p_s_exp = DiagonalPreprocessing.genomic_distance_statistics(gthic, 'prob')
         xyz = get_bonded_simulation_xyz(config)
         y = xyz_to_contact_grid(xyz, optimum, dtype=float)
@@ -180,14 +179,15 @@ def main(root, config, mode='grid_angle10'):
         title = f'RMSE: {np.round(rmse, 5)}'
         plot_mean_dist(p_s_sim, root, 'mean_dist.png',
                         None, False, ref = p_s_exp,
-                        ref_label = 'Reference',  label = 'Bonded Grid Optimal',
+                        ref_label = 'Reference',  label = f'Bonded {mode} optimal',
                         color = 'b', title = title)
         plot_mean_dist(p_s_sim, root, 'mean_dist_log.png',
                         None, True, ref = p_s_exp,
-                        ref_label = 'Reference',  label = 'Bonded Grid Optimal',
+                        ref_label = 'Reference',  label = f'Bonded {mode} optimal',
                         color = 'b', title = title)
-        print(f"optimal grid size is: {optimum}")
-        with open(osp.join(root, 'grid_size.txt'), 'w') as f:
+
+        print(f"optimal {mode} is: {optimum}")
+        with open(osp.join(root, f'{mode}.txt'), 'w') as f:
             f.write(str(optimum))
     elif mode.startswith('angle'):
         assert config['angles_on']

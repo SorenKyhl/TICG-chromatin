@@ -121,6 +121,36 @@ def xyz_to_contact_grid(xyz, grid_size, sparse_format = False, dtype = np.int32,
 
     return contact_map
 
+def xyz_to_contact_distance(xyz, cutoff_distance, dtype = np.int32, verbose = False):
+    '''
+    Converts xyz to contact map via grid
+    '''
+    if len(xyz.shape) == 3:
+        N = xyz.shape[0]
+        m = xyz.shape[1]
+    else:
+        N = 1
+        m = xyz.shape[0]
+        xyz = xyz.reshape(-1, m, 3)
+
+    contact_map = np.zeros((m, m)).astype(dtype)
+    t0 = time.time()
+    for n in range(N):
+        if verbose:
+            prcnt_done = n/N * 100
+            t = time.time() - t0
+            if prcnt_done % 5 == 0:
+                print(f'{prcnt_done}%')
+        for i in range(m):
+            for j in range(i+1):
+                dist = np.linalg.norm(xyz[n, i, :] -xyz[n, j, :])
+                if dist <= cutoff_distance:
+                    contact_map[i,j] += 1
+                    contact_map[j,i] += 1
+
+    return contact_map
+
+
 def xyz_to_distance(xyz, verbose = False):
     N, m, _ = xyz.shape
     D = np.zeros((N, m, m), dtype = np.float32)
@@ -155,7 +185,6 @@ def xyz_to_angles(xyz, verbose = False):
             angles_temp.append(angle)
         angles[i] = angles_temp
     return angles
-
 
 
 def calculate_rg(xyz, verbose=False):

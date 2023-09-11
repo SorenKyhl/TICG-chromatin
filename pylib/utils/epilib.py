@@ -96,7 +96,6 @@ class Sim:
                 observables_file = self.path / "observables.traj"
                 if os.stat(observables_file).st_size > 0:
                     try:
-                        print('HERE'*8)
                         self.obs_full = pd.read_csv(observables_file, sep="\t",
                                                     header=None)
                         self.obs = np.array(self.obs_full.mean().values[1:])
@@ -108,7 +107,7 @@ class Sim:
         if self.config['diagonal_on']:
             self.diag_bins = np.shape(self.config["diag_chis"])[0]
             diag_observables_file = self.path / "diag_observables.traj"
-            if os.stat(observables_file).st_size > 0:
+            if os.stat(diag_observables_file).st_size > 0:
                 try:
                     self.diag_obs_full = pd.read_csv(diag_observables_file, sep="\t",
                                                     header=None)
