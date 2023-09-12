@@ -7,11 +7,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 from modify_maxent import get_samples
+from sklearn.metrics import mean_squared_error
+
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import calculate_diag_chi_step
 from pylib.utils.plotting_utils import BLUE_RED_CMAP, plot_mean_dist
 from pylib.utils.xyz import xyz_load, xyz_to_contact_grid, xyz_to_distance
-from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (

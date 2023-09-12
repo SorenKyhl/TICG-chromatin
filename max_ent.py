@@ -7,6 +7,7 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 import optimize_grid
 import pylib.analysis as analysis
 from pylib.Maxent import Maxent
@@ -145,8 +146,10 @@ def modify_maxent():
             p.starmap(run, mapping)
 
 def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
-                aspect_ratio=1, bond_type='gaussian', k=None, contact_distance=False):
-    print(sample)
+                aspect_ratio=1, bond_type='gaussian', k=None, contact_distance=False,
+                verbose=True):
+    if verbose:
+        print(sample)
     dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
 
     bonded_config = default.bonded_config
@@ -182,7 +185,8 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
     if bonded_config['update_contacts_distance']:
         root += '_distance'
 
-    print(root)
+    if verbose:
+        print(root)
     root = osp.join(dir, root)
     optimimum_file = osp.join(root, f'{mode}.txt')
     if osp.exists(optimimum_file):
@@ -286,12 +290,25 @@ def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
     print(sample)
     dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
     root, _ = setup_config(dataset, sample, samples, bl, phi, vb,
-                                aspect_ratio, bond_type, k, contact_distance)
+                                aspect_ratio, bond_type, k, contact_distance,
+                                verbose=False)
 
     root = osp.join(dir, f'{root}-max_ent{k}')
     if osp.exists(root):
         if not osp.exists(osp.join(root, 'iteration1')):
             shutil.rmtree(root)
+
+def check(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
+        aspect_ratio=1, bond_type='gaussian', k=10, contact_distance=False):
+    dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
+    root, _ = setup_config(dataset, sample, samples, bl, phi, vb,
+                                aspect_ratio, bond_type, k, contact_distance,
+                                verbose=False)
+
+    root = osp.join(dir, f'{root}-max_ent{k}')
+    if osp.exists(root):
+        if not osp.exists(osp.join(root, 'iteration30')):
+            print(f'{sample} is still running')
 
 
 
@@ -321,12 +338,13 @@ def main():
             for ar in [1.0]:
                 mapping.append((dataset, i, f'samples', b, phi, None, ar, 'gaussian', k, False))
     print(len(mapping))
-    print(mapping)
+    # print(mapping)
 
     with mp.Pool(15) as p:
         # p.starmap(setup_config, mapping)
         p.starmap(fit, mapping)
         # p.starmap(cleanup, mapping)
+        # p.starmap(check, mapping)
 
 if __name__ == '__main__':
     # modify_maxent()
