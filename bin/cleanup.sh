@@ -32,6 +32,6 @@ for i in {201..282}
 do
   cd  "${dir}/sample${i}"
   pwd
-  rm -r optimize_grid_b_261_phi_0.01-max_ent8
+  rm -r optimize_grid_b_140_phi_0.03-GNN479_repeat
 
 done

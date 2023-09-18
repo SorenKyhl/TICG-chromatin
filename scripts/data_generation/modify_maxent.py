@@ -78,7 +78,7 @@ def get_samples(dataset, train=False, test=False):
         samples = range(1, 21)
     elif dataset == 'dataset_08_25_23':
         samples = list(range(1, 12)) + [981]
-    elif dataset in {'dataset_08_22_23', 'dataset_08_24_23'}:
+    elif dataset in {'dataset_08_22_23', 'dataset_08_24_23', 'dataset_09_17_23', 'dataset_09_18_23'}:
         samples = range(1, 11)
     elif dataset in {'dataset_08_24_23_v2', 'dataset_08_24_23_v3', 'dataset_08_24_23_v4'}:
         samples = range(1, 16)
@@ -102,13 +102,16 @@ def get_samples(dataset, train=False, test=False):
 
     return samples, experimental
 
-def modify_plaid_chis(dataset, b, phi, k):
+def modify_plaid_chis(dataset, b, phi, k, ar):
     samples, _ = get_samples(dataset, True)
     for sample in samples:
         s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{sample}')
         print(sample)
 
-        max_ent_dir = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}-max_ent{k}')
+        if ar != 1:
+            max_ent_dir = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}_spheroid_{ar}-max_ent{k}')
+        else:
+            max_ent_dir = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}-max_ent{k}')
         if not osp.exists(max_ent_dir):
             print(f'{max_ent_dir} does not exist')
             continue
@@ -206,7 +209,7 @@ def modify_plaid_chis(dataset, b, phi, k):
         assert np.allclose(L, L_eig), L - L_eig
 
 
-def modify_maxent_diag_chi(dataset, b, phi, k, edit=True):
+def modify_maxent_diag_chi(dataset, b, phi, k, ar, edit=True):
     '''
     Inputs:
         k: number of marks
@@ -217,7 +220,10 @@ def modify_maxent_diag_chi(dataset, b, phi, k, edit=True):
         s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{sample}')
 
         # try different modifications to diag chis learned by max ent
-        max_ent_dir = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}-max_ent{k}')
+        if ar != 1:
+            max_ent_dir = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}_spheroid_{ar}-max_ent{k}')
+        else:
+            max_ent_dir = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}-max_ent{k}')
         if not osp.exists(max_ent_dir):
             print(f'{max_ent_dir} does not exist')
             continue
@@ -246,7 +252,7 @@ def modify_maxent_diag_chi(dataset, b, phi, k, edit=True):
         poly6_log_fit = curve_fit_helper(Curves.poly6_curve, np.log(x[:m]), meanDist_S,
                                         'poly6_log_meanDist_S', odir, [1, 1, 1, 1, 1, 1, 1], start = 2)
         poly6_fit = curve_fit_helper(Curves.poly6_curve, x[:m], meanDist_S,
-                                        'poly6_log_meanDist_S', odir, [1, 1, 1, 1, 1, 1, 1], start = 2)
+                                        'poly6_meanDist_S', odir, [1, 1, 1, 1, 1, 1, 1], start = 2)
         poly8_log_fit = curve_fit_helper(Curves.poly8_curve, np.log(x[:m]), meanDist_S,
                                         'poly8_log_meanDist_S', odir, [1, 1, 1, 1, 1, 1, 1, 1, 1], start = 2)
         poly9_log_fit = curve_fit_helper(Curves.poly9_curve, np.log(x[:m]), meanDist_S,
@@ -865,7 +871,7 @@ def seq_dist(dataset, k, plot=True, eig_norm=False):
 
     return x_list
 
-def plaid_dist(dataset, b, phi, k, plot=True, eig_norm=False):
+def plaid_dist(dataset, b, phi, k, ar, plot=True, eig_norm=False):
     # distribution of plaid params
     samples, experimental = get_samples(dataset, True)
     dir = '/project2/depablo/erschultz/'
@@ -873,7 +879,10 @@ def plaid_dist(dataset, b, phi, k, plot=True, eig_norm=False):
         dir = '/home/erschultz'
     data_dir = osp.join(dir, dataset)
 
-    odir = osp.join(data_dir, f'b_{b}_phi_{phi}_distributions')
+    if ar == 1:
+        odir = osp.join(data_dir, f'b_{b}_phi_{phi}_distributions')
+    else:
+        odir = osp.join(data_dir, f'b_{b}_phi_{phi}_spheroid_{ar}_distributions')
     if not osp.exists(odir):
         os.mkdir(odir, mode = 0o755)
     if eig_norm:
@@ -897,8 +906,12 @@ def plaid_dist(dataset, b, phi, k, plot=True, eig_norm=False):
         print(sample)
         s_dir = osp.join(data_dir, f'samples/sample{sample}')
         if experimental:
-            s_dir = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}-max_ent{k}')
+            if ar == 1:
+                s_dir = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}-max_ent{k}')
+            else:
+                s_dir = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}_spheroid_{ar}-max_ent{k}')
         if not osp.exists(s_dir):
+            print(f'WARNING: {s_dir} does not exist')
             continue
 
         # get L
@@ -950,6 +963,8 @@ def plaid_dist(dataset, b, phi, k, plot=True, eig_norm=False):
                         chi_ii_list.append(chi_ij)
                     else:
                         chi_ij_list.append(chi_ij)
+        else:
+            print('WARNING: chi is None')
 
     # multivariate normal
     if chi_flat_list:
@@ -1080,11 +1095,11 @@ def plaid_dist(dataset, b, phi, k, plot=True, eig_norm=False):
             arr = np.delete(arr, delete_arr, axis = None)
 
             # remove outliers by zscore
-            mean = np.mean(arr)
-            std = np.std(arr)
-            delete_arr = np.abs(arr - mean)/ std > 2
-            print(np.sum(delete_arr))
-            arr = np.delete(arr, delete_arr, axis = None)
+            # mean = np.mean(arr)
+            # std = np.std(arr)
+            # delete_arr = np.abs(arr - mean)/ std > 2
+            # print(np.sum(delete_arr))
+            # arr = np.delete(arr, delete_arr, axis = None)
 
             bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width)
             n, bins, patches = ax[row][col].hist(arr, weights = np.ones_like(arr) / len(arr),
@@ -1122,56 +1137,6 @@ def plaid_dist(dataset, b, phi, k, plot=True, eig_norm=False):
         plt.tight_layout()
         plt.savefig(osp.join(odir, f'k{k}_chi_per_ii_KDE.png'))
         plt.close()
-
-
-        # per chi all
-        if not eig_norm:
-            print('Starting per chi all')
-            ind = np.arange(k*(k-1)/2 + k) % cmap.N
-            colors = cmap(ind.astype(int))
-
-            fig, axes = plt.subplots(k, k, sharey = True, sharex = True)
-            row = 0
-            col = 0
-            c = 0
-            for i in range(k):
-                for j in range(k):
-                    ax = axes[i][j]
-                    if j < i:
-                        # ax.get_xaxis().set_visible(False)
-                        # ax.get_yaxis().set_visible(False)
-                        continue
-
-                    data = []
-                    for chi in chi_list:
-                        data.append(chi[i,j])
-
-                    dist = skewnorm
-                    arr = np.array(data).reshape(-1)
-                    bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width)
-                    n, bins, patches = ax.hist(arr, weights = np.ones_like(arr) / len(arr),
-                                                bins = bins, alpha = 0.5, color = colors[c])
-
-                    params = dist.fit(arr)
-                    y = dist.pdf(bins, *params) * bin_width
-                    params = np.round(params, 1)
-                    pair = LETTERS[i] + LETTERS[j]
-                    with open(osp.join(odir, f'k{k}_chi{pair}.pickle'), 'wb') as f:
-                        dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
-                        pickle.dump(dict, f)
-
-                    ax.plot(bins, y, ls = '--', color = 'k')
-                    title = r'$\alpha=$' + f'{params[0]}\n'
-                    title += r'$\mu$=' + f'{params[-2]} '+r'$\sigma$='+f'{params[-1]}'
-                    ax.set_title(title)
-                    c += 1
-
-            fig.supxlabel(r'$\chi_{ij}$', fontsize=16)
-            fig.supylabel('Probability', fontsize=16)
-            plt.xlim(-20, 20)
-            plt.tight_layout()
-            plt.savefig(osp.join(odir, f'k{k}_chi_per_dist.png'))
-            plt.close()
 
         if grid_size_arr is not None:
             # grid_size vs chi_aa
@@ -1344,13 +1309,13 @@ def get_read_counts(dataset):
 
 
 if __name__ == '__main__':
-    modify_plaid_chis('dataset_02_04_23', b=261, phi=0.01, k=5)
-    # modify_maxent_diag_chi('dataset_02_04_23', b=261, phi=0.01, k=5, edit=False)
+    # modify_plaid_chis('dataset_02_04_23', b=180, phi=0.01, k=10, ar=2.0)
+    modify_maxent_diag_chi('dataset_02_04_23', b=180, phi=0.01, k=10, ar=2.0, edit=False)
     # for i in range(221, 222):
         # plot_modified_max_ent(i, k = 10)
     # diagonal_dist('dataset_02_04_23', b=261, phi=0.01, k=10)
     # grid_dist('dataset_02_04_23', b=140, phi=0.03)
-    plaid_dist('dataset_02_04_23', b=261, phi=0.01, k=5, plot=True, eig_norm=True)
+    # plaid_dist('dataset_02_04_23', b=180, phi=0.01, k=10, ar=2.0, plot=True, eig_norm=True)
     # get_read_counts('dataset_04_28_23')
     # seq_dist('dataset_01_26_23', 4, True, True)
     # plot_params_test()

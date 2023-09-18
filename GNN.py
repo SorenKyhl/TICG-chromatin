@@ -83,7 +83,21 @@ def fit(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03):
         analysis.main_no_maxent(dir=sim.root)
     sys.stdout = stdout
 
+def cleanup(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03):
+    mode = 'grid'
+    root = f"optimize_{mode}"
+    root = f"{root}_b_{b}_phi_{phi}"
+    dir = f'/home/erschultz/{dataset}/{sub_dir}/sample{sample}'
+    root = osp.join(dir, root)
+    gnn_root = f'{root}-GNN{GNN_ID}'
+    if osp.exists(gnn_root):
+        if not osp.exists(osp.join(gnn_root, 'production_out')):
+            # shutil.rmtree(gnn_root)
+            print(f'removing {gnn_root}')
+
+
 def main():
+    samples=None
     # dataset='downsampling_analysis'; samples = range(201, 211)
     dataset='dataset_02_04_23';
     # dataset='dataset_02_04_23'; all_samples = range(201, 283)
@@ -97,16 +111,16 @@ def main():
     # dataset = 'dataset_06_29_23'; samples = [2, 103, 604]
     # dataset = 'dataset_08_25_23'; samples=list(range(1,21))+[981]
     #
-    # dataset = 'dataset_04_28_23'; samples = [1,2,3,4,5,324,981,1753,1936,2834,3464]
-
+    # dataset = 'dataset_04_28_23'
     # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     mapping = []
 
-    samples, _ = get_samples(dataset, test=True)
-    samples = samples[:10]
+    if samples is None:
+        samples, _ = get_samples(dataset, test=True)
+        samples = samples[:10]
 
     # GNN_IDs = [434, 440, 448, 442, 443, 447, 449, 446, 444, 445, 441]
-    GNN_IDs = [451]
+    GNN_IDs = [480]
     for GNN_ID in GNN_IDs:
         # for i in samples:
         #     mapping.append((dataset, i, GNN_ID))
@@ -118,6 +132,7 @@ def main():
     print(mapping)
 
     with mp.Pool(5) as p:
+        # p.starmap(cleanup, mapping)
         p.starmap(fit, mapping)
 
 

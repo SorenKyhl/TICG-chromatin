@@ -9,7 +9,7 @@ import seaborn as sns
 from modify_maxent import get_samples, plaid_dist, simple_histogram
 from molar_contact_ratio import molar_contact_ratio
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
-from pylib.utils.plotting_utils import RED_BLUE_CMAP, RED_CMAP
+from pylib.utils.plotting_utils import BLUE_RED_CMAP, RED_BLUE_CMAP, RED_CMAP
 from pylib.utils.similarity_measures import SCC
 from pylib.utils.utils import make_composite
 from scipy.stats import norm, skewnorm
@@ -26,8 +26,8 @@ from sequences_to_contact_maps.scripts.utils import (calc_dist_strat_corr,
 def meanDist_comparison():
     # datasets = ['dataset_01_26_23', 'dataset_02_16_23']
     # datasets = ['dataset_01_26_23', 'dataset_02_04_23', 'dataset_02_21_23']
-    datasets = ['dataset_06_29_23', 'dataset_02_04_23']
-    labels = ['Experiment', 'Experiment2']
+    datasets = ['dataset_02_04_23', 'dataset_09_18_23']
+    labels = ['Experiment', 'synthetic']
     data_dir = osp.join('/home/erschultz', datasets[0])
 
     cmap = matplotlib.cm.get_cmap('tab10')
@@ -393,13 +393,16 @@ def l_ij_comparison(dataset, dataset_exp, b, phi, k):
     plt.savefig(osp.join(data_dir, 'frob_L_comparison.png'))
     plt.close()
 
-def plot_y_S(dataset, b, phi):
+def plot_y_S(dataset, b, phi, ar=1.0):
     dir = '/project2/depablo/erschultz/'
     if not osp.exists(dir):
         dir = '/home/erschultz'
     data_dir = osp.join(dir, dataset)
 
-    odir = osp.join(data_dir, f'b_{b}_phi_{phi}_distributions')
+    if ar == 1:
+        odir = osp.join(data_dir, f'b_{b}_phi_{phi}_distributions')
+    else:
+        odir = osp.join(data_dir, f'b_{b}_phi_{phi}_spheroid_{ar}_distributions')
     if not osp.exists(odir):
         os.mkdir(odir, mode=0o755)
 
@@ -417,8 +420,10 @@ def plot_y_S(dataset, b, phi):
         y /= np.mean(np.diagonal(y))
         y_list.append(y)
 
-
-        max_ent_dir = osp.join(sample_dir, f'optimize_grid_b_{b}_phi_{phi}-max_ent10')
+        if ar == 1:
+            max_ent_dir = osp.join(sample_dir, f'optimize_grid_b_{b}_phi_{phi}-max_ent10')
+        else:
+            max_ent_dir = osp.join(sample_dir, f'optimize_grid_b_{b}_phi_{phi}_spheroid_{ar}-max_ent10')
         final = get_final_max_ent_folder(max_ent_dir)
         S = np.load(osp.join(final, 'S.npy'))
         S_list.append(S)
@@ -504,11 +509,11 @@ def plot_y_S(dataset, b, phi):
     for S, sample in zip(S_list, samples):
         if col == 0:
             s = sns.heatmap(S, linewidth = 0, vmin = vmin, vmax = vmax,
-                            cmap = BLUE_RED_CMAP,
+                            cmap = RED_BLUE_CMAP,
                 ax = ax[row][col], cbar_ax = ax[row][-1])
         else:
             s = sns.heatmap(S, linewidth = 0, vmin = vmin, vmax = vmax,
-                            cmap = BLUE_RED_CMAP,
+                            cmap = RED_BLUE_CMAP,
                 ax = ax[row][col], cbar = False)
         s.set_title(f'Sample {sample}', fontsize = 16)
         s.set_xticks([])
@@ -537,11 +542,11 @@ def plot_y_S(dataset, b, phi):
     for S_dag, sample in zip(S_dag_list, samples):
         if col == 0:
             s = sns.heatmap(S_dag, linewidth = 0, vmin = vmin, vmax = vmax,
-                            cmap = BLUE_RED_CMAP,
+                            cmap = RED_BLUE_CMAP,
                 ax = ax[row][col], cbar_ax = ax[row][-1])
         else:
             s = sns.heatmap(S_dag, linewidth = 0, vmin = vmin, vmax = vmax,
-                            cmap = BLUE_RED_CMAP,
+                            cmap = RED_BLUE_CMAP,
                 ax = ax[row][col], cbar = False)
         s.set_title(f'Sample {sample}', fontsize = 16)
         s.set_xticks([])
@@ -629,6 +634,7 @@ if __name__ == '__main__':
     # main()
     # plot_y_S('dataset_02_04_23', 140, 0.03)
     # plot_y_S('dataset_02_04_23', 261, 0.01)
+    # plot_y_S('dataset_02_04_23', 180, 0.01, 2.0)
     # plot_y_S('dataset_')
 
     meanDist_comparison()

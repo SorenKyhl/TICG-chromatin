@@ -497,10 +497,17 @@ void Sim::readInput() {
 
     if (config.contains("angles_on")){
       angles_on = config["angles_on"];
+      assert (config.contains("k_angle"));
+      k_angle = config["k_angle"];
+      if (config.contains("theta_0")){
+        theta_0 = config["theta_0"];
+      } else {
+        theta_0 = 180; // in degrees
+      }
+
     } else {
       angles_on = false;
     }
-    if (config.contains("k_angle")){k_angle = config["k_angle"];}
 
     // parallel config params
     assert(config.contains("parallel"));
@@ -918,8 +925,13 @@ void Sim::constructBonds() {
     for (int i = 0; i < nbeads - 1; i++) {
         if (bond_type == "DSS") {
             bonds[i] = std::make_unique<DSS_Bond>(&beads[i], &beads[i + 1]);
-        }
-        if (bond_type == "gaussian") {
+        } else if (bond_type == "FENE"){
+          // TODO hardcoded FENE
+          double k = 30 / (bond_length * bond_length);
+          double r0 = 1.5 * bond_length;
+          bonds[i] =
+              std::make_unique<FENE_Bond>(&beads[i], &beads[i + 1], k, r0, bond_length);
+        } else if (bond_type == "gaussian") {
             // gaussian coil spring constant is 3/(2b^2)
             double k = 3 / (2 * bond_length * bond_length);
             bonds[i] =
@@ -932,12 +944,13 @@ void Sim::constructBonds() {
 void Sim::constructAngles() {
     angles.resize(nbeads - 2);
     for (int i = 0; i < nbeads - 2; i++) {
-        if (bond_type == "gaussian" && angles_on) {
-            angles[i] = std::make_unique<Harmonic_Angle>(
-                &beads[i], &beads[i + 1], &beads[i + 2], k_angle);
+      assert(bond_type != "DSS");
+      if (angles_on) {
+          angles[i] = std::make_unique<Harmonic_Angle>(
+              &beads[i], &beads[i + 1], &beads[i + 2], k_angle, theta_0);
         }
     }
-    std::cout << "angles constructed" << std::endl;
+    std::cout << "angles constructed with k_angle " << k_angle << "and theta_0 " << theta_0 << std::endl;
 }
 
 void Sim::print() {

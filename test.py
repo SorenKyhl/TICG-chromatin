@@ -18,10 +18,13 @@ import sympy
 import torch
 import torch_geometric
 from pylib.utils import default, epilib, hic_utils
+from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
                                       calculate_diag_chi_step, calculate_S)
 from pylib.utils.plotting_utils import BLUE_RED_CMAP
-from pylib.utils.utils import load_json
+from pylib.utils.similarity_measures import SCC
+from pylib.utils.utils import load_json, pearson_round
+from pylib.utils.xyz import xyz_load, xyz_to_distance
 from scipy.ndimage import uniform_filter
 from scripts.data_generation.modify_maxent import get_samples
 from scripts.get_params import GetEnergy, GetSeq
@@ -38,13 +41,8 @@ from sequences_to_contact_maps.scripts.plotting_utils import (plot_diag_chi,
                                                               plot_matrix,
                                                               plot_seq_binary)
 from sequences_to_contact_maps.scripts.R_pca import R_pca
-from sequences_to_contact_maps.scripts.similarity_measures import SCC
-from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
-                                                     pearson_round,
-                                                     rescale_matrix,
+from sequences_to_contact_maps.scripts.utils import (rescale_matrix,
                                                      triu_to_full)
-from sequences_to_contact_maps.scripts.xyz_utils import (xyz_load,
-                                                         xyz_to_distance)
 
 LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -928,6 +926,61 @@ def test_pooling():
         print(np.allclose(y_256, y_rescale))
 
 
+def test_harmonic_angle():
+    # p1: 314.257 314.257 314.257
+    # p2: 482.553 150.319 200.583
+    # p3: 502.703 387.782 307.008
+    # disp1: -168.296  163.938  113.674
+    # disp2: 20.1498 237.463 106.425
+    # theta: 0.796404
+    bead1 = np.array([314.257, 314.257, 314.257]).astype(float)
+    bead2 = np.array([482.553, 150.319, 200.583]).astype(float)
+    bead3 = np.array([502.703, 387.782, 307.008]).astype(float)
+    a = bead2 - bead1
+    b = bead2 - bead3
+    print(a, b)
+    a /= np.linalg.norm(a)
+    b /= np.linalg.norm(b)
+    print(a, b)
+    cos_theta = np.dot(a,b)
+    print(cos_theta)
+    theta = np.arccos(cos_theta)
+    print(theta)
+
+def fene(r, k, R0):
+    if r < R0:
+        return -0.5*k*(R0**2)*math.log(1-r/R0)
+    return 0
+
+def hc(r, b):
+    if r < b*(2**(1/6)):
+        return 4*((b/r)**12-(b/r)**6+1/4)
+    return 0
+
+def test_FENE():
+    b = 261
+    k = 30 / b**2
+    R0 = 1.5 * b
+    X = np.arange(0.7*b, 1.6*b, b/100)
+    Y1 = np.zeros_like(X)
+    Y2 = np.zeros_like(X)
+    Y3 = np.zeros_like(X)
+    for i, x in enumerate(X):
+        val1 = fene(x, k, R0)
+        Y1[i] = val1
+        val2 = hc(x, b)
+        Y2[i] = val2
+        Y3[i] = val1 + val2
+
+    plt.plot(X, Y1, label='fene')
+    plt.plot(X, Y2, label='hc')
+    plt.plot(X, Y3, label='combined')
+    plt.legend()
+    plt.show()
+
+
+
+
 
 if __name__ == '__main__':
     # test_robust_PCA()
@@ -935,13 +988,13 @@ if __name__ == '__main__':
     # test_convergence('dataset_02_04_23', 'loss')
     # test_convergence('dataset_02_04_23', 'param')
     # check_dataset('dataset_11_18_22')
-    check_dataset_p_s('dataset_08_17_23')
+    # check_dataset_p_s('dataset_08_17_23')
     # time_comparison()
     # time_comparison_dmatrix()
     # main()
     # compare_scc_bio_replicates()
     # max_ent_loss_for_gnn('dataset_11_14_22', 2201)
-    # plot_mean_dist_S('dataset_04_28_23')
+    plot_mean_dist_S('dataset_09_18_23')
     # gnn_of_max_ent([207], 8, 378)
     # check_interpolation()
     # make_dataset_of_converged('dataset_03_21_23')
@@ -953,3 +1006,5 @@ if __name__ == '__main__':
     # make_small('dataset_04_05_23')
     # compare_s_per_iteration()
     # compare_p_s()
+    # test_harmonic_angle()
+    # test_FENE()

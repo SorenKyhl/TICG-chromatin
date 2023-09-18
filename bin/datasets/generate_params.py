@@ -33,6 +33,8 @@ def getArgs():
                         help='output dataset')
     parser.add_argument('--k', type=int,
                         help='number of marks')
+    parser.add_argument('--ar', type=float,
+                        help='aspect ratio for spheroid boundary')
     parser.add_argument('--samples', type=int,
                         help='number of samples')
     parser.add_argument('--m', type=int,
@@ -81,7 +83,12 @@ class DatasetGenerator():
         self.phi = args.phi
         self.conv_defn = args.conv_defn
         self.plaid_mode = args.plaid_mode
-        self.grid_root = f'optimize_grid_b_{self.b}_phi_{self.phi}'
+        if args.ar == 1:
+            self.grid_root = f'optimize_grid_b_{self.b}_phi_{self.phi}'
+            self.distributions_root = f'b_{self.b}_phi_{self.phi}_distributions'
+        else:
+            self.grid_root = f'optimize_grid_b_{self.b}_phi_{self.phi}_spheroid_{args.ar}'
+            self.distributions_root = f'b_{self.b}_phi_{self.phi}_spheroid_{args.ar}_distributions'
 
         self.get_exp_samples()
 
@@ -99,6 +106,9 @@ class DatasetGenerator():
         self.sample_dict = defaultdict(dict)
         for i in range(self.N):
             self.sample_dict[i]['m'] = self.m
+            if args.ar != 1:
+                self.sample_dict[i]['boundary_type'] = 'spheroid'
+                self.sample_dict[i]['aspect_ratio'] = args.ar
 
 
     def get_exp_samples(self):
@@ -135,13 +145,13 @@ class DatasetGenerator():
             for j in range(self.k):
                 l = LETTERS[j]
                 if self.plaid_mode == 'skewnorm':
-                    with open(osp.join(self.dir, self.exp_dataset, f'b_{self.b}_phi_{self.phi}_distributions',
+                    with open(osp.join(self.dir, self.exp_dataset, self.distributions_root,
                                         'plaid_param_distributions_eig_norm',
                                         f'k{self.k}_chi{l}{l}.pickle'), 'rb') as f:
                         dict_j = pickle.load(f)
                     chi_ii[j] =  skewnorm.rvs(dict_j['alpha'], dict_j['mu'], dict_j['sigma'])
                 elif self.plaid_mode == 'KDE':
-                    with open(osp.join(self.dir, self.exp_dataset, f'b_{self.b}_phi_{self.phi}_distributions',
+                    with open(osp.join(self.dir, self.exp_dataset, self.distributions_root,
                                         'plaid_param_distributions_eig_norm',
                                         f'k{self.k}_chi{l}{l}_KDE.pickle'), 'rb') as f:
                         kde = pickle.load(f)
@@ -385,11 +395,18 @@ class DatasetGenerator():
         get_grid = False
         if 'grid' in self.diag_mode:
             get_grid = True
+        poly12_log = False
+        if 'poly12_log' in self.diag_mode:
+            poly12_log = True
+            print('Using poly12 for meanDist_S')
 
         converged_samples = self.get_converged_samples()
         for j in converged_samples:
             sample_folder = osp.join(self.exp_dir, f'sample{j}', f'{self.grid_root}-max_ent{self.k}')
-            meanDist_S = np.loadtxt(osp.join(sample_folder, 'fitting2/poly6_log_meanDist_S_fit.txt'))
+            if poly12_log:
+                meanDist_S = np.loadtxt(osp.join(sample_folder, 'fitting2/poly12_log_meanDist_S_fit.txt'))
+            else:
+                meanDist_S = np.loadtxt(osp.join(sample_folder, 'fitting2/poly6_log_meanDist_S_fit.txt'))
             meanDist_S_dict[j] = meanDist_S
 
             # get grid_size

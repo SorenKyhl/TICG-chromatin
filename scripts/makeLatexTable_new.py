@@ -116,14 +116,13 @@ def load_data(args):
             # methods should be formatted such that method.split('-')[0] is in METHODS
             if not fname.startswith('optimize') or '-' not in fname:
                 continue
-            if 'angle' in fname:
+            bad_methods = ['angle', '_old', '0.006', '0.06', '_repeat', 'bound', 'init_diag']
+            skip = False
+            for bad_method in bad_methods:
+                if bad_method in fname:
+                    skip = True
+            if skip:
                 continue
-            if '_old' in fname:
-                continue
-            if '0.006' in fname or '0.06' in fname:
-                continue
-            # if '261' in fname:
-                # continue
 
             method = fname
             method_type = fname.split('-')[1]
@@ -266,7 +265,8 @@ def load_data(args):
                 # rmse-diag
                 rmse_diag = mean_squared_error(ground_truth_meanDist, yhat_meanDist, squared = False)
                 temp_dict['rmse-diag'] = rmse_diag
-
+            else:
+                yhat = None
 
             if ground_truth_S is not None and S is not None:
                 rmse_S = mean_squared_error(ground_truth_S, S, squared = False)
@@ -481,6 +481,8 @@ def sort_method_keys(keys):
                 phi = key_split[i+1]
             if substr.startswith('angle'):
                 angle = substr[5:]
+            if substr.startswith('spheroid'):
+                ar = substr[9:]
 
         if 'GNN' in key:
             pos = key.find('GNN')
@@ -489,6 +491,8 @@ def sort_method_keys(keys):
 
         if 'angle' in key:
             label += f' (b={b},phi={phi}, angle{angle})'
+        elif 'spheroid' in key:
+            label += f' (b={b},phi={phi}, ar{ar})'
         else:
             label += f'  (b={b},phi={phi})'
 
@@ -616,8 +620,8 @@ if __name__ == '__main__':
     args = getArgs(data_folder = data_dir, samples = samples)
     args.experimental = True
     args.convergence_definition = 'normal'
-    # args.gnn_id=[451, 457, 460, 461, 462]
-    args.gnn_id=[461]
+    args.gnn_id=[434, 451, 457, 460, 461, 462, 470, 471, 472, 476, 477, 479, 480, 481]
+    # args.gnn_id=[461]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

@@ -32,16 +32,16 @@ def bonded_simulations():
     if not osp.exists(dataset):
         os.mkdir(dataset, mode=0o755)
 
-    config = default.bonded_config
-    config['beadvol'] = 130000
-    config['seed'] = 1
-    config["nSweeps"] = 350000
-    config["dump_frequency"] = 1000
-    config["dump_stats_frequency"] = 100
-    config['grid_size'] = 1000
+    base_config = default.bonded_config
+    base_config['beadvol'] = 130000
+    base_config['seed'] = 1
+    base_config["nSweeps"] = 350000
+    base_config["dump_frequency"] = 1000
+    base_config["dump_stats_frequency"] = 100
+    base_config['grid_size'] = 1000
 
     mapping = []
-    for boundary_type, ar in [('spherical', 1.0)]:
+    for boundary_type, ar in [('spherical', 1.0), ('spheroid', 2.0)]:
         boundary_dir = f'boundary_{boundary_type}'
         if ar != 1.0:
             boundary_dir += f'_{ar}'
@@ -52,39 +52,47 @@ def bonded_simulations():
             bond_dir = osp.join(boundary_dir, f'bond_type_{bond_type}')
             if not osp.exists(bond_dir):
                 os.mkdir(bond_dir, mode=0o755)
-            for m in [64]:
+            for m in [512]:
                 m_dir = osp.join(bond_dir, f'm_{m}')
                 if not osp.exists(m_dir):
                     os.mkdir(m_dir, mode=0o755)
-                for b in [261]:
+                for b in [180, 200, 220, 240]:
                     b_dir = osp.join(m_dir, f'bond_length_{b}')
                     if not osp.exists(b_dir):
                         os.mkdir(b_dir, mode=0o755)
-                    for phi in [1e-5]:
+                    for phi in [0.01, 0.02, 0.03, 0.04]:
                         phi_dir = osp.join(b_dir, f'phi_{phi}')
                         if not osp.exists(phi_dir):
                             os.mkdir(phi_dir, mode=0o755)
-                        for k_angle in [0, 1, 10, 100]:
-                            config = config.copy()
-                            config['bond_length'] = b
-                            config['phi_chromatin'] = phi
-                            config['nbeads'] = m
-                            config["bond_type"] = bond_type
-                            config['boundary_type'] = boundary_type
-                            config['aspect_ratio'] = ar
+                        for k_angle in [0]:
+                            if bond_type == 'DSS'and k_angle != 0:
+                                continue
+                            for theta_0 in [180]:
+                                if theta_0 == 180:
+                                    k_angle_dir = osp.join(phi_dir, f'angle_{k_angle}')
+                                elif k_angle == 0:
+                                    continue
+                                else:
+                                    k_angle_dir = osp.join(phi_dir, f'angle_{k_angle}_theta0_{theta_0}')
 
-                            if k_angle == 0:
-                                k_angle_dir = phi_dir
-                            else:
-                                k_angle_dir = osp.join(phi_dir, f'angle_{k_angle}')
-                                config['angles_on'] = True
-                                config['k_angle'] = k_angle
-                            if not osp.exists(k_angle_dir):
-                                os.mkdir(k_angle_dir, mode=0o755)
-                            mapping.append((k_angle_dir, config))
+                                if not osp.exists(k_angle_dir):
+                                    os.mkdir(k_angle_dir, mode=0o755)
+
+                                config = base_config.copy()
+                                config['bond_length'] = b
+                                config['phi_chromatin'] = phi
+                                config['nbeads'] = m
+                                config["bond_type"] = bond_type
+                                config['boundary_type'] = boundary_type
+                                config['aspect_ratio'] = ar
+                                if k_angle != 0:
+                                    config['angles_on'] = True
+                                    config['k_angle'] = k_angle
+                                    config['theta_0'] = theta_0
+                                mapping.append((k_angle_dir, config))
 
     print(len(mapping))
-    with mp.Pool(min(len(mapping), 10)) as p:
+    with mp.Pool(min(len(mapping), 13)) as p:
         p.starmap(run, mapping)
 
 def plot_bond_length():
@@ -95,57 +103,61 @@ def plot_bond_length():
         if boundary_type == 'spheroid':
             boundary_type += f'_{ar}'
         for bond_type in ['gaussian']:
-            for m in [64]:
+            for m in [512]:
                 for b in [261]:
-                    for phi in [1e-5]:
-                        for k_angle in [0, 1, 10, 100]:
-                            # k_angle = np.round(k_angle, 1)
-                            dir = osp.join(dataset, f'boundary_{boundary_type}/bond_type_{bond_type}/m_{m}/bond_length_{b}/phi_{phi}')
-                            if k_angle != 0:
-                                dir = osp.join(dir, f'angle_{k_angle}')
-                            xyz = xyz_load(osp.join(dir, 'production_out/output.xyz'),
-                                            multiple_timesteps=True, N_min=1)
-                            xyz = xyz.reshape(-1, m, 3)
-                            D = xyz_to_distance(xyz) **2
-                            N = len(D)
-                            data = []
-                            for i in range(N):
-                                data.append(np.diagonal(D[i], 1))
-                            simple_histogram(data, xlabel='Bond Length', odir=dir,
-                                            ofname='bond_length_dist.png', dist=norm)
-                            #
-                            angles = xyz_to_angles(xyz).flatten()
-                            simple_histogram(angles, xlabel=r'Angle $\theta$',
-                                            odir=dir,
-                                            ofname='angle_dist.png', dist=norm)
+                    for phi in [0.03]:
+                        for k_angle in [0]:
+                            for theta_0 in [180]:
+                                dir = osp.join(dataset, f'boundary_{boundary_type}/bond_type_{bond_type}/m_{m}/bond_length_{b}/phi_{phi}/angle_{k_angle}')
+                                if theta_0 != 180:
+                                    dir += f'_theta0_{theta_0}'
+                                if not osp.exists(dir):
+                                    print(f"{dir} does not exist")
+                                    continue
 
-                            # log_labels = np.linspace(0, (m-1), m)
-                            # D = np.nanmean(D, axis = 0)
-                            # meanDist_D = DiagonalPreprocessing.genomic_distance_statistics(D, mode='freq')
-                            # plt.plot(log_labels, meanDist_D, label='Simulation')
-                            #
-                            # D_exp = np.load('/home/erschultz/Su2020/samples/sample1013/D_crop.npy')
-                            # meanDist_D_exp = DiagonalPreprocessing.genomic_distance_statistics(D_exp, mode='freq')
-                            # nan_rows = np.isnan(meanDist_D_exp)
-                            # plt.plot(log_labels[~nan_rows], meanDist_D_exp[~nan_rows],
-                            #             label='Experiment', color='k')
-                            # plt.legend()
-                            # plt.ylabel('Distance (nm)')
-                            # plt.xlabel('Polymer Distance (m)')
-                            # plt.xscale('log')
-                            # plt.tight_layout()
-                            # plt.savefig(osp.join(dir, 'meanDist_D.png'))
-                            # plt.close()
+                                xyz = xyz_load(osp.join(dir, 'production_out/output.xyz'),
+                                                multiple_timesteps=True, N_min=1)
+                                xyz = xyz.reshape(-1, m, 3)
+                                D = xyz_to_distance(xyz)
+                                N = len(D)
+                                data = []
+                                for i in range(N):
+                                    data.append(np.diagonal(D[i], 1))
+                                simple_histogram(data, xlabel='Bond Length', odir=dir,
+                                                ofname='bond_length_dist.png', dist=norm)
+                                #
+                                angles = xyz_to_angles(xyz).flatten()
+                                simple_histogram(angles, xlabel=r'Angle $\theta$',
+                                                odir=dir,
+                                                ofname='angle_dist.png', dist=norm)
 
-    #                         with open(osp.join(k_angle_dir, 'production_out/log.log')) as f:
-    #                             for line in f.readlines():
-    #                                 if line.startswith('simulation volume'):
-    #                                     vol = line.split(' ')[-2]
-    #                                     print(vol)
-    #                                     break
-    #                         X.append(phi)
-                            X.append(k_angle)
-                            Y.append(np.sqrt(np.mean(data)))
+                                log_labels = np.linspace(0, (m-1), m)
+                                D = np.nanmean(D, axis = 0)
+                                meanDist_D = DiagonalPreprocessing.genomic_distance_statistics(D, mode='freq')
+                                plt.plot(log_labels, meanDist_D, label='Simulation')
+
+                                D_exp = np.load('/home/erschultz/Su2020/samples/sample1013/D_crop.npy')
+                                meanDist_D_exp = DiagonalPreprocessing.genomic_distance_statistics(D_exp, mode='freq')
+                                nan_rows = np.isnan(meanDist_D_exp)
+                                plt.plot(log_labels[~nan_rows], meanDist_D_exp[~nan_rows],
+                                            label='Experiment', color='k')
+                                plt.legend()
+                                plt.ylabel('Distance (nm)')
+                                plt.xlabel('Polymer Distance (m)')
+                                plt.xscale('log')
+                                plt.tight_layout()
+                                plt.savefig(osp.join(dir, 'meanDist_D.png'))
+                                plt.close()
+
+        #                         with open(osp.join(k_angle_dir, 'production_out/log.log')) as f:
+        #                             for line in f.readlines():
+        #                                 if line.startswith('simulation volume'):
+        #                                     vol = line.split(' ')[-2]
+        #                                     print(vol)
+        #                                     break
+        #                         X.append(phi)
+                                X.append(k_angle)
+                                Y.append(np.sqrt(np.mean(data)))
     #
     #
     # plt.plot(X, Y)
@@ -158,7 +170,6 @@ def plot_bond_length():
     # plt.close()
 
 def main(root, config, mode='grid_angle10'):
-
     gthic = np.load(osp.join(osp.split(root)[0], 'y.npy')).astype(float)
     config['nbeads'] = len(gthic)
     # config["nSweeps"] = 100000
@@ -268,6 +279,6 @@ def test_optimize():
 
 if __name__ == "__main__":
     # check_all_converged()
-    # bonded_simulations()
+    bonded_simulations()
     # test_optimize()
-    plot_bond_length()
+    # plot_bond_length()

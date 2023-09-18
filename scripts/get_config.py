@@ -57,6 +57,8 @@ def getArgs(args_file=None, args_tmp=None):
                         help='k for angle term')
     parser.add_argument('--boundary_type', type=str, default='spherical',
                         help='simulation boundary type {cubic, spherical}')
+    parser.add_argument('--aspect_ratio', type=float, default=1.0,
+                        help='for simulation boundary type = spheroid')
     parser.add_argument('--track_contactmap', type=AC.str2bool, default=False,
                         help='True to dump contact map every dump_frequency')
     parser.add_argument('--gridmove_on', type=AC.str2bool, default=True,
@@ -373,6 +375,9 @@ def main(args_file=None, args_tmp=None):
 
     # save boundary_type
     config['boundary_type'] = args.boundary_type
+    if args.aspect_ratio != 1:
+        assert config['boundary_type'] == 'spheroid'
+        config['aspect_ratio'] = args.aspect_ratio
 
     # save dump frequency
     if args.dump_frequency is not None:

@@ -13,13 +13,14 @@ import pandas as pd
 import scipy
 import seaborn as sns
 from numba import njit
+from sklearn.decomposition import PCA, KernelPCA
+from tqdm import tqdm
+
 from pylib.utils import hic_utils, utils
 from pylib.utils.goals import *
 from pylib.utils.hic_utils import get_diagonal
 from pylib.utils.plotting_utils import plot_matrix
 from pylib.utils.similarity_measures import *
-from sklearn.decomposition import PCA, KernelPCA
-from tqdm import tqdm
 
 # import palettable
 # from palettable.colorbrewer.sequential import Reds_3
@@ -435,9 +436,12 @@ def plot_energy(sim):
     sz = np.shape(sim.energy)[0]
     last20 = int(sz - sz / 5)
 
-    bondmean = np.mean(sim.energy["bonded"][:last20])
-    nbondmean = np.mean(sim.energy["nonbonded"][:last20])
-    diagmean = np.mean(sim.energy["diagonal"][:last20])
+    try:
+        bondmean = np.mean(sim.energy["bonded"][:last20])
+        nbondmean = np.mean(sim.energy["nonbonded"][:last20])
+        diagmean = np.mean(sim.energy["diagonal"][:last20])
+    except TypeError:
+        return
 
     rightedge = len(sim.energy["bonded"])
 

@@ -11,6 +11,7 @@
 
 #include "Bead.h"
 #include "DSS_Bond.h"
+#include "FENE_Bond.h"
 #include "Harmonic_Bond.h"
 #include "Harmonic_Angle.h"
 #include "Cell.h"
@@ -45,6 +46,7 @@ public:
 	double bond_length; // nm
 	std::string bond_type;
 	double k_angle;
+	double theta_0;
 	float dense_diagonal_cutoff;
 	float dense_diagonal_loading;
 	std::string boundary_type;

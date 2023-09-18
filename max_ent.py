@@ -7,7 +7,6 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
-
 import optimize_grid
 import pylib.analysis as analysis
 from pylib.Maxent import Maxent
@@ -147,16 +146,22 @@ def modify_maxent():
 
 def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
                 aspect_ratio=1, bond_type='gaussian', k=None, contact_distance=False,
+                k_angle=0, theta_0=180,
                 verbose=True):
     if verbose:
         print(sample)
     dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
 
-    bonded_config = default.bonded_config
+    bonded_config = default.bonded_config.copy()
     bonded_config['bond_length'] = bl
     bonded_config['phi_chromatin'] = phi
     bonded_config['bond_type'] = bond_type
     bonded_config['update_contacts_distance'] = contact_distance
+    if k_angle != 0:
+        bonded_config['angles_on'] = True
+        bonded_config['k_angle'] = k_angle
+        bonded_config['theta_0'] = theta_0
+
     if bonded_config['update_contacts_distance']:
         mode = 'distance'
     else:
@@ -173,11 +178,14 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
             bonded_config['beadvol'] = 260000
         else:
             bonded_config['beadvol'] = 130000
-    if aspect_ratio != 1:
+    if int(aspect_ratio) != 1:
+        print(aspect_ratio)
         bonded_config['boundary_type'] = 'spheroid'
         bonded_config['aspect_ratio'] = aspect_ratio
     root = f"optimize_{mode}"
     root = f"{root}_b_{bonded_config['bond_length']}_phi_{bonded_config['phi_chromatin']}"
+    if bonded_config['angles_on']:
+        root += f"_angle_{bonded_config['k_angle']}_theta0_{bonded_config['theta_0']}"
     if bonded_config['boundary_type'] == 'spheroid':
         root += f'_spheroid_{aspect_ratio}'
     if bonded_config['bond_type'] == 'DSS':
@@ -203,13 +211,15 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
 
     config = default.config
     for key in ['beadvol', 'bond_length', 'phi_chromatin', 'grid_size',
-                'k_angle', 'angles_on']:
+                'k_angle', 'angles_on', 'theta_0', 'boundary_type',
+                'update_contacts_distance', 'aspect_ratio', 'bond_type']:
         config[key] = bonded_config[key]
 
     return root, config
 
 def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
-        aspect_ratio=1, bond_type='gaussian', k=10, contact_distance=False):
+        aspect_ratio=1, bond_type='gaussian', k=10, contact_distance=False,
+        k_angle=0, theta_0=180):
     print(sample)
     dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
     y = np.load(osp.join(dir, 'y.npy')).astype(float)
@@ -217,7 +227,8 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
     np.fill_diagonal(y, 1)
 
     root, config = setup_config(dataset, sample, samples, bl, phi, vb,
-                                aspect_ratio, bond_type, k, contact_distance)
+                                aspect_ratio, bond_type, k, contact_distance,
+                                k_angle, theta_0)
 
     config['nspecies'] = k
     if k > 0:
@@ -313,6 +324,7 @@ def check(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
 
 
 def main():
+    samples = None
     # dataset = 'dataset_05_31_23'; samples = list(range(1137, 1214))
     # dataset = 'downsampling_analysis'; samples = list(range(201, 211))
     dataset = 'dataset_02_04_23';
@@ -327,20 +339,23 @@ def main():
     # samples = sorted(np.random.choice(samples, 12, replace = False))
     # dataset = 'timing_analysis/512'; samples = list(range(1, 16))
 
-    samples, _ = get_samples(dataset, train=True)
-    samples = samples
+    if samples is None:
+        samples, _ = get_samples(dataset, test=True)
+        samples = samples[:10]
     print(samples)
 
     mapping = []
-    b=261;k=0
+    k=10;k_angle=0;theta_0=180
     for i in samples:
-        for phi in [0.01]:
-            for ar in [1.0]:
-                mapping.append((dataset, i, f'samples', b, phi, None, ar, 'gaussian', k, False))
+        for b in [180]:
+            for phi in [0.01]:
+                for ar in [2.0]:
+                    mapping.append((dataset, i, f'samples', b, phi, None, ar,
+                                    'gaussian', k, False, k_angle, theta_0))
     print(len(mapping))
     # print(mapping)
 
-    with mp.Pool(15) as p:
+    with mp.Pool(5) as p:
         # p.starmap(setup_config, mapping)
         p.starmap(fit, mapping)
         # p.starmap(cleanup, mapping)

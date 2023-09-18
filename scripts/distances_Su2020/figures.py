@@ -211,7 +211,7 @@ def old_figure(sample, GNN_ID, bl=140, phi=0.03):
     m = len(D)
     log_labels = np.linspace(0, resolution*(m-1), m)
     # print('h1204', log_labels.shape)
-    data = zip([D,D_pca, D_gnn], ['Experiment', 'Max Ent', 'GNN'], ['k', 'b', 'r'])
+    data = zip([D, D_pca, D_gnn], ['Experiment', 'Max Ent', 'GNN'], ['k', 'b', 'r'])
     for D_i, label, color in data:
         # print(label)
         if D_i is not None:
@@ -484,5 +484,5 @@ def supp_figure(sample, GNN_ID, bl=140, phi=0.03):
 
 
 if __name__ == '__main__':
-    old_figure(1004, 434, bl=261, phi=0.01)
+    old_figure(1013, None, bl=261, phi=0.01)
     # supp_figure(1013, 434, bl=261, phi=0.01)

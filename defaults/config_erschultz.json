@@ -3,6 +3,7 @@
   "double_count_main_diagonal": false,
   "angles_on": false,
   "k_angle": 0,
+  "theta_0": 180,
   "cell_volumes":  false,
   "compressibility_on": false,
   "diag_pseudobeads_on": true,
@@ -18,6 +19,7 @@
   "dump_density": false,
   "dump_observables": false,
   "update_contacts_distance": false,
+  "aspect_ratio": 1.0,
 
   "lmatrix_on": true,
   "smatrix_on": true,

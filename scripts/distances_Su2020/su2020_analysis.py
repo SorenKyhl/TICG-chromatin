@@ -14,6 +14,12 @@ import numpy.ma as ma
 import pandas as pd
 import scipy
 import seaborn as sns
+from scipy.optimize import minimize
+from scipy.spatial import ConvexHull
+from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+from sklearn.metrics import mean_squared_error
+
 from pylib.utils import epilib
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.plotting_utils import (BLUE_CMAP, BLUE_RED_CMAP,
@@ -22,11 +28,6 @@ from pylib.utils.plotting_utils import (BLUE_CMAP, BLUE_RED_CMAP,
 from pylib.utils.similarity_measures import SCC
 from pylib.utils.utils import pearson_round
 from pylib.utils.xyz import calculate_rg, xyz_load, xyz_to_distance, xyz_write
-from scipy.optimize import minimize
-from scipy.spatial import ConvexHull
-from sklearn.cluster import KMeans
-from sklearn.decomposition import PCA
-from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
@@ -865,25 +866,34 @@ def compare_D_to_sim_D(sample, GNN_ID=None):
             row += 1
     plt.savefig(osp.join(sim_dir, 'pc_D_vs_D_sim.png'))
 
-def get_dirs(dir, GNN_ID, b=140, phi=0.03, ar=1.0):
+def get_dirs(dir, GNN_ID, b=140, phi=0.03, ar=1.0, k_angle=0, theta=180):
     if ar == 1.0:
-        max_ent_dir = osp.join(dir, f'optimize_grid_b_{b}_phi_{phi}-max_ent10')
-        gnn_dir = osp.join(dir, f'optimize_grid_b_{b}_phi_{phi}-GNN{GNN_ID}')
+        max_ent_dir = osp.join(dir, f'optimize_grid_b_{b}_phi_{phi}')
+        gnn_dir = osp.join(dir, f'optimize_grid_b_{b}_phi_{phi}')
     else:
-        max_ent_dir = osp.join(dir, f'optimize_grid_b_{b}_phi_{phi}_spheroid_{ar}-max_ent10')
-        gnn_dir = osp.join(dir, f'optimize_grid_b_{b}_phi_{phi}_spheroid_{ar}-GNN{GNN_ID}')
+        max_ent_dir = osp.join(dir, f'optimize_grid_b_{b}_phi_{phi}_spheroid_{ar}')
+        gnn_dir = osp.join(dir, f'optimize_grid_b_{b}_phi_{phi}_spheroid_{ar}')
+    if k_angle != 0:
+        max_ent_dir += f'_angle_{k_angle}'
+        gnn_dir += f'_angle_{k_angle}'
+        if theta != 180:
+            max_ent_dir += f'_theta0_{theta}'
+            gnn_dir += f'_theta0_{theta}'
+    max_ent_dir += '-max_ent10'
+    gnn_dir += f'-GNN{GNN_ID}'
     if GNN_ID is None:
         gnn_dir = None
     return max_ent_dir, gnn_dir
 
-def load_exp_gnn_pca(dir, GNN_ID=None, mode='mean', b=140, phi=0.03):
+def load_exp_gnn_pca(dir, GNN_ID=None, mode='mean', b=140, phi=0.03, ar=1,
+                    k_angle=0, theta=180):
     result = load_import_log(dir)
     start = result['start']
     resolution = result['resolution']
     chrom = int(result['chrom'])
     genome = result['genome']
 
-    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, b, phi)
+    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, b, phi, ar, k_angle, theta)
     if osp.exists(max_ent_dir):
         D_pca, D_med_pca = sim_xyz_to_dist(max_ent_dir, True)
         m = len(D_pca)
