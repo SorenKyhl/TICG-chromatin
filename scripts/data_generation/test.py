@@ -15,7 +15,7 @@ from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_max_ent_S, load_Y)
+    get_final_max_ent_folder, load_max_ent_S, load_S, load_Y)
 
 
 def split_samples(dataset):
@@ -434,7 +434,14 @@ def compare_p_s_modified():
     plt.savefig(osp.join(data_dir, 'meanDist_modified.png'))
     plt.close()
 
+def check_GNN_S():
+    e = np.loadtxt('/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/434/dataset_04_28_23_sample324/sample324/energy.txt')
+    e_orig = np.multiply(np.sign(e), np.exp(np.abs(e)) - 1)
+    print(e_orig[1, :10], e_orig.shape)
 
+    S = load_S('/home/erschultz/dataset_04_28_23/samples/sample324')
+    # S = np.load('/home/erschultz/dataset_04_28_23/samples/sample324/S.npy')
+    print(S[1, :10])
 
 def compare_xyz():
     dir1 = '/home/erschultz/Su2020/samples/sample1004/optimize_grid_b_261_phi_0.01 (copy)/iteration6'
@@ -467,7 +474,8 @@ if __name__ == '__main__':
     # compare_p_s_bonded3()
     # compare_d_s_bonded()
     # compare_d_s_bonded2()
-    compare_d_s_max_ent()
+    # compare_d_s_max_ent()
     # compare_meanDist_S()
     # compare_p_s_modified()
     # compare_xyz()
+    check_GNN_S()

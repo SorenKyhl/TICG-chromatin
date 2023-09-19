@@ -15,4 +15,4 @@ source activate python3.9_pytorch1.9
 sourceFile=$1
 source $sourceFile
 
-python3 ~/TICG-chromatin/bin/datasets/run_new.py --start 1 --end 1000 --jobs $2 --data_folder $dataFolder --scratch $scratchDir --m $m --n_sweeps $nSweeps --dump_frequency $dumpFrequency --TICG_seed $TICGSeed --phi_chromatin $phiChromatin --bead_vol $beadVol --bond_length $bondLength --track_contactmap $trackContactMap --overwrite
+python3 ~/TICG-chromatin/bin/datasets/run_new.py --start 3464 --end 3464 --jobs $2 --data_folder $dataFolder --scratch $scratchDir --m $m --n_sweeps $nSweeps --dump_frequency $dumpFrequency --TICG_seed $TICGSeed --phi_chromatin $phiChromatin --bead_vol $beadVol --bond_length $bondLength --track_contactmap $trackContactMap --overwrite

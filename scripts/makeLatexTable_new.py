@@ -116,7 +116,7 @@ def load_data(args):
             # methods should be formatted such that method.split('-')[0] is in METHODS
             if not fname.startswith('optimize') or '-' not in fname:
                 continue
-            bad_methods = ['angle', '_old', '0.006', '0.06', '_repeat', 'bound', 'init_diag']
+            bad_methods = ['angle', '_old', '0.006', '0.06', 'bound', 'init_diag']
             skip = False
             for bad_method in bad_methods:
                 if bad_method in fname:
@@ -127,7 +127,7 @@ def load_data(args):
             method = fname
             method_type = fname.split('-')[1]
             if method_type.startswith('GNN'):
-                GNN_ID = int(fname[-3:])
+                GNN_ID = int(fname.strip('_repeat')[-3:])
                 if args.gnn_id is not None and GNN_ID not in args.gnn_id:
                     continue
                 print(fname)
@@ -482,7 +482,7 @@ def sort_method_keys(keys):
             if substr.startswith('angle'):
                 angle = substr[5:]
             if substr.startswith('spheroid'):
-                ar = substr[9:]
+                ar = substr[8:]
 
         if 'GNN' in key:
             pos = key.find('GNN')
@@ -607,7 +607,8 @@ def main(args=None):
 
 
 if __name__ == '__main__':
-    dataset = 'dataset_02_04_23'
+    # dataset = 'dataset_02_04_23'
+    dataset = 'dataset_09_17_23'
     # dataset = 'dataset_08_25_23'; samples = range(1, 16)
     # dataset = 'dataset_04_28_23'; samples = [1,2,3,4,5,324,981,1753,1936,2834,3464]
     # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5,101,102,103,104,105,601,602,603,604,605]
@@ -620,8 +621,8 @@ if __name__ == '__main__':
     args = getArgs(data_folder = data_dir, samples = samples)
     args.experimental = True
     args.convergence_definition = 'normal'
-    args.gnn_id=[434, 451, 457, 460, 461, 462, 470, 471, 472, 476, 477, 479, 480, 481]
-    # args.gnn_id=[461]
+    args.gnn_id=[434, 451, 461, 462, 471, 472, 476, 477, 479, 480, 481, 485]
+    # args.gnn_id=[434]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

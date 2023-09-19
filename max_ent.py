@@ -179,7 +179,6 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
         else:
             bonded_config['beadvol'] = 130000
     if int(aspect_ratio) != 1:
-        print(aspect_ratio)
         bonded_config['boundary_type'] = 'spheroid'
         bonded_config['aspect_ratio'] = aspect_ratio
     root = f"optimize_{mode}"
@@ -297,17 +296,21 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
     sys.stdout = stdout
 
 def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
-        aspect_ratio=1, bond_type='gaussian', k=10, contact_distance=False):
+        aspect_ratio=1, bond_type='gaussian', k=10, contact_distance=False,
+        k_angle=0, theta_0=190):
     print(sample)
     dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
     root, _ = setup_config(dataset, sample, samples, bl, phi, vb,
                                 aspect_ratio, bond_type, k, contact_distance,
+                                k_angle, theta_0,
                                 verbose=False)
 
     root = osp.join(dir, f'{root}-max_ent{k}')
     if osp.exists(root):
         if not osp.exists(osp.join(root, 'iteration1')):
             shutil.rmtree(root)
+        # if not osp.exists(osp.join(root, 'iteration30')):
+        #     shutil.rmtree(root)
 
 def check(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
         aspect_ratio=1, bond_type='gaussian', k=10, contact_distance=False):
@@ -327,7 +330,7 @@ def main():
     samples = None
     # dataset = 'dataset_05_31_23'; samples = list(range(1137, 1214))
     # dataset = 'downsampling_analysis'; samples = list(range(201, 211))
-    dataset = 'dataset_02_04_23';
+    # dataset = 'dataset_02_04_23';
     # dataset = 'dataset_02_04_23'; samples = [211, 212, 213, 214, 215, 216, 217,
                                                 # 218, 219, 220, 221, 222, 223, 224]
     # dataset = 'Su2020'; samples = [1013]
@@ -336,6 +339,7 @@ def main():
     # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105,
                                                 # 601,602,603,604,605]
     # dataset = 'dataset_08_25_23'; samples=[981]
+    dataset='dataset_09_17_23'
     # samples = sorted(np.random.choice(samples, 12, replace = False))
     # dataset = 'timing_analysis/512'; samples = list(range(1, 16))
 
@@ -355,7 +359,7 @@ def main():
     print(len(mapping))
     # print(mapping)
 
-    with mp.Pool(5) as p:
+    with mp.Pool(10) as p:
         # p.starmap(setup_config, mapping)
         p.starmap(fit, mapping)
         # p.starmap(cleanup, mapping)

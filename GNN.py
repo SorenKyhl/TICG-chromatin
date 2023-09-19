@@ -17,7 +17,7 @@ sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import load_import_log
 
 
-def fit(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03):
+def fit(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03, ar=1.0):
     print(sample)
     mode = 'grid'
     dir = f'/home/erschultz/{dataset}/{sub_dir}/sample{sample}'
@@ -36,10 +36,12 @@ def fit(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03):
     bonded_config["nSweeps"] = 20000
     root = f"optimize_{mode}"
     root = f"{root}_b_{b}_phi_{phi}"
+    if ar != 1:
+        root += f"_spheroid_{ar}"
     print(root)
     root = osp.join(dir, root)
     if osp.exists(root):
-        bonded_config['grid_size'] = np.loadtxt(osp.join(root, 'grid_size.txt'))
+        bonded_config['grid_size'] = np.loadtxt(osp.join(root, 'grid.txt'))
         angle_file = osp.join(root, 'angle.txt')
         if osp.exists(angle_file):
             bonded_config['k_angle'] = np.loadtxt(angle_file)
@@ -83,16 +85,32 @@ def fit(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03):
         analysis.main_no_maxent(dir=sim.root)
     sys.stdout = stdout
 
-def cleanup(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03):
+def check(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03, ar=1.0):
     mode = 'grid'
     root = f"optimize_{mode}"
     root = f"{root}_b_{b}_phi_{phi}"
+    if ar != 1:
+        root += f"_spheroid_{ar}"
     dir = f'/home/erschultz/{dataset}/{sub_dir}/sample{sample}'
     root = osp.join(dir, root)
     gnn_root = f'{root}-GNN{GNN_ID}'
     if osp.exists(gnn_root):
         if not osp.exists(osp.join(gnn_root, 'production_out')):
-            # shutil.rmtree(gnn_root)
+            shutil.rmtree(gnn_root)
+            # print(f'removing {gnn_root}')
+
+def cleanup(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03, ar=1.0):
+    mode = 'grid'
+    root = f"optimize_{mode}"
+    root = f"{root}_b_{b}_phi_{phi}"
+    if ar != 1:
+        root += f"_spheroid_{ar}"
+    dir = f'/home/erschultz/{dataset}/{sub_dir}/sample{sample}'
+    root = osp.join(dir, root)
+    gnn_root = f'{root}-GNN{GNN_ID}'
+    if osp.exists(gnn_root):
+        if not osp.exists(osp.join(gnn_root, 'production_out')):
+            shutil.rmtree(gnn_root)
             print(f'removing {gnn_root}')
 
 
@@ -100,6 +118,7 @@ def main():
     samples=None
     # dataset='downsampling_analysis'; samples = range(201, 211)
     dataset='dataset_02_04_23';
+    dataset='dataset_09_17_23';
     # dataset='dataset_02_04_23'; all_samples = range(201, 283)
     # dataset='dataset_04_10_23'; samples = range(1001, 1011)
     # dataset='dataset_04_05_23'; samples = range(1001, 1011)
@@ -120,18 +139,20 @@ def main():
         samples = samples[:10]
 
     # GNN_IDs = [434, 440, 448, 442, 443, 447, 449, 446, 444, 445, 441]
-    GNN_IDs = [480]
+    GNN_IDs = [485]
     for GNN_ID in GNN_IDs:
         # for i in samples:
         #     mapping.append((dataset, i, GNN_ID))
         for i in samples:
-            for phi in [0.01]:
-                mapping.append((dataset, i, GNN_ID, f'samples', 261, phi))
+            for b in [180]:
+                for phi in [0.01]:
+                    for ar in [2.0]:
+                        mapping.append((dataset, i, GNN_ID, f'samples', b, phi, ar))
     print(samples)
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(5) as p:
+    with mp.Pool(3) as p:
         # p.starmap(cleanup, mapping)
         p.starmap(fit, mapping)
 
