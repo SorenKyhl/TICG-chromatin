@@ -1,13 +1,18 @@
+import csv
 import json
 import multiprocessing as mp
 import os
 import os.path as osp
 import shutil
+import subprocess as sp
 import sys
+from time import sleep
 
 import numpy as np
 import optimize_grid
 import pylib.analysis as analysis
+import torch
+from max_ent import setup_config
 from pylib.Pysim import Pysim
 from pylib.utils import default, epilib, utils
 from scripts.data_generation.modify_maxent import get_samples
@@ -24,39 +29,17 @@ def fit(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03, ar=1.0):
     y = np.load(osp.join(dir, 'y.npy')).astype(np.float64)
     y /= np.mean(np.diagonal(y))
     np.fill_diagonal(y, 1)
-    nbeads = len(y)
+    m = len(y)
 
-    bonded_config = default.bonded_config
-    bonded_config['bond_length'] = b
-    bonded_config['phi_chromatin'] = phi
-    if b == 16.5:
-        bonded_config['beadvol'] = 520
-    else:
-        bonded_config['beadvol'] = 130000
-    bonded_config["nSweeps"] = 20000
-    root = f"optimize_{mode}"
-    root = f"{root}_b_{b}_phi_{phi}"
-    if ar != 1:
-        root += f"_spheroid_{ar}"
-    print(root)
-    root = osp.join(dir, root)
-    if osp.exists(root):
-        bonded_config['grid_size'] = np.loadtxt(osp.join(root, 'grid.txt'))
-        angle_file = osp.join(root, 'angle.txt')
-        if osp.exists(angle_file):
-            bonded_config['k_angle'] = np.loadtxt(angle_file)
-            bonded_config['angles_on'] = True
-    else:
-        root, bonded_config = optimize_grid.main(root, bonded_config, mode)
-    config = default.config
-    for key in ['beadvol', 'bond_length', 'phi_chromatin', 'grid_size',
-                'k_angle', 'angles_on']:
-        config[key] = bonded_config[key]
+    root, config = setup_config(dataset, sample, sub_dir, b, phi, None, ar)
+
     config['nspecies'] = 0
     config['load_bead_types'] = False
     config['lmatrix_on'] = False
     config['dmatrix_on'] = False
     config['dump_frequency'] = 10000
+    config['nbeads'] = m
+    config["smatrix_filename"] = "smatrix.txt"
 
     gnn_root = f'{root}-GNN{GNN_ID}'
     if osp.exists(gnn_root):
@@ -65,17 +48,19 @@ def fit(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03, ar=1.0):
         return
     os.mkdir(gnn_root, mode=0o755)
 
-    stdout = sys.stdout
-    with open(osp.join(gnn_root, 'energy.log'), 'w') as sys.stdout:
-        # get energy
-        config['nbeads'] = len(y)
-        getenergy = GetEnergy(config = config)
-        model_path = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{GNN_ID}'
-        S = getenergy.get_energy_gnn(model_path, dir,
-                                    bonded_path=root,
-                                    sub_dir = sub_dir)
-        config["smatrix_filename"] = "smatrix.txt"
 
+    # sleep for random # of seconds so as not to overload gpu
+    sleep(np.random.rand()*10)
+    model_path = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{GNN_ID}'
+    log_file = osp.join(gnn_root, 'energy.log')
+    ofile = osp.join(gnn_root, 'S.npy')
+    args_str = f'--m {m} --gnn_model_path {model_path} --sample_path {dir} --bonded_path {root} --sub_dir {sub_dir} --ofile {ofile}'
+    # using subprocess gaurantees that pytorch can't keep an GPU vram cached
+    sp.run(f"python3 /home/erschultz/TICG-chromatin/scripts/get_params.py {args_str} > {log_file}",
+            shell=True)
+    S = np.load(ofile)
+
+    stdout = sys.stdout
     with open(osp.join(gnn_root, 'log.log'), 'w') as sys.stdout:
         sim = Pysim(gnn_root, config, None, y, randomize_seed = True,
                     mkdir = False, smatrix = S)
@@ -95,9 +80,24 @@ def check(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03, ar=1.0):
     root = osp.join(dir, root)
     gnn_root = f'{root}-GNN{GNN_ID}'
     if osp.exists(gnn_root):
-        if not osp.exists(osp.join(gnn_root, 'production_out')):
-            shutil.rmtree(gnn_root)
-            # print(f'removing {gnn_root}')
+        production = osp.join(gnn_root, 'production_out')
+        equilibration = osp.join(gnn_root, 'equilibration')
+        if osp.exists(production):
+            if not osp.exists(osp.join(gnn_root, 'y.npy')):
+                with open(osp.join(production, 'energy.traj'), 'r') as f:
+                    last = f.readlines()[-1]
+                    it = int(last.split('\t')[0])
+                    prcnt = np.round(it / 350000 * 100, 1)
+                print(f"{gnn_root} in progress: {prcnt}%")
+            else:
+                print(f"{gnn_root} complete")
+        elif not osp.exists(equilibration):
+            print(f"{gnn_root} BROKEN")
+        else:
+            print(f"{gnn_root} confused")
+    else:
+        print(f"{gnn_root} not started")
+
 
 def cleanup(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03, ar=1.0):
     mode = 'grid'
@@ -109,7 +109,9 @@ def cleanup(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03, ar=1.0)
     root = osp.join(dir, root)
     gnn_root = f'{root}-GNN{GNN_ID}'
     if osp.exists(gnn_root):
-        if not osp.exists(osp.join(gnn_root, 'production_out')):
+        # shutil.rmtree(gnn_root)
+        # print(f'removing {gnn_root}')
+        if not osp.exists(osp.join(gnn_root, 'equilibration')):
             shutil.rmtree(gnn_root)
             print(f'removing {gnn_root}')
 
@@ -117,8 +119,8 @@ def cleanup(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03, ar=1.0)
 def main():
     samples=None
     # dataset='downsampling_analysis'; samples = range(201, 211)
-    dataset='dataset_02_04_23';
-    dataset='dataset_09_17_23';
+    # dataset='dataset_02_04_23';
+    # dataset='dataset_09_17_23';
     # dataset='dataset_02_04_23'; all_samples = range(201, 283)
     # dataset='dataset_04_10_23'; samples = range(1001, 1011)
     # dataset='dataset_04_05_23'; samples = range(1001, 1011)
@@ -126,39 +128,39 @@ def main():
     # dataset = 'dataset_04_05_23'; samples = [1001, 1039, 1065, 1093, 1122, 1137, 1166, 1185]
     # dataset='dataset_05_28_23'; samples = [324, 981, 1936, 2834, 3464]
     # dataset = 'dataset_05_31_23'; samples = [1002, 1037, 1198]
-    # dataset = 'Su2020'; samples=[1013]
+    dataset = 'Su2020'; samples=[1013]
     # dataset = 'dataset_06_29_23'; samples = [2, 103, 604]
     # dataset = 'dataset_08_25_23'; samples=list(range(1,21))+[981]
-    #
     # dataset = 'dataset_04_28_23'
-    # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
+    dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     mapping = []
 
     if samples is None:
         samples, _ = get_samples(dataset, test=True)
         samples = samples[:10]
 
-    # GNN_IDs = [434, 440, 448, 442, 443, 447, 449, 446, 444, 445, 441]
-    GNN_IDs = [485]
+    # GNN_IDs = [451, 461, 479, 480, 481]; b=261; phi=0.01; ar=1.0
+    # GNN_IDs = [455, 456, 463, 470, 471, 472, 476, 477]; b=140; phi=0.03; ar=1.0
+    # GNN_IDs= [484]; b=140; phi=0.03; ar=1.0
+    GNN_IDs = [485]; b=180; phi=0.01; ar=2.0
     for GNN_ID in GNN_IDs:
         # for i in samples:
         #     mapping.append((dataset, i, GNN_ID))
         for i in samples:
-            for b in [180]:
-                for phi in [0.01]:
-                    for ar in [2.0]:
-                        mapping.append((dataset, i, GNN_ID, f'samples', b, phi, ar))
+            mapping.append((dataset, i, GNN_ID, f'samples', b, phi, ar))
     print(samples)
     print(len(mapping))
-    print(mapping)
+    # print(mapping)
 
     with mp.Pool(3) as p:
         # p.starmap(cleanup, mapping)
-        p.starmap(fit, mapping)
-
+        # p.starmap(fit, mapping)
+        # p.starmap(check, mapping)
+        p.starmap(setup_config, mapping)
 
 
 if __name__ == '__main__':
+    mp.set_start_method('spawn')
     # soren()
     # modify_soren()
     main()

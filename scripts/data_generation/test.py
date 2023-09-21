@@ -435,13 +435,34 @@ def compare_p_s_modified():
     plt.close()
 
 def check_GNN_S():
-    e = np.loadtxt('/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/434/dataset_04_28_23_sample324/sample324/energy.txt')
-    e_orig = np.multiply(np.sign(e), np.exp(np.abs(e)) - 1)
-    print(e_orig[1, :10], e_orig.shape)
+    GNN_ID=484
+    dataset='dataset_04_28_23'; b=140; phi=0.03
+    GNN_dir = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{GNN_ID}'
+    data_dir = f'/home/erschultz/{dataset}/samples'
+    for sample in [324, 981, 1936, 2834, 3464]:
+        print(sample)
+        e_gt1 = np.loadtxt(osp.join(GNN_dir, f'{dataset}_sample{sample}-regular/sample{sample}-regular/energy.txt'))
+        # e_gt1 = np.multiply(np.sign(e_gt1), np.exp(np.abs(e_gt1)) - 1)
+        e_hat1 = np.loadtxt(osp.join(GNN_dir, f'{dataset}_sample{sample}-regular/sample{sample}-regular/energy_hat.txt'))
+        # e_hat1 = np.multiply(np.sign(e_hat1), np.exp(np.abs(e_hat1)) - 1)
+        # print(e_gt1[0, :10], e_hat1.shape)
+        # print(e_hat1[0, :10], e_hat1.shape)
+        diff = e_hat1 - e_gt1
+        # print('MAE (e_gt, e_hat1)', np.mean(np.abs(diff)))
 
-    S = load_S('/home/erschultz/dataset_04_28_23/samples/sample324')
-    # S = np.load('/home/erschultz/dataset_04_28_23/samples/sample324/S.npy')
-    print(S[1, :10])
+
+        e_gt2 = load_S(osp.join(data_dir, f'sample{sample}'))
+        assert np.allclose(e_gt2, e_gt1, atol=1e-3, rtol=1e-3)
+        e_hat2 = np.loadtxt(osp.join(data_dir, f'sample{sample}/optimize_grid_b_{b}_phi_{phi}-GNN{GNN_ID}/smatrix.txt'))
+        # print(e_gt2[0, :10], e_hat1.shape)
+        # print(e_hat2[0, :10])
+        diff = e_hat2 - e_gt2
+        # print('MAE (e_gt, e_hat2)', np.mean(np.abs(diff)))
+
+
+        diff = e_hat2 - e_hat1
+        print('MAE (e_hat2, e_hat1)', np.mean(np.abs(diff)))
+        print()
 
 def compare_xyz():
     dir1 = '/home/erschultz/Su2020/samples/sample1004/optimize_grid_b_261_phi_0.01 (copy)/iteration6'
@@ -466,6 +487,15 @@ def compare_xyz():
         if val1 != val2:
             print(k, val1, val2)
 
+def grid_sizes():
+    grid_arr = np.array([198., 364., 254.]) # nm
+    grid_arr /= 1000 # um
+    grid_v_list = [g**3 for g in grid_arr]
+    v_list = [2.21867, 6.656, 6.656]# um
+    m=512
+
+    v_ratio = np.divide(grid_v_list, v_list)
+    print(v_ratio*512)
 
 if __name__ == '__main__':
     # compare_diag_params()
@@ -479,3 +509,4 @@ if __name__ == '__main__':
     # compare_p_s_modified()
     # compare_xyz()
     check_GNN_S()
+    # grid_sizes()

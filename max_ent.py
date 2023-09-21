@@ -16,7 +16,6 @@ from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import *
 from scripts.contact_map import getArgs, plot_all
 from scripts.data_generation.modify_maxent import get_samples
-from scripts.get_params import GetSeq
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import load_import_log
@@ -313,7 +312,8 @@ def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
         #     shutil.rmtree(root)
 
 def check(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
-        aspect_ratio=1, bond_type='gaussian', k=10, contact_distance=False):
+        aspect_ratio=1, bond_type='gaussian', k=10, contact_distance=False,
+        k_angle=0, theta_0=190):
     dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
     root, _ = setup_config(dataset, sample, samples, bl, phi, vb,
                                 aspect_ratio, bond_type, k, contact_distance,
@@ -330,7 +330,7 @@ def main():
     samples = None
     # dataset = 'dataset_05_31_23'; samples = list(range(1137, 1214))
     # dataset = 'downsampling_analysis'; samples = list(range(201, 211))
-    # dataset = 'dataset_02_04_23';
+    dataset = 'dataset_02_04_23';
     # dataset = 'dataset_02_04_23'; samples = [211, 212, 213, 214, 215, 216, 217,
                                                 # 218, 219, 220, 221, 222, 223, 224]
     # dataset = 'Su2020'; samples = [1013]
@@ -339,17 +339,17 @@ def main():
     # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105,
                                                 # 601,602,603,604,605]
     # dataset = 'dataset_08_25_23'; samples=[981]
-    dataset='dataset_09_17_23'
+    # dataset='dataset_09_17_23'
     # samples = sorted(np.random.choice(samples, 12, replace = False))
     # dataset = 'timing_analysis/512'; samples = list(range(1, 16))
 
     if samples is None:
-        samples, _ = get_samples(dataset, test=True)
-        samples = samples[:10]
+        samples, _ = get_samples(dataset, train=True)
+        samples = samples
     print(samples)
 
     mapping = []
-    k=10;k_angle=0;theta_0=180
+    k=5;k_angle=0;theta_0=180
     for i in samples:
         for b in [180]:
             for phi in [0.01]:
@@ -359,7 +359,7 @@ def main():
     print(len(mapping))
     # print(mapping)
 
-    with mp.Pool(10) as p:
+    with mp.Pool(14) as p:
         # p.starmap(setup_config, mapping)
         p.starmap(fit, mapping)
         # p.starmap(cleanup, mapping)

@@ -116,7 +116,7 @@ def load_data(args):
             # methods should be formatted such that method.split('-')[0] is in METHODS
             if not fname.startswith('optimize') or '-' not in fname:
                 continue
-            bad_methods = ['angle', '_old', '0.006', '0.06', 'bound', 'init_diag']
+            bad_methods = ['angle', '_old', '0.006', '0.06', 'bound', 'init_diag', "_repeat"]
             skip = False
             for bad_method in bad_methods:
                 if bad_method in fname:
@@ -482,7 +482,7 @@ def sort_method_keys(keys):
             if substr.startswith('angle'):
                 angle = substr[5:]
             if substr.startswith('spheroid'):
-                ar = substr[8:]
+                ar = key_split[i+1]
 
         if 'GNN' in key:
             pos = key.find('GNN')
@@ -607,8 +607,8 @@ def main(args=None):
 
 
 if __name__ == '__main__':
-    # dataset = 'dataset_02_04_23'
-    dataset = 'dataset_09_17_23'
+    dataset = 'dataset_02_04_23'
+    # dataset = 'dataset_09_17_23'
     # dataset = 'dataset_08_25_23'; samples = range(1, 16)
     # dataset = 'dataset_04_28_23'; samples = [1,2,3,4,5,324,981,1753,1936,2834,3464]
     # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5,101,102,103,104,105,601,602,603,604,605]
@@ -622,7 +622,9 @@ if __name__ == '__main__':
     args.experimental = True
     args.convergence_definition = 'normal'
     args.gnn_id=[434, 451, 461, 462, 471, 472, 476, 477, 479, 480, 481, 485]
-    # args.gnn_id=[434]
+    args.gnn_id=[434, 451, 455, 456, 461, 462, 463, 470, 471, 472, 476, 477, 479, 480, 481, 484, 485, 486, 488]
+
+    args.gnn_id=[485]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))
