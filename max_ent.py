@@ -144,7 +144,7 @@ def modify_maxent():
             p.starmap(run, mapping)
 
 def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
-                aspect_ratio=1, bond_type='gaussian', k=None, contact_distance=False,
+                aspect_ratio=1.0, bond_type='gaussian', k=None, contact_distance=False,
                 k_angle=0, theta_0=180,
                 verbose=True):
     if verbose:
@@ -177,7 +177,7 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
             bonded_config['beadvol'] = 260000
         else:
             bonded_config['beadvol'] = 130000
-    if int(aspect_ratio) != 1:
+    if aspect_ratio != 1.0:
         bonded_config['boundary_type'] = 'spheroid'
         bonded_config['aspect_ratio'] = aspect_ratio
     root = f"optimize_{mode}"
@@ -283,7 +283,7 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
     params['equilib_sweeps'] = 10000
     params['production_sweeps'] = 350000
     params['stop_at_convergence'] = True
-    params['conv_defn'] = 'strict'
+    params['conv_defn'] = 'normal'
     params['run_longer_at_convergence'] = False
 
     stdout = sys.stdout
@@ -306,10 +306,10 @@ def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
 
     root = osp.join(dir, f'{root}-max_ent{k}')
     if osp.exists(root):
-        if not osp.exists(osp.join(root, 'iteration1')):
-            shutil.rmtree(root)
-        # if not osp.exists(osp.join(root, 'iteration30')):
+        # if not osp.exists(osp.join(root, 'iteration1')):
         #     shutil.rmtree(root)
+        if not osp.exists(osp.join(root, 'iteration30')):
+            shutil.rmtree(root)
 
 def check(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
         aspect_ratio=1, bond_type='gaussian', k=10, contact_distance=False,
@@ -322,7 +322,14 @@ def check(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
     root = osp.join(dir, f'{root}-max_ent{k}')
     if osp.exists(root):
         if not osp.exists(osp.join(root, 'iteration30')):
-            print(f'{sample} is still running')
+            it=0
+            for i in range(30):
+                if osp.exists(osp.join(root, f'iteration{i}')):
+                    it = i
+            prcnt = np.round(it/30*100, 1)
+            print(f'{root}: {prcnt}')
+        else:
+            print(f'{root}: complete')
 
 
 
@@ -330,10 +337,10 @@ def main():
     samples = None
     # dataset = 'dataset_05_31_23'; samples = list(range(1137, 1214))
     # dataset = 'downsampling_analysis'; samples = list(range(201, 211))
-    dataset = 'dataset_02_04_23';
+    # dataset = 'dataset_02_04_23';
     # dataset = 'dataset_02_04_23'; samples = [211, 212, 213, 214, 215, 216, 217,
                                                 # 218, 219, 220, 221, 222, 223, 224]
-    # dataset = 'Su2020'; samples = [1013]
+    dataset = 'Su2020'; samples = [1004]
     # dataset = 'dataset_04_28_23'; samples = [1,2,3,4,5,324,981,1753,1936,2834,3464]
     # dataset = 'dataset_04_05_23'; samples = list(range(1211, 1288))
     # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105,
@@ -349,21 +356,36 @@ def main():
     print(samples)
 
     mapping = []
-    k=5;k_angle=0;theta_0=180
+    k=10;k_angle=0;theta_0=180
     for i in samples:
-        for b in [180]:
-            for phi in [0.01]:
-                for ar in [2.0]:
+        for b in [160, 180, 200]:
+            for phi in [0.007, 0.008, 0.009, 0.01]:
+                for ar in [1.5, 2.0]:
                     mapping.append((dataset, i, f'samples', b, phi, None, ar,
                                     'gaussian', k, False, k_angle, theta_0))
-    print(len(mapping))
+
+    # for i in samples:
+    #     for b in [180, 200, 220, 240, 261]:
+    #         for phi in [0.005, 0.006, 0.007, 0.008, 0.009]:
+    #             for ar in [1.0, 1.5]:
+    #                 mapping.append((dataset, i, f'samples', b, phi, None, ar,
+    #                                 'gaussian', k, False, k_angle, theta_0))
+    samples=[1014]
+    for i in samples:
+        for b in [180, 200, 220, 240, 261]:
+            for phi in [0.006, 0.008, 0.01, 0.02, 0.03]:
+                for ar in [1.0, 2.0]:
+                    mapping.append((dataset, i, f'samples', b, phi, None, ar,
+                                   'gaussian', k, False, k_angle, theta_0))
+
+    print('len =', len(mapping))
     # print(mapping)
 
-    with mp.Pool(14) as p:
+    with mp.Pool(16) as p:
         # p.starmap(setup_config, mapping)
-        p.starmap(fit, mapping)
+        # p.starmap(fit, mapping)
         # p.starmap(cleanup, mapping)
-        # p.starmap(check, mapping)
+        p.starmap(check, mapping)
 
 if __name__ == '__main__':
     # modify_maxent()

@@ -41,7 +41,7 @@ def bonded_simulations():
     base_config['grid_size'] = 1000
 
     mapping = []
-    for boundary_type, ar in [('spherical', 1.0), ('spheroid', 2.0)]:
+    for boundary_type, ar in [('spherical', 1.0), ('spheroid', 1.5), ('spheroid', 2.0)]:
         boundary_dir = f'boundary_{boundary_type}'
         if ar != 1.0:
             boundary_dir += f'_{ar}'
@@ -56,11 +56,11 @@ def bonded_simulations():
                 m_dir = osp.join(bond_dir, f'm_{m}')
                 if not osp.exists(m_dir):
                     os.mkdir(m_dir, mode=0o755)
-                for b in [180, 200, 220, 240]:
+                for b in [160]:
                     b_dir = osp.join(m_dir, f'bond_length_{b}')
                     if not osp.exists(b_dir):
                         os.mkdir(b_dir, mode=0o755)
-                    for phi in [0.01, 0.02, 0.03, 0.04]:
+                    for phi in [0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.02, 0.03, 0.04]:
                         phi_dir = osp.join(b_dir, f'phi_{phi}')
                         if not osp.exists(phi_dir):
                             os.mkdir(phi_dir, mode=0o755)
@@ -92,7 +92,7 @@ def bonded_simulations():
                                 mapping.append((k_angle_dir, config))
 
     print(len(mapping))
-    with mp.Pool(min(len(mapping), 13)) as p:
+    with mp.Pool(min(len(mapping), 16)) as p:
         p.starmap(run, mapping)
 
 def plot_bond_length():

@@ -12,7 +12,7 @@ import torch_geometric
 from modify_maxent import get_samples, plaid_dist
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.plotting_utils import BLUE_RED_CMAP, RED_BLUE_CMAP, RED_CMAP
-from pylib.utils.utils import pearson_round
+from pylib.utils.utils import pearson_round, triu_to_full
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 
@@ -24,7 +24,6 @@ from sequences_to_contact_maps.scripts.clean_directories import \
 from sequences_to_contact_maps.scripts.load_utils import load_Y
 from sequences_to_contact_maps.scripts.neural_nets.utils import (
     get_dataset, load_saved_model)
-from sequences_to_contact_maps.scripts.utils import triu_to_full
 
 
 def molar_contact_ratio(dataset, model_ID=None, plot=True):

@@ -13,16 +13,15 @@ import scipy.stats as ss
 import seaborn as sns
 from pylib.utils.plotting_utils import RED_CMAP, plot_matrix
 from pylib.utils.similarity_measures import SCC
+from pylib.utils.utils import triu_to_full
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (
     get_final_max_ent_folder, load_import_log)
-from sequences_to_contact_maps.scripts.utils import triu_to_full
 
 sys.path.append('/home/erschultz/TICG-chromatin')
 import GNN
 import max_ent
-
 from scripts.data_generation.modify_maxent import get_samples
 
 EXP_DATASET='dataset_02_04_23'

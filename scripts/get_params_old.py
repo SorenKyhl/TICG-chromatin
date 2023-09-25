@@ -18,12 +18,11 @@ import scipy.ndimage as ndimage
 import torch
 import torch_geometric
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
-from pylib.utils.utils import load_json
+from pylib.utils.utils import load_json, triu_to_full
 from sklearn.cluster import KMeans
 from sklearn.decomposition import NMF, PCA, KernelPCA
 
 sys.path.append('/home/erschultz')
-
 from sequences_to_contact_maps.scripts.argparse_utils import (
     ArgparserConverter, finalize_opt, get_base_parser)
 from sequences_to_contact_maps.scripts.clean_directories import \
@@ -38,7 +37,7 @@ from sequences_to_contact_maps.scripts.neural_nets.utils import (
 from sequences_to_contact_maps.scripts.plotting_utils import (
     plot_matrix, plot_seq_binary, plot_seq_continuous)
 from sequences_to_contact_maps.scripts.R_pca import R_pca
-from sequences_to_contact_maps.scripts.utils import LETTERS, crop, triu_to_full
+from sequences_to_contact_maps.scripts.utils import LETTERS, crop
 
 
 def get_gpu_memory():

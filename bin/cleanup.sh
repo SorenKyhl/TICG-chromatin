@@ -25,13 +25,33 @@
 #   done
 # done
 
+
 dir='/home/erschultz/dataset_02_04_23/samples'
 cd $dir
 
 for i in {201..282}
 do
-  cd  "${dir}/sample${i}"
-  pwd
-  rm -r optimize_grid_b_140_phi_0.03-GNN479_repeat
-
+  for j in {0..29}
+  do
+    cd  "${dir}/sample${i}"
+    cd "optimize_grid_b_180_phi_0.01_spheroid_2.0-max_ent10"
+    cd "iteration${j}"
+    if [ -d "equilibration" ]
+    then
+      pwd
+      tar -czf equilibration.tar.gz equilibration
+      rm -r equilibration
+    fi
+  done
 done
+
+# dir='/home/erschultz/dataset_02_04_23/samples'
+# cd $dir
+#
+# for i in {201..282}
+# do
+#   cd  "${dir}/sample${i}"
+#   pwd
+#   rm -r optimize_grid_angle*
+#
+# done

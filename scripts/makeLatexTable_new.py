@@ -17,6 +17,7 @@ from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
                                       calculate_L, calculate_S)
 from pylib.utils.similarity_measures import SCC
+from pylib.utils.utils import triu_to_full
 from scipy.stats import pearsonr
 from sklearn.metrics import mean_squared_error
 
@@ -25,8 +26,7 @@ from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
 from sequences_to_contact_maps.scripts.load_utils import (
     get_final_max_ent_folder, load_import_log, load_L, load_max_ent_chi,
     load_psi, load_Y)
-from sequences_to_contact_maps.scripts.utils import (load_time_dir, print_time,
-                                                     triu_to_full)
+from sequences_to_contact_maps.scripts.utils import load_time_dir, print_time
 
 
 def getArgs(data_folder = None, sample = None, samples = None):

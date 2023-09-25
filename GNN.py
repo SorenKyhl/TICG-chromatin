@@ -32,7 +32,6 @@ def fit(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03, ar=1.0):
     m = len(y)
 
     root, config = setup_config(dataset, sample, sub_dir, b, phi, None, ar)
-
     config['nspecies'] = 0
     config['load_bead_types'] = False
     config['lmatrix_on'] = False
@@ -132,17 +131,18 @@ def main():
     # dataset = 'dataset_06_29_23'; samples = [2, 103, 604]
     # dataset = 'dataset_08_25_23'; samples=list(range(1,21))+[981]
     # dataset = 'dataset_04_28_23'
-    dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
+    # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     mapping = []
 
     if samples is None:
         samples, _ = get_samples(dataset, test=True)
         samples = samples[:10]
 
-    # GNN_IDs = [451, 461, 479, 480, 481]; b=261; phi=0.01; ar=1.0
+    # GNN_IDs = [480]; b=261; phi=0.01; ar=1.0
     # GNN_IDs = [455, 456, 463, 470, 471, 472, 476, 477]; b=140; phi=0.03; ar=1.0
     # GNN_IDs= [484]; b=140; phi=0.03; ar=1.0
-    GNN_IDs = [485]; b=180; phi=0.01; ar=2.0
+    # GNN_IDs = [485]; b=180; phi=0.01; ar=2.0
+    GNN_IDs = [485]; b=180; phi=0.008; ar=1.5
     for GNN_ID in GNN_IDs:
         # for i in samples:
         #     mapping.append((dataset, i, GNN_ID))
@@ -152,12 +152,10 @@ def main():
     print(len(mapping))
     # print(mapping)
 
-    with mp.Pool(3) as p:
+    with mp.Pool(1) as p:
         # p.starmap(cleanup, mapping)
-        # p.starmap(fit, mapping)
+        p.starmap(fit, mapping)
         # p.starmap(check, mapping)
-        p.starmap(setup_config, mapping)
-
 
 if __name__ == '__main__':
     mp.set_start_method('spawn')

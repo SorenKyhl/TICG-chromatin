@@ -9,6 +9,7 @@ import jsbeautifier
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import pearsonr, spearmanr
+from sympy import solve, symbols
 
 """
 utility functions
@@ -150,7 +151,6 @@ def load_chis(config):
 
     return chi
 
-
 def plot_image(x, dark=False):
     x = np.array(x)
     v = x.flatten()
@@ -191,6 +191,23 @@ def make_composite(lower, upper):
     np.fill_diagonal(composite, 1)
 
     return composite
+
+def triu_to_full(arr, m = None):
+    '''Convert array of upper triangle to symmetric matrix.'''
+    # infer m given length of upper triangle
+    if m is None:
+        l, = arr.shape
+        x, y = symbols('x y')
+        y=x*(x+1)/2-l
+        result=solve(y)
+        m = int(np.max(result))
+
+    # need to reconstruct from upper traingle
+    y = np.zeros((m, m))
+    y[np.triu_indices(m)] = arr
+    y += np.triu(y, 1).T
+
+    return y
 
 def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method,norm=False):
     """newton's method"""

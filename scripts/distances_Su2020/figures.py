@@ -32,14 +32,14 @@ from scripts.distances_Su2020.su2020_analysis import (dist_distribution_a_b,
                                                       rescale_mu_sigma)
 
 
-def load_exp_gnn_pca_contact_maps(dir, GNN_ID=None, b=140, phi=0.03):
+def load_exp_gnn_pca_contact_maps(dir, GNN_ID=None, b=140, phi=0.03, ar=1.0):
     result = load_import_log(dir)
     start = result['start']
     resolution = result['resolution']
     chrom = int(result['chrom'])
     genome = result['genome']
 
-    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, b, phi)
+    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, b, phi, ar)
     if osp.exists(max_ent_dir):
         final = get_final_max_ent_folder(max_ent_dir)
         y_pca, _ = load_Y(final)
@@ -61,12 +61,12 @@ def load_exp_gnn_pca_contact_maps(dir, GNN_ID=None, b=140, phi=0.03):
 
     return y, y_gnn, y_pca
 
-def old_figure(sample, GNN_ID, bl=140, phi=0.03):
+def old_figure(sample, GNN_ID, bl=140, phi=0.03, ar=1.0):
     label_fontsize=24
     tick_fontsize=22
     letter_fontsize=26
     dir = f'/home/erschultz/Su2020/samples/sample{sample}'
-    D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=bl, phi=phi, mode='mean')
+    D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=bl, phi=phi, ar=ar, mode='mean')
     D2 = np.load('/home/erschultz/Su2020/samples/sample1/dist2_mean.npy')
     nan_rows = np.isnan(D[0])
     D_no_nan = D[~nan_rows][:, ~nan_rows] # ignore nan_rows
@@ -119,7 +119,7 @@ def old_figure(sample, GNN_ID, bl=140, phi=0.03):
     # shift ind such that start is at 0
     shift = coords_dict[f"chr{chrom}:{start}-{start+resolution}"]
 
-    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, bl, phi)
+    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, bl, phi, ar)
     final_dir = get_final_max_ent_folder(max_ent_dir)
     file = osp.join(final_dir, 'production_out/output.xyz')
     xyz_max_ent = xyz_load(file, multiple_timesteps = True) * alpha_pca
@@ -428,12 +428,12 @@ def new_figure(sample, GNN_ID, bl=140, phi=0.03):
     plt.savefig('/home/erschultz/TICG-chromatin/figures/distances.png')
     plt.close()
 
-def supp_figure(sample, GNN_ID, bl=140, phi=0.03):
+def supp_figure(sample, GNN_ID, bl, phi, ar):
     label_fontsize=24
     tick_fontsize=22
     letter_fontsize=26
     dir = f'/home/erschultz/Su2020/samples/sample{sample}'
-    y, y_gnn, y_pca = load_exp_gnn_pca_contact_maps(dir, GNN_ID, b=bl, phi=phi)
+    y, y_gnn, y_pca = load_exp_gnn_pca_contact_maps(dir, GNN_ID, b=bl, phi=phi, ar=ar)
     m = len(y)
 
     ### supp figure with hicmaps ###
@@ -484,5 +484,5 @@ def supp_figure(sample, GNN_ID, bl=140, phi=0.03):
 
 
 if __name__ == '__main__':
-    old_figure(1013, None, bl=261, phi=0.01)
-    # supp_figure(1013, 434, bl=261, phi=0.01)
+    old_figure(1004, None, bl=180, phi=0.01, ar=2.0)
+    # supp_figure(1004, None, bl=180, phi=0.01, ar=2.0)

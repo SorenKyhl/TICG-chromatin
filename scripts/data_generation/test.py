@@ -178,6 +178,22 @@ def compare_S2():
     plt.savefig(osp.join('/home/erschultz/dataset_02_04_23/samples/sample204/', 'S_vs_S.png'))
     plt.close()
 
+def compare_p_s_exp():
+    '''compare different experimantal p_s curves'''
+    def plot(file, label):
+        y = np.load(file)
+        y = y.astype(float)
+        y /= np.mean(np.diagonal(y))
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
+        plt.plot(meanDist, label = label)
+
+    plot('/home/erschultz/Su2020/samples/sample1013/y.npy', 1013)
+    plot('/home/erschultz/Su2020/samples/sample1004/y.npy', 1004)
+    plt.yscale('log')
+    plt.xscale('log')
+    plt.legend()
+    plt.show()
+
 def compare_p_s_bonded():
     '''Compare c++ to python implementation'''
     dir = '/home/erschultz/dataset_bonded/bond_type_DSS/m_512/bond_length_140/phi_0.01'
@@ -385,6 +401,64 @@ def compare_d_s_max_ent():
             plt.savefig(osp.join(s_dir, 'd_s_max_ent.png'))
         plt.close()
 
+def compare_d_s_max_ent2():
+    '''Compare p(s) curves in dataset_bonded'''
+    s_dir = '/home/erschultz/Su2020/samples/sample1004'
+    odir = osp.join(s_dir, 'd_s_curves')
+    if not osp.exists(odir):
+        os.mkdir(odir, mode=0o755)
+    m=512
+    log_labels = np.linspace(0, 50000*(m-1), m)
+    def plot_meanDist_D(dir, label):
+        final = get_final_max_ent_folder(dir)
+        xyz_file = osp.join(final, 'production_out/output.xyz')
+        xyz = xyz_load(xyz_file, multiple_timesteps=True)
+        D = xyz_to_distance(xyz)
+        D = np.nanmean(D, axis = 0)
+        meanDist_D = DiagonalPreprocessing.genomic_distance_statistics(D, mode='freq')
+        plt.plot(log_labels, meanDist_D, label = label)
+
+    D_exp = np.load('/home/erschultz/Su2020/samples/sample1013/D_crop.npy')
+    meanDist_D_exp = DiagonalPreprocessing.genomic_distance_statistics(D_exp, mode='freq')
+    D_exp2 = np.load('/home/erschultz/Su2020/samples/sample1/dist2_mean.npy')
+    meanDist_D_exp2 = DiagonalPreprocessing.genomic_distance_statistics(D_exp2, mode='freq')
+    print(meanDist_D_exp2)
+    m2 = len(meanDist_D_exp2)
+
+    for log in [False]:
+        if log:
+            odir = osp.join(odir, 'log')
+            if not osp.exists(odir):
+                os.mkdir(odir, mode=0o755)
+        for ar in [1.0, 1.5, 2.0]:
+            for phi in [0.008, 0.009, 0.01]:
+                for b in [160, 180, 200, 220, 240, 261]:
+                    grid_dir = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}')
+                    if ar != 1.0:
+                        grid_dir += f'_spheroid_{ar}'
+                    max_ent_dir = grid_dir + '-max_ent10'
+                    if osp.exists(max_ent_dir):
+                        plot_meanDist_D(max_ent_dir,
+                                        f'b_{b}_phi_{phi}_ar_{ar}')
+
+                nan_rows = np.isnan(meanDist_D_exp)
+                plt.plot(log_labels[~nan_rows], meanDist_D_exp[~nan_rows],
+                            label='Experiment', color='k')
+
+                # nan_rows = np.isnan(meanDist_D_exp2)
+                # plt.plot(np.linspace(0, 30000*(m2-1), m2)[~nan_rows], meanDist_D_exp2[~nan_rows],
+                #             label='Experiment 2', color='k', ls=':')
+
+                plt.ylabel('Distance (nm)', fontsize=16)
+                plt.xlabel('Genomic Separation (bp)', fontsize=16)
+                plt.legend()
+                if log:
+                    plt.xscale('log')
+                    plt.savefig(osp.join(odir, f'd_s_max_ent_phi_{phi}_ar_{ar}_log.png'))
+                else:
+                    plt.savefig(osp.join(odir, f'd_s_max_ent_phi_{phi}_ar_{ar}.png'))
+                plt.close()
+
 
 def compare_meanDist_S():
     sample = 2
@@ -504,9 +578,10 @@ if __name__ == '__main__':
     # compare_p_s_bonded3()
     # compare_d_s_bonded()
     # compare_d_s_bonded2()
-    # compare_d_s_max_ent()
+    compare_d_s_max_ent2()
+    # compare_p_s_exp()
     # compare_meanDist_S()
     # compare_p_s_modified()
     # compare_xyz()
-    check_GNN_S()
+    # check_GNN_S()
     # grid_sizes()

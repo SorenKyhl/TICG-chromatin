@@ -14,7 +14,7 @@ from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
                                       calculate_L, calculate_S)
 from pylib.utils.plotting_utils import plot_matrix
-from pylib.utils.utils import pearson_round
+from pylib.utils.utils import pearson_round, triu_to_full
 from scipy.ndimage import gaussian_filter
 from scipy.optimize import curve_fit
 from scipy.stats import (beta, gamma, laplace, multivariate_normal, norm,
@@ -35,7 +35,6 @@ from sequences_to_contact_maps.scripts.load_utils import (
     load_max_ent_L, load_max_ent_S, load_psi)
 from sequences_to_contact_maps.scripts.plotting_utils import \
     plot_seq_continuous
-from sequences_to_contact_maps.scripts.utils import triu_to_full
 
 LETTERS = 'ABCDEFGHIJKLMN'
 

@@ -23,7 +23,7 @@ from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
                                       calculate_diag_chi_step, calculate_S)
 from pylib.utils.plotting_utils import BLUE_RED_CMAP
 from pylib.utils.similarity_measures import SCC
-from pylib.utils.utils import load_json, pearson_round
+from pylib.utils.utils import load_json, pearson_round, triu_to_full
 from pylib.utils.xyz import xyz_load, xyz_to_distance
 from scipy.ndimage import uniform_filter
 from scripts.data_generation.modify_maxent import get_samples
@@ -41,8 +41,7 @@ from sequences_to_contact_maps.scripts.plotting_utils import (plot_diag_chi,
                                                               plot_matrix,
                                                               plot_seq_binary)
 from sequences_to_contact_maps.scripts.R_pca import R_pca
-from sequences_to_contact_maps.scripts.utils import (rescale_matrix,
-                                                     triu_to_full)
+from sequences_to_contact_maps.scripts.utils import rescale_matrix
 
 LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 

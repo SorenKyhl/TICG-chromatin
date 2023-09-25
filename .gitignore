@@ -8,6 +8,7 @@ __pycache__
 debug
 .magicindex.json
 data
+figures/**
 
 # pylib things
 build
