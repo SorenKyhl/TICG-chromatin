@@ -283,7 +283,7 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
     params['equilib_sweeps'] = 10000
     params['production_sweeps'] = 350000
     params['stop_at_convergence'] = True
-    params['conv_defn'] = 'normal'
+    params['conv_defn'] = 'strict'
     params['run_longer_at_convergence'] = False
 
     stdout = sys.stdout
@@ -337,10 +337,10 @@ def main():
     samples = None
     # dataset = 'dataset_05_31_23'; samples = list(range(1137, 1214))
     # dataset = 'downsampling_analysis'; samples = list(range(201, 211))
-    # dataset = 'dataset_02_04_23';
+    dataset = 'dataset_02_04_23';
     # dataset = 'dataset_02_04_23'; samples = [211, 212, 213, 214, 215, 216, 217,
                                                 # 218, 219, 220, 221, 222, 223, 224]
-    dataset = 'Su2020'; samples = [1004]
+    #dataset = 'Su2020'; samples = [1004]
     # dataset = 'dataset_04_28_23'; samples = [1,2,3,4,5,324,981,1753,1936,2834,3464]
     # dataset = 'dataset_04_05_23'; samples = list(range(1211, 1288))
     # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105,
@@ -356,13 +356,11 @@ def main():
     print(samples)
 
     mapping = []
-    k=10;k_angle=0;theta_0=180
+    k_angle=0;theta_0=180;b=180;phi=0.008;ar=1.5    
     for i in samples:
-        for b in [160, 180, 200]:
-            for phi in [0.007, 0.008, 0.009, 0.01]:
-                for ar in [1.5, 2.0]:
-                    mapping.append((dataset, i, f'samples', b, phi, None, ar,
-                                    'gaussian', k, False, k_angle, theta_0))
+        for k in [5,10]:
+            mapping.append((dataset, i, f'samples', b, phi, None, ar,
+                        'gaussian', k, False, k_angle, theta_0))
 
     # for i in samples:
     #     for b in [180, 200, 220, 240, 261]:
@@ -370,14 +368,7 @@ def main():
     #             for ar in [1.0, 1.5]:
     #                 mapping.append((dataset, i, f'samples', b, phi, None, ar,
     #                                 'gaussian', k, False, k_angle, theta_0))
-    samples=[1014]
-    for i in samples:
-        for b in [180, 200, 220, 240, 261]:
-            for phi in [0.006, 0.008, 0.01, 0.02, 0.03]:
-                for ar in [1.0, 2.0]:
-                    mapping.append((dataset, i, f'samples', b, phi, None, ar,
-                                   'gaussian', k, False, k_angle, theta_0))
-
+    
     print('len =', len(mapping))
     # print(mapping)
 
