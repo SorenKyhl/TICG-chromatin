@@ -425,7 +425,7 @@ def compare_d_s_max_ent2():
     print(meanDist_D_exp2)
     m2 = len(meanDist_D_exp2)
 
-    for log in [False]:
+    for log in [True]:
         if log:
             odir = osp.join(odir, 'log')
             if not osp.exists(odir):
