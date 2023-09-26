@@ -9,19 +9,18 @@ from collections import defaultdict
 import numpy as np
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import calculate_diag_chi_step, calculate_L
-from pylib.utils.utils import pearson_round
+from pylib.utils.utils import pearson_round, triu_to_full
 from scipy.stats import laplace, multivariate_normal, norm, qmc, skewnorm
 from sklearn.neighbors import KernelDensity
 
 sys.path.insert(0, '/home/erschultz/TICG-chromatin')
 from scripts.data_generation.ECDF import Ecdf
-from scripts.get_params import GetSeq
+from scripts.get_params_old import GetSeq
 
 sys.path.insert(0, '/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (load_import_log,
                                                           load_max_ent_S,
                                                           load_Y)
-from sequences_to_contact_maps.scripts.utils import triu_to_full
 
 LETTERS='ABCDEFGHIJKLMN'
 

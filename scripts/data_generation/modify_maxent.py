@@ -1308,13 +1308,13 @@ def get_read_counts(dataset):
 
 
 if __name__ == '__main__':
-    # modify_plaid_chis('dataset_02_04_23', b=180, phi=0.01, k=10, ar=2.0)
-    modify_maxent_diag_chi('dataset_02_04_23', b=180, phi=0.01, k=10, ar=2.0, edit=False)
+    modify_plaid_chis('dataset_02_04_23', b=180, phi=0.008, k=5, ar=1.5)
+    modify_maxent_diag_chi('dataset_02_04_23', b=180, phi=0.008, k=5, ar=1.5, edit=False)
     # for i in range(221, 222):
         # plot_modified_max_ent(i, k = 10)
     # diagonal_dist('dataset_02_04_23', b=261, phi=0.01, k=10)
     # grid_dist('dataset_02_04_23', b=140, phi=0.03)
-    # plaid_dist('dataset_02_04_23', b=180, phi=0.01, k=10, ar=2.0, plot=True, eig_norm=True)
+    plaid_dist('dataset_02_04_23', b=180, phi=0.008, k=5, ar=1.5, plot=True, eig_norm=True)
     # get_read_counts('dataset_04_28_23')
     # seq_dist('dataset_01_26_23', 4, True, True)
     # plot_params_test()
