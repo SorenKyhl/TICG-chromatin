@@ -1,6 +1,6 @@
 #! /bin/bash
-#SBATCH --job-name=fds11
-#SBATCH --output=logFiles/fixed_diag_dataset11.out
+#SBATCH --job-name=fds12
+#SBATCH --output=logFiles/fixed_diag_dataset12.out
 #SBATCH --time=24:00:00
 #SBATCH --account=pi-depablo
 #SBATCH --partition=depablo

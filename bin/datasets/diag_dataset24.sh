@@ -1,0 +1,16 @@
+#! /bin/bash
+#SBATCH --job-name=fds24
+#SBATCH --output=logFiles/fixed_diag_dataset24.out
+#SBATCH --time=24:00:00
+#SBATCH --account=pi-depablo
+#SBATCH --partition=amd
+#SBATCH --ntasks=128
+#SBATCH --nodes=1
+#SBATCH --mem-per-cpu=1000
+
+source activate python3.9_pytorch1.9_cuda10.2
+source activate python3.9_pytorch1.9
+sourceFile=$1
+source $sourceFile
+
+python3 ~/TICG-chromatin/bin/datasets/run_new.py --start 8001 --end 9000 --jobs $2 --data_folder $dataFolder --scratch $scratchDir --m $m --n_sweeps $nSweeps --dump_frequency $dumpFrequency --TICG_seed $TICGSeed --phi_chromatin $phiChromatin --bead_vol $beadVol --bond_length $bondLength --track_contactmap $trackContactMap --overwrite
