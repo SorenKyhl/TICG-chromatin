@@ -23,7 +23,7 @@ cd ~/TICG-chromatin
 dataset="dataset_09_19_23"
 echo "generate_params for ${dataset}"
 # uses poly6 fit to max ent params + grid
-python  ~/TICG-chromatin/bin/datasets/generate_params.py --samples 5000 --b 180 --phi 0.01 --k 10 --ar 2.0 --m 512 --dataset $dataset --seq_mode 'eig_norm' --diag_mode 'max_ent_poly6_log_v2_grid' --data_dir '/project2/depablo/erschultz'
+# python  ~/TICG-chromatin/bin/datasets/generate_params.py --samples 5000 --b 180 --phi 0.01 --k 10 --ar 2.0 --m 512 --dataset $dataset --seq_mode 'eig_norm' --diag_mode 'max_ent_poly6_log_v2_grid' --data_dir '/project2/depablo/erschultz'
 #
 # cd "/home/erschultz/${dataset}"
 # tar -czvf setup.tar.gz setup
@@ -36,5 +36,5 @@ sourceFile=~/TICG-chromatin/bin/datasets/diag_dataset53/diag_dataset_fns.sh
 for i in 1 2 3 4 5
 do
   echo $i
-  sbatch ~/TICG-chromatin/bin/datasets/diag_dataset${i}.sh $sourceFile 10
+  sbatch ~/TICG-chromatin/bin/datasets/diag_dataset${i}.sh $sourceFile 128
 done
