@@ -1633,18 +1633,18 @@ class GetEnergy():
         clean_directories(GNN_path = opt.root)
         return energy
 
-# def main(args_file=None):
-#     args, unknown = getArgs(args_file)
-#     print(args)
-#     getSeq = GetSeq(args, unknown)
-#     print(f'Method recognized: {getSeq.method_recognized}')
-#     GetPlaidChi(args, unknown)
-#     GetDiagChi(args, unknown)
-#     if not getSeq.method_recognized:
-#         GetEnergy(args, unknown)
-#
-#     with open(args.config_ofile, 'w') as f:
-#         json.dump(args.config, f, indent = 2)
+def main(args_file=None):
+    args, unknown = getArgs(args_file)
+    print(args)
+    getSeq = GetSeq(args, unknown)
+    print(f'Method recognized: {getSeq.method_recognized}')
+    GetPlaidChi(args, unknown)
+    GetDiagChi(args, unknown)
+    if not getSeq.method_recognized:
+        GetEnergy(args, unknown)
+
+    with open(args.config_ofile, 'w') as f:
+        json.dump(args.config, f, indent = 2)
 
 ### Tester class ###
 class Tester():
@@ -1820,11 +1820,11 @@ class Tester():
         # self.test_PCA()
         # self.test_Soren_PCA()
 
-def main(model_path, root, sub_dir):
-    getenergy = GetEnergy(config = config)
-    S = getenergy.get_energy_gnn(model_path, dir,
-                                bonded_path = root,
-                                sub_dir = sub_dir)
+# def main(model_path, root, sub_dir):
+#     getenergy = GetEnergy(config = config)
+#     S = getenergy.get_energy_gnn(model_path, dir,
+#                                 bonded_path = root,
+#                                 sub_dir = sub_dir)
 
 if __name__ ==  "__main__":
     # main()
