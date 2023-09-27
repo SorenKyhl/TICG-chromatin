@@ -10,7 +10,7 @@ scratchDir='/home/erschultz/scratch'
 # scratchDir='/home/erschultz/scratch'
 
 m=512
-overwrite=1
+overwrite=0
 useL='true'
 useS='true'
 useD='true'

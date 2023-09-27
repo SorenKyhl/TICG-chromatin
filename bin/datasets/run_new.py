@@ -27,7 +27,7 @@ def getArgs():
     parser.add_argument('--jobs', type=int,
                         help='number of jobs')
     parser.add_argument('--odir_start', type=str,
-                        defulat='')
+                        default='')
 
     parser.add_argument('--scratch', type=str,
                         help='absolute path to scratch')
