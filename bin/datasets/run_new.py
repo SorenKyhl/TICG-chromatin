@@ -26,6 +26,8 @@ def getArgs():
                         help='last sample')
     parser.add_argument('--jobs', type=int,
                         help='number of jobs')
+    parser.add_argument('--odir_start', type=str,
+                        defulat='')
 
     parser.add_argument('--scratch', type=str,
                         help='absolute path to scratch')
@@ -46,19 +48,25 @@ def check_dir(odir, overwrite):
             print(f'Overwriting {odir}')
             shutil.rmtree(odir)
         else:
-            raise Exception(f'Output directory already exists: {odir}')
+            return True
+
+    return False
 
 
 def run(args, i):
     odir = osp.join(args.data_folder, f'samples/sample{i}')
-    odir_scratch = osp.join(args.scratch, f'{i}')
+    if check_dir(odir, args.overwrite):
+        return
+
+    odir_scratch = osp.join(args.scratch, f'{odir_start}{i}')
+    if osp.exists(odir_scratch):
+        shutil.rmtree(odir_scratch)
     os.mkdir(odir_scratch, mode=0o755)
     os.chdir(odir_scratch)
 
     defaults = '/home/erschultz/TICG-chromatin/defaults'
     shutil.copyfile(osp.join(defaults, 'config_erschultz.json'),
                     osp.join(odir_scratch, 'default_config.json'))
-    check_dir(odir, args.overwrite)
 
     args_file = osp.join(args.data_folder, f'setup/sample_{i}.txt')
 
