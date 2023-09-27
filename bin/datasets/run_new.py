@@ -58,7 +58,7 @@ def run(args, i):
     if check_dir(odir, args.overwrite):
         return
 
-    odir_scratch = osp.join(args.scratch, f'{odir_start}{i}')
+    odir_scratch = osp.join(args.scratch, f'{args.odir_start}{i}')
     if osp.exists(odir_scratch):
         shutil.rmtree(odir_scratch)
     os.mkdir(odir_scratch, mode=0o755)
