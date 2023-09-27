@@ -24,7 +24,7 @@ end=2000
 for i in {21..25}
 do
   echo $i $start $end
-  sbatch ~/TICG-chromatin/bin/datasets/diag_dataset${i}.sh $sourceFile 128 "55_"
+  sbatch ~/TICG-chromatin/bin/datasets/diag_dataset${i}.sh $sourceFile $start $end 128 "55_"
   start=$(( $start + 2000 ))
   end=$(( $end + 2000 ))
 done
