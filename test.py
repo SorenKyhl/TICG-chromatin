@@ -27,7 +27,7 @@ from pylib.utils.utils import load_json, pearson_round, triu_to_full
 from pylib.utils.xyz import xyz_load, xyz_to_distance
 from scipy.ndimage import uniform_filter
 from scripts.data_generation.modify_maxent import get_samples
-from scripts.get_params import GetEnergy, GetSeq
+from scripts.get_params import GetEnergy
 from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
 
@@ -773,7 +773,7 @@ def edit_setup(dataset, exp_dataset):
 def make_small(dataset):
     dir = f'/home/erschultz/{dataset}/samples'
     odir = f'/home/erschultz/{dataset}-small'
-    grid_root = f'optimize_grid_b_180_phi_0.01_spheroid_2.0'
+    grid_root = f'optimize_grid_b_180_phi_0.008_spheroid_1.5'
     if not osp.exists(odir):
         os.mkdir(odir)
     odir = osp.join(odir, 'samples')
@@ -993,7 +993,7 @@ if __name__ == '__main__':
     # main()
     # compare_scc_bio_replicates()
     # max_ent_loss_for_gnn('dataset_11_14_22', 2201)
-    plot_mean_dist_S('dataset_09_17_23')
+    # plot_mean_dist_S('dataset_09_17_23')
     # gnn_of_max_ent([207], 8, 378)
     # check_interpolation()
     # make_dataset_of_converged('dataset_03_21_23')
@@ -1002,7 +1002,7 @@ if __name__ == '__main__':
     # edit_setup('dataset_05_28_23', 'dataset_04_10_23')
     # edit_setup('dataset_04_28_23', 'dataset_02_04_23')
     # edit_setup('dataset_05_15_23', 'dataset_02_04_23')
-    # make_small('dataset_02_04_23')
+    make_small('dataset_02_04_23')
     # compare_s_per_iteration()
     # compare_p_s()
     # test_harmonic_angle()

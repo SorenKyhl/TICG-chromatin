@@ -25,17 +25,18 @@ from sequences_to_contact_maps.scripts.load_utils import (
 
 test=False
 label_fontsize=24
-tick_fontsize=22
+tick_fontsize=18
 letter_fontsize=26
-dataset = 'dataset_02_04_23'; sample = 208; GNN_ID = [434]
+dataset = 'dataset_02_04_23'; sample = 208; GNN_ID = 490
 # dataset = 'dataset_04_05_23'; sample = 1001; GN_ID = 407
 # dataset = 'dataset_04_05_23'; sample = 1001; GNN_ID = 423
 samples, _ = get_samples(dataset, test=True)
 samples_list = samples[:10]
 
 k=10
+grid_root = 'optimize_grid_b_180_phi_0.008_spheroid_1.5'
 def get_dirs(sample_dir):
-    grid_dir = osp.join(sample_dir, 'optimize_grid_b_140_phi_0.03')
+    grid_dir = osp.join(sample_dir, grid_root)
     max_ent_dir = f'{grid_dir}-max_ent{k}'
     gnn_dir = f'{grid_dir}-GNN{GNN_ID}'
 
@@ -132,28 +133,37 @@ if not test:
     args = getArgs(data_folder = f'/home/erschultz/{dataset}',
                     samples = samples_list)
     args.experimental = True
-    args.convergence_definition = None
-    args.gnn_id = GNN_ID
+    args.verbose = False
+    args.bad_methods=['140', '261', 'spheroid_2.0']
+    args.convergence_definition = 'normal'
+    args.gnn_id = [GNN_ID]
     data, _ = load_data(args)
     max_ent = osp.split(max_ent_dir)[1]
 
-    gnn = f'optimize_grid_b_140_phi_0.03-GNN{GNN_ID}'
+    gnn = f'{grid_root}-GNN{GNN_ID}'
     gnn_times = data[0][gnn]['total_time']
     gnn_sccs = data[0][gnn]['scc_var']
     gnn_pearsons = data[0][gnn]['pearson_pc_1']
 
-    max_ent_times_strict = data[k][max_ent]['converged_time']
-    max_ent_times_strict = [i for i in max_ent_times_strict if i is not None]
-    max_ent_sccs_strict = data[k][max_ent]['scc_var']
-    max_ent_sccs_strict = [i for i in max_ent_sccs_strict if not np.isnan(i)]
-    max_ent_pearsons_strict = data[k][max_ent]['pearson_pc_1']
-
-    max_ent += '_stop'
     max_ent_times = data[k][max_ent]['converged_time']
     max_ent_times = [i for i in max_ent_times if i is not None]
     max_ent_sccs = data[k][max_ent]['scc_var']
     max_ent_sccs = [i for i in max_ent_sccs if not np.isnan(i)]
     max_ent_pearsons = data[k][max_ent]['pearson_pc_1']
+    max_ent_pearsons = [i for i in max_ent_pearsons if not np.isnan(i)]
+
+
+
+    args.convergence_definition = 'strict'
+    args.gnn_id = []
+    data, _ = load_data(args)
+    max_ent_times_strict = data[k][max_ent]['converged_time']
+    max_ent_times_strict = [i for i in max_ent_times_strict if i is not None]
+    max_ent_sccs_strict = data[k][max_ent]['scc_var']
+    max_ent_sccs_strict = [i for i in max_ent_sccs_strict if not np.isnan(i)]
+    max_ent_pearsons_strict = data[k][max_ent]['pearson_pc_1']
+    max_ent_pearsons_strict = [i for i in max_ent_pearsons_strict if not np.isnan(i)]
+
 else:
     max_ent_times = np.random.normal(size=100)
     max_ent_sccs = np.random.normal(loc=0.7, scale = 0.1, size=100)
@@ -295,47 +305,50 @@ def figure(test=False):
                 ['Experiment', 'Max Ent', f'GNN'],
                 ['k', 'b', 'r'])
     for arr, fig_label, c in data:
-        print(fig_label, mean_squared_error(meanDist, arr))
+        print(fig_label, f'MSE meanDist = {mean_squared_error(meanDist, arr)}')
         ax5.plot(log_labels, arr, label = fig_label, color = c)
 
     ax5.set_yscale('log')
     ax5.set_xscale('log')
     ax5.set_ylabel('Contact Probability', fontsize = label_fontsize)
     ax5.set_xlabel('Genomic Separation (bp)', fontsize = label_fontsize)
-    ax4.tick_params(axis='both', which='major', labelsize=tick_fontsize)
+    ax5.tick_params(axis='both', which='major', labelsize=tick_fontsize)
     # ax5.legend(loc='upper right', fontsize=legend_fontsize)
 
     # time and scc
-    labels = ['Max Ent', 'GNN']
+    labels = [r'Max Ent ($\epsilon$=1e-2)', r'Max Ent ($\epsilon$=1e-3)', 'GNN']
     ticks = range(1, len(labels)+1)
-    data = [max_ent_sccs, gnn_sccs]
-    print(max_ent_sccs, np.mean(max_ent_sccs))
-    print(gnn_sccs, np.mean(gnn_sccs))
+    data = [max_ent_sccs, max_ent_sccs_strict, gnn_sccs]
+    print('SCCs:')
+    print('\tMax Ent: ', max_ent_sccs, np.mean(max_ent_sccs))
+    print('\tGNN:', gnn_sccs, np.mean(gnn_sccs))
     b1 = ax6.boxplot(data, vert = True,
                         patch_artist = True, labels = labels)
     ax6.set_ylim()
     ax6.set_ylabel(r'SCC(H$^{\rm sim}$, H$^{\rm exp}$)', fontsize=label_fontsize)
+    # ax6.set_yticks([0.6, 0.7, 0.8])
 
 
+    print('Pearsons:')
+    print('\tMax Ent: ', max_ent_pearsons, np.mean(max_ent_pearsons))
+    print('\tMax Ent Strict:', max_ent_pearsons_strict, np.mean(max_ent_pearsons_strict))
 
-    data = [max_ent_pearsons, gnn_pearsons]
-    print(max_ent_pearsons_strict)
+    data = [max_ent_pearsons, max_ent_pearsons_strict, gnn_pearsons]
     b3 = ax7.boxplot(data, vert = True,
                         patch_artist = True, labels = labels)
-    # axes[1].set_yscale('log')
     ax7.set_ylabel(r'Pearson(PC1$^{\rm sim}$, PC1$^{\rm exp}$)', fontsize=label_fontsize)
 
-    data = [max_ent_times, gnn_times]
+    data = [max_ent_times, max_ent_times_strict, gnn_times]
     b2 = ax8.boxplot(data,  vert = True,
                         patch_artist = True, labels = labels)
     # ax8.set_yticks([10, 50, 100])
-    # ax8.set_yscale('log')
+    ax8.set_yscale('log')
 
     ax8.set_ylim(0, None)
     ax8.set_ylabel('Time (mins)', fontsize=label_fontsize)
 
     # fill with colors
-    colors = ['b', 'r']
+    colors = ['b', 'b', 'r']
     for bplot in [b1, b2, b3]:
         for patch, color in zip(bplot['boxes'], colors):
             patch.set_facecolor(color)
@@ -350,7 +363,7 @@ def figure(test=False):
         # apply offset transform to all x ticklabels.
         for label in ax.xaxis.get_majorticklabels():
             label.set_transform(label.get_transform() + offset)
-        ax.tick_params(axis='both', which='major', labelsize=tick_fontsize)
+        ax.tick_params(axis='both', which='major', labelsize=16)
 
     # axes.append(ax2)
     for n, ax in enumerate(axes):
@@ -435,4 +448,4 @@ def supp_figure():
 
 if __name__ == '__main__':
     figure()
-    supp_figure()
+    # supp_figure()

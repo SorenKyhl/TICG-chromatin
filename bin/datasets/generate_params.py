@@ -31,7 +31,9 @@ def getArgs():
     parser.add_argument('--dataset', type=str,
                         help='output dataset')
     parser.add_argument('--k', type=int,
-                        help='number of marks')
+                        help='number of marks in max ent')
+    parser.add_argument('--sim_k', type=int,
+                        help='number of marks in simulation')
     parser.add_argument('--ar', type=float,
                         help='aspect ratio for spheroid boundary')
     parser.add_argument('--samples', type=int,
@@ -70,6 +72,10 @@ class DatasetGenerator():
         self.N = args.samples
         self.m = args.m
         self.k = args.k
+        if args.sim_k is None:
+            self.sim_k = args.k
+        else:
+            self.sim_k = args.sim_k
         self.dataset = args.dataset
         self.diag_mode = args.diag_mode
         self.seq_mode = args.seq_mode
@@ -134,14 +140,14 @@ class DatasetGenerator():
                 self.sample_dict[i]['chi_method'] = 'none'
             return
         for i in range(self.N):
-            self.sample_dict[i]['k'] = self.k
+            self.sample_dict[i]['k'] = self.sim_k
             if self.k == 0:
                 self.sample_dict[i]['chi_method'] = 'none'
                 continue
 
             # eignorm approach
-            chi_ii = np.zeros(self.k)
-            for j in range(self.k):
+            chi_ii = np.zeros(self.sim_k)
+            for j in range(self.sim_k):
                 l = LETTERS[j]
                 if self.plaid_mode == 'skewnorm':
                     with open(osp.join(self.dir, self.exp_dataset, self.distributions_root,
@@ -155,11 +161,11 @@ class DatasetGenerator():
                                         f'k{self.k}_chi{l}{l}_KDE.pickle'), 'rb') as f:
                         kde = pickle.load(f)
                     chi_ii[j] = kde.sample(1).reshape(-1)
-            chi_ij = np.zeros(int(self.k*(self.k-1)/2))
+            chi_ij = np.zeros(int(self.sim_k*(self.sim_k-1)/2))
 
-            chi = np.zeros((self.k, self.k))
+            chi = np.zeros((self.sim_k, self.sim_k))
             np.fill_diagonal(chi, chi_ii)
-            chi[np.triu_indices(self.k, 1)] = chi_ij
+            chi[np.triu_indices(self.sim_k, 1)] = chi_ij
             chi = chi + np.triu(chi, 1).T
 
             chi_file = osp.join(self.odir, f'chi_{i+1}.npy')
@@ -218,6 +224,7 @@ class DatasetGenerator():
         for i in range(self.N):
             j = np.random.choice(self.exp_samples)
             x = x_dict[j]
+            x = x[:, :self.sim_k]
 
             seq_file = osp.join(self.odir, f'x_{i+1}.npy')
             np.save(seq_file, x)

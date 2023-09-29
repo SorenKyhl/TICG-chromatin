@@ -118,7 +118,7 @@ def cleanup(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03, ar=1.0)
 def main():
     samples=None
     # dataset='downsampling_analysis'; samples = range(201, 211)
-    # dataset='dataset_02_04_23';
+    dataset='dataset_02_04_23';
     # dataset='dataset_09_17_23';
     # dataset='dataset_02_04_23'; all_samples = range(201, 283)
     # dataset='dataset_04_10_23'; samples = range(1001, 1011)
@@ -127,7 +127,7 @@ def main():
     # dataset = 'dataset_04_05_23'; samples = [1001, 1039, 1065, 1093, 1122, 1137, 1166, 1185]
     # dataset='dataset_05_28_23'; samples = [324, 981, 1936, 2834, 3464]
     # dataset = 'dataset_05_31_23'; samples = [1002, 1037, 1198]
-    dataset = 'Su2020'; samples=[1013]
+    # dataset = 'Su2020'; samples=[1013, 1004]
     # dataset = 'dataset_06_29_23'; samples = [2, 103, 604]
     # dataset = 'dataset_08_25_23'; samples=list(range(1,21))+[981]
     # dataset = 'dataset_04_28_23'
@@ -142,7 +142,7 @@ def main():
     # GNN_IDs = [455, 456, 463, 470, 471, 472, 476, 477]; b=140; phi=0.03; ar=1.0
     # GNN_IDs= [484]; b=140; phi=0.03; ar=1.0
     # GNN_IDs = [485]; b=180; phi=0.01; ar=2.0
-    GNN_IDs = [485]; b=180; phi=0.008; ar=1.5
+    GNN_IDs = [492]; b=180; phi=0.008; ar=1.5
     for GNN_ID in GNN_IDs:
         # for i in samples:
         #     mapping.append((dataset, i, GNN_ID))
@@ -152,7 +152,7 @@ def main():
     print(len(mapping))
     # print(mapping)
 
-    with mp.Pool(1) as p:
+    with mp.Pool(10) as p:
         # p.starmap(cleanup, mapping)
         p.starmap(fit, mapping)
         # p.starmap(check, mapping)

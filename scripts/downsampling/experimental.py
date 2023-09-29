@@ -102,7 +102,8 @@ def fit_max_ent():
     mapping = []
     for downsampling in [4, 5, 6, 7, 8]:
         for i in samples:
-            mapping.append((dataset, i, f'samples_exp{downsampling}', 140, 0.03))
+            mapping.append((dataset, i, f'samples_exp{downsampling}',
+                            180, 0.008, None, 1.5))
 
     print(len(mapping))
     print(mapping)
@@ -343,6 +344,6 @@ def figure(GNN_ID):
 
 if __name__ == '__main__':
     # make_samples()
-    # fit_max_ent()
+    fit_max_ent()
     # fit_gnn(434)
-    figure(434)
+    # figure(434)

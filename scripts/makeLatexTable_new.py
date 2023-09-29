@@ -22,7 +22,6 @@ from scipy.stats import pearsonr
 from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
-from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
 from sequences_to_contact_maps.scripts.load_utils import (
     get_final_max_ent_folder, load_import_log, load_L, load_max_ent_chi,
     load_psi, load_Y)
@@ -31,24 +30,26 @@ from sequences_to_contact_maps.scripts.utils import load_time_dir, print_time
 
 def getArgs(data_folder = None, sample = None, samples = None):
     parser = argparse.ArgumentParser(description='Base parser')
-    AC = ArgparserConverter()
 
     parser.add_argument('--data_folder', type=str, default=data_folder,
                             help='location of input data')
     parser.add_argument('--sample', type=str, default=sample,
                             help='sample id')
-    parser.add_argument('--samples', type=AC.str2list, default=samples,
+    parser.add_argument('--samples', type=list, default=samples,
                             help='list of sample ids separated by -')
     parser.add_argument('--sample_folder', type=str,
                         help='location of input data')
     parser.add_argument('--experimental', action='store_true',
                         help="True for experimental data mode - ground truth won't be present")
-    parser.add_argument('--convergence_definition', type=AC.str2None,
+    parser.add_argument('--convergence_definition', type=str,
                         help='key to define convergence {strict, normal, param} ("all" for all 3) (None to skip)')
     parser.add_argument('--convergence_mask', action='store_true',
                         help="True to mask samples for which max ent didn't converge")
-    parser.add_argument('--gnn_id', type=AC.str2list,
+    parser.add_argument('--gnn_id', type=list,
                         help="only consider given gnn_id")
+    parser.add_argument('--bad_methods', type=list,
+                        help="ignore methods matching an str in bad_methods")
+    parser.add_argument('--verbose', type=bool, default=True)
 
     args = parser.parse_args()
 
@@ -92,8 +93,14 @@ def load_data(args):
     data = defaultdict(lambda: defaultdict(lambda : defaultdict(list))) # k, method, metric : list of values acros samples
     converged_mask = np.ones(len(args.samples)).astype(bool)
 
+    bad_methods = ['angle', '_old', '0.006', '0.06', 'bound', 'init_diag', "_repeat"]
+    if args.bad_methods is not None:
+        bad_methods.extend(args.bad_methods)
+        print(f"bad methods: {bad_methods}")
+
     for i, sample in enumerate(args.samples):
-        print(i, sample)
+        if args.verbose:
+            print(i, sample)
         sample_folder = osp.join(args.data_folder, 'samples', f'sample{sample}')
         if args.experimental:
             ground_truth_S = None
@@ -116,7 +123,6 @@ def load_data(args):
             # methods should be formatted such that method.split('-')[0] is in METHODS
             if not fname.startswith('optimize') or '-' not in fname:
                 continue
-            bad_methods = ['angle', '_old', '0.006', '0.06', 'bound', 'init_diag', "_repeat"]
             skip = False
             for bad_method in bad_methods:
                 if bad_method in fname:
@@ -130,14 +136,16 @@ def load_data(args):
                 GNN_ID = int(fname.strip('_repeat')[-3:])
                 if args.gnn_id is not None and GNN_ID not in args.gnn_id:
                     continue
-                print(fname)
+                if args.verbose:
+                    print(fname)
                 k = 0
                 converged_it = None
                 converged_path = fpath
                 S = np.load(osp.join(fpath, 'S.npy'))
                 times = [load_time_dir(fpath)]
             elif method_type.startswith('max_ent'):
-                print(fname)
+                if args.verbose:
+                    print(fname)
                 chi_path = osp.join(fpath, 'chis.txt')
                 if not osp.exists(chi_path):
                     # presumabely it is still running
@@ -165,7 +173,8 @@ def load_data(args):
                             diag_chis = np.array(config['diag_chis'])
 
                     params = np.concatenate((diag_chis, chis), axis = 1)
-                    print(params, params.shape)
+                    if args.verbose:
+                        print(params, params.shape)
 
                     eps = 1e-2
                     for j in range(1, len(params)):
@@ -193,7 +202,8 @@ def load_data(args):
                 if converged_it is not None:
                     converged_path = osp.join(fpath, f'iteration{converged_it}')
                 else:
-                    print('\tDID NOT CONVERGE')
+                    if args.verbose:
+                        print('\tDID NOT CONVERGE')
                     converged_mask[i] = 0
                     converged_path = None
 
@@ -253,7 +263,6 @@ def load_data(args):
                 yhat_diag = DiagonalPreprocessing.process(yhat, yhat_meanDist, verbose = False)
                 scc = SCC()
                 corr_scc_var = scc.scc(ground_truth_ydiag, yhat_diag, var_stabilized = True)
-                print(corr_scc_var)
                 # result = plotDistanceStratifiedPearsonCorrelation(ground_truth_y,
                                 # yhat, converged_path)
                 # overall_corr, corr_scc, corr_scc_var, avg_diag = result
@@ -621,10 +630,9 @@ if __name__ == '__main__':
     args = getArgs(data_folder = data_dir, samples = samples)
     args.experimental = True
     args.convergence_definition = 'normal'
-    args.gnn_id=[434, 451, 461, 462, 471, 472, 476, 477, 479, 480, 481, 485]
-    args.gnn_id=[434, 451, 455, 456, 461, 462, 463, 470, 471, 472, 476, 477, 479, 480, 481, 484, 485, 486, 488]
-
-    args.gnn_id=[485]
+    args.gnn_id = [434, 480, 485, 490, 491, 492, 493, 494]
+    # args.gnn_id=[434, 451, 455, 456, 461, 462, 463, 470, 471, 472, 476, 477, 479, 480, 481, 484, 485, 486, 488]
+    # args.gnn_id=[490]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

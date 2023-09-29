@@ -3,10 +3,10 @@
 #SBATCH --output=logFiles/fixed_diag_dataset6.out
 #SBATCH --time=24:00:00
 #SBATCH --account=pi-depablo
-#SBATCH --partition=depablo
-#SBATCH --ntasks=24
+#SBATCH --partition=amd
+#SBATCH --ntasks=128
 #SBATCH --nodes=1
-#SBATCH --mem-per-cpu=2000
+#SBATCH --mem-per-cpu=1000
 #SBATCH --mail-type=END
 #SBATCH --mail-user=erschultz@uchicago.edu
 

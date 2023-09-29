@@ -337,28 +337,28 @@ def main():
     samples = None
     # dataset = 'dataset_05_31_23'; samples = list(range(1137, 1214))
     # dataset = 'downsampling_analysis'; samples = list(range(201, 211))
-    dataset = 'dataset_02_04_23';
+    # dataset = 'dataset_02_04_23';
     # dataset = 'dataset_02_04_23'; samples = [211, 212, 213, 214, 215, 216, 217,
                                                 # 218, 219, 220, 221, 222, 223, 224]
     #dataset = 'Su2020'; samples = [1004]
     # dataset = 'dataset_04_28_23'; samples = [1,2,3,4,5,324,981,1753,1936,2834,3464]
     # dataset = 'dataset_04_05_23'; samples = list(range(1211, 1288))
-    # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105,
-                                                # 601,602,603,604,605]
+    dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105,
+                                                601,602,603,604,605]
     # dataset = 'dataset_08_25_23'; samples=[981]
     # dataset='dataset_09_17_23'
     # samples = sorted(np.random.choice(samples, 12, replace = False))
     # dataset = 'timing_analysis/512'; samples = list(range(1, 16))
 
     if samples is None:
-        samples, _ = get_samples(dataset, train=True)
-        samples = samples
+        samples, _ = get_samples(dataset, test=True)
+        samples = samples[:10]
     print(samples)
 
     mapping = []
     k_angle=0;theta_0=180;b=180;phi=0.008;ar=1.5    
     for i in samples:
-        for k in [5,10]:
+        for k in [10]:
             mapping.append((dataset, i, f'samples', b, phi, None, ar,
                         'gaussian', k, False, k_angle, theta_0))
 

@@ -484,5 +484,5 @@ def supp_figure(sample, GNN_ID, bl, phi, ar):
 
 
 if __name__ == '__main__':
-    old_figure(1013, None, bl=180, phi=0.008, ar=1.5)
+    old_figure(1004, 490, bl=180, phi=0.008, ar=1.5)
     # supp_figure(1004, None, bl=180, phi=0.01, ar=2.0)
