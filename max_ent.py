@@ -374,7 +374,7 @@ def main():
     print('len =', len(mapping))
     # print(mapping)
 
-    with mp.Pool(10) as p:
+    with mp.Pool(1) as p:
         # p.starmap(setup_config, mapping)
         # p.starmap(fit, mapping)
         # p.starmap(cleanup, mapping)

@@ -576,8 +576,6 @@ def boxplot(data, ofile):
     plt.tight_layout()
     plt.savefig(ofile)
 
-
-
 def main(args=None):
     if args is None:
         args = getArgs()
@@ -650,7 +648,7 @@ if __name__ == '__main__':
     args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', 'max_ent10']
     # args.gnn_id = [490, 491, 492, 493, 494, 496, 498, 500, 501]
     # args.gnn_id=[434, 451, 455, 456, 461, 462, 463, 470, 471, 472, 476, 477, 479, 480, 481, 484, 485, 486, 488]
-    args.gnn_id=[490, 500]
+    args.gnn_id=[490, 505]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))
