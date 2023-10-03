@@ -209,7 +209,7 @@ def triu_to_full(arr, m = None):
 
     return y
 
-def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method,norm=False):
+def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method, norm=False):
     """newton's method"""
     obj_goal = np.array(obj_goal)
     lam = np.array(lam)

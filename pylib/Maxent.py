@@ -263,6 +263,8 @@ class Maxent:
                 self.eps = 1e-3
             elif conv_defn == 'normal':
                 self.eps = 1e-2
+            elif isinstance(conv_defn, float):
+                self.eps = conf_defn
         if 'stop_at_convergence' in self.params:
             stop_at_convergence = self.params['stop_at_convergence']
         else:
@@ -347,10 +349,14 @@ class Maxent:
 
             self.analyze(sim.root)
             if converged:
+                print(f'Converged at epsilon = {self.eps}')
                 if stop_at_convergence:
                     break
                 elif run_longer_at_convergence:
                     self.params["production_sweeps"] = self.final_it_sweeps
+                    self.eps /= 10
+                    print(f'Epsilon is now {self.eps}')
+                    print(f'production_sweeps is now {self.final_it_sweeps}')
 
         if self.final_it_sweeps > 0:
             self.run_final_iteration(newchis)

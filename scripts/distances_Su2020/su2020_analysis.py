@@ -24,6 +24,7 @@ from pylib.utils.utils import pearson_round
 from pylib.utils.xyz import calculate_rg, xyz_load, xyz_to_distance, xyz_write
 from scipy.optimize import minimize
 from scipy.spatial import ConvexHull
+from scipy.stats import gaussian_kde
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
@@ -1312,12 +1313,18 @@ def compare_diagonal(sample, GNN_ID=None, b=140, phi=0.03):
     plot_diagonal(D_no_nan, D_pca[~nan_rows][:, ~nan_rows], osp.join(dir, 'diagonal_pca.png'))
     plot_diagonal(D_no_nan, D_gnn[~nan_rows][:, ~nan_rows], osp.join(dir, 'diagonal_gnn.png'))
 
-def compare_dist_ij(sample, GNN_ID=None, b=140, phi=0.03):
+def compare_dist_ij(sample, GNN_ID, b, phi, ar):
     dir = f'/home/erschultz/Su2020/samples/sample{sample}'
-    D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=b, phi=phi)
+    odir = '/home/erschultz/TICG-chromatin/figures/distances'
+
+    D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=b, phi=phi, ar=ar)
     nan_rows = np.isnan(D[0])
     D_no_nan = D[~nan_rows][:, ~nan_rows] # ignore nan_rows
     D_pca_no_nan = D_pca[~nan_rows][:, ~nan_rows]
+
+    # observed / expected
+    D_no_nan = epilib.get_oe(D_no_nan)
+    D_pca_no_nan = epilib.get_oe(D_pca_no_nan)
 
     result = load_import_log(dir)
     start = result['start']
@@ -1333,15 +1340,23 @@ def compare_dist_ij(sample, GNN_ID=None, b=140, phi=0.03):
     genome_ticks = [0, m-1]
     genome_labels = [f'{all_labels[i]} Mb' for i in genome_ticks]
 
-    print(D)
-    D_flat = D_no_nan.flatten()
-    print(D_flat)
-    plt.scatter(D_no_nan.flatten(), D_pca_no_nan.flatten())
+    x = D_no_nan.flatten()[::10]
+    y = D_pca_no_nan.flatten()[::10]
+    # Calculate the point density
+    xy = np.vstack([x,y])
+    print(xy.shape)
+    z = gaussian_kde(xy)(xy)
+    print('fitted kde')
+    plt.scatter(x, y, c=z, s=10)
     plt.axline((0,0), slope=1, color = 'k')
     plt.xlabel(r'$D_{ij}$', fontsize=16)
     plt.ylabel(r'$D^{PCA}_{ij}$', fontsize=16)
+    plt.xlim(0.5, None)
+    plt.ylim(0.5, None)
     plt.tight_layout()
-    plt.show()
+    # plt.show()
+    plt.savefig(osp.join(odir, 'D_oe_ij.png'))
+    plt.close()
 
 def compare_bonded_p_s():
     data_dir = '/home/erschultz/Su2020/samples/sample1013'
@@ -1458,6 +1473,6 @@ if __name__ == '__main__':
     # compare_dist_distribution_a_b()
     # compare_dist_distribution_plaid(1013, None, 261, 0.01)
     # compare_rg(1013, None, b=180, phi=0.01, ar=2.0)
-    compare_rg_pos(1013, None, b=180, phi=0.008, ar=1.5)
+    # compare_rg_pos(1013, None, b=180, phi=0.008, ar=1.5)
+    compare_dist_ij(1004, None, b=180, phi=0.008, ar=1.5)
     # compare_scaling(1002, None, 261, 0.006)
-    # compare_dist_ij(1013, 434, b=261, phi=0.01)

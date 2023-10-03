@@ -133,7 +133,11 @@ def load_data(args):
             method = fname
             method_type = fname.split('-')[1]
             if method_type.startswith('GNN'):
-                GNN_ID = int(fname.strip('_repeat')[-3:])
+                GNN_ID = None
+                type_split = re.split('[-_]', method_type)
+                for subtype in type_split:
+                    if subtype.startswith('GNN'):
+                        GNN_ID = int(subtype[-3:])
                 if args.gnn_id is not None and GNN_ID not in args.gnn_id:
                     continue
                 if args.verbose:
@@ -333,11 +337,11 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                     'rmse-S':'RMSE-Energy', 'rmse-y':'RMSE-Y', 'pearson_pc_1':'Corr PC 1',
                     'rmse-diag':'RMSE-P(s)', 'avg_dist_pearson':'SCC mean',
                     'total_time':'Total Time', 'converged_it':'Converged It.',
-                    'converged_time':'Converged Time'}
+                    'converged_time':'Converged Time', 'prcnt_converged': '\% Converged'}
     if small:
         metrics = ['scc_var', 'rmse-diag', 'pearson_pc_1', 'converged_time']
     else:
-        metrics = ['converged_it', 'converged_time', 'total_time']
+        metrics = ['converged_it', 'converged_time', 'total_time', 'prcnt_converged']
 
 
     print(f'\nMAKING TABLE-small={small}')
@@ -430,11 +434,19 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
 
                 for metric in metrics:
                     significant = False # two sided t test
-                    result = np.array(data[k][method][metric], dtype=np.float64)
-
-
-                    if nan_mask is not None:
-                        result[nan_mask] = np.NaN
+                    if metric == 'prcnt_converged':
+                        converged_it = data[k][method]['converged_it']
+                        not_converged = 0
+                        for i in converged_it:
+                            if i is None:
+                                not_converged += 1
+                        result = 1 - not_converged / len(converged_it)
+                        result *= 100
+                        result = np.array([result])
+                    else:
+                        result = np.array(data[k][method][metric], dtype=np.float64)
+                        if nan_mask is not None:
+                            result[nan_mask] = np.NaN
 
                     if 'time' in metric:
                         roundoff = 1
@@ -452,9 +464,10 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                         if nan_mask is not None:
                             ref_result[nan_mask] = np.nan
                         stat, pval = ss.ttest_rel(ref_result, result)
+                        mean_effect_size = np.mean(ref_result - result)
+                        mean_effect_size = np.round(mean_effect_size, 3)
                         if pval < 0.05:
-                            print('Significant:', metric, pval)
-                            significant = True
+                            print('Significant:', metric, pval, mean_effect_size)
 
                         result_mean = np.round(result_mean, roundoff)
                         result_std = np.nanstd(result, ddof=1)
@@ -462,8 +475,12 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                         result_std = np.round(result_std, roundoff)
                         result_sem = np.round(result_sem, roundoff)
                         text += f" & {result_mean} $\pm$ {result_sem}"
-                        if significant:
-                            text += f' *{np.round(pval, 5)}'
+                        if pval < 0.001:
+                            text += f' ***({mean_effect_size})'
+                        elif pval < 0.01:
+                            text += f' **({mean_effect_size})'
+                        elif pval < 0.05:
+                            text += f' *({mean_effect_size})'
                     else:
                         result = result[0]
                         if result is not None:
@@ -629,10 +646,11 @@ if __name__ == '__main__':
     data_dir = osp.join('/home/erschultz', dataset)
     args = getArgs(data_folder = data_dir, samples = samples)
     args.experimental = True
-    args.convergence_definition = 'normal'
-    args.gnn_id = [434, 480, 485, 490, 491, 492, 493, 494]
+    args.convergence_definition = 'strict'
+    args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', 'max_ent10']
+    # args.gnn_id = [490, 491, 492, 493, 494, 496, 498, 500, 501]
     # args.gnn_id=[434, 451, 455, 456, 461, 462, 463, 470, 471, 472, 476, 477, 479, 480, 481, 484, 485, 486, 488]
-    # args.gnn_id=[490]
+    args.gnn_id=[490, 500]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

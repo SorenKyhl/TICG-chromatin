@@ -977,7 +977,35 @@ def test_FENE():
     plt.legend()
     plt.show()
 
+def convergence():
+    dir = '/home/erschultz/dataset_02_04_23/samples/sample209/optimize_grid_b_180_phi_0.008_spheroid_1.5-max_ent5_longer'
+    conv = np.loadtxt(osp.join(dir, 'convergence.txt'))
+    plt.plot(conv)
+    plt.yscale('log')
+    plt.ylabel('Loss', fontsize=16)
+    plt.xlabel('Iteration', fontsize=16)
+    plt.savefig(osp.join(dir, 'convergence.png'))
+    plt.close()
 
+    diff_list = []
+    eps = 1e-3
+    for j in range(1, len(conv)):
+        diff = conv[j] - conv[j-1]
+        diff = np.abs(diff)
+        diff_list.append(diff)
+        if diff < eps and conv[j] < conv[0]:
+            converged_it = j
+            break
+
+    print(diff_list)
+    plt.plot(range(1, len(diff_list)+1), diff_list)
+    plt.yscale('log')
+    plt.axhline(1e-2, c='k', ls='--')
+    plt.axhline(1e-3, c='k', ls='--')
+    plt.ylabel(r'|Loss$_i$ - Loss$_{i-1}$|', fontsize=16)
+    plt.xlabel('Iteration', fontsize=16)
+    plt.savefig(osp.join(dir, 'convergence_diff.png'))
+    plt.close()
 
 
 
@@ -1002,7 +1030,8 @@ if __name__ == '__main__':
     # edit_setup('dataset_05_28_23', 'dataset_04_10_23')
     # edit_setup('dataset_04_28_23', 'dataset_02_04_23')
     # edit_setup('dataset_05_15_23', 'dataset_02_04_23')
-    make_small('dataset_02_04_23')
+    # make_small('dataset_02_04_23')
+    convergence()
     # compare_s_per_iteration()
     # compare_p_s()
     # test_harmonic_angle()

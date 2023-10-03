@@ -26,13 +26,23 @@
 # done
 
 
-dir='/project2/depablo/erschultz/dataset_02_04_23/samples'
+dir='/home/erschultz/dataset_02_04_23/samples'
 cd $dir
 
 for i in {201..282}
 do
   cd  "${dir}/sample${i}"
-  cp -r "/project2/depablo/erschultz/dataset_02_04_23-small/samples/sample${i}/optimize_grid_b_180_phi_0.008_spheroid_1.5" .
+  for GNN in 490 491 492 493 494 496 498 500 501 434
+  do
+    cd  "${dir}/sample${i}/optimize_grid_b_180_phi_0.008_spheroid_1.5-GNN${GNN}"
+    if [ -d 'equilibration' ]
+    then
+      pwd
+      tar -czf equilibration.tar.gz equilibration
+      rm -r equilibration
+    fi
+  done
+
 
 done
 

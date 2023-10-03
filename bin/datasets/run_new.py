@@ -35,6 +35,8 @@ def getArgs():
                         help='absolute path to dataset')
     parser.add_argument('--overwrite', action='store_true',
                         help='True to overwrite')
+    parser.add_argument('--longer', action='store_true',
+                        help='True to run existing simulation longer')
     parser.add_argument('--m', type=int,
                         help='num particles')
 
@@ -52,10 +54,54 @@ def check_dir(odir, overwrite):
 
     return False
 
+def run_longer(args, i):
+    odir = osp.join(args.data_folder, f'samples/sample{i}')
+    odir_scratch = osp.join(args.scratch, f'{args.odir_start}{i}')
+    if osp.exists(odir_scratch):
+        shutil.rmtree(odir_scratch)
+    os.mkdir(odir_scratch, mode=0o755)
+    shutil.copyfile(osp.join(odir, 'equilibrated.xyz'),
+                    osp.join(odir_scratch, 'equilibrated.xyz'))
+    os.chdir(odir_scratch)
+
+
+    stdout = sys.stdout
+    with open(osp.join(odir_scratch, 'log.log'), 'w') as sys.stdout:
+        config = utils.load_json(osp.join(odir, 'config.json'))
+        orig_sweeps = config['nSweeps']
+        print('orig_sweeps', orig_sweeps)
+
+        config['nSweeps'] = config['dump_frequency']
+
+        # get sequences
+        if osp.exists(osp.join(odir, 'x.npy')):
+            seqs = np.load(osp.join(odir, 'x.npy'))
+        else:
+            seqs = None
+
+        sim = Pysim('', config, seqs, randomize_seed = True, mkdir = False)
+
+        print('Running Simulation')
+        sim.run('production_out')
+
+        # merge production and production2
+        new_sweeps = config['nSweeps']
+        y_1 = np.loadtxt(osp.join(odir, 'production_out', f'contacts{orig_sweeps}.txt'))
+        y_2 = np.loadtxt(osp.join('production_out', f'contacts{new_sweeps}.txt'))
+        y_3 = y_1 + y_2
+        np.savetxt(osp.join(odir, 'production_out', f'contacts{orig_sweeps+new_sweeps}.txt'),
+                    y_3, fmt='%i')
+        print(osp.join(odir, 'production_out', f'contacts{orig_sweeps+new_sweeps}.txt'))
+    sys.stdout = stdout
+
+    # cleanup
+    shutil.move('production_out', osp.join(odir, 'production_out2'))
+    shutil.rmtree(odir_scratch)
 
 def run(args, i):
     odir = osp.join(args.data_folder, f'samples/sample{i}')
-    if check_dir(odir, args.overwrite):
+    abort = check_dir(odir, args.overwrite)
+    if abort:
         return
 
     odir_scratch = osp.join(args.scratch, f'{args.odir_start}{i}')
@@ -115,8 +161,12 @@ def run_wrapper():
     mapping = []
     for i in range(args.start, args.end+1):
         mapping.append((args, i))
-    with mp.Pool(args.jobs) as p:
-        p.starmap(run, mapping)
+    if args.longer:
+        with mp.Pool(args.jobs) as p:
+            p.starmap(run_longer, mapping)
+    else:
+        with mp.Pool(args.jobs) as p:
+            p.starmap(run, mapping)
 
 if __name__ == '__main__':
     run_wrapper()

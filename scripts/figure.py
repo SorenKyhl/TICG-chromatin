@@ -27,13 +27,13 @@ test=False
 label_fontsize=24
 tick_fontsize=18
 letter_fontsize=26
-dataset = 'dataset_02_04_23'; sample = 208; GNN_ID = 490
+dataset = 'dataset_02_04_23'; sample = 211; GNN_ID = 490
 # dataset = 'dataset_04_05_23'; sample = 1001; GN_ID = 407
 # dataset = 'dataset_04_05_23'; sample = 1001; GNN_ID = 423
 samples, _ = get_samples(dataset, test=True)
 samples_list = samples[:10]
 
-k=10
+k=5
 grid_root = 'optimize_grid_b_180_phi_0.008_spheroid_1.5'
 def get_dirs(sample_dir):
     grid_dir = osp.join(sample_dir, grid_root)
