@@ -166,7 +166,7 @@ class GetEnergy():
                 model = model.to('cuda:0')
                 data = data.to('cuda:0')
                 with torch.no_grad():
-                    yhat = model(data, verbose)
+                    yhat = model(data, verbose=verbose)
             else:
                 sleep(5)
             num_it += 1

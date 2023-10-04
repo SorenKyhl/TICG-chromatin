@@ -264,7 +264,7 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
     config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
     # config['diag_chis'] = np.load('/home/erschultz/dataset_02_04_23/samples/sample201/optimize_grid_b_261_phi_0.01-max_ent10/diag_chis_init1.npy')
 
-    root = osp.join(dir, f'{root}-max_ent{k}_longer')
+    root = osp.join(dir, f'{root}-max_ent{k}_700k')
     if osp.exists(root):
         # shutil.rmtree(root)
         print('WARNING: root exists')
@@ -281,10 +281,10 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
     params['iterations'] = 30
     params['parallel'] = 1
     params['equilib_sweeps'] = 10000
-    params['production_sweeps'] = 350000
-    params['stop_at_convergence'] = False
-    params['conv_defn'] = 'normal'
-    params['run_longer_at_convergence'] = True
+    params['production_sweeps'] = 700000
+    params['stop_at_convergence'] = True
+    params['conv_defn'] = 'strict'
+    params['run_longer_at_convergence'] = False
 
     stdout = sys.stdout
     with open(osp.join(root, 'log.log'), 'w') as sys.stdout:
@@ -304,7 +304,7 @@ def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
                                 k_angle, theta_0,
                                 verbose=False)
 
-    root = osp.join(dir, f'{root}-max_ent{k}_longer')
+    root = osp.join(dir, f'{root}-max_ent{k}_700k')
     if osp.exists(root):
         # if not osp.exists(osp.join(root, 'iteration1')):
         #     shutil.rmtree(root)
@@ -321,7 +321,7 @@ def check(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
                                 aspect_ratio, bond_type, k, contact_distance,
                                 verbose=False)
 
-    root = osp.join(dir, f'{root}-max_ent{k}_longer')
+    root = osp.join(dir, f'{root}-max_ent{k}_700k')
     if osp.exists(root):
         if not osp.exists(osp.join(root, 'iteration30')):
             it=0
@@ -374,11 +374,11 @@ def main():
     print('len =', len(mapping))
     # print(mapping)
 
-    with mp.Pool(1) as p:
+    with mp.Pool(10) as p:
         # p.starmap(setup_config, mapping)
-        # p.starmap(fit, mapping)
+        p.starmap(fit, mapping)
         # p.starmap(cleanup, mapping)
-        p.starmap(check, mapping)
+        # p.starmap(check, mapping)
 
 if __name__ == '__main__':
     # modify_maxent()

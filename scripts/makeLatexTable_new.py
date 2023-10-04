@@ -10,7 +10,7 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats as ss
-from compare_contact import plotDistanceStratifiedPearsonCorrelation
+# from compare_contact import plotDistanceStratifiedPearsonCorrelation
 from data_generation.modify_maxent import get_samples
 from pylib.utils import epilib
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
@@ -333,7 +333,7 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
         na_mask: mask for sample_results, True to set to nan
     '''
 
-    metric_labels = {'scc':'SCC', 'scc_var':'SCC var',
+    metric_labels = {'scc':'SCC', 'scc_var':'SCC var', None: '',
                     'rmse-S':'RMSE-Energy', 'rmse-y':'RMSE-Y', 'pearson_pc_1':'Corr PC 1',
                     'rmse-diag':'RMSE-P(s)', 'avg_dist_pearson':'SCC mean',
                     'total_time':'Total Time', 'converged_it':'Converged It.',
@@ -341,7 +341,7 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
     if small:
         metrics = ['scc_var', 'rmse-diag', 'pearson_pc_1', 'converged_time']
     else:
-        metrics = ['converged_it', 'converged_time', 'total_time', 'prcnt_converged']
+        metrics = [None, 'scc_var', 'converged_time', 'prcnt_converged']
 
 
     print(f'\nMAKING TABLE-small={small}')
@@ -443,12 +443,14 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                         result = 1 - not_converged / len(converged_it)
                         result *= 100
                         result = np.array([result])
+                    elif metric is None:
+                        result = np.array([np.NaN])
                     else:
                         result = np.array(data[k][method][metric], dtype=np.float64)
                         if nan_mask is not None:
                             result[nan_mask] = np.NaN
 
-                    if 'time' in metric:
+                    if metric is not None and 'time' in metric:
                         roundoff = 1
                     elif metric == 'rmse-S':
                         roundoff = 2
@@ -457,6 +459,10 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                     else:
                         roundoff = 3
 
+                    if metric == 'scc_var':
+                        print(method)
+                        print(result)
+
                     if len(result) > 1:
                         result_mean = np.nanmean(result)
                         # print(metric, result, result_mean)
@@ -464,7 +470,7 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                         if nan_mask is not None:
                             ref_result[nan_mask] = np.nan
                         stat, pval = ss.ttest_rel(ref_result, result)
-                        mean_effect_size = np.mean(ref_result - result)
+                        mean_effect_size = np.mean(result - ref_result)
                         mean_effect_size = np.round(mean_effect_size, 3)
                         if pval < 0.05:
                             print('Significant:', metric, pval, mean_effect_size)
@@ -629,7 +635,6 @@ def main(args=None):
 
         # boxplot(data, osp.join(odir, f'boxplot_{defn}_convergence.png'))
 
-
 if __name__ == '__main__':
     dataset = 'dataset_02_04_23'
     # dataset = 'dataset_09_17_23'
@@ -644,11 +649,11 @@ if __name__ == '__main__':
     data_dir = osp.join('/home/erschultz', dataset)
     args = getArgs(data_folder = data_dir, samples = samples)
     args.experimental = True
-    args.convergence_definition = 'strict'
+    args.convergence_definition = 'normal'
     args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', 'max_ent10']
     # args.gnn_id = [490, 491, 492, 493, 494, 496, 498, 500, 501]
     # args.gnn_id=[434, 451, 455, 456, 461, 462, 463, 470, 471, 472, 476, 477, 479, 480, 481, 484, 485, 486, 488]
-    args.gnn_id=[490, 505]
+    args.gnn_id=[490, 512]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

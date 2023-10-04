@@ -28,6 +28,7 @@ from pylib.utils.xyz import xyz_load, xyz_to_distance
 from scipy.ndimage import uniform_filter
 from scripts.data_generation.modify_maxent import get_samples
 from scripts.get_params import GetEnergy
+from scripts.makeLatexTable_new import getArgs, load_data
 from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
 
@@ -792,18 +793,18 @@ def make_small(dataset):
 
 def test_convergence(dataset, mode='loss'):
     dir = f'/home/erschultz/{dataset}/samples'
-    b=140; phi=0.03
-    # samples, _ = get_samples(dataset, True)
-    samples = range(201, 211)
+    b=180; phi=0.008; ar=1.5
+    samples, _ = get_samples(dataset, test=True)
+    samples = samples[:10]
     cmap = matplotlib.cm.get_cmap('tab10')
     fig, ax = plt.subplots()
 
-    for ls, max_ent_mode in zip(['-'], ['']):
+    for ls, max_ent_mode in zip(['-'], ['_700k']):
         if max_ent_mode is None:
             continue
         for i, s in enumerate(samples):
             s_dir = osp.join(dir, f'sample{s}')
-            fpath = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}-max_ent10{max_ent_mode}')
+            fpath = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}_spheroid_{ar}-max_ent5{max_ent_mode}')
             assert osp.exists(fpath), fpath
 
             if mode == 'loss':
@@ -816,7 +817,7 @@ def test_convergence(dataset, mode='loss'):
                 for j in range(1, max_it):
                     diff = conv[j] - conv[j-1]
                     convergence.append(np.abs(diff))
-            elif mode == 'param':
+            elif mode.startswith('param'):
                 all_chis = []
                 all_diag_chis = []
                 for j in range(31):
@@ -834,13 +835,20 @@ def test_convergence(dataset, mode='loss'):
 
                 params = np.concatenate((all_diag_chis, all_chis), axis = 1)
 
-                convergence = []
-                for j in range(1, len(params)):
-                    diff = params[j] - params[j-1]
-                    conv = np.linalg.norm(diff, ord = 2)
-                    convergence.append(conv)
-
+                if mode == 'param':
+                    convergence = []
+                    for j in range(1, len(params)):
+                        diff = params[j] - params[j-1]
+                        conv = np.linalg.norm(diff, ord = 2)
+                        convergence.append(conv)
+                elif mode == 'param_mag':
+                    convergence = []
+                    for j in range(1, len(params)):
+                        diff = np.linalg.norm(params[j]) - np.linalg.norm(params[j-1])
+                        conv = np.abs(diff)
+                        convergence.append(conv)
             ax.plot(convergence, ls = ls, c = cmap(i % cmap.N))
+
 
     ax2 = ax.twinx()
     for i, s in enumerate(samples):
@@ -852,7 +860,13 @@ def test_convergence(dataset, mode='loss'):
     ax.set_yscale('log')
     if mode == 'param':
         ax.set_ylabel(r'$|\chi_{i}-\chi_{i-1}|$ (L2 norm)', fontsize=16)
-        ax.axhline(100, c='k', ls='--')
+        # ax.axhline(100, c='k', ls='--')
+        ax.axhline(10, c='k', ls='--')
+        # ax.axhline(1, c='k', ls='--')
+    if mode == 'param_mag':
+        ax.set_ylabel(r'abs$(|\chi_{i}|-|\chi_{i-1}|)$', fontsize=16)
+        ax.axhline(1, c='k', ls='--')
+        ax.axhline(1e-1, c='k', ls='--')
     elif mode == 'loss':
         ax.set_ylabel(r'$|f(\chi)_{i}-f(\chi)_{i-1}|$', fontsize=16)
         ax.axhline(1e-2, c='k', ls='--')
@@ -1007,13 +1021,45 @@ def convergence():
     plt.savefig(osp.join(dir, 'convergence_diff.png'))
     plt.close()
 
+def data_t_test():
+    dataset = 'dataset_02_04_23'
+    samples, _ = get_samples(dataset, test = True)
+    samples_list = samples[:10]
+    args = getArgs(data_folder = f'/home/erschultz/{dataset}',
+                    samples = samples_list)
+    args.experimental = True
+    args.verbose = False
+    args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', 'max_ent10']
+    args.convergence_definition = 'normal'
+    args.gnn_id = []
+    data, _ = load_data(args)
 
+    k = 5
+    grid_root = 'optimize_grid_b_180_phi_0.008_spheroid_1.5'
+    max_ent_dir = f'{grid_root}-max_ent{k}'
+    metric = 'scc_var'
+    method_1 = max_ent_dir
+    result1 = np.array(data[k][method_1][metric], dtype=np.float64)
+    print(result1, np.mean(result1))
+
+    args.convergence_definition = 'strict'
+    data, _ = load_data(args)
+    method_2 = max_ent_dir + '_700k'
+    result2 = np.array(data[k][method_2][metric], dtype=np.float64)
+    print(result2, np.mean(result2))
+
+
+    stat, pval = ss.ttest_rel(result2, result1)
+    mean_effect_size = np.mean(result2 - result1)
+    mean_effect_size = np.round(mean_effect_size, 3)
+    print(stat, pval)
+    print(mean_effect_size)
 
 if __name__ == '__main__':
     # test_robust_PCA()
     # test_pooling()
     # test_convergence('dataset_02_04_23', 'loss')
-    # test_convergence('dataset_02_04_23', 'param')
+    test_convergence('dataset_02_04_23', 'param_mag')
     # check_dataset('dataset_11_18_22')
     # check_dataset_p_s('dataset_08_17_23')
     # time_comparison()
@@ -1031,7 +1077,8 @@ if __name__ == '__main__':
     # edit_setup('dataset_04_28_23', 'dataset_02_04_23')
     # edit_setup('dataset_05_15_23', 'dataset_02_04_23')
     # make_small('dataset_02_04_23')
-    convergence()
+    # convergence()
+    # data_t_test()
     # compare_s_per_iteration()
     # compare_p_s()
     # test_harmonic_angle()
