@@ -1,6 +1,7 @@
 import json
 import os
 import os.path as osp
+import shutil
 import sys
 
 import matplotlib.pyplot as plt
@@ -18,20 +19,41 @@ from sequences_to_contact_maps.scripts.load_utils import (
     get_final_max_ent_folder, load_max_ent_S, load_S, load_Y)
 
 
-def split_samples(dataset):
-    samples, _ = get_samples(dataset)
-    good = []; bad = []
-    for s in samples:
-        s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{s}')
+def split_dataset(dataset, s, cutoff):
+    print(f'Using s = {s}, cutoff = {cutoff}')
+    dir = '/project2/depablo/erschultz'
+    # dir = '/home/erschultz'
+    odir = osp.join(dir, dataset + f'_s_{s}_cutoff_{cutoff}')
+    if not osp.exists(odir):
+        os.mkdir(odir, mode=0o755)
+    odir = osp.join(odir, 'samples')
+    if not osp.exists(odir):
+        os.mkdir(odir, mode=0o755)
+
+    rejects = 0
+    for i in range(1, 10001):
+        s_dir = osp.join(dir, dataset, f'samples/sample{i}')
+        if not osp.exists(s_dir):
+            continue
         y, _ = load_Y(s_dir)
         y /= np.mean(np.diagonal(y))
-        meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
-        if meanDist[10] > 0.06:
-            bad.append(s)
+        val = np.nanmean(np.diagonal(y, offset = s))
+        if val > cutoff:
+            rejects += 1
         else:
-            good.append(s)
+            odir_s = osp.join(odir, f'sample{i}')
+            if not osp.exists(odir_s):
+                os.mkdir(odir_s, mode=0o755)
+                os.mkdir(osp.join(odir_s, 'production_out'))
+            for j in [200000, 300000, 400000, 500000]:
+                shutil.copy(osp.join(s_dir, f'production_out/contacts{j}.txt'),
+                            osp.join(odir_s, f'production_out/contacts{j}.txt'))
+            shutil.copy(osp.join(s_dir, 'diag_chis.npy'),
+                        osp.join(odir_s, 'diag_chis.npy'))
+            shutil.copy(osp.join(s_dir, 'L.npy'),
+                        osp.join(odir_s, 'L.npy'))
 
-    return good, bad
+    print(f'Rejected {np.round(rejects / 10000 * 100, 3)} percent')
 
 def compare_diag_params():
     dataset = 'dataset_08_24_23_v4'
@@ -578,10 +600,13 @@ if __name__ == '__main__':
     # compare_p_s_bonded3()
     # compare_d_s_bonded()
     # compare_d_s_bonded2()
-    compare_d_s_max_ent2()
+    # compare_d_s_max_ent2()
     # compare_p_s_exp()
     # compare_meanDist_S()
     # compare_p_s_modified()
     # compare_xyz()
     # check_GNN_S()
     # grid_sizes()
+    split_dataset('dataset_09_28_23', 1, 0.36)
+    split_dataset('dataset_09_28_23', 10, 0.08)
+    split_dataset('dataset_09_28_23', 100, 0.01)

@@ -108,6 +108,19 @@ def check_dataset_p_s(dataset):
     print(vals, len(vals))
     print(ids, len(ids))
 
+def plot_vals():
+    vals = np.loadtxt('/home/erschultz/dataset_09_28_23/vals.txt')
+    n, bins, patches = plt.hist(vals, weights = np.ones_like(vals) / len(vals),
+                                bins = 50,
+                                alpha = 0.5)
+    plt.ylabel('probability', fontsize=16)
+    plt.xlabel('p(10)', fontsize=16)
+    # plt.xscale('log')
+    plt.savefig(osp.join('/home/erschultz/dataset_09_28_23/p_10_distribution.png'))
+    plt.close()
+
+    print(np.median(vals))
+
 def test_robust_PCA():
     if False:
         dir = '/home/eric/dataset_test/rpca_test'
@@ -1071,7 +1084,8 @@ if __name__ == '__main__':
     # test_convergence('dataset_02_04_23', 'loss')
     # test_convergence('dataset_02_04_23', 'param_mag')
     # check_dataset('dataset_09_25_22')
-    check_dataset_p_s('dataset_09_28_23')
+    # check_dataset_p_s('dataset_09_28_23')
+    plot_vals()
     # time_comparison()
     # time_comparison_dmatrix()
     # main()

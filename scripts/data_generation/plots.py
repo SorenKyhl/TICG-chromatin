@@ -36,22 +36,25 @@ def meanDist_comparison():
     ax2 = ax.twinx()
     ax2.get_yaxis().set_visible(False)
 
+    s=100; cutoff = 0.01
     for i, (dataset, label) in enumerate(zip(datasets, labels)):
         meanDist_list = molar_contact_ratio(dataset, None, False)
         print(f'Retrieved meanDist_list for dataset {dataset}')
         arr = []
         for meanDist in meanDist_list:
-            print(meanDist[:10])
-            arr.append(meanDist[10])
+            arr.append(meanDist[s])
+            if cutoff is not None and meanDist[s] > cutoff:
+                continue
             ax.plot(meanDist, c = colors[i], alpha=0.6)
-        mean = np.mean(arr); std = np.std(arr)
-        print(mean + std)
         ax2.plot(np.NaN, np.NaN, label = label, c = colors[i])
+        print(np.mean(arr), np.max(arr))
 
     ax.set_yscale('log')
     ax.set_xscale('log')
-    # ax.axvline(10, c='k')
-    # ax.axhline(0.06, c='k')
+
+    if cutoff is not None:
+        ax.axhline(cutoff, c='k')
+    ax.axvline(s, c='k')
     ax.set_ylabel('Contact Probability', fontsize = 16)
     ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
 
@@ -636,7 +639,7 @@ if __name__ == '__main__':
     # plot_y_S('dataset_02_04_23', 180, 0.01, 2.0)
     # plot_y_S('dataset_')
 
-    # meanDist_comparison()
-    l_ij_comparison('dataset_09_28_23', 'dataset_02_04_23', 180, 0.008, 5, 1.5)
+    meanDist_comparison()
+    # l_ij_comparison('dataset_09_28_23', 'dataset_02_04_23', 180, 0.008, 5, 1.5)
     # p_s_comparison('dataset_02_04_23', None, 261, 0.01, 10)
     # scc_comparison('dataset_02_04_23', 392, 8, True)

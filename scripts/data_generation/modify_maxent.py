@@ -82,6 +82,9 @@ def get_samples(dataset, train=False, test=False):
         samples = range(1, 11)
     elif dataset in {'dataset_08_24_23_v2', 'dataset_08_24_23_v3', 'dataset_08_24_23_v4'}:
         samples = range(1, 16)
+    elif dataset == 'dataset_09_28_23':
+        samples = list(range(1, 26))
+        samples.extend([324, 981, 1936, 2834, 3464])
     else:
         samples = [1, 2, 3, 4, 5, 324, 981, 1936, 2834, 3464]
 

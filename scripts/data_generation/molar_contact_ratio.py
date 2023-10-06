@@ -6,6 +6,7 @@ import sys
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.stats as ss
 import seaborn as sns
 import torch
 import torch_geometric
@@ -361,9 +362,10 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
         plt.savefig(osp.join(data_dir, 'meanDist_L1_score.png'))
         plt.close()
 
-        # plot meanDist colored by SCC
         if model_ID is not None:
-            ind = np.argsort(rmse_arr)
+            # plot meanDist colored by SCC
+
+            ind = np.argsort(rmse_arr[:10])
             for meanDist, val, sample in zip(meanDist_arr[ind], rmse_arr[ind], samples[ind]):
                 plt.plot(meanDist, label = f'sample{sample}: {np.round(val, 1)}',
                         c=plt.cm.viridis(val/np.max(rmse_arr)))
@@ -373,6 +375,26 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
             plt.tight_layout()
             plt.savefig(osp.join(data_dir, 'meanDist_RMSE.png'))
             plt.close()
+
+            # plot meanDist[10] vs SCC
+            odir = osp.join(data_dir, 'meanDist_vs_RMSE')
+            if not osp.exists(odir):
+                os.mkdir(odir, mode=0o755)
+            for i in range(1, 513):
+                X = []
+                for meanDist in meanDist_arr:
+                    X.append(meanDist[i])
+                X = np.array(X)
+
+                a, b, r_val, p, se = ss.linregress(X, rmse_arr)
+
+                plt.scatter(X, rmse_arr)
+                plt.xlabel(f'p({i})')
+                plt.ylabel('RMSE')
+                plt.plot(X, a*X + b, label = r_val)
+                plt.legend()
+                plt.savefig(osp.join(odir, f'meanDist_{i}_vs_RMSE.png'))
+                plt.close()
 
     np.save(meanDist_file, meanDist_list)
 
@@ -385,4 +407,4 @@ if __name__ == '__main__':
     # molar_contact_ratio('dataset_02_13_23', 372)
     # molar_contact_ratio('dataset_03_03_23', 387)
     # molar_contact_ratio('dataset_04_28_23', None)
-    molar_contact_ratio('dataset_09_25_23', 506)
+    molar_contact_ratio('dataset_09_28_23', 506)

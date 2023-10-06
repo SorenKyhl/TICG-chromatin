@@ -642,7 +642,7 @@ def main(args=None):
         # boxplot(data, osp.join(odir, f'boxplot_{defn}_convergence.png'))
 
 if __name__ == '__main__':
-    dataset = 'dataset_02_04_23_max_ent'
+    dataset = 'dataset_02_04_23'
     # dataset = 'dataset_09_17_23'
     # dataset = 'dataset_08_25_23'; samples = range(1, 16)
     # dataset = 'dataset_09_25_23'
@@ -657,7 +657,7 @@ if __name__ == '__main__':
     args.experimental = True
     args.convergence_definition = 'normal'
     args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', 'max_ent10']
-    args.gnn_id = [490, 496, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518]
+    args.gnn_id = [490, 496, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518, 519]
     # args.gnn_id=[434, 451, 455, 456, 461, 462, 463, 470, 471, 472, 476, 477, 479, 480, 481, 484, 485, 486, 488]
     # args.gnn_id=[490, 507, 511]
     main(args)
