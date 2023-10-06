@@ -10,12 +10,11 @@ scratchDir='/home/erschultz/scratch'
 # scratchDir='/home/erschultz/scratch'
 
 m=512
-overwrite=0
 useL='true'
 useS='true'
 useD='true'
 
-nSweeps=400000
+nSweeps=600000
 dumpFrequency=100000
 TICGSeed=10
 dense='false'
