@@ -83,17 +83,18 @@ def check_dataset_p_s(dataset):
     # dir = osp.join("/home/erschultz", dataset, "samples")
     ids = set()
     vals = np.zeros(10000)
-    for file in os.listdir(dir):
-        if file.startswith('sample'):
+    for i, file in enumerate(os.listdir(dir)):
+         if i % 100 == 0:
+            print(i)
+       if file.startswith('sample'):
             id = int(file[6:])
             file_dir = osp.join(dir, file)
             try:
                 y, _ = load_Y(file_dir)
-                y /= np.mean(y.diagonal())
-                meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
+                y /= np.mean(y.diagonal()) 
                 # if meanDist[10] > 0.06:
                 #     ids.add(id)
-                vals[id] = meanDist[10]
+                vals[id-1] = np.nanmean(np.diagonal(y, offset=10))
 
             except Exception as e:
                 print(f'id={id}: {e}')
