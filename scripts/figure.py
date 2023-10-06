@@ -27,7 +27,7 @@ test=False
 label_fontsize=24
 tick_fontsize=18
 letter_fontsize=26
-dataset = 'dataset_02_04_23'; sample = 211; GNN_ID = 490
+dataset = 'dataset_02_04_23'; sample = 223; GNN_ID = 490
 # dataset = 'dataset_04_05_23'; sample = 1001; GN_ID = 407
 # dataset = 'dataset_04_05_23'; sample = 1001; GNN_ID = 423
 samples, _ = get_samples(dataset, test=True)
@@ -332,7 +332,7 @@ def figure(test=False):
     print('Pearsons:')
     print('\tMax Ent: ', max_ent_pearsons, np.mean(max_ent_pearsons))
     print('\tMax Ent Strict:', max_ent_pearsons_strict, np.mean(max_ent_pearsons_strict))
-
+    print('\tGNN:', gnn_pearsons, np.mean(gnn_pearsons))
     data = [max_ent_pearsons, max_ent_pearsons_strict, gnn_pearsons]
     b3 = ax7.boxplot(data, vert = True,
                         patch_artist = True, labels = labels)

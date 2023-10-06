@@ -25,7 +25,7 @@ from sequences_to_contact_maps.scripts.utils import calc_dist_strat_corr
 def meanDist_comparison():
     # datasets = ['dataset_01_26_23', 'dataset_02_16_23']
     # datasets = ['dataset_01_26_23', 'dataset_02_04_23', 'dataset_02_21_23']
-    datasets = ['dataset_02_04_23', 'dataset_09_25_23']
+    datasets = ['dataset_02_04_23', 'dataset_09_28_23']
     labels = ['Experiment', 'synthetic']
     data_dir = osp.join('/home/erschultz', datasets[0])
 
@@ -636,7 +636,7 @@ if __name__ == '__main__':
     # plot_y_S('dataset_02_04_23', 180, 0.01, 2.0)
     # plot_y_S('dataset_')
 
-    meanDist_comparison()
-    # l_ij_comparison('dataset_09_29_23', 'dataset_02_04_23', 180, 0.008, 10, 1.5)
+    # meanDist_comparison()
+    l_ij_comparison('dataset_09_28_23', 'dataset_02_04_23', 180, 0.008, 5, 1.5)
     # p_s_comparison('dataset_02_04_23', None, 261, 0.01, 10)
     # scc_comparison('dataset_02_04_23', 392, 8, True)

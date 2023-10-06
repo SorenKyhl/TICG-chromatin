@@ -348,13 +348,13 @@ def main():
     # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105,
     #                                             601,602,603,604,605]
     # dataset = 'dataset_08_25_23'; samples=[981]
-    # dataset='dataset_09_17_23'
+    # dataset='dataset_09_28_23'
     # samples = sorted(np.random.choice(samples, 12, replace = False))
     # dataset = 'timing_analysis/512'; samples = list(range(1, 16))
 
     if samples is None:
-        samples, _ = get_samples(dataset, test=True)
-        samples = samples[:10]
+        samples, _ = get_samples(dataset, train=True)
+        samples = samples
     print(samples)
 
     mapping = []
@@ -374,11 +374,11 @@ def main():
     print('len =', len(mapping))
     # print(mapping)
 
-    with mp.Pool(10) as p:
+    with mp.Pool(1) as p:
         # p.starmap(setup_config, mapping)
-        p.starmap(fit, mapping)
+        # p.starmap(fit, mapping)
         # p.starmap(cleanup, mapping)
-        # p.starmap(check, mapping)
+        p.starmap(check, mapping)
 
 if __name__ == '__main__':
     # modify_maxent()

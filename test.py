@@ -54,24 +54,27 @@ def check_dataset(dataset):
         if file.startswith('sample'):
             id = int(file[6:])
             file_dir = osp.join(dir, file)
-            try:
-                x, psi, chi, chi_diag, e, s, y, ydiag = load_all(file_dir)
-
-                m, k = psi.shape
-                seq = np.zeros((m, k))
-                for i in range(k):
-                    seq_i = np.loadtxt(osp.join(file_dir, f'seq{i}.txt'))
-                    seq[:, i] = seq_i
-
-                if not np.array_equal(seq, psi):
-                    print(psi)
-                    print(seq)
-                    print(id)
-                    ids.add(id)
-            except Exception as e:
-                print(f'id={id}: {e}')
+            y_file = osp.join(file_dir, 'production_out', 'contacts600000.txt')
+            if not osp.exists(y_file):
                 ids.add(id)
-                continue
+            # try:
+            #     x, psi, chi, chi_diag, e, s, y, ydiag = load_all(file_dir)
+            #
+            #     m, k = psi.shape
+            #     seq = np.zeros((m, k))
+            #     for i in range(k):
+            #         seq_i = np.loadtxt(osp.join(file_dir, f'seq{i}.txt'))
+            #         seq[:, i] = seq_i
+            #
+            #     if not np.array_equal(seq, psi):
+            #         print(psi)
+            #         print(seq)
+            #         print(id)
+            #         ids.add(id)
+            # except Exception as e:
+            #     print(f'id={id}: {e}')
+            #     ids.add(id)
+            #     continue
 
     print(ids, len(ids))
 
@@ -1059,8 +1062,8 @@ if __name__ == '__main__':
     # test_robust_PCA()
     # test_pooling()
     # test_convergence('dataset_02_04_23', 'loss')
-    test_convergence('dataset_02_04_23', 'param_mag')
-    # check_dataset('dataset_11_18_22')
+    # test_convergence('dataset_02_04_23', 'param_mag')
+    check_dataset('dataset_09_25_22')
     # check_dataset_p_s('dataset_08_17_23')
     # time_comparison()
     # time_comparison_dmatrix()

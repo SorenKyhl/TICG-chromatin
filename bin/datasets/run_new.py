@@ -96,7 +96,7 @@ def run_longer(args, i):
 
     # cleanup
     shutil.move('production_out', osp.join(odir, 'production_out3'))
-    # shutil.rmtree(odir_scratch)
+    shutil.rmtree(odir_scratch)
 
 def run(args, i):
     odir = osp.join(args.data_folder, f'samples/sample{i}')

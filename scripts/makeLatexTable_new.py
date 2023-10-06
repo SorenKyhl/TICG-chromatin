@@ -10,8 +10,6 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats as ss
-# from compare_contact import plotDistanceStratifiedPearsonCorrelation
-from data_generation.modify_maxent import get_samples
 from pylib.utils import epilib
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
@@ -20,6 +18,10 @@ from pylib.utils.similarity_measures import SCC
 from pylib.utils.utils import triu_to_full
 from scipy.stats import pearsonr
 from sklearn.metrics import mean_squared_error
+
+# from compare_contact import plotDistanceStratifiedPearsonCorrelation
+sys.path.append('/home/erschultz/TICG-chromatin/scripts')
+from data_generation.modify_maxent import get_samples
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (
@@ -145,7 +147,11 @@ def load_data(args):
                 k = 0
                 converged_it = None
                 converged_path = fpath
-                S = np.load(osp.join(fpath, 'S.npy'))
+                S_file = osp.join(fpath, 'S.npy')
+                if osp.exists(S_file):
+                    S = np.load(S_file)
+                else:
+                    continue
                 times = [load_time_dir(fpath)]
             elif method_type.startswith('max_ent'):
                 if args.verbose:
@@ -643,7 +649,7 @@ if __name__ == '__main__':
     # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5,101,102,103,104,105,601,602,603,604,605]
     # dataset='Su2020'; samples = [1013]
 
-    samples, _ = get_samples(dataset, test = True)
+    samples, _ = get_samples(dataset, train = True)
     samples = samples[:10]
 
     data_dir = osp.join('/home/erschultz', dataset)
@@ -651,9 +657,9 @@ if __name__ == '__main__':
     args.experimental = True
     args.convergence_definition = 'normal'
     args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', 'max_ent10']
-    # args.gnn_id = [490, 491, 492, 493, 494, 496, 498, 500, 501]
+    args.gnn_id = [490, 496, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 517]
     # args.gnn_id=[434, 451, 455, 456, 461, 462, 463, 470, 471, 472, 476, 477, 479, 480, 481, 484, 485, 486, 488]
-    args.gnn_id=[490, 512]
+    # args.gnn_id=[490, 507, 511]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))
