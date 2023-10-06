@@ -82,6 +82,7 @@ def check_dataset_p_s(dataset):
     dir = osp.join("/project2/depablo/erschultz", dataset, "samples")
     # dir = osp.join("/home/erschultz", dataset, "samples")
     ids = set()
+    vals = np.zeros(10000)
     for file in os.listdir(dir):
         if file.startswith('sample'):
             id = int(file[6:])
@@ -90,15 +91,18 @@ def check_dataset_p_s(dataset):
                 y, _ = load_Y(file_dir)
                 y /= np.mean(y.diagonal())
                 meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
-                if meanDist[10] > 0.06:
-                    ids.add(id)
+                # if meanDist[10] > 0.06:
+                #     ids.add(id)
+                vals[id] = meanDist[10]
 
             except Exception as e:
                 print(f'id={id}: {e}')
                 ids.add(id)
                 continue
 
+    np.savetxt(osp.join(dir, 'vals.txt'), vals)
     np.savetxt(osp.join(dir, 'ids.txt'), ids)
+    print(vals, len(vals))
     print(ids, len(ids))
 
 def test_robust_PCA():
@@ -1063,8 +1067,8 @@ if __name__ == '__main__':
     # test_pooling()
     # test_convergence('dataset_02_04_23', 'loss')
     # test_convergence('dataset_02_04_23', 'param_mag')
-    check_dataset('dataset_09_25_22')
-    # check_dataset_p_s('dataset_08_17_23')
+    # check_dataset('dataset_09_25_22')
+    check_dataset_p_s('dataset_09_28_23')
     # time_comparison()
     # time_comparison_dmatrix()
     # main()

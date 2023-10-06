@@ -264,7 +264,7 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
     config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
     # config['diag_chis'] = np.load('/home/erschultz/dataset_02_04_23/samples/sample201/optimize_grid_b_261_phi_0.01-max_ent10/diag_chis_init1.npy')
 
-    root = osp.join(dir, f'{root}-max_ent{k}_700k')
+    root = osp.join(dir, f'{root}-max_ent{k}')
     if osp.exists(root):
         # shutil.rmtree(root)
         print('WARNING: root exists')
@@ -281,15 +281,15 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
     params['iterations'] = 30
     params['parallel'] = 1
     params['equilib_sweeps'] = 10000
-    params['production_sweeps'] = 700000
+    params['production_sweeps'] = 350000
     params['stop_at_convergence'] = True
-    params['conv_defn'] = 'strict'
+    params['conv_defn'] = 'normal'
     params['run_longer_at_convergence'] = False
 
     stdout = sys.stdout
     with open(osp.join(root, 'log.log'), 'w') as sys.stdout:
         me = Maxent(root, params, config, seqs, y,
-                    final_it_sweeps=700000, mkdir=False, bound_diag_chis=False)
+                    final_it_sweeps=350000, mkdir=False, bound_diag_chis=False)
         t = me.fit()
         print(f'Simulation took {np.round(t, 2)} seconds')
     sys.stdout = stdout
@@ -321,7 +321,7 @@ def check(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
                                 aspect_ratio, bond_type, k, contact_distance,
                                 verbose=False)
 
-    root = osp.join(dir, f'{root}-max_ent{k}_700k')
+    root = osp.join(dir, f'{root}-max_ent{k}')
     if osp.exists(root):
         if not osp.exists(osp.join(root, 'iteration30')):
             it=0
@@ -339,7 +339,7 @@ def main():
     samples = None
     # dataset = 'dataset_05_31_23'; samples = list(range(1137, 1214))
     # dataset = 'downsampling_analysis'; samples = list(range(201, 211))
-    dataset = 'dataset_02_04_23';
+    dataset = 'dataset_02_04_23_max_ent';
     # dataset = 'dataset_02_04_23'; samples = [211, 212, 213, 214, 215, 216, 217,
                                                 # 218, 219, 220, 221, 222, 223, 224]
     # dataset = 'Su2020'; samples = [1004, 1013]
@@ -354,7 +354,7 @@ def main():
 
     if samples is None:
         samples, _ = get_samples(dataset, train=True)
-        samples = samples
+        samples = samples[:10]
     print(samples)
 
     mapping = []
@@ -374,7 +374,7 @@ def main():
     print('len =', len(mapping))
     # print(mapping)
 
-    with mp.Pool(1) as p:
+    with mp.Pool(10) as p:
         # p.starmap(setup_config, mapping)
         # p.starmap(fit, mapping)
         # p.starmap(cleanup, mapping)

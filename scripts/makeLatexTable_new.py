@@ -642,10 +642,10 @@ def main(args=None):
         # boxplot(data, osp.join(odir, f'boxplot_{defn}_convergence.png'))
 
 if __name__ == '__main__':
-    dataset = 'dataset_02_04_23'
+    dataset = 'dataset_02_04_23_max_ent'
     # dataset = 'dataset_09_17_23'
     # dataset = 'dataset_08_25_23'; samples = range(1, 16)
-    # dataset = 'dataset_04_28_23'; samples = [1,2,3,4,5,324,981,1753,1936,2834,3464]
+    # dataset = 'dataset_09_25_23'
     # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5,101,102,103,104,105,601,602,603,604,605]
     # dataset='Su2020'; samples = [1013]
 

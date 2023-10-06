@@ -51,7 +51,8 @@ def get_samples(dataset, train=False, test=False):
     elif dataset == 'dataset_06_29_23':
         samples = range(1,636)
         experimental = True
-    elif dataset in {'dataset_01_26_23', 'dataset_02_04_23', 'dataset_02_21_23'}:
+    elif dataset in {'dataset_01_26_23', 'dataset_02_04_23', 'dataset_02_21_23',
+                    'dataset_02_04_23_max_ent'}:
         samples = range(201, 283)
         # samples = range(284, 293)
         # samples = range(201, 210)
