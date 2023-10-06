@@ -84,14 +84,16 @@ def check_dataset_p_s(dataset):
     ids = set()
     vals = np.zeros(10000)
     for i, file in enumerate(os.listdir(dir)):
-         if i % 100 == 0:
+        if i % 100 == 0:
             print(i)
-       if file.startswith('sample'):
+        if i == 1000:
+            break
+        if file.startswith('sample'):
             id = int(file[6:])
             file_dir = osp.join(dir, file)
             try:
                 y, _ = load_Y(file_dir)
-                y /= np.mean(y.diagonal()) 
+                y /= np.mean(y.diagonal())
                 # if meanDist[10] > 0.06:
                 #     ids.add(id)
                 vals[id-1] = np.nanmean(np.diagonal(y, offset=10))
