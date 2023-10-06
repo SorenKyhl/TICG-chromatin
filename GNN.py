@@ -134,7 +134,7 @@ def main():
     # GNN_IDs = [455, 456, 463, 470, 471, 472, 476, 477]; b=140; phi=0.03; ar=1.0
     # GNN_IDs= [484]; b=140; phi=0.03; ar=1.0
     # GNN_IDs = [485]; b=180; phi=0.01; ar=2.0
-    GNN_IDs = [515]; b=180; phi=0.008; ar=1.5
+    GNN_IDs = [518]; b=180; phi=0.008; ar=1.5
     for GNN_ID in GNN_IDs:
         # for i in samples:
         #     mapping.append((dataset, i, GNN_ID))
@@ -146,8 +146,8 @@ def main():
 
     with mp.Pool(10) as p:
         # p.starmap(cleanup, mapping)
-        # p.starmap(fit, mapping)
-        p.starmap(check, mapping)
+        p.starmap(fit, mapping)
+        # p.starmap(check, mapping)
 
 if __name__ == '__main__':
     mp.set_start_method('spawn')
