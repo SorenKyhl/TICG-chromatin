@@ -78,9 +78,7 @@ dir='/home/erschultz'
 
 dir='/project2/depablo/erschultz'
 cd $dir
-rm dataset_05_23_23.tar.gz
-rm dataset_05_28_23.tar.gz
-rm -r dataset_06_05_23
-rm dataset_06_05_23.tar.gz
-compress dataset_08_17_23
-compress dataset_09_10_23
+compress dataset_08_25_23
+compress dataset_09_11_23
+compress dataset_09_17_23
+compress dataset_09_19_23

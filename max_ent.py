@@ -389,10 +389,10 @@ def main():
     # print(mapping)
 
     with mp.Pool(15) as p:
-        p.starmap(setup_config, mapping)
+        # p.starmap(setup_config, mapping)
         # p.starmap(fit, mapping)
         # p.starmap(cleanup, mapping)
-        # p.starmap(check, mapping)
+        p.starmap(check, mapping)
 
 if __name__ == '__main__':
     # modify_maxent()

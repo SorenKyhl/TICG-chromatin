@@ -47,24 +47,31 @@ def plot_diagonal(exp, sim, ofile=None):
     composite = np.zeros((npixels, npixels))
     composite[indu] = sim[indu]
     composite[indl] = exp[indl]
-    print(composite, composite.shape)
+    print('orig', composite.shape)
+    m = len(composite)
 
     # Rotate 45 degs
     resized = rotate_bound(composite,-45)
-    print(resized, resized.shape)
+    print('resize', resized.shape)
 
     # crop
     center = resized.shape[0] // 2
+    m_resize = len(resized)
     height=30
     resized = resized[center-height:center+height, :]
 
 
     vmin = np.nanpercentile(exp, 1)
     vmax = np.nanpercentile(exp, 99)
-    fig, ax = plt.subplots(figsize=(6, 3),dpi=600)
+    fig, ax = plt.subplots(figsize=(6, 2),dpi=600)
     # _pf = ax.imshow(resized, vmin=200, vmax=1000, cmap='seismic')
     sns.heatmap(resized, ax = ax, linewidth = 0, vmin = vmin, vmax = vmax, cmap = RED_BLUE_CMAP)
-    ax.set_yticks([])
+    ax.set_xticks([0, m_resize/4, m_resize/2, m_resize*3/4, m_resize],
+                labels = np.round([0, m/4, m/2, m*3/4, m], 0).astype(int))
+    ax.set_yticks([0, height, height*2],
+                labels = np.round([m*height/m_resize, 0, m*height/m_resize], 0).astype(int))
+
+    plt.tight_layout()
 
     if ofile is not None:
         plt.savefig(ofile)

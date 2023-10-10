@@ -228,7 +228,8 @@ def plot_mean_dist(meanDist, path, ofile, diag_chis_step, logx, logy=True,
         meanDist (array): mean value along off-diagonals of contact map
         path (path): save path
         ofile (str): save file name
-        diag_chis_step (array or None): diagonal chi parameter as function of d (None to skip)
+        diag_chis_step (array or None): diagonal chi parameter as function of d
+                                        (None to skip)
         logx (bool): True to log-scale x axis
         ref (array): reference meanDist
         ref_label (str): label for legend
@@ -308,7 +309,8 @@ def plot_mean_vs_genomic_distance(y, path, ofile, diag_chis_step = None,
     if config is not None:
         diag_chis_step = calculate_diag_chi_step(config)
 
-    plot_mean_dist(meanDist, path, ofile, diag_chis_step, logx, ref=ref, ref_label=ref_label)
+    plot_mean_dist(meanDist, path, ofile, diag_chis_step, logx, ref=ref,
+                    ref_label=ref_label)
 
     return meanDist
 

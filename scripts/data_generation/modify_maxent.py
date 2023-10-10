@@ -85,6 +85,12 @@ def get_samples(dataset, train=False, test=False):
     elif dataset == 'dataset_09_28_23':
         samples = list(range(1, 26))
         samples.extend([324, 981, 1936, 2834, 3464])
+    elif dataset == 'dataset_09_28_23_s_1_cutoff_0.36':
+        samples = [5453, 7790, 1531, 1467, 8970, 4352, 253, 6750, 2353, 4051, 6505, 5480, 1340, 1317, 8949]
+    elif dataset == 'dataset_09_28_23_s_10_cutoff_0.08':
+        samples = [68, 3180, 7880, 5787, 833, 8285, 765, 4392, 8467, 9142, 9245, 8668, 4354, 265, 7738]
+    elif dataset == 'dataset_09_28_23_s_100_cutoff_0.01':
+        samples = [1191, 1478, 4990, 5612, 3073, 1351, 4128, 2768, 9627, 4127, 1160, 8932, 2929, 7699, 6629]
     else:
         samples = [1, 2, 3, 4, 5, 324, 981, 1936, 2834, 3464]
 
