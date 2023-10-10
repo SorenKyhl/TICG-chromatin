@@ -11,7 +11,7 @@ from sklearn.metrics.pairwise import nan_euclidean_distances
 
 
 def xyz_load(xyz_filepath, delim = '\t', multiple_timesteps = True, save = False,
-            N_min = 1, N_max = None, down_sampling = 1):
+            N_min = 1, N_max = None, down_sampling = 1, verbose = True):
     t0 = time.time()
     xyz_npy_file = osp.join(osp.split(xyz_filepath)[0], 'xyz.npy')
     if osp.exists(xyz_npy_file):
@@ -47,8 +47,9 @@ def xyz_load(xyz_filepath, delim = '\t', multiple_timesteps = True, save = False
         xyz = xyz[N_min:N_max:down_sampling]
 
     tf = time.time()
-    print(f'Loaded xyz with shape {xyz.shape}')
-    print(f'time: {np.round(tf - t0, 3)} s')
+    if verbose:
+        print(f'Loaded xyz with shape {xyz.shape}')
+        print(f'time: {np.round(tf - t0, 3)} s')
     return xyz
 
 def xyz_write(xyz, outfile, writestyle, comment = '', x = None):

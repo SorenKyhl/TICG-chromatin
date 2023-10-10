@@ -6,10 +6,10 @@ source activate python3.8_pytorch1.9
 # necessary to ensure log files are in right place
 cd ~/TICG-chromatin
 
-dataset="dataset_09_29_23_test"
+dataset="dataset_09_29_23"
 echo "generate_params for ${dataset}"
 # uses poly6 fit to max ent params + grid
-python  ~/TICG-chromatin/bin/datasets/generate_params.py --samples 3 --b 180 --phi 0.008 --k 10 --ar 1.5 --m 512 --dataset $dataset --seq_mode 'eig_norm' --diag_mode 'meanDist_S_grid' --data_dir '/home/erschultz'
+# python  ~/TICG-chromatin/bin/datasets/generate_params.py --samples 5000 --b 180 --phi 0.008 --k 10 --ar 1.5 --m 512 --dataset $dataset --seq_mode 'eig_norm' --diag_mode 'meanDist_S_grid' --data_dir '/project2/depablo/erschultz'
 #
 # cd "/home/erschultz/${dataset}"
 # tar -czvf setup.tar.gz setup
@@ -20,10 +20,11 @@ python  ~/TICG-chromatin/bin/datasets/generate_params.py --samples 3 --b 180 --p
 #
 sourceFile=~/TICG-chromatin/bin/datasets/diag_dataset58/diag_dataset_fns.sh
 start=1
-end=1
-for i in 1
+end=2500
+for i in {1..4}
 do
   echo $i $start $end
-  bash ~/TICG-chromatin/bin/datasets/diag_dataset${i}.sh $sourceFile $start $end 1 "58_"
-
+  # bash ~/TICG-chromatin/bin/datasets/diag_dataset${i}.sh $sourceFile $start $end 1 "58_"
+  start=$(( $start + 2500 ))
+  end=$(( $end + 2500 ))
 done

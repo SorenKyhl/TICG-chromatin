@@ -2,6 +2,7 @@ import sys
 
 import matplotlib.pyplot
 import numpy as np
+import scipy.stats as ss
 
 sys.path.append('/home/erschultz/TICG-chromatin/scripts')
 from data_generation.modify_maxent import get_samples
@@ -32,7 +33,7 @@ for i, k in enumerate(k_list):
         max_ent_sccs = data[k][max_ent]['scc_var']
         print('\t', max_ent_sccs)
         mean_arr[i] = np.nanmean(max_ent_sccs)
-        std_arr[i] = np.nanstd(max_ent_sccs)
+        std_arr[i] = ss.sem(max_ent_sccs, nan_policy='omit')
 
 plt.errorbar(k_list, mean_arr, std_arr, c='b')
 plt.xlabel('k', fontsize=16)

@@ -89,13 +89,13 @@ def run_longer(args, i):
         y_1 = np.loadtxt(osp.join(odir, 'production_out', f'contacts{orig_sweeps}.txt'))
         y_2 = np.loadtxt(osp.join('production_out', f'contacts{new_sweeps}.txt'))
         y_3 = y_1 + y_2
-        np.savetxt(osp.join(odir, 'production_out', f'contacts{orig_sweeps+2*new_sweeps}.txt'),
+        np.savetxt(osp.join(odir, 'production_out', f'contacts{orig_sweeps+1*new_sweeps}.txt'),
                     y_3, fmt='%i')
-        print(osp.join(odir, 'production_out', f'contacts{orig_sweeps+2*new_sweeps}.txt'))
+        print(osp.join(odir, 'production_out', f'contacts{orig_sweeps+1*new_sweeps}.txt'))
     sys.stdout = stdout
 
     # cleanup
-    shutil.move('production_out', osp.join(odir, 'production_out3'))
+    shutil.move('production_out', osp.join(odir, 'production_out2'))
     shutil.rmtree(odir_scratch)
 
 def run(args, i):
