@@ -1197,7 +1197,7 @@ def plaid_dist(dataset, b, phi, v, k, ar, plot=True, eig_norm=False):
 
     return L_list, S_list, D_list, chi_ij_list
 
-def grid_dist(dataset, plot=True, b=140, phi=0.03):
+def grid_dist(dataset, plot=True, b=140, phi=None, v=None, ar=1.0):
     # distribution of plaid params
     samples, experimental = get_samples(dataset, True)
     if not experimental:
@@ -1206,18 +1206,33 @@ def grid_dist(dataset, plot=True, b=140, phi=0.03):
         return
     data_dir = osp.join('/home/erschultz', dataset)
 
-    odir = osp.join(data_dir, f'b_{b}_phi_{phi}_distributions')
+    if v is None:
+        assert phi is not None
+        odir = osp.join(data_dir, f'b_{b}_phi_{phi}')
+    else:
+        odir = osp.join(data_dir, f'b_{b}_v_{v}')
+    if ar != 1.0:
+        odir += f'_spheroid_{ar}'
+    odir += '_distributions'
     if not osp.exists(odir):
         os.mkdir(odir, mode = 0o755)
 
     grid_size_arr = np.zeros(len(samples))
     for i, sample in enumerate(samples):
-        dir = osp.join(data_dir, f'samples/sample{sample}/optimize_grid_b_{b}_phi_{phi}')
+        s_dir = osp.join(data_dir, f'samples/sample{sample}')
+        assert osp.exists(s_dir), s_dir
+        if v is None:
+            dir = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}')
+        else:
+            assert v is not None
+            dir = osp.join(s_dir, f'optimize_grid_b_{b}_v_{v}')
+        if ar != 1:
+            dir += f'_spheroid_{ar}'
         if not osp.exists(dir) or len(os.listdir(dir)) == 0:
             continue
 
         # get grid_size
-        grid_size_arr[i] = np.loadtxt(osp.join(dir, 'grid_size.txt'))
+        grid_size_arr[i] = np.loadtxt(osp.join(dir, 'grid.txt'))
 
     if plot:
         # plot plaid chi parameters
@@ -1317,8 +1332,8 @@ if __name__ == '__main__':
     # for i in range(221, 222):
         # plot_modified_max_ent(i, k = 10)
     # diagonal_dist('dataset_02_04_23', b=261, phi=0.01, k=10)
-    # grid_dist('dataset_02_04_23', b=140, phi=0.03)
-    plaid_dist('dataset_02_04_23', b=180, phi=None, v=8, k=5, ar=1.5, plot=True, eig_norm=True)
+    grid_dist('dataset_02_04_23', b=180, phi=0.008, ar=1.5)
+    # plaid_dist('dataset_02_04_23', b=180, phi=None, v=8, k=5, ar=1.5, plot=True, eig_norm=True)
     # get_read_counts('dataset_04_28_23')
     # seq_dist('dataset_01_26_23', 4, True, True)
     # plot_params_test()

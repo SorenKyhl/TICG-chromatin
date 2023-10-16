@@ -508,7 +508,7 @@ def compare_d_s_max_ent2():
 
 def compare_meanDist_S():
     dataset = 'dataset_09_28_23'
-    samples = [1]
+    samples = [2452]
     GNN_ID=496
     data_dir = osp.join('/home/erschultz/', dataset, 'samples')
     grid_root = 'optimize_grid_b_180_phi_0.008_spheroid_1.5'
@@ -518,6 +518,7 @@ def compare_meanDist_S():
         Sgt = np.load(osp.join(s_dir, 'S.npy'))
         for S, label in zip([Sgt, Sgnn],['Ground Truth', 'GNN']):
             meanDist = DiagonalPreprocessing.genomic_distance_statistics(S, 'freq')
+            print(label, meanDist[:5])
             plt.plot(meanDist, label = label)
         plt.legend()
         plt.xscale('log')
@@ -535,12 +536,15 @@ def compare_meanDist_S2():
     dir = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{GNN_ID}'
     assert osp.exists(dir), dir
     for s in samples:
-        s_dir = osp.join(dir, f'{dataset}_sample{s}-regular/sample{s}-regular')
+        print(s)
+        s_dir = osp.join(dir, f'{dataset}_sample{s}/sample{s}')
         assert osp.exists(s_dir), s_dir
         Sgnn = np.loadtxt(osp.join(s_dir, 'energy_hat.txt'))
         Sgt = np.loadtxt(osp.join(s_dir, 'energy.txt'))
         for S, label in zip([Sgt, Sgnn],['Ground Truth', 'GNN']):
             meanDist = DiagonalPreprocessing.genomic_distance_statistics(S, 'freq')
+            print(label, meanDist[:5])
+
             plt.plot(meanDist, label = label)
         plt.legend()
         plt.xscale('log')
@@ -548,6 +552,21 @@ def compare_meanDist_S2():
         plt.xlabel('Off-diagonal Index', fontsize=16)
         plt.tight_layout()
         plt.savefig(osp.join(s_dir, 'meanDist_S.png'))
+        plt.close()
+
+        Sgnn = np.multiply(np.sign(Sgnn), np.exp(np.abs(Sgnn)) - 1)
+        Sgt = np.multiply(np.sign(Sgt), np.exp(np.abs(Sgt)) - 1)
+        for S, label in zip([Sgt, Sgnn],['Ground Truth', 'GNN']):
+            meanDist = DiagonalPreprocessing.genomic_distance_statistics(S, 'freq')
+            print(label, meanDist[:5])
+
+            plt.plot(meanDist, label = label)
+        plt.legend()
+        plt.xscale('log')
+        plt.ylabel('Mean', fontsize=16)
+        plt.xlabel('Off-diagonal Index', fontsize=16)
+        plt.tight_layout()
+        plt.savefig(osp.join(s_dir, 'meanDist_S_reg.png'))
         plt.close()
 
 

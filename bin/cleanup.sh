@@ -53,11 +53,11 @@ cd $dir
 #   done
 # done
 
-dir='/home/erschultz/dataset_02_04_23/samples'
+dir='/home/erschultz/dataset_09_28_23/samples'
 cd $dir
-for i in {201..282}
+for i in {1..6}
 do
   cd  "${dir}/sample${i}"
   pwd
-  rm -r *max_ent12
+  rm -r *496_grid
 done

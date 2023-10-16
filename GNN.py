@@ -33,6 +33,8 @@ def fit(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     m = len(y)
 
     root, config = setup_config(dataset, sample, sub_dir, b, phi, v, None, ar)
+    # config_ref = utils.load_json(osp.join(dir, 'config.json'))
+    # config['grid_size'] = config_ref['grid_size']
     config['nspecies'] = 0
     config['load_bead_types'] = False
     config['lmatrix_on'] = False
@@ -47,7 +49,6 @@ def fit(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
         print('WARNING: root exists')
         return
     os.mkdir(gnn_root, mode=0o755)
-
 
     # sleep for random # of seconds so as not to overload gpu
     sleep(np.random.rand()*10)
@@ -130,7 +131,7 @@ def main():
     # dataset='dataset_02_04_23';
     # dataset = 'Su2020'; samples=[1013, 1004]
     # dataset = 'dataset_06_29_23'; samples = [2, 103, 604]
-    dataset = 'dataset_09_28_23'
+    dataset = 'dataset_09_28_23'; samples=[752, 2452]
     # dataset='dataset_09_28_23_s_100_cutoff_0.01';
     # dataset='dataset_09_28_23_s_10_cutoff_0.08';
     # dataset='dataset_09_28_23_s_1_cutoff_0.36';
@@ -139,10 +140,10 @@ def main():
 
     if samples is None:
         samples, _ = get_samples(dataset, train=True)
-        samples = samples[:5]
+        samples = samples[:6]
     print(len(samples))
 
-    GNN_IDs = [539]; b=180; phi=None; v=8; ar=1.5
+    GNN_IDs = [496]; b=180; phi=0.008; v=None; ar=1.5
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
@@ -151,9 +152,9 @@ def main():
     print(len(mapping))
     # print(mapping)
 
-    # with mp.Pool(2) as p:
+    with mp.Pool(2) as p:
         # p.starmap(cleanup, mapping)
-        # p.starmap(fit, mapping)
+        p.starmap(fit, mapping)
 
     for i in mapping:
         check(*i)

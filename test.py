@@ -55,27 +55,13 @@ def check_dataset(dataset):
         if file.startswith('sample'):
             id = int(file[6:])
             file_dir = osp.join(dir, file)
-            y_file = osp.join(file_dir, 'production_out', 'contacts600000.txt')
-            if not osp.exists(y_file):
-                ids.add(id)
-            # try:
-            #     x, psi, chi, chi_diag, e, s, y, ydiag = load_all(file_dir)
-            #
-            #     m, k = psi.shape
-            #     seq = np.zeros((m, k))
-            #     for i in range(k):
-            #         seq_i = np.loadtxt(osp.join(file_dir, f'seq{i}.txt'))
-            #         seq[:, i] = seq_i
-            #
-            #     if not np.array_equal(seq, psi):
-            #         print(psi)
-            #         print(seq)
-            #         print(id)
-            #         ids.add(id)
-            # except Exception as e:
-            #     print(f'id={id}: {e}')
-            #     ids.add(id)
-            #     continue
+            files = []
+            files.append(osp.join(file_dir, 'y.npy'))
+            files.append(osp.join(file_dir, 'L.npy'))
+            files.append(osp.join(file_dir, 'diag_chis.npy'))
+            for file in files:
+                if not osp.exists(file):
+                    ids.add(id)
 
     print(ids, len(ids))
 
@@ -979,4 +965,5 @@ def data_t_test():
 
 if __name__ == '__main__':
     # make_small('dataset_02_04_23')
-    compare_scc()
+    # compare_scc()
+    check_dataset('dataset_10_12_23')
