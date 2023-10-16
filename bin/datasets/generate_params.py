@@ -56,8 +56,10 @@ def getArgs():
                     help='dataset where experimental data is located')
     parser.add_argument('--b', type=int, default=140,
                         help='bond length')
-    parser.add_argument('--phi', type=float, default=0.03,
+    parser.add_argument('--phi', type=float,
                     help='phi chromatin')
+    parser.add_argument('--v', type=int,
+                    help='simulation volume')
     parser.add_argument('--conv_defn', type=str, default='loss')
     parser.add_argument('--plaid_mode', type=str, default='skewnorm')
 
@@ -86,14 +88,21 @@ class DatasetGenerator():
         self.exp_dataset = args.exp_dataset
         self.b = args.b
         self.phi = args.phi
+        self.v = args.v
         self.conv_defn = args.conv_defn
         self.plaid_mode = args.plaid_mode
-        if args.ar == 1:
+
+        if self.phi is not None:
+            assert self.v is None
             self.grid_root = f'optimize_grid_b_{self.b}_phi_{self.phi}'
             self.distributions_root = f'b_{self.b}_phi_{self.phi}_distributions'
         else:
-            self.grid_root = f'optimize_grid_b_{self.b}_phi_{self.phi}_spheroid_{args.ar}'
-            self.distributions_root = f'b_{self.b}_phi_{self.phi}_spheroid_{args.ar}_distributions'
+            self.grid_root = f'optimize_grid_b_{self.b}_v_{self.v}'
+            self.distributions_root = f'b_{self.b}_v_{self.v}_distributions'
+
+        if args.ar != 1:
+            self.grid_root += f'_spheroid_{args.ar}'
+            self.distributions_root += f'_spheroid_{args.ar}_distributions'
 
         self.get_exp_samples()
 
@@ -454,9 +463,8 @@ class DatasetGenerator():
 
 
     def grid_params(self):
-        b, phi = self.grid_mode.split('_')
         with open(osp.join(self.dir, self.exp_dataset,
-                            f'b_{b}_phi_{phi}_distributions',
+                            self.distributions_root,
                             'grid_size.pickle'), 'rb') as f:
             dict_grid = pickle.load(f)
 

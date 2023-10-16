@@ -15,6 +15,7 @@ import torch
 from max_ent import setup_config
 from pylib.Pysim import Pysim
 from pylib.utils import default, epilib, utils
+
 from scripts.data_generation.modify_maxent import get_samples
 from scripts.get_params import GetEnergy
 
@@ -31,7 +32,7 @@ def fit(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03, ar=1.0):
     np.fill_diagonal(y, 1)
     m = len(y)
 
-    root, config = setup_config(dataset, sample, sub_dir, b, phi, None, ar)
+    root, config = setup_config(dataset, sample, sub_dir, b, phi, None, None, ar)
     config['nspecies'] = 0
     config['load_bead_types'] = False
     config['lmatrix_on'] = False
@@ -118,7 +119,7 @@ def cleanup(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03, ar=1.0)
 
 def main():
     samples=None
-    dataset='dataset_02_04_23_max_ent';
+    dataset='dataset_02_04_23';
     # dataset = 'Su2020'; samples=[1013, 1004]
     # dataset = 'dataset_06_29_23'; samples = [2, 103, 604]
     # dataset = 'dataset_09_28_23'
@@ -133,11 +134,7 @@ def main():
         samples = samples[:10]
     print(len(samples))
 
-    # GNN_IDs = [480]; b=261; phi=0.01; ar=1.0
-    # GNN_IDs = [455, 456, 463, 470, 471, 472, 476, 477]; b=140; phi=0.03; ar=1.0
-    # GNN_IDs= [484]; b=140; phi=0.03; ar=1.0
-    # GNN_IDs = [485]; b=180; phi=0.01; ar=2.0
-    GNN_IDs = [529, 530, 531]; b=180; phi=0.008; ar=1.5
+    GNN_IDs = [539]; b=180; phi=0.008; ar=1.5
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID, f'samples', b, phi, ar))
@@ -146,10 +143,12 @@ def main():
     print(len(mapping))
     # print(mapping)
 
-    with mp.Pool(1) as p:
+    with mp.Pool(10) as p:
         # p.starmap(cleanup, mapping)
-        # p.starmap(fit, mapping)
-        p.starmap(check, mapping)
+        p.starmap(fit, mapping)
+
+    # for i in mapping:
+        # check(*i)
 
 if __name__ == '__main__':
     mp.set_start_method('spawn')

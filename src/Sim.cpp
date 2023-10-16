@@ -459,13 +459,21 @@ void Sim::readInput() {
 
     assert(config.contains("phi_solvent_max"));
     Cell::phi_solvent_max = config["phi_solvent_max"];
-    assert(config.contains("phi_chromatin"));
-    Cell::phi_chromatin = config["phi_chromatin"];
+    assert(config.contains("phi_chromatin") ^ config.contains("target_volume"));
+    if (config.contains("phi_chromatin")){
+      Cell::phi_chromatin = config["phi_chromatin"];
+    }
+    if (config.contains("target_volume")){
+      target_volume = config["target_volume"]; // in um^3
+    } else {
+      target_volume = 0;
+    }
     assert(config.contains("density_cap_on"));
     Cell::density_cap_on = config["density_cap_on"];
     assert(config.contains("compressibility_on"));
     Cell::compressibility_on = config["compressibility_on"];
     if (Cell::compressibility_on) {
+      assert(config.contains("phi_chromatin"));
       assert(config.contains("kappa"));
       Cell::kappa = config["kappa"];
     }
@@ -680,32 +688,28 @@ void Sim::initializeObjects() {
 }
 
 void Sim::volParameters_new() {
-    assert(Cell::phi_chromatin > 0 && Cell::phi_chromatin < 1);
-    double vol_beads = nbeads * Cell::beadvol;
-    double vol = vol_beads / Cell::phi_chromatin;
+    if (target_volume == 0){
+      assert(Cell::phi_chromatin > 0 && Cell::phi_chromatin < 1);
+      double vol_beads = nbeads * Cell::beadvol;
+      target_volume = vol_beads / Cell::phi_chromatin;
+    } else {
+      target_volume = target_volume * 1000 * 1000 * 1000; // to nm^3
+    }
 
+    grid.cubic_boundary = false;
+    grid.spherical_boundary = false;
+    grid.spheroid_boundary = false;
     if (boundary_type == "cube" || boundary_type == "cubic") {
         grid.cubic_boundary = true;
-        grid.spherical_boundary = false;
-		grid.spheroid_boundary = false;
-    }
-
-    if (boundary_type == "sphere" || boundary_type == "spherical") {
-        grid.cubic_boundary = false;
+    } else if (boundary_type == "sphere" || boundary_type == "spherical") {
         grid.spherical_boundary = true;
-		grid.spheroid_boundary = false;
+    } else if (boundary_type == "spheroid") {
+      grid.spheroid_boundary = true;
     }
-
-	if (boundary_type == "spheroid")
-	{
-        grid.cubic_boundary = false;
-		grid.spherical_boundary = false;
-		grid.spheroid_boundary = true;
-	}
 
     if (grid.cubic_boundary) {
         std::cout << "cubic boundary" << std::endl;
-        grid.side_length = std::pow(vol, 1.0 / 3.0);
+        grid.side_length = std::pow(target_volume, 1.0 / 3.0);
 
         grid.L = std::ceil(grid.side_length /
                       grid.delta); // number of grid cells per side // ROUNDED,
@@ -723,8 +727,8 @@ void Sim::volParameters_new() {
     } else if (grid.spherical_boundary) {
         std::cout << "spherical boundary" << std::endl;
         // float total_volume = 3*vol/(4*M_PI);
-        total_volume = vol;
-        grid.radius = std::pow(3 * vol / (4 * M_PI),
+        total_volume = target_volume;
+        grid.radius = std::pow(3 * target_volume / (4 * M_PI),
                                1.0 / 3.0); // [nm] radius of simulation volume
         grid.L = std::ceil(2 * grid.radius / grid.delta);
         grid.sphere_center = {grid.radius, grid.radius, grid.radius};
@@ -737,9 +741,8 @@ void Sim::volParameters_new() {
         // << std::endl;
     } else if (grid.spheroid_boundary) {
         std::cout << "spheroid boundary" << std::endl;
-
-        total_volume = vol;
-        grid.equitorial_radius = std::pow(3 * vol / (4 * M_PI * grid.aspect_ratio), 1.0/3.0);
+        total_volume = target_volume;
+        grid.equitorial_radius = std::pow(3 * target_volume / (4 * M_PI * grid.aspect_ratio), 1.0/3.0);
 		grid.polar_radius = grid.equitorial_radius * grid.aspect_ratio;
 
 		std::cout << "equitorial radius: " << grid.equitorial_radius << " polar radius: " << grid.polar_radius << std::endl;

@@ -27,7 +27,7 @@ test=False
 label_fontsize=24
 tick_fontsize=18
 letter_fontsize=26
-dataset = 'dataset_02_04_23'; sample = 223; GNN_ID = 490
+dataset = 'dataset_02_04_23'; sample = 208; GNN_ID = 536
 # dataset = 'dataset_04_05_23'; sample = 1001; GN_ID = 407
 # dataset = 'dataset_04_05_23'; sample = 1001; GNN_ID = 423
 samples, _ = get_samples(dataset, test=True)

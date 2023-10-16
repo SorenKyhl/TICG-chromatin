@@ -14,6 +14,7 @@ from pylib.Pysim import Pysim
 from pylib.utils import default, epilib, utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import *
+
 from scripts.contact_map import getArgs, plot_all
 from scripts.data_generation.modify_maxent import get_samples
 
@@ -143,7 +144,7 @@ def modify_maxent():
         with mp.Pool(min(len(mapping), 5)) as p:
             p.starmap(run, mapping)
 
-def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
+def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
                 aspect_ratio=1.0, bond_type='gaussian', k=None, contact_distance=False,
                 k_angle=0, theta_0=180,
                 verbose=True):
@@ -153,19 +154,21 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
 
     bonded_config = default.bonded_config.copy()
     bonded_config['bond_length'] = bl
-    bonded_config['phi_chromatin'] = phi
+    assert phi is None or v is None
+    if phi is not None:
+        bonded_config['phi_chromatin'] = phi
+    if v is not None:
+        bonded_config['target_volume'] = v
     bonded_config['bond_type'] = bond_type
     bonded_config['update_contacts_distance'] = contact_distance
     if k_angle != 0:
         bonded_config['angles_on'] = True
         bonded_config['k_angle'] = k_angle
         bonded_config['theta_0'] = theta_0
-
     if bonded_config['update_contacts_distance']:
         mode = 'distance'
     else:
         mode = 'grid'
-
     if vb is not None:
         bonded_config['beadvol'] = vb
     else:
@@ -180,8 +183,12 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
     if aspect_ratio != 1.0:
         bonded_config['boundary_type'] = 'spheroid'
         bonded_config['aspect_ratio'] = aspect_ratio
+
     root = f"optimize_{mode}"
-    root = f"{root}_b_{bonded_config['bond_length']}_phi_{bonded_config['phi_chromatin']}"
+    if phi is not None:
+        root = f"{root}_b_{bl}_phi_{phi}"
+    else:
+        root = f"{root}_b_{bl}_v_{v}"
     if bonded_config['angles_on']:
         root += f"_angle_{bonded_config['k_angle']}_theta0_{bonded_config['theta_0']}"
     if bonded_config['boundary_type'] == 'spheroid':
@@ -208,14 +215,15 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
         root, bonded_config = optimize_grid.main(root, bonded_config, mode)
 
     config = default.config
-    for key in ['beadvol', 'bond_length', 'phi_chromatin', 'grid_size',
-                'k_angle', 'angles_on', 'theta_0', 'boundary_type',
+    for key in ['beadvol', 'bond_length', 'phi_chromatin', 'target_volume',
+                'grid_size', 'k_angle', 'angles_on', 'theta_0', 'boundary_type',
                 'update_contacts_distance', 'aspect_ratio', 'bond_type']:
-        config[key] = bonded_config[key]
+        if key in bonded_config:
+            config[key] = bonded_config[key]
 
     return root, config
 
-def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
+def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
         aspect_ratio=1, bond_type='gaussian', k=10, contact_distance=False,
         k_angle=0, theta_0=180):
     print(sample)
@@ -224,7 +232,7 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
     y /= np.mean(np.diagonal(y))
     np.fill_diagonal(y, 1)
 
-    root, config = setup_config(dataset, sample, samples, bl, phi, vb,
+    root, config = setup_config(dataset, sample, samples, bl, phi, v, vb,
                                 aspect_ratio, bond_type, k, contact_distance,
                                 k_angle, theta_0)
 
@@ -232,6 +240,7 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
     if k > 0:
         config['chis'] = np.zeros((k,k))
     config['dump_frequency'] = 10000
+    config['dump_stats_frequency'] = 10
     config['dump_observables'] = True
 
     # set up diag chis
@@ -262,9 +271,9 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
         raise Exception(f'Need to specify bin sizes for size={len(y)}')
 
     config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
-    # config['diag_chis'] = np.load('/home/erschultz/dataset_02_04_23/samples/sample201/optimize_grid_b_261_phi_0.01-max_ent10/diag_chis_init1.npy')
+    # config['diag_chis'] = np.loadtxt('/home/erschultz/Su2020/samples/sample1013/optimize_grid_b_180_phi_0.008_spheroid_1.5-max_ent5/chis_diag.txt')
 
-    root = osp.join(dir, f'{root}-max_ent{k}')
+    root = osp.join(dir, f'{root}-max_ent{k}_d10_300k')
     if osp.exists(root):
         # shutil.rmtree(root)
         print('WARNING: root exists')
@@ -281,47 +290,47 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
     params['iterations'] = 30
     params['parallel'] = 1
     params['equilib_sweeps'] = 10000
-    params['production_sweeps'] = 350000
+    params['production_sweeps'] = 300000
     params['stop_at_convergence'] = True
-    params['conv_defn'] = 'normal'
+    params['conv_defn'] = 'strict'
     params['run_longer_at_convergence'] = False
 
     stdout = sys.stdout
     with open(osp.join(root, 'log.log'), 'w') as sys.stdout:
         me = Maxent(root, params, config, seqs, y,
-                    final_it_sweeps=350000, mkdir=False, bound_diag_chis=False)
+                    final_it_sweeps=300000, mkdir=False, bound_diag_chis=False)
         t = me.fit()
         print(f'Simulation took {np.round(t, 2)} seconds')
     sys.stdout = stdout
 
-def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
+def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
         aspect_ratio=1, bond_type='gaussian', k=10, contact_distance=False,
         k_angle=0, theta_0=190):
     print(sample)
     dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
-    root, _ = setup_config(dataset, sample, samples, bl, phi, vb,
+    root, _ = setup_config(dataset, sample, samples, bl, phi, v, vb,
                                 aspect_ratio, bond_type, k, contact_distance,
                                 k_angle, theta_0,
                                 verbose=False)
 
-    root = osp.join(dir, f'{root}-max_ent{k}_700k')
+    root = osp.join(dir, f'{root}-max_ent{k}_d10_300k')
     if osp.exists(root):
         # if not osp.exists(osp.join(root, 'iteration1')):
         #     shutil.rmtree(root)
-        # if not osp.exists(osp.join(root, 'iteration30')):
-            # shutil.rmtree(root)
-        print(f'removing {root}')
-        shutil.rmtree(root)
+        if not osp.exists(osp.join(root, 'iteration30')):
+            shutil.rmtree(root)
+            print(f'removing {root}')
+        # shutil.rmtree(root)
 
-def check(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
+def check(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
         aspect_ratio=1, bond_type='gaussian', k=10, contact_distance=False,
         k_angle=0, theta_0=190):
     dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
-    root, _ = setup_config(dataset, sample, samples, bl, phi, vb,
+    root, _ = setup_config(dataset, sample, samples, bl, phi, v, vb,
                                 aspect_ratio, bond_type, k, contact_distance,
                                 verbose=False)
 
-    root = osp.join(dir, f'{root}-max_ent{k}')
+    root = osp.join(dir, f'{root}-max_ent{k}_d10_300k')
     if osp.exists(root):
         if not osp.exists(osp.join(root, 'iteration30')):
             it=0
@@ -332,6 +341,8 @@ def check(dataset, sample, samples='samples', bl=140, phi=0.03, vb=None,
             print(f'{root}: {prcnt}')
         else:
             print(f'{root}: complete')
+    else:
+        print(f'{root}: not started')
 
 
 
@@ -339,10 +350,8 @@ def main():
     samples = None
     # dataset = 'dataset_05_31_23'; samples = list(range(1137, 1214))
     # dataset = 'downsampling_analysis'; samples = list(range(201, 211))
-    # dataset = 'dataset_02_04_23_max_ent';
-    # dataset = 'dataset_02_04_23'; samples = [211, 212, 213, 214, 215, 216, 217,
-                                                # 218, 219, 220, 221, 222, 223, 224]
-    dataset = 'Su2020'; samples = [1013]
+    dataset = 'dataset_02_04_23';
+    # dataset = 'Su2020'; samples = [1004]
     # dataset = 'dataset_04_28_23'; samples = [1,2,3,4,5,324,981,1753,1936,2834,3464]
     # dataset = 'dataset_04_05_23'; samples = list(range(1211, 1288))
     # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105,
@@ -354,33 +363,21 @@ def main():
 
     if samples is None:
         samples, _ = get_samples(dataset, train=True)
-        samples = samples[:10]
+        samples = samples
     print(samples)
 
     mapping = []
-    k_angle=0;theta_0=180;b=160;phi=0.008;ar=1.5
+    k_angle=0;theta_0=180;b=180;phi=None;ar=1.5;v=8
     for i in samples:
-        for k in [10]:
-            mapping.append((dataset, i, f'samples', b, phi, None, ar,
+        for k in [5]:
+            mapping.append((dataset, i, f'samples', b, phi, v, None, ar,
                         'gaussian', k, False, k_angle, theta_0))
-
-
-
-    # for i in samples:
-    #     for b in [180, 200, 220, 240, 261]:
-    #         for phi in [0.005, 0.006, 0.007, 0.008, 0.009]:
-    #             for ar in [1.0, 1.5]:
-    #                 mapping.append((dataset, i, f'samples', b, phi, None, ar,
-    #                                 'gaussian', k, False, k_angle, theta_0))
-
     print('len =', len(mapping))
-    # print(mapping)
 
     with mp.Pool(1) as p:
-        p.starmap(setup_config, mapping)
         # p.starmap(fit, mapping)
+        p.starmap(check, mapping)
         # p.starmap(cleanup, mapping)
-        # p.starmap(check, mapping)
 
 if __name__ == '__main__':
     # modify_maxent()

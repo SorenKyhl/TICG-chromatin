@@ -41,6 +41,7 @@ public:
 	double constant_chi;
 	int nspecies; // number of different epigenetic marks
 	int nbeads;
+	double target_volume;
 	double total_volume;
 	double grid_size; // nm
 	double bond_length; // nm
@@ -183,7 +184,6 @@ public:
 	void setInitialConfiguration();
 	void initializeObjects();
 	void calculateParameters();
-	void volParameters();
 	void volParameters_new();
 	void loadConfiguration();
 	void generateRandomCoil(double bondlength);

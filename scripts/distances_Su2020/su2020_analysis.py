@@ -280,8 +280,8 @@ def find_volume():
     dir = '/home/erschultz/Su2020/samples'
     odir = '/home/erschultz/TICG-chromatin/figures/distances'
     s_dir = osp.join(dir, 'sample1013')
-    b = 180; phi = 0.01; ar=2.0
-    xyz_file = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}_spheroid_{ar}-max_ent10',
+    b = 180; phi = 0.008; ar=1.5
+    xyz_file = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}_spheroid_{ar}-max_ent5',
                         'iteration30/production_out/output.xyz')
     xyz_sim = xyz_load(xyz_file, multiple_timesteps = True)
     N, m, _ = xyz_sim.shape
@@ -338,16 +338,18 @@ def find_volume():
         mean_vol = np.nanmean(vols)
         median_vol = np.nanmedian(vols)
         std_vol = np.nanstd(vols)
+        max_vol = np.nanmax(vols)
         print(f'median vol {mean_vol} um^3')
         print(f'mean vol {median_vol} um^3')
         print(f'std vol {std_vol}')
+        print(f'max vol {max_vol}')
         mean_r_sphere = np.nanmean(r_spheres) / 2
         print(f'mean spherical radius {r_sphere} nm')
         return vols, r_spheres
 
     print('---Experiment---')
-    exp_arr, vols_arr1 = get_vols(xyz_exp)
-    arr = exp_arr; bin_width = 1
+    exp_hull, exp_radii = get_vols(xyz_exp)
+    arr = exp_hull; bin_width = 1
     plt.hist(arr, alpha=0.5, label = 'Experiment',
                 weights = np.ones_like(arr) / len(arr),
                 bins = np.arange(math.floor(min(arr)),
@@ -355,14 +357,15 @@ def find_volume():
                             bin_width))
 
     print('---Simulation---')
-    arr, vols_arr2 = get_vols(xyz_sim)
+    sim_hull, sim_radii = get_vols(xyz_sim)
+    arr = sim_hull
     plt.hist(arr, alpha=0.5, label = 'Simulation',
                 weights = np.ones_like(arr) / len(arr),
                 bins = np.arange(math.floor(min(arr)),
                             math.ceil(max(arr)) + bin_width,
                             bin_width))
 
-    plt.xlim(None, np.percentile(exp_arr, 99))
+    plt.xlim(None, np.nanpercentile(exp_hull, 99))
     plt.title(f'b={b}, phi={phi}')
     plt.xlabel(r'Volume $\mu m^3$')
     plt.ylabel('Probability')
@@ -371,19 +374,19 @@ def find_volume():
     plt.savefig(osp.join(odir, 'volumes.png'))
     plt.close()
 
-    bin_width = 100
-    for arr, label in zip([vols_arr1, vols_arr2], ['Experiment', 'Simulation']):
-        plt.hist(arr, alpha=0.5, label = label,
-                    weights = np.ones_like(arr) / len(arr),
-                    bins = np.arange(math.floor(min(arr)),
-                                math.ceil(max(arr)) + bin_width,
-                                bin_width))
-    plt.title(f'b={b}, phi={phi}')
-    plt.xlabel(r'Spherical Radius nm')
-    plt.ylabel('Probability')
-    plt.legend()
-    plt.savefig(osp.join(odir, 'spherical_radii.png'))
-    plt.close()
+    # bin_width = 100
+    # for arr, label in zip([vols_arr1, vols_arr2], ['Experiment', 'Simulation']):
+    #     plt.hist(arr, alpha=0.5, label = label,
+    #                 weights = np.ones_like(arr) / len(arr),
+    #                 bins = np.arange(math.floor(min(arr)),
+    #                             math.ceil(max(arr)) + bin_width,
+    #                             bin_width))
+    # plt.title(f'b={b}, phi={phi}')
+    # plt.xlabel(r'Spherical Radius nm')
+    # plt.ylabel('Probability')
+    # plt.legend()
+    # plt.savefig(osp.join(odir, 'spherical_radii.png'))
+    # plt.close()
 
 def compare_dist_distribution_a_b(sample):
     '''Compare distributions of A-B distances between sim and experiment.'''
@@ -878,13 +881,18 @@ def compare_D_to_sim_D(sample, GNN_ID=None):
             row += 1
     plt.savefig(osp.join(sim_dir, 'pc_D_vs_D_sim.png'))
 
-def get_dirs(dir, GNN_ID, b, phi, ar, k_angle=0, theta=180):
-    if ar == 1.0:
+def get_dirs(dir, GNN_ID, b, phi, v, ar, k_angle=0, theta=180):
+    if phi is None:
+        assert v is not None
+        max_ent_dir = osp.join(dir, f'optimize_grid_b_{b}_v_{v}')
+        gnn_dir = osp.join(dir, f'optimize_grid_b_{b}_v_{v}')
+    else:
         max_ent_dir = osp.join(dir, f'optimize_grid_b_{b}_phi_{phi}')
         gnn_dir = osp.join(dir, f'optimize_grid_b_{b}_phi_{phi}')
-    else:
-        max_ent_dir = osp.join(dir, f'optimize_grid_b_{b}_phi_{phi}_spheroid_{ar}')
-        gnn_dir = osp.join(dir, f'optimize_grid_b_{b}_phi_{phi}_spheroid_{ar}')
+
+    if ar != 1.0:
+        max_ent_dir += f'_spheroid_{ar}'
+        gnn_dir += f'_spheroid_{ar}'
     if k_angle != 0:
         max_ent_dir += f'_angle_{k_angle}'
         gnn_dir += f'_angle_{k_angle}'
@@ -897,15 +905,15 @@ def get_dirs(dir, GNN_ID, b, phi, ar, k_angle=0, theta=180):
         gnn_dir = None
     return max_ent_dir, gnn_dir
 
-def load_exp_gnn_pca(dir, GNN_ID=None, mode='mean', b=140, phi=0.03, ar=1,
-                    k_angle=0, theta=180):
+def load_exp_gnn_pca(dir, GNN_ID=None, mode='mean', b=140, phi=None, v=None,
+                    ar=1, k_angle=0, theta=180):
     result = load_import_log(dir)
     start = result['start']
     resolution = result['resolution']
     chrom = int(result['chrom'])
     genome = result['genome']
 
-    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, b, phi, ar, k_angle, theta)
+    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, b, phi, v, ar, k_angle, theta)
     if osp.exists(max_ent_dir):
         D_pca, D_med_pca = sim_xyz_to_dist(max_ent_dir, True)
         m = len(D_pca)
@@ -1473,7 +1481,7 @@ if __name__ == '__main__':
     # compare_diagonal(1013, 434)
     # sim_xyz_to_dist(osp.join(dir, 'samples/sample1011/optimize_grid_b_140_phi_0.03-GNN403'),
     #                 False)
-    # find_volume()
+    find_volume()
     # compare_bonded()
     # compare_pcs(1013, None, b=180, phi=0.01, ar=2.0)
     # compare_d_maps(1003, None)
@@ -1481,5 +1489,5 @@ if __name__ == '__main__':
     # compare_dist_distribution_plaid(1013, None, 261, 0.01)
     # compare_rg(1013, None, b=180, phi=0.01, ar=2.0)
     # compare_rg_pos(1013, None, b=180, phi=0.008, ar=1.5)
-    compare_dist_ij(1004, None, b=180, phi=0.008, ar=1.5)
+    # compare_dist_ij(1004, None, b=180, phi=0.008, ar=1.5)
     # compare_scaling(1002, None, 261, 0.006)

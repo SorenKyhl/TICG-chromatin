@@ -56,31 +56,31 @@ def bonded_simulations():
                 m_dir = osp.join(bond_dir, f'm_{m}')
                 if not osp.exists(m_dir):
                     os.mkdir(m_dir, mode=0o755)
-                for b in [160]:
+                for b in [160, 180, 200]:
                     b_dir = osp.join(m_dir, f'bond_length_{b}')
                     if not osp.exists(b_dir):
                         os.mkdir(b_dir, mode=0o755)
-                    for phi in [0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.02, 0.03, 0.04]:
-                        phi_dir = osp.join(b_dir, f'phi_{phi}')
-                        if not osp.exists(phi_dir):
-                            os.mkdir(phi_dir, mode=0o755)
+                    for v in [7, 9]:
+                        v_dir = osp.join(b_dir, f'v_{v}')
+                        if not osp.exists(v_dir):
+                            os.mkdir(v_dir, mode=0o755)
                         for k_angle in [0]:
                             if bond_type == 'DSS'and k_angle != 0:
                                 continue
                             for theta_0 in [180]:
                                 if theta_0 == 180:
-                                    k_angle_dir = osp.join(phi_dir, f'angle_{k_angle}')
+                                    k_angle_dir = osp.join(v_dir, f'angle_{k_angle}')
                                 elif k_angle == 0:
                                     continue
                                 else:
-                                    k_angle_dir = osp.join(phi_dir, f'angle_{k_angle}_theta0_{theta_0}')
+                                    k_angle_dir = osp.join(v_dir, f'angle_{k_angle}_theta0_{theta_0}')
 
                                 if not osp.exists(k_angle_dir):
                                     os.mkdir(k_angle_dir, mode=0o755)
 
                                 config = base_config.copy()
                                 config['bond_length'] = b
-                                config['phi_chromatin'] = phi
+                                config['target_volume'] = v
                                 config['nbeads'] = m
                                 config["bond_type"] = bond_type
                                 config['boundary_type'] = boundary_type

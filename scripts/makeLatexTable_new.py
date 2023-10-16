@@ -347,7 +347,7 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
     if small:
         metrics = ['scc_var', 'rmse-diag', 'pearson_pc_1', 'converged_time']
     else:
-        metrics = [None, 'scc_var', 'converged_time', 'prcnt_converged']
+        metrics = [None, 'scc_var', 'converged_time', 'converged_it', 'prcnt_converged']
 
 
     print(f'\nMAKING TABLE-small={small}')
@@ -487,12 +487,12 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                         result_std = np.round(result_std, roundoff)
                         result_sem = np.round(result_sem, roundoff)
                         text += f" & {result_mean} $\pm$ {result_sem}"
-                        if pval < 0.001:
-                            text += f' ***({mean_effect_size})'
-                        elif pval < 0.01:
-                            text += f' **({mean_effect_size})'
-                        elif pval < 0.05:
-                            text += f' *({mean_effect_size})'
+                        # if pval < 0.001:
+                        #     text += f' ***({mean_effect_size})'
+                        # elif pval < 0.01:
+                        #     text += f' **({mean_effect_size})'
+                        # elif pval < 0.05:
+                        #     text += f' *({mean_effect_size})'
                     else:
                         result = result[0]
                         if result is not None:
@@ -517,6 +517,8 @@ def sort_method_keys(keys):
                 b = key_split[i+1]
             if substr == 'phi':
                 phi = key_split[i+1]
+            if substr == 'v':
+                v = key_split[i+1]
             if substr.startswith('angle'):
                 angle = substr[5:]
             if substr.startswith('spheroid'):
@@ -527,12 +529,18 @@ def sort_method_keys(keys):
             id = key[pos+3:]
             label += id
 
+        if 'phi' in key:
+            label += f' (b={b}, phi={phi}'
+        elif 'v' in key:
+            label += f' (b={b}, v={v}'
+
         if 'angle' in key:
-            label += f' (b={b},phi={phi}, angle{angle})'
+            label += f', angle{angle})'
         elif 'spheroid' in key:
-            label += f' (b={b},phi={phi}, ar{ar})'
+            label += f', ar{ar})'
         else:
-            label += f'  (b={b},phi={phi})'
+            label += ')'
+
 
         left, right = key.split('-')
         other = right.split('_')
@@ -643,7 +651,7 @@ def main(args=None):
 
 if __name__ == '__main__':
     samples = None
-    dataset = 'dataset_02_04_23_max_ent'
+    dataset = 'dataset_02_04_23'
     # dataset='dataset_09_28_23_s_100_cutoff_0.01'
     # dataset='dataset_09_28_23_s_10_cutoff_0.08'
     # dataset='dataset_09_28_23_s_1_cutoff_0.36'
@@ -658,12 +666,15 @@ if __name__ == '__main__':
     args = getArgs(data_folder = data_dir, samples = samples)
     args.experimental = True
     args.convergence_definition = 'normal'
-    args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', 'max_ent10']
+    args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0']
+    for i in [2,3,4,6,7,8,9]:
+        args.bad_methods.append(f'max_ent{i}')
+
     # args.gnn_id = [490, 496, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518, 519, 520, 521, 522, 523, 524, 525]
     # args.gnn_id=[434, 451, 455, 456, 461, 462, 463, 470, 471, 472, 476, 477, 479, 480, 481, 484, 485, 486, 488]
     # args.gnn_id=[490, 507, 511]
-    args.gnn_id = [496, 506, 518, 519, 523, 524, 525, 526, 527, 528, 529, 530 ,531]
-
+    args.gnn_id = [496, 506, 518, 519, 523, 524, 525, 526, 527, 528, 529, 530, 531, 532, 533, 534, 535, 536, 537, 538, 539, 540, 541, 542, 543, 544]
+    # args.gnn_id = [496]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

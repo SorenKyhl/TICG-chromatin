@@ -292,12 +292,12 @@ def old_figure(sample, GNN_ID, bl=140, phi=0.03, ar=1.0):
     plt.savefig('/home/erschultz/TICG-chromatin/figures/distances.png')
     plt.close()
 
-def new_figure(sample, GNN_ID, bl=140, phi=0.03, ar=1.0):
+def new_figure(sample, GNN_ID, bl=140, phi=None, v=None, ar=1.0):
     label_fontsize=24
     tick_fontsize=22
     letter_fontsize=26
     dir = f'/home/erschultz/Su2020/samples/sample{sample}'
-    D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=bl, phi=phi, ar=ar, mode='mean')
+    D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=bl, phi=phi, v=v, ar=ar, mode='mean')
     D2 = np.load('/home/erschultz/Su2020/samples/sample1/dist2_mean.npy')
     nan_rows = np.isnan(D[0])
     D_no_nan = D[~nan_rows][:, ~nan_rows] # ignore nan_rows
@@ -339,7 +339,7 @@ def new_figure(sample, GNN_ID, bl=140, phi=0.03, ar=1.0):
     # shift ind such that start is at 0
     shift = coords_dict[f"chr{chrom}:{start}-{start+resolution}"]
 
-    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, bl, phi, ar)
+    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, bl, phi, v, ar)
     final_dir = get_final_max_ent_folder(max_ent_dir)
     file = osp.join(final_dir, 'production_out/output.xyz')
     xyz_max_ent = xyz_load(file, multiple_timesteps = True)
@@ -726,5 +726,6 @@ def supp_figure(sample, GNN_ID, bl, phi, ar):
 
 if __name__ == '__main__':
     # old_figure(1013, 490, bl=180, phi=0.008, ar=1.5)
-    new_figure(1004, 490, bl=180, phi=0.008, ar=1.5)
+    # new_figure(1004, 490, bl=180, phi=0.008, ar=1.5)
+    new_figure(1004, 490, bl=180, v=8, ar=1.5)
     # supp_figure(1004, None, bl=180, phi=0.01, ar=2.0)

@@ -49,8 +49,10 @@ def getArgs(args_file=None, args_tmp=None):
                         help='True to run simulation in parallel')
     parser.add_argument('--num_threads', type=int, default=2,
                         help='Number of threads if parallel is True')
-    parser.add_argument('--phi_chromatin', type=float, default=0.06,
+    parser.add_argument('--phi_chromatin', type=AC.str2float,
                         help='chromatin volume fraction')
+    parser.add_argument('--volume', type=int,
+                        help='simulation volume')
     parser.add_argument('--bond_length', type=float, default=16.5,
                         help='bond length')
     parser.add_argument('--k_angle', type=float, default=0.0,
@@ -112,6 +114,7 @@ def getArgs(args_file=None, args_tmp=None):
         print(f'parsing {args.args_file}')
         argv = sys.argv
         argv.append(f'@{args.args_file}') # appending means args_file will override other args
+        print(f'argv: {argv}')
         args, unknown = parser.parse_known_args(argv)
         print('unknown:', unknown)
 
@@ -364,7 +367,11 @@ def main(args_file=None, args_tmp=None):
         config['nSweeps'] = args.n_sweeps
 
     # save phi_chromatin
-    config['phi_chromatin'] = args.phi_chromatin
+    if args.phi_chromatin is None:
+        assert args.volume is not None
+        config['target_volume'] = args.volume
+    else:
+        config['phi_chromatin'] = args.phi_chromatin
 
     # save bond_length
     bond_length_file = 'bond_length.txt'

@@ -380,52 +380,8 @@ def compare_p_s_bonded3():
 
 def compare_d_s_max_ent():
     '''Compare p(s) curves in dataset_bonded'''
-    s_dir = '/home/erschultz/Su2020/samples/sample1013'
-    m=512
-    log_labels = np.linspace(0, 50000*(m-1), m)
-    def plot_meanDist_D(dir, label):
-        final = get_final_max_ent_folder(dir)
-        xyz_file = osp.join(final, 'production_out/output.xyz')
-        xyz = xyz_load(xyz_file, multiple_timesteps=True)
-        D = xyz_to_distance(xyz)
-        D = np.nanmean(D, axis = 0)
-        meanDist_D = DiagonalPreprocessing.genomic_distance_statistics(D, mode='freq')
-        plt.plot(log_labels, meanDist_D, label = label)
-
-    D_exp = np.load('/home/erschultz/Su2020/samples/sample1013/D_crop.npy')
-    meanDist_D_exp = DiagonalPreprocessing.genomic_distance_statistics(D_exp, mode='freq')
-    D_exp2 = np.load('/home/erschultz/Su2020/samples/sample1/dist2_mean.npy')
-    meanDist_D_exp2 = DiagonalPreprocessing.genomic_distance_statistics(D_exp2, mode='freq')
-    print(meanDist_D_exp2)
-    m2 = len(meanDist_D_exp2)
-
-    for log in [True, False]:
-        for b in [180, 200, 220, 240, 261]:
-            for phi in [0.01]:
-                plot_meanDist_D(osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}-max_ent10'),
-                                f'b_{b}_phi_{phi}')
-
-        nan_rows = np.isnan(meanDist_D_exp)
-        plt.plot(log_labels[~nan_rows], meanDist_D_exp[~nan_rows],
-                    label='Experiment', color='k')
-
-        # nan_rows = np.isnan(meanDist_D_exp2)
-        # plt.plot(np.linspace(0, 30000*(m2-1), m2)[~nan_rows], meanDist_D_exp2[~nan_rows],
-        #             label='Experiment 2', color='k', ls=':')
-
-        plt.ylabel('Distance (nm)', fontsize=16)
-        plt.xlabel('Genomic Separation (bp)', fontsize=16)
-        plt.legend()
-        if log:
-            plt.xscale('log')
-            plt.savefig(osp.join(s_dir, 'd_s_max_ent_log.png'))
-        else:
-            plt.savefig(osp.join(s_dir, 'd_s_max_ent.png'))
-        plt.close()
-
-def compare_d_s_max_ent2():
-    '''Compare p(s) curves in dataset_bonded'''
-    s_dir = '/home/erschultz/Su2020/samples/sample1004'
+    s=1004
+    s_dir = f'/home/erschultz/Su2020/samples/sample{s}'
     odir = osp.join(s_dir, 'd_s_curves')
     if not osp.exists(odir):
         os.mkdir(odir, mode=0o755)
@@ -438,47 +394,115 @@ def compare_d_s_max_ent2():
         D = xyz_to_distance(xyz)
         D = np.nanmean(D, axis = 0)
         meanDist_D = DiagonalPreprocessing.genomic_distance_statistics(D, mode='freq')
-        plt.plot(log_labels, meanDist_D, label = label)
+        plt.plot(log_labels[1:], meanDist_D[1:], label = label)
 
-    D_exp = np.load('/home/erschultz/Su2020/samples/sample1013/D_crop.npy')
+    D_exp = np.load(f'/home/erschultz/Su2020/samples/sample{s}/D_crop.npy')
     meanDist_D_exp = DiagonalPreprocessing.genomic_distance_statistics(D_exp, mode='freq')
     D_exp2 = np.load('/home/erschultz/Su2020/samples/sample1/dist2_mean.npy')
     meanDist_D_exp2 = DiagonalPreprocessing.genomic_distance_statistics(D_exp2, mode='freq')
-    print(meanDist_D_exp2)
     m2 = len(meanDist_D_exp2)
 
-    for log in [True]:
+    for log in [False, True]:
         if log:
             odir = osp.join(odir, 'log')
             if not osp.exists(odir):
                 os.mkdir(odir, mode=0o755)
-        for ar in [1.0, 1.5, 2.0]:
-            for phi in [0.008, 0.009, 0.01]:
-                for b in [160, 180, 200, 220, 240, 261]:
-                    grid_dir = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}')
+        for ar in [1.5]:
+            for b in [160, 180]:
+                for v in [6,  8, 10, 12]:
+                    grid_dir = osp.join(s_dir, f'optimize_grid_b_{b}_v_{v}')
                     if ar != 1.0:
                         grid_dir += f'_spheroid_{ar}'
                     max_ent_dir = grid_dir + '-max_ent10'
                     if osp.exists(max_ent_dir):
                         plot_meanDist_D(max_ent_dir,
-                                        f'b_{b}_phi_{phi}_ar_{ar}')
+                                        f'b_{b}_v_{v}_ar_{ar}')
+
+                # for phi in [0.006, 0.007, 0.008, 0.009, 0.01]:
+                #     grid_dir = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}')
+                #     if ar != 1.0:
+                #         grid_dir += f'_spheroid_{ar}'
+                #     max_ent_dir = grid_dir + '-max_ent10'
+                #     if osp.exists(max_ent_dir):
+                #         plot_meanDist_D(max_ent_dir,
+                #                         f'b_{b}_phi_{phi}_ar_{ar}')
 
                 nan_rows = np.isnan(meanDist_D_exp)
-                plt.plot(log_labels[~nan_rows], meanDist_D_exp[~nan_rows],
+                plt.plot(log_labels[~nan_rows][1:], meanDist_D_exp[~nan_rows][1:],
                             label='Experiment', color='k')
 
-                # nan_rows = np.isnan(meanDist_D_exp2)
-                # plt.plot(np.linspace(0, 30000*(m2-1), m2)[~nan_rows], meanDist_D_exp2[~nan_rows],
-                #             label='Experiment 2', color='k', ls=':')
+                nan_rows = np.isnan(meanDist_D_exp2)
+                plt.plot(np.linspace(0, 30000*(m2-1), m2)[~nan_rows][1:], meanDist_D_exp2[~nan_rows][1:],
+                            label='Experiment 2', color='k', ls=':')
 
                 plt.ylabel('Distance (nm)', fontsize=16)
                 plt.xlabel('Genomic Separation (bp)', fontsize=16)
                 plt.legend()
                 if log:
                     plt.xscale('log')
-                    plt.savefig(osp.join(odir, f'd_s_max_ent_phi_{phi}_ar_{ar}_log.png'))
+                    plt.savefig(osp.join(odir, f'd_s_max_ent_b_{b}_ar_{ar}_log.png'))
                 else:
-                    plt.savefig(osp.join(odir, f'd_s_max_ent_phi_{phi}_ar_{ar}.png'))
+                    plt.savefig(osp.join(odir, f'd_s_max_ent_b_{b}_ar_{ar}.png'))
+                plt.close()
+
+
+def compare_d_s_max_ent2():
+    '''Compare p(s) curves in dataset_bonded'''
+    s=1004
+    s_dir = f'/home/erschultz/Su2020/samples/sample{s}'
+    odir = osp.join(s_dir, 'd_s_curves')
+    if not osp.exists(odir):
+        os.mkdir(odir, mode=0o755)
+    m=512
+    log_labels = np.linspace(0, 50000*(m-1), m)
+    def plot_meanDist_D(dir, label):
+        final = get_final_max_ent_folder(dir)
+        xyz_file = osp.join(final, 'production_out/output.xyz')
+        xyz = xyz_load(xyz_file, multiple_timesteps=True)
+        D = xyz_to_distance(xyz)
+        D = np.nanmean(D, axis = 0)
+        meanDist_D = DiagonalPreprocessing.genomic_distance_statistics(D, mode='freq')
+        plt.plot(log_labels[1:], meanDist_D[1:], label = label)
+
+    D_exp = np.load(f'/home/erschultz/Su2020/samples/sample{s}/D_crop.npy')
+    meanDist_D_exp = DiagonalPreprocessing.genomic_distance_statistics(D_exp, mode='freq')
+    D_exp2 = np.load('/home/erschultz/Su2020/samples/sample1/dist2_mean.npy')
+    meanDist_D_exp2 = DiagonalPreprocessing.genomic_distance_statistics(D_exp2, mode='freq')
+    print(meanDist_D_exp2)
+    m2 = len(meanDist_D_exp2)
+
+    for log in [False]:
+        if log:
+            odir = osp.join(odir, 'log')
+            if not osp.exists(odir):
+                os.mkdir(odir, mode=0o755)
+        for ar in [1.0, 1.5, 2.0]:
+            for v in [6, 7, 8, 9, 10, 12]:
+                for b in [160, 180, 200, 220, 240]:
+                    grid_dir = osp.join(s_dir, f'optimize_grid_b_{b}_v_{v}')
+                    if ar != 1.0:
+                        grid_dir += f'_spheroid_{ar}'
+                    max_ent_dir = grid_dir + '-max_ent10'
+                    if osp.exists(max_ent_dir):
+                        plot_meanDist_D(max_ent_dir,
+                                        f'b_{b}_v_{v}_ar_{ar}')
+
+                nan_rows = np.isnan(meanDist_D_exp)
+                plt.plot(log_labels[~nan_rows][1:], meanDist_D_exp[~nan_rows][1:],
+                            label='Experiment', color='k')
+
+                nan_rows = np.isnan(meanDist_D_exp2)
+                plt.plot(np.linspace(0, 30000*(m2-1), m2)[~nan_rows][1:], meanDist_D_exp2[~nan_rows][1:],
+                            label='Experiment 2', color='k', ls=':')
+
+                plt.ylabel('Distance (nm)', fontsize=16)
+                plt.xlabel('Genomic Separation (bp)', fontsize=16)
+                plt.legend()
+                if log:
+                    plt.xscale('log')
+                    plt.savefig(osp.join(odir, f'd_s_max_ent_v_{v}_ar_{ar}_log.png'))
+                else:
+                    plt.savefig(osp.join(odir, f'd_s_max_ent_v_{v}_ar_{ar}.png'))
                 plt.close()
 
 
@@ -600,13 +624,13 @@ if __name__ == '__main__':
     # compare_p_s_bonded3()
     # compare_d_s_bonded()
     # compare_d_s_bonded2()
-    # compare_d_s_max_ent2()
+    compare_d_s_max_ent()
     # compare_p_s_exp()
     # compare_meanDist_S()
     # compare_p_s_modified()
     # compare_xyz()
     # check_GNN_S()
-    grid_sizes()
+    # grid_sizes()
     # split_dataset('dataset_09_28_23', 1, 0.36)
     # split_dataset('dataset_09_28_23', 10, 0.08)
     # split_dataset('dataset_09_28_23', 100, 0.01)
