@@ -4,7 +4,7 @@
 #SBATCH --time=24:00:00
 #SBATCH --account=pi-depablo
 #SBATCH --partition=depablo
-#SBATCH --ntasks=24
+#SBATCH --ntasks=48
 #SBATCH --nodes=1
 #SBATCH --mem-per-cpu=2000
 

@@ -3,11 +3,11 @@
 source ~/TICG-chromatin/bin/datasets/dataset_fns.sh
 
 dataset="dataset_10_13_23"
-# dataFolder="/project2/depablo/erschultz/${dataset}"
-# scratchDir='/home/erschultz/scratch'
-#
-dataFolder="/home/erschultz/${dataset}"
+dataFolder="/project2/depablo/erschultz/${dataset}"
 scratchDir='/home/erschultz/scratch'
+#
+# dataFolder="/home/erschultz/${dataset}"
+# scratchDir='/home/erschultz/scratch'
 # nSweeps=3000
 # dumpFrequency=500
 
