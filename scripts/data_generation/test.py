@@ -507,20 +507,49 @@ def compare_d_s_max_ent2():
 
 
 def compare_meanDist_S():
-    sample = 2
-    data_dir = '/home/erschultz/dataset_09_17_23/samples'
-    s_dir = osp.join(data_dir, f'sample{sample}')
-    Sgnn = np.load(osp.join(s_dir, 'optimize_grid_b_261_phi_0.01-GNN457/S.npy'))
-    Sgt = np.load(osp.join(s_dir, 'S.npy'))
-    for S, label in zip([Sgt, Sgnn],['Ground Truth', 'GNN']):
-        meanDist = DiagonalPreprocessing.genomic_distance_statistics(S, 'freq')
-        plt.plot(meanDist, label = label)
-    plt.legend()
-    plt.xscale('log')
-    plt.ylabel('Mean', fontsize=16)
-    plt.xlabel('Off-diagonal Index', fontsize=16)
-    plt.savefig(osp.join(s_dir, 'meanDist_S.png'))
-    plt.close()
+    dataset = 'dataset_09_28_23'
+    samples = [1]
+    GNN_ID=496
+    data_dir = osp.join('/home/erschultz/', dataset, 'samples')
+    grid_root = 'optimize_grid_b_180_phi_0.008_spheroid_1.5'
+    for s in samples:
+        s_dir = osp.join(data_dir, f'sample{s}')
+        Sgnn = np.load(osp.join(s_dir, f'{grid_root}-GNN{GNN_ID}/S.npy'))
+        Sgt = np.load(osp.join(s_dir, 'S.npy'))
+        for S, label in zip([Sgt, Sgnn],['Ground Truth', 'GNN']):
+            meanDist = DiagonalPreprocessing.genomic_distance_statistics(S, 'freq')
+            plt.plot(meanDist, label = label)
+        plt.legend()
+        plt.xscale('log')
+        plt.ylabel('Mean', fontsize=16)
+        plt.xlabel('Off-diagonal Index', fontsize=16)
+        plt.tight_layout()
+        plt.savefig(osp.join(s_dir, 'meanDist_S.png'))
+        plt.close()
+
+def compare_meanDist_S2():
+    '''Compare based on results/GNN_ID'''
+    samples = [752, 2452]
+    GNN_ID=496
+    dataset='dataset_09_28_23'
+    dir = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{GNN_ID}'
+    assert osp.exists(dir), dir
+    for s in samples:
+        s_dir = osp.join(dir, f'{dataset}_sample{s}-regular/sample{s}-regular')
+        assert osp.exists(s_dir), s_dir
+        Sgnn = np.loadtxt(osp.join(s_dir, 'energy_hat.txt'))
+        Sgt = np.loadtxt(osp.join(s_dir, 'energy.txt'))
+        for S, label in zip([Sgt, Sgnn],['Ground Truth', 'GNN']):
+            meanDist = DiagonalPreprocessing.genomic_distance_statistics(S, 'freq')
+            plt.plot(meanDist, label = label)
+        plt.legend()
+        plt.xscale('log')
+        plt.ylabel('Mean', fontsize=16)
+        plt.xlabel('Off-diagonal Index', fontsize=16)
+        plt.tight_layout()
+        plt.savefig(osp.join(s_dir, 'meanDist_S.png'))
+        plt.close()
+
 
 def compare_p_s_modified():
     dataset='dataset_02_04_23'
@@ -624,9 +653,9 @@ if __name__ == '__main__':
     # compare_p_s_bonded3()
     # compare_d_s_bonded()
     # compare_d_s_bonded2()
-    compare_d_s_max_ent()
+    # compare_d_s_max_ent()
     # compare_p_s_exp()
-    # compare_meanDist_S()
+    compare_meanDist_S2()
     # compare_p_s_modified()
     # compare_xyz()
     # check_GNN_S()

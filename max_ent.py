@@ -186,6 +186,7 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, v
 
     root = f"optimize_{mode}"
     if phi is not None:
+        assert v is None
         root = f"{root}_b_{bl}_phi_{phi}"
     else:
         root = f"{root}_b_{bl}_v_{v}"
@@ -271,9 +272,8 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
         raise Exception(f'Need to specify bin sizes for size={len(y)}')
 
     config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
-    # config['diag_chis'] = np.loadtxt('/home/erschultz/Su2020/samples/sample1013/optimize_grid_b_180_phi_0.008_spheroid_1.5-max_ent5/chis_diag.txt')
 
-    root = osp.join(dir, f'{root}-max_ent{k}_d10_300k')
+    root = osp.join(dir, f'{root}-max_ent{k}')
     if osp.exists(root):
         # shutil.rmtree(root)
         print('WARNING: root exists')
@@ -313,7 +313,7 @@ def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=Non
                                 k_angle, theta_0,
                                 verbose=False)
 
-    root = osp.join(dir, f'{root}-max_ent{k}_d10_300k')
+    root = osp.join(dir, f'{root}-max_ent{k}')
     if osp.exists(root):
         # if not osp.exists(osp.join(root, 'iteration1')):
         #     shutil.rmtree(root)
@@ -330,7 +330,7 @@ def check(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
                                 aspect_ratio, bond_type, k, contact_distance,
                                 verbose=False)
 
-    root = osp.join(dir, f'{root}-max_ent{k}_d10_300k')
+    root = osp.join(dir, f'{root}-max_ent{k}')
     if osp.exists(root):
         if not osp.exists(osp.join(root, 'iteration30')):
             it=0
@@ -369,7 +369,7 @@ def main():
     mapping = []
     k_angle=0;theta_0=180;b=180;phi=None;ar=1.5;v=8
     for i in samples:
-        for k in [5]:
+        for k in [10]:
             mapping.append((dataset, i, f'samples', b, phi, v, None, ar,
                         'gaussian', k, False, k_angle, theta_0))
     print('len =', len(mapping))

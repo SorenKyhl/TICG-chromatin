@@ -59,5 +59,5 @@ for i in {201..282}
 do
   cd  "${dir}/sample${i}"
   pwd
-  rm -r *max_ent0
+  rm -r *max_ent12
 done

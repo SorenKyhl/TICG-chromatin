@@ -23,7 +23,7 @@ sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import load_import_log
 
 
-def fit(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03, ar=1.0):
+def fit(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     print(sample)
     mode = 'grid'
     dir = f'/home/erschultz/{dataset}/{sub_dir}/sample{sample}'
@@ -32,7 +32,7 @@ def fit(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03, ar=1.0):
     np.fill_diagonal(y, 1)
     m = len(y)
 
-    root, config = setup_config(dataset, sample, sub_dir, b, phi, None, None, ar)
+    root, config = setup_config(dataset, sample, sub_dir, b, phi, v, None, ar)
     config['nspecies'] = 0
     config['load_bead_types'] = False
     config['lmatrix_on'] = False
@@ -64,16 +64,20 @@ def fit(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03, ar=1.0):
     with open(osp.join(gnn_root, 'log.log'), 'w') as sys.stdout:
         sim = Pysim(gnn_root, config, None, y, randomize_seed = True,
                     mkdir = False, smatrix = S)
-        t = sim.run_eq(10000, 350000, 1)
+        t = sim.run_eq(10000, 300000, 1)
         print(f'Simulation took {np.round(t, 2)} seconds')
 
         analysis.main_no_maxent(dir=sim.root)
     sys.stdout = stdout
 
-def check(dataset, sample, GNN_ID, sub_dir, b, phi, ar):
+def check(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     mode = 'grid'
     root = f"optimize_{mode}"
-    root = f"{root}_b_{b}_phi_{phi}"
+    if phi is not None:
+        assert v is None
+        root = f"{root}_b_{b}_phi_{phi}"
+    else:
+        root = f"{root}_b_{b}_v_{v}"
     if ar != 1:
         root += f"_spheroid_{ar}"
     dir = f'/home/erschultz/{dataset}/{sub_dir}/sample{sample}'
@@ -100,10 +104,14 @@ def check(dataset, sample, GNN_ID, sub_dir, b, phi, ar):
         print(f"{gnn_root} not started")
 
 
-def cleanup(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03, ar=1.0):
+def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     mode = 'grid'
     root = f"optimize_{mode}"
-    root = f"{root}_b_{b}_phi_{phi}"
+    if phi is not None:
+        assert v is None
+        root = f"{root}_b_{b}_phi_{phi}"
+    else:
+        root = f"{root}_b_{b}_v_{v}"
     if ar != 1:
         root += f"_spheroid_{ar}"
     dir = f'/home/erschultz/{dataset}/{sub_dir}/sample{sample}'
@@ -119,10 +127,10 @@ def cleanup(dataset, sample, GNN_ID, sub_dir='samples', b=140, phi=0.03, ar=1.0)
 
 def main():
     samples=None
-    dataset='dataset_02_04_23';
+    # dataset='dataset_02_04_23';
     # dataset = 'Su2020'; samples=[1013, 1004]
     # dataset = 'dataset_06_29_23'; samples = [2, 103, 604]
-    # dataset = 'dataset_09_28_23'
+    dataset = 'dataset_09_28_23'
     # dataset='dataset_09_28_23_s_100_cutoff_0.01';
     # dataset='dataset_09_28_23_s_10_cutoff_0.08';
     # dataset='dataset_09_28_23_s_1_cutoff_0.36';
@@ -131,24 +139,24 @@ def main():
 
     if samples is None:
         samples, _ = get_samples(dataset, train=True)
-        samples = samples[:10]
+        samples = samples[:5]
     print(len(samples))
 
-    GNN_IDs = [539]; b=180; phi=0.008; ar=1.5
+    GNN_IDs = [539]; b=180; phi=None; v=8; ar=1.5
     for GNN_ID in GNN_IDs:
         for i in samples:
-            mapping.append((dataset, i, GNN_ID, f'samples', b, phi, ar))
+            mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
 
     print(samples)
     print(len(mapping))
     # print(mapping)
 
-    with mp.Pool(10) as p:
+    # with mp.Pool(2) as p:
         # p.starmap(cleanup, mapping)
-        p.starmap(fit, mapping)
+        # p.starmap(fit, mapping)
 
-    # for i in mapping:
-        # check(*i)
+    for i in mapping:
+        check(*i)
 
 if __name__ == '__main__':
     mp.set_start_method('spawn')

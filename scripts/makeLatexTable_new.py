@@ -466,20 +466,22 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                         roundoff = 3
 
                     if metric == 'scc_var':
+                        print('scc_var: ')
                         print(method)
                         print(result)
 
                     if len(result) > 1:
                         result_mean = np.nanmean(result)
                         # print(metric, result, result_mean)
-                        ref_result = np.array(GNN_ref[metric], dtype=np.float64)
-                        if nan_mask is not None:
-                            ref_result[nan_mask] = np.nan
-                        stat, pval = ss.ttest_rel(ref_result, result)
-                        mean_effect_size = np.mean(result - ref_result)
-                        mean_effect_size = np.round(mean_effect_size, 3)
-                        if pval < 0.05:
-                            print('Significant:', metric, pval, mean_effect_size)
+                        if GNN_ref is not None:
+                            ref_result = np.array(GNN_ref[metric], dtype=np.float64)
+                            if nan_mask is not None:
+                                ref_result[nan_mask] = np.nan
+                            stat, pval = ss.ttest_rel(ref_result, result)
+                            mean_effect_size = np.mean(result - ref_result)
+                            mean_effect_size = np.round(mean_effect_size, 3)
+                            if pval < 0.05:
+                                print('Significant:', metric, pval, mean_effect_size)
 
                         result_mean = np.round(result_mean, roundoff)
                         result_std = np.nanstd(result, ddof=1)
@@ -660,21 +662,21 @@ if __name__ == '__main__':
 
     if samples is None:
         samples, _ = get_samples(dataset, train = True)
-        samples = samples[:10]
+        samples = samples
 
     data_dir = osp.join('/home/erschultz', dataset)
     args = getArgs(data_folder = data_dir, samples = samples)
     args.experimental = True
     args.convergence_definition = 'normal'
-    args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0']
+    args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', '_700k', 'v_8']
     for i in [2,3,4,6,7,8,9]:
         args.bad_methods.append(f'max_ent{i}')
 
     # args.gnn_id = [490, 496, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518, 519, 520, 521, 522, 523, 524, 525]
     # args.gnn_id=[434, 451, 455, 456, 461, 462, 463, 470, 471, 472, 476, 477, 479, 480, 481, 484, 485, 486, 488]
     # args.gnn_id=[490, 507, 511]
-    args.gnn_id = [496, 506, 518, 519, 523, 524, 525, 526, 527, 528, 529, 530, 531, 532, 533, 534, 535, 536, 537, 538, 539, 540, 541, 542, 543, 544]
-    # args.gnn_id = [496]
+    # args.gnn_id = [496, 506, 518, 519, 523, 524, 525, 526, 527, 528, 529, 530, 531, 532, 533, 534, 535, 536, 537, 538, 539, 540, 541, 542, 543, 544]
+    args.gnn_id = []
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

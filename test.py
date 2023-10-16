@@ -26,14 +26,14 @@ from pylib.utils.similarity_measures import SCC
 from pylib.utils.utils import load_json, pearson_round, triu_to_full
 from pylib.utils.xyz import xyz_load, xyz_to_distance
 from scipy.ndimage import uniform_filter
-from scripts.data_generation.modify_maxent import get_samples
-from scripts.get_params import GetEnergy
-from scripts.makeLatexTable_new import getArgs, load_data
 from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
 
-sys.path.append('/home/erschultz')
+from scripts.data_generation.modify_maxent import get_samples
+from scripts.get_params import GetEnergy
+from scripts.makeLatexTable_new import getArgs, load_data
 
+sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.knightRuiz import knightRuiz
 from sequences_to_contact_maps.scripts.load_utils import (
     get_final_max_ent_folder, load_all, load_contact_map, load_max_ent_D,
@@ -42,7 +42,8 @@ from sequences_to_contact_maps.scripts.plotting_utils import (plot_diag_chi,
                                                               plot_matrix,
                                                               plot_seq_binary)
 from sequences_to_contact_maps.scripts.R_pca import R_pca
-from sequences_to_contact_maps.scripts.utils import rescale_matrix
+from sequences_to_contact_maps.scripts.utils import (calc_dist_strat_corr,
+                                                     rescale_matrix)
 
 LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -107,126 +108,6 @@ def check_dataset_p_s(dataset):
     np.savetxt(osp.join(dir, 'ids.txt'), ids)
     print(vals, len(vals))
     print(ids, len(ids))
-
-def plot_vals():
-    vals = np.loadtxt('/home/erschultz/dataset_09_28_23/vals.txt')
-    n, bins, patches = plt.hist(vals, weights = np.ones_like(vals) / len(vals),
-                                bins = 50,
-                                alpha = 0.5)
-    plt.ylabel('probability', fontsize=16)
-    plt.xlabel('p(10)', fontsize=16)
-    # plt.xscale('log')
-    plt.savefig(osp.join('/home/erschultz/dataset_09_28_23/p_10_distribution.png'))
-    plt.close()
-
-    print(np.median(vals))
-
-def test_robust_PCA():
-    if False:
-        dir = '/home/eric/dataset_test/rpca_test'
-        n = 1000
-        r = 10
-        x = np.random.rand(n, r)
-        y = np.random.rand(r, n)
-        l_0 = x @ y
-        s_0 = np.random.binomial(n = 1, p = 0.3, size = (n, n))
-
-        inp = l_0 + s_0
-
-        plotContactMap(l_0, ofile = osp.join(dir, 'L.png'), vmax = 'max')
-        plotContactMap(s_0, ofile = osp.join(dir, 'S.png'), vmax = 1)
-        plotContactMap(inp, ofile = osp.join(dir, 'inp.png'), vmax = 'max')
-
-        L, S = R_pca(inp).fit(max_iter=200)
-        plotContactMap(L, ofile = osp.join(dir, 'RPCA_L.png'), vmax = np.mean(y))
-        plotContactMap(S, ofile = osp.join(dir, 'RPCA_S.png'), vmax = np.mean(y))
-
-    if True:
-        dir = '/home/eric/dataset_test/rpca_test2'
-        dataset_test = '/home/eric/dataset_test/samples'
-        l0 = np.load(osp.join(dataset_test, 'sample20/PCA_analysis/y_diag_rank_1.npy'))
-        p = np.load(osp.join(dataset_test, 'sample22/y.npy'))
-        p = p / np.max(p) + 1e-8
-        # m = np.load(osp.join(dataset_test, 'sample21/y.npy'))
-        m = l0*p
-        s0 = m - l0
-        l0_log = np.log(l0)
-        p_log = np.log(p)
-        print('p', np.min(p_log))
-        m_log = np.log(m)
-        print(np.min(m_log))
-        # plotContactMap(l0, ofile = osp.join(dir, 'L0.png'), vmax = 'max')
-        # plotContactMap(l0_log, ofile = osp.join(dir, 'L0_log.png'), vmax = 'max')
-        # plotContactMap(m, ofile = osp.join(dir, 'M.png'), vmax = 'mean')
-        # plotContactMap(m_log, ofile = osp.join(dir, 'M_log.png'), vmin = 'min',
-        #                 vmax = 'max')
-        # plotContactMap(s0, ofile = osp.join(dir, 'S0.png'), vmin = 'min',
-        #                 vmax = 'mean', cmap='blue-red')
-
-        # plotContactMap(p, ofile = osp.join(dir, 'P.png'), vmax = 'mean')
-        # plotContactMap(p_log, ofile = osp.join(dir, 'P_log.png'), vmin = 'min',
-        #                 vmax = 'max')
-
-        # L, S = R_pca(m).fit(max_iter=200)
-        # plotContactMap(L, ofile = osp.join(dir, 'RPCA_L.png'), vmax = 'mean')
-        # plotContactMap(S, ofile = osp.join(dir, 'RPCA_S.png'), vmin = 'min',
-        #                 vmax = 'max', cmap='blue-red')
-        L_log, S_log = R_pca(m_log).fit(max_iter=2000)
-        plotContactMap(L_log, ofile = osp.join(dir, 'RPCA_L_log.png'), vmin = 'min',
-                    vmax = 'max')
-        plotContactMap(S_log, ofile = osp.join(dir, 'RPCA_S_log.png'), vmin = 'min',
-                    vmax = 'max', cmap='blue-red')
-        L_log_exp = np.exp(L_log)
-        S_log_exp = np.exp(S_log)
-        plotContactMap(L_log_exp, ofile = osp.join(dir, 'RPCA_L_log_exp.png'),
-                    vmax = 'max')
-        plotContactMap(S_log_exp, ofile = osp.join(dir, 'RPCA_S_log_exp.png'),
-                    vmin = 'min', vmax = 'max', cmap='blue-red')
-
-        PC_m = plot_top_PCs(m, inp_type='m', verbose = True, odir = dir, plot = True)
-        meanDist = genomic_distance_statistics(m)
-        m_diag = diagonal_preprocessing(m, meanDist)
-        PC_m_diag = plot_top_PCs(m_diag, inp_type='m_diag', verbose = True,
-                                odir = dir, plot = True)
-
-        # plot_top_PCs(L_log_exp, inp_type='L_log_exp', verbose = True, odir = dir, plot = True)
-        PC_L_log = plot_top_PCs(L_log, inp_type='L_log', verbose = True,
-                                odir = dir, plot = True)
-        stat = pearson_round(PC_L_log[0], PC_m[0])
-        print("Correlation between PC 1 of L_log and M: ", stat)
-        stat = pearson_round(PC_L_log[1], PC_m[1])
-        print("Correlation between PC 2 of L_log and M: ", stat)
-        meanDist = genomic_distance_statistics(L_log)
-        L_log_diag = diagonal_preprocessing(L_log, meanDist)
-        PC_L_log_diag = plot_top_PCs(L_log_diag, inp_type='L_log_diag',
-                                    verbose = True, odir = dir, plot = True)
-        stat = pearson_round(PC_L_log_diag[0], PC_m_diag[0])
-        print("Correlation between PC 1 of L_log_diag and M_diag: ", stat)
-        stat = pearson_round(PC_L_log_diag[1], PC_m_diag[1])
-        print("Correlation between PC 2 of L_log_diag and M_diag: ", stat)
-        # plot_top_PCs(m_log, inp_type='m_log', verbose = True, odir = dir, plot = True)
-        # meanDist = genomic_distance_statistics(m_log)
-        # m_log_diag = diagonal_preprocessing(m_log, meanDist)
-        # plot_top_PCs(m_log_diag, inp_type='m_log_diag', verbose = True, odir = dir,
-        #             plot = True)
-
-    if False:
-        # dir = '/home/eric/dataset_test/samples/sample104'
-        dir = '/home/eric/sequences_to_contact_maps/dataset_09_21_21/samples/sample1'
-        y = np.load(osp.join(dir, 'y.npy'))
-        # L, S = R_pca(y).fit(max_iter=200)def time_comparison():
-        # plotContactMap(L, ofile = osp.join(dir, 'RPCA_L.png'), vmax = np.mean(y))
-        # plotContactMap(S, ofile = osp.join(dir, 'RPCA_S.png'), vmax = np.mean(y))
-
-        # l = 1/np.sqrt(1024) * 1/100
-        y_diag = np.load(osp.join(dir, 'y_diag.npy'))
-        L, S = R_pca(y_diag).fit(max_iter=200)
-        plotContactMap(L, ofile = osp.join(dir, 'RPCA_L_diag.png'), vmin='min',
-                        vmax = 'max')
-        plotContactMap(S, ofile = osp.join(dir, 'RPCA_S_diag.png'), vmin='min',
-                        vmax = np.max(S), cmap='blue-red')
-        plotContactMap(y_diag, ofile = osp.join(dir, 'y_diag.png'), vmax = 'max')
-        plot_top_PCs(L, verbose = True)
 
 def time_comparison():
     # dir = '/project2/depablo/erschultz/dataset_05_18_22/samples'
@@ -797,7 +678,7 @@ def edit_setup(dataset, exp_dataset):
 def make_small(dataset):
     dir = f'/home/erschultz/{dataset}/samples'
     odir = f'/home/erschultz/{dataset}-small'
-    grid_root = f'optimize_grid_b_180_phi_0.008_spheroid_1.5'
+    grid_root = f'optimize_grid_b_180_v_8_spheroid_1.5'
     if not osp.exists(odir):
         os.mkdir(odir)
     odir = osp.join(odir, 'samples')
@@ -961,58 +842,75 @@ def test_pooling():
         print(y_rescale.shape)
         print(np.allclose(y_256, y_rescale))
 
+def compare_scc():
+    dataset = 'dataset_02_04_23'
+    data_dir = osp.join('/home/erschultz', dataset, 'samples')
+    grid_root = 'optimize_grid_b_180_phi_0.008_spheroid_1.5'
+    max_ent_root = f'{grid_root}-max_ent10'
+    GNN_ID=541
+    samples, _ = get_samples(dataset, train=True)
+    N = 9
+    samples = samples[:N]
+    m=512
+    K = m-2
+    # K=100
+    scc = SCC(h=5, K=K)
 
-def test_harmonic_angle():
-    # p1: 314.257 314.257 314.257
-    # p2: 482.553 150.319 200.583
-    # p3: 502.703 387.782 307.008
-    # disp1: -168.296  163.938  113.674
-    # disp2: 20.1498 237.463 106.425
-    # theta: 0.796404
-    bead1 = np.array([314.257, 314.257, 314.257]).astype(float)
-    bead2 = np.array([482.553, 150.319, 200.583]).astype(float)
-    bead3 = np.array([502.703, 387.782, 307.008]).astype(float)
-    a = bead2 - bead1
-    b = bead2 - bead3
-    print(a, b)
-    a /= np.linalg.norm(a)
-    b /= np.linalg.norm(b)
-    print(a, b)
-    cos_theta = np.dot(a,b)
-    print(cos_theta)
-    theta = np.arccos(cos_theta)
-    print(theta)
+    fig, axes = plt.subplots(3, N//3)
+    fig.set_figheight(12)
+    fig.set_figwidth(6*2.5)
+    axes = axes.flatten()
+    scc_max_ent_arr = np.zeros(N)
+    scc_gnn_arr = np.zeros(N)
+    for i, (s, ax) in enumerate(zip(samples, axes)):
+        print(s)
+        s_dir = osp.join(data_dir, f'sample{s}')
+        y = np.load(osp.join(s_dir, 'y.npy'))
 
-def fene(r, k, R0):
-    if r < R0:
-        return -0.5*k*(R0**2)*math.log(1-r/R0)
-    return 0
+        max_ent_dir = osp.join(s_dir, max_ent_root)
+        final = get_final_max_ent_folder(max_ent_dir)
+        yhat = np.load(osp.join(final, 'y.npy'))
+        scc1, p_arr, w_arr = scc.scc(y, yhat, var_stabilized = True, debug=True)
+        ax.plot(np.arange(K), p_arr, color = 'blue')
+        avg_diag1 = np.mean(p_arr)
+        avg_diag1 = np.round(avg_diag1, 3)
+        scc1 = np.round(scc1, 3)
+        scc_max_ent_arr[i]  = scc1
 
-def hc(r, b):
-    if r < b*(2**(1/6)):
-        return 4*((b/r)**12-(b/r)**6+1/4)
-    return 0
+        yhat = np.load(osp.join(s_dir, f'{grid_root}-GNN{GNN_ID}/y.npy'))
+        scc2, p_arr, w_arr = scc.scc(y, yhat, var_stabilized = True, debug=True)
+        ax.plot(np.arange(K), p_arr, color = 'red')
+        avg_diag2 = np.mean(p_arr)
+        avg_diag2 = np.round(avg_diag2, 3)
+        scc2 = np.round(scc2, 3)
+        scc_gnn_arr[i] = scc2
 
-def test_FENE():
-    b = 261
-    k = 30 / b**2
-    R0 = 1.5 * b
-    X = np.arange(0.7*b, 1.6*b, b/100)
-    Y1 = np.zeros_like(X)
-    Y2 = np.zeros_like(X)
-    Y3 = np.zeros_like(X)
-    for i, x in enumerate(X):
-        val1 = fene(x, k, R0)
-        Y1[i] = val1
-        val2 = hc(x, b)
-        Y2[i] = val2
-        Y3[i] = val1 + val2
+        w_arr /= np.max(w_arr)
+        ax.plot(np.arange(K), w_arr, color = 'black')
 
-    plt.plot(X, Y1, label='fene')
-    plt.plot(X, Y2, label='hc')
-    plt.plot(X, Y3, label='combined')
-    plt.legend()
-    plt.show()
+        ax.set_ylim(-0.5, 1)
+        title = f'sample {s}\nMaxEnt={scc1}, GNN={scc2}'
+        ax.set_title(title, fontsize = 16)
+        # ax.set_xscale('log')
+
+    scc_max_ent = np.round(np.mean(scc_max_ent_arr), 3)
+    scc_gnn = np.round(np.mean(scc_gnn_arr), 3)
+    stat, pval = ss.ttest_rel(scc_max_ent_arr, scc_gnn_arr)
+    mean_effect_size = np.mean(scc_gnn_arr - scc_max_ent_arr)
+    mean_effect_size = np.round(mean_effect_size, 3)
+    print(stat, pval)
+    print(mean_effect_size)
+
+    fig.suptitle(f'MaxEnt={scc_max_ent}, GNN={scc_gnn}', fontsize=18)
+    fig.supxlabel('Distance', fontsize = 16)
+    fig.supylabel('Pearson Correlation Coefficient', fontsize = 16)
+    plt.tight_layout()
+    plt.savefig(osp.join(data_dir, 'distance_pearson.png'))
+    plt.close()
+
+
+
+
 
 def convergence():
     dir = '/home/erschultz/dataset_02_04_23/samples/sample209/optimize_grid_b_180_phi_0.008_spheroid_1.5-max_ent5_longer'
@@ -1045,6 +943,7 @@ def convergence():
     plt.close()
 
 def data_t_test():
+    "run t test on different pairs of results from latex table"
     dataset = 'dataset_02_04_23'
     samples, _ = get_samples(dataset, test = True)
     samples_list = samples[:10]
@@ -1079,31 +978,5 @@ def data_t_test():
     print(mean_effect_size)
 
 if __name__ == '__main__':
-    # test_robust_PCA()
-    # test_pooling()
-    # test_convergence('dataset_02_04_23', 'loss')
-    # test_convergence('dataset_02_04_23', 'param_mag')
-    # check_dataset('dataset_09_25_22')
-    # check_dataset_p_s('dataset_09_28_23')
-    plot_vals()
-    # time_comparison()
-    # time_comparison_dmatrix()
-    # main()
-    # compare_scc_bio_replicates()
-    # max_ent_loss_for_gnn('dataset_11_14_22', 2201)
-    # plot_mean_dist_S('dataset_09_17_23')
-    # gnn_of_max_ent([207], 8, 378)
-    # check_interpolation()
-    # make_dataset_of_converged('dataset_03_21_23')
-    # check_bonded_distributions()
-    # compare_y_exp_vs_sim()
-    # edit_setup('dataset_05_28_23', 'dataset_04_10_23')
-    # edit_setup('dataset_04_28_23', 'dataset_02_04_23')
-    # edit_setup('dataset_05_15_23', 'dataset_02_04_23')
     # make_small('dataset_02_04_23')
-    # convergence()
-    # data_t_test()
-    # compare_s_per_iteration()
-    # compare_p_s()
-    # test_harmonic_angle()
-    # test_FENE()
+    compare_scc()

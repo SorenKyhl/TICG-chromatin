@@ -410,15 +410,15 @@ class DatasetGenerator():
         get_grid = False
         if 'grid' in self.diag_mode:
             get_grid = True
-        poly12_log = False
-        if 'poly12_log' in self.diag_mode:
-            poly12_log = True
+        poly12 = False
+        if 'poly12' in self.diag_mode:
+            poly12 = True
             print('Using poly12 for meanDist_S')
 
         converged_samples = self.get_converged_samples()
         for j in converged_samples:
             sample_folder = osp.join(self.exp_dir, f'sample{j}', f'{self.grid_root}-max_ent{self.k}')
-            if poly12_log:
+            if poly12:
                 meanDist_S = np.loadtxt(osp.join(sample_folder, 'fitting2/poly12_log_meanDist_S_fit.txt'))
             else:
                 meanDist_S = np.loadtxt(osp.join(sample_folder, 'fitting2/poly6_log_meanDist_S_fit.txt'))
