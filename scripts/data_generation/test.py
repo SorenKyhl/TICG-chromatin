@@ -57,8 +57,8 @@ def split_dataset(dataset, s, cutoff):
 
 def split_dataset2(dataset, cutoff):
     print(f'Using cutoff = {cutoff}')
-    # dir = '/project2/depablo/erschultz'
-    dir = '/home/erschultz'
+    dir = '/project2/depablo/erschultz'
+    # dir = '/home/erschultz'
     odir = osp.join(dir, dataset + f'_cutoff_{cutoff}')
     if not osp.exists(odir):
         os.mkdir(odir, mode=0o755)
@@ -72,6 +72,8 @@ def split_dataset2(dataset, cutoff):
     rejects = 0
     accepts = 0
     for i in range(1, 10001):
+        if i % 500 == 0:
+            print(i)
         s_dir = osp.join(dir, dataset, f'samples/sample{i}')
         if not osp.exists(s_dir):
             continue
