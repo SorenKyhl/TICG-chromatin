@@ -27,7 +27,7 @@ sys.path.append('/home/erschultz/TICG-chromatin')
 from scripts.data_generation.ECDF import Ecdf
 from scripts.data_generation.MultivariateSkewNormal import \
     multivariate_skewnorm
-from scripts.get_params import Tester
+from scripts.get_params_old import Tester
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (

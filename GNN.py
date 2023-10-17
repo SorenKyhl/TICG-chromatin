@@ -128,10 +128,10 @@ def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
 
 def main():
     samples=None
-    # dataset='dataset_02_04_23';
+    dataset='dataset_02_04_23';
     # dataset = 'Su2020'; samples=[1013, 1004]
     # dataset = 'dataset_06_29_23'; samples = [2, 103, 604]
-    dataset = 'dataset_09_28_23'; samples=[752, 2452]
+    # dataset = 'dataset_09_28_23'; samples=[752, 2452]
     # dataset='dataset_09_28_23_s_100_cutoff_0.01';
     # dataset='dataset_09_28_23_s_10_cutoff_0.08';
     # dataset='dataset_09_28_23_s_1_cutoff_0.36';
@@ -140,10 +140,10 @@ def main():
 
     if samples is None:
         samples, _ = get_samples(dataset, train=True)
-        samples = samples[:6]
+        samples = samples[:10]
     print(len(samples))
 
-    GNN_IDs = [496]; b=180; phi=0.008; v=None; ar=1.5
+    GNN_IDs = [549, 550]; b=180; phi=0.008; v=None; ar=1.5
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
@@ -152,12 +152,12 @@ def main():
     print(len(mapping))
     # print(mapping)
 
-    with mp.Pool(2) as p:
+    with mp.Pool(10) as p:
         # p.starmap(cleanup, mapping)
         p.starmap(fit, mapping)
 
-    for i in mapping:
-        check(*i)
+    # for i in mapping:
+        # check(*i)
 
 if __name__ == '__main__':
     mp.set_start_method('spawn')

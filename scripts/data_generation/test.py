@@ -55,6 +55,48 @@ def split_dataset(dataset, s, cutoff):
 
     print(f'Rejected {np.round(rejects / 10000 * 100, 3)} percent')
 
+def split_dataset2(dataset, cutoff):
+    print(f'Using cutoff = {cutoff}')
+    # dir = '/project2/depablo/erschultz'
+    dir = '/home/erschultz'
+    odir = osp.join(dir, dataset + f'_cutoff_{cutoff}')
+    if not osp.exists(odir):
+        os.mkdir(odir, mode=0o755)
+    odir = osp.join(odir, 'samples')
+    if not osp.exists(odir):
+        os.mkdir(odir, mode=0o755)
+
+    ref_meanDist = np.load(osp.join(dir, 'dataset_02_04_23/molar_contact_ratio/meanDist.npy'))
+    ref_meanDist = np.mean(ref_meanDist, axis = 0)
+
+    rejects = 0
+    accepts = 0
+    for i in range(1, 10001):
+        s_dir = osp.join(dir, dataset, f'samples/sample{i}')
+        if not osp.exists(s_dir):
+            continue
+        y, _ = load_Y(s_dir)
+        y /= np.mean(np.diagonal(y))
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, mode='freq')
+        val = mean_squared_error(meanDist, ref_meanDist, squared = False)
+
+        if val > cutoff:
+            rejects += 1
+        else:
+            accepts += 1
+            odir_s = osp.join(odir, f'sample{i}')
+            if not osp.exists(odir_s):
+                os.mkdir(odir_s, mode=0o755)
+            shutil.copy(osp.join(s_dir, 'diag_chis.npy'),
+                        osp.join(odir_s, 'diag_chis.npy'))
+            shutil.copy(osp.join(s_dir, 'L.npy'),
+                        osp.join(odir_s, 'L.npy'))
+            shutil.copy(osp.join(s_dir, 'y.npy'),
+                        osp.join(odir_s, 'y.npy'))
+
+    print(f'Rejected {np.round(rejects / (accepts+rejects) * 100, 3)} percent')
+
+
 def compare_diag_params():
     dataset = 'dataset_08_24_23_v4'
     data_dir = osp.join('/home/erschultz', dataset)
@@ -674,7 +716,7 @@ if __name__ == '__main__':
     # compare_d_s_bonded2()
     # compare_d_s_max_ent()
     # compare_p_s_exp()
-    compare_meanDist_S2()
+    # compare_meanDist_S2()
     # compare_p_s_modified()
     # compare_xyz()
     # check_GNN_S()
@@ -682,3 +724,4 @@ if __name__ == '__main__':
     # split_dataset('dataset_09_28_23', 1, 0.36)
     # split_dataset('dataset_09_28_23', 10, 0.08)
     # split_dataset('dataset_09_28_23', 100, 0.01)
+    split_dataset2('dataset_09_28_23', 0.02)

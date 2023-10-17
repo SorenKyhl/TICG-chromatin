@@ -662,7 +662,7 @@ if __name__ == '__main__':
 
     if samples is None:
         samples, _ = get_samples(dataset, train = True)
-        samples = samples
+        samples = samples[:10]
 
     data_dir = osp.join('/home/erschultz', dataset)
     args = getArgs(data_folder = data_dir, samples = samples)
@@ -676,7 +676,7 @@ if __name__ == '__main__':
     # args.gnn_id=[434, 451, 455, 456, 461, 462, 463, 470, 471, 472, 476, 477, 479, 480, 481, 484, 485, 486, 488]
     # args.gnn_id=[490, 507, 511]
     # args.gnn_id = [496, 506, 518, 519, 523, 524, 525, 526, 527, 528, 529, 530, 531, 532, 533, 534, 535, 536, 537, 538, 539, 540, 541, 542, 543, 544]
-    args.gnn_id = []
+    args.gnn_id = [496, 540, 541, 545, 546, 547, 548, 549, 550, 551, 552, 553, 554, 555, 556]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

@@ -297,7 +297,7 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
 
     stdout = sys.stdout
     with open(osp.join(root, 'log.log'), 'w') as sys.stdout:
-        me = Maxent(root, params, config, seqs, y,
+        me = Maxent(root, params, config, seqs, y, fast_analysis=True,
                     final_it_sweeps=300000, mkdir=False, bound_diag_chis=False)
         t = me.fit()
         print(f'Simulation took {np.round(t, 2)} seconds')
@@ -317,8 +317,8 @@ def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=Non
     if osp.exists(root):
         # if not osp.exists(osp.join(root, 'iteration1')):
         #     shutil.rmtree(root)
-        if not osp.exists(osp.join(root, 'iteration30')):
-            shutil.rmtree(root)
+        if not osp.exists(osp.join(root, 'iteration30/tri.png')):
+            # shutil.rmtree(root)
             print(f'removing {root}')
         # shutil.rmtree(root)
 
@@ -350,7 +350,7 @@ def main():
     samples = None
     # dataset = 'dataset_05_31_23'; samples = list(range(1137, 1214))
     # dataset = 'downsampling_analysis'; samples = list(range(201, 211))
-    dataset = 'dataset_02_04_23';
+    dataset = 'dataset_02_04_23'
     # dataset = 'Su2020'; samples = [1004]
     # dataset = 'dataset_04_28_23'; samples = [1,2,3,4,5,324,981,1753,1936,2834,3464]
     # dataset = 'dataset_04_05_23'; samples = list(range(1211, 1288))
@@ -362,21 +362,21 @@ def main():
     # dataset = 'timing_analysis/512'; samples = list(range(1, 16))
 
     if samples is None:
-        samples, _ = get_samples(dataset, train=True)
+        samples, _ = get_samples(dataset, test=True)
         samples = samples
     print(samples)
 
     mapping = []
     k_angle=0;theta_0=180;b=180;phi=None;ar=1.5;v=8
     for i in samples:
-        for k in [10]:
+        for k in [5, 10]:
             mapping.append((dataset, i, f'samples', b, phi, v, None, ar,
                         'gaussian', k, False, k_angle, theta_0))
     print('len =', len(mapping))
 
-    with mp.Pool(1) as p:
-        # p.starmap(fit, mapping)
-        p.starmap(check, mapping)
+    with mp.Pool(16) as p:
+        p.starmap(fit, mapping)
+        # p.starmap(check, mapping)
         # p.starmap(cleanup, mapping)
 
 if __name__ == '__main__':

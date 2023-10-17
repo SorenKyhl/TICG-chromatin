@@ -60,7 +60,7 @@ def sim_analysis(sim, fast_analysis=False):
         plot_chi_matrix(sim)
         plt.close()
 
-        if fast_analysis is False:
+        if not fast_analysis:
             try:
                 # don't run if the matrices are big
                 if sim.config["nbeads"] <= 2048:
@@ -72,7 +72,7 @@ def sim_analysis(sim, fast_analysis=False):
                     raise ValueError
             except NotImplementedError:
                 logging.warn("energy matrices not implemented for this situation")
-    elif osp.exists('S.npy'):
+    elif osp.exists('S.npy') and not fast_analysis:
         S = np.load('S.npy')
         plot_matrix(S, 'matrix_S.png', "S", cmap='bluered')
         meanDist_S = DiagonalPreprocessing.genomic_distance_statistics(S, mode='freq')
@@ -96,7 +96,8 @@ def sim_analysis(sim, fast_analysis=False):
     plt.close()
 
     if fast_analysis is False:
-        plot_mean_vs_genomic_distance(sim.hic, '', 'meanDist_log.png', logx = True, ref = sim.gthic)
+        plot_mean_vs_genomic_distance(sim.hic, '', 'meanDist_log.png',
+                                        logx = True, ref = sim.gthic)
 
 
 def compare_analysis(sim, fast_analysis=False):

@@ -94,6 +94,7 @@ class Maxent:
         self.lengthen_iterations = lengthen_iterations
         self.analysis_on = analysis_on
         self.plaid_diagonly = plaid_diagonly
+        self.fast_analysis = fast_analysis
 
     def set_root(self, root: PathLike):
         """
@@ -246,7 +247,7 @@ class Maxent:
 
     def analyze(self, dir):
         if self.analysis_on:
-            analysis.main(dir=dir)
+            analysis.main(self.fast_analysis, dir)
 
     def fit(self):
         """execute maxent optimization"""
@@ -367,6 +368,7 @@ class Maxent:
     def run_final_iteration(self, newchis):
         print(f'Final Iteration')
         self.save_state()
+        self.fast_analysis = False # overide to False
 
         # set up new config
         config = self.defaultsim.config.copy()

@@ -162,13 +162,13 @@ class GetEnergy():
         yhat = None
         while yhat is None and num_it < max_it:
             print(f'GPU vram: {vram}')
-            if vram > 2000:
+            if vram > 3000:
                 model = model.to('cuda:0')
                 data = data.to('cuda:0')
                 with torch.no_grad():
                     yhat = model(data, verbose=verbose)
             else:
-                sleep(5)
+                sleep(10)
             num_it += 1
             vram = get_gpu_memory()
         if num_it == max_it:
