@@ -71,7 +71,7 @@ def split_dataset2(dataset, cutoff):
 
     rejects = 0
     accepts = 0
-    for i in range(1, 10001):
+    for i in range(2000, 10001):
         if i % 500 == 0:
             print(i)
         s_dir = osp.join(dir, dataset, f'samples/sample{i}')
@@ -87,8 +87,9 @@ def split_dataset2(dataset, cutoff):
         else:
             accepts += 1
             odir_s = osp.join(odir, f'sample{i}')
-            if not osp.exists(odir_s):
-                os.mkdir(odir_s, mode=0o755)
+            if osp.exists(odir_s):
+                shutil.rmtree(odir_s) # wipe and re-copy to be safe
+            os.mkdir(odir_s, mode=0o755)
             shutil.copy(osp.join(s_dir, 'diag_chis.npy'),
                         osp.join(odir_s, 'diag_chis.npy'))
             shutil.copy(osp.join(s_dir, 'L.npy'),

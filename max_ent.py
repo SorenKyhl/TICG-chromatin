@@ -318,7 +318,7 @@ def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=Non
         # if not osp.exists(osp.join(root, 'iteration1')):
         #     shutil.rmtree(root)
         if not osp.exists(osp.join(root, 'iteration30/tri.png')):
-            # shutil.rmtree(root)
+            shutil.rmtree(root)
             print(f'removing {root}')
         # shutil.rmtree(root)
 
@@ -374,7 +374,7 @@ def main():
                         'gaussian', k, False, k_angle, theta_0))
     print('len =', len(mapping))
 
-    with mp.Pool(16) as p:
+    with mp.Pool(15) as p:
         p.starmap(fit, mapping)
         # p.starmap(check, mapping)
         # p.starmap(cleanup, mapping)

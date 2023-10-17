@@ -152,12 +152,12 @@ def main():
     print(len(mapping))
     # print(mapping)
 
-    with mp.Pool(10) as p:
+    # with mp.Pool(10) as p:
         # p.starmap(cleanup, mapping)
-        p.starmap(fit, mapping)
+        # p.starmap(fit, mapping)
 
-    # for i in mapping:
-        # check(*i)
+    for i in mapping:
+        check(*i)
 
 if __name__ == '__main__':
     mp.set_start_method('spawn')
