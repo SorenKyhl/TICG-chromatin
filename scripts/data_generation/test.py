@@ -553,7 +553,7 @@ def compare_d_s_max_ent2():
 
 def compare_meanDist_S():
     dataset = 'dataset_09_28_23'
-    samples = [2452]
+    samples = [752, 2452]
     GNN_ID=496
     data_dir = osp.join('/home/erschultz/', dataset, 'samples')
     grid_root = 'optimize_grid_b_180_phi_0.008_spheroid_1.5'
@@ -575,8 +575,8 @@ def compare_meanDist_S():
 
 def compare_meanDist_S2():
     '''Compare based on results/GNN_ID'''
-    samples = [752, 2452]
-    GNN_ID=496
+    samples = [981, 3464]
+    GNN_ID=548
     dataset='dataset_09_28_23'
     dir = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{GNN_ID}'
     assert osp.exists(dir), dir
@@ -719,7 +719,7 @@ if __name__ == '__main__':
     # compare_d_s_bonded2()
     # compare_d_s_max_ent()
     # compare_p_s_exp()
-    # compare_meanDist_S2()
+    compare_meanDist_S2()
     # compare_p_s_modified()
     # compare_xyz()
     # check_GNN_S()
@@ -727,4 +727,4 @@ if __name__ == '__main__':
     # split_dataset('dataset_09_28_23', 1, 0.36)
     # split_dataset('dataset_09_28_23', 10, 0.08)
     # split_dataset('dataset_09_28_23', 100, 0.01)
-    split_dataset2('dataset_09_28_23', 0.02)
+    # split_dataset2('dataset_09_28_23', 0.02)

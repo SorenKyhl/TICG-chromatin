@@ -668,7 +668,7 @@ if __name__ == '__main__':
     args = getArgs(data_folder = data_dir, samples = samples)
     args.experimental = True
     args.convergence_definition = 'normal'
-    args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', '_700k', 'v_8']
+    args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', '_700k']
     for i in [2,3,4,6,7,8,9]:
         args.bad_methods.append(f'max_ent{i}')
 
@@ -676,7 +676,7 @@ if __name__ == '__main__':
     # args.gnn_id=[434, 451, 455, 456, 461, 462, 463, 470, 471, 472, 476, 477, 479, 480, 481, 484, 485, 486, 488]
     # args.gnn_id=[490, 507, 511]
     # args.gnn_id = [496, 506, 518, 519, 523, 524, 525, 526, 527, 528, 529, 530, 531, 532, 533, 534, 535, 536, 537, 538, 539, 540, 541, 542, 543, 544]
-    args.gnn_id = [496, 540, 541, 545, 546, 547, 548, 549, 550, 551, 552, 553, 554, 555, 556]
+    args.gnn_id = [496, 540, 541, 545, 546, 547, 548, 549, 550, 551, 552, 553, 554, 555, 556, 557, 558, 559, 560, 561]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

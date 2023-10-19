@@ -9,9 +9,8 @@
 #SBATCH --mail-type=END
 #SBATCH --mail-user=erschultz@uchicago.edu
 
-dir='/home/erschultz/dataset_02_04_23/samples'
-cd $dir
-
+# dir='/home/erschultz/dataset_02_04_23/samples'
+# cd $dir
 # for i in {201..282}
 # do
 #   cd  "${dir}/sample${i}"
@@ -35,47 +34,16 @@ cd $dir
 #   done
 # done
 
-dir='/home/erschultz/downsampling_analysis'
-cd $dir
-for i in {208..224}
-do
-  for exp in {4..8}
-  do
-    for j in {0..29}
-    do
-      cd  "${dir}/samples_exp${exp}/sample${i}"
-      cd "optimize_grid_b_180_phi_0.008_spheroid_1.5-max_ent10"
-      cd "iteration${j}"
-      pwd
-      if [ -d "equilibration" ]
-      then
-        tar -czf equilibration.tar.gz equilibration
-        rm -r equilibration
-      fi
-      rm S.npy
-      rm L.npy
-      rm experimental_hic.npy
-      rm matrix*.png
-      rm D.npy
-      if [ -d "production_out" ]
-      then
-        tar -czf production_out.tar.gz production_out
-        rm -r production_out
-      fi
-    done
-  done
-done
-
-# dir='/home/erschultz/dataset_02_04_23/samples'
+# dir='/home/erschultz/downsampling_analysis'
 # cd $dir
-# for i in {280..282}
+# for i in {208..224}
 # do
-#   for k in 5 10
+#   for exp in {4..8}
 #   do
 #     for j in {0..29}
 #     do
-#       cd  "${dir}/sample${i}"
-#       cd "optimize_grid_b_180_v_8_spheroid_1.5-max_ent${k}"
+#       cd  "${dir}/samples_exp${exp}/sample${i}"
+#       cd "optimize_grid_b_180_phi_0.008_spheroid_1.5-max_ent10"
 #       cd "iteration${j}"
 #       pwd
 #       if [ -d "equilibration" ]
@@ -97,11 +65,42 @@ done
 #   done
 # done
 
-# dir='/home/erschultz/dataset_02_04_23/samples'
+# dir='/home/erschultz/dataset_06_29_23/samples'
 # cd $dir
-# for i in {201..282}
+# for i in {1..605}
 # do
-#   cd  "${dir}/sample${i}"
-#   pwd
-#   rm -r *10_old
+#   for k in 10
+#   do
+#     for j in {0..29}
+#     do
+#       cd  "${dir}/sample${i}"
+#       cd "optimize_grid_b_180_phi_0.008_spheroid_1.5-max_ent${k}"
+#       cd "iteration${j}"
+#       pwd
+#       if [ -d "equilibration" ]
+#       then
+#         tar -czf equilibration.tar.gz equilibration
+#         rm -r equilibration
+#       fi
+#       rm S.npy
+#       rm L.npy
+#       rm experimental_hic.npy
+#       rm matrix*.png
+#       rm D.npy
+#       if [ -d "production_out" ]
+#       then
+#         tar -czf production_out.tar.gz production_out
+#         rm -r production_out
+#       fi
+#     done
+#   done
 # done
+
+dir='/home/erschultz/dataset_06_29_23/samples'
+cd $dir
+for i in 1 2 3 4 5 101 102 103 104 105 601 602 603 604 605
+do
+  cd  "${dir}/sample${i}"
+  pwd
+  rm -r optimize_grid_b_180_phi_0.008_spheroid_1.5-max_ent10
+done

@@ -78,7 +78,8 @@ def get_samples(dataset, train=False, test=False):
         samples = range(1, 21)
     elif dataset == 'dataset_08_25_23':
         samples = list(range(1, 12)) + [981]
-    elif dataset in {'dataset_08_22_23', 'dataset_08_24_23', 'dataset_09_18_23', 'dataset_09_19_23'}:
+    elif dataset in {'dataset_08_22_23', 'dataset_08_24_23', 'dataset_09_18_23',
+                    'dataset_09_19_23', 'dataset_10_12_23'}:
         samples = range(1, 11)
     elif dataset in {'dataset_08_24_23_v2', 'dataset_08_24_23_v3', 'dataset_08_24_23_v4'}:
         samples = range(1, 16)

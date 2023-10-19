@@ -112,11 +112,12 @@ def getArgs(args_file=None, args_tmp=None):
     if args.args_file is not None:
         assert osp.exists(args.args_file), f'{args.args_file} does not exist'
         print(f'parsing {args.args_file}')
-        argv = sys.argv
+        argv = sys.argv.copy()
+        print(f'argv: {argv}\n')
         argv.append(f'@{args.args_file}') # appending means args_file will override other args
-        print(f'argv: {argv}')
+        print(f'argv: {argv}\n')
         args, unknown = parser.parse_known_args(argv)
-        print('unknown:', unknown)
+        print(f'unknown: {unknown}\n')
 
     if args_tmp is not None:
         # hacky solution

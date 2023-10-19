@@ -250,7 +250,7 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
     if plot:
         L_list, S_list, _, _ = plaid_dist(dataset, 180, 0.008, 10, 1.5, False)
         S_list = [triu_to_full(S) for S in S_list]
-        # plot histograms
+        # # plot histograms
         # for arr, label in zip([k_means_rab, pca_rab, pca_b_rab, pca_var],
         #                         ['kmeans_Rab', 'PCA_Rab', 'PCA_binary_Rab','PCA_var']):
         #     np.save(osp.join(odir, label + '.npy'), arr)
@@ -310,8 +310,8 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
         #                 S_dag_arr, k_means_rab, samples,
         #                 BLUE_RED_CMAP, vmin, vmax,
         #                 osp.join(data_dir, 'S_dag_ordered.png'))
-
-
+        #
+        #
         # # plot L_ij ordered by rab
         # fig, ax = plt.subplots(rows, cols)
         # fig.set_figheight(6*2)
@@ -421,10 +421,5 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
     return meanDist_list
 
 if __name__ == '__main__':
-    # molar_contact_ratio('dataset_01_27_23_v5', True)
-    # molar_contact_ratio('dataset_01_26_23', True)
-    # molar_contact_ratio('dataset_02_06_23', 363)
-    # molar_contact_ratio('dataset_02_13_23', 372)
-    # molar_contact_ratio('dataset_03_03_23', 387)
-    # molar_contact_ratio('dataset_04_28_23', None)
-    molar_contact_ratio('dataset_09_28_23', 541, plot=True)
+    molar_contact_ratio('dataset_10_12_23', 545, plot=True)
+    # molar_contact_ratio('dataset_09_28_23', 541, plot=True)

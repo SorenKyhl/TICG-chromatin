@@ -350,12 +350,12 @@ def main():
     samples = None
     # dataset = 'dataset_05_31_23'; samples = list(range(1137, 1214))
     # dataset = 'downsampling_analysis'; samples = list(range(201, 211))
-    dataset = 'dataset_02_04_23'
+    # dataset = 'dataset_02_04_23'
     # dataset = 'Su2020'; samples = [1004]
     # dataset = 'dataset_04_28_23'; samples = [1,2,3,4,5,324,981,1753,1936,2834,3464]
     # dataset = 'dataset_04_05_23'; samples = list(range(1211, 1288))
-    # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105,
-    #                                             601,602,603,604,605]
+    dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105,
+                                                601,602,603,604,605]
     # dataset = 'dataset_08_25_23'; samples=[981]
     # dataset='dataset_09_28_23_s_100_cutoff_0.01'; samples = [1191, 1478, 4990, 5612, 3073, 1351, 4128, 2768, 9627, 4127, 1160, 8932, 2929, 7699, 6629]
     # samples = sorted(np.random.choice(samples, 12, replace = False))
@@ -367,16 +367,17 @@ def main():
     print(samples)
 
     mapping = []
-    k_angle=0;theta_0=180;b=180;phi=None;ar=1.5;v=8
+    k_angle=0;theta_0=180;b=180;phi=0.008;ar=1.5;v=None
     for i in samples:
         for k in [5, 10]:
             mapping.append((dataset, i, f'samples', b, phi, v, None, ar,
                         'gaussian', k, False, k_angle, theta_0))
     print('len =', len(mapping))
 
-    with mp.Pool(15) as p:
-        p.starmap(fit, mapping)
-        # p.starmap(check, mapping)
+    with mp.Pool(1) as p:
+        # p.starmap(setup_config, mapping)
+        # p.starmap(fit, mapping)
+        p.starmap(check, mapping)
         # p.starmap(cleanup, mapping)
 
 if __name__ == '__main__':

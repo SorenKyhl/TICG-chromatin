@@ -22,6 +22,7 @@ from sequences_to_contact_maps.scripts.load_utils import (
 sys.path.append('/home/erschultz/TICG-chromatin')
 import GNN
 import max_ent
+
 from scripts.data_generation.modify_maxent import get_samples
 
 EXP_DATASET='dataset_02_04_23'
@@ -103,7 +104,7 @@ def fit_max_ent():
     for downsampling in [4, 5, 6, 7, 8]:
         for i in samples:
             mapping.append((dataset, i, f'samples_exp{downsampling}',
-                            180, 0.008, None, 1.5))
+                            180, None, 8, None, 1.5))
 
     print(len(mapping))
     print(mapping)

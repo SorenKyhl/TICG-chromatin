@@ -1304,10 +1304,10 @@ def compare_dist_distribution_plaid(sample, GNN_ID, b=140, phi=0.03):
     plt.savefig(osp.join(dir, 'dist_distribution_plaid.png'))
     plt.close()
 
-def compare_diagonal(sample, GNN_ID=None, b=140, phi=0.03):
+def compare_diagonal(sample, GNN_ID, b, phi, v, ar):
     dir = f'/home/erschultz/Su2020/samples/sample{sample}'
     max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, b, phi)
-    D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=b, phi=phi)
+    D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=b, phi=phi, v=v, ar=ar)
     nan_rows = np.isnan(D[0])
     D_no_nan = D[~nan_rows][:, ~nan_rows] # ignore nan_rows
     alpha_pca = min_MSE(D_no_nan, D_pca[~nan_rows][:, ~nan_rows])
@@ -1481,7 +1481,7 @@ if __name__ == '__main__':
     # compare_diagonal(1013, 434)
     # sim_xyz_to_dist(osp.join(dir, 'samples/sample1011/optimize_grid_b_140_phi_0.03-GNN403'),
     #                 False)
-    find_volume()
+    # find_volume()
     # compare_bonded()
     # compare_pcs(1013, None, b=180, phi=0.01, ar=2.0)
     # compare_d_maps(1003, None)

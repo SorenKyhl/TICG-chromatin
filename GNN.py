@@ -131,7 +131,7 @@ def main():
     dataset='dataset_02_04_23';
     # dataset = 'Su2020'; samples=[1013, 1004]
     # dataset = 'dataset_06_29_23'; samples = [2, 103, 604]
-    # dataset = 'dataset_09_28_23'; samples=[752, 2452]
+    # dataset = 'dataset_09_28_23'; samples=[981, 3464]
     # dataset='dataset_09_28_23_s_100_cutoff_0.01';
     # dataset='dataset_09_28_23_s_10_cutoff_0.08';
     # dataset='dataset_09_28_23_s_1_cutoff_0.36';
@@ -143,10 +143,16 @@ def main():
         samples = samples[:10]
     print(len(samples))
 
-    GNN_IDs = [549, 550]; b=180; phi=0.008; v=None; ar=1.5
+    GNN_IDs = [560, 561]; b=180; phi=0.008; v=None; ar=1.5
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
+
+    # GNN_IDs = [545, 546]; b=180; phi=None; v=8; ar=1.5
+    # for GNN_ID in GNN_IDs:
+    #     for i in samples:
+    #         mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
+
 
     print(samples)
     print(len(mapping))
