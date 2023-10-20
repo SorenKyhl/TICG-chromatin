@@ -15,12 +15,12 @@ echo "generate_params for ${dataset}"
 # tar -czvf setup.tar.gz setup
 
 sourceFile=~/TICG-chromatin/bin/datasets/diag_dataset60/diag_dataset_fns.sh
-start=1
-end=1000
-for i in {11..20}
+start=6001
+end=6500
+for i in {13..20}
 do
   echo $i $start $end
-  sbatch ~/TICG-chromatin/bin/datasets/diag_dataset${i}.sh $sourceFile $start $end 48 "60_"
-  start=$(( $start + 1000 ))
-  end=$(( $end + 1000 ))
+  sbatch ~/TICG-chromatin/bin/datasets/diag_dataset${i}.sh $sourceFile $start $end 24 "60_"
+  start=$(( $start + 500 ))
+  end=$(( $end + 500 ))
 done
