@@ -322,7 +322,7 @@ class Maxent:
             print("self.gamma = " + str(self.params["gamma"]))
 
             if self.params['mode'] == 'diag':
-                _, curr_chis = sim.split_chis(curr_chis)
+                plaid, curr_chis = sim.split_chis(curr_chis)
             newchis, newloss = utils.newton(
                 lam=obs,
                 obj_goal=obj_goal,
@@ -332,6 +332,8 @@ class Maxent:
                 trust_region=self.params["trust_region"],
                 method=self.params["method"],
             )
+            if self.params['mode'] == 'diag':
+                newchis = np.concatenate((plaid, newchis))
 
             if self.bound_diag_chis:
                 plaid, diag = sim.split_chis(newchis) # these are a view (reference type)
