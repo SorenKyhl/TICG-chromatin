@@ -36,7 +36,8 @@ def meanDist_comparison():
     ax2 = ax.twinx()
     ax2.get_yaxis().set_visible(False)
 
-    s=100; cutoff = 0.01
+    s=1; cutoff = 0.01
+    arr_list = []
     for i, (dataset, label) in enumerate(zip(datasets, labels)):
         meanDist_list = molar_contact_ratio(dataset, None, False)
         print(f'Retrieved meanDist_list for dataset {dataset}')
@@ -48,6 +49,7 @@ def meanDist_comparison():
             ax.plot(meanDist, c = colors[i], alpha=0.6)
         ax2.plot(np.NaN, np.NaN, label = label, c = colors[i])
         print(np.mean(arr), np.max(arr))
+        arr_list.append(arr)
 
     ax.set_yscale('log')
     ax.set_xscale('log')
@@ -62,6 +64,28 @@ def meanDist_comparison():
     plt.tight_layout()
     plt.savefig(osp.join(data_dir, 'meanDist_comparison.png'))
     plt.close()
+
+    fig, ax = plt.subplots()
+    bin_width = 0.01
+    arr_list = arr_list
+    all_vals = arr_list[0].copy()
+    all_vals.extend(arr_list[1])
+    print('a,', all_vals)
+    start = np.round(np.min(all_vals), 2)
+    end = np.round(np.max(all_vals), 2)
+    print(start, end, bin_width)
+    bin_positions = np.arange(start - bin_width, end + bin_width, bin_width)
+    for arr, label in zip(arr_list, labels):
+        plt.hist(arr, weights = np.ones_like(arr) / len(arr),
+                bins = bin_positions, alpha=0.5,
+                label = label)
+    plt.xlabel('P(s=1)', fontsize=16)
+    plt.tight_layout()
+    plt.savefig(osp.join(data_dir, 'meanDist_p_s.png'))
+    plt.close()
+
+
+
 
 def p_s_comparison(dataset, GNN_ID, b, phi, k=8, max_ent=False):
     samples, experimental = get_samples(dataset, True)

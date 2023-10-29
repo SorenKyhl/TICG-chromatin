@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 import seaborn as sns
+from pylib.utils.similarity_measures import SCC
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
                                       calculate_diag_chi_step, calculate_L,
@@ -21,20 +22,20 @@ from makeLatexTable_new import *
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_import_log, load_L)
+    get_final_max_ent_folder, load_import_log, load_L, get_converged_max_ent_folder)
 
 test=False
-label_fontsize=24
+label_fontsize=22
 tick_fontsize=18
 letter_fontsize=26
-dataset = 'dataset_02_04_23'; sample = 208; GNN_ID = 536
+dataset = 'dataset_02_04_23'; sample = 223; GNN_ID = 578
 # dataset = 'dataset_04_05_23'; sample = 1001; GN_ID = 407
 # dataset = 'dataset_04_05_23'; sample = 1001; GNN_ID = 423
 samples, _ = get_samples(dataset, test=True)
 samples_list = samples[:10]
-
-k=5
-grid_root = 'optimize_grid_b_180_phi_0.008_spheroid_1.5'
+print(f'Samples: {samples_list}')
+k=10 
+grid_root = 'optimize_grid_b_180_v_8_spheroid_1.5'
 def get_dirs(sample_dir):
     grid_dir = osp.join(sample_dir, grid_root)
     max_ent_dir = f'{grid_dir}-max_ent{k}'
@@ -77,26 +78,15 @@ all_labels = np.round(all_labels, 0).astype(int)
 genome_ticks = [0, len(y)-1]
 genome_labels = [f'{all_labels[i]}' for i in genome_ticks]
 
-final = get_final_max_ent_folder(max_ent_dir)
-with open(osp.join(final, 'distance_pearson.json'), 'r') as f:
-    # TODO this is after final iteration, not convergence
-    pca_results = json.load(f)
-    pca_scc = np.round(pca_results["scc_var"], 3)
+conv_it = get_converged_max_ent_folder(max_ent_dir, 'normal')
 meanDist = DiagonalPreprocessing.genomic_distance_statistics(y_pca)
 y_pca_diag = DiagonalPreprocessing.process(y_pca, meanDist)
 L = load_L(max_ent_dir)
-with open(osp.join(final, 'config.json'), 'r') as f:
+with open(osp.join(conv_it, 'config.json'), 'r') as f:
     config = json.load(f)
 diag_chis_continuous = calculate_diag_chi_step(config)
 D = calculate_D(diag_chis_continuous)
 S = calculate_S(L, D)
-
-
-with open(osp.join(gnn_dir, 'distance_pearson.json'), 'r') as f:
-    gnn_results = json.load(f)
-    gnn_scc = np.round(gnn_results["scc_var"], 3)
-
-
 S_gnn = np.load(osp.join(gnn_dir, 'S.npy'))
 
 def get_pcs(input, smooth=False, h=1, verbose=False):
@@ -134,7 +124,7 @@ if not test:
                     samples = samples_list)
     args.experimental = True
     args.verbose = False
-    args.bad_methods=['140', '261', 'spheroid_2.0']
+    args.bad_methods=['140', '261', 'spheroid_2.0', 'phi', 'max_ent5']
     args.convergence_definition = 'normal'
     args.gnn_id = [GNN_ID]
     data, _ = load_data(args)
@@ -249,8 +239,9 @@ def figure(test=False):
     npixels = np.shape(y)[0]
     indu = np.triu_indices(npixels)
     indl = np.tril_indices(npixels)
-    data = zip([y_gnn, y_pca], ['GNN', 'Max Ent'], [ax1, ax2], [gnn_scc, pca_scc])
-    for i, (y_sim, label, ax, scc) in enumerate(data):
+    data = zip([y_gnn, y_pca], ['GNN', 'Max Ent'], [ax1, ax2])
+    scc = SCC(h=1)
+    for i, (y_sim, label, ax) in enumerate(data):
         # make composite contact map
         composite = np.zeros((npixels, npixels))
         composite[indu] = y_sim[indu]
@@ -263,25 +254,29 @@ def figure(test=False):
                     fontsize = tick_fontsize)
         else:
             s.set_yticks([])
-        title = (f'{label} ' + r'$\hat{H}$')
-        print(title, f': SCC={scc}')
-        # s.set_title(title, fontsize = label_fontsize)
+        
+        scc_var = scc.scc(y, y_sim, var_stabilized = True)
+        scc_var = np.round(scc_var, 3)
+        title = f'SCC={scc_var}'
+        print(f'{label}: ' + title)
+        s.set_title(title, fontsize = label_fontsize, loc='left')
         s.axline((0,0), slope=1, color = 'k', lw=1)
-        s.text(0.99*m, 0.01*m, label, fontsize=letter_fontsize, ha='right', va='top', weight='bold')
-        s.text(0.01*m, 0.99*m, 'Experiment', fontsize=letter_fontsize, weight='bold')
-        s.set_xticks(genome_ticks, labels = genome_labels, rotation = 0,
-                    fontsize = tick_fontsize)
+        s.text(0.99*m, -0.08*m, label, fontsize=label_fontsize, ha='right', va='top', weight='bold')
+        s.text(0.01*m, 1.08*m, 'Experiment', fontsize=label_fontsize, weight='bold')
+        # s.set_xticks(genome_ticks, labels = genome_labels, rotation = 0,
+        #            fontsize = tick_fontsize)
+        s.set_xticks([])
 
     ax4.plot(pcs[0], label = 'Experiment', color = 'k')
     ax4.plot(pcs_pca[0], label = f'Max Ent', color = 'b')
     ax4.plot(pcs_gnn[0], label = f'GNN', color = 'r')
-    print(f'Max Ent (r={pearson_round(pcs[0], pcs_pca[0])})', '\n',
-            f'GNN (r={pearson_round(pcs[0], pcs_gnn[0])})')
+    title = f'Max Ent (r={pearson_round(pcs[0], pcs_pca[0])})\nGNN (r={pearson_round(pcs[0], pcs_gnn[0])})'
+    print(title)
+    ax4.set_title(title)
     ax4.set_xticks(genome_ticks, labels = genome_labels, rotation = 0,
                     fontsize = tick_fontsize)
     ax4.set_yticks([])
     ax4.set_ylabel('PC 1', fontsize=label_fontsize)
-    # ax4.set_title(f'PC 1\nCorr(Exp, GNN)={pearson_round(pcs[0], pcs_gnn[0])}')
     ax4.set_ylim(None, .14)
     ax4.legend(bbox_to_anchor=(0.5, .98), loc="upper center",
                 fontsize = 14, borderaxespad=0, ncol=3)

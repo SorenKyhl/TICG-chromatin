@@ -85,14 +85,14 @@ def fit_gnn(GNN_id):
 
         for GNN_ID in GNN_IDs:
             for i in samples:
-                mapping.append((dataset, i, GNN_ID, f'samples_exp{downsampling}', 140, 0.03))
+                mapping.append((dataset, i, GNN_ID, f'samples_exp{downsampling}', 180, None, 8, 1.5))
 
         print(len(mapping))
         print(mapping)
 
         # this must be nested because of how GNN uses scratch
         with mp.Pool(N) as p:
-            p.starmap(GNN.fit, mapping)
+            p.starmap(GNN.check, mapping)
 
 def fit_max_ent():
     dataset='downsampling_analysis'
@@ -104,13 +104,13 @@ def fit_max_ent():
     for downsampling in [4, 5, 6, 7, 8]:
         for i in samples:
             mapping.append((dataset, i, f'samples_exp{downsampling}',
-                            180, None, 8, None, 1.5))
+                            180, 0.008, None, None, 1.5))
 
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(15) as p:
-        p.starmap(max_ent.fit, mapping)
+    with mp.Pool(1) as p:
+        p.starmap(max_ent.check, mapping)
 
 
 def figure(GNN_ID):
@@ -344,7 +344,8 @@ def figure(GNN_ID):
 
 
 if __name__ == '__main__':
+    mp.set_start_method('spawn')
     # make_samples()
-    fit_max_ent()
-    # fit_gnn(434)
+    # fit_max_ent()
+    fit_gnn(579)
     # figure(434)

@@ -34,36 +34,37 @@
 #   done
 # done
 
-# dir='/home/erschultz/downsampling_analysis'
-# cd $dir
-# for i in {208..224}
-# do
-#   for exp in {4..8}
-#   do
-#     for j in {0..29}
-#     do
-#       cd  "${dir}/samples_exp${exp}/sample${i}"
-#       cd "optimize_grid_b_180_phi_0.008_spheroid_1.5-max_ent10"
-#       cd "iteration${j}"
-#       pwd
-#       if [ -d "equilibration" ]
-#       then
-#         tar -czf equilibration.tar.gz equilibration
-#         rm -r equilibration
-#       fi
-#       rm S.npy
-#       rm L.npy
-#       rm experimental_hic.npy
-#       rm matrix*.png
-#       rm D.npy
-#       if [ -d "production_out" ]
-#       then
-#         tar -czf production_out.tar.gz production_out
-#         rm -r production_out
-#       fi
-#     done
-#   done
-# done
+dir='/home/erschultz/downsampling_analysis'
+cd $dir
+for i in {208..224}
+do
+  for exp in {4..8}
+  do
+    for j in {0..29}
+    do
+      cd  "${dir}/samples_exp${exp}/sample${i}"
+      rm -r optimize_grid_b_140*
+      cd "optimize_grid_b_180_phi_0.008_spheroid_1.5-max_ent10"
+      cd "iteration${j}"
+      pwd
+      if [ -d "equilibration" ]
+      then
+        tar -czf equilibration.tar.gz equilibration
+        rm -r equilibration
+      fi
+      rm S.npy
+      rm L.npy
+      rm experimental_hic.npy
+      rm matrix*.png
+      rm D.npy
+      if [ -d "production_out" ]
+      then
+        tar -czf production_out.tar.gz production_out
+        rm -r production_out
+      fi
+    done
+  done
+done
 
 # dir='/home/erschultz/dataset_06_29_23/samples'
 # cd $dir
@@ -96,11 +97,22 @@
 #   done
 # done
 
-dir='/home/erschultz/dataset_06_29_23/samples'
-cd $dir
-for i in 1 2 3 4 5 101 102 103 104 105 601 602 603 604 605
-do
-  cd  "${dir}/sample${i}"
-  pwd
-  rm -r optimize_grid_b_180_phi_0.008_spheroid_1.5-max_ent10
-done
+# dir='/home/erschultz/dataset_06_29_23/samples'
+# cd $dir
+# for i in 1 2 3 4 5 101 102 103 104 105 601 602 603 604 605
+# do
+#   cd  "${dir}/sample${i}"
+#   pwd
+#   rm -r optimize_grid_b_180_phi_0.008_spheroid_1.5-max_ent10
+# done
+
+# dir='/home/erschultz/dataset_02_04_23/samples'
+# cd $dir
+# for i in {201..282}
+# do
+#   cd  "${dir}/sample${i}"
+#   pwd
+#   rm -r *GNN545
+#   rm -r *GNN546
+#   rm -r *GNN547
+# done

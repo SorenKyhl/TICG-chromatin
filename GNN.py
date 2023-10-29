@@ -124,41 +124,39 @@ def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
         if not osp.exists(osp.join(gnn_root, 'equilibration')):
             shutil.rmtree(gnn_root)
             print(f'removing {gnn_root}')
-
+        elif not osp.exists(osp.join(gnn_root, 'production_out')):
+            shutil.rmtree(gnn_root)
+            print(f'removing {gnn_root}')
 
 def main():
     samples=None
     dataset='dataset_02_04_23';
     # dataset = 'Su2020'; samples=[1013, 1004]
     # dataset = 'dataset_06_29_23'; samples = [2, 103, 604]
-    # dataset = 'dataset_09_28_23'; samples=[981, 3464]
-    # dataset='dataset_09_28_23_s_100_cutoff_0.01';
-    # dataset='dataset_09_28_23_s_10_cutoff_0.08';
-    # dataset='dataset_09_28_23_s_1_cutoff_0.36';
+    # dataset = 'dataset_09_28_23';
     # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     mapping = []
 
     if samples is None:
         samples, _ = get_samples(dataset, train=True)
-        samples = samples[:10]
+        samples = samples
     print(len(samples))
 
-    GNN_IDs = [560, 561]; b=180; phi=0.008; v=None; ar=1.5
+    # GNN_IDs = [577]; b=180; phi=0.008; v=None; ar=1.5
+    # for GNN_ID in GNN_IDs:
+    #    for i in samples:
+    #         mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
+
+    GNN_IDs = [569]; b=180; phi=None; v=8; ar=1.5
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
-
-    # GNN_IDs = [545, 546]; b=180; phi=None; v=8; ar=1.5
-    # for GNN_ID in GNN_IDs:
-    #     for i in samples:
-    #         mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
-
 
     print(samples)
     print(len(mapping))
     # print(mapping)
 
-    # with mp.Pool(10) as p:
+    # with mp.Pool(15) as p:
         # p.starmap(cleanup, mapping)
         # p.starmap(fit, mapping)
 

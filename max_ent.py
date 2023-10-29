@@ -273,6 +273,7 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
 
     config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
 
+    # config['diag_start'] = 10
     root = osp.join(dir, f'{root}-max_ent{k}')
     if osp.exists(root):
         # shutil.rmtree(root)
@@ -314,13 +315,16 @@ def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=Non
                                 verbose=False)
 
     root = osp.join(dir, f'{root}-max_ent{k}')
+    remove = False
     if osp.exists(root):
         # if not osp.exists(osp.join(root, 'iteration1')):
-        #     shutil.rmtree(root)
+        #     remove = True
         if not osp.exists(osp.join(root, 'iteration30/tri.png')):
-            shutil.rmtree(root)
+            remove = True
+        # remove = True
+        if remove:
             print(f'removing {root}')
-        # shutil.rmtree(root)
+            shutil.rmtree(root)
 
 def check(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
         aspect_ratio=1, bond_type='gaussian', k=10, contact_distance=False,
@@ -330,7 +334,7 @@ def check(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
                                 aspect_ratio, bond_type, k, contact_distance,
                                 verbose=False)
 
-    root = osp.join(dir, f'{root}-max_ent{k}')
+    root = osp.join(dir, f'{root}-max_ent{k}_long')
     if osp.exists(root):
         if not osp.exists(osp.join(root, 'iteration30')):
             it=0
@@ -350,12 +354,12 @@ def main():
     samples = None
     # dataset = 'dataset_05_31_23'; samples = list(range(1137, 1214))
     # dataset = 'downsampling_analysis'; samples = list(range(201, 211))
-    # dataset = 'dataset_02_04_23'
-    # dataset = 'Su2020'; samples = [1004]
+    dataset = 'dataset_02_04_23'
+    # dataset = 'Su2020'; samples = [1013, 1004]
     # dataset = 'dataset_04_28_23'; samples = [1,2,3,4,5,324,981,1753,1936,2834,3464]
     # dataset = 'dataset_04_05_23'; samples = list(range(1211, 1288))
-    dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105,
-                                                601,602,603,604,605]
+    # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105,
+    #                                             601,602,603,604,605]
     # dataset = 'dataset_08_25_23'; samples=[981]
     # dataset='dataset_09_28_23_s_100_cutoff_0.01'; samples = [1191, 1478, 4990, 5612, 3073, 1351, 4128, 2768, 9627, 4127, 1160, 8932, 2929, 7699, 6629]
     # samples = sorted(np.random.choice(samples, 12, replace = False))
@@ -364,17 +368,17 @@ def main():
     if samples is None:
         samples, _ = get_samples(dataset, test=True)
         samples = samples
-    print(samples)
+        print(samples)
 
     mapping = []
-    k_angle=0;theta_0=180;b=180;phi=0.008;ar=1.5;v=None
+    k_angle=0;theta_0=180;b=180;ar=1.5;phi=None;v=8
     for i in samples:
-        for k in [5, 10]:
+        for k in [10]:
             mapping.append((dataset, i, f'samples', b, phi, v, None, ar,
                         'gaussian', k, False, k_angle, theta_0))
     print('len =', len(mapping))
 
-    with mp.Pool(1) as p:
+    with mp.Pool(2) as p:
         # p.starmap(setup_config, mapping)
         # p.starmap(fit, mapping)
         p.starmap(check, mapping)

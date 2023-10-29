@@ -819,6 +819,78 @@ def compare_p_s():
     plt.legend()
     plt.show()
 
+def compare_gnn_p_s(dataset, GNN_ID):
+    dir = '/home/erschultz'
+    data_dir = osp.join(dir, dataset, 'samples')
+    GNN_root = f'optimize_grid_b_180_v_8_spheroid_1.5-GNN{GNN_ID}'
+
+    # samples = [1,2,3,4,5,324,981,1936,2834,3464]
+    samples, _ = get_samples(dataset, train=True)
+    N = 10; rows = 2; cols = 5
+    samlpes = samples[:N]
+
+    fig, axes = plt.subplots(rows, cols)
+    fig.set_figheight(12)
+    fig.set_figwidth(6*2.5)
+    for ax, sample in zip(axes.flatten(), samples):
+        s_dir = osp.join(dir, dataset, f'samples/sample{sample}')
+        s_dir = osp.join(data_dir, f'sample{sample}')
+
+        y = np.load(osp.join(s_dir, 'y.npy')).astype(float)
+        y /= np.mean(np.diagonal(y))
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
+        ax.plot(meanDist, c='k')
+
+        yhat = np.load(osp.join(s_dir, f'{GNN_root}/y.npy')).astype(float)
+        yhat /= np.mean(np.diagonal(yhat))
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(yhat)
+        ax.plot(meanDist, c='r')
+        ax.set_yscale('log')
+        ax.set_xscale('log')
+
+    fig.supylabel('Probability', fontsize=16)
+    fig.supxlabel('Beads', fontsize=16)
+    fig.suptitle(f'GNN_ID={GNN_ID}')
+    plt.tight_layout()
+    plt.savefig(osp.join(data_dir, f'p_s_GNN_{GNN_ID}.png'))
+    plt.close()
+
+def compare_max_ent_p_s(dataset):
+    dir = '/home/erschultz'
+    data_dir = osp.join(dir, dataset, 'samples')
+    max_ent_root = f'optimize_grid_b_180_phi_0.008_spheroid_1.5-max_ent10_start10'
+
+    # samples = [1,2,3,4,5,324,981,1936,2834,3464]
+    samples, _ = get_samples(dataset, train=True)
+    N = 5; rows = 1; cols = 5
+    samlpes = samples[:N]
+
+    fig, axes = plt.subplots(rows, cols)
+    fig.set_figheight(6)
+    fig.set_figwidth(6*2.5)
+    for ax, sample in zip(axes.flatten(), samples):
+        s_dir = osp.join(dir, dataset, f'samples/sample{sample}')
+        s_dir = osp.join(data_dir, f'sample{sample}')
+
+        y = np.load(osp.join(s_dir, 'y.npy')).astype(float)
+        y /= np.mean(np.diagonal(y))
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
+        ax.plot(meanDist, c='k')
+
+        yhat = np.load(osp.join(s_dir, f'{max_ent_root}/iteration30/y.npy')).astype(float)
+        yhat /= np.mean(np.diagonal(yhat))
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(yhat)
+        ax.plot(meanDist, c='r')
+        ax.set_yscale('log')
+        ax.set_xscale('log')
+
+    fig.supylabel('Probability', fontsize=16)
+    fig.supxlabel('Beads', fontsize=16)
+    plt.tight_layout()
+    plt.savefig(osp.join(data_dir, 'p_s_max_ent.png'))
+    plt.close()
+
+
 def test_pooling():
     dir = '/home/erschultz/timing_analysis'
     y_256 = np.load(osp.join(dir, '256', 'samples/sample1/y.npy'))
@@ -831,16 +903,17 @@ def test_pooling():
 def compare_scc():
     dataset = 'dataset_02_04_23'
     data_dir = osp.join('/home/erschultz', dataset, 'samples')
-    grid_root = 'optimize_grid_b_180_phi_0.008_spheroid_1.5'
+    grid_root = 'optimize_grid_b_180_v_8_spheroid_1.5'
     max_ent_root = f'{grid_root}-max_ent10'
-    GNN_ID=541
+    GNN_ID=579
     samples, _ = get_samples(dataset, train=True)
     N = 9
     samples = samples[:N]
     m=512
+    start=20
     K = m-2
-    # K=100
-    scc = SCC(h=5, K=K)
+    K=100
+    scc = SCC(h=5, K=K, start = start)
 
     fig, axes = plt.subplots(3, N//3)
     fig.set_figheight(12)
@@ -857,7 +930,7 @@ def compare_scc():
         final = get_final_max_ent_folder(max_ent_dir)
         yhat = np.load(osp.join(final, 'y.npy'))
         scc1, p_arr, w_arr = scc.scc(y, yhat, var_stabilized = True, debug=True)
-        ax.plot(np.arange(K), p_arr, color = 'blue')
+        ax.plot(np.arange(start, K), p_arr, color = 'blue')
         avg_diag1 = np.mean(p_arr)
         avg_diag1 = np.round(avg_diag1, 3)
         scc1 = np.round(scc1, 3)
@@ -865,14 +938,14 @@ def compare_scc():
 
         yhat = np.load(osp.join(s_dir, f'{grid_root}-GNN{GNN_ID}/y.npy'))
         scc2, p_arr, w_arr = scc.scc(y, yhat, var_stabilized = True, debug=True)
-        ax.plot(np.arange(K), p_arr, color = 'red')
+        ax.plot(np.arange(start, K), p_arr, color = 'red')
         avg_diag2 = np.mean(p_arr)
         avg_diag2 = np.round(avg_diag2, 3)
         scc2 = np.round(scc2, 3)
         scc_gnn_arr[i] = scc2
 
         w_arr /= np.max(w_arr)
-        ax.plot(np.arange(K), w_arr, color = 'black')
+        ax.plot(np.arange(start, K), w_arr, color = 'black')
 
         ax.set_ylim(-0.5, 1)
         title = f'sample {s}\nMaxEnt={scc1}, GNN={scc2}'
@@ -891,7 +964,7 @@ def compare_scc():
     fig.supxlabel('Distance', fontsize = 16)
     fig.supylabel('Pearson Correlation Coefficient', fontsize = 16)
     plt.tight_layout()
-    plt.savefig(osp.join(data_dir, 'distance_pearson.png'))
+    plt.savefig(osp.join(data_dir, f'distance_pearson_start{start}_K{K}.png'))
     plt.close()
 
 
@@ -965,5 +1038,7 @@ def data_t_test():
 
 if __name__ == '__main__':
     # make_small('dataset_02_04_23')
-    # compare_scc()
-    check_dataset('dataset_10_12_23')
+    compare_scc()
+    # check_dataset('dataset_10_12_23')
+    # compare_gnn_p_s('dataset_02_04_23', 579)
+    # compare_max_ent_p_s('dataset_02_04_23')ii

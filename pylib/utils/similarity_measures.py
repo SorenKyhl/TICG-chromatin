@@ -17,11 +17,16 @@ class SCC():
     Calculate Stratified Correlation Coefficient (SCC)
     as defined by https://pubmed.ncbi.nlm.nih.gov/28855260/.
     """
-    def __init__(self, h=1, K=None, var_stabilized=True):
+    def __init__(self, h=1, K=None, var_stabilized=True, start=None):
         self.r_2k_dict = {} # memoized solution for var_stabilized r_2k
         self.h = h
         self.K = K
+        if start is None:
+            self.start = 0
+        else:
+            self.start = start
         self.var_stabilized = var_stabilized
+
 
     def r_2k(self, x_k, y_k, var_stabilized):
         '''
@@ -113,7 +118,7 @@ class SCC():
         nan_list = []
         p_arr = []
         w_arr = []
-        for k in range(K):
+        for k in range(self.start, K):
             # get stratum (diagonal) of contact map
             x_k = np.diagonal(x, k)
             y_k = np.diagonal(y, k)

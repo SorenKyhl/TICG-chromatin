@@ -271,7 +271,7 @@ def load_data(args):
                     continue
                 yhat_meanDist = DiagonalPreprocessing.genomic_distance_statistics(yhat)
                 yhat_diag = DiagonalPreprocessing.process(yhat, yhat_meanDist, verbose = False)
-                scc = SCC()
+                scc = SCC(h=5)
                 corr_scc_var = scc.scc(ground_truth_ydiag, yhat_diag, var_stabilized = True)
                 # result = plotDistanceStratifiedPearsonCorrelation(ground_truth_y,
                                 # yhat, converged_path)
@@ -284,6 +284,8 @@ def load_data(args):
                 # rmse-diag
                 rmse_diag = mean_squared_error(ground_truth_meanDist, yhat_meanDist, squared = False)
                 temp_dict['rmse-diag'] = rmse_diag
+                rmse_diag10 = mean_squared_error(ground_truth_meanDist[:10], yhat_meanDist[:10], squared = False)
+                temp_dict['rmse-diag10'] = rmse_diag10
             else:
                 yhat = None
 
@@ -299,6 +301,9 @@ def load_data(args):
                 rmse_y = mean_squared_error(ground_truth_y, yhat, squared = False)
                 temp_dict['rmse-y'] = rmse_y
 
+                rmse_ydiag = mean_squared_error(ground_truth_ydiag, yhat_diag, squared=False)
+                temp_dict['rmse-ydiag'] = rmse_ydiag
+
                 pcs = epilib.get_pcs(yhat_diag, 12, align = True).T
                 pearson_pc_1, _ = pearsonr(pcs[0], ground_truth_pcs[0])
                 pearson_pc_1 *= np.sign(pearson_pc_1) # ensure positive pearson
@@ -313,8 +318,10 @@ def load_data(args):
             data[k][method]['avg_dist_pearson'].append(temp_dict['avg_dist_pearson'])
             data[k][method]['rmse-S'].append(temp_dict['rmse-S'])
             data[k][method]['rmse-y'].append(temp_dict['rmse-y'])
+            data[k][method]['rmse-ydiag'].append(temp_dict['rmse-ydiag'])
             data[k][method]['pearson_pc_1'].append(temp_dict['pearson_pc_1'])
             data[k][method]['rmse-diag'].append(temp_dict['rmse-diag'])
+            data[k][method]['rmse-diag10'].append(temp_dict['rmse-diag10'])
             data[k][method]['converged_time'].append(temp_dict['converged_time'])
             data[k][method]['total_time'].append(temp_dict['total_time'])
             data[k][method]['converged_it'].append(temp_dict['converged_it'])
@@ -340,14 +347,16 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
     '''
 
     metric_labels = {'scc':'SCC', 'scc_var':'SCC var', None: '',
-                    'rmse-S':'RMSE-Energy', 'rmse-y':'RMSE-Y', 'pearson_pc_1':'Corr PC 1',
-                    'rmse-diag':'RMSE-P(s)', 'avg_dist_pearson':'SCC mean',
+            'rmse-S':'RMSE-Energy', 'rmse-y':'RMSE-Y', 'rmse-ydiag':'RMSE-Ydiag',
+                    'pearson_pc_1':'Corr PC 1',
+                    'rmse-diag':'RMSE-P(s)', 'rmse-diag10':'RMSE-P(s<10)',
+                    'avg_dist_pearson':'SCC mean',
                     'total_time':'Total Time', 'converged_it':'Converged It.',
                     'converged_time':'Converged Time', 'prcnt_converged': '\% Converged'}
     if small:
         metrics = ['scc_var', 'rmse-diag', 'pearson_pc_1', 'converged_time']
     else:
-        metrics = [None, 'scc_var', 'converged_time', 'converged_it', 'prcnt_converged']
+        metrics = ['rmse-y', 'rmse-ydiag', 'converged_time', 'converged_it', 'prcnt_converged']
 
 
     print(f'\nMAKING TABLE-small={small}')
@@ -456,19 +465,20 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                         if nan_mask is not None:
                             result[nan_mask] = np.NaN
 
-                    if metric is not None and 'time' in metric:
+                    roundoff = 3
+                    if metric is None:
+                        pass # metric is None for filler column
+                    elif 'time' in metric:
                         roundoff = 1
                     elif metric == 'rmse-S':
                         roundoff = 2
-                    elif metric == 'rmse-y' or metric == 'rmse-diag':
+                    elif metric == 'rmse-y' or metric.startswith('rmse-diag'):
                         roundoff = 4
-                    else:
-                        roundoff = 3
 
-                    if metric == 'scc_var':
-                        print('scc_var: ')
-                        print(method)
-                        print(result)
+                    # if metric == 'scc_var':
+                    #     print('scc_var: ')
+                    #     print(method)
+                    #     print(result)
 
                     if len(result) > 1:
                         result_mean = np.nanmean(result)
@@ -489,12 +499,12 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                         result_std = np.round(result_std, roundoff)
                         result_sem = np.round(result_sem, roundoff)
                         text += f" & {result_mean} $\pm$ {result_sem}"
-                        # if pval < 0.001:
-                        #     text += f' ***({mean_effect_size})'
-                        # elif pval < 0.01:
-                        #     text += f' **({mean_effect_size})'
-                        # elif pval < 0.05:
-                        #     text += f' *({mean_effect_size})'
+                        if pval < 0.001:
+                            text += f' ***({mean_effect_size})'
+                        elif pval < 0.01:
+                            text += f' **({mean_effect_size})'
+                        elif pval < 0.05:
+                            text += f' *({mean_effect_size})'
                     else:
                         result = result[0]
                         if result is not None:
@@ -532,9 +542,9 @@ def sort_method_keys(keys):
             label += id
 
         if 'phi' in key:
-            label += f' (b={b}, phi={phi}'
+            label += f' (b{b}, $\phi${phi}'
         elif 'v' in key:
-            label += f' (b={b}, v={v}'
+            label += f' (b{b}, v{v}'
 
         if 'angle' in key:
             label += f', angle{angle})'
@@ -662,13 +672,13 @@ if __name__ == '__main__':
 
     if samples is None:
         samples, _ = get_samples(dataset, train = True)
-        samples = samples[:10]
+        samples = samples
 
     data_dir = osp.join('/home/erschultz', dataset)
     args = getArgs(data_folder = data_dir, samples = samples)
     args.experimental = True
     args.convergence_definition = 'normal'
-    args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', '_700k']
+    args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', '_700k', 'phi']
     for i in [2,3,4,6,7,8,9]:
         args.bad_methods.append(f'max_ent{i}')
 
@@ -676,7 +686,8 @@ if __name__ == '__main__':
     # args.gnn_id=[434, 451, 455, 456, 461, 462, 463, 470, 471, 472, 476, 477, 479, 480, 481, 484, 485, 486, 488]
     # args.gnn_id=[490, 507, 511]
     # args.gnn_id = [496, 506, 518, 519, 523, 524, 525, 526, 527, 528, 529, 530, 531, 532, 533, 534, 535, 536, 537, 538, 539, 540, 541, 542, 543, 544]
-    args.gnn_id = [496, 540, 541, 545, 546, 547, 548, 549, 550, 551, 552, 553, 554, 555, 556, 557, 558, 559, 560, 561]
+    args.gnn_id = [496, 541, 548, 549, 550, 551, 552, 553, 555, 556, 558, 560, 561, 562, 564, 565, 567, 568, 569, 570, 571, 572, 573, 574, 575, 576, 577, 578, 579, 580]
+    args.gnn_id = [569, 579]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

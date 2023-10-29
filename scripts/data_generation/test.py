@@ -576,7 +576,7 @@ def compare_meanDist_S():
 def compare_meanDist_S2():
     '''Compare based on results/GNN_ID'''
     samples = [981, 3464]
-    GNN_ID=548
+    GNN_ID=556
     dataset='dataset_09_28_23'
     dir = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{GNN_ID}'
     assert osp.exists(dir), dir
