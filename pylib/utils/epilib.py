@@ -38,7 +38,7 @@ class Sim:
         metrics: cache for expensive metrics
     """
 
-    def __init__(self, path, maxent_analysis=True):
+    def __init__(self, path, maxent_analysis=True, mode='all'):
         """
         Args:
             path: directory containing simulation output
@@ -84,7 +84,7 @@ class Sim:
         self.seqs = None
         self.obs_full = None
         self.obs_tot = None
-        if self.config['plaid_on']:
+        if self.config['plaid_on'] and mode != 'diag':
             self.k = self.config['nspecies']
             if self.k > 0:
                 self.chi = self.load_chis()

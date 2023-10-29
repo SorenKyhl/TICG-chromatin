@@ -363,11 +363,11 @@ def main_no_maxent(dir=None):
     compare_analysis(sim)
     logging.info("compare analysis done")
 
-def main(fast_analysis = False, dir = None):
+def main(fast_analysis = False, dir = None, mode = 'all'):
     if dir is not None:
         os.chdir(dir)
     assert osp.exists("production_out"), f'{dir}, {os.getcwd()}'
-    sim = ep.Sim("production_out")
+    sim = ep.Sim("production_out", mode=mode)
     logging.info("sim created")
     sim_analysis(sim, fast_analysis)
     logging.info("sim analysis done")

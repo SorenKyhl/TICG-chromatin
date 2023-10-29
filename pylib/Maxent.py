@@ -247,7 +247,7 @@ class Maxent:
 
     def analyze(self, dir):
         if self.analysis_on:
-            analysis.main(self.fast_analysis, dir)
+            analysis.main(self.fast_analysis, dir, self.params['mode'])
 
     def fit(self):
         """execute maxent optimization"""
