@@ -140,7 +140,11 @@ class Maxent:
         """
         saves (and plots) parameter values and loss over the course of optimization
         """
-        self.chis = np.vstack((self.chis, newchis))
+        if self.params['mode'] == 'diag':
+            plaid, diag = sim.split_chis(self.chis)
+            self.chis = np.vstack((diag, newchis))
+        else:
+            self.chis = np.vstack((self.chis, newchis))
         self.loss = np.append(self.loss, newloss)
 
         plaid, diag = sim.split_chis(newchis)
