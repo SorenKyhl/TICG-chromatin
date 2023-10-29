@@ -16,6 +16,8 @@ utility functions
 """
 
 
+LETTERS= 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
 def load_json(path):
     with open(path) as f:
         myjson = json.load(f)

@@ -14,6 +14,7 @@ import pylib.analysis as analysis
 import torch
 from max_ent import setup_config
 from pylib.Pysim import Pysim
+from pylib.Maxent import Maxent
 from pylib.utils import default, epilib, utils
 from pylib.utils.energy_utils import calculate_D
 from pylib.utils.goals import get_goals
@@ -36,15 +37,17 @@ def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     m = len(y)
 
     root, config = setup_config(dataset, sample, sub_dir, b, phi, v, None, ar)
-    config['nspecies'] = 10
-    config['dump_frequency'] = 10000
+    k=10
+    config['nspecies'] = k
+    config['dump_frequency'] = 100
     config['nbeads'] = m
+    config['dump_observables'] = True
 
     gnn_root = f'{root}-GNN{GNN_ID}-max_ent'
     if osp.exists(gnn_root):
-        # shutil.rmtree(gnn_root)
+        shutil.rmtree(gnn_root)
         print('WARNING: root exists')
-        return
+        # return
     os.mkdir(gnn_root, mode=0o755)
 
     # sleep for random # of seconds so as not to overload gpu
@@ -62,8 +65,10 @@ def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     L -= np.mean(L)
 
     seqs = epilib.get_pcs(epilib.get_oe(y), k, normalize = True)
-    chi = predict_chi_in_psi_basis(x, L_gnn, verbose = True)
+    chi = predict_chi_in_psi_basis(seqs, L, verbose = True)
+    chi_flat = chi[np.triu_indices(k)]
     config['chis'] = chi
+    
 
     config['diagonal_on'] = True
     config['dense_diagonal_on'] = True
@@ -72,7 +77,9 @@ def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
         config['n_small_bins'] = 64
         config["n_big_bins"] = 16
         config["big_binsize"] = 28
-    config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
+    diag_chis = np.zeros(config['n_small_bins']+config["n_big_bins"])
+    config['diag_chis'] = diag_chis
+    all_chis = np.concatenate((chi_flat, diag_chis))
 
 
     params = default.params
@@ -88,9 +95,10 @@ def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     params['run_longer_at_convergence'] = False
 
     stdout = sys.stdout
-    with open(osp.join(root, 'log.log'), 'w') as sys.stdout:
-        me = Maxent(root, params, config, seqs, y, fast_analysis=True,
-                    final_it_sweeps=3000, mkdir=False, bound_diag_chis=False)
+    with open(osp.join(gnn_root, 'log.log'), 'w') as sys.stdout:
+        me = Maxent(gnn_root, params, config, seqs, y, fast_analysis=True,
+                    final_it_sweeps=3000, mkdir=False, bound_diag_chis=False,
+                    initial_chis = all_chis)
         t = me.fit()
         print(f'Simulation took {np.round(t, 2)} seconds')
     sys.stdout = stdout
@@ -212,7 +220,7 @@ def main():
 
     if samples is None:
         samples, _ = get_samples(dataset, train=True)
-        samples = samples
+        samples = samples[:1]
     print(len(samples))
 
     # GNN_IDs = [577]; b=180; phi=0.008; v=None; ar=1.5
@@ -220,7 +228,7 @@ def main():
     #    for i in samples:
     #         mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
 
-    GNN_IDs = [569]; b=180; phi=None; v=8; ar=1.5
+    GNN_IDs = [579]; b=180; phi=None; v=8; ar=1.5
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
@@ -229,9 +237,9 @@ def main():
     print(len(mapping))
     # print(mapping)
 
-    # with mp.Pool(15) as p:
+    with mp.Pool(15) as p:
         # p.starmap(cleanup, mapping)
-        # p.starmap(fit, mapping)
+        p.starmap(fit_max_ent, mapping)
 
     for i in mapping:
         check(*i)
