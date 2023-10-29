@@ -84,7 +84,7 @@ class Sim:
         self.seqs = None
         self.obs_full = None
         self.obs_tot = None
-        if self.config['plaid_on'] and mode != 'diag':
+        if self.config['plaid_on']:
             self.k = self.config['nspecies']
             if self.k > 0:
                 self.chi = self.load_chis()
@@ -94,14 +94,15 @@ class Sim:
                 except OSError:
                     logging.error("error loading sequences")
 
-                observables_file = self.path / "observables.traj"
-                if os.stat(observables_file).st_size > 0:
-                    try:
-                        self.obs_full = pd.read_csv(observables_file, sep="\t",
-                                                    header=None)
-                        self.obs = np.array(self.obs_full.mean().values[1:])
-                    except FileNotFoundError:
-                        logging.error("error loading plaid observables")
+                if mode != 'diag':
+                    observables_file = self.path / "observables.traj"
+                    if os.stat(observables_file).st_size > 0:
+                        try:
+                            self.obs_full = pd.read_csv(observables_file, sep="\t",
+                                                        header=None)
+                            self.obs = np.array(self.obs_full.mean().values[1:])
+                        except FileNotFoundError:
+                            logging.error("error loading plaid observables")
         else:
             self.k = 0
 
