@@ -140,11 +140,7 @@ class Maxent:
         """
         saves (and plots) parameter values and loss over the course of optimization
         """
-        if self.params['mode'] == 'diag':
-            plaid, diag = sim.split_chis(self.chis)
-            self.chis = np.vstack((diag, newchis))
-        else:
-            self.chis = np.vstack((self.chis, newchis))
+        self.chis = np.vstack((self.chis, newchis))
         self.loss = np.append(self.loss, newloss)
 
         plaid, diag = sim.split_chis(newchis)
@@ -350,6 +346,7 @@ class Maxent:
                 new_chis_diagonly[inds] = newchis
                 newchis = new_chis_diagonly
 
+            print(newchis)
             converged = self.track_progress(newchis, newloss, sim)
             os.symlink(
                 self.resources / "experimental_hic.npy",
