@@ -321,6 +321,8 @@ class Maxent:
             print(f"gammma = {gamma}")
             print("self.gamma = " + str(self.params["gamma"]))
 
+            if self.params['mode'] == 'diag':
+                _, curr_chis = sim.split_chis(curr_chis)
             newchis, newloss = utils.newton(
                 lam=obs,
                 obj_goal=obj_goal,

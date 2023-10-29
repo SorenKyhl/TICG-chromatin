@@ -74,7 +74,6 @@ def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
         config["big_binsize"] = 28
     config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
 
-
     params = default.params
     goals = get_goals(y, None, config)
     params["goals"] = goals
