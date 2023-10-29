@@ -164,7 +164,7 @@ class Pysim:
             self.config["chis"] = self.chis_to_matrix(plaid_chis_flat).tolist()
         self.config["diag_chis"] = diag_chis.tolist()
 
-    def load_observables(self, jacobian=False):
+    def load_observables(self, jacobian=False, mode='all'):
         """load observable trajectories from simulation output.
         return mean of observables throughout the simulation,
         and (optionally) the jacobian of the observable matrix
@@ -173,8 +173,15 @@ class Pysim:
             raise ValueError("data out member variable has not been initialized")
 
         obs_files = []
-        obs_files.append(self.root / self.data_out / "observables.traj")
-        obs_files.append(self.root / self.data_out / "diag_observables.traj")
+        if mode == 'all':
+            obs_files.append(self.root / self.data_out / "observables.traj")
+            obs_files.append(self.root / self.data_out / "diag_observables.traj")
+        elif mode == 'diag':
+            obs_files.append(self.root / self.data_out / "diag_observables.traj")
+        elif mode == 'plaid':
+            obs_files.append(self.root / self.data_out / "observables.traj")
+        else:
+            raise Exception(f'Unrecognized mode: {mode}')
 
         df_total = pd.DataFrame()
         for file in obs_files:

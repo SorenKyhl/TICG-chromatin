@@ -7,21 +7,27 @@ from numba import njit
 
 def get_goals(hic, seqs, config, save_path=None):
     """get maximum entropy goals for simulation observables"""
-    assert len(seqs.shape) == 2
-    if seqs.shape[0] > seqs.shape[1]:
-        # need seqs to be kxm
-        seqs = seqs.T
-
     hic /= np.mean(np.diagonal(hic)) # ensure normalized
 
-    plaid = get_goal_plaid(hic, seqs, config)
+    if seqs is not None:
+        assert len(seqs.shape) == 2
+        if seqs.shape[0] > seqs.shape[1]:
+            # need seqs to be kxm
+            seqs = seqs.T
+
+        plaid = get_goal_plaid(hic, seqs, config)
+
     diag = get_goal_diag(hic, config)
 
     if save_path is not None:
-        np.savetxt(save_path, plaid, newline=" ", fmt="%.8f")
+        if seqs is not None:
+            np.savetxt(save_path, plaid, newline=" ", fmt="%.8f")
         np.savetxt(save_path, diag, newline=" ", fmt="%.8f")
 
-    return np.hstack((plaid, diag))
+    if seqs is not None:
+        return np.hstack((plaid, diag))
+    else:
+        return diag
 
 def get_goal_plaid(hic, seqs, config, flat=True, norm=False, adj=True):
     """

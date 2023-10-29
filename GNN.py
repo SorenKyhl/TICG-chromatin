@@ -15,12 +15,85 @@ import torch
 from max_ent import setup_config
 from pylib.Pysim import Pysim
 from pylib.utils import default, epilib, utils
+from pylib.utils.energy_utils import calculate_D
+from pylib.utils.goals import get_goals
+from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 
 from scripts.data_generation.modify_maxent import get_samples
 from scripts.get_params import GetEnergy
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import load_import_log
+from sequences_to_contact_maps.result_summary_plots import predict_chi_in_psi_basis
+
+def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
+    print(sample)
+    mode = 'grid'
+    dir = f'/home/erschultz/{dataset}/{sub_dir}/sample{sample}'
+    y = np.load(osp.join(dir, 'y.npy')).astype(np.float64)
+    y /= np.mean(np.diagonal(y))
+    np.fill_diagonal(y, 1)
+    m = len(y)
+
+    root, config = setup_config(dataset, sample, sub_dir, b, phi, v, None, ar)
+    config['nspecies'] = 10
+    config['dump_frequency'] = 10000
+    config['nbeads'] = m
+
+    gnn_root = f'{root}-GNN{GNN_ID}-max_ent'
+    if osp.exists(gnn_root):
+        # shutil.rmtree(gnn_root)
+        print('WARNING: root exists')
+        return
+    os.mkdir(gnn_root, mode=0o755)
+
+    # sleep for random # of seconds so as not to overload gpu
+    sleep(np.random.rand()*10)
+    model_path = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{GNN_ID}'
+    log_file = osp.join(gnn_root, 'energy.log')
+    ofile = osp.join(gnn_root, 'S.npy')
+    args_str = f'--m {m} --gnn_model_path {model_path} --sample_path {dir} --bonded_path {root} --sub_dir {sub_dir} --ofile {ofile}'
+    # using subprocess gaurantees that pytorch can't keep an GPU vram cached
+    sp.run(f"python3 /home/erschultz/TICG-chromatin/scripts/get_params.py {args_str} > {log_file}",
+            shell=True)
+    S = np.load(ofile)
+    meanDist_S = DiagonalPreprocessing.genomic_distance_statistics(S, 'freq')
+    L = S - calculate_D(meanDist_S)
+    L -= np.mean(L)
+
+    seqs = epilib.get_pcs(epilib.get_oe(y), k, normalize = True)
+    chi = predict_chi_in_psi_basis(x, L_gnn, verbose = True)
+    config['chis'] = chi
+
+    config['diagonal_on'] = True
+    config['dense_diagonal_on'] = True
+    config["small_binsize"] = 1
+    if len(y) == 512:
+        config['n_small_bins'] = 64
+        config["n_big_bins"] = 16
+        config["big_binsize"] = 28
+    config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
+
+
+    params = default.params
+    goals = get_goals(y, None, config)
+    params["goals"] = goals
+    params['mode'] = 'diag'
+    params['iterations'] = 2
+    params['parallel'] = 1
+    params['equilib_sweeps'] = 100
+    params['production_sweeps'] = 3000
+    params['stop_at_convergence'] = True
+    params['conv_defn'] = 'strict'
+    params['run_longer_at_convergence'] = False
+
+    stdout = sys.stdout
+    with open(osp.join(root, 'log.log'), 'w') as sys.stdout:
+        me = Maxent(root, params, config, seqs, y, fast_analysis=True,
+                    final_it_sweeps=3000, mkdir=False, bound_diag_chis=False)
+        t = me.fit()
+        print(f'Simulation took {np.round(t, 2)} seconds')
+    sys.stdout = stdout
 
 
 def fit(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):

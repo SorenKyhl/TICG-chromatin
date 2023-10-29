@@ -300,7 +300,7 @@ class Maxent:
             )
 
             curr_chis = sim.flatten_chis()
-            obs, jac = sim.load_observables(jacobian=True)
+            obs, jac = sim.load_observables(jacobian=True, mode = self.params['mode'])
             obj_goal = np.array(self.params["goals"])
 
 
