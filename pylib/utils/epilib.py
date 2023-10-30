@@ -32,7 +32,7 @@ mycmap = matplotlib.colors.LinearSegmentedColormap.from_list(
 
 
 class Sim:
-   """simulation analysis
+    """simulation analysis
 
     Attributes:
         metrics: cache for expensive metrics
@@ -84,6 +84,7 @@ class Sim:
         self.seqs = None
         self.obs_full = None
         self.obs_tot = None
+        self.obs = None
         if self.config['plaid_on']:
             self.k = self.config['nspecies']
             if self.k > 0:
