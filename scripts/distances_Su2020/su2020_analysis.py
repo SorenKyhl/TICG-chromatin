@@ -38,7 +38,7 @@ from sequences_to_contact_maps.scripts.utils import (calc_dist_strat_corr,
 
 
 # plotting functions
-def plot_diagonal(exp, sim, ofile=None):
+def plot_diagonal(exp, sim, ofile=None, height=30):
     npixels = np.shape(sim)[0]
     indu = np.triu_indices(npixels)
     indl = np.tril_indices(npixels)
@@ -57,7 +57,6 @@ def plot_diagonal(exp, sim, ofile=None):
     # crop
     center = resized.shape[0] // 2
     m_resize = len(resized)
-    height=30
     resized = resized[center-height:center+height, :]
 
 

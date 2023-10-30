@@ -12,19 +12,20 @@ from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
                                       calculate_diag_chi_step, calculate_L,
                                       calculate_S)
-from pylib.utils.plotting_utils import RED_CMAP
+from pylib.utils.plotting_utils import RED_CMAP, rotate_bound
 from pylib.utils.utils import pearson_round
 from pylib.utils.xyz import xyz_load, xyz_write
 
 sys.path.append('/home/erschultz/TICG-chromatin/scripts')
 from data_generation.modify_maxent import get_samples
+from distances_Su2020.su2020_analysis import plot_diagonal
 from makeLatexTable_new import *
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (
     get_final_max_ent_folder, load_import_log, load_L, get_converged_max_ent_folder)
 
-test=False
+test=True
 label_fontsize=22
 tick_fontsize=18
 letter_fontsize=26
@@ -34,7 +35,7 @@ dataset = 'dataset_02_04_23'; sample = 223; GNN_ID = 578
 samples, _ = get_samples(dataset, test=True)
 samples_list = samples[:10]
 print(f'Samples: {samples_list}')
-k=10 
+k=10
 grid_root = 'optimize_grid_b_180_v_8_spheroid_1.5'
 def get_dirs(sample_dir):
     grid_dir = osp.join(sample_dir, grid_root)
@@ -224,8 +225,8 @@ def figure(test=False):
     ax1 = plt.subplot(2, 24, (1, 6))
     ax2 = plt.subplot(2, 24, (9, 14))
     # ax_cb = plt.subplot(2, 48*2, 29*2-1)
-    ax4 = plt.subplot(2, 24, (17, 24)) # pc
-    # ax4_2 = plt.subplot(4, 24, (41, 48)) # diagonal
+    # ax4 = plt.subplot(2, 24, (17, 24)) # pc
+    ax4_2 = plt.subplot(4, 24, (41, 48)) # diagonal
     ax5 = plt.subplot(2, 24, (25, 29)) # meandist
     ax6 = plt.subplot(2, 48, (63, 67))
     ax7 = plt.subplot(2, 48, (72, 76))
@@ -254,7 +255,7 @@ def figure(test=False):
                     fontsize = tick_fontsize)
         else:
             s.set_yticks([])
-        
+
         scc_var = scc.scc(y, y_sim, var_stabilized = True)
         scc_var = np.round(scc_var, 3)
         title = f'SCC={scc_var}'
@@ -267,28 +268,28 @@ def figure(test=False):
         #            fontsize = tick_fontsize)
         s.set_xticks([])
 
-    ax4.plot(pcs[0], label = 'Experiment', color = 'k')
-    ax4.plot(pcs_pca[0], label = f'Max Ent', color = 'b')
-    ax4.plot(pcs_gnn[0], label = f'GNN', color = 'r')
-    title = f'Max Ent (r={pearson_round(pcs[0], pcs_pca[0])})\nGNN (r={pearson_round(pcs[0], pcs_gnn[0])})'
-    print(title)
-    ax4.set_title(title)
-    ax4.set_xticks(genome_ticks, labels = genome_labels, rotation = 0,
-                    fontsize = tick_fontsize)
-    ax4.set_yticks([])
-    ax4.set_ylabel('PC 1', fontsize=label_fontsize)
-    ax4.set_ylim(None, .14)
-    ax4.legend(bbox_to_anchor=(0.5, .98), loc="upper center",
-                fontsize = 14, borderaxespad=0, ncol=3)
+    # ax4.plot(pcs[0], label = 'Experiment', color = 'k')
+    # ax4.plot(pcs_pca[0], label = f'Max Ent', color = 'b')
+    # ax4.plot(pcs_gnn[0], label = f'GNN', color = 'r')
+    # title = f'Max Ent (r={pearson_round(pcs[0], pcs_pca[0])})\nGNN (r={pearson_round(pcs[0], pcs_gnn[0])})'
+    # print(title)
+    # ax4.set_title(title)
+    # ax4.set_xticks(genome_ticks, labels = genome_labels, rotation = 0,
+    #                 fontsize = tick_fontsize)
+    # ax4.set_yticks([])
+    # ax4.set_ylabel('PC 1', fontsize=label_fontsize)
+    # ax4.set_ylim(None, .14)
+    # ax4.legend(bbox_to_anchor=(0.5, .98), loc="upper center",
+    #             fontsize = 14, borderaxespad=0, ncol=3)
 
-    # resized = rotate_bound(y,-45)
-    # height=50
-    # center = resized.shape[0] // 2
-    # resized = resized[center-height:center, :]
-    # sns.heatmap(resized, ax = ax4_2, linewidth = 0, vmin = vmin, vmax = vmax,
-    #             cmap = RED_CMAP, cbar = False)
-    # ax4_2.set_xticks([])
-    # ax4_2.set_yticks([])
+    resized = rotate_bound(y,-45)
+    height=50
+    center = resized.shape[0] // 2
+    resized = resized[center-height:center, :]
+    sns.heatmap(resized, ax = ax4_2, linewidth = 0, vmin = vmin, vmax = vmax,
+                cmap = RED_CMAP, cbar = False)
+    ax4_2.set_xticks([])
+    ax4_2.set_yticks([])
 
 
     # compare P(s)
@@ -439,8 +440,13 @@ def supp_figure():
     plt.savefig('/home/erschultz/TICG-chromatin/figures/figure2_supp.png')
     plt.close()
 
+def diagonal_figure():
+    odir = '/home/erschultz/TICG-chromatin/figures'
+    plot_diagonal(y, y_pca, osp.join(odir, 'exp_vs_pca_diag.png'))
+    plot_diagonal(y, y_gnn, osp.join(odir, 'exp_vs_gnn_diag.png'))
 
 
 if __name__ == '__main__':
     figure()
     # supp_figure()
+    diagonal_figure()
