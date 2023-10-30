@@ -61,14 +61,18 @@ def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
             shell=True)
     S = np.load(ofile)
     meanDist_S = DiagonalPreprocessing.genomic_distance_statistics(S, 'freq')
-    L = S - calculate_D(meanDist_S)
-    L -= np.mean(L)
+    D = calculate_D(meanDist_S)
+    L = S - D
+    meanL = np.mean(L)
+    L -= meanL
+    D += meanL
+    all_diag_chis = D[0]
 
     seqs = epilib.get_pcs(epilib.get_oe(y), k, normalize = True)
     chi = predict_chi_in_psi_basis(seqs, L, verbose = True)
     chi_flat = chi[np.triu_indices(k)]
     config['chis'] = chi
-    
+
 
     config['diagonal_on'] = True
     config['dense_diagonal_on'] = True
@@ -77,7 +81,28 @@ def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
         config['n_small_bins'] = 64
         config["n_big_bins"] = 16
         config["big_binsize"] = 28
+
     diag_chis = np.zeros(config['n_small_bins']+config["n_big_bins"])
+
+    left = 0
+    right = left + config["small_binsize"]
+    bin = 0
+    for i in range(config['n_small_bins']):
+        diag_chis[bin] = all_diag_chis[left:right]
+        print(left, right)
+        left += config["small_binsize"]
+        right += config["small_binsize"]
+        bin += 1
+    right = left + config["big_binsize"]
+    for i in range(config['n_big_bins']):
+        print(left, right)
+        diag_chis[bin] = all_diag_chis[left:right]
+        left += config["big_binsize"]
+        right += config["big_binsize"]
+        bin += 1
+    print(all_diag_chis)
+    print(diag_chis)
+
     config['diag_chis'] = diag_chis
     all_chis = np.concatenate((chi_flat, diag_chis))
 
