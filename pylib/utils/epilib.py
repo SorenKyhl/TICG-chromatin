@@ -123,7 +123,7 @@ class Sim:
             else:
                 self.obs_tot = np.hstack((self.obs, self.diag_obs))
         except AttributeError:
-            logging.error(f"observables not loaded: diag_obs is {type(self.diag_obs)}")
+            logging.error(f"observables not loaded: diag_obs is {type(self.diag_obs)}, obs_tot is {type(self.obs_tot)}")
 
         try:
             self.extra = np.loadtxt(self.path / "extra.traj")
@@ -994,6 +994,7 @@ def plot_consistency(sim, ofile=None):
         diff = sim.obs_tot - goal
     except TypeError:
         print(f'obs_tot is {type(sim.obs_tot)}, goal is {type(goal)}')
+        return
     error = np.sqrt(diff @ diff / (goal @ goal))
 
     plt.figure()
