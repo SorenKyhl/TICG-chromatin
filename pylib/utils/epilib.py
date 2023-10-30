@@ -987,7 +987,10 @@ def plot_consistency(sim, ofile=None):
 
     goal = get_goals(hic, sim.seqs, sim.config)
 
-    diff = sim.obs_tot - goal
+    try:
+        diff = sim.obs_tot - goal
+    except TypeError:
+        print(f'obs_tot is {type(sim.obs_tot)}, goal is {type(goal)}')
     error = np.sqrt(diff @ diff / (goal @ goal))
 
     plt.figure()
