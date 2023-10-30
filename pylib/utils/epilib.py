@@ -115,10 +115,13 @@ class Sim:
                                                     header=None)
                     self.diag_obs = np.array(self.diag_obs_full.mean().values[1:])
                 except FileNotFoundError:
-                    logging.error("error loading diag observables")
+                    logging.error(f"error loading diag observables: not found at {diag_observables_file}")
 
         try:
-            self.obs_tot = np.hstack((self.obs, self.diag_obs))
+            if self.obs is None:
+                self.obs_tot = self.diag_obs
+            else:
+                self.obs_tot = np.hstack((self.obs, self.diag_obs))
         except AttributeError:
             logging.error("observables not loaded")
 
