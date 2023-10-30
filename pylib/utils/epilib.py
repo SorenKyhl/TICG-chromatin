@@ -123,7 +123,7 @@ class Sim:
             else:
                 self.obs_tot = np.hstack((self.obs, self.diag_obs))
         except AttributeError:
-            logging.error("observables not loaded")
+            logging.error(f"observables not loaded: diag_obs is {type(self.diag_obs)}")
 
         try:
             self.extra = np.loadtxt(self.path / "extra.traj")

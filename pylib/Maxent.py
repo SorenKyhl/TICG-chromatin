@@ -54,6 +54,7 @@ class Maxent:
         gthic: ground truth hic
         overwrite: will overwrite existing files
         bound_diag_chis: will ensure that diag chis start at 0
+        plaid_diagonly: True to constrain plaid chis to be a diagonal matrix
         """
 
         # maxent things
