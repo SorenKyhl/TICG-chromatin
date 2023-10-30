@@ -39,7 +39,7 @@ def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     root, config = setup_config(dataset, sample, sub_dir, b, phi, v, None, ar)
     k=10
     config['nspecies'] = k
-    config['dump_frequency'] = 100
+    config['dump_frequency'] = 10000
     config['nbeads'] = m
     config['dump_observables'] = True
 
@@ -88,20 +88,16 @@ def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     right = left + config["small_binsize"]
     bin = 0
     for i in range(config['n_small_bins']):
-        diag_chis[bin] = all_diag_chis[left:right]
-        print(left, right)
+        diag_chis[bin] = np.mean(all_diag_chis[left:right])
         left += config["small_binsize"]
         right += config["small_binsize"]
         bin += 1
     right = left + config["big_binsize"]
     for i in range(config['n_big_bins']):
-        print(left, right)
-        diag_chis[bin] = all_diag_chis[left:right]
+        diag_chis[bin] = np.mean(all_diag_chis[left:right])
         left += config["big_binsize"]
         right += config["big_binsize"]
         bin += 1
-    print(all_diag_chis)
-    print(diag_chis)
 
     config['diag_chis'] = diag_chis
     all_chis = np.concatenate((chi_flat, diag_chis))
@@ -112,10 +108,10 @@ def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     params['mode'] = 'diag'
     params['iterations'] = 2
     params['parallel'] = 1
-    params['equilib_sweeps'] = 100
+    params['equilib_sweeps'] = 10000
     params['production_sweeps'] = 3000
     params['stop_at_convergence'] = True
-    params['conv_defn'] = 'strict'
+    params['conv_defn'] = 'normal'
     params['run_longer_at_convergence'] = False
 
     stdout = sys.stdout
@@ -261,11 +257,12 @@ def main():
     print(len(mapping))
     # print(mapping)
 
-    with mp.Pool(15) as p:
+    #with mp.Pool(10) as p:
         # p.starmap(cleanup, mapping)
-        p.starmap(fit_max_ent, mapping)
+        #p.starmap(fit_max_ent, mapping)
 
     for i in mapping:
+        fit_max_ent(*i)
         check(*i)
 
 if __name__ == '__main__':

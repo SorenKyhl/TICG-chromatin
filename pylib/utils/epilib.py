@@ -32,7 +32,7 @@ mycmap = matplotlib.colors.LinearSegmentedColormap.from_list(
 
 
 class Sim:
-    """simulation analysis
+   """simulation analysis
 
     Attributes:
         metrics: cache for expensive metrics
@@ -106,6 +106,7 @@ class Sim:
         else:
             self.k = 0
 
+        self.diag_obs = None
         if self.config['diagonal_on']:
             self.diag_bins = np.shape(self.config["diag_chis"])[0]
             diag_observables_file = self.path / "diag_observables.traj"
@@ -123,7 +124,7 @@ class Sim:
             else:
                 self.obs_tot = np.hstack((self.obs, self.diag_obs))
         except AttributeError:
-            logging.error(f"observables not loaded: diag_obs is {type(self.diag_obs)}, obs_tot is {type(self.obs_tot)}")
+            logging.error(f"observables not loaded: obs is {type(self.obs)}, diag_obs is {type(self.diag_obs)}, obs_tot is {type(self.obs_tot)}")
 
         try:
             self.extra = np.loadtxt(self.path / "extra.traj")
@@ -993,8 +994,7 @@ def plot_consistency(sim, ofile=None):
     try:
         diff = sim.obs_tot - goal
     except TypeError:
-        print(f'obs_tot is {type(sim.obs_tot)}, goal is {type(goal)}')
-        return
+        raise Exception(f'obs_tot is {type(sim.obs_tot)}, goal is {type(goal)}')
     error = np.sqrt(diff @ diff / (goal @ goal))
 
     plt.figure()

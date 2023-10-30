@@ -29,8 +29,6 @@ plt.rcParams.update({"font.size": 18})
 def sim_analysis(sim, fast_analysis=False):
     """analyze data from simulation only (doesn't require ground truth hic)"""
     error = sim.plot_consistency()
-    if error is None:
-        return
     if error > 0.01:
         logging.error("SIMULATION IS NOT CONSISTENT")
 
