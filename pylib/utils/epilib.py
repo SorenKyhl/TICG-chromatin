@@ -991,11 +991,13 @@ def plot_consistency(sim, ofile=None):
         hic = sim.hic
 
     goal = get_goals(hic, sim.seqs, sim.config)
+    assert sim.obs_tot is not None
+    assert goal is not None
 
-    try:
-        diff = sim.obs_tot - goal
-    except TypeError:
-        raise Exception(f'obs_tot is {type(sim.obs_tot)}, goal is {type(goal)}')
+    if len(sim.obs_tot)  < len(goal):
+        N = len(sim.obs_tot)
+        goal = goal[-N:]
+    diff = sim.obs_tot - goal
     error = np.sqrt(diff @ diff / (goal @ goal))
 
     plt.figure()
