@@ -76,19 +76,35 @@
 #   done
 # done
 
-dir='/home/erschultz/dataset_06_29_23/samples'
-cd $dir
-for i in 1 2 3 4 5 101 102 103 104 105 601 602 603 604 605
+# dir='/home/erschultz/dataset_06_29_23/samples'
+# cd $dir
+# for i in 1 2 3 4 5 101 102 103 104 105 601 602 603 604 605
+# do
+#   cd  "${dir}/sample${i}"
+#   pwd
+#   rm -r optimize_grid_b_180_phi_0.008_spheroid_1.5-max_ent5
+# done
+
+for dataset in "dataset_04_28_23" "dataset_08_17_23" "dataset_08_25_23" "dataset_09_10_23" "dataset_09_11_23" "dataset_09_16_23" "dataset_09_17_23" "dataset_09_18_23" "dataset_09_19_23" "dataset_09_25_23" "dataset_09_26_23"
+dir="/home/erschultz/${dataset}/samples"
 do
-  cd  "${dir}/sample${i}"
-  pwd
-  rm -r optimize_grid_b_180_phi_0.008_spheroid_1.5-max_ent5
+  cd $dir
+  for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 1 41 15 16 17 18 19 20 1753 1936 2834 3464 981 324
+  do
+    cd  "${dir}/sample${i}"
+    pwd
+    rm -r optimize_grid_b_140*
+    rm -r optimize_grid_b_261*
+    rm -r *longer
+  done
 done
 
-#dir='/home/erschultz/dataset_02_04_23/samples'
-#cd $dir
-#for i in {201..282}
-#do
-#  cd  "${dir}/sample${i}"
-#  pwd
-#done
+dir='/home/erschultz/dataset_02_04_23/samples'
+cd $dir
+for i in {201..282}
+do
+ cd  "${dir}/sample${i}"
+ rm -r optimize_grid_b_140*GNN*
+ rm -r optimize_grid_b_180_phi_0.008*GNN
+ rm -r *stat10
+done
