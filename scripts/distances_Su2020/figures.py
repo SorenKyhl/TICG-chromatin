@@ -33,14 +33,14 @@ from scripts.distances_Su2020.su2020_analysis import (dist_distribution_a_b,
                                                       rescale_mu_sigma)
 
 
-def load_exp_gnn_pca_contact_maps(dir, GNN_ID=None, b=140, phi=0.03, ar=1.0):
+def load_exp_gnn_pca_contact_maps(dir, GNN_ID=None, b=140, phi=0.03, v=None, ar=1.0):
     result = load_import_log(dir)
     start = result['start']
     resolution = result['resolution']
     chrom = int(result['chrom'])
     genome = result['genome']
 
-    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, b, phi, ar)
+    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, b, phi, v, ar)
     if osp.exists(max_ent_dir):
         final = get_final_max_ent_folder(max_ent_dir)
         y_pca, _ = load_Y(final)
@@ -669,12 +669,12 @@ def small_figure(sample, GNN_ID, bl=140, phi=0.03):
 
 
 
-def supp_figure(sample, GNN_ID, bl, phi, ar):
+def supp_figure(sample, GNN_ID, bl, phi=None, v=None, ar=1.0):
     label_fontsize=24
     tick_fontsize=22
     letter_fontsize=26
     dir = f'/home/erschultz/Su2020/samples/sample{sample}'
-    y, y_gnn, y_pca = load_exp_gnn_pca_contact_maps(dir, GNN_ID, b=bl, phi=phi, ar=ar)
+    y, y_gnn, y_pca = load_exp_gnn_pca_contact_maps(dir, GNN_ID, b=bl, phi=phi, v=v, ar=ar)
     m = len(y)
 
     ### supp figure with hicmaps ###
@@ -727,5 +727,5 @@ def supp_figure(sample, GNN_ID, bl, phi, ar):
 if __name__ == '__main__':
     # old_figure(1013, 490, bl=180, phi=0.008, ar=1.5)
     # new_figure(1004, 490, bl=180, phi=0.008, ar=1.5)
-    new_figure(1004, 490, bl=180, v=8, ar=1.5)
-    # supp_figure(1004, None, bl=180, phi=0.01, ar=2.0)
+    # new_figure(1013, 579, bl=180, v=8, ar=1.5)
+    supp_figure(1013, 579, bl=180, v=8, ar=1.5)

@@ -45,9 +45,9 @@ def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
 
     gnn_root = f'{root}-GNN{GNN_ID}-max_ent'
     if osp.exists(gnn_root):
-        shutil.rmtree(gnn_root)
+        # shutil.rmtree(gnn_root)
         print('WARNING: root exists')
-        # return
+        return
     os.mkdir(gnn_root, mode=0o755)
 
     # sleep for random # of seconds so as not to overload gpu
@@ -106,10 +106,10 @@ def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     goals = get_goals(y, None, config)
     params["goals"] = goals
     params['mode'] = 'diag'
-    params['iterations'] = 2
+    params['iterations'] = 20
     params['parallel'] = 1
     params['equilib_sweeps'] = 10000
-    params['production_sweeps'] = 3000
+    params['production_sweeps'] = 300000
     params['stop_at_convergence'] = True
     params['conv_defn'] = 'normal'
     params['run_longer_at_convergence'] = False
@@ -117,7 +117,7 @@ def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     stdout = sys.stdout
     with open(osp.join(gnn_root, 'log.log'), 'w') as sys.stdout:
         me = Maxent(gnn_root, params, config, seqs, y, fast_analysis=True,
-                    final_it_sweeps=3000, mkdir=False, bound_diag_chis=False,
+                    final_it_sweeps=300000, mkdir=False, bound_diag_chis=False,
                     initial_chis = all_chis)
         t = me.fit()
         print(f'Simulation took {np.round(t, 2)} seconds')
@@ -231,8 +231,8 @@ def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
 
 def main():
     samples=None
-    dataset='dataset_02_04_23';
-    # dataset = 'Su2020'; samples=[1013, 1004]
+    #dataset='dataset_02_04_23';
+    dataset = 'Su2020'; samples=[1013, 1004]
     # dataset = 'dataset_06_29_23'; samples = [2, 103, 604]
     # dataset = 'dataset_09_28_23';
     # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
@@ -240,7 +240,7 @@ def main():
 
     if samples is None:
         samples, _ = get_samples(dataset, train=True)
-        samples = samples[:1]
+        samples = samples[:10]
     print(len(samples))
 
     # GNN_IDs = [577]; b=180; phi=0.008; v=None; ar=1.5
@@ -257,12 +257,12 @@ def main():
     print(len(mapping))
     # print(mapping)
 
-    #with mp.Pool(10) as p:
+    with mp.Pool(15) as p:
         # p.starmap(cleanup, mapping)
-        #p.starmap(fit_max_ent, mapping)
+        p.starmap(fit, mapping)
 
     for i in mapping:
-        fit_max_ent(*i)
+        #fit_max_ent(*i)
         check(*i)
 
 if __name__ == '__main__':

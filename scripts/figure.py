@@ -29,12 +29,12 @@ test=True
 label_fontsize=22
 tick_fontsize=18
 letter_fontsize=26
-dataset = 'dataset_02_04_23'; sample = 223; GNN_ID = 578
+dataset = 'dataset_02_04_23'; sample = 223; GNN_ID = 579
 # dataset = 'dataset_04_05_23'; sample = 1001; GN_ID = 407
 # dataset = 'dataset_04_05_23'; sample = 1001; GNN_ID = 423
 samples, _ = get_samples(dataset, test=True)
-samples_list = samples[:10]
-print(f'Samples: {samples_list}')
+samples_list = samples
+print(f'Samples: {samples_list}, len={len(samples_list)}')
 k=10
 grid_root = 'optimize_grid_b_180_v_8_spheroid_1.5'
 def get_dirs(sample_dir):
@@ -125,11 +125,14 @@ if not test:
                     samples = samples_list)
     args.experimental = True
     args.verbose = False
-    args.bad_methods=['140', '261', 'spheroid_2.0', 'phi', 'max_ent5']
+    args.bad_methods=['140', '261', 'spheroid_2.0', 'phi', 'long', 'GNN579-max_ent']
+    for j in range(2,10):
+        args.bad_methods.append(f'max_ent{j}')
     args.convergence_definition = 'normal'
     args.gnn_id = [GNN_ID]
     data, _ = load_data(args)
     max_ent = osp.split(max_ent_dir)[1]
+    print(k, max_ent)
 
     gnn = f'{grid_root}-GNN{GNN_ID}'
     gnn_times = data[0][gnn]['total_time']
@@ -142,12 +145,14 @@ if not test:
     max_ent_sccs = [i for i in max_ent_sccs if not np.isnan(i)]
     max_ent_pearsons = data[k][max_ent]['pearson_pc_1']
     max_ent_pearsons = [i for i in max_ent_pearsons if not np.isnan(i)]
+    print(data)
 
-
-
+    
     args.convergence_definition = 'strict'
+    args.bad_methods.remove('long')
     args.gnn_id = []
     data, _ = load_data(args)
+    max_ent = max_ent+ '_long'
     max_ent_times_strict = data[k][max_ent]['converged_time']
     max_ent_times_strict = [i for i in max_ent_times_strict if i is not None]
     max_ent_sccs_strict = data[k][max_ent]['scc_var']
@@ -225,8 +230,8 @@ def figure(test=False):
     ax1 = plt.subplot(2, 24, (1, 6))
     ax2 = plt.subplot(2, 24, (9, 14))
     # ax_cb = plt.subplot(2, 48*2, 29*2-1)
-    # ax4 = plt.subplot(2, 24, (17, 24)) # pc
-    ax4_2 = plt.subplot(4, 24, (41, 48)) # diagonal
+    ax4 = plt.subplot(2, 24, (17, 24)) # pc
+    # ax4_2 = plt.subplot(4, 24, (41, 48)) # diagonal
     ax5 = plt.subplot(2, 24, (25, 29)) # meandist
     ax6 = plt.subplot(2, 48, (63, 67))
     ax7 = plt.subplot(2, 48, (72, 76))
@@ -260,7 +265,7 @@ def figure(test=False):
         scc_var = np.round(scc_var, 3)
         title = f'SCC={scc_var}'
         print(f'{label}: ' + title)
-        s.set_title(title, fontsize = label_fontsize, loc='left')
+        # s.set_title(title, fontsize = label_fontsize, loc='left')
         s.axline((0,0), slope=1, color = 'k', lw=1)
         s.text(0.99*m, -0.08*m, label, fontsize=label_fontsize, ha='right', va='top', weight='bold')
         s.text(0.01*m, 1.08*m, 'Experiment', fontsize=label_fontsize, weight='bold')
@@ -268,28 +273,28 @@ def figure(test=False):
         #            fontsize = tick_fontsize)
         s.set_xticks([])
 
-    # ax4.plot(pcs[0], label = 'Experiment', color = 'k')
-    # ax4.plot(pcs_pca[0], label = f'Max Ent', color = 'b')
-    # ax4.plot(pcs_gnn[0], label = f'GNN', color = 'r')
-    # title = f'Max Ent (r={pearson_round(pcs[0], pcs_pca[0])})\nGNN (r={pearson_round(pcs[0], pcs_gnn[0])})'
-    # print(title)
+    ax4.plot(pcs[0], label = 'Experiment', color = 'k')
+    ax4.plot(pcs_pca[0], label = f'Max Ent', color = 'b')
+    ax4.plot(pcs_gnn[0], label = f'GNN', color = 'r')
+    title = f'Max Ent (r={pearson_round(pcs[0], pcs_pca[0])})\nGNN (r={pearson_round(pcs[0], pcs_gnn[0])})'
+    print(title)
     # ax4.set_title(title)
-    # ax4.set_xticks(genome_ticks, labels = genome_labels, rotation = 0,
-    #                 fontsize = tick_fontsize)
-    # ax4.set_yticks([])
-    # ax4.set_ylabel('PC 1', fontsize=label_fontsize)
-    # ax4.set_ylim(None, .14)
-    # ax4.legend(bbox_to_anchor=(0.5, .98), loc="upper center",
-    #             fontsize = 14, borderaxespad=0, ncol=3)
+    ax4.set_xticks(genome_ticks, labels = genome_labels, rotation = 0,
+                    fontsize = tick_fontsize)
+    ax4.set_yticks([])
+    ax4.set_ylabel('PC 1', fontsize=label_fontsize)
+    ax4.set_ylim(None, .14)
+    ax4.legend(bbox_to_anchor=(0.5, .98), loc="upper center",
+                fontsize = 14, borderaxespad=0, ncol=3)
 
-    resized = rotate_bound(y,-45)
-    height=50
-    center = resized.shape[0] // 2
-    resized = resized[center-height:center, :]
-    sns.heatmap(resized, ax = ax4_2, linewidth = 0, vmin = vmin, vmax = vmax,
-                cmap = RED_CMAP, cbar = False)
-    ax4_2.set_xticks([])
-    ax4_2.set_yticks([])
+    # resized = rotate_bound(y,-45)
+    # height=50
+    # center = resized.shape[0] // 2
+    # resized = resized[center-height:center, :]
+    # sns.heatmap(resized, ax = ax4_2, linewidth = 0, vmin = vmin, vmax = vmax,
+    #             cmap = RED_CMAP, cbar = False)
+    # ax4_2.set_xticks([])
+    # ax4_2.set_yticks([])
 
 
     # compare P(s)
@@ -448,5 +453,5 @@ def diagonal_figure():
 
 if __name__ == '__main__':
     figure()
-    # supp_figure()
-    diagonal_figure()
+    #supp_figure()
+    # diagonal_figure()

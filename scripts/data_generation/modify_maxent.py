@@ -1236,7 +1236,8 @@ def grid_dist(dataset, plot=True, b=140, phi=None, v=None, ar=1.0):
         grid_size_arr[i] = np.loadtxt(osp.join(dir, 'grid.txt'))
 
     if plot:
-        # plot plaid chi parameters
+        # plot grid distribution
+        print(osp.join(odir, 'grid_Size_dist.png'))
         simple_histogram(grid_size_arr, 'grid size', odir,
                             'grid_size_dist.png', dist = skewnorm)
 
@@ -1333,8 +1334,8 @@ if __name__ == '__main__':
     # for i in range(221, 222):
         # plot_modified_max_ent(i, k = 10)
     # diagonal_dist('dataset_02_04_23', b=261, phi=0.01, k=10)
-    # grid_dist('dataset_02_04_23', b=180, phi=0.008, ar=1.5)
-    plaid_dist('dataset_02_04_23', b=180, phi=None, v=8, k=10, ar=1.5, plot=True, eig_norm=True)
+    grid_dist('dataset_02_04_23', b=180, phi=None, v=8, ar=1.5)
+    # plaid_dist('dataset_02_04_23', b=180, phi=None, v=8, k=10, ar=1.5, plot=True, eig_norm=True)
     # get_read_counts('dataset_04_28_23')
     # seq_dist('dataset_01_26_23', 4, True, True)
     # plot_params_test()

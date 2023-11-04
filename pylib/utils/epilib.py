@@ -1092,14 +1092,16 @@ def plot_obs_vs_goal(sim):
     goal = sim.obj_goal_tot
     axs[0].plot(obs, "--o", label="obs")
     axs[0].plot(goal, "ko", label="goal")
-    axs[0].vlines(len(sim.obs), min(sim.obs_tot) / 5, max(sim.obs_tot) / 5, "k")
+    if sim.obs is not None:
+        axs[0].vlines(len(sim.obs), min(sim.obs_tot) / 5, max(sim.obs_tot) / 5, "k")
     axs[0].legend()
     axs[0].set_title("Observables vs Goals")
 
     diff = sim.obs_tot - sim.obj_goal_tot
     axs[1].plot(diff, "--o")
     axs[1].hlines(0, len(sim.obs_tot), 0, "k")
-    axs[1].vlines(len(sim.obs), min(diff) / 5, max(diff) / 5, "k")
+    if sim.obs is not None:
+        axs[1].vlines(len(sim.obs), min(diff) / 5, max(diff) / 5, "k")
     axs[1].set_title("Difference")
 
 

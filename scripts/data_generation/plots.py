@@ -25,8 +25,8 @@ from sequences_to_contact_maps.scripts.utils import calc_dist_strat_corr
 def meanDist_comparison():
     # datasets = ['dataset_01_26_23', 'dataset_02_16_23']
     # datasets = ['dataset_01_26_23', 'dataset_02_04_23', 'dataset_02_21_23']
-    datasets = ['dataset_02_04_23', 'dataset_09_28_23']
-    labels = ['Experiment', 'synthetic']
+    datasets = ['dataset_02_04_23', 'dataset_06_29_23']
+    labels = ['GM12878', 'Mixed']
     data_dir = osp.join('/home/erschultz', datasets[0])
 
     cmap = matplotlib.cm.get_cmap('tab10')

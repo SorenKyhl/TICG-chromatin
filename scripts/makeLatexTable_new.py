@@ -146,14 +146,19 @@ def load_data(args):
                     print(fname)
                 k = 0
                 converged_it = None
-                converged_path = fpath
+                if 'max_ent' in method:
+                    converged_path = osp.join(fpath, 'iteration20')
+                    times = [0]
+                else:
+                    converged_path = fpath
+                    times = [load_time_dir(fpath)]
                 S_file = osp.join(fpath, 'S.npy')
                 if osp.exists(S_file):
                     S = np.load(S_file)
                 else:
+                    print(f'S does not exists for {fpath}')
                     continue
-                times = [load_time_dir(fpath)]
-            elif method_type.startswith('max_ent'):
+            elif 'max_ent' in method:
                 if args.verbose:
                     print(fname)
                 chi_path = osp.join(fpath, 'chis.txt')
@@ -246,7 +251,7 @@ def load_data(args):
             else:
                 # method must be GNN or max_ent
                 continue
-
+            
 
             # time
             if converged_it is None:
@@ -256,7 +261,7 @@ def load_data(args):
                 converge_time /= 60 # to minutes
             temp_dict['converged_time'] = converge_time
             temp_dict['total_time'] = np.sum(times) / 60
-
+            
             if converged_path is not None:
                 # SCC
                 data_file = osp.join(converged_path, 'production_out')
@@ -267,12 +272,14 @@ def load_data(args):
                 elif osp.exists(y_file2):
                     yhat = np.loadtxt(y_file2)
                 else:
+                    print(f'y_file not found')
                     # presumably max ent is still running
                     continue
                 yhat_meanDist = DiagonalPreprocessing.genomic_distance_statistics(yhat)
                 yhat_diag = DiagonalPreprocessing.process(yhat, yhat_meanDist, verbose = False)
                 scc = SCC(h=5)
                 corr_scc_var = scc.scc(ground_truth_ydiag, yhat_diag, var_stabilized = True)
+              
                 # result = plotDistanceStratifiedPearsonCorrelation(ground_truth_y,
                                 # yhat, converged_path)
                 # overall_corr, corr_scc, corr_scc_var, avg_diag = result
@@ -287,6 +294,7 @@ def load_data(args):
                 rmse_diag10 = mean_squared_error(ground_truth_meanDist[:10], yhat_meanDist[:10], squared = False)
                 temp_dict['rmse-diag10'] = rmse_diag10
             else:
+                print(f'converged path is None: {method}')
                 yhat = None
 
             if ground_truth_S is not None and S is not None:
@@ -418,6 +426,7 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                 if 'GNN' in method:
                     pos = method.find('GNN')
                     id = method[pos+3:]
+                    id = id.split('-')[0]
                     try:
                         with open(f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{id}/argparse.txt', 'r') as f:
                             for line in f:
@@ -434,6 +443,7 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                         print(e)
                 if nan_mask is not None and len(data[k][method]['scc']) != len(nan_mask):
                     # skip method if not performed for all samples
+                    print(f'skipping {method}, k={k}: {data[k][method]}')
                     continue
                 if first: # only write k for first row in section
                     k_label = k
@@ -492,14 +502,17 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                             mean_effect_size = np.round(mean_effect_size, 3)
                             if pval < 0.05:
                                 print('Significant:', metric, pval, mean_effect_size)
-
+                        else:
+                            pval = None
                         result_mean = np.round(result_mean, roundoff)
                         result_std = np.nanstd(result, ddof=1)
                         result_sem = ss.sem(result, nan_policy = 'omit')
                         result_std = np.round(result_std, roundoff)
                         result_sem = np.round(result_sem, roundoff)
                         text += f" & {result_mean} $\pm$ {result_sem}"
-                        if pval < 0.001:
+                        if pval is None:
+                            pass
+                        elif pval < 0.001:
                             text += f' ***({mean_effect_size})'
                         elif pval < 0.01:
                             text += f' **({mean_effect_size})'
@@ -553,9 +566,11 @@ def sort_method_keys(keys):
         else:
             label += ')'
 
-
-        left, right = key.split('-')
-        other = right.split('_')
+        
+        key_split = key.split('-')
+        other = key_split[-1].split('_')
+        if len(key_split) == 3:
+            other = [key_split[-2]] + other
         if len(other) > 2:
             label += ' '
             label += '\_'.join(other[2:])
@@ -663,31 +678,33 @@ def main(args=None):
 
 if __name__ == '__main__':
     samples = None
-    dataset = 'dataset_02_04_23'
+    # dataset = 'dataset_02_04_23'
     # dataset='dataset_09_28_23_s_100_cutoff_0.01'
     # dataset='dataset_09_28_23_s_10_cutoff_0.08'
     # dataset='dataset_09_28_23_s_1_cutoff_0.36'
-    # dataset = 'dataset_06_29_23'
+    dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     # dataset='Su2020'; samples = [1013]
 
     if samples is None:
-        samples, _ = get_samples(dataset, train = True)
-        samples = samples[:10]
-
+        samples, _ = get_samples(dataset, test = True)
+        samples = samples
     data_dir = osp.join('/home/erschultz', dataset)
     args = getArgs(data_folder = data_dir, samples = samples)
     args.experimental = True
+    args.verbose = True
     args.convergence_definition = 'normal'
-    args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', '_700k', 'phi', 'GNN579-max_ent']
-    for i in [2,3,4,6,7,8,9]:
-        args.bad_methods.append(f'max_ent{i}')
+    #args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', '_700k', 'phi', 'GNN579-max_ent']
+    #for i in [2,3,4,5,6,7,8,9]:
+    #    args.bad_methods.append(f'max_ent{i}')
 
     # args.gnn_id = [490, 496, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518, 519, 520, 521, 522, 523, 524, 525]
     # args.gnn_id=[434, 451, 455, 456, 461, 462, 463, 470, 471, 472, 476, 477, 479, 480, 481, 484, 485, 486, 488]
     # args.gnn_id=[490, 507, 511]
     # args.gnn_id = [496, 506, 518, 519, 523, 524, 525, 526, 527, 528, 529, 530, 531, 532, 533, 534, 535, 536, 537, 538, 539, 540, 541, 542, 543, 544]
-    args.gnn_id = [496, 541, 548, 549, 550, 551, 552, 553, 555, 556, 558, 560, 561, 562, 564, 565, 567, 568, 569, 570, 571, 572, 573, 574, 575, 576, 577, 578, 579, 580]
-    args.gnn_id = [569, 570, 571, 572, 573, 575, 575, 576, 577, 578, 579, 580, 581, 582, 583]
+    # args.gnn_id = [496, 541, 548, 549, 550, 551, 552, 553, 555, 556, 558, 560, 561, 562, 564, 565, 567, 568, 569, 570, 571, 572, 573, 574, 575, 576, 577, 578, 579, 580]
+    # args.gnn_id = [569, 570, 571, 572, 573, 575, 575, 576, 577, 578, 579, 580, 581, 582, 583, 584, 585, 586, 587, 588, 589]
+    args.gnn_id = [434, 578, 579, 450, 451]
+    #args.gnn_id = [579]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

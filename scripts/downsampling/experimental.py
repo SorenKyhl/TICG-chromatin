@@ -104,12 +104,12 @@ def fit_max_ent():
     for downsampling in [4, 5, 6, 7, 8]:
         for i in samples:
             mapping.append((dataset, i, f'samples_exp{downsampling}',
-                            180, 0.008, None, None, 1.5))
+                            180, None, 8, None, 1.5))
 
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(1) as p:
+    with mp.Pool(16) as p:
         p.starmap(max_ent.check, mapping)
 
 
@@ -157,8 +157,10 @@ def figure(GNN_ID):
             corr_scc_var = scc.scc(y_dense, y_sparse)
             experiment_scc_dense[exp][i] = corr_scc_var
 
+            grid_root = 'optimize_grid_b_180_v_8_spheroid_1.5'
+            
             # gnn
-            gnn_dir = osp.join(s_dir, f'optimize_grid_b_140_phi_0.03-GNN{GNN_ID}')
+            gnn_dir = osp.join(s_dir, f'{grid_root}-GNN{GNN_ID}')
             yhat = np.load(osp.join(gnn_dir, 'y.npy'))
             gnn_scc_dense[exp][i] = scc.scc(y_dense, yhat)
             gnn_scc_sparse[exp][i] = scc.scc(y_sparse, yhat)
@@ -170,7 +172,7 @@ def figure(GNN_ID):
             composite_dict[exp][i] = composite
 
             # max ent
-            max_ent_dir = osp.join(s_dir, 'optimize_grid_b_140_phi_0.03-max_ent10')
+            max_ent_dir = osp.join(s_dir, f'{grid_root}-max_ent10')
             final = get_final_max_ent_folder(max_ent_dir)
             yhat = np.load(osp.join(final, 'y.npy'))
             max_ent_scc_dense[exp][i] = scc.scc(y_dense, yhat)
@@ -346,6 +348,6 @@ def figure(GNN_ID):
 if __name__ == '__main__':
     mp.set_start_method('spawn')
     # make_samples()
-    # fit_max_ent()
-    fit_gnn(579)
-    # figure(434)
+    fit_max_ent()
+    # fit_gnn(579)
+    # figure(579)

@@ -158,8 +158,12 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
     if not osp.exists(odir):
         os.mkdir(odir, mode = 0o755)
 
-    ref_meanDist = np.load(osp.join(dir, 'dataset_02_04_23/molar_contact_ratio/meanDist.npy'))
-    ref_meanDist = np.mean(ref_meanDist, axis = 0)
+    ref_file = osp.join(dir, 'dataset_02_04_23/molar_contact_ratio/meanDist.npy')
+    if osp.exists(ref_file):
+        ref_meanDist = np.load(ref_file)
+        ref_meanDist = np.mean(ref_meanDist, axis = 0)
+    else:
+        ref_meanDist = None
 
     samples, experimental = get_samples(dataset)
     samples = np.array(samples)[:100] # cap at 100
@@ -189,10 +193,11 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
 
         if not found_meanDist:
             meanDist_list.append(DiagonalPreprocessing.genomic_distance_statistics(y))
-        rmse = mean_squared_error(meanDist_list[i], ref_meanDist, squared=False)
-        meanDist_rmse_arr[i] = rmse
-        print(meanDist_list[i][:10])
-        print(sample, rmse)
+        if ref_meanDist is not None:
+            rmse = mean_squared_error(meanDist_list[i], ref_meanDist, squared=False)
+            meanDist_rmse_arr[i] = rmse
+            print(meanDist_list[i][:10])
+            print(sample, rmse)
 
         if plot:
             m = len(y)
@@ -421,5 +426,5 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
     return meanDist_list
 
 if __name__ == '__main__':
-    molar_contact_ratio('dataset_10_12_23', 545, plot=True)
+    molar_contact_ratio('dataset_02_04_23', None, plot=False)
     # molar_contact_ratio('dataset_09_28_23', 541, plot=True)
