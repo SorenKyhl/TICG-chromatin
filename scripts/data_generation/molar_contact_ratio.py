@@ -149,14 +149,29 @@ def plot_matrix_layout(rows, cols, ind, data_arr, val_arr, samples_arr, cmap, vm
     plt.savefig(ofile)
     plt.close()
 
-def molar_contact_ratio(dataset, model_ID=None, plot=True):
+def molar_contact_ratio(dataset, model_ID=None, plot=True, cap=100, m=512):
     dir = '/project2/depablo/erschultz/'
     if not osp.exists(dir):
         dir = '/home/erschultz'
     data_dir = osp.join(dir, dataset)
+    if not osp.exists(data_dir):
+        data_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/home/erschultz', dataset)
+    assert osp.exists(data_dir), f'{data_dir} does not exist'
     odir = osp.join(data_dir, 'molar_contact_ratio')
     if not osp.exists(odir):
         os.mkdir(odir, mode = 0o755)
+
+
+    meanDist_file = osp.join(odir, 'meanDist.npy')
+    if osp.exists(meanDist_file):
+        meanDist_list = np.load(meanDist_file)
+        if not plot:
+            return meanDist_list
+        found_meanDist = True
+    else:
+        found_meanDist = False
+        meanDist_list = []
+
 
     ref_file = osp.join(dir, 'dataset_02_04_23/molar_contact_ratio/meanDist.npy')
     if osp.exists(ref_file):
@@ -166,7 +181,7 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
         ref_meanDist = None
 
     samples, experimental = get_samples(dataset)
-    samples = np.array(samples)[:100] # cap at 100
+    samples = np.array(samples)[:cap] # cap at 100
     print('samples:', samples)
 
     N = len(samples)
@@ -175,32 +190,29 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
     pca_var = np.zeros(N)
     L1_arr = np.zeros(N)
     meanDist_rmse_arr = np.zeros(N)
-    y_arr = np.zeros((N, 512, 512))
+    y_arr = np.zeros((N, m, m))
     # L_list_exp, _ = plaid_dist('dataset_01_26_23', 4, False)
-    meanDist_file = osp.join(odir, 'meanDist.npy')
-    if osp.exists(meanDist_file):
-        meanDist_list = np.load(meanDist_file)
-        found_meanDist = True
-    else:
-        found_meanDist = False
-        meanDist_list = []
     for i, sample in enumerate(samples):
+        if i % 100 == 0:
+            print(f'progress: {np.round(i/N*100, 3)}%')
         sample_dir = osp.join(data_dir, f'samples/sample{sample}')
 
-        y, y_diag = load_Y(sample_dir)
-        y /= np.mean(np.diagonal(y))
-        y_arr[i] = y
+        if not found_meanDist or plot:
+            y, y_diag = load_Y(sample_dir)
+            y /= np.mean(np.diagonal(y))
+            y_arr[i] = y
 
         if not found_meanDist:
             meanDist_list.append(DiagonalPreprocessing.genomic_distance_statistics(y))
-        if ref_meanDist is not None:
-            rmse = mean_squared_error(meanDist_list[i], ref_meanDist, squared=False)
-            meanDist_rmse_arr[i] = rmse
-            print(meanDist_list[i][:10])
-            print(sample, rmse)
 
         if plot:
             m = len(y)
+
+            # if ref_meanDist is not None:
+            #     rmse = mean_squared_error(meanDist_list[i], ref_meanDist, squared=False)
+            #     meanDist_rmse_arr[i] = rmse
+                # print(meanDist_list[i][:10])
+                # print(sample, f'rmse={rmse}')
 
             # L1 chi
             if osp.exists(osp.join(sample_dir, 'chis.npy')):

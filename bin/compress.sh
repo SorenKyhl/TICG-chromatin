@@ -78,7 +78,9 @@ dir='/home/erschultz'
 
 dir='/project2/depablo/erschultz'
 cd $dir
-compress dataset_08_25_23
-compress dataset_09_11_23
-compress dataset_09_17_23
-compress dataset_09_19_23
+compress dataset_09_25_23
+compress dataset_09_26_23
+compress dataset_09_27_23
+compress dataset_09_28_23
+compress dataset_09_29_23
+compress dataset_10_12_23

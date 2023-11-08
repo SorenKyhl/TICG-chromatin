@@ -48,6 +48,8 @@ ALL_FILES = [
 
 ALL_FILES_NO_GM12878 = [f for f in ALL_FILES if 'gm12878' not in f]
 
+ALL_FILES_in_situ = [f for f in ALL_FILES if 'in-situ' in f]
+
 VALIDATION_FILES = [
         "https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
         "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-untreated_combined_30.hic",
@@ -170,72 +172,6 @@ def import_wrapper(odir, filename_list, resolution, norm, m,
     with multiprocessing.Pool(15) as p:
         p.starmap(import_contactmap_straw, mapping)
 
-
-def dataset_01_26():
-    dir = '/home/erschultz'
-    dataset='dataset_01_26_23'
-    data_folder = osp.join(dir, dataset)
-    if not osp.exists(data_folder):
-        os.mkdir(data_folder, mode = 0o755)
-    if not osp.exists(osp.join(data_folder, 'samples')):
-        os.mkdir(osp.join(data_folder, 'samples'), mode = 0o755)
-
-    resolution=10000
-    norm = 'NONE'
-    filename="https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-treated_6hr_combined_30.hic"
-    m = 512*5
-
-    # slices = [(1, 15), (1, 166), (2, 110), (3, 130), (4, 140), (7, 89)]
-    slices = [(5, 137), (6, 80), (10, 63), (13, 30)]
-
-    # set up for multiprocessing
-    mapping = []
-    start_sample=89
-    for i, (chromosome, start_mb) in enumerate(slices):
-        start = start_mb * 1000000
-        end = start + resolution * m
-        end_mb = end / 1000000
-        print(f'i={i+start_sample}: chr{chromosome} {start_mb}-{end_mb}')
-        sample_folder = osp.join(data_folder, 'samples', f'sample{i+start_sample}')
-        mapping.append((sample_folder, filename, chromosome, start, end, resolution, norm))
-
-    with multiprocessing.Pool(10) as p:
-        p.starmap(import_contactmap_straw, mapping)
-
-def dataset_11_14():
-    dir = '/home/erschultz'
-    # dir = '/project2/depablo/erschultz'
-    dataset='dataset_11_14_22'
-    data_folder = osp.join(dir, dataset)
-    if not osp.exists(data_folder):
-        os.mkdir(data_folder, mode = 0o755)
-    if not osp.exists(osp.join(data_folder, 'samples')):
-        os.mkdir(osp.join(data_folder, 'samples'), mode = 0o755)
-
-    resolution=10000
-    norm = 'NONE'
-    filename='https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-treated_6hr_combined_30.hic'
-    m = 1024*5
-
-    # slices = [(2, 17.6)]
-    # slices = [(1, 15), (1, 150), (2, 5), (2, 135), (3, 5), (3, 110), (4, 60),
-    #             (4, 115), (5, 75), (5, 120), (6, 4), (6, 100), (7, 6), (7, 77),]
-    slices = [            (8, 90), (9, 75), (10, 55), (11, 56), (12, 45), (13, 22),]
-    #             # (14, 35), (18, 20)]
-
-    # set up for multiprocessing
-    mapping = []
-    start_sample=2017
-    for i, (chromosome, start_mb) in enumerate(slices):
-        start = start_mb * 1000000
-        end = start + resolution * m
-        end_mb = end / 1000000
-        print(f'i={i+start_sample}: chr{chromosome} {start_mb}-{end_mb}')
-        sample_folder = osp.join(data_folder, 'samples', f'sample{i+start_sample}')
-        mapping.append((sample_folder, filename, chromosome, start, end, resolution, norm))
-
-    with multiprocessing.Pool(10) as p:
-        p.starmap(import_contactmap_straw, mapping)
 
 def single_experiment_dataset(filename, dataset, resolution, m,
                                 norm='NONE', i=1, ref_genome='hg19',
@@ -425,7 +361,6 @@ if __name__ == '__main__':
             # "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-untreated_combined_30.hic"]
     # files = ["https://www.encodeproject.org/files/ENCFF177TYX/@@download/ENCFF177TYX.hic"]
     # mixed_experimental_dataset('dataset_04_05_23', 10000, 1024*5, files = files, i=263)
-    mixed_experimental_dataset('dataset_06_29_23', 10000, 512*5, files = ALL_FILES_NO_GM12878)
     # mixed_experimental_dataset('dataset_04_06', 10000, 1024*5)
     # mixed_experimental_dataset('dataset_04_07', 25000, 1024*4)
     # single_experiment_dataset("https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic",
@@ -438,5 +373,6 @@ if __name__ == '__main__':
     #                             'dataset_HCT116', 10000, 512*5, i=10, chroms=[2])
     # single_experiment_dataset("https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-treated_6hr_combined_30.hic",
                                 # 'dataset_HCT116_RAD21_KO', 10000, 512*5, i=10, chroms=[2])
-
+    mixed_experimental_dataset('dataset_11_07_23', 10000, 512*5, files = ALL_FILES_in_situ,
+                                norm = 'KR', chroms=[1,2])
     # Su2020imr90()

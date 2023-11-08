@@ -13,19 +13,20 @@ import optimize_grid
 import pylib.analysis as analysis
 import torch
 from max_ent import setup_config
-from pylib.Pysim import Pysim
 from pylib.Maxent import Maxent
+from pylib.Pysim import Pysim
 from pylib.utils import default, epilib, utils
+from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import calculate_D
 from pylib.utils.goals import get_goals
-from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
-
 from scripts.data_generation.modify_maxent import get_samples
 from scripts.get_params import GetEnergy
 
 sys.path.append('/home/erschultz')
+from sequences_to_contact_maps.result_summary_plots import \
+    predict_chi_in_psi_basis
 from sequences_to_contact_maps.scripts.load_utils import load_import_log
-from sequences_to_contact_maps.result_summary_plots import predict_chi_in_psi_basis
+
 
 def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     print(sample)

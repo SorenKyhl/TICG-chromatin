@@ -14,7 +14,6 @@ from pylib.Pysim import Pysim
 from pylib.utils import default, epilib, utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import *
-
 from scripts.contact_map import getArgs, plot_all
 from scripts.data_generation.modify_maxent import get_samples
 
@@ -293,7 +292,7 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
     params['equilib_sweeps'] = 10000
     params['production_sweeps'] = 300000
     params['stop_at_convergence'] = True
-    params['conv_defn'] = 'strict'
+    params['conv_defn'] = 'normal'
     params['run_longer_at_convergence'] = False
 
     stdout = sys.stdout
@@ -358,7 +357,7 @@ def main():
     # dataset = 'Su2020'; samples = [1013, 1004]
     # dataset = 'dataset_04_28_23'; samples = [1,2,3,4,5,324,981,1753,1936,2834,3464]
     # dataset = 'dataset_04_05_23'; samples = list(range(1211, 1288))
-    dataset = 'dataset_06_29_23'; 
+    dataset = 'dataset_06_29_23';
     # samples = [1,2,3,4,5, 101,102,103,104,105,
     #                                             601,602,603,604,605]
     # dataset = 'dataset_08_25_23'; samples=[981]
@@ -367,8 +366,8 @@ def main():
     # dataset = 'timing_analysis/512'; samples = list(range(1, 16))
 
     if samples is None:
-        samples, _ = get_samples(dataset, test=True)
-        samples = samples[:128]
+        samples, _ = get_samples(dataset, train=True)
+        samples = samples
         print(samples)
 
     mapping = []
@@ -379,10 +378,10 @@ def main():
                         'gaussian', k, False, k_angle, theta_0))
     print('len =', len(mapping))
 
-    with mp.Pool(16) as p:
+    with mp.Pool(1) as p:
         # p.starmap(setup_config, mapping)
-        p.starmap(fit, mapping)
-        # p.starmap(check, mapping)
+        # p.starmap(fit, mapping)
+        p.starmap(check, mapping)
         # p.starmap(cleanup, mapping)
 
 if __name__ == '__main__':

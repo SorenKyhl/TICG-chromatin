@@ -23,10 +23,9 @@ from sequences_to_contact_maps.scripts.utils import calc_dist_strat_corr
 
 
 def meanDist_comparison():
-    # datasets = ['dataset_01_26_23', 'dataset_02_16_23']
-    # datasets = ['dataset_01_26_23', 'dataset_02_04_23', 'dataset_02_21_23']
-    datasets = ['dataset_02_04_23', 'dataset_06_29_23']
-    labels = ['GM12878', 'Mixed']
+    datasets = ['dataset_06_29_23', 'dataset_04_05_23']
+    m_list= [512, 1024]
+    labels = ['Mixed', 'Mixed2']
     data_dir = osp.join('/home/erschultz', datasets[0])
 
     cmap = matplotlib.cm.get_cmap('tab10')
@@ -36,17 +35,17 @@ def meanDist_comparison():
     ax2 = ax.twinx()
     ax2.get_yaxis().set_visible(False)
 
-    s=1; cutoff = 0.01
+    s=1; cutoff = None
     arr_list = []
-    for i, (dataset, label) in enumerate(zip(datasets, labels)):
-        meanDist_list = molar_contact_ratio(dataset, None, False)
-        print(f'Retrieved meanDist_list for dataset {dataset}')
+    for i, (dataset, label, m) in enumerate(zip(datasets, labels, m_list)):
+        meanDist_list = molar_contact_ratio(dataset, None, False, cap=1000, m=m)
+        print(f'Retrieved meanDist_list for dataset {dataset}: size={meanDist_list.shape}')
         arr = []
         for meanDist in meanDist_list:
             arr.append(meanDist[s])
             if cutoff is not None and meanDist[s] > cutoff:
                 continue
-            ax.plot(meanDist, c = colors[i], alpha=0.6)
+            ax.plot(meanDist, c = colors[i], alpha=0.3)
         ax2.plot(np.NaN, np.NaN, label = label, c = colors[i])
         print(np.mean(arr), np.max(arr))
         arr_list.append(arr)
@@ -56,7 +55,7 @@ def meanDist_comparison():
 
     if cutoff is not None:
         ax.axhline(cutoff, c='k')
-    ax.axvline(s, c='k')
+        ax.axvline(s, c='k')
     ax.set_ylabel('Contact Probability', fontsize = 16)
     ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
 
@@ -66,7 +65,7 @@ def meanDist_comparison():
     plt.close()
 
     fig, ax = plt.subplots()
-    bin_width = 0.01
+    bin_width = 0.005
     arr_list = arr_list
     all_vals = arr_list[0].copy()
     all_vals.extend(arr_list[1])
@@ -75,10 +74,27 @@ def meanDist_comparison():
     end = np.round(np.max(all_vals), 2)
     print(start, end, bin_width)
     bin_positions = np.arange(start - bin_width, end + bin_width, bin_width)
-    for arr, label in zip(arr_list, labels):
-        plt.hist(arr, weights = np.ones_like(arr) / len(arr),
-                bins = bin_positions, alpha=0.5,
-                label = label)
+    for arr, label, dataset in zip(arr_list, labels, datasets):
+        _, _, cell_lines = get_samples(dataset, return_cell_lines=True)
+        if cell_lines is not None:
+            print(set(cell_lines))
+            for target_cell_line in set(cell_lines):
+                print(target_cell_line)
+                cell_line_arr = []
+                for grid_size, cell_line in zip(arr, cell_lines):
+                    if cell_line == target_cell_line:
+                        cell_line_arr.append(grid_size)
+                print(cell_line_arr[:5], len(cell_line_arr))
+                plt.hist(cell_line_arr, weights = np.ones_like(cell_line_arr) / len(cell_line_arr),
+                        bins = bin_positions, alpha=0.5,
+                        label = target_cell_line)
+
+            plt.legend()
+        else:
+            print('cell_lines is None')
+            plt.hist(arr, weights = np.ones_like(arr) / len(arr),
+                    bins = bin_positions, alpha=0.5,
+                    label = label)
     plt.xlabel('P(s=1)', fontsize=16)
     plt.tight_layout()
     plt.savefig(osp.join(data_dir, 'meanDist_p_s.png'))

@@ -15,6 +15,7 @@ from sklearn.neighbors import KernelDensity
 
 sys.path.insert(0, '/home/erschultz/TICG-chromatin')
 from scripts.data_generation.ECDF import Ecdf
+from scripts.data_generation.modify_maxent import get_samples
 from scripts.get_params_old import GetSeq
 
 sys.path.insert(0, '/home/erschultz')
@@ -95,14 +96,16 @@ class DatasetGenerator():
         if self.phi is not None:
             assert self.v is None
             self.grid_root = f'optimize_grid_b_{self.b}_phi_{self.phi}'
-            self.distributions_root = f'b_{self.b}_phi_{self.phi}_distributions'
+            self.distributions_root = f'b_{self.b}_phi_{self.phi}'
         else:
             self.grid_root = f'optimize_grid_b_{self.b}_v_{self.v}'
-            self.distributions_root = f'b_{self.b}_v_{self.v}_distributions'
+            self.distributions_root = f'b_{self.b}_v_{self.v}'
 
         if args.ar != 1:
             self.grid_root += f'_spheroid_{args.ar}'
             self.distributions_root += f'_spheroid_{args.ar}_distributions'
+        else:
+            self.distributions_root += '_distributions'
 
         self.get_exp_samples()
 
@@ -126,21 +129,25 @@ class DatasetGenerator():
 
 
     def get_exp_samples(self):
-        if self.exp_dataset == 'dataset_02_04_23':
-            exp_samples = range(201, 283)
-            assert self.m == 512, f"m={self.m}"
-        else:
-            raise Exception(f'unrecognized dataset {self.exp_dataset}')
+        # if self.exp_dataset == 'dataset_02_04_23':
+        #     exp_samples = range(201, 283)
+        #     assert self.m == 512, f"m={self.m}"
+        # else:
+        #     raise Exception(f'unrecognized dataset {self.exp_dataset}')
+        #
+        # # only use odd samples
+        # odd_samples = []
+        # for s in exp_samples:
+        #     s_dir = osp.join('/home/erschultz', self.exp_dataset, f'samples/sample{s}')
+        #     result = load_import_log(s_dir)
+        #     chrom = int(result['chrom'])
+        #     if chrom % 2 == 1:
+        #         odd_samples.append(s)
 
-        # only use odd samples
-        odd_samples = []
-        for s in exp_samples:
-            s_dir = osp.join('/home/erschultz', self.exp_dataset, f'samples/sample{s}')
-            result = load_import_log(s_dir)
-            chrom = int(result['chrom'])
-            if chrom % 2 == 1:
-                odd_samples.append(s)
-        self.exp_samples = odd_samples
+        samples, _, cell_lines = get_samples(self.exp_dataset, train=True, return_cell_lines=True)
+        self.exp_samples = samples
+        print(f'Using {len(self.exp_samples)} samples: {self.exp_samples}')
+        print(f'Using cell lines: {set(cell_lines)}')
 
     def plaid_params(self):
         if self.plaid_mode == 'none':
