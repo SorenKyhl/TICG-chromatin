@@ -48,7 +48,9 @@ class DiagonalPreprocessing():
         Outputs:
             stat_per_diagonal: numpy array where result[d] is the contact frequency/probability stat at distance d
         '''
-        y = y.copy().astype(np.float64)
+        assert len(y.shape) == 2, f'input is shape {y.shape}'
+        if isinstance(y, np.ndarray):
+            y = y.copy().astype(np.float64)
         if smoothen:
             y = uniform_filter(y, 3, mode = 'constant')
         if mode == 'prob':
@@ -63,6 +65,8 @@ class DiagonalPreprocessing():
             np_stat = np.nanmean
         elif stat == 'var':
             np_stat = np.nanvar
+        elif stat == 'std':
+            np_stat = np.nanstd
         m = len(y)
         distances = range(0, m, 1)
         stat_per_diagonal = np.zeros_like(distances).astype(float)
@@ -83,7 +87,7 @@ class DiagonalPreprocessing():
 
         return np.array(stat_per_diagonal)
 
-    def process(y, mean_per_diagonal, triu = False, verbose = True):
+    def process(y, mean_per_diagonal, triu = False, verbose = False):
         """
         Inputs:
             y: contact map numpy array or path to .npy file

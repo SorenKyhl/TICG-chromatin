@@ -130,9 +130,12 @@ class Pysim:
         Returns: [1 x n] list = [plaid_chis, diag_chis]
         """
         indices = np.triu_indices(self.config["nspecies"])
-        plaid_chis = np.array(self.config["chis"])[indices]
         diag_chis = np.array(self.config["diag_chis"])
-        flat_chis = np.hstack((plaid_chis, diag_chis))
+        if "chis" in self.config:
+            plaid_chis = np.array(self.config["chis"])[indices]
+            flat_chis = np.hstack((plaid_chis, diag_chis))
+        else:
+            flat_chis = diag_chis
         return flat_chis
 
     def chis_to_matrix(self, flat_chis):
@@ -148,16 +151,20 @@ class Pysim:
     def split_chis(self, allchis):
         """splits 1-D list of chis into: plaid_chis, diag_chis"""
         nplaidchis = len(allchis) - len(self.config["diag_chis"])
-        plaid_chis_flat, diag_chis = np.split(allchis, [nplaidchis])
-        return plaid_chis_flat, diag_chis
+        if nplaidchis > 0:
+            plaid_chis_flat, diag_chis = np.split(allchis, [nplaidchis])
+            return plaid_chis_flat, diag_chis
+        else:
+            return None, allchis
 
     def set_chis(self, allchis):
         """takes 1d vector of all chis and updates config chi parameters"""
         plaid_chis_flat, diag_chis = self.split_chis(allchis)
-        self.config["chis"] = self.chis_to_matrix(plaid_chis_flat).tolist()
+        if plaid_chis_flat is not None:
+            self.config["chis"] = self.chis_to_matrix(plaid_chis_flat).tolist()
         self.config["diag_chis"] = diag_chis.tolist()
 
-    def load_observables(self, jacobian=False):
+    def load_observables(self, jacobian=False, mode='all'):
         """load observable trajectories from simulation output.
         return mean of observables throughout the simulation,
         and (optionally) the jacobian of the observable matrix
@@ -166,8 +173,15 @@ class Pysim:
             raise ValueError("data out member variable has not been initialized")
 
         obs_files = []
-        obs_files.append(self.root / self.data_out / "observables.traj")
-        obs_files.append(self.root / self.data_out / "diag_observables.traj")
+        if mode == 'all':
+            obs_files.append(self.root / self.data_out / "observables.traj")
+            obs_files.append(self.root / self.data_out / "diag_observables.traj")
+        elif mode == 'diag':
+            obs_files.append(self.root / self.data_out / "diag_observables.traj")
+        elif mode == 'plaid':
+            obs_files.append(self.root / self.data_out / "observables.traj")
+        else:
+            raise Exception(f'Unrecognized mode: {mode}')
 
         df_total = pd.DataFrame()
         for file in obs_files:
@@ -186,6 +200,7 @@ class Pysim:
 
     def run(self, name=None):
         """run simulation"""
+        t0 = time.time()
         self.data_out = name
         self.setup()
         with cd(self.root):
@@ -196,6 +211,8 @@ class Pysim:
                 self.data_out = "data_out"  # don't set earlier...
                 # in this case, use default constructor so engine.run() pipes to stdout
             engine.run()
+        tf = time.time()
+        return tf - t0
 
     def run_eq(
         self,
@@ -211,13 +228,15 @@ class Pysim:
             production_sweeps: number of production simulation sweeps (per core)
             parallel_simulations: number of parallel production simulations to execute
         """
+        t0 = time.time()
         equilibration_dir = "equilibration"
         production_dir = "production_out"
 
         # equilibration
         self.config["nSweeps"] = equilibrium_sweeps
         self.config["load_configuration"] = False
-        self.run(equilibration_dir)
+        t_eq = self.run(equilibration_dir)
+        print(f'Equillibration took {np.round(t_eq, 2)} seconds')
 
         # production. copy the last structure to initialize production simulations
         equilibrated_structure = "equilibrated.xyz"
@@ -232,9 +251,14 @@ class Pysim:
         self.config["load_configuration_filename"] = equilibrated_structure
 
         if parallel_simulations == 1:
-            self.run(production_dir)
+            t_prod = self.run(production_dir)
         else:
-            self.run_parallel(production_dir, parallel_simulations)
+            print(f'Running in parallel with {parallel_simulations} runs')
+            t_prod = self.run_parallel(production_dir, parallel_simulations)
+        print(f'Production took {np.round(t_prod, 2)} seconds')
+
+        tf = time.time()
+        return tf - t0
 
     def run_parallel(self, name: str, cores: int):
         """run production, using parallel simulations with different initial seeds
@@ -246,6 +270,7 @@ class Pysim:
             name: name of output file for aggregated simulation data
             cores: number of parallel simulations to execute
         """
+        t0 = time.time()
         self.data_out = name
         processes = []
         # create processes
@@ -272,6 +297,8 @@ class Pysim:
             p.terminate()
 
         self.aggregate_production_files()
+        tf = time.time()
+        return tf - t0
 
     def aggregate_production_files(self):
         """aggregate simulation data from each core into final production folder.

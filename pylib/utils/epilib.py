@@ -13,13 +13,14 @@ import pandas as pd
 import scipy
 import seaborn as sns
 from numba import njit
-from pylib.utils import hic_utils, utils
-from pylib.utils.goals import *
-from pylib.utils.plotting_utils import plot_matrix
-from pylib.utils.similarity_measures import *
+from sklearn.decomposition import PCA, KernelPCA
 from tqdm import tqdm
 
+from pylib.utils import hic_utils, utils
+from pylib.utils.goals import *
 from pylib.utils.hic_utils import get_diagonal
+from pylib.utils.plotting_utils import plot_matrix
+from pylib.utils.similarity_measures import *
 
 # import palettable
 # from palettable.colorbrewer.sequential import Reds_3
@@ -37,7 +38,7 @@ class Sim:
         metrics: cache for expensive metrics
     """
 
-    def __init__(self, path, maxent_analysis=True):
+    def __init__(self, path, maxent_analysis=True, mode='all'):
         """
         Args:
             path: directory containing simulation output
@@ -82,6 +83,8 @@ class Sim:
         self.chi = None
         self.seqs = None
         self.obs_full = None
+        self.obs_tot = None
+        self.obs = None
         if self.config['plaid_on']:
             self.k = self.config['nspecies']
             if self.k > 0:
@@ -92,30 +95,37 @@ class Sim:
                 except OSError:
                     logging.error("error loading sequences")
 
-                try:
-                    self.obs_full = pd.read_csv(
-                        self.path / "observables.traj", sep="\t", header=None
-                    )
-                    self.obs = np.array(self.obs_full.mean().values[1:])
-                except FileNotFoundError:
-                    logging.error("error loading plaid observables")
+                if mode != 'diag':
+                    observables_file = self.path / "observables.traj"
+                    if os.stat(observables_file).st_size > 0:
+                        try:
+                            self.obs_full = pd.read_csv(observables_file, sep="\t",
+                                                        header=None)
+                            self.obs = np.array(self.obs_full.mean().values[1:])
+                        except FileNotFoundError:
+                            logging.error("error loading plaid observables")
         else:
             self.k = 0
 
+        self.diag_obs = None
         if self.config['diagonal_on']:
             self.diag_bins = np.shape(self.config["diag_chis"])[0]
-            try:
-                self.diag_obs_full = pd.read_csv(
-                    self.path / "diag_observables.traj", sep="\t", header=None
-                )
-                self.diag_obs = np.array(self.diag_obs_full.mean().values[1:])
-            except FileNotFoundError:
-                logging.error("error loading diag observables")
+            diag_observables_file = self.path / "diag_observables.traj"
+            if os.stat(diag_observables_file).st_size > 0:
+                try:
+                    self.diag_obs_full = pd.read_csv(diag_observables_file, sep="\t",
+                                                    header=None)
+                    self.diag_obs = np.array(self.diag_obs_full.mean().values[1:])
+                except FileNotFoundError:
+                    logging.error(f"error loading diag observables: not found at {diag_observables_file}")
 
         try:
-            self.obs_tot = np.hstack((self.obs, self.diag_obs))
+            if self.obs is None:
+                self.obs_tot = self.diag_obs
+            else:
+                self.obs_tot = np.hstack((self.obs, self.diag_obs))
         except AttributeError:
-            logging.error("observables not loaded")
+            logging.error(f"observables not loaded: obs is {type(self.obs)}, diag_obs is {type(self.diag_obs)}, obs_tot is {type(self.obs_tot)}")
 
         try:
             self.extra = np.loadtxt(self.path / "extra.traj")
@@ -399,8 +409,8 @@ def plot_contactmap(contact, vmaxp=0.1, absolute=False, imshow=True, cbar=True,
         contact = np.log10(contact + 1e-20)
         vmin = np.min(contact[np.where(contact > -19)])
         vmax = vmin / 3
-        print("vmiin", vmin)
-        print("vmax", vmax)
+        # print("vmin", vmin)
+        # print("vmax", vmax)
 
     plot_fn(contact, cmap=cmap, vmin=vmin, vmax=vmax)
 
@@ -432,9 +442,12 @@ def plot_energy(sim):
     sz = np.shape(sim.energy)[0]
     last20 = int(sz - sz / 5)
 
-    bondmean = np.mean(sim.energy["bonded"][:last20])
-    nbondmean = np.mean(sim.energy["nonbonded"][:last20])
-    diagmean = np.mean(sim.energy["diagonal"][:last20])
+    try:
+        bondmean = np.mean(sim.energy["bonded"][:last20])
+        nbondmean = np.mean(sim.energy["nonbonded"][:last20])
+        diagmean = np.mean(sim.energy["diagonal"][:last20])
+    except TypeError:
+        return
 
     rightedge = len(sim.energy["bonded"])
 
@@ -517,6 +530,75 @@ def randomized_svd(X, r, q=10, p=1):
     U = Q @ UY
 
     return U, S, VT
+
+def get_pcs(input, k, normalize=False, binarize=False, scale=False,
+            use_kernel=False, kernel=None, manual=False, soren=False,
+            randomized=False, smooth=False, h=3, align=False):
+    '''
+    Defines seq based on PCs of input.
+
+    Inputs:
+        input: matrix to perform PCA on
+        normalize: True to normalize pcs to [-1, 1]
+        binarize: True to binarize pcs (will normalize and then set any value > 0 as 1)
+        use_kernel: True to use kernel PCA
+        kernel: type of kernel to use
+        align: flip sign such that all pcs start positive
+
+    Outputs:
+        seq: array of particle types
+    '''
+    m = len(input)
+    if binarize:
+        normalize = True # reusing normalize code in binarize
+    if smooth:
+        input = scipy.ndimage.gaussian_filter(input, (h, h))
+
+    if use_kernel:
+        assert kernel is not None
+        pca = KernelPCA(kernel = kernel)
+    else:
+        pca = PCA()
+
+
+    if manual:
+        C = np.corrcoef(input)
+        W, V = np.linalg.eig(C)
+        V = V.T
+    elif soren:
+        U, S, V = scipy.linalg.svd(np.corrcoef(input))
+    else:
+        if scale:
+            pca.fit(input/np.std(input, axis = 0))
+        else:
+            pca.fit(input)
+        if use_kernel:
+            V = pca.eigenvectors_.T
+        else:
+            V = pca.components_
+
+    seq = np.zeros((m, k))
+    for j in range(k):
+        pc = V[j]
+        if normalize:
+            val = np.max(np.abs(pc))
+            # multiply by scale such that val x scale = 1
+            scale = 1/val
+            pc *= scale
+
+        if binarize:
+            # pc has already been normalized to [-1, 1]
+            pc[pc < 0] = 0
+            pc[pc > 0] = 1
+
+        seq[:,j] = pc
+
+    if align:
+        cutoff = int(0.2 * m)
+        for j in range(k):
+            seq[:, j] *= np.sign(np.mean(seq[:cutoff, j]))
+
+    return seq
 
 
 def get_sequences(
@@ -909,7 +991,12 @@ def plot_consistency(sim, ofile=None):
         hic = sim.hic
 
     goal = get_goals(hic, sim.seqs, sim.config)
+    assert sim.obs_tot is not None
+    assert goal is not None
 
+    if len(sim.obs_tot)  < len(goal):
+        N = len(sim.obs_tot)
+        goal = goal[-N:]
     diff = sim.obs_tot - goal
     error = np.sqrt(diff @ diff / (goal @ goal))
 
@@ -998,19 +1085,23 @@ def plot_tri(first, second, vmaxp=None, oe=False, title="", dark=False, log=Fals
 
 def plot_obs_vs_goal(sim):
     """compare observables versus maxent goals"""
+    if sim.obs_tot is None:
+        return
     fig, axs = plt.subplots(2, figsize=(12, 14))
     obs = sim.obs_tot
     goal = sim.obj_goal_tot
     axs[0].plot(obs, "--o", label="obs")
     axs[0].plot(goal, "ko", label="goal")
-    axs[0].vlines(len(sim.obs), min(sim.obs_tot) / 5, max(sim.obs_tot) / 5, "k")
+    if sim.obs is not None:
+        axs[0].vlines(len(sim.obs), min(sim.obs_tot) / 5, max(sim.obs_tot) / 5, "k")
     axs[0].legend()
     axs[0].set_title("Observables vs Goals")
 
     diff = sim.obs_tot - sim.obj_goal_tot
     axs[1].plot(diff, "--o")
     axs[1].hlines(0, len(sim.obs_tot), 0, "k")
-    axs[1].vlines(len(sim.obs), min(diff) / 5, max(diff) / 5, "k")
+    if sim.obs is not None:
+        axs[1].vlines(len(sim.obs), min(diff) / 5, max(diff) / 5, "k")
     axs[1].set_title("Difference")
 
 
@@ -1127,5 +1218,3 @@ def clean_contactmap(contact):
     deleted = len(inds)
 
     return contact[mask].reshape(N - deleted, N - deleted), inds
-
-

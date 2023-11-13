@@ -24,11 +24,14 @@ params = utils.load_json(proj_root / f"defaults/params_{usr}.json")
 
 
 bonded_config = config.copy()
-bonded_config['nonbonded'] = False
+bonded_config['nonbonded_on'] = False
 bonded_config['plaid_on'] = False
 bonded_config['diagonal_on'] = False
-bonded_config["nSweeps"] = 20000
-bonded_config["dump_frequency"] = 2000
+bonded_config['gridmove_on'] = False
+bonded_config['grid_size'] = 100 # irrelevant
+bonded_config["nSweeps"] = 50000
+bonded_config["dump_frequency"] = 1000
+bonded_config["dump_stats_frequency"] = 1000
 bonded_config['lmatrix_on'] = False
 bonded_config['dmatrix_on'] = False
 bonded_config['smatrix_on'] = False

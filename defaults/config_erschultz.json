@@ -3,6 +3,7 @@
   "double_count_main_diagonal": false,
   "angles_on": false,
   "k_angle": 0,
+  "theta_0": 180,
   "cell_volumes":  false,
   "compressibility_on": false,
   "diag_pseudobeads_on": true,
@@ -16,16 +17,17 @@
   "track_contactmap": false,
   "diagonal_linear": true,
   "dump_density": false,
+  "dump_observables": false,
   "update_contacts_distance": false,
+  "aspect_ratio": 1.0,
 
   "lmatrix_on": true,
   "smatrix_on": true,
   "dmatrix_on": true,
 
-  "decay_length": 500,
-  "nSweeps": 500000,
-  "dump_frequency": 10000,
-  "dump_stats_frequency": 100,
+  "nSweeps": 300000,
+  "dump_frequency": 100000,
+  "dump_stats_frequency": 10,
 
   "bonded_on": true,
   "nonbonded_on": true,
@@ -43,10 +45,7 @@
 
   "density_cap_on": true,
   "phi_solvent_max": 0.5,
-  "phi_chromatin": 0.06,
 
-  "beadvol": 520,
-  "bond_type": "gaussian",
-  "bond_length": 16.5,
-  "grid_size": 28.7
+  "bond_type": "gaussian"
+
 }

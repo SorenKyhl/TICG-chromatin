@@ -6,12 +6,17 @@ import sys
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.stats as ss
 import seaborn as sns
 import torch
 import torch_geometric
 from modify_maxent import get_samples, plaid_dist
+from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
+from pylib.utils.plotting_utils import BLUE_RED_CMAP, RED_BLUE_CMAP, RED_CMAP
+from pylib.utils.utils import pearson_round, triu_to_full
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
+from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.argparse_utils import (finalize_opt,
@@ -21,136 +26,181 @@ from sequences_to_contact_maps.scripts.clean_directories import \
 from sequences_to_contact_maps.scripts.load_utils import load_Y
 from sequences_to_contact_maps.scripts.neural_nets.utils import (
     get_dataset, load_saved_model)
-from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
-                                                     pearson_round)
 
 
-def molar_contact_ratio(dataset, model_ID=None, plot=True):
+def c(y, a, b):
+    return a@y@b
+
+def r(y, a, b):
+    denom = c(y,a,b)**2
+    num = c(y,a,a) * c(y,b,b)
+    return num/denom
+
+def get_seq_kmeans(y_diag):
+    m = len(y_diag)
+    kmeans = KMeans(n_clusters = 2)
+    kmeans.fit(y_diag)
+    seq = np.zeros((m, 2))
+    seq[np.arange(m), kmeans.labels_] = 1
+    return seq
+
+def get_seq_pca(y_diag, binarize=False):
+    m = len(y_diag)
+    pca = PCA()
+    pca.fit(y_diag)
+    pc = pca.components_[0]
+    # normalize
+
+    pcpos = pc.copy()
+    pcpos[pc < 0] = 0 # set negative part to zero
+    pcneg = pc.copy()
+    pcneg[pc > 0] = 0 # set positive part to zero
+    pcneg *= -1 # make positive
+
+    if binarize:
+        val = np.mean(pcpos)
+        pcpos[pcpos <= val] = 0
+        pcpos[pcpos > val] = 1
+        val = np.mean(pcneg)
+        pcneg[pcneg <= val] = 0
+        pcneg[pcneg > val] = 1
+
+    seq = np.zeros((m, 2))
+    seq[:,0] = pcpos
+    seq[:,1] = pcneg
+
+    return seq, pca.explained_variance_ratio_[0]
+
+def get_gnn_mse(model_ID, data_dir, samples):
+    model_path = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{model_ID}'
+    argparse_path = osp.join(model_path, 'argparse.txt')
+
+
+    # set up argparse options
+    parser = get_base_parser()
+    sys.argv = [sys.argv[0]] # delete args from get_params, otherwise gnn opt will try and use them
+    opt = parser.parse_args(['@{}'.format(argparse_path)])
+    opt.id = int(model_ID)
+    print(opt)
+    opt = finalize_opt(opt, parser, local = True, debug = True)
+    opt.data_folder = data_dir
+    opt.root_name = f'GNN{opt.id}-test' # need this to be unique
+    opt.log_file = sys.stdout # change
+    opt.verbose = False
+    opt.scratch = '/home/erschultz/scratch'
+    if opt.y_preprocessing.startswith('sweep'):
+        _, *opt.y_preprocessing = opt.y_preprocessing.split('_')
+        if isinstance(opt.y_preprocessing, list):
+            opt.y_preprocessing = '_'.join(opt.y_preprocessing)
+    print(opt.output_mode)
+
+    # get model
+    model, _, _ = load_saved_model(opt, False)
+
+    # get dataset
+    dataset = get_dataset(opt, verbose = False, samples = samples)
+    print('Dataset: ', dataset, len(dataset))
+    dataloader = torch_geometric.loader.DataLoader(dataset, batch_size = 1,
+                        shuffle = False, num_workers = 1)
+
+    # get prediction
+    mse_dict = {}
+    for i, data in enumerate(dataloader):
+        data = data.to(opt.device)
+        yhat = model(data)
+        loss = opt.criterion(yhat, data.energy)
+        mse_dict[int(osp.split(data.path[0])[1][6:])] = np.round(loss.item(), 3)
+        yhat = yhat.cpu().detach().numpy().reshape((opt.m,opt.m))
+
+        if opt.output_preprocesing == 'log':
+            yhat = np.multiply(np.sign(yhat), np.exp(np.abs(yhat)) - 1)
+
+    # cleanup
+    # opt.root is set in get_dataset
+    clean_directories(GNN_path = opt.root)
+
+    return mse_dict
+
+def plot_matrix_layout(rows, cols, ind, data_arr, val_arr, samples_arr, cmap, vmin, vmax, ofile):
+    height = 6*rows; width = 3*cols
+    width_ratios = [1]*cols+[0.08]
+    fig, ax = plt.subplots(rows, cols+1,
+                            gridspec_kw={'width_ratios':width_ratios})
+    fig.set_figheight(height)
+    fig.set_figwidth(width)
+    row = 0; col=0
+    for y, val, sample in zip(data_arr[ind], val_arr[ind], samples_arr[ind]):
+        if col == 0:
+            s = sns.heatmap(y, linewidth = 0, vmin = vmin, vmax = vmax, cmap = cmap,
+                ax = ax[row][col], cbar_ax = ax[row][-1])
+        else:
+            s = sns.heatmap(y, linewidth = 0, vmin = vmin, vmax = vmax, cmap = cmap,
+                ax = ax[row][col], cbar = False)
+        s.set_title(f'Sample {sample}\nPlaid Score = {np.round(val, 1)}', fontsize = 16)
+        s.set_xticks([])
+        s.set_yticks([])
+
+        col += 1
+        if col == cols:
+            col = 0
+            row += 1
+
+    plt.tight_layout()
+    plt.savefig(ofile)
+    plt.close()
+
+def molar_contact_ratio(dataset, model_ID=None, plot=True, cap=100, m=512):
     dir = '/project2/depablo/erschultz/'
     if not osp.exists(dir):
         dir = '/home/erschultz'
     data_dir = osp.join(dir, dataset)
+    if not osp.exists(data_dir):
+        data_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/home/erschultz', dataset)
+    assert osp.exists(data_dir), f'{data_dir} does not exist'
     odir = osp.join(data_dir, 'molar_contact_ratio')
     if not osp.exists(odir):
         os.mkdir(odir, mode = 0o755)
 
-    def c(y, a, b):
-        return a@y@b
 
-    def r(y, a, b):
-        denom = c(y,a,b)**2
-        num = c(y,a,a) * c(y,b,b)
-        return num/denom
-
-    def get_seq_kmeans():
-        kmeans = KMeans(n_clusters = 2)
-        kmeans.fit(y_diag)
-        seq = np.zeros((m, 2))
-        seq[np.arange(m), kmeans.labels_] = 1
-        return seq
-
-    def get_seq_pca(binarize=False):
-        pca = PCA()
-        pca.fit(y_diag)
-        pc = pca.components_[0]
-        # normalize
-
-
-        pca_var[i] = pca.explained_variance_ratio_[0]
-        pcpos = pc.copy()
-        pcpos[pc < 0] = 0 # set negative part to zero
-        pcneg = pc.copy()
-        pcneg[pc > 0] = 0 # set positive part to zero
-        pcneg *= -1 # make positive
-
-        if binarize:
-            val = np.mean(pcpos)
-            pcpos[pcpos <= val] = 0
-            pcpos[pcpos > val] = 1
-            val = np.mean(pcneg)
-            pcneg[pcneg <= val] = 0
-            pcneg[pcneg > val] = 1
-
-        seq[:,0] = pcpos
-        seq[:,1] = pcneg
-
-        return seq
-
-    def get_gnn_mse(model_ID):
-        model_path = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{model_ID}'
-        argparse_path = osp.join(model_path, 'argparse.txt')
-
-
-        # set up argparse options
-        parser = get_base_parser()
-        sys.argv = [sys.argv[0]] # delete args from get_params, otherwise gnn opt will try and use them
-        opt = parser.parse_args(['@{}'.format(argparse_path)])
-        opt.id = int(model_ID)
-        print(opt)
-        opt = finalize_opt(opt, parser, local = True, debug = True)
-        opt.data_folder = data_dir
-        opt.root_name = f'GNN{opt.id}-test' # need this to be unique
-        opt.log_file = sys.stdout # change
-        opt.cuda = False # force to use cpu
-        opt.device = torch.device('cpu')
-        opt.verbose = False
-        opt.scratch = '/home/erschultz/scratch'
-        if opt.y_preprocessing.startswith('sweep'):
-            _, *opt.y_preprocessing = opt.y_preprocessing.split('_')
-            if isinstance(opt.y_preprocessing, list):
-                opt.y_preprocessing = '_'.join(opt.y_preprocessing)
-        print(opt.output_mode)
-
-        # get model
-        model, _, _ = load_saved_model(opt, False)
-
-        # get dataset
-        dataset = get_dataset(opt, verbose = False, samples = samples)
-        print('Dataset: ', dataset, len(dataset))
-        dataloader = torch_geometric.loader.DataLoader(dataset, batch_size = 1,
-                            shuffle = False, num_workers = 1)
-
-        # get prediction
-        mse_dict = {}
-        for i, data in enumerate(dataloader):
-            data = data.to(opt.device)
-            yhat = model(data)
-            loss = opt.criterion(yhat, data.energy)
-            mse_dict[int(osp.split(data.path[0])[1][6:])] = np.round(loss.item(), 3)
-            yhat = yhat.cpu().detach().numpy().reshape((opt.m,opt.m))
-
-            if opt.output_preprocesing == 'log':
-                yhat = np.multiply(np.sign(yhat), np.exp(np.abs(yhat)) - 1)
-
-        # cleanup
-        # opt.root is set in get_dataset
-        clean_directories(GNN_path = opt.root)
-
-        return mse_dict
-
-    samples, experimental = get_samples(dataset)
-    samples = np.array(samples)[:500] # cap at 500
-
-    N = len(samples)
-    k_means_rab = np.zeros(N)
-    pca_rab = np.zeros(N)
-    pca_b_rab = np.zeros(N)
-    pca_var = np.zeros(N)
-    y_list = []
-    # L_list_exp, _ = plaid_dist('dataset_01_26_23', 4, False)
     meanDist_file = osp.join(odir, 'meanDist.npy')
     if osp.exists(meanDist_file):
         meanDist_list = np.load(meanDist_file)
+        if not plot:
+            return meanDist_list
         found_meanDist = True
     else:
         found_meanDist = False
         meanDist_list = []
+
+
+    ref_file = osp.join(dir, 'dataset_02_04_23/molar_contact_ratio/meanDist.npy')
+    if osp.exists(ref_file):
+        ref_meanDist = np.load(ref_file)
+        ref_meanDist = np.mean(ref_meanDist, axis = 0)
+    else:
+        ref_meanDist = None
+
+    samples, experimental = get_samples(dataset)
+    samples = np.array(samples)[:cap] # cap at 100
+    print('samples:', samples)
+
+    N = len(samples)
+    k_means_rab = np.zeros(N)
+    pca_rab = np.zeros(N); pca_b_rab = np.zeros(N)
+    pca_var = np.zeros(N)
+    L1_arr = np.zeros(N)
+    meanDist_rmse_arr = np.zeros(N)
+    y_arr = np.zeros((N, m, m))
+    # L_list_exp, _ = plaid_dist('dataset_01_26_23', 4, False)
     for i, sample in enumerate(samples):
+        if i % 100 == 0:
+            print(f'progress: {np.round(i/N*100, 3)}%')
         sample_dir = osp.join(data_dir, f'samples/sample{sample}')
 
-        y, y_diag = load_Y(sample_dir)
-        y /= np.mean(np.diagonal(y))
-        y_list.append(y)
+        if not found_meanDist or plot:
+            y, y_diag = load_Y(sample_dir)
+            y /= np.mean(np.diagonal(y))
+            y_arr[i] = y
 
         if not found_meanDist:
             meanDist_list.append(DiagonalPreprocessing.genomic_distance_statistics(y))
@@ -158,29 +208,43 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
         if plot:
             m = len(y)
 
+            # if ref_meanDist is not None:
+            #     rmse = mean_squared_error(meanDist_list[i], ref_meanDist, squared=False)
+            #     meanDist_rmse_arr[i] = rmse
+                # print(meanDist_list[i][:10])
+                # print(sample, f'rmse={rmse}')
+
+            # L1 chi
+            if osp.exists(osp.join(sample_dir, 'chis.npy')):
+                chi = np.load(osp.join(sample_dir, 'chis.npy'))
+                L1_arr[i] = np.linalg.norm(chi, ord='nuc') # sum of |singular vales|
+
             # kmeans
-            seq = get_seq_kmeans()
+            seq = get_seq_kmeans(y_diag)
             rab = r(y, seq[:, 1], seq[:, 0])
             k_means_rab[i] = rab
 
             # pca
-            seq = get_seq_pca()
+            seq, var_explained = get_seq_pca(y_diag)
+            pca_var[i] = var_explained
             rab = r(y, seq[:, 1], seq[:, 0])
             pca_rab[i] = rab
 
             # pca
-            seq = get_seq_pca(True)
+            seq, _ = get_seq_pca(y_diag, True)
             rab = r(y, seq[:, 1], seq[:, 0])
             pca_b_rab[i] = rab
 
     # GNN MSE
     if not experimental and model_ID is not None:
-        mse_dict = get_gnn_mse(model_ID)
+        mse_dict = get_gnn_mse(model_ID, data_dir, samples)
         mse_list = []
         for i, s in enumerate(samples):
             mse = mse_dict[s]
             mse_list.append(mse)
         np.save(osp.join(odir, 'mse.npy'), mse_list)
+        mse_arr = np.array(mse_list)
+        rmse_arr = np.sqrt(mse_arr)
 
         # make table
         with open(osp.join(odir, 'plaid_score_table.txt'), 'w') as o:
@@ -201,7 +265,8 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
 
     # plot distributions
     if plot:
-        L_list, _, _, _ = plaid_dist(dataset, 4, False)
+        L_list, S_list, _, _ = plaid_dist(dataset, 180, 0.008, 10, 1.5, False)
+        S_list = [triu_to_full(S) for S in S_list]
         # plot histograms
         for arr, label in zip([k_means_rab, pca_rab, pca_b_rab, pca_var],
                                 ['kmeans_Rab', 'PCA_Rab', 'PCA_binary_Rab','PCA_var']):
@@ -224,49 +289,45 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
 
 
         # crop samples for plotting
-        plot_n = 8
-        y_arr = np.array(y_list[:8])
-        L_arr = np.array(L_list[:8])
-        k_means_rab = k_means_rab[:8]
-        meanDist_arr = np.array(meanDist_list[:8])
-        print(meanDist_arr)
-        samples = samples[:8]
+        plot_n = 12
+        rows=2; cols=6
+        L_arr = np.array(L_list)
+        S_arr = np.array(S_list)
+        k_means_rab = k_means_rab
+        ind = np.argsort(k_means_rab[:plot_n])
+        L1_arr = L1_arr[:plot_n]
+        meanDist_arr = np.array(meanDist_list)
+        samples = samples
 
-        # plot contact maps orderd by rab
-        cmap = matplotlib.colors.LinearSegmentedColormap.from_list('custom',
-                                                 [(0,    'white'),
-                                                  (1,    'red')], N=126)
-        ind = np.argsort(k_means_rab)
-        y_arr = np.array(y_list)
-        fig, ax = plt.subplots(2, 5,
-                                gridspec_kw={'width_ratios':[1,1,1,1,0.08]})
-        fig.set_figheight(6*2)
-        fig.set_figwidth(6*3)
+        # plot contact maps ordered by rab
         vmin = 0; vmax = np.mean(y_arr)
-        row = 0; col=0
-        for y, val, sample in zip(y_arr[ind], k_means_rab[ind], samples[ind]):
-            if col == 0:
-                s = sns.heatmap(y, linewidth = 0, vmin = vmin, vmax = vmax, cmap = cmap,
-                    ax = ax[row][col], cbar_ax = ax[row][4])
-            else:
-                s = sns.heatmap(y, linewidth = 0, vmin = vmin, vmax = vmax, cmap = cmap,
-                    ax = ax[row][col], cbar = False)
-            s.set_title(f'Sample {sample}\nPlaid Score = {np.round(val, 1)}', fontsize = 16)
-            s.set_xticks([])
-            s.set_yticks([])
-
-            col += 1
-            if col == 4:
-                col = 0
-                row += 1
-
-        plt.tight_layout()
-        plt.savefig(osp.join(data_dir, 'y_ordered.png'))
-        plt.close()
-
-
+        plot_matrix_layout(rows, cols, ind,
+                        y_arr, k_means_rab, samples,
+                        RED_CMAP, vmin, vmax,
+                        osp.join(data_dir, 'y_ordered.png'))
+                #
+        # plot S ordered by rab
+        vmin = np.nanpercentile(S_arr, 1)
+        vmax = np.nanpercentile(S_arr, 99)
+        vmax = max(vmax, vmin * -1)
+        vmin = vmax * -1
+        plot_matrix_layout(rows, cols, ind,
+                        S_arr, k_means_rab, samples,
+                        BLUE_RED_CMAP, vmin, vmax,
+                        osp.join(data_dir, 'S_ordered.png'))
+        # plot S_dag ordered by rab
+        S_dag_arr = np.array([np.sign(S) * np.log(np.abs(S)+1) for S in S_arr])
+        vmin = np.nanpercentile(S_dag_arr, 1)
+        vmax = np.nanpercentile(S_dag_arr, 99)
+        vmax = max(vmax, vmin * -1)
+        vmin = vmax * -1
+        plot_matrix_layout(rows, cols, ind,
+                        S_dag_arr, k_means_rab, samples,
+                        BLUE_RED_CMAP, vmin, vmax,
+                        osp.join(data_dir, 'S_dag_ordered.png'))
+        
         # plot L_ij ordered by rab
-        fig, ax = plt.subplots(2, 4)
+        fig, ax = plt.subplots(rows, cols)
         fig.set_figheight(6*2)
         fig.set_figwidth(6*3)
         row = 0; col=0
@@ -283,19 +344,27 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
                                         bins = bins,
                                         alpha = 0.5, label = 'Simulation')
             ax[row][col].set_title(f'Sample {sample}\nPlaid Score = {np.round(val, 1)}', fontsize = 16)
-
+        
             col += 1
-            if col == 4:
+            if col == cols:
                 col = 0
                 row += 1
-
         plt.tight_layout()
         plt.savefig(osp.join(data_dir, 'L_dist_ordered.png'))
         plt.close()
 
+        # plot all meanDist
+        for meanDist, sample in zip(meanDist_arr, samples):
+            plt.plot(meanDist)
+        plt.yscale('log')
+        plt.xscale('log')
+        plt.tight_layout()
+        plt.savefig(osp.join(data_dir, 'meanDist.png'))
+        plt.close()
+
         # plot meanDist colored by plaid score
         for meanDist, val, sample in zip(meanDist_arr[ind], k_means_rab[ind], samples[ind]):
-            plt.plot(meanDist, label = np.round(val, 1))
+            plt.plot(meanDist, label = f'sample{sample}: {np.round(val, 1)}')
         plt.legend()
         plt.yscale('log')
         plt.xscale('log')
@@ -303,13 +372,67 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True):
         plt.savefig(osp.join(data_dir, 'meanDist_plaid_score.png'))
         plt.close()
 
+        # plot meanDist colored by L1 score
+        ind = np.argsort(L1_arr)
+        for meanDist, val, sample in zip(meanDist_arr[ind], L1_arr[ind], samples[ind]):
+            plt.plot(meanDist, label = f'sample{sample}: {np.round(val, 1)}',
+                        c = plt.cm.viridis(val/np.max(L1_arr)))
+        plt.legend()
+        plt.yscale('log')
+        plt.xscale('log')
+        plt.tight_layout()
+        plt.savefig(osp.join(data_dir, 'meanDist_L1_score.png'))
+        plt.close()
+
+        if model_ID is not None:
+            # plot meanDist colored by GNN RMSE
+            ind = np.argsort(rmse_arr[:10])
+            for meanDist, val, sample in zip(meanDist_arr[ind], rmse_arr[ind], samples[ind]):
+                plt.plot(meanDist, label = f'sample{sample}: {np.round(val, 1)}',
+                        c=plt.cm.viridis(val/np.max(rmse_arr)))
+            plt.legend()
+            plt.yscale('log')
+            plt.xscale('log')
+            plt.tight_layout()
+            plt.savefig(osp.join(data_dir, 'meanDist_RMSE.png'))
+            plt.close()
+
+            # plot meanDist[i] vs GNN RMSE
+            odir = osp.join(data_dir, 'meanDist_vs_RMSE')
+            if not osp.exists(odir):
+                os.mkdir(odir, mode=0o755)
+            for i in range(1, 20):
+                X = []
+                for meanDist in meanDist_arr:
+                    X.append(meanDist[i])
+                X = np.array(X)
+
+                a, b, r_val, p, se = ss.linregress(X, rmse_arr)
+
+                plt.scatter(X, rmse_arr)
+                plt.xlabel(f'p({i})')
+                plt.ylabel('RMSE')
+                plt.plot(X, a*X + b, label = r_val)
+                plt.legend()
+                plt.savefig(osp.join(odir, f'meanDist_{i}_vs_RMSE.png'))
+                plt.close()
+
+            # plot meanDist RMSE vs GNN RMSE
+            X = meanDist_rmse_arr
+            print(X)
+            a, b, r_val, p, se = ss.linregress(X, rmse_arr)
+            plt.scatter(X, rmse_arr)
+            plt.xlabel(f'p(s) RMSE')
+            plt.ylabel('GNN RMSE')
+            plt.plot(X, a*X + b, label = r_val, c='k')
+            plt.legend()
+            plt.savefig(osp.join(data_dir, f'meanDist_RMSE_vs_RMSE.png'))
+            plt.close()
+
     np.save(meanDist_file, meanDist_list)
 
     return meanDist_list
 
 if __name__ == '__main__':
-    # molar_contact_ratio('dataset_01_27_23_v5', True)
-    # molar_contact_ratio('dataset_01_26_23', True)
-    # molar_contact_ratio('dataset_02_06_23', 363)
-    # molar_contact_ratio('dataset_02_13_23', 372)
-    molar_contact_ratio('dataset_03_03_23', 387)
+    molar_contact_ratio('dataset_06_29_23', None, plot=True)
+    # molar_contact_ratio('dataset_09_28_23', 541, plot=True)

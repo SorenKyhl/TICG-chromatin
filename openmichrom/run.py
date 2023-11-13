@@ -3,10 +3,9 @@ import os.path as osp
 
 import h5py
 import numpy as np
-from sklearn.cluster import KMeans
-
 from OpenMiChroM.ChromDynamics import MiChroM
 from OpenMiChroM.Optimization import CustomMiChroMTraining
+from sklearn.cluster import KMeans
 
 
 def get_k_means_seq(y, k):

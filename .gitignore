@@ -1,6 +1,5 @@
 TICG-engine*
 data_out
-*.png
 *.log
 *.out
 test
@@ -9,6 +8,7 @@ __pycache__
 debug
 .magicindex.json
 data
+figures/**
 
 # pylib things
 build

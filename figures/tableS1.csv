@@ -1,0 +1,12 @@
+Cell Line,Use,File
+IMR90,Training,https://hicfiles.s3.amazonaws.com/hiseq/imr90/in-situ/combined.hic
+HMEC,Training,https://hicfiles.s3.amazonaws.com/hiseq/hmec/in-situ/combined.hic
+NHEK,Training,https://hicfiles.s3.amazonaws.com/hiseq/nhek/in-situ/combined.hic
+K562,Training,https://hicfiles.s3.amazonaws.com/hiseq/k562/in-situ/combined.hic
+KBM7,Training,https://hicfiles.s3.amazonaws.com/hiseq/kbm7/in-situ/combined.hic
+HUVEC,Training,https://hicfiles.s3.amazonaws.com/hiseq/huvec/in-situ/combined.hic
+HELA,Training,https://hicfiles.s3.amazonaws.com/hiseq/hela/in-situ/combined.hic
+HAP1,Training,https://hicfiles.s3.amazonaws.com/hiseq/hap1/in-situ/combined.hic
+GM12878,Validation,https://hicfiles.s3.amazonaws.com/hiseq/gm12878/in-situ/combined.hic
+HCT116,Validation,https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-untreated_combined_30.hic
+HL-60,Validation,https://www.encodeproject.org/files/ENCFF177TYX/@@download/ENCFF177TYX.hic

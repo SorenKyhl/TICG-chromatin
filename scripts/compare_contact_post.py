@@ -10,10 +10,10 @@ import sys
 import numpy as np
 from compare_contact import (comparePCA,
                              plotDistanceStratifiedPearsonCorrelation)
+from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import load_Y
-from sequences_to_contact_maps.scripts.utils import DiagonalPreprocessing
 
 
 def getArgs():

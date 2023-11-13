@@ -1,5 +1,6 @@
 import csv
 import json
+import math
 import os
 import os.path as osp
 import shutil
@@ -7,27 +8,31 @@ import sys
 import tarfile
 from collections import defaultdict
 
-import imageio.v2 as imageio
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.stats as ss
+import seaborn as sns
 import sympy
 import torch
 import torch_geometric
 from pylib.utils import default, epilib, hic_utils
+from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
                                       calculate_diag_chi_step, calculate_S)
-from pylib.utils.utils import load_json
+from pylib.utils.plotting_utils import BLUE_RED_CMAP
+from pylib.utils.similarity_measures import SCC
+from pylib.utils.utils import load_json, pearson_round, triu_to_full
+from pylib.utils.xyz import xyz_load, xyz_to_distance
 from scipy.ndimage import uniform_filter
 from scripts.data_generation.modify_maxent import get_samples
-from scripts.get_params import GetSeq
+from scripts.get_params import GetEnergy
+from scripts.makeLatexTable_new import getArgs, load_data
 from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
-
 from sequences_to_contact_maps.scripts.knightRuiz import knightRuiz
 from sequences_to_contact_maps.scripts.load_utils import (
     get_final_max_ent_folder, load_all, load_contact_map, load_max_ent_D,
@@ -36,12 +41,9 @@ from sequences_to_contact_maps.scripts.plotting_utils import (plot_diag_chi,
                                                               plot_matrix,
                                                               plot_seq_binary)
 from sequences_to_contact_maps.scripts.R_pca import R_pca
-from sequences_to_contact_maps.scripts.similarity_measures import SCC
-from sequences_to_contact_maps.scripts.utils import (DiagonalPreprocessing,
-                                                     pearson_round,
-                                                     triu_to_full)
-from sequences_to_contact_maps.scripts.xyz_utils import (xyz_load,
-                                                         xyz_to_distance)
+from sequences_to_contact_maps.scripts.utils import (calc_dist_strat_corr,
+                                                     load_time_dir,
+                                                     rescale_matrix)
 
 LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -53,133 +55,45 @@ def check_dataset(dataset):
         if file.startswith('sample'):
             id = int(file[6:])
             file_dir = osp.join(dir, file)
-            try:
-                x, psi, chi, chi_diag, e, s, y, ydiag = load_all(file_dir)
-
-                m, k = psi.shape
-                seq = np.zeros((m, k))
-                for i in range(k):
-                    seq_i = np.loadtxt(osp.join(file_dir, f'seq{i}.txt'))
-                    seq[:, i] = seq_i
-
-                if not np.array_equal(seq, psi):
-                    print(psi)
-                    print(seq)
-                    print(id)
+            files = []
+            files.append(osp.join(file_dir, 'y.npy'))
+            files.append(osp.join(file_dir, 'L.npy'))
+            files.append(osp.join(file_dir, 'diag_chis.npy'))
+            for file in files:
+                if not osp.exists(file):
                     ids.add(id)
+
+    print(ids, len(ids))
+
+def check_dataset_p_s(dataset):
+    dir = osp.join("/project2/depablo/erschultz", dataset, "samples")
+    # dir = osp.join("/home/erschultz", dataset, "samples")
+    ids = set()
+    vals = np.zeros(10000)
+    for i, file in enumerate(os.listdir(dir)):
+        if i % 100 == 0:
+            print(i)
+        if i == 1000:
+            break
+        if file.startswith('sample'):
+            id = int(file[6:])
+            file_dir = osp.join(dir, file)
+            try:
+                y, _ = load_Y(file_dir)
+                y /= np.mean(y.diagonal())
+                # if meanDist[10] > 0.06:
+                #     ids.add(id)
+                vals[id-1] = np.nanmean(np.diagonal(y, offset=10))
+
             except Exception as e:
                 print(f'id={id}: {e}')
                 ids.add(id)
                 continue
 
+    np.savetxt(osp.join(dir, 'vals.txt'), vals)
+    np.savetxt(osp.join(dir, 'ids.txt'), ids)
+    print(vals, len(vals))
     print(ids, len(ids))
-
-def test_robust_PCA():
-    if False:
-        dir = '/home/eric/dataset_test/rpca_test'
-        n = 1000
-        r = 10
-        x = np.random.rand(n, r)
-        y = np.random.rand(r, n)
-        l_0 = x @ y
-        s_0 = np.random.binomial(n = 1, p = 0.3, size = (n, n))
-
-        inp = l_0 + s_0
-
-        plotContactMap(l_0, ofile = osp.join(dir, 'L.png'), vmax = 'max')
-        plotContactMap(s_0, ofile = osp.join(dir, 'S.png'), vmax = 1)
-        plotContactMap(inp, ofile = osp.join(dir, 'inp.png'), vmax = 'max')
-
-        L, S = R_pca(inp).fit(max_iter=200)
-        plotContactMap(L, ofile = osp.join(dir, 'RPCA_L.png'), vmax = np.mean(y))
-        plotContactMap(S, ofile = osp.join(dir, 'RPCA_S.png'), vmax = np.mean(y))
-
-    if True:
-        dir = '/home/eric/dataset_test/rpca_test2'
-        dataset_test = '/home/eric/dataset_test/samples'
-        l0 = np.load(osp.join(dataset_test, 'sample20/PCA_analysis/y_diag_rank_1.npy'))
-        p = np.load(osp.join(dataset_test, 'sample22/y.npy'))
-        p = p / np.max(p) + 1e-8
-        # m = np.load(osp.join(dataset_test, 'sample21/y.npy'))
-        m = l0*p
-        s0 = m - l0
-        l0_log = np.log(l0)
-        p_log = np.log(p)
-        print('p', np.min(p_log))
-        m_log = np.log(m)
-        print(np.min(m_log))
-        # plotContactMap(l0, ofile = osp.join(dir, 'L0.png'), vmax = 'max')
-        # plotContactMap(l0_log, ofile = osp.join(dir, 'L0_log.png'), vmax = 'max')
-        # plotContactMap(m, ofile = osp.join(dir, 'M.png'), vmax = 'mean')
-        # plotContactMap(m_log, ofile = osp.join(dir, 'M_log.png'), vmin = 'min',
-        #                 vmax = 'max')
-        # plotContactMap(s0, ofile = osp.join(dir, 'S0.png'), vmin = 'min',
-        #                 vmax = 'mean', cmap='blue-red')
-
-        # plotContactMap(p, ofile = osp.join(dir, 'P.png'), vmax = 'mean')
-        # plotContactMap(p_log, ofile = osp.join(dir, 'P_log.png'), vmin = 'min',
-        #                 vmax = 'max')
-
-        # L, S = R_pca(m).fit(max_iter=200)
-        # plotContactMap(L, ofile = osp.join(dir, 'RPCA_L.png'), vmax = 'mean')
-        # plotContactMap(S, ofile = osp.join(dir, 'RPCA_S.png'), vmin = 'min',
-        #                 vmax = 'max', cmap='blue-red')
-        L_log, S_log = R_pca(m_log).fit(max_iter=2000)
-        plotContactMap(L_log, ofile = osp.join(dir, 'RPCA_L_log.png'), vmin = 'min',
-                    vmax = 'max')
-        plotContactMap(S_log, ofile = osp.join(dir, 'RPCA_S_log.png'), vmin = 'min',
-                    vmax = 'max', cmap='blue-red')
-        L_log_exp = np.exp(L_log)
-        S_log_exp = np.exp(S_log)
-        plotContactMap(L_log_exp, ofile = osp.join(dir, 'RPCA_L_log_exp.png'),
-                    vmax = 'max')
-        plotContactMap(S_log_exp, ofile = osp.join(dir, 'RPCA_S_log_exp.png'),
-                    vmin = 'min', vmax = 'max', cmap='blue-red')
-
-        PC_m = plot_top_PCs(m, inp_type='m', verbose = True, odir = dir, plot = True)
-        meanDist = genomic_distance_statistics(m)
-        m_diag = diagonal_preprocessing(m, meanDist)
-        PC_m_diag = plot_top_PCs(m_diag, inp_type='m_diag', verbose = True,
-                                odir = dir, plot = True)
-
-        # plot_top_PCs(L_log_exp, inp_type='L_log_exp', verbose = True, odir = dir, plot = True)
-        PC_L_log = plot_top_PCs(L_log, inp_type='L_log', verbose = True,
-                                odir = dir, plot = True)
-        stat = pearson_round(PC_L_log[0], PC_m[0])
-        print("Correlation between PC 1 of L_log and M: ", stat)
-        stat = pearson_round(PC_L_log[1], PC_m[1])
-        print("Correlation between PC 2 of L_log and M: ", stat)
-        meanDist = genomic_distance_statistics(L_log)
-        L_log_diag = diagonal_preprocessing(L_log, meanDist)
-        PC_L_log_diag = plot_top_PCs(L_log_diag, inp_type='L_log_diag',
-                                    verbose = True, odir = dir, plot = True)
-        stat = pearson_round(PC_L_log_diag[0], PC_m_diag[0])
-        print("Correlation between PC 1 of L_log_diag and M_diag: ", stat)
-        stat = pearson_round(PC_L_log_diag[1], PC_m_diag[1])
-        print("Correlation between PC 2 of L_log_diag and M_diag: ", stat)
-        # plot_top_PCs(m_log, inp_type='m_log', verbose = True, odir = dir, plot = True)
-        # meanDist = genomic_distance_statistics(m_log)
-        # m_log_diag = diagonal_preprocessing(m_log, meanDist)
-        # plot_top_PCs(m_log_diag, inp_type='m_log_diag', verbose = True, odir = dir,
-        #             plot = True)
-
-    if False:
-        # dir = '/home/eric/dataset_test/samples/sample104'
-        dir = '/home/eric/sequences_to_contact_maps/dataset_09_21_21/samples/sample1'
-        y = np.load(osp.join(dir, 'y.npy'))
-        # L, S = R_pca(y).fit(max_iter=200)def time_comparison():
-        # plotContactMap(L, ofile = osp.join(dir, 'RPCA_L.png'), vmax = np.mean(y))
-        # plotContactMap(S, ofile = osp.join(dir, 'RPCA_S.png'), vmax = np.mean(y))
-
-        # l = 1/np.sqrt(1024) * 1/100
-        y_diag = np.load(osp.join(dir, 'y_diag.npy'))
-        L, S = R_pca(y_diag).fit(max_iter=200)
-        plotContactMap(L, ofile = osp.join(dir, 'RPCA_L_diag.png'), vmin='min',
-                        vmax = 'max')
-        plotContactMap(S, ofile = osp.join(dir, 'RPCA_S_diag.png'), vmin='min',
-                        vmax = np.max(S), cmap='blue-red')
-        plotContactMap(y_diag, ofile = osp.join(dir, 'y_diag.png'), vmax = 'max')
-        plot_top_PCs(L, verbose = True)
 
 def time_comparison():
     # dir = '/project2/depablo/erschultz/dataset_05_18_22/samples'
@@ -271,100 +185,6 @@ def time_comparison():
     ax.legend(loc='upper left')
     plt.tight_layout()
     plt.savefig(osp.join(dir, 'time.png'))
-    plt.close()
-
-def convergence_check():
-    dir = '/home/erschultz/dataset_09_30_22/samples'
-    results_1 = {} # param convergence
-    results_2 = {} # loss convergence
-    for file in os.listdir(dir):
-        sample = osp.join(dir, file)
-        if file.startswith('sample') and osp.isdir(sample):
-            id = int(file[6:])
-            for file in os.listdir(sample):
-                if file.startswith('GNN-') or file.startswith('PCA-'):
-                    method = osp.join(sample, file)
-                    if 'MLP' in method and 'GNN' in method:
-                        continue
-                    for file in os.listdir(method):
-                        if file.startswith('k'):
-                            k = file[1:]
-                            k_folder = osp.join(method, file)
-                            for file in os.listdir(k_folder):
-                                rep = file[-1]
-                                if file[-1] == '2':
-                                    continue
-                                replicate = osp.join(k_folder, file)
-                                label = f'{id}_{osp.split(method)[1]}_k{k}_r{rep}'
-
-                                chis_diag_file = osp.join(replicate, 'chis_diag.txt')
-                                if osp.exists(chis_diag_file):
-                                    params = np.loadtxt(chis_diag_file)
-
-                                chis_file = osp.join(replicate, 'chis.txt')
-                                if osp.exists(chis_file):
-                                    chis = np.loadtxt(chis_file)
-                                    params = np.concatenate((params, chis), axis = 1)
-                                else:
-                                    continue
-
-                                vals = []
-                                for i in range(2, len(params)):
-                                    diff = params[i] - params[i-1]
-                                    vals.append(np.linalg.norm(diff, ord = 2))
-                                results_1[label] = vals
-
-
-                                conv_file = osp.join(replicate, 'convergence.txt')
-                                if osp.exists(conv_file):
-                                    conv = np.loadtxt(conv_file)
-                                else:
-                                    continue
-
-                                vals = []
-                                for i in range(1, len(conv)):
-                                    diff = conv[i] - conv[i-1]
-                                    vals.append(np.abs(diff))
-                                results_2[label] = vals
-
-
-    cmap = matplotlib.cm.get_cmap('tab10')
-    ls_arr = ['solid', 'dotted', 'dashed', 'dashdot']
-    for label, vals in results_1.items():
-        print(label)
-        id = int(label.split('_')[0])
-        k = int(label[-4])
-
-        plt.plot(vals, label = label, ls = ls_arr[k // 2])
-
-    eps = 1
-    plt.axhline(eps, c = 'k')
-    plt.yscale('log')
-    plt.xlabel('Iteration', fontsize=16)
-    plt.ylabel(r'$||x_t - x_{t-1}||_2$', fontsize=16)
-    plt.legend()
-    plt.title(r'$||x_t - x_{t-1}||_2 < $'+f'{eps}')
-    plt.savefig(osp.join(dir, 'param_convergence.png'))
-    plt.close()
-
-
-    cmap = matplotlib.cm.get_cmap('tab10')
-    ls_arr = ['solid', 'dotted', 'dashed', 'dashdot']
-    for label, vals in results_2.items():
-        print(label)
-        id = int(label.split('_')[0])
-        k = int(label[-4])
-
-        plt.plot(vals, label = label, ls = ls_arr[k // 2])
-
-    eps = 1e-3
-    plt.axhline(eps, c = 'k')
-    plt.yscale('log')
-    plt.xlabel('Iteration', fontsize=16)
-    plt.ylabel(r'$|f(x_t) - f(x_{t-1})|$', fontsize=16)
-    plt.legend(loc = 'upper right')
-    plt.title(r'$|f(x_t) - f(x_{t-1})| < 10^{-3}$')
-    plt.savefig(osp.join(dir, 'loss_convergence.png'))
     plt.close()
 
 def plot_sc_p_s():
@@ -477,72 +297,6 @@ def plot_mean_dist_S(dataset, experimental=False, label=None):
     plt.tight_layout()
     plt.savefig(osp.join(data_dir, 'S_meanDist.png'))
     plt.close()
-
-def plot_S():
-    raise Excepton('deprecated - need to fix energy notation')
-    # plot S matrix at every max ent iteration
-    dataset = 'dataset_09_30_22'
-    dir = f'/home/erschultz/{dataset}/samples'
-    sample = 10
-    sample_dir = osp.join(dir, f'sample{sample}')
-    y = np.load(osp.join(sample_dir, 'y.npy'))
-    y /= np.max(y)
-    s = np.load(osp.join(sample_dir, 's.npy'))
-    s_sym = (s + s.T)/2
-    diag_chis = np.load(osp.join(sample_dir, 'diag_chis.npy'))
-    d = calculate_D(diag_chis)
-    sd = s_sym + d
-
-    rep_dir = osp.join(sample_dir, 'PCA-normalize/k4/replicate1')
-    chis = np.loadtxt(osp.join(rep_dir, 'chis.txt'))
-    chis_diag = np.loadtxt(osp.join(rep_dir, 'chis_diag.txt'))
-    x = np.load(osp.join(rep_dir, 'resources/x.npy'))
-    m, k = x.shape
-
-    rmse_list = []
-    rmse_diag_list = []
-    rmse_s_list = []
-    rmse_y_list = []
-    for it in range(1, 22):
-        print(it)
-        it_dir = osp.join(rep_dir, f'iteration{it}')
-        chis_it = triu_to_full(chis[it])
-        chis_diag_it = chis_diag[it]
-
-        data_file = osp.join(it_dir, 'production_out.tar.gz')
-        if osp.exists(data_file):
-            with tarfile.open(data_file) as f:
-                f.extractall(it_dir)
-        y_file = osp.join(it_dir, 'production_out/contacts.txt')
-        yhat = np.loadtxt(y_file)
-        yhat /= np.max(yhat)
-        rmse = mean_squared_error(y, yhat, squared = False)
-        rmse_y_list.append(rmse)
-
-        s_it = calculate_S(x, chis_it)
-        s_sym_it = (s_it + s_it.T)/2
-        rmse_s_list.append(mean_squared_error(s_sym, s_sym_it, squared = False))
-
-        with open(osp.join(it_dir, 'config.json'), 'r') as f:
-            config = json.load(f)
-        diag_chi_continuous = calculate_diag_chi_step(config, chis_diag_it)
-        rmse_diag_list.append(mean_squared_error(diag_chi_continuous, diag_chis,
-                                                squared = False))
-
-        d = calculate_D(diag_chi_continuous)
-        sd_it = s_sym_it + d
-        rmse_list.append(mean_squared_error(sd, sd_it, squared = False))
-
-    plt.plot(rmse_list, label = 'combined')
-    plt.plot(rmse_diag_list, label = 'diag')
-    plt.plot(rmse_s_list, label = 's')
-    plt.plot(rmse_y_list, label = 'y')
-    plt.ylabel('RMSE')
-    plt.xlabel('Max Ent Iteration')
-    plt.yscale('log')
-    plt.legend()
-    plt.savefig(osp.join(rep_dir, 'convergence_mse.png'))
-    plt.show()
 
 def time_comparison_dmatrix():
     dir = '/home/erschultz/dataset_test/samples'
@@ -722,40 +476,6 @@ def compare_scc_bio_replicates():
     corr_scc_var = scc.scc(y_a, y_b, var_stabilized = True)
     print(corr_scc, corr_scc_var)
 
-def main():
-    dir = '/home/erschultz/dataset_02_06_23/molar_contact_ratio'
-    def simple_plot(arr, fname, bins=np.logspace(np.log10(1),np.log10(1000), 50)):
-        n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
-                                    bins = bins,
-                                    alpha = 0.5)
-        plt.ylabel('probability', fontsize=16)
-        plt.xscale('log')
-        plt.savefig(osp.join(dir, fname))
-        plt.close()
-
-
-    mse_arr = np.load(osp.join(dir, 'mse.npy'))
-    simple_plot(mse_arr, 'mse_distribution.png', np.logspace(np.log10(0.01),np.log10(1), 50))
-
-    kmeans_arr = np.load(osp.join(dir, 'kmeans_Rab.npy'))
-    simple_plot(kmeans_arr, 'kmeans_distribution.png')
-    result = pearson_round(kmeans_arr, mse_arr, stat = 'spearman')
-    print(result)
-
-    kmeans_exp = np.load('/home/erschultz/dataset_01_26_23/molar_contact_ratio/kmeans_Rab.npy')
-    for arr, label in zip([kmeans_arr, kmeans_exp], ['Synthetic', 'Experiment']):
-        print(label)
-        print(np.min(arr), np.max(arr))
-        n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
-                                    bins = np.logspace(np.log10(1),np.log10(1000), 50),
-                                    alpha = 0.5, label = label)
-    plt.legend()
-    plt.ylabel('probability', fontsize=16)
-    plt.xlabel('KMeans Plaid Score', fontsize=16)
-    plt.xscale('log')
-    plt.savefig(osp.join(dir, f'kmeans_vs_exp_distribution.png'))
-    plt.close()
-
 def gnn_of_max_ent(samples, k, ID):
     '''Analysis of results for running GNN on max ent of experimental data'''
     dir = '/home/erschultz/dataset_02_04_23/samples'
@@ -844,30 +564,503 @@ def make_dataset_of_converged(dataset):
                     count += 1
     print(f'{converged_count} out of {converged_count+count} converged')
 
-def check_bonded_distributions():
-    dir = '/home/erschultz/dataset_grid/samples/sample3'
-    xyz = xyz_load(osp.join(dir, 'data_out/output.xyz'), multiple_timesteps = True)
-    D = xyz_to_distance(xyz) ** 2
+def compare_y_exp_vs_sim():
+    sim = '/home/erschultz/dataset_05_28_23/samples/sample324'
+    exp = '/home/erschultz/dataset_04_10_23/samples/sample1002'
+    GNN_ID=411
+    model_path = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{GNN_ID}'
+    config = default.config
+    root = "optimize_grid_b_140_phi_0.03"
 
-    with open(osp.join(dir, 'config.json')) as f:
-        config = json.load(f)
-        print(f"bond_length = {config['bond_length']}")
+    def print_arr(arr, name=None):
+        if isinstance(arr, torch.Tensor):
+            arr = arr.cpu().detach().numpy()
+        if name is not None:
+            print(name)
+        print(arr, arr.shape, np.nanmin(arr), np.nanpercentile(arr, [1,99]), np.nanmax(arr))
 
-    D_mean = np.mean(D, axis = 0)
-    for i in range(4):
-        print(i, np.mean(np.diagonal(D_mean, i))**0.5)
+    for dir in [sim, exp]:
+        print(dir)
+        y = np.load(osp.join(dir, 'y.npy')).astype(np.float64)
+        y /= np.mean(np.diagonal(y))
+        m = len(y)
+
+
+        config['nbeads'] = len(y)
+        config['grid_size'] = np.loadtxt(osp.join(dir, root, 'grid_size.txt'))
+        getenergy = GetEnergy(config = config)
+
+        model, data, dataset = getenergy.get_energy_gnn(model_path, dir,
+                                    grid_path=osp.join(root, 'grid_size.txt'),
+                                    verbose = False, return_model_data = True)
+
+        print_arr(data.edge_attr[:, 1], 'i-j')
+        print_arr(data.edge_attr[:, 0], 'H_ij')
+        arr = data.edge_attr[:, 0] * 10
+        bin_width=1
+        # plt.hist(arr)
+        # plt.hist(arr, label = osp.split(dir)[1], alpha = 0.5,
+        #             weights = np.ones_like(arr) / len(arr),
+        #             bins = range(math.floor(np.nanmin(arr)), math.ceil(np.nanmax(arr)) + bin_width, bin_width))
+    #
+    # plt.legend()
+    # plt.show()
+
+        # print_arr(hat_S)
+        latent1, latent2 = model.latent(data)
+        print_arr(latent1, 'latent1')
+        print_arr(latent2, 'latent2')
+
+        plaid1 = model.plaid_component(latent1)
+        plaid2 = model.plaid_component(latent2)
+        print_arr(plaid1, 'plaid1')
+        print_arr(plaid2, 'plaid2')
+
+        diag1 = model.diagonal_component(latent1).detach()[0, 0, :]
+        diag1 = np.multiply(np.sign(diag1), np.exp(np.abs(diag1)) - 1)
+        diag2 = model.diagonal_component(latent2).detach()[0, 0, :]
+        diag2 = np.multiply(np.sign(diag2), np.exp(np.abs(diag2)) - 1)
+        print_arr(diag1, 'diag1')
+        print_arr(diag2, 'diag2')
+
+        S1 = plaid1 + diag1
+        S2 = plaid2 + diag2
+        print_arr(S1, 'S1')
+        print_arr(S2, 'S2')
+        #
+        # yhat = model(data)
+        # yhat = yhat.cpu().detach().numpy().reshape((m, m))
+        # print_arr(yhat, 'yhat')
+        # yhat = np.multiply(np.sign(yhat), np.exp(np.abs(yhat)) - 1)
+        # print_arr(yhat, 'yhat_trans')
+
+def edit_setup(dataset, exp_dataset):
+    dir = f'/home/erschultz/{dataset}/setup'
+    grid_root = f'optimize_grid_b_140_phi_0.03'
+    for i in range(1, 5001):
+        file = osp.join(dir, f'sample_{i}.txt')
+        rowList = []
+        with open(file, 'r') as f:
+            is_j = False
+            j = -1
+            for line in f:
+                line = line.strip()
+                rowList.append([line])
+                if is_j:
+                    j = int(line)
+                if line.startswith('--exp_max_ent'):
+                    is_j = True
+                else:
+                    is_j = False
+
+        rowList.append(['--diag_chi_experiment'])
+        rowList.append([osp.join(exp_dataset, f'samples/sample{j}', grid_root)])
+
+
+        with open(file, 'w') as f:
+            wr = csv.writer(f)
+            wr.writerows(rowList)
+
+def make_small(dataset):
+    dir = f'/home/erschultz/{dataset}/samples'
+    odir = f'/home/erschultz/{dataset}-small'
+    grid_root = f'optimize_grid_b_180_v_8_spheroid_1.5'
+    if not osp.exists(odir):
+        os.mkdir(odir)
+    odir = osp.join(odir, 'samples')
+    if not osp.exists(odir):
+        os.mkdir(odir)
+    for s in os.listdir(dir):
+        s_dir_grid = osp.join(dir, s, grid_root)
+        s_odir = osp.join(odir, s)
+        if not osp.exists(s_odir):
+            os.mkdir(s_odir)
+        s_odir_grid = osp.join(s_odir, grid_root)
+        if not osp.exists(s_odir_grid):
+            os.mkdir(s_odir_grid)
+        for f in ['y.npy', 'grid.txt']:
+            shutil.copyfile(osp.join(s_dir_grid, f), osp.join(s_odir_grid, f))
+
+def test_convergence(dataset, mode='loss'):
+    dir = f'/home/erschultz/{dataset}/samples'
+    b=180; phi=0.008; ar=1.5
+    samples, _ = get_samples(dataset, test=True)
+    samples = samples[:10]
+    cmap = matplotlib.cm.get_cmap('tab10')
+    fig, ax = plt.subplots()
+
+    for ls, max_ent_mode in zip(['-'], ['_700k']):
+        if max_ent_mode is None:
+            continue
+        for i, s in enumerate(samples):
+            s_dir = osp.join(dir, f'sample{s}')
+            fpath = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}_spheroid_{ar}-max_ent5{max_ent_mode}')
+            assert osp.exists(fpath), fpath
+
+            if mode == 'loss':
+                conv = np.loadtxt(osp.join(fpath, 'convergence.txt'))
+                max_it = len(conv)
+
+                convergence = []
+                eps = 1e-2
+                converged_it = None
+                for j in range(1, max_it):
+                    diff = conv[j] - conv[j-1]
+                    convergence.append(np.abs(diff))
+            elif mode.startswith('param'):
+                all_chis = []
+                all_diag_chis = []
+                for j in range(31):
+                    it_path = osp.join(fpath, f'iteration{j}')
+                    if osp.exists(it_path):
+                        config_file = osp.join(it_path, 'production_out/config.json')
+                        with open(config_file) as f:
+                            config = json.load(f)
+                        chis = np.array(config['chis'])
+                        chis = chis[np.triu_indices(len(chis))] # grab upper triangle
+                        diag_chis = np.array(config['diag_chis'])
+
+                        all_chis.append(chis)
+                        all_diag_chis.append(diag_chis)
+
+                params = np.concatenate((all_diag_chis, all_chis), axis = 1)
+
+                if mode == 'param':
+                    convergence = []
+                    for j in range(1, len(params)):
+                        diff = params[j] - params[j-1]
+                        conv = np.linalg.norm(diff, ord = 2)
+                        convergence.append(conv)
+                elif mode == 'param_mag':
+                    convergence = []
+                    for j in range(1, len(params)):
+                        diff = np.linalg.norm(params[j]) - np.linalg.norm(params[j-1])
+                        conv = np.abs(diff)
+                        convergence.append(conv)
+            ax.plot(convergence, ls = ls, c = cmap(i % cmap.N))
+
+
+    ax2 = ax.twinx()
+    for i, s in enumerate(samples):
+        ax2.plot(np.NaN, np.NaN, c = cmap(i % cmap.N), label = f'sample {s}')
+    ax2.get_yaxis().set_visible(False)
+    if len(samples) < 20:
+        ax2.legend(title='sample')
+
+    ax.set_yscale('log')
+    if mode == 'param':
+        ax.set_ylabel(r'$|\chi_{i}-\chi_{i-1}|$ (L2 norm)', fontsize=16)
+        # ax.axhline(100, c='k', ls='--')
+        ax.axhline(10, c='k', ls='--')
+        # ax.axhline(1, c='k', ls='--')
+    if mode == 'param_mag':
+        ax.set_ylabel(r'abs$(|\chi_{i}|-|\chi_{i-1}|)$', fontsize=16)
+        ax.axhline(1, c='k', ls='--')
+        ax.axhline(1e-1, c='k', ls='--')
+    elif mode == 'loss':
+        ax.set_ylabel(r'$|f(\chi)_{i}-f(\chi)_{i-1}|$', fontsize=16)
+        ax.axhline(1e-2, c='k', ls='--')
+        ax.axhline(1e-3, c='k', ls='--')
+    ax.set_xlabel('Iteration', fontsize=16)
+    plt.tight_layout()
+    plt.savefig(f'/home/erschultz/TICG-chromatin/figures/conv_{mode}.png')
+    plt.close()
+
+def compare_s_per_iteration():
+    dir = '/home/erschultz/Su2020/samples/sample1013'
+    max_ent_dir = osp.join(dir, 'optimize_grid_b_261_phi_0.01-max_ent10_longer')
+    assert osp.exists(max_ent_dir)
+    S_10 = np.load(osp.join(max_ent_dir, 'iteration10/S.npy'))
+    S_20 = np.load(osp.join(max_ent_dir, 'iteration20/S.npy'))
+    diff = S_20 - S_10
+
+    fig, (ax1, ax2, ax3, axcb) = plt.subplots(1, 4,
+                                gridspec_kw={'width_ratios':[1,1,1,0.08]})
+    fig.set_figheight(6)
+    fig.set_figwidth(6*2.5)
+    arr = np.array([S_10, S_20])
+    vmin = np.nanpercentile(arr, 1)
+    vmax = np.nanpercentile(arr, 99)
+    vmax = max(vmax, vmin * -1)
+    vmin = vmax * -1
+    s1 = sns.heatmap(S_10, linewidth = 0, vmin = vmin, vmax = vmax, cmap = BLUE_RED_CMAP,
+                    ax = ax1, cbar = False)
+    s1.set_title(f'$S$ iteration 10', fontsize = 16)
+    s1.set_yticks([])
+    s2 = sns.heatmap(S_20, linewidth = 0, vmin = vmin, vmax = vmax, cmap = BLUE_RED_CMAP,
+                    ax = ax2, cbar = False)
+    s2.set_title(f'$S$ iteration 20', fontsize = 16)
+    s2.set_yticks([])
+    s3 = sns.heatmap(diff, linewidth = 0, vmin = vmin, vmax = vmax, cmap = BLUE_RED_CMAP,
+                    ax = ax3, cbar_ax = axcb)
+    title = ('Difference\n'
+            '20 - 10')
+    s3.set_title(title, fontsize = 16)
+    s3.set_yticks([])
+    plt.show()
+
+def compare_p_s():
+    dir = '/home/erschultz'
+    datasets = ['Su2020', 'dataset_02_04_23']
+    samples = [1013, 243]
+    cell_lines = ['IMR90', 'GM12878']
+
+    for dataset, sample, cell_line in zip(datasets, samples, cell_lines):
+        s_dir = osp.join(dir, dataset, f'samples/sample{sample}')
+        y = np.load(osp.join(s_dir, 'y.npy')).astype(float)
+        y /= np.mean(np.diagonal(y))
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
+        plt.plot(meanDist, label = f'{cell_line} sample {sample}')
+
+    plt.yscale('log')
+    # plt.xscale('log')
+    plt.ylabel('Probability', fontsize=16)
+    plt.xlabel('Beads', fontsize=16)
+    plt.legend()
+    plt.show()
+
+def compare_gnn_p_s(dataset, GNN_ID):
+    dir = '/home/erschultz'
+    data_dir = osp.join(dir, dataset, 'samples')
+    GNN_root = f'optimize_grid_b_180_v_8_spheroid_1.5-GNN{GNN_ID}'
+
+    # samples = [1,2,3,4,5,324,981,1936,2834,3464]
+    samples, _ = get_samples(dataset, train=True)
+    N = 10; rows = 2; cols = 5
+    samlpes = samples[:N]
+
+    fig, axes = plt.subplots(rows, cols)
+    fig.set_figheight(12)
+    fig.set_figwidth(6*2.5)
+    for ax, sample in zip(axes.flatten(), samples):
+        s_dir = osp.join(dir, dataset, f'samples/sample{sample}')
+        s_dir = osp.join(data_dir, f'sample{sample}')
+
+        y = np.load(osp.join(s_dir, 'y.npy')).astype(float)
+        y /= np.mean(np.diagonal(y))
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
+        ax.plot(meanDist, c='k')
+
+        yhat = np.load(osp.join(s_dir, f'{GNN_root}/y.npy')).astype(float)
+        yhat /= np.mean(np.diagonal(yhat))
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(yhat)
+        ax.plot(meanDist, c='r')
+        ax.set_yscale('log')
+        ax.set_xscale('log')
+
+    fig.supylabel('Probability', fontsize=16)
+    fig.supxlabel('Beads', fontsize=16)
+    fig.suptitle(f'GNN_ID={GNN_ID}')
+    plt.tight_layout()
+    plt.savefig(osp.join(data_dir, f'p_s_GNN_{GNN_ID}.png'))
+    plt.close()
+
+def compare_max_ent_p_s(dataset):
+    dir = '/home/erschultz'
+    data_dir = osp.join(dir, dataset, 'samples')
+    max_ent_root = f'optimize_grid_b_180_phi_0.008_spheroid_1.5-max_ent10_start10'
+
+    # samples = [1,2,3,4,5,324,981,1936,2834,3464]
+    samples, _ = get_samples(dataset, train=True)
+    N = 5; rows = 1; cols = 5
+    samlpes = samples[:N]
+
+    fig, axes = plt.subplots(rows, cols)
+    fig.set_figheight(6)
+    fig.set_figwidth(6*2.5)
+    for ax, sample in zip(axes.flatten(), samples):
+        s_dir = osp.join(dir, dataset, f'samples/sample{sample}')
+        s_dir = osp.join(data_dir, f'sample{sample}')
+
+        y = np.load(osp.join(s_dir, 'y.npy')).astype(float)
+        y /= np.mean(np.diagonal(y))
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
+        ax.plot(meanDist, c='k')
+
+        yhat = np.load(osp.join(s_dir, f'{max_ent_root}/iteration30/y.npy')).astype(float)
+        yhat /= np.mean(np.diagonal(yhat))
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(yhat)
+        ax.plot(meanDist, c='r')
+        ax.set_yscale('log')
+        ax.set_xscale('log')
+
+    fig.supylabel('Probability', fontsize=16)
+    fig.supxlabel('Beads', fontsize=16)
+    plt.tight_layout()
+    plt.savefig(osp.join(data_dir, 'p_s_max_ent.png'))
+    plt.close()
+
+
+def test_pooling():
+    dir = '/home/erschultz/timing_analysis'
+    y_256 = np.load(osp.join(dir, '256', 'samples/sample1/y.npy'))
+    for i in [512, 1024]:
+        y_i = np.load(osp.join(dir, str(i), 'samples/sample1/y.npy'))
+        y_rescale = rescale_matrix(y_i, int(i/256))
+        print(y_rescale.shape)
+        print(np.allclose(y_256, y_rescale))
+
+def compare_scc():
+    dataset = 'dataset_02_04_23'
+    data_dir = osp.join('/home/erschultz', dataset, 'samples')
+    grid_root = 'optimize_grid_b_180_v_8_spheroid_1.5'
+    max_ent_root = f'{grid_root}-max_ent10'
+    GNN_ID=579
+    samples, _ = get_samples(dataset, train=True)
+    N = 9
+    samples = samples[:N]
+    m=512
+    start=20
+    K = m-2
+    K=100
+    scc = SCC(h=5, K=K, start = start)
+
+    fig, axes = plt.subplots(3, N//3)
+    fig.set_figheight(12)
+    fig.set_figwidth(6*2.5)
+    axes = axes.flatten()
+    scc_max_ent_arr = np.zeros(N)
+    scc_gnn_arr = np.zeros(N)
+    for i, (s, ax) in enumerate(zip(samples, axes)):
+        print(s)
+        s_dir = osp.join(data_dir, f'sample{s}')
+        y = np.load(osp.join(s_dir, 'y.npy'))
+
+        max_ent_dir = osp.join(s_dir, max_ent_root)
+        final = get_final_max_ent_folder(max_ent_dir)
+        yhat = np.load(osp.join(final, 'y.npy'))
+        scc1, p_arr, w_arr = scc.scc(y, yhat, var_stabilized = True, debug=True)
+        ax.plot(np.arange(start, K), p_arr, color = 'blue')
+        avg_diag1 = np.mean(p_arr)
+        avg_diag1 = np.round(avg_diag1, 3)
+        scc1 = np.round(scc1, 3)
+        scc_max_ent_arr[i]  = scc1
+
+        yhat = np.load(osp.join(s_dir, f'{grid_root}-GNN{GNN_ID}/y.npy'))
+        scc2, p_arr, w_arr = scc.scc(y, yhat, var_stabilized = True, debug=True)
+        ax.plot(np.arange(start, K), p_arr, color = 'red')
+        avg_diag2 = np.mean(p_arr)
+        avg_diag2 = np.round(avg_diag2, 3)
+        scc2 = np.round(scc2, 3)
+        scc_gnn_arr[i] = scc2
+
+        w_arr /= np.max(w_arr)
+        ax.plot(np.arange(start, K), w_arr, color = 'black')
+
+        ax.set_ylim(-0.5, 1)
+        title = f'sample {s}\nMaxEnt={scc1}, GNN={scc2}'
+        ax.set_title(title, fontsize = 16)
+        # ax.set_xscale('log')
+
+    scc_max_ent = np.round(np.mean(scc_max_ent_arr), 3)
+    scc_gnn = np.round(np.mean(scc_gnn_arr), 3)
+    stat, pval = ss.ttest_rel(scc_max_ent_arr, scc_gnn_arr)
+    mean_effect_size = np.mean(scc_gnn_arr - scc_max_ent_arr)
+    mean_effect_size = np.round(mean_effect_size, 3)
+    print(stat, pval)
+    print(mean_effect_size)
+
+    fig.suptitle(f'MaxEnt={scc_max_ent}, GNN={scc_gnn}', fontsize=18)
+    fig.supxlabel('Distance', fontsize = 16)
+    fig.supylabel('Pearson Correlation Coefficient', fontsize = 16)
+    plt.tight_layout()
+    plt.savefig(osp.join(data_dir, f'distance_pearson_start{start}_K{K}.png'))
+    plt.close()
+
+def test_time_contact_distance():
+    dirs = ['/home/erschultz/dataset_11_01_23_test',
+            '/home/erschultz/dataset_11_01_23_test2',
+            # '/home/erschultz/dataset_11_02_23_test',
+            '/home/erschultz/dataset_11_02_23_test2', # none on?
+            # '/home/erschultz/dataset_11_02_23_test3',
+            # '/home/erschultz/dataset_11_02_23_test4',
+            # '/home/erschultz/dataset_11_02_23_test5',
+            # '/home/erschultz/dataset_11_02_23_test6',
+            '/home/erschultz/dataset_11_02_23_test7', # only compute contact_matrix
+            '/home/erschultz/dataset_11_02_23_test8', # plaid on
+            '/home/erschultz/dataset_11_02_23_test9', # all on
+            ]
+    samples = range(1, 31)
+    for dir in dirs:
+        print(dir)
+        times = []
+        for sample in samples:
+            s_dir = osp.join(dir, 'samples', f'sample{sample}')
+            if not osp.exists(s_dir):
+                continue
+            t = load_time_dir(s_dir)
+            times.append(t)
+        print(np.mean(times), '+-', np.round(np.std(times), 3))
+
+def convergence():
+    dir = '/home/erschultz/dataset_02_04_23/samples/sample209/optimize_grid_b_180_phi_0.008_spheroid_1.5-max_ent5_longer'
+    conv = np.loadtxt(osp.join(dir, 'convergence.txt'))
+    plt.plot(conv)
+    plt.yscale('log')
+    plt.ylabel('Loss', fontsize=16)
+    plt.xlabel('Iteration', fontsize=16)
+    plt.savefig(osp.join(dir, 'convergence.png'))
+    plt.close()
+
+    diff_list = []
+    eps = 1e-3
+    for j in range(1, len(conv)):
+        diff = conv[j] - conv[j-1]
+        diff = np.abs(diff)
+        diff_list.append(diff)
+        if diff < eps and conv[j] < conv[0]:
+            converged_it = j
+            break
+
+    print(diff_list)
+    plt.plot(range(1, len(diff_list)+1), diff_list)
+    plt.yscale('log')
+    plt.axhline(1e-2, c='k', ls='--')
+    plt.axhline(1e-3, c='k', ls='--')
+    plt.ylabel(r'|Loss$_i$ - Loss$_{i-1}$|', fontsize=16)
+    plt.xlabel('Iteration', fontsize=16)
+    plt.savefig(osp.join(dir, 'convergence_diff.png'))
+    plt.close()
+
+def data_t_test():
+    "run t test on different pairs of results from latex table"
+    dataset = 'dataset_02_04_23'
+    samples, _ = get_samples(dataset, test = True)
+    samples_list = samples[:10]
+    args = getArgs(data_folder = f'/home/erschultz/{dataset}',
+                    samples = samples_list)
+    args.experimental = True
+    args.verbose = False
+    args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', 'max_ent10']
+    args.convergence_definition = 'normal'
+    args.gnn_id = []
+    data, _ = load_data(args)
+
+    k = 5
+    grid_root = 'optimize_grid_b_180_phi_0.008_spheroid_1.5'
+    max_ent_dir = f'{grid_root}-max_ent{k}'
+    metric = 'scc_var'
+    method_1 = max_ent_dir
+    result1 = np.array(data[k][method_1][metric], dtype=np.float64)
+    print(result1, np.mean(result1))
+
+    args.convergence_definition = 'strict'
+    data, _ = load_data(args)
+    method_2 = max_ent_dir + '_700k'
+    result2 = np.array(data[k][method_2][metric], dtype=np.float64)
+    print(result2, np.mean(result2))
+
+
+    stat, pval = ss.ttest_rel(result2, result1)
+    mean_effect_size = np.mean(result2 - result1)
+    mean_effect_size = np.round(mean_effect_size, 3)
+    print(stat, pval)
+    print(mean_effect_size)
 
 if __name__ == '__main__':
-    # test_robust_PCA()
-    # check_dataset('dataset_11_18_22')
-    # time_comparison()
-    # time_comparison_dmatrix()
-    # convergence_check()
-    main()
-    # compare_scc_bio_replicates()
-    # max_ent_loss_for_gnn('dataset_11_14_22', 2201)
-    # plot_mean_dist_S('dataset_04_28_23')
-    # gnn_of_max_ent([207], 8, 378)
-    # check_interpolation()
-    # make_dataset_of_converged('dataset_03_21_23')
-    # check_bonded_distributions()
+    # make_small('dataset_06_29_23')
+    test_time_contact_distance()
+    # compare_scc()
+    # check_dataset('dataset_10_12_23')
+    # compare_gnn_p_s('dataset_02_04_23', 579)
+    # compare_max_ent_p_s('dataset_02_04_23')

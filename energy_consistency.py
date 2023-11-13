@@ -27,20 +27,22 @@ def smatrix_mode(config):
     return config
 
 
-def setup():
+def setup(seed):
     config = default.config
     m=512
     config['nbeads'] = m
     config['nspecies'] = 4
-    config['seed'] = 12
+    config['seed'] = seed
     config['bead_type_files'] = [f'pcf{i}.txt' for i in range(1, config['nspecies']+1)]
     config['track_contactmap'] = False
     config['beadvol'] = 130000
     config['bond_length'] = 140
     config['phi_chromatin'] = 0.03
     config['grid_size'] = 210
-    config['dump_frequency'] = 1000
+    config['dump_frequency'] = 1
     config['dump_stats_frequency'] = 1
+    config['equilibSweeps'] = 1000
+    config['nSweeps'] = 1000
 
     config['smatrix_on'] = True
     config['lmatrix_on'] = True
@@ -57,7 +59,7 @@ def setup():
     print(config['diag_chis'])
 
     # get sequences
-    rng = np.random.default_rng(12)
+    rng = np.random.default_rng(seed)
     seq = rng.choice((0,1), size=(m,4))
     print('psi')
     print(seq[0])
@@ -69,54 +71,105 @@ def setup():
 
     return config, seq, chis
 
-def baseline(config, seq, chis):
-    '''Run simulation with chis.'''
-    root = '/home/erschultz/consistency_check/baseline'
+def baseline(dir, config, seq, chis):
+    root = f'{dir}/baseline'
     config['smatrix_on'] = False
     config['dmatrix_on'] = False
     config['lmatrix_on'] = False
 
     sim = Pysim(root, config, seq, None, randomize_seed = False, overwrite = True)
-    sim.run_eq(1000, 1000, 1)
+    sim.run_eq(config['equilibSweeps'], config['nSweeps'], 1)
 
     with utils.cd(sim.root):
         analysis.main_no_compare()
 
-def baseline_only_l(config, seq, chis):
-    root = '/home/erschultz/consistency_check/baseline_only_l'
+def baseline_only_l(dir, config, seq, chis):
+    root = f'{dir}/baseline_only_l'
     config['smatrix_on'] = False
     config['dmatrix_on'] = False
 
 
     sim = Pysim(root, config, seq, None, randomize_seed = False, overwrite = True)
-    sim.run_eq(1000, 1000, 1)
+    sim.run_eq(config['equilibSweeps'], config['nSweeps'], 1)
 
     with utils.cd(sim.root):
         analysis.main_no_compare()
 
-def baseline_only_d(config, seq, chis):
-    root = '/home/erschultz/consistency_check/baseline_only_d'
+def baseline_only_d(dir, config, seq, chis):
+    root = f'{dir}/baseline_only_d'
     config['smatrix_on'] = False
     config['lmatrix_on'] = False
 
     sim = Pysim(root, config, seq, None, randomize_seed = False, overwrite = True)
-    sim.run_eq(1000, 1000, 1)
+    sim.run_eq(config['equilibSweeps'], config['nSweeps'], 1)
 
     with utils.cd(sim.root):
         analysis.main_no_compare()
 
-def baseline_energy_on(config, seq, chis):
-    '''Run simulation using S calculated in TICG engine.'''
-    root = '/home/erschultz/consistency_check/baseline_energy_on'
+def baseline_energy_on(dir, config, seq, chis):
+    root = f'{dir}/baseline_energy_on'
     sim = Pysim(root, config, seq, None, randomize_seed = False, overwrite = True)
-    sim.run_eq(1000, 1000, 1)
+    sim.run_eq(config['equilibSweeps'], config['nSweeps'], 1)
 
     with utils.cd(sim.root):
         analysis.main_no_compare()
 
-def smatrix_only(config, seq, chis):
-    '''Run simulation using S calculated in python.'''
-    root = '/home/erschultz/consistency_check/smatrix_only'
+def baseline_energy_on_no_gridmove(dir, config, seq, chis):
+    root = f'{dir}/baseline_energy_on_no_gridmove'
+
+    config['gridmove_on'] = False
+
+    sim = Pysim(root, config, seq, None, randomize_seed = False, overwrite = True)
+    sim.run_eq(config['equilibSweeps'], config['nSweeps'], 1)
+
+    with utils.cd(sim.root):
+        analysis.main_no_compare()
+
+def baseline_energy_on_only_trans(dir, config, seq, chis):
+    root = f'{dir}/baseline_energy_on_only_trans'
+
+    config['pivot_on'] = False
+    config['crankshaft_on'] = False
+    config['gridmove_on'] = False
+
+
+    sim = Pysim(root, config, seq, None, randomize_seed = False, overwrite = True)
+    sim.run_eq(config['equilibSweeps'], config['nSweeps'], 1)
+
+    with utils.cd(sim.root):
+        analysis.main_no_compare()
+
+def baseline_energy_on_only_pivot(dir, config, seq, chis):
+    root = f'{dir}/baseline_energy_on_only_pivot'
+
+    config['translation_on'] = False
+    config['crankshaft_on'] = False
+    config['gridmove_on'] = False
+
+
+    sim = Pysim(root, config, seq, None, randomize_seed = False, overwrite = True)
+    sim.run_eq(config['equilibSweeps'], config['nSweeps'], 1)
+
+    with utils.cd(sim.root):
+        analysis.main_no_compare()
+
+
+def baseline_energy_on_only_trans_grid(dir, config, seq, chis):
+    root = f'{dir}/baseline_energy_on_only_trans_grid'
+
+    config['pivot_on'] = False
+    config['crankshaft_on'] = False
+
+
+    sim = Pysim(root, config, seq, None, randomize_seed = False, overwrite = True)
+    sim.run_eq(config['equilibSweeps'], config['nSweeps'], 1)
+
+    with utils.cd(sim.root):
+        analysis.main_no_compare()
+
+def smatrix_only(dir, config, seq, chis):
+    root = f'{dir}/smatrix_only'
+    print(root)
     L, D, S = calculate_all_energy(config, seq, chis)
     print('L')
     print(L)
@@ -128,28 +181,95 @@ def smatrix_only(config, seq, chis):
     print(L)
     # print(S)
     config = smatrix_mode(config)
+    #
+    # S_prime = convert_L_to_Lp(S)
+    #
+    # S_prime2 = np.loadtxt(osp.join(root, 'equilibration/smatrix_prime.txt'))
+    #
+    # print(np.max(S_prime - S_prime2))
 
     sim = Pysim(root, config, None, None, randomize_seed = False, overwrite = True, smatrix = S)
-    sim.run_eq(1000, 1000, 1)
+    sim.run_eq(config['equilibSweeps'], config['nSweeps'], 1)
 
     with utils.cd(sim.root):
       analysis.main_no_compare()
 
-def smatrix_only_zeros(config, seq, chis):
-    '''Run simulation with smatrix_filename but S is all zeros.'''
-    root = '/home/erschultz/consistency_check/smatrix_only_zeros'
+def smatrix_only_trans(dir, config, seq, chis):
+    root = f'{dir}/smatrix_only_trans'
+    L, D, S = calculate_all_energy(config, seq, chis)
+
+    config = smatrix_mode(config)
+    config['pivot_on'] = False
+    config['crankshaft_on'] = False
+    config['gridmove_on'] = False
+
+
+    sim = Pysim(root, config, None, None, randomize_seed = False, overwrite = True, smatrix = S)
+    sim.run_eq(config['equilibSweeps'], config['nSweeps'], 1)
+
+    with utils.cd(sim.root):
+      analysis.main_no_compare()
+
+def smatrix_only_trans_grid(dir, config, seq, chis):
+    root = f'{dir}/smatrix_only_trans_grid'
+    L, D, S = calculate_all_energy(config, seq, chis)
+
+    config = smatrix_mode(config)
+    config['pivot_on'] = False
+    config['crankshaft_on'] = False
+
+    sim = Pysim(root, config, None, None, randomize_seed = False, overwrite = True, smatrix = S)
+    sim.run_eq(config['equilibSweeps'], config['nSweeps'], 1)
+
+    with utils.cd(sim.root):
+      analysis.main_no_compare()
+
+def smatrix_only_no_gridmove(dir, config, seq, chis):
+    root = f'{dir}/smatrix_only_no_gridmove'
+    L, D, S = calculate_all_energy(config, seq, chis)
+
+    config = smatrix_mode(config)
+    config['gridmove_on'] = False
+
+
+    sim = Pysim(root, config, None, None, randomize_seed = False, overwrite = True, smatrix = S)
+    sim.run_eq(config['equilibSweeps'], config['nSweeps'], 1)
+
+    with utils.cd(sim.root):
+      analysis.main_no_compare()
+
+def smatrix_only_pivot(dir, config, seq, chis):
+    root = f'{dir}/smatrix_only_pivot'
+    L, D, S = calculate_all_energy(config, seq, chis)
+
+    config = smatrix_mode(config)
+    config['translation_on'] = False
+    config['crankshaft_on'] = False
+    config['gridmove_on'] = False
+
+
+    sim = Pysim(root, config, None, None, randomize_seed = False, overwrite = True, smatrix = S)
+    sim.run_eq(config['equilibSweeps'], config['nSweeps'], 1)
+
+    with utils.cd(sim.root):
+      analysis.main_no_compare()
+
+
+
+
+def smatrix_only_zeros(dir, config, seq, chis):
+    root = f'{dir}/smatrix_only_zeros'
     S = np.zeros((512, 512))
     # print(S)
     config = smatrix_mode(config)
     sim = Pysim(root, config, None, None, randomize_seed = False, overwrite = True, smatrix = S)
-    sim.run_eq(1000, 1000, 1)
+    sim.run_eq(config['equilibSweeps'], config['nSweeps'], 1)
 
     with utils.cd(sim.root):
       analysis.main_no_compare()
 
-def lmatrix_dmatrix_only(config, seq, chis):
-    '''Run simulation with lmatrix_filename and dmatrix_filename.'''
-    root = '/home/erschultz/consistency_check/lmatrix_dmatrix_only'
+def lmatrix_dmatrix_only(dir, config, seq, chis):
+    root = f'{dir}/lmatrix_dmatrix_only'
     L, D, S = calculate_all_energy(config, seq, chis)
     config['chis'] = None
     config['nspecies'] = 0
@@ -163,14 +283,13 @@ def lmatrix_dmatrix_only(config, seq, chis):
 
     sim = Pysim(root, config, None, None, randomize_seed = False, overwrite = True, lmatrix = L,
                 dmatrix = D)
-    sim.run_eq(1000, 1000, 1)
+    sim.run_eq(config['equilibSweeps'], config['nSweeps'], 1)
 
     with utils.cd(sim.root):
       analysis.main_no_compare()
 
-def lmatrix_dmatrix_only_use_S(config, seq, chis):
-    '''Run simulation with lmatrix_filename and dmatrix_filename, and use TICG engine to calculate S.'''
-    root = '/home/erschultz/consistency_check/lmatrix_dmatrix_only_use_S'
+def lmatrix_dmatrix_only_use_S(dir, config, seq, chis):
+    root = f'{dir}/lmatrix_dmatrix_only_use_S'
     L, D, S = calculate_all_energy(config, seq, chis)
     config['chis'] = None
     config['nspecies'] = 0
@@ -184,14 +303,13 @@ def lmatrix_dmatrix_only_use_S(config, seq, chis):
 
     sim = Pysim(root, config, None, None, randomize_seed = False, overwrite = True, lmatrix = L,
                 dmatrix = D)
-    sim.run_eq(1000, 1000, 1)
+    sim.run_eq(config['equilibSweeps'], config['nSweeps'], 1)
 
     with utils.cd(sim.root):
       analysis.main_no_compare()
 
-def hack_smatrix_as_lmatrix(config, seq, chis):
-    '''Run simulation with python S, but hack it into the lmatrix_filename.'''
-    root = '/home/erschultz/consistency_check/hack_smatrix_as_lmatrix'
+def hack_smatrix_as_lmatrix(dir, config, seq, chis):
+    root = f'{dir}/hack_smatrix_as_lmatrix'
     L, D, S = calculate_all_energy(config, seq, chis)
     config['chis'] = None
     config['nspecies'] = 0
@@ -206,28 +324,36 @@ def hack_smatrix_as_lmatrix(config, seq, chis):
 
     sim = Pysim(root, config, None, None, randomize_seed = False, overwrite = True, lmatrix = S,
                 dmatrix = D)
-    sim.run_eq(1000, 1000, 1)
+    sim.run_eq(config['equilibSweeps'], config['nSweeps'], 1)
 
     with utils.cd(sim.root):
       analysis.main_no_compare()
 
 
 def main():
-    dir = '/home/erschultz/consistency_check'
+    seed=13
+    dir = f'/home/erschultz/consistency_check_seed{seed}'
     if not osp.exists(dir):
         os.mkdir(dir, mode=0o755)
 
-    config, seq, chis = setup()
-    # baseline(config, seq, chis)
-    # baseline_only_d(config, seq, chis)
-    # baseline_only_l(config, seq, chis)
-    # baseline_energy_on(config, seq, chis)
-    smatrix_only(config, seq, chis)
-    # lmatrix_dmatrix_only(config, seq, chis)
-    # lmatrix_dmatrix_only_use_S(config, seq, chis)
-    # hack_smatrix_as_lmatrix(config, seq, chis)
-    # smatrix_only_zeros(config, seq, chis)
-
+    config, seq, chis = setup(seed)
+    # baseline(dir, config, seq, chis)
+    # baseline_only_d(dir, config, seq, chis)
+    # baseline_only_l(dir, config, seq, chis)
+    # baseline_energy_on(dir, config, seq, chis)
+    # baseline_energy_on_only_trans(dir, config, seq, chis)
+    smatrix_only(dir, config, seq, chis)
+    # smatrix_only_trans_grid(dir, config, seq, chis)
+    # smatrix_only_trans(dir, config, seq, chis)
+    # lmatrix_dmatrix_only(dir, config, seq, chis)
+    # lmatrix_dmatrix_only_use_S(dir, config, seq, chis)
+    # hack_smatrix_as_lmatrix(dir, config, seq, chis)
+    # smatrix_only_zeros(dir, config, seq, chis)
+    # smatrix_only_no_gridmove(dir, config, seq, chis)
+    # baseline_energy_on_no_gridmove(dir, config, seq, chis)
+    # baseline_energy_on_only_trans_grid(dir, config, seq, chis)
+    # baseline_energy_on_only_pivot(dir, config, seq, chis)
+    # smatrix_only_pivot(dir, config, seq, chis)
 
 if __name__ == '__main__':
     main()

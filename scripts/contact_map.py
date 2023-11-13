@@ -10,17 +10,19 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
+from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
+                                      calculate_S)
+from pylib.utils.plotting_utils import (plot_matrix, plot_mean_dist,
+                                        plot_mean_vs_genomic_distance)
 from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
-from sequences_to_contact_maps.scripts.energy_utils import (
-    calculate_D, calculate_diag_chi_step, calculate_S)
 from sequences_to_contact_maps.scripts.load_utils import (
     get_final_max_ent_folder, load_L, load_max_ent_L)
-from sequences_to_contact_maps.scripts.plotting_utils import (
-    plot_diag_chi, plot_matrix, plot_mean_dist, plot_mean_vs_genomic_distance)
-from sequences_to_contact_maps.scripts.utils import DiagonalPreprocessing, crop
+from sequences_to_contact_maps.scripts.plotting_utils import plot_diag_chi
+from sequences_to_contact_maps.scripts.utils import crop
 
 
 def getArgs(sample_folder=''):
@@ -59,12 +61,14 @@ def plot_all(args):
     if args.random_mode:
         y_path = osp.join(args.sample_folder, 'production_out')
         if not osp.exists(y_path):
+            print(f'{y_path} does not exist')
             y_path = args.sample_folder
+
     else:
         y_path = osp.join(args.final_folder, "production_out")
         if not osp.exists(y_path):
             y_path = args.final_folder
-
+    assert osp.exists(y_path), f'{y_path} does not exist'
 
     # get y
     y_file = osp.join(y_path, 'contacts.txt')
@@ -133,10 +137,11 @@ def plot_all(args):
     S = None
     if L is not None:
         S = calculate_S(L, D)
-    elif args.replicate_folder is not None:
-        file = osp.join(args.replicate_folder, 'resources/S.npy')
-        if osp.exists(file):
-            S = np.load(file)
+        print(S)
+    else:
+        S_file = osp.join(args.sample_folder, 'S.npy')
+        if osp.exists(S_file):
+            S = np.load(S_file)
 
     if args.plot:
         plot_matrix(y, ofile = osp.join(args.save_folder, 'y.png'), vmax = 'mean')
@@ -234,11 +239,13 @@ def plot_all(args):
                 sim_label = 'Max Ent'
                 color = 'blue'
             plot_mean_dist(meanDist_max_ent, args.save_folder, 'meanDist.png',
-                            diag_chi_step, False, meanDist_gt, 'Reference', sim_label,
-                            color, title)
+                            diag_chi_step, False, ref = meanDist_gt,
+                            ref_label = 'Reference',  label = sim_label,
+                            color = color, title = title)
             plot_mean_dist(meanDist_max_ent, args.save_folder, 'meanDist_log.png',
-                            diag_chi_step, True, meanDist_gt, 'Reference', sim_label,
-                            color, title)
+                            diag_chi_step, True, ref = meanDist_gt,
+                            ref_label = 'Reference',  label = sim_label,
+                            color = color, title = title)
 
     if args.save_npy:
         np.save(osp.join(args.save_folder, 'y.npy'), y.astype(np.int16))

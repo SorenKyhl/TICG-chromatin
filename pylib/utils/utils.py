@@ -8,11 +8,15 @@ from pathlib import Path
 import jsbeautifier
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.stats import pearsonr, spearmanr
+from sympy import solve, symbols
 
 """
 utility functions
 """
 
+
+LETTERS= 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 def load_json(path):
     with open(path) as f:
@@ -149,7 +153,6 @@ def load_chis(config):
 
     return chi
 
-
 def plot_image(x, dark=False):
     x = np.array(x)
     v = x.flatten()
@@ -159,9 +162,56 @@ def plot_image(x, dark=False):
     plt.imshow(x, vmin=-lim, vmax=lim, cmap="bwr")
     plt.colorbar()
 
+def nan_pearsonr(x, y):
+    na_ind = np.logical_or(np.isnan(x), np.isnan(y))
+    return pearsonr(x[~na_ind], y[~na_ind])
 
+def pearson_round(x, y, stat = 'pearson', round = 2):
+    "Wrapper function that combines np.round and pearsonr."
+    if stat == 'pearson':
+        fn = pearsonr
+    elif stat == 'nan_pearson':
+        fn = nan_pearsonr
+    elif stat == 'spearman':
+        fn = spearmanr
+    x = np.array(x)
+    y = np.array(y)
+    assert x.shape == y.shape, f'shape mismatch, {x.shape} != {y.shape}'
+    stat, _ = fn(x, y)
+    return np.round(stat, round)
 
-def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method,norm=False):
+def make_composite(lower, upper):
+    m, _ = lower.shape
+    assert m == upper.shape[0]
+    indu = np.triu_indices(m)
+    indl = np.tril_indices(m)
+
+    # make composite contact map
+    composite = np.zeros((m, m))
+    composite[indu] = upper[indu]
+    composite[indl] = lower[indl]
+    np.fill_diagonal(composite, 1)
+
+    return composite
+
+def triu_to_full(arr, m = None):
+    '''Convert array of upper triangle to symmetric matrix.'''
+    # infer m given length of upper triangle
+    if m is None:
+        l, = arr.shape
+        x, y = symbols('x y')
+        y=x*(x+1)/2-l
+        result=solve(y)
+        m = int(np.max(result))
+
+    # need to reconstruct from upper traingle
+    y = np.zeros((m, m))
+    y[np.triu_indices(m)] = arr
+    y += np.triu(y, 1).T
+
+    return y
+
+def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method, norm=False):
     """newton's method"""
     obj_goal = np.array(obj_goal)
     lam = np.array(lam)
@@ -203,7 +253,7 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method,norm=Fals
     logging.debug("========= step after gamma: ", steplength)
     logging.debug("step: ", step)
 
-    if steplength > trust_region:
+    if trust_region is not None and steplength > trust_region:
         step /= steplength
         step *= trust_region
         steplength = np.sqrt(step @ step)

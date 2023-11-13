@@ -15,6 +15,6 @@ public:
 	{
 		Eigen::RowVector3d displacement = pbead2->r - pbead1->r;
 		double r = sqrt(displacement.dot(displacement));
-		return k*(r- r0)*(r - r0);
+		return k*(r - r0)*(r - r0);
 	}
 };

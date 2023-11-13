@@ -1,21 +1,24 @@
 import csv
 import json
 import logging
+import os
+import os.path as osp
+import sys
+
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from codetiming import Timer
-
 import pylib.utils.epilib as ep
 import pylib.utils.utils as utils
+from codetiming import Timer
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import calculate_all_energy
-from pylib.utils.plotting_utils import (plot_matrix,
+from pylib.utils.plotting_utils import (plot_matrix, plot_mean_dist,
                                         plot_mean_vs_genomic_distance)
 from pylib.utils.similarity_measures import SCC
 from scipy.stats import pearsonr
 from sklearn.decomposition import PCA
 
-import matplotlib
 matplotlib.use('Agg')
 plt.rcParams["figure.figsize"] = [8, 6]
 plt.rcParams.update({"font.size": 18})
@@ -23,7 +26,7 @@ plt.rcParams.update({"font.size": 18})
 
 
 #@Timer("sim analysis took {:.2f} seconds", logger=logging.info)
-def sim_analysis(sim, fast_analysis):
+def sim_analysis(sim, fast_analysis=False):
     """analyze data from simulation only (doesn't require ground truth hic)"""
     error = sim.plot_consistency()
     if error > 0.01:
@@ -53,7 +56,11 @@ def sim_analysis(sim, fast_analysis):
         plt.savefig("chis.png")
         plt.close()
 
-        if fast_analysis is False:
+        plt.figure()
+        plot_chi_matrix(sim)
+        plt.close()
+
+        if not fast_analysis:
             try:
                 # don't run if the matrices are big
                 if sim.config["nbeads"] <= 2048:
@@ -65,6 +72,13 @@ def sim_analysis(sim, fast_analysis):
                     raise ValueError
             except NotImplementedError:
                 logging.warn("energy matrices not implemented for this situation")
+    elif osp.exists('S.npy') and not fast_analysis:
+        S = np.load('S.npy')
+        plot_matrix(S, 'matrix_S.png', "S", cmap='bluered')
+        meanDist_S = DiagonalPreprocessing.genomic_distance_statistics(S, mode='freq')
+        plot_mean_dist(meanDist_S, '', 'meanDist_S_log.png', None,
+                        logx = True, logy = False,
+                        ylabel = 'mean(diagonal(S, d))')
 
     plt.figure()
     sim.plot_oe()
@@ -82,10 +96,11 @@ def sim_analysis(sim, fast_analysis):
     plt.close()
 
     if fast_analysis is False:
-        plot_mean_vs_genomic_distance(sim.hic, '', 'meanDist_log.png', logx = True, ref = sim.gthic)
+        plot_mean_vs_genomic_distance(sim.hic, '', 'meanDist_log.png',
+                                        logx = True, ref = sim.gthic)
 
 
-def compare_analysis(sim, fast_analysis):
+def compare_analysis(sim, fast_analysis=False):
     """analyze comparison of simulation with ground truth contact map"""
 
     if fast_analysis is False:
@@ -100,15 +115,15 @@ def compare_analysis(sim, fast_analysis):
     ep.plot_tri(sim.hic, sim.gthic, oe=True)
     plt.savefig("tri_oe.png")
     plt.close()
-   
+
     sim.plot_tri()
     plt.savefig("tri_sk.png")
     plt.close()
-    
+
     sim.plot_tri(log=True)
     plt.savefig("tri_log_sk.png")
     plt.close()
-    
+
     sim.plot_tri(vmaxp=np.mean(sim.hic) / 2)
     plt.savefig("tri_dark_sk.png")
     plt.close()
@@ -174,6 +189,8 @@ def maxent_analysis(sim):
     plt.savefig("obs_vs_goal.png")
     plt.close()
 
+def plot_chi_matrix(sim):
+    utils.plot_image(np.array(sim.config["chis"]))
 
 def plot_energy_matrices(sim, save=True):
     # energy matrices
@@ -326,13 +343,19 @@ def calc_dist_strat_corr(y, yhat, mode = 'pearson', return_arr = False):
     else:
         return avg
 
-def main_no_compare():
+def main_no_compare(dir=None):
+    if dir is not None:
+        os.chdir(dir)
+    assert osp.exists("production_out"), f'{os.getcwd()}'
     sim = ep.Sim("production_out")
     logging.info("sim created")
     sim_analysis(sim)
     logging.info("sim analysis done")
 
-def main_no_maxent():
+def main_no_maxent(dir=None):
+    if dir is not None:
+        os.chdir(dir)
+    assert osp.exists("production_out"), f'{os.getcwd()}'
     sim = ep.Sim("production_out")
     logging.info("sim created")
     sim_analysis(sim)
@@ -340,8 +363,11 @@ def main_no_maxent():
     compare_analysis(sim)
     logging.info("compare analysis done")
 
-def main(fast_analysis = False):
-    sim = ep.Sim("production_out")
+def main(fast_analysis = False, dir = None, mode = 'all'):
+    if dir is not None:
+        os.chdir(dir)
+    assert osp.exists("production_out"), f'{dir}, {os.getcwd()}'
+    sim = ep.Sim("production_out", mode=mode)
     logging.info("sim created")
     sim_analysis(sim, fast_analysis)
     logging.info("sim analysis done")

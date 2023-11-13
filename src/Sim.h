@@ -7,10 +7,12 @@
 #include <memory>
 
 #include "Eigen/Dense"
+#include <Eigen/StdVector>
 #include "nlohmann/json.hpp"
 
 #include "Bead.h"
 #include "DSS_Bond.h"
+#include "FENE_Bond.h"
 #include "Harmonic_Bond.h"
 #include "Harmonic_Angle.h"
 #include "Cell.h"
@@ -18,7 +20,6 @@
 #include "Analytics.h"
 #include "prof_timer.cpp"
 #include "random_mars.h"
-
 
 class Sim {
 public:
@@ -40,11 +41,13 @@ public:
 	double constant_chi;
 	int nspecies; // number of different epigenetic marks
 	int nbeads;
+	double target_volume;
 	double total_volume;
 	double grid_size; // nm
 	double bond_length; // nm
 	std::string bond_type;
 	double k_angle;
+	double theta_0;
 	float dense_diagonal_cutoff;
 	float dense_diagonal_loading;
 	std::string boundary_type;
@@ -142,8 +145,11 @@ public:
 	int num_threads;
 
 	std::vector<std::vector<int>> contact_map;
+	std::vector<Eigen::ArrayXd> masks;
+	Eigen::MatrixXd psi;
 	int contact_resolution; //= 500;
 	bool dump_density;
+	bool dump_observables;
 	bool visit_tracking;
 	bool update_contacts_distance;
 	double distance_cutoff;
@@ -180,7 +186,6 @@ public:
 	void setInitialConfiguration();
 	void initializeObjects();
 	void calculateParameters();
-	void volParameters();
 	void volParameters_new();
 	void loadConfiguration();
 	void generateRandomCoil(double bondlength);
@@ -215,6 +220,9 @@ public:
 	void saveXyz() ;
 	void saveEnergy(int sweep);
 	void saveObservables(int sweep);
+	void saveObservablesDistance(int sweep);
+	Eigen::MatrixXd contactMatrix();
+	void initializeMasks();
 	void saveContacts(int sweep);
 	void makeDataAndLogFiles();
 	void redirectStdout();

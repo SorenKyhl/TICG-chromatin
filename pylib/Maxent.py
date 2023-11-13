@@ -1,8 +1,10 @@
 import copy
+import logging
 import os
 import pickle
 import shutil
-import logging
+import sys
+import time
 from pathlib import Path
 from typing import Optional, Union
 
@@ -40,7 +42,9 @@ class Maxent:
         final_it_sweeps: int = 0,
         plaid_diagonly: bool = False,
         norm: bool = False,
-        fast_analysis: bool = False
+        fast_analysis: bool = False,
+        mkdir: bool = True,
+        bound_diag_chis: bool = False
     ):
         """
         root: root of maxent filesystem
@@ -49,6 +53,8 @@ class Maxent:
         seqs: simulation sequences
         gthic: ground truth hic
         overwrite: will overwrite existing files
+        bound_diag_chis: will ensure that diag chis start at 0
+        plaid_diagonly: True to constrain plaid chis to be a diagonal matrix
         """
 
         # maxent things
@@ -62,6 +68,8 @@ class Maxent:
             self.seqs = seqs
         self.gthic = gthic
         self.overwrite = overwrite
+        self.mkdir = mkdir
+        self.bound_diag_chis = bound_diag_chis
 
         if "goals" not in self.params:
             raise ValueError("goals are not specified in parameters")
@@ -87,6 +95,7 @@ class Maxent:
         self.lengthen_iterations = lengthen_iterations
         self.analysis_on = analysis_on
         self.plaid_diagonly = plaid_diagonly
+        self.fast_analysis = fast_analysis
 
     def set_root(self, root: PathLike):
         """
@@ -105,7 +114,8 @@ class Maxent:
         self.config["nbeads"] = self.n
         self.config["diag_cutoff"] = self.n
         # if (np.shape(self.config['chis']) != (self.k, self.k)):
-        self.config["chis"] = np.zeros((self.k, self.k))
+        if self.k > 0:
+            self.config["chis"] = np.zeros((self.k, self.k))
 
         self.config["nspecies"] = self.k
 
@@ -118,10 +128,12 @@ class Maxent:
         """create maxent directory and populate resources"""
         if self.root.exists() and self.overwrite:
             shutil.rmtree(self.root)
-        self.root.mkdir()
-        self.resources.mkdir(exist_ok=self.overwrite)
+        if self.mkdir:
+            self.root.mkdir(exist_ok=False)
+        self.resources.mkdir(exist_ok=False)
         np.save(self.resources / "experimental_hic.npy", self.gthic)
         utils.write_json(self.config, self.resources / "config.json")
+        np.save(self.resources / "x.npy", self.seqs)
         # TODO: write seqs, defaultsim.config, goals, gthic to resources.
         # or: maybe just pickle the maxent instance?
 
@@ -133,40 +145,72 @@ class Maxent:
         self.loss = np.append(self.loss, newloss)
 
         plaid, diag = sim.split_chis(newchis)
-        self.track_plaid_chis = np.vstack((self.track_plaid_chis, plaid))
+
+        if plaid is not None:
+            self.track_plaid_chis = np.vstack((self.track_plaid_chis, plaid))
+            np.savetxt(self.root / "chis.txt", plaid, fmt="%.4f", newline=" ")
+            np.save(self.root / "plaid_chis.npy", self.track_plaid_chis)
+            self.plot_plaid_chis()
+
         self.track_diag_chis = np.vstack((self.track_diag_chis, diag))
-
-        np.savetxt(self.root / "chis.txt", plaid, fmt="%.4f", newline=" ")
         np.savetxt(self.root / "chis_diag.txt", diag, fmt="%.4f", newline=" ")
-        np.savetxt(self.root / "convergence.txt", self.loss, fmt="%.16f")
-        np.save(self.root / "plaid_chis.npy", self.track_plaid_chis)
         np.save(self.root / "diag_chis.npy", self.track_diag_chis)
-
-        self.plot_convergence()
-        self.plot_plaid_chis()
-        self.plot_plaid_chis(True)
         self.plot_diag_chis()
 
+        np.savetxt(self.root / "convergence.txt", self.loss, fmt="%.16f")
+        converged = self.plot_convergence()
+
+        return converged
+
     def plot_convergence(self):
+        max_it = len(self.loss)
+        iterations = np.arange(1, max_it+1)
+        if max_it < 2:
+            return False
+
+        # plot loss
         plt.figure()
         plt.xlabel('Iteration', fontsize=16)
         plt.ylabel('Loss', fontsize=16)
-        iterations = np.arange(1, len(self.loss)+1)
         plt.plot(iterations, self.loss, ".-")
 
+        # convergence based on loss
         converged_it = None
-        for i in range(1, len(self.loss)):
+        for i in range(1, max_it):
             diff = self.loss[i] - self.loss[i-1]
-            if np.abs(diff) < 1e-2 and self.loss[i] < self.loss[0]:
+            if np.abs(diff) < self.eps and self.loss[i] < self.loss[0]:
                 converged_it = iterations[i]
                 break
 
-        if converged_it is not None:
+        if converged_it is not None and max_it > 2:
             plt.axvline(converged_it, color = 'k', label = 'converged')
             plt.legend()
+            converged = True
+        else:
+            converged = False
 
         plt.tight_layout()
         plt.savefig(self.root / "loss.png")
+        plt.close()
+
+        # convergence in parameter space
+        convergence = []
+        for j in range(1, max_it+1):
+            diff = self.chis[j] - self.chis[j-1]
+            conv = np.linalg.norm(diff, ord = 2)
+            convergence.append(conv)
+        print(convergence)
+        plt.plot(iterations, convergence)
+        plt.yscale('log')
+        plt.axhline(100, c='k', ls='--')
+        plt.axhline(10, c='k', ls='--')
+        plt.ylabel(r'$|\chi_{i}-\chi_{i-1}|$ (L2 norm)', fontsize=16)
+        plt.xlabel('Iteration', fontsize=16)
+        plt.tight_layout()
+        plt.savefig(self.root / "param_convergence.png")
+        plt.close()
+
+        return converged
 
     def plot_plaid_chis(self, legend=False):
         k = sympy.Symbol('k')
@@ -185,9 +229,9 @@ class Maxent:
                 counter += 1
         plt.xlabel('Iteration', fontsize=16)
         plt.ylabel(r'$\chi_{IJ}$ value', fontsize=16)
+        plt.tight_layout()
         if legend:
             plt.legend(loc=(1.04,0), ncol = 3)
-            plt.tight_layout()
             plt.savefig(self.root / "track_plaid_chis_legend.png")
         else:
             plt.savefig(self.root / "track_plaid_chis.png")
@@ -200,19 +244,40 @@ class Maxent:
         plt.plot(self.track_diag_chis, ".-")
         plt.tight_layout()
         plt.savefig(self.root / "track_diag_chis.png")
+        plt.close()
 
-    def analyze(self):
+    def analyze(self, dir):
         if self.analysis_on:
-            analysis.main()
+            analysis.main(self.fast_analysis, dir, self.params['mode'])
 
     def fit(self):
         """execute maxent optimization"""
-
+        t0 = time.time()
         self.make_directory()
         newchis = self.initial_chis
         utils.write_json(self.params, self.resources / "params.json")
 
-        for it in range(self.params["iterations"]):
+        max_iterations = self.params["iterations"]
+        self.eps = 1e-2
+        if 'conv_defn' in self.params:
+            conv_defn = self.params['conv_defn']
+            if conv_defn == 'strict':
+                self.eps = 1e-3
+            elif conv_defn == 'normal':
+                self.eps = 1e-2
+            elif isinstance(conv_defn, float):
+                self.eps = conf_defn
+        if 'stop_at_convergence' in self.params:
+            stop_at_convergence = self.params['stop_at_convergence']
+        else:
+            stop_at_convergence = False
+        if 'run_longer_at_convergence' in self.params:
+            run_longer_at_convergence = self.params['run_longer_at_convergence']
+        else:
+            run_longer_at_convergence = False
+
+        for it in range(max_iterations):
+            print(f'Iteration {it}')
             self.save_state()
 
             sim = Pysim(
@@ -236,7 +301,7 @@ class Maxent:
             )
 
             curr_chis = sim.flatten_chis()
-            obs, jac = sim.load_observables(jacobian=True)
+            obs, jac = sim.load_observables(jacobian=True, mode = self.params['mode'])
             obj_goal = np.array(self.params["goals"])
 
 
@@ -257,6 +322,8 @@ class Maxent:
             print(f"gammma = {gamma}")
             print("self.gamma = " + str(self.params["gamma"]))
 
+            if self.params['mode'] == 'diag':
+                plaid, curr_chis = sim.split_chis(curr_chis)
             newchis, newloss = utils.newton(
                 lam=obs,
                 obj_goal=obj_goal,
@@ -266,25 +333,48 @@ class Maxent:
                 trust_region=self.params["trust_region"],
                 method=self.params["method"],
             )
+            if self.params['mode'] == 'diag':
+                newchis = np.concatenate((plaid, newchis))
+
+            if self.bound_diag_chis:
+                plaid, diag = sim.split_chis(newchis) # these are a view (reference type)
+                assert diag[0] < 1e-5, f'diag[0] = {diag[0]}'
+                diag -= diag[1] # push diag chis down s.t. first diag chi is zero
+                diag[0] = 0 # zeroth diag chi should stay at zero
+
 
             if self.plaid_diagonly:
                 new_chis_diagonly[inds] = newchis
                 newchis = new_chis_diagonly
 
-            self.track_progress(newchis, newloss, sim)
+            print(newchis)
+            converged = self.track_progress(newchis, newloss, sim)
             os.symlink(
                 self.resources / "experimental_hic.npy",
                 sim.root / "experimental_hic.npy",
             )
 
-            with utils.cd(sim.root):
-                self.analyze()
+            self.analyze(sim.root)
+            if converged:
+                print(f'Converged at epsilon = {self.eps}')
+                if stop_at_convergence:
+                    break
+                elif run_longer_at_convergence:
+                    self.params["production_sweeps"] = self.final_it_sweeps
+                    self.eps /= 10
+                    print(f'Epsilon is now {self.eps}')
+                    print(f'production_sweeps is now {self.final_it_sweeps}')
 
         if self.final_it_sweeps > 0:
             self.run_final_iteration(newchis)
 
+        tf = time.time()
+        return tf - t0
+
     def run_final_iteration(self, newchis):
+        print(f'Final Iteration')
         self.save_state()
+        self.fast_analysis = False # overide to False
 
         # set up new config
         config = self.defaultsim.config.copy()
@@ -310,8 +400,7 @@ class Maxent:
             sim.root / "experimental_hic.npy",
         )
 
-        with utils.cd(sim.root):
-            self.analyze()
+        self.analyze(sim.root)
 
 
     def save_state(self):
@@ -385,7 +474,7 @@ class Maxent:
         # when allchis are flattened, get indices for all diagonal chis
         ndiag_chis = len(sim.config["diag_chis"])
         start = plaid_chis_diag_inds_flat[-1] + 1
-        diag_chis_inds = np.arange(start, start+ndiag_chis) 
+        diag_chis_inds = np.arange(start, start+ndiag_chis)
 
         inds = np.hstack((plaid_chis_diag_inds_flat, diag_chis_inds))
         return inds

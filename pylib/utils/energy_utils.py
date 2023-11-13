@@ -18,8 +18,11 @@ def calculate_S(L, D):
     # S is symmetric net energy
     if D is None:
         return L
+    elif L is None:
+        return D
     else:
-        return L + D
+        S = L + D
+        return S
 
 def convert_L_to_Lp(L):
     # Lp only requires upper triangle
@@ -31,6 +34,8 @@ def calculate_Lp(x, chi):
     return Lp
 
 def calculate_L(psi, chi):
+    if psi is None or chi is None:
+        return None
     assert len(chi.shape) == 2, f"chi has shape {chi.shape}"
     if psi.shape[1] > psi.shape[0]:
         psi = psi.T
@@ -104,6 +109,26 @@ def calculate_diag_chi_step(config, diag_chi = None):
 
     return diag_chi_step
 
+def diag_chi_step_to_dense(diag_chi_step, n_small_bins, small_binsize,
+                            n_big_bins, big_binsize):
+    diag_chi = np.zeros(n_small_bins + n_big_bins)
+
+    left = 0
+    right = left + small_binsize
+    for bin in range(n_small_bins):
+        diag_chi[bin] = np.mean(diag_chi_step[left:right])
+        left += small_binsize
+        right += small_binsize
+
+    right = left + big_binsize
+    for bin in range(n_big_bins):
+        diag_chi[bin+n_small_bins] = np.mean(diag_chi_step[left:right])
+        left += big_binsize
+        right += big_binsize
+
+    return diag_chi
+
+
 def calculate_D(diag_chi_continuous):
     return scipy.linalg.toeplitz(diag_chi_continuous)
 
@@ -157,6 +182,12 @@ def test():
     Lp_energy()
     L_energy()
 
+def test2():
+    diag_chi_step = np.arange(0, 10, 1)
+    print(diag_chi_step)
+    diag_chi = diag_chi_step_to_dense(diag_chi_step, 4, 1, 2, 3)
+    print(diag_chi)
 
 if __name__ == '__main__':
-    test()
+    # test()
+    test2()
