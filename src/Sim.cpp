@@ -1800,10 +1800,8 @@ void Sim::saveObservablesDistance(int sweep) {
 
         for (int i = 0; i < nspecies; i++) {
             for (int j = i; j < nspecies; j++) {
-                Eigen::MatrixXd left = psi.col(i)*contact_map_matrix; // psi is from setupLmatrix
-                Eigen::VectorXd all = left * psi.col(j);
-                assert(all.size() == 1);
-                double obs = all.sum(); // all will have only one element
+                Eigen::VectorXd left = psi.col(i).transpose()*contact_map_matrix; // psi is from setupLmatrix
+                double obs = left.dot(psi.col(j));
                 obs = obs * Cell::beadvol / grid_size / grid_size / grid_size;
                 fprintf(obs_out, "\t%lf", obs);
             }
@@ -1820,7 +1818,8 @@ void Sim::saveObservablesDistance(int sweep) {
 
         std::vector<double> diag_obs(diag_chis.size(), 0.0);
         for (int d = 0; d < Cell::diag_nbins; d++) {
-          Eigen::ArrayXd tmp = masks[d] * contact_map_matrix.array();
+          std::cout << masks[d].size() << " " << contact_map_matrix.size() << std::endl;;
+          Eigen::MatrixXd tmp = masks[d].cwiseProduct(contact_map_matrix);
           double obs = tmp.sum();
           obs = obs * Cell::beadvol / grid_size / grid_size / grid_size;
           diag_obs[d] = obs;
@@ -1848,11 +1847,10 @@ Eigen::MatrixXd Sim::contactMatrix() {
 }
 
 void Sim::initializeMasks() {
-  std::cout << "starting masks\n";
-  masks.resize(Cell::diag_nbins, Eigen::ArrayXd::Zero(nbeads, nbeads));
+  std::cout << "starting masks\n" << std::endl;;
+  masks.resize(Cell::diag_nbins, Eigen::MatrixXd::Zero(nbeads, nbeads));
   for (int target_d_index=0; target_d_index<Cell::diag_nbins; target_d_index++)
   {
-    Eigen::ArrayXd mask(nbeads, nbeads);
     for (int i=0; i<nbeads; i++)
     {
       for (int j=0; j<nbeads; j++)
@@ -1869,7 +1867,7 @@ void Sim::initializeMasks() {
       }
     }
   }
-  std::cout << "masks initialized\n";
+  std::cout << "masks initialized\n" << std::endl;;
 }
 
 // write contact map to file

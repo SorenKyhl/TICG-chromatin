@@ -145,7 +145,7 @@ public:
 	int num_threads;
 
 	std::vector<std::vector<int>> contact_map;
-	std::vector<Eigen::ArrayXd> masks;
+	std::vector<Eigen::MatrixXd> masks;
 	Eigen::MatrixXd psi;
 	int contact_resolution; //= 500;
 	bool dump_density;
