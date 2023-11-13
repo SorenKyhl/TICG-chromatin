@@ -4,6 +4,7 @@ import os
 import jsbeautifier
 import matplotlib.pyplot as plt
 import logging
+import copy
 from pathlib import Path
 from multiprocessing import Process
 from contextlib import contextmanager
@@ -181,10 +182,17 @@ def plot_image(x, dark=False):
 
 
 
-def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method):
+def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method, optimize_indices=None):
     """newton's method"""
     obj_goal = np.array(obj_goal)
     lam = np.array(lam)
+
+    if optimize_indices is not None:
+        chis_tmp = copy.deepcopy(current_chis)
+        lam = lam[optimize_indices]
+        obj_goal = obj_goal[optimize_indices]
+        B = B[np.ix_(optimize_indices, optimize_indices)]
+        current_chis = current_chis[optimize_indices]
 
     difference = obj_goal - lam  # pyright: ignore
     Binv = np.linalg.pinv(B)
@@ -231,6 +239,10 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method):
     # logging.debug(f"new chi values: {new_chis}\n")
 
     howfar = np.sqrt(difference @ difference) / np.sqrt(obj_goal @ obj_goal)
+
+    if optimize_indices is not None:
+        chis_tmp[optimize_indices] = new_chis
+        new_chis = chis_tmp
 
     return new_chis, howfar
 

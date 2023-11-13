@@ -36,6 +36,7 @@ class Maxent:
         initial_chis: Optional[bool] = None,
         dampen_first_step: bool = True,
         diag_only: bool = False,
+        optimize_indices: Optional[bool] = None
     ):
         """
         root: root of maxent filesystem
@@ -53,6 +54,7 @@ class Maxent:
         self.seqs = seqs
         self.gthic = gthic
         self.overwrite = overwrite
+        self.optimize_indices=optimize_indices
 
         if "goals" not in self.params:
             raise ValueError("goals are not specified in parameters")
@@ -184,6 +186,7 @@ class Maxent:
 
             curr_chis = sim.flatten_chis()
             obs, jac = sim.load_observables(jacobian=True)
+            obj_goal=self.params["goals"]
 
             gamma = self.params["gamma"]
             if self.dampen_first_step and (it == 0):
@@ -196,12 +199,13 @@ class Maxent:
 
             newchis, newloss = newton(
                 lam=obs,
-                obj_goal=self.params["goals"],
+                obj_goal=obj_goal,
                 B=jac,
                 gamma=gamma,
                 current_chis=curr_chis,
                 trust_region=self.params["trust_region"],
                 method=self.params["method"],
+                optimize_indices=self.optimize_indices
             )
 
             self.track_progress(newchis, newloss, sim)

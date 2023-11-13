@@ -128,7 +128,8 @@ def tune_stiffness(nbeads_large, nbeads_small, pool_fn, grid_bond_ratio, method,
 
 
 def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large = True, 
-            zerodiag = False, match_ideal_large_grid=False, optimize_bond=False, cell="HCT116_auxin"):
+            zerodiag = False, match_ideal_large_grid=False, optimize_bond=False, cell="HCT116_auxin",
+            drop_diag_inds=None):
     """optimize chis on small system, and scale up parameters to large system
 
     in order for the chi parameters to be transferrable from the coarse system to the fine system,
@@ -142,6 +143,7 @@ def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large =
     requires tuning the grid size and stiffness at small scale,
     in order for the chi parameters to be transferrable
     """
+
     if pool_large:
         large_contact_pooling_factor = int(nbeads_large/nbeads_small)
     else:
@@ -149,6 +151,16 @@ def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large =
 
     config_small = parameters.get_config(nbeads_small)
     gthic_small = hic.load_hic(nbeads_small, pool_fn, cell=cell)
+
+    if drop_diag_inds is not None:
+        plaid_chis = config_small['nspecies']
+        start = int(plaid_chis*(plaid_chis+1)/2)
+        diag_chis = len(config_small['diag_chis'])
+        all_inds = np.arange(start+diag_chis, dtype=int)
+        skip = 5
+        opt_inds = np.hstack((all_inds[:start],all_inds[start+skip:]))
+    else:
+        opt_inds = None
 
     if pool_large:
         if config_small["conservative_contact_pooling"] == False:
@@ -219,7 +231,7 @@ def scaleup(nbeads_large, nbeads_small, pool_fn, method="notbayes", pool_large =
 
     me_root = "me-" + str(nbeads_small)
     try:
-        me = Maxent(me_root, params, config_small, seqs_small, gthic_small)
+        me = Maxent(me_root, params, config_small, seqs_small, gthic_small, optimize_indices=opt_inds)
         me.fit()
     except FileExistsError:
         pass
