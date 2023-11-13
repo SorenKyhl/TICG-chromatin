@@ -448,6 +448,8 @@ def main(args_file=None, args_tmp=None):
 
     # save update_contacts_distance
     config['update_contacts_distance'] = args.update_contacts_distance
+    if args.update_contacts_distance:
+        config['distance_cutoff'] = grid_size
 
     # save seed
     if args.use_ground_truth_TICG_seed:

@@ -82,7 +82,7 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False):
     elif dataset == 'dataset_08_25_23':
         samples = list(range(1, 12)) + [981]
     elif dataset in {'dataset_08_22_23', 'dataset_08_24_23', 'dataset_09_18_23',
-                    'dataset_09_19_23', 'dataset_10_12_23'}:
+                    'dataset_09_19_23', 'dataset_10_12_23', 'dataset_11_08_23'}:
         samples = range(1, 11)
     elif dataset in {'dataset_08_24_23_v2', 'dataset_08_24_23_v3', 'dataset_08_24_23_v4'}:
         samples = range(1, 16)
@@ -110,9 +110,10 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False):
             cell_line = result['cell_line']
             cell_lines.append(cell_line)
             if cell_line is None:
-                print(f'cell_line is None, skipping {s}: url={result["url"]}')
-                continue
-            if cell_line in {'kbm7', 'nhek', 'hela'}:
+                pass
+                # print(f'cell_line is None, skipping {s}: url={result["url"]}')
+                # continue
+            elif cell_line in {'kbm7', 'nhek', 'hela'}:
                 # not using these cell lines
                 continue
             elif test and cell_line not in {'gm12878', 'hap1', 'huvec'} :
@@ -135,9 +136,10 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False):
         cell_lines = None
 
     if return_cell_lines:
-        unique_cell_lines = set(cell_lines)
-        if len(unique_cell_lines) == 1 and None in unique_cell_lines:
-            cell_lines = None
+        if cell_lines is not None:
+            unique_cell_lines = set(cell_lines)
+            if len(unique_cell_lines) == 1 and None in unique_cell_lines:
+                cell_lines = None
         return samples, experimental, cell_lines
     else:
         return samples, experimental
@@ -656,13 +658,17 @@ def test_shuffle():
     plt.close()
 
 def simple_histogram(arr, xlabel='X', odir=None, ofname=None, dist=skewnorm,
-                    label=None, legend_title=''):
+                    label=None, legend_title='', color=None):
     title = []
     if arr is None:
         return
     arr = np.array(arr).reshape(-1)
-    n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
+    if color is None:
+        n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
                                 bins = 50, alpha = 0.5, label = label)
+    else:
+        n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
+                                bins = 50, alpha = 0.5, label = label, color = color)
     bin_width = bins[1] - bins[0]
     if dist is not None:
         params = dist.fit(arr)
@@ -1238,7 +1244,7 @@ def plaid_dist(dataset, b, phi, v, k, ar, plot=True, eig_norm=False):
 
 def grid_dist(dataset, plot=True, b=140, phi=None, v=None, ar=1.0):
     # distribution of plaid params
-    samples, experimental, cell_lines = get_samples(dataset, train=True, return_cell_lines=True)
+    samples, experimental, cell_lines = get_samples(dataset, return_cell_lines=True)
     if not experimental:
         if plot:
             raise Exception('must be experimental')
@@ -1276,10 +1282,10 @@ def grid_dist(dataset, plot=True, b=140, phi=None, v=None, ar=1.0):
     if plot:
         # plot grid distribution
         print(osp.join(odir, 'grid_size_dist.png'))
-        # simple_histogram(grid_size_arr, 'grid size', odir,
-                            # 'grid_size_dist.png', dist = skewnorm)
+        simple_histogram(grid_size_arr, 'grid size', odir,
+                          'grid_size_dist.png', dist = skewnorm, color = 'orange')
         if cell_lines is not None:
-            for target_cell_line in set(cell_lines):
+            for target_cell_line in sorted(set(cell_lines)):
                 print(target_cell_line)
                 grid_size_arr_cell_line = []
                 for grid_size, cell_line in zip(grid_size_arr, cell_lines):
@@ -1383,8 +1389,8 @@ if __name__ == '__main__':
     # for i in range(221, 222):
         # plot_modified_max_ent(i, k = 10)
     # diagonal_dist('dataset_02_04_23', b=261, phi=0.01, k=10)
-    # grid_dist('dataset_06_29_23', b=180, phi=None, v=8, ar=1.5)
-    plaid_dist('dataset_06_29_23', b=180, phi=None, v=8, k=10, ar=1.5, plot=True, eig_norm=True)
+    grid_dist('dataset_02_04_23', b=180, phi=None, v=8, ar=1.5)
+    # plaid_dist('dataset_06_29_23', b=180, phi=None, v=8, k=10, ar=1.5, plot=True, eig_norm=True)
     # get_read_counts('dataset_04_28_23')
     # seq_dist('dataset_01_26_23', 4, True, True)
     # plot_params_test()

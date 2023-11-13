@@ -23,7 +23,7 @@ from sequences_to_contact_maps.scripts.utils import calc_dist_strat_corr
 
 
 def meanDist_comparison():
-    datasets = ['dataset_06_29_23', 'dataset_04_05_23']
+    datasets = ['dataset_06_29_23', 'dataset_02_04_23']
     m_list= [512, 1024]
     labels = ['Mixed', 'Mixed2']
     data_dir = osp.join('/home/erschultz', datasets[0])
@@ -78,7 +78,7 @@ def meanDist_comparison():
         _, _, cell_lines = get_samples(dataset, return_cell_lines=True)
         if cell_lines is not None:
             print(set(cell_lines))
-            for target_cell_line in set(cell_lines):
+            for target_cell_line in sorted(set(cell_lines)):
                 print(target_cell_line)
                 cell_line_arr = []
                 for grid_size, cell_line in zip(arr, cell_lines):

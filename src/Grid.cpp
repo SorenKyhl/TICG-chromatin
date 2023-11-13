@@ -12,8 +12,8 @@ void Grid::generate() {
 	 * The grid origin and coordinate origin are not the same thing.
 	 * The coordinate origin is fixed at {0,0,0}
 	 * The grid origin moves in a periodic box defined by the corners:
-	 * {-delta, -delta, -delta} and {0,0,0}, 
-	 * and is initialized in the center of this box. 
+	 * {-delta, -delta, -delta} and {0,0,0},
+	 * and is initialized in the center of this box.
 	 * The grid origin is moved during the course of the simulation in
 	 * order to remove artifacts of the discrete grid (see: Sim::MCmove_grid)
 	 */
@@ -68,8 +68,8 @@ void Grid::setActiveCells() {
                         active_cells.insert(&cells[i][j][k]);
                     }
                 } else if (spheroid_boundary) {
-					// this is an inefficient implementation: use the 
-					// same criterion as the spherical boundary, with 
+					// this is an inefficient implementation: use the
+					// same criterion as the spherical boundary, with
 					// the largest axis acting as the radius.
 					// the further the aspect ratio is from 1, the more inefficient.
                     Eigen::RowVector3d cell_corner;

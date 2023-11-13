@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "Eigen/Dense"
+#include <Eigen/StdVector>
 #include "nlohmann/json.hpp"
 
 #include "Bead.h"
@@ -19,7 +20,6 @@
 #include "Analytics.h"
 #include "prof_timer.cpp"
 #include "random_mars.h"
-
 
 class Sim {
 public:
@@ -145,6 +145,8 @@ public:
 	int num_threads;
 
 	std::vector<std::vector<int>> contact_map;
+	std::vector<Eigen::ArrayXd> masks;
+	Eigen::MatrixXd psi;
 	int contact_resolution; //= 500;
 	bool dump_density;
 	bool dump_observables;
@@ -218,6 +220,9 @@ public:
 	void saveXyz() ;
 	void saveEnergy(int sweep);
 	void saveObservables(int sweep);
+	void saveObservablesDistance(int sweep);
+	Eigen::MatrixXd contactMatrix();
+	void initializeMasks();
 	void saveContacts(int sweep);
 	void makeDataAndLogFiles();
 	void redirectStdout();

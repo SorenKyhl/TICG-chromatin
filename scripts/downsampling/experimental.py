@@ -22,7 +22,6 @@ from sequences_to_contact_maps.scripts.load_utils import (
 sys.path.append('/home/erschultz/TICG-chromatin')
 import GNN
 import max_ent
-
 from scripts.data_generation.modify_maxent import get_samples
 
 EXP_DATASET='dataset_02_04_23'
@@ -110,7 +109,7 @@ def fit_max_ent():
     print(mapping)
 
     with mp.Pool(16) as p:
-        p.starmap(max_ent.check, mapping)
+        p.starmap(max_ent.fit, mapping)
 
 
 def figure(GNN_ID):
@@ -158,7 +157,7 @@ def figure(GNN_ID):
             experiment_scc_dense[exp][i] = corr_scc_var
 
             grid_root = 'optimize_grid_b_180_v_8_spheroid_1.5'
-            
+
             # gnn
             gnn_dir = osp.join(s_dir, f'{grid_root}-GNN{GNN_ID}')
             yhat = np.load(osp.join(gnn_dir, 'y.npy'))

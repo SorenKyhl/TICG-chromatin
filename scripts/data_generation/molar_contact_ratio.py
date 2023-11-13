@@ -267,25 +267,25 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True, cap=100, m=512):
     if plot:
         L_list, S_list, _, _ = plaid_dist(dataset, 180, 0.008, 10, 1.5, False)
         S_list = [triu_to_full(S) for S in S_list]
-        # # plot histograms
-        # for arr, label in zip([k_means_rab, pca_rab, pca_b_rab, pca_var],
-        #                         ['kmeans_Rab', 'PCA_Rab', 'PCA_binary_Rab','PCA_var']):
-        #     np.save(osp.join(odir, label + '.npy'), arr)
-        #     print(label)
-        #     if not experimental and model_ID is not None:
-        #         p = pearson_round(arr, mse_list)
-        #         print(p)
-        #     arr = np.array(arr).reshape(-1)
-        #     print(np.min(arr), np.max(arr))
-        #     n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
-        #                                 bins = 50,
-        #                                 alpha = 0.5, label = label)
-        #     plt.legend()
-        #     plt.ylabel('probability', fontsize=16)
-        #     plt.xlabel(f'{label}', fontsize=16)
-        #     plt.xscale('log')
-        #     plt.savefig(osp.join(odir, f'{label}_distribution.png'))
-        #     plt.close()
+        # plot histograms
+        for arr, label in zip([k_means_rab, pca_rab, pca_b_rab, pca_var],
+                                ['kmeans_Rab', 'PCA_Rab', 'PCA_binary_Rab','PCA_var']):
+            np.save(osp.join(odir, label + '.npy'), arr)
+            print(label)
+            if not experimental and model_ID is not None:
+                p = pearson_round(arr, mse_list)
+                print(p)
+            arr = np.array(arr).reshape(-1)
+            print(np.min(arr), np.max(arr))
+            n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
+                                        bins = 50,
+                                        alpha = 0.5, label = label)
+            plt.legend()
+            plt.ylabel('probability', fontsize=16)
+            plt.xlabel(f'{label}', fontsize=16)
+            plt.xscale('log')
+            plt.savefig(osp.join(odir, f'{label}_distribution.png'))
+            plt.close()
 
 
         # crop samples for plotting
@@ -299,63 +299,59 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True, cap=100, m=512):
         meanDist_arr = np.array(meanDist_list)
         samples = samples
 
-        # # plot contact maps ordered by rab
-        # vmin = 0; vmax = np.mean(y_arr)
-        # plot_matrix_layout(rows, cols, ind,
-        #                 y_arr, k_means_rab, samples,
-        #                 RED_CMAP, vmin, vmax,
-        #                 osp.join(data_dir, 'y_ordered.png'))
-        #
-        #
-        # # plot S ordered by rab
-        # vmin = np.nanpercentile(S_arr, 1)
-        # vmax = np.nanpercentile(S_arr, 99)
-        # vmax = max(vmax, vmin * -1)
-        # vmin = vmax * -1
-        # plot_matrix_layout(rows, cols, ind,
-        #                 S_arr, k_means_rab, samples,
-        #                 BLUE_RED_CMAP, vmin, vmax,
-        #                 osp.join(data_dir, 'S_ordered.png'))
-        #
-        # # plot S_dag ordered by rab
-        # S_dag_arr = np.array([np.sign(S) * np.log(np.abs(S)+1) for S in S_arr])
-        # vmin = np.nanpercentile(S_dag_arr, 1)
-        # vmax = np.nanpercentile(S_dag_arr, 99)
-        # vmax = max(vmax, vmin * -1)
-        # vmin = vmax * -1
-        # plot_matrix_layout(rows, cols, ind,
-        #                 S_dag_arr, k_means_rab, samples,
-        #                 BLUE_RED_CMAP, vmin, vmax,
-        #                 osp.join(data_dir, 'S_dag_ordered.png'))
-        #
-        #
-        # # plot L_ij ordered by rab
-        # fig, ax = plt.subplots(rows, cols)
-        # fig.set_figheight(6*2)
-        # fig.set_figwidth(6*3)
-        # row = 0; col=0
-        # bin_width = 1
-        # # arr_exp = np.array(L_list_exp).reshape(-1)
-        # for L, val, sample in zip(L_arr[ind], k_means_rab[ind], samples[ind]):
-        #     arr = L.reshape(-1)
-        #     # bins = range(math.floor(min(arr_exp)), math.ceil(max(arr_exp)) + bin_width, bin_width)
-        #     # ax[row][col].hist(arr_exp, weights = np.ones_like(arr_exp) / len(arr_exp),
-        #     #                             bins = bins,
-        #     #                             alpha = 0.5, label = 'Experiment')
-        #     bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width)
-        #     ax[row][col].hist(arr, weights = np.ones_like(arr) / len(arr),
-        #                                 bins = bins,
-        #                                 alpha = 0.5, label = 'Simulation')
-        #     ax[row][col].set_title(f'Sample {sample}\nPlaid Score = {np.round(val, 1)}', fontsize = 16)
-        #
-        #     col += 1
-        #     if col == cols:
-        #         col = 0
-        #         row += 1
-        #
-        # plt.tight_layout()
-        # plt.savefig(osp.join(data_dir, 'L_dist_ordered.png'))
-        # plt.close()
+        # plot contact maps ordered by rab
+        vmin = 0; vmax = np.mean(y_arr)
+        plot_matrix_layout(rows, cols, ind,
+                        y_arr, k_means_rab, samples,
+                        RED_CMAP, vmin, vmax,
+                        osp.join(data_dir, 'y_ordered.png'))
+                #
+        # plot S ordered by rab
+        vmin = np.nanpercentile(S_arr, 1)
+        vmax = np.nanpercentile(S_arr, 99)
+        vmax = max(vmax, vmin * -1)
+        vmin = vmax * -1
+        plot_matrix_layout(rows, cols, ind,
+                        S_arr, k_means_rab, samples,
+                        BLUE_RED_CMAP, vmin, vmax,
+                        osp.join(data_dir, 'S_ordered.png'))
+        # plot S_dag ordered by rab
+        S_dag_arr = np.array([np.sign(S) * np.log(np.abs(S)+1) for S in S_arr])
+        vmin = np.nanpercentile(S_dag_arr, 1)
+        vmax = np.nanpercentile(S_dag_arr, 99)
+        vmax = max(vmax, vmin * -1)
+        vmin = vmax * -1
+        plot_matrix_layout(rows, cols, ind,
+                        S_dag_arr, k_means_rab, samples,
+                        BLUE_RED_CMAP, vmin, vmax,
+                        osp.join(data_dir, 'S_dag_ordered.png'))
+        
+        # plot L_ij ordered by rab
+        fig, ax = plt.subplots(rows, cols)
+        fig.set_figheight(6*2)
+        fig.set_figwidth(6*3)
+        row = 0; col=0
+        bin_width = 1
+        # arr_exp = np.array(L_list_exp).reshape(-1)
+        for L, val, sample in zip(L_arr[ind], k_means_rab[ind], samples[ind]):
+            arr = L.reshape(-1)
+            # bins = range(math.floor(min(arr_exp)), math.ceil(max(arr_exp)) + bin_width, bin_width)
+            # ax[row][col].hist(arr_exp, weights = np.ones_like(arr_exp) / len(arr_exp),
+            #                             bins = bins,
+            #                             alpha = 0.5, label = 'Experiment')
+            bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width)
+            ax[row][col].hist(arr, weights = np.ones_like(arr) / len(arr),
+                                        bins = bins,
+                                        alpha = 0.5, label = 'Simulation')
+            ax[row][col].set_title(f'Sample {sample}\nPlaid Score = {np.round(val, 1)}', fontsize = 16)
+        
+            col += 1
+            if col == cols:
+                col = 0
+                row += 1
+        plt.tight_layout()
+        plt.savefig(osp.join(data_dir, 'L_dist_ordered.png'))
+        plt.close()
 
         # plot all meanDist
         for meanDist, sample in zip(meanDist_arr, samples):
@@ -438,5 +434,5 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True, cap=100, m=512):
     return meanDist_list
 
 if __name__ == '__main__':
-    molar_contact_ratio('dataset_02_04_23', None, plot=False)
+    molar_contact_ratio('dataset_06_29_23', None, plot=True)
     # molar_contact_ratio('dataset_09_28_23', 541, plot=True)

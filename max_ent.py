@@ -271,9 +271,11 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
         raise Exception(f'Need to specify bin sizes for size={len(y)}')
 
     config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
+    config['update_contacts_distance'] = True
+    config['distance_cutoff'] = config['grid_size']
 
     # config['diag_start'] = 10
-    root = osp.join(dir, f'{root}-max_ent{k}')
+    root = osp.join(dir, f'{root}-max_ent{k}-distance')
     if osp.exists(root):
         # shutil.rmtree(root)
         print('WARNING: root exists')
@@ -287,10 +289,10 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
     params = default.params
     goals = epilib.get_goals(y, seqs, config)
     params["goals"] = goals
-    params['iterations'] = 30
+    params['iterations'] = 2
     params['parallel'] = 1
-    params['equilib_sweeps'] = 10000
-    params['production_sweeps'] = 300000
+    params['equilib_sweeps'] = 1000
+    params['production_sweeps'] = 3000
     params['stop_at_convergence'] = True
     params['conv_defn'] = 'normal'
     params['run_longer_at_convergence'] = False
@@ -298,14 +300,14 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
     stdout = sys.stdout
     with open(osp.join(root, 'log.log'), 'w') as sys.stdout:
         me = Maxent(root, params, config, seqs, y, fast_analysis=True,
-                    final_it_sweeps=300000, mkdir=False, bound_diag_chis=False)
+                    final_it_sweeps=3000, mkdir=False, bound_diag_chis=False)
         t = me.fit()
         print(f'Simulation took {np.round(t, 2)} seconds')
     sys.stdout = stdout
 
 def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
         aspect_ratio=1, bond_type='gaussian', k=10, contact_distance=False,
-        k_angle=0, theta_0=190):
+        k_angle=0, theta_0=180):
     print(sample)
     dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
     root, _ = setup_config(dataset, sample, samples, bl, phi, v, vb,
@@ -367,7 +369,7 @@ def main():
 
     if samples is None:
         samples, _ = get_samples(dataset, train=True)
-        samples = samples
+        samples = samples[:1]
         print(samples)
 
     mapping = []
@@ -380,8 +382,8 @@ def main():
 
     with mp.Pool(1) as p:
         # p.starmap(setup_config, mapping)
-        # p.starmap(fit, mapping)
-        p.starmap(check, mapping)
+        p.starmap(fit, mapping)
+        # p.starmap(check, mapping)
         # p.starmap(cleanup, mapping)
 
 if __name__ == '__main__':

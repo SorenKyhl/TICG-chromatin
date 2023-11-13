@@ -251,7 +251,7 @@ def load_data(args):
             else:
                 # method must be GNN or max_ent
                 continue
-            
+
 
             # time
             if converged_it is None:
@@ -261,7 +261,7 @@ def load_data(args):
                 converge_time /= 60 # to minutes
             temp_dict['converged_time'] = converge_time
             temp_dict['total_time'] = np.sum(times) / 60
-            
+
             if converged_path is not None:
                 # SCC
                 data_file = osp.join(converged_path, 'production_out')
@@ -279,7 +279,7 @@ def load_data(args):
                 yhat_diag = DiagonalPreprocessing.process(yhat, yhat_meanDist, verbose = False)
                 scc = SCC(h=5)
                 corr_scc_var = scc.scc(ground_truth_ydiag, yhat_diag, var_stabilized = True)
-              
+
                 # result = plotDistanceStratifiedPearsonCorrelation(ground_truth_y,
                                 # yhat, converged_path)
                 # overall_corr, corr_scc, corr_scc_var, avg_diag = result
@@ -566,7 +566,7 @@ def sort_method_keys(keys):
         else:
             label += ')'
 
-        
+
         key_split = key.split('-')
         other = key_split[-1].split('_')
         if len(key_split) == 3:
@@ -682,18 +682,19 @@ if __name__ == '__main__':
     # dataset='dataset_09_28_23_s_100_cutoff_0.01'
     # dataset='dataset_09_28_23_s_10_cutoff_0.08'
     # dataset='dataset_09_28_23_s_1_cutoff_0.36'
-    dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
+    dataset = 'dataset_06_29_23'
+    # samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     # dataset='Su2020'; samples = [1013]
 
     if samples is None:
-        samples, _ = get_samples(dataset, test = True)
+        samples, _ = get_samples(dataset, train = True)
         samples = samples
     data_dir = osp.join('/home/erschultz', dataset)
     args = getArgs(data_folder = data_dir, samples = samples)
     args.experimental = True
     args.verbose = True
     args.convergence_definition = 'normal'
-    #args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', '_700k', 'phi', 'GNN579-max_ent']
+    args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', '_700k', 'phi', 'GNN579-max_ent']
     #for i in [2,3,4,5,6,7,8,9]:
     #    args.bad_methods.append(f'max_ent{i}')
 
@@ -703,8 +704,8 @@ if __name__ == '__main__':
     # args.gnn_id = [496, 506, 518, 519, 523, 524, 525, 526, 527, 528, 529, 530, 531, 532, 533, 534, 535, 536, 537, 538, 539, 540, 541, 542, 543, 544]
     # args.gnn_id = [496, 541, 548, 549, 550, 551, 552, 553, 555, 556, 558, 560, 561, 562, 564, 565, 567, 568, 569, 570, 571, 572, 573, 574, 575, 576, 577, 578, 579, 580]
     # args.gnn_id = [569, 570, 571, 572, 573, 575, 575, 576, 577, 578, 579, 580, 581, 582, 583, 584, 585, 586, 587, 588, 589]
-    args.gnn_id = [434, 578, 579, 450, 451]
-    #args.gnn_id = [579]
+    # args.gnn_id = [434, 578, 579, 450, 451]
+    args.gnn_id = [600]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

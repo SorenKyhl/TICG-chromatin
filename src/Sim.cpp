@@ -62,6 +62,7 @@ void Sim::xyzToContact() {
 void Sim::initializeContactmap() {
     int nbins = nbeads / contact_resolution;
     contact_map.resize(nbins, std::vector<int>(nbins, 0));
+    std::cout << "Initialized contact map\n";
 }
 
 // calcualte contacts between adjacent beads
@@ -480,8 +481,6 @@ void Sim::readInput() {
 
     assert(config.contains("parallel"));
     Grid::parallel = config["parallel"];
-    assert(config.contains("beadvol"));
-    Cell::beadvol = config["beadvol"];
     assert(config.contains("cell_volumes"));
     Grid::cell_volumes = config["cell_volumes"];
     assert(config.contains("bond_type"));
@@ -505,7 +504,7 @@ void Sim::readInput() {
 
     if (config.contains("angles_on")){
       angles_on = config["angles_on"];
-      assert (config.contains("k_angle"));
+      assert(config.contains("k_angle"));
       k_angle = config["k_angle"];
       if (config.contains("theta_0")){
         theta_0 = config["theta_0"];
@@ -683,6 +682,11 @@ void Sim::initializeObjects() {
 
     // contactmap
     initializeContactmap();
+
+    if (update_contacts_distance){
+       initializeMasks();
+    }
+
 
     std::cout << "Simulation objects initialized" << std::endl;
 }
@@ -1708,33 +1712,102 @@ void Sim::saveEnergy(int sweep) {
 }
 
 void Sim::saveObservables(int sweep) {
-    // TODO phis are not updated unless energy function is called
-    // leads to error if dumping observables after a rejected move;
-    // beads are returned to their original state and typenums is updated
-    // but cell.phis is not
-    double U = grid.energy(grid.active_cells, chis); // to update phis in cells
+    if (update_contacts_distance){
+        saveObservablesDistance(sweep);
+    } else {
+        // TODO phis are not updated unless energy function is called
+        // leads to error if dumping observables after a rejected move;
+        // beads are returned to their original state and typenums is updated
+        // but cell.phis is not
+        double U = grid.energy(grid.active_cells, chis); // to update phis in cells
+        if (plaid_on) {
+            obs_out = fopen(obs_out_filename.c_str(), "a");
+            fprintf(obs_out, "%d", sweep);
+
+            for (int i = 0; i < nspecies; i++) {
+                for (int j = i; j < nspecies; j++) {
+                    double ij_contacts = grid.get_ij_Contacts(i, j);
+                    fprintf(obs_out, "\t%lf", ij_contacts);
+                }
+            }
+
+            fprintf(obs_out, "\n");
+            fclose(obs_out);
+        }
+
+        if (constant_chi_on) {
+            obs_out = fopen(constant_obs_out_filename.c_str(), "a");
+            fprintf(obs_out, "%d", sweep);
+
+            double contacts = grid.getContacts();
+            fprintf(obs_out, "\t%lf", contacts);
+
+            fprintf(obs_out, "\n");
+            fclose(obs_out);
+        }
+
+        if (diagonal_on || dmatrix_on)
+        // if dmatrix_on and smatrix_on , diagonal_on will be set to False for computational efficiency
+        {
+            double Udiag = grid.diagEnergy(
+                grid.active_cells, diag_chis); // to update phis_diag? jan 28-2022
+            diag_obs_out = fopen(diag_obs_out_filename.c_str(), "a");
+            fprintf(diag_obs_out, "%d", sweep);
+
+            std::vector<double> diag_obs(diag_chis.size(), 0.0);
+            grid.getDiagObs(diag_obs);
+
+            for (auto &e : diag_obs) {
+                fprintf(diag_obs_out, "\t%lf", e);
+            }
+
+            fprintf(diag_obs_out, "\n");
+            fclose(diag_obs_out);
+        }
+
+        if (dump_density) {
+            density_out = fopen(density_out_filename.c_str(), "a");
+            fprintf(density_out, "%d", sweep);
+
+            double avg_density = 0;
+            int i = 0;
+            for (Cell *cell : grid.active_cells) {
+                i++;
+                // fprintf(density_out, " %lf", cell->phis[0]);
+                avg_density += cell->phis[0];
+            }
+            avg_density /= i;
+            fprintf(density_out, " %lf\n", avg_density);
+            fclose(density_out);
+        }
+
+        extra_out = fopen(extra_out_filename.c_str(), "a");
+        double phi_c = grid.getChromatinVolfrac();
+        double phi_c2 = grid.getChromatinVolfrac2();
+        double phi_cD = grid.getChromatinVolfracD();
+        fprintf(extra_out, "%.8f %.8f %.8f\n", phi_c, phi_c2, phi_cD);
+        fclose(extra_out);
+    }
+}
+
+void Sim::saveObservablesDistance(int sweep) {
+    Eigen::MatrixXd contact_map_matrix = contactMatrix();
+
     if (plaid_on) {
+        assert(lmatrix_on || smatrix_on);
         obs_out = fopen(obs_out_filename.c_str(), "a");
         fprintf(obs_out, "%d", sweep);
 
         for (int i = 0; i < nspecies; i++) {
             for (int j = i; j < nspecies; j++) {
-                double ij_contacts = grid.get_ij_Contacts(i, j);
-                fprintf(obs_out, "\t%lf", ij_contacts);
+                Eigen::MatrixXd left = psi.col(i)*contact_map_matrix; // psi is from setupLmatrix
+                Eigen::VectorXd all = left * psi.col(j);
+                assert(all.size() == 1);
+                double obs = all.sum(); // all will have only one element
+                obs = obs * Cell::beadvol / grid_size / grid_size / grid_size;
+                fprintf(obs_out, "\t%lf", obs);
             }
         }
-
-        fprintf(obs_out, "\n");
-        fclose(obs_out);
-    }
-
-    if (constant_chi_on) {
-        obs_out = fopen(constant_obs_out_filename.c_str(), "a");
-        fprintf(obs_out, "%d", sweep);
-
-        double contacts = grid.getContacts();
-        fprintf(obs_out, "\t%lf", contacts);
-
         fprintf(obs_out, "\n");
         fclose(obs_out);
     }
@@ -1742,13 +1815,16 @@ void Sim::saveObservables(int sweep) {
     if (diagonal_on || dmatrix_on)
     // if dmatrix_on and smatrix_on , diagonal_on will be set to False for computational efficiency
     {
-        double Udiag = grid.diagEnergy(
-            grid.active_cells, diag_chis); // to update phis_diag? jan 28-2022
         diag_obs_out = fopen(diag_obs_out_filename.c_str(), "a");
         fprintf(diag_obs_out, "%d", sweep);
 
         std::vector<double> diag_obs(diag_chis.size(), 0.0);
-        grid.getDiagObs(diag_obs);
+        for (int d = 0; d < Cell::diag_nbins; d++) {
+          Eigen::ArrayXd tmp = masks[d] * contact_map_matrix.array();
+          double obs = tmp.sum();
+          obs = obs * Cell::beadvol / grid_size / grid_size / grid_size;
+          diag_obs[d] = obs;
+        }
 
         for (auto &e : diag_obs) {
             fprintf(diag_obs_out, "\t%lf", e);
@@ -1757,29 +1833,43 @@ void Sim::saveObservables(int sweep) {
         fprintf(diag_obs_out, "\n");
         fclose(diag_obs_out);
     }
+}
 
-    if (dump_density) {
-        density_out = fopen(density_out_filename.c_str(), "a");
-        fprintf(density_out, "%d", sweep);
-
-        double avg_density = 0;
-        int i = 0;
-        for (Cell *cell : grid.active_cells) {
-            i++;
-            // fprintf(density_out, " %lf", cell->phis[0]);
-            avg_density += cell->phis[0];
-        }
-        avg_density /= i;
-        fprintf(density_out, " %lf\n", avg_density);
-        fclose(density_out);
+Eigen::MatrixXd Sim::contactMatrix() {
+    Eigen::MatrixXd result(nbeads, nbeads);
+    for (int i=0; i<nbeads; i++)
+    {
+      std::vector<double> vd(contact_map[i].begin(), contact_map[i].end()); //convert to double
+      Eigen::VectorXd col = Eigen::Map<Eigen::VectorXd>(vd.data(), nbeads); // map to Eigen::Vector
+      result.col(i) = col;
     }
 
-    extra_out = fopen(extra_out_filename.c_str(), "a");
-    double phi_c = grid.getChromatinVolfrac();
-    double phi_c2 = grid.getChromatinVolfrac2();
-    double phi_cD = grid.getChromatinVolfracD();
-    fprintf(extra_out, "%.8f %.8f %.8f\n", phi_c, phi_c2, phi_cD);
-    fclose(extra_out);
+    return result;
+}
+
+void Sim::initializeMasks() {
+  std::cout << "starting masks\n";
+  masks.resize(Cell::diag_nbins, Eigen::ArrayXd::Zero(nbeads, nbeads));
+  for (int target_d_index=0; target_d_index<Cell::diag_nbins; target_d_index++)
+  {
+    Eigen::ArrayXd mask(nbeads, nbeads);
+    for (int i=0; i<nbeads; i++)
+    {
+      for (int j=0; j<nbeads; j++)
+      {
+        int d = std::abs(i - j);
+        if (d >= Cell::diag_start)
+        {
+          int d_index = Cell::binDiagonal(d);
+          if (target_d_index == d_index)
+          {
+            masks[target_d_index](i,j) = 1;
+          }
+        }
+      }
+    }
+  }
+  std::cout << "masks initialized\n";
 }
 
 // write contact map to file
@@ -1820,8 +1910,6 @@ void Sim::setupLmatrix() {
 	}
   else
   {
-    Eigen::MatrixXd psi;
-
     // need to define psi
     psi = Eigen::MatrixXd::Zero(nbeads, nspecies);
     for (int i=0; i<nbeads; i++)
@@ -1850,7 +1938,6 @@ void Sim::setupLmatrix() {
 
   std::cout << "converted to L prime, first row: " << lmatrix.row(0) << std::endl;
 }
-
 
 void Sim::setupSmatrix() {
 	std::ifstream smatrixfile(smatrix_filename);

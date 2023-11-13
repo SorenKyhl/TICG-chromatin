@@ -26,12 +26,11 @@ from pylib.utils.similarity_measures import SCC
 from pylib.utils.utils import load_json, pearson_round, triu_to_full
 from pylib.utils.xyz import xyz_load, xyz_to_distance
 from scipy.ndimage import uniform_filter
-from sklearn.decomposition import PCA
-from sklearn.metrics import mean_squared_error
-
 from scripts.data_generation.modify_maxent import get_samples
 from scripts.get_params import GetEnergy
 from scripts.makeLatexTable_new import getArgs, load_data
+from sklearn.decomposition import PCA
+from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.knightRuiz import knightRuiz
@@ -43,6 +42,7 @@ from sequences_to_contact_maps.scripts.plotting_utils import (plot_diag_chi,
                                                               plot_seq_binary)
 from sequences_to_contact_maps.scripts.R_pca import R_pca
 from sequences_to_contact_maps.scripts.utils import (calc_dist_strat_corr,
+                                                     load_time_dir,
                                                      rescale_matrix)
 
 LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -967,9 +967,30 @@ def compare_scc():
     plt.savefig(osp.join(data_dir, f'distance_pearson_start{start}_K{K}.png'))
     plt.close()
 
-
-
-
+def test_time_contact_distance():
+    dirs = ['/home/erschultz/dataset_11_01_23_test',
+            '/home/erschultz/dataset_11_01_23_test2',
+            # '/home/erschultz/dataset_11_02_23_test',
+            '/home/erschultz/dataset_11_02_23_test2', # none on?
+            # '/home/erschultz/dataset_11_02_23_test3',
+            # '/home/erschultz/dataset_11_02_23_test4',
+            # '/home/erschultz/dataset_11_02_23_test5',
+            # '/home/erschultz/dataset_11_02_23_test6',
+            '/home/erschultz/dataset_11_02_23_test7', # only compute contact_matrix
+            '/home/erschultz/dataset_11_02_23_test8', # plaid on
+            '/home/erschultz/dataset_11_02_23_test9', # all on
+            ]
+    samples = range(1, 31)
+    for dir in dirs:
+        print(dir)
+        times = []
+        for sample in samples:
+            s_dir = osp.join(dir, 'samples', f'sample{sample}')
+            if not osp.exists(s_dir):
+                continue
+            t = load_time_dir(s_dir)
+            times.append(t)
+        print(np.mean(times), '+-', np.round(np.std(times), 3))
 
 def convergence():
     dir = '/home/erschultz/dataset_02_04_23/samples/sample209/optimize_grid_b_180_phi_0.008_spheroid_1.5-max_ent5_longer'
@@ -1037,8 +1058,9 @@ def data_t_test():
     print(mean_effect_size)
 
 if __name__ == '__main__':
-    # make_small('dataset_02_04_23')
-    compare_scc()
+    # make_small('dataset_06_29_23')
+    test_time_contact_distance()
+    # compare_scc()
     # check_dataset('dataset_10_12_23')
     # compare_gnn_p_s('dataset_02_04_23', 579)
-    # compare_max_ent_p_s('dataset_02_04_23')ii
+    # compare_max_ent_p_s('dataset_02_04_23')
