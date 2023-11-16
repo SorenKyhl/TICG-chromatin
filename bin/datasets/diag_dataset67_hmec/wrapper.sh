@@ -16,11 +16,11 @@ echo "generate_params for ${dataset}"
 
 sourceFile=~/TICG-chromatin/bin/datasets/diag_dataset67_hmec/diag_dataset_fns.sh
 start=1
-end=1000
-for i in {11..20}
+end=2000
+for i in {1..5}
 do
   echo $i $start $end
-  sbatch ~/TICG-chromatin/bin/datasets/bash_files/diag_dataset${i}.sh $sourceFile $start $end 48 "66_"
-  start=$(( $start + 1000 ))
-  end=$(( $end + 1000 ))
+  sbatch ~/TICG-chromatin/bin/datasets/bash_files/diag_dataset${i}.sh $sourceFile $start $end 128 "67_"
+  start=$(( $start + 2000 ))
+  end=$(( $end + 2000 ))
 done
