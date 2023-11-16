@@ -145,7 +145,7 @@ def fit(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     config['nbeads'] = m
     config["smatrix_filename"] = "smatrix.txt"
 
-    gnn_root = f'{root}-GNN{GNN_ID}'
+    gnn_root = f'{root}-GNN{GNN_ID}_test'
     if osp.exists(gnn_root):
         # shutil.rmtree(gnn_root)
         print('WARNING: root exists')
@@ -167,7 +167,7 @@ def fit(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     with open(osp.join(gnn_root, 'log.log'), 'w') as sys.stdout:
         sim = Pysim(gnn_root, config, None, y, randomize_seed = True,
                     mkdir = False, smatrix = S)
-        t = sim.run_eq(10000, 300000, 1)
+        t = sim.run_eq(10000, 3000, 1)
         print(f'Simulation took {np.round(t, 2)} seconds')
 
         analysis.main_no_maxent(dir=sim.root)
@@ -241,7 +241,7 @@ def main():
 
     if samples is None:
         samples, _ = get_samples(dataset, train=True)
-        samples = samples
+        samples = samples[:1]
     print(len(samples))
 
     GNN_IDs = [600]; b=180; phi=None; v=8; ar=1.5
@@ -253,9 +253,9 @@ def main():
     print(len(mapping))
     # print(mapping)
 
-    # with mp.Pool(15) as p:
+    with mp.Pool(1) as p:
         # p.starmap(cleanup, mapping)
-        # p.starmap(fit, mapping)
+        p.starmap(fit, mapping)
 
     for i in mapping:
         #fit_max_ent(*i)

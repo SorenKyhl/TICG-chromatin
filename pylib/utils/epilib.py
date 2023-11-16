@@ -13,14 +13,13 @@ import pandas as pd
 import scipy
 import seaborn as sns
 from numba import njit
-from sklearn.decomposition import PCA, KernelPCA
-from tqdm import tqdm
-
 from pylib.utils import hic_utils, utils
 from pylib.utils.goals import *
 from pylib.utils.hic_utils import get_diagonal
 from pylib.utils.plotting_utils import plot_matrix
 from pylib.utils.similarity_measures import *
+from sklearn.decomposition import PCA, KernelPCA
+from tqdm import tqdm
 
 # import palettable
 # from palettable.colorbrewer.sequential import Reds_3
@@ -991,14 +990,19 @@ def plot_consistency(sim, ofile=None):
         hic = sim.hic
 
     goal = get_goals(hic, sim.seqs, sim.config)
-    assert sim.obs_tot is not None
-    assert goal is not None
+
+    if sim.obs_tot is None or goal is None:
+        print('sim.obs_tot is None or goal is None')
+        return 0
 
     if len(sim.obs_tot)  < len(goal):
         N = len(sim.obs_tot)
         goal = goal[-N:]
     diff = sim.obs_tot - goal
     error = np.sqrt(diff @ diff / (goal @ goal))
+    if error > 0.01:
+        ratio = sim.obs_tot / goal
+        print(f'ratio: {ratio}')
 
     plt.figure()
     plt.plot(sim.obs_tot, "o", label="obs")

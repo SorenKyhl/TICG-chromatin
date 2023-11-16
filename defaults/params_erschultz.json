@@ -3,11 +3,12 @@
 	"gamma": 1,
 	"trust_region": null,
 	"equilib_sweeps": 10000,
-	"production_sweeps": 50000,
+	"production_sweeps": 300000,
 	"goal_specified": 1,
 	"overwrite": 0,
-	"parallel": 7,
+	"parallel": 1,
 	"randomize_seed": 1,
 	"mode": "all",
-	"method": "n"
+	"method": "n",
+	"run_longer_at_convergence": false
 }

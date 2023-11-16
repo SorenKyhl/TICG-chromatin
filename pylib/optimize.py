@@ -172,7 +172,6 @@ def optimize_config(config, gthic, mode, low_bound, high_bound,
     gthic /= np.mean(np.diagonal(gthic))
 
 
-
     sim_engine = Pysim(root, config, seqs=None, overwrite=False, mkdir=False)
     error_metric = ErrorMetric(metric, mode, gthic, config, sim_engine)
     if metric.startswith('neighbor'):
@@ -182,7 +181,7 @@ def optimize_config(config, gthic, mode, low_bound, high_bound,
                 low_bound,
                 high_bound,
                 xtol=1e-3,
-                maxiter=15,
+                maxiter=15
             )
         except RuntimeError as e:
             print(e)
@@ -211,8 +210,8 @@ def optimize_config(config, gthic, mode, low_bound, high_bound,
             raise
         result = result.x
 
-    if mode == 'grid':
-        # optimizer returns the grid_to_bond ratio... have to convert to real units.
+    if mode in {'grid', 'distance'}:
+        # optimizer returns the grid_to_bond ratio, have to convert to real units.
         optimum = result * config["bond_length"]
     elif mode == 'angle':
         optimum = result

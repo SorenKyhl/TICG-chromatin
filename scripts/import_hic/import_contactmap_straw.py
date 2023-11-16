@@ -202,8 +202,8 @@ if __name__ == '__main__':
     #                     'dataset_02_05_23', 50000)
     # single_experiment_dataset("https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-untreated_combined_30.hic",
     #                             'dataset_HCT116', 10000, 512*5, i=10, chroms=[2])
-    # single_experiment_dataset("https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-treated_6hr_combined_30.hic",
-                                # 'dataset_HCT116_RAD21_KO', 10000, 512*5, i=10, chroms=[2])
+    single_experiment_dataset("https://ftp.ncbi.nlm.nih.gov/geo/series/GSE104nnn/GSE104333/suppl/GSE104333_Rao-2017-treated_6hr_combined_30.hic",
+                                'dataset_HCT116_RAD21_KO', 10000, 512*5, chroms=[2])
     # Su2020imr90()
     # multiHiCcompare_files(GM12878_REPLICATES, 'dataset_gm12878')
-    multiHiCcompare_files(HMEC_REPLICATES, 'dataset_hmec')
+    # multiHiCcompare_files(HMEC_REPLICATES, 'dataset_hmec')

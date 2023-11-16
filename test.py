@@ -65,37 +65,8 @@ def check_dataset(dataset):
 
     print(ids, len(ids))
 
-def check_dataset_p_s(dataset):
-    dir = osp.join("/project2/depablo/erschultz", dataset, "samples")
-    # dir = osp.join("/home/erschultz", dataset, "samples")
-    ids = set()
-    vals = np.zeros(10000)
-    for i, file in enumerate(os.listdir(dir)):
-        if i % 100 == 0:
-            print(i)
-        if i == 1000:
-            break
-        if file.startswith('sample'):
-            id = int(file[6:])
-            file_dir = osp.join(dir, file)
-            try:
-                y, _ = load_Y(file_dir)
-                y /= np.mean(y.diagonal())
-                # if meanDist[10] > 0.06:
-                #     ids.add(id)
-                vals[id-1] = np.nanmean(np.diagonal(y, offset=10))
-
-            except Exception as e:
-                print(f'id={id}: {e}')
-                ids.add(id)
-                continue
-
-    np.savetxt(osp.join(dir, 'vals.txt'), vals)
-    np.savetxt(osp.join(dir, 'ids.txt'), ids)
-    print(vals, len(vals))
-    print(ids, len(ids))
-
 def time_comparison():
+    '''Time as function of m.'''
     # dir = '/project2/depablo/erschultz/dataset_05_18_22/samples'
     dir = '/home/erschultz/sequences_to_contact_maps/dataset_05_18_22/samples'
     samples_per_size = 3
@@ -968,19 +939,10 @@ def compare_scc():
     plt.close()
 
 def test_time_contact_distance():
-    dirs = ['/home/erschultz/dataset_11_01_23_test',
-            '/home/erschultz/dataset_11_01_23_test2',
-            # '/home/erschultz/dataset_11_02_23_test',
-            '/home/erschultz/dataset_11_02_23_test2', # none on?
-            # '/home/erschultz/dataset_11_02_23_test3',
-            # '/home/erschultz/dataset_11_02_23_test4',
-            # '/home/erschultz/dataset_11_02_23_test5',
-            # '/home/erschultz/dataset_11_02_23_test6',
-            '/home/erschultz/dataset_11_02_23_test7', # only compute contact_matrix
-            '/home/erschultz/dataset_11_02_23_test8', # plaid on
-            '/home/erschultz/dataset_11_02_23_test9', # all on
+    dirs = ['/home/erschultz/dataset_11_02_23_normal',
+            '/home/erschultz/dataset_11_02_23_distances'
             ]
-    samples = range(1, 31)
+    samples = range(1, 2)
     for dir in dirs:
         print(dir)
         times = []
@@ -1057,9 +1019,37 @@ def data_t_test():
     print(stat, pval)
     print(mean_effect_size)
 
+def distance_cutoff_diag_chis():
+    dir = '/home/erschultz/dataset_06_29_23/samples/'
+    samples = [2,3,4,5,6,7,16]
+    odir = '/home/erschultz/dataset_06_29_23'
+    bonded_root = 'optimize_distance_b_180_v_8_spheroid_1.5'
+    max_ent_root = f'{bonded_root}-max_ent10'
+    for s in samples:
+        final = get_final_max_ent_folder(osp.join(dir, f'sample{s}', max_ent_root))
+        config = load_json(osp.join(final, 'config.json'))
+        y = np.load(osp.join(final, 'y.npy'))
+        meanDist_y = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+        p_1 = np.round(meanDist_y[1], 2)
+        diag_chi_continuous = calculate_diag_chi_step(config)
+        plt.plot(diag_chi_continuous, label=f'{s}, p(s=1)={p_1}')
+
+    plt.xscale('log')
+    plt.legend(title='Sample', fontsize=14,
+                bbox_to_anchor=(1, .5), loc='center left')
+    plt.xlabel('Distance', fontsize=16)
+    plt.ylabel('Diagonal Parameter', fontsize=16)
+    plt.tight_layout()
+    plt.savefig(osp.join(odir, f'diag_chis_distance_cutoff.png'))
+    plt.close()
+
+
+
+
 if __name__ == '__main__':
     # make_small('dataset_06_29_23')
-    test_time_contact_distance()
+    distance_cutoff_diag_chis()
+    # test_time_contact_distance()
     # compare_scc()
     # check_dataset('dataset_10_12_23')
     # compare_gnn_p_s('dataset_02_04_23', 579)

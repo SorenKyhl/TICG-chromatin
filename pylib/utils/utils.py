@@ -222,8 +222,9 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method, norm=Fal
         B /= np.outer(obj_goal, obj_goal)
 
     difference = obj_goal - lam  # pyright: ignore
-    Binv = np.linalg.pinv(B)
+
     if method == "n":
+        Binv = np.linalg.pinv(B)
         step = Binv @ difference
         if norm:
             step /= obj_goal

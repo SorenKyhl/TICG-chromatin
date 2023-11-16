@@ -168,6 +168,10 @@ void Sim::updateContactsGridNonconservative()
 // alternative method for calculating bead contacts
 // two beads are considered in contact if they are closer than a cutoff radius
 void Sim::updateContactsDistance() {
+    contact_map_matrix = Eigen::MatrixXd::Zero(nbeads, nbeads);
+    // contact_map_matrix contains cumulative contacts
+    // contact_map_matrix only contains current contacts
+    // it is used to compute observables
     int pixel1, pixel2;
     for (std::size_t i = 0; i < beads.size(); i++) {
         for (std::size_t j = i; j < beads.size(); j++) {
@@ -176,8 +180,10 @@ void Sim::updateContactsDistance() {
                 pixel1 = beads[i].id / contact_resolution;
                 pixel2 = beads[j].id / contact_resolution;
                 contact_map[pixel1][pixel2] += 1;
+                contact_map_matrix(pixel1, pixel2) = 1;
                 if (pixel1 != pixel2)
                     contact_map[pixel2][pixel1] += 1;
+                    contact_map_matrix(pixel2, pixel1) = 1;
             }
         }
     }
@@ -1791,8 +1797,6 @@ void Sim::saveObservables(int sweep) {
 }
 
 void Sim::saveObservablesDistance(int sweep) {
-    Eigen::MatrixXd contact_map_matrix = contactMatrix();
-
     if (plaid_on) {
         assert(lmatrix_on || smatrix_on);
         obs_out = fopen(obs_out_filename.c_str(), "a");
@@ -1818,7 +1822,6 @@ void Sim::saveObservablesDistance(int sweep) {
 
         std::vector<double> diag_obs(diag_chis.size(), 0.0);
         for (int d = 0; d < Cell::diag_nbins; d++) {
-          std::cout << masks[d].size() << " " << contact_map_matrix.size() << std::endl;;
           Eigen::MatrixXd tmp = masks[d].cwiseProduct(contact_map_matrix);
           double obs = tmp.sum();
           obs = obs * Cell::beadvol / grid_size / grid_size / grid_size;
@@ -1847,7 +1850,6 @@ Eigen::MatrixXd Sim::contactMatrix() {
 }
 
 void Sim::initializeMasks() {
-  std::cout << "starting masks\n" << std::endl;;
   masks.resize(Cell::diag_nbins, Eigen::MatrixXd::Zero(nbeads, nbeads));
   for (int target_d_index=0; target_d_index<Cell::diag_nbins; target_d_index++)
   {
@@ -1867,7 +1869,7 @@ void Sim::initializeMasks() {
       }
     }
   }
-  std::cout << "masks initialized\n" << std::endl;;
+  std::cout << "masks initialized" << std::endl;;
 }
 
 // write contact map to file
@@ -1995,7 +1997,6 @@ void Sim::setupDmatrix() {
       {
         int d = std::abs(i - j);
         if (d >= Cell::diag_start)
-        // TODO need to account for bin_size > 1
         {
           int d_index = Cell::binDiagonal(d);
           dmatrix(i,j) = diag_chis[d_index];

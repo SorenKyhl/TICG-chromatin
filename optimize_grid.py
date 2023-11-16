@@ -13,8 +13,8 @@ from pylib.Pysim import Pysim
 from pylib.utils import default, utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.plotting_utils import plot_matrix, plot_mean_dist
-from pylib.utils.xyz import (xyz_load, xyz_to_angles, xyz_to_contact_grid,
-                             xyz_to_distance)
+from pylib.utils.xyz import (xyz_load, xyz_to_angles, xyz_to_contact_distance,
+                             xyz_to_contact_grid, xyz_to_distance)
 from scipy import optimize
 from scipy.stats import norm
 from scripts.contact_map import plot_max_ent
@@ -103,61 +103,58 @@ def plot_bond_length():
         if boundary_type == 'spheroid':
             boundary_type += f'_{ar}'
         for bond_type in ['gaussian']:
-            for m in [512]:
-                for b in [261]:
-                    for phi in [0.03]:
-                        for k_angle in [0]:
-                            for theta_0 in [180]:
-                                dir = osp.join(dataset, f'boundary_{boundary_type}/bond_type_{bond_type}/m_{m}/bond_length_{b}/phi_{phi}/angle_{k_angle}')
-                                if theta_0 != 180:
-                                    dir += f'_theta0_{theta_0}'
-                                if not osp.exists(dir):
-                                    print(f"{dir} does not exist")
-                                    continue
+            m=512; b=261; phi=0.03; k_angle=0; theta_0=180
+            dir = osp.join(dataset, f'boundary_{boundary_type}/bond_type_{bond_type}',
+                            f'/m_{m}/bond_length_{b}/phi_{phi}/angle_{k_angle}')
+            if theta_0 != 180:
+                dir += f'_theta0_{theta_0}'
+            if not osp.exists(dir):
+                print(f"{dir} does not exist")
+                continue
 
-                                xyz = xyz_load(osp.join(dir, 'production_out/output.xyz'),
-                                                multiple_timesteps=True, N_min=1)
-                                xyz = xyz.reshape(-1, m, 3)
-                                D = xyz_to_distance(xyz)
-                                N = len(D)
-                                data = []
-                                for i in range(N):
-                                    data.append(np.diagonal(D[i], 1))
-                                simple_histogram(data, xlabel='Bond Length', odir=dir,
-                                                ofname='bond_length_dist.png', dist=norm)
-                                #
-                                angles = xyz_to_angles(xyz).flatten()
-                                simple_histogram(angles, xlabel=r'Angle $\theta$',
-                                                odir=dir,
-                                                ofname='angle_dist.png', dist=norm)
+            xyz = xyz_load(osp.join(dir, 'production_out/output.xyz'),
+                            multiple_timesteps=True, N_min=1)
+            xyz = xyz.reshape(-1, m, 3)
+            D = xyz_to_distance(xyz)
+            N = len(D)
+            data = []
+            for i in range(N):
+                data.append(np.diagonal(D[i], 1))
+            simple_histogram(data, xlabel='Bond Length', odir=dir,
+                            ofname='bond_length_dist.png', dist=norm)
+            #
+            angles = xyz_to_angles(xyz).flatten()
+            simple_histogram(angles, xlabel=r'Angle $\theta$',
+                            odir=dir,
+                            ofname='angle_dist.png', dist=norm)
 
-                                log_labels = np.linspace(0, (m-1), m)
-                                D = np.nanmean(D, axis = 0)
-                                meanDist_D = DiagonalPreprocessing.genomic_distance_statistics(D, mode='freq')
-                                plt.plot(log_labels, meanDist_D, label='Simulation')
+            log_labels = np.linspace(0, (m-1), m)
+            D = np.nanmean(D, axis = 0)
+            meanDist_D = DiagonalPreprocessing.genomic_distance_statistics(D, mode='freq')
+            plt.plot(log_labels, meanDist_D, label='Simulation')
 
-                                D_exp = np.load('/home/erschultz/Su2020/samples/sample1013/D_crop.npy')
-                                meanDist_D_exp = DiagonalPreprocessing.genomic_distance_statistics(D_exp, mode='freq')
-                                nan_rows = np.isnan(meanDist_D_exp)
-                                plt.plot(log_labels[~nan_rows], meanDist_D_exp[~nan_rows],
-                                            label='Experiment', color='k')
-                                plt.legend()
-                                plt.ylabel('Distance (nm)')
-                                plt.xlabel('Polymer Distance (m)')
-                                plt.xscale('log')
-                                plt.tight_layout()
-                                plt.savefig(osp.join(dir, 'meanDist_D.png'))
-                                plt.close()
+            D_exp = np.load('/home/erschultz/Su2020/samples/sample1013/D_crop.npy')
+            meanDist_D_exp = DiagonalPreprocessing.genomic_distance_statistics(D_exp, mode='freq')
+            nan_rows = np.isnan(meanDist_D_exp)
+            plt.plot(log_labels[~nan_rows], meanDist_D_exp[~nan_rows],
+                        label='Experiment', color='k')
+            plt.legend()
+            plt.ylabel('Distance (nm)')
+            plt.xlabel('Polymer Distance (m)')
+            plt.xscale('log')
+            plt.tight_layout()
+            plt.savefig(osp.join(dir, 'meanDist_D.png'))
+            plt.close()
 
-        #                         with open(osp.join(k_angle_dir, 'production_out/log.log')) as f:
-        #                             for line in f.readlines():
-        #                                 if line.startswith('simulation volume'):
-        #                                     vol = line.split(' ')[-2]
-        #                                     print(vol)
-        #                                     break
-        #                         X.append(phi)
-                                X.append(k_angle)
-                                Y.append(np.sqrt(np.mean(data)))
+#                         with open(osp.join(k_angle_dir, 'production_out/log.log')) as f:
+#                             for line in f.readlines():
+#                                 if line.startswith('simulation volume'):
+#                                     vol = line.split(' ')[-2]
+#                                     print(vol)
+#                                     break
+#                         X.append(phi)
+            X.append(k_angle)
+            Y.append(np.sqrt(np.mean(data)))
     #
     #
     # plt.plot(X, Y)
@@ -176,11 +173,14 @@ def main(root, config, mode='grid_angle10'):
     # config["dump_frequency"] = 100
     # config["dump_stats_frequency"] = 100
 
-    if mode.startswith('grid') or mode.startswith('distance'):
+    if mode in {'grid', 'distance'}:
         optimum = optimize_config(config, gthic, mode, 0.5, 2.0, root)
         p_s_exp = DiagonalPreprocessing.genomic_distance_statistics(gthic, 'prob')
         xyz = get_bonded_simulation_xyz(config)
-        y = xyz_to_contact_grid(xyz, optimum, dtype=float)
+        if mode == 'grid':
+            y = xyz_to_contact_grid(xyz, optimum, dtype=float)
+        elif mode == 'distance':
+            y = xyz_to_contact_distance(xyz, optimum, dtype=float)
         np.save(osp.join(root, 'y.npy'), y)
         plot_matrix(y, osp.join(root, 'y.png'))
         p_s_exp = DiagonalPreprocessing.genomic_distance_statistics(gthic, 'prob')
@@ -220,7 +220,8 @@ def main(root, config, mode='grid_angle10'):
         config['angles_on'] = True
 
         s = mode[10:]
-        optimum = optimize_config(config, gthic, 'angle', 0.0, 2.0, root, f'neighbor_{s}', mkdir=False)
+        optimum = optimize_config(config, gthic, 'angle', 0.0, 2.0, root,
+                                    f'neighbor_{s}', mkdir=False)
         plot_max_ent(root)
         print(f"optimal angle is: {optimum}")
         with open(osp.join(root, 'angle.txt'), 'w') as f:

@@ -412,23 +412,34 @@ class DatasetGenerator():
 
 
     def meanDist_S_params(self):
+        # meanDist_S_grid_poly8_log_start5
         meanDist_S_dict = {} # id : meanDist_S
         grid_dict = {} # id : grid_size
-        get_grid = False
-        if 'grid' in self.diag_mode:
-            get_grid = True
-        poly12 = False
-        if 'poly12' in self.diag_mode:
-            poly12 = True
-            print('Using poly12 for meanDist_S')
+        get_grid = False; start = 2; log = False
+        modes = self.diag_mode.split('_')
+
+        for mode in modes:
+            if mode == 'grid':
+                get_grid = True
+            if mode.startswith('poly'):
+                order = int(mode[4:])
+            if mode == 'log':
+                use_log = True
+            if mode.startswith('start'):
+                start = int(mode[5:])
+
+        diag_mode = f'poly{order}'
+        if use_log:
+            diag_mode += '_log'
+        diag_mode += f'_start_{start}_meanDist_S_fit.txt'
+        print(f'Using diag_mode: {diag_mode}')
 
         converged_samples = self.get_converged_samples()
         for j in converged_samples:
             sample_folder = osp.join(self.exp_dir, f'sample{j}', f'{self.grid_root}-max_ent{self.k}')
-            if poly12:
-                meanDist_S = np.loadtxt(osp.join(sample_folder, 'fitting2/poly12_log_meanDist_S_fit.txt'))
-            else:
-                meanDist_S = np.loadtxt(osp.join(sample_folder, 'fitting2/poly6_log_meanDist_S_fit.txt'))
+            file = osp.join(sample_folder, 'fitting2', diag_mode)
+            assert osp.exists(file), file
+            meanDist_S = np.loadtxt(file)
             meanDist_S_dict[j] = meanDist_S
 
             # get grid_size

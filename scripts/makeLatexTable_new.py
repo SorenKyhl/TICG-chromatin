@@ -15,7 +15,7 @@ from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
                                       calculate_L, calculate_S)
 from pylib.utils.similarity_measures import SCC
-from pylib.utils.utils import triu_to_full
+from pylib.utils.utils import load_json, triu_to_full
 from scipy.stats import pearsonr
 from sklearn.metrics import mean_squared_error
 
@@ -161,12 +161,8 @@ def load_data(args):
             elif 'max_ent' in method:
                 if args.verbose:
                     print(fname)
-                chi_path = osp.join(fpath, 'chis.txt')
-                if not osp.exists(chi_path):
-                    # presumabely it is still running
-                    continue
-                k = len(triu_to_full(np.loadtxt(chi_path)))
-
+                config = load_json(osp.join(fpath, 'resources/config.json'))
+                k = config['nspecies']
                 # convergence
                 convergence_file = osp.join(fpath, 'convergence.txt')
                 assert osp.exists(convergence_file)
@@ -182,7 +178,7 @@ def load_data(args):
                         it_path = osp.join(fpath, f'iteration{i}')
                         if osp.exists(it_path):
                             config_file = osp.join(it_path, 'production_out/config.json')
-                            config = json.load(config_file)
+                            config = load_json(config_file)
                             chis = np.array(config['chis'])
                             chis = chis[np.triu_indices(len(chis))] # grab upper triangle
                             diag_chis = np.array(config['diag_chis'])
@@ -239,8 +235,7 @@ def load_data(args):
                     # calc s
                     L = calculate_L(psi, chi)
 
-                    with open(osp.join(converged_path, 'config.json'), 'r') as f:
-                        config = json.load(f)
+                    config = load_json(osp.join(converged_path, 'config.json'))
                     diag_chis_continuous = calculate_diag_chi_step(config)
                     D = calculate_D(diag_chis_continuous)
 
@@ -339,8 +334,8 @@ def load_data(args):
     print(converged_mask)
     return data, converged_mask
 
-def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
-                    experimental = False, nan_mask = None):
+def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
+                    experimental=False, nan_mask=None, test_significance=True):
     '''
     Writes data to ofile in latex table format.
 
@@ -352,6 +347,7 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
         sample_id: sample_id for table header; if set, table will show stdev over replicates for that sample
         experimental: True if ground_truth won't be present
         na_mask: mask for sample_results, True to set to nan
+        test_significance: True to perform two-sided paired t-tests for significance
     '''
 
     metric_labels = {'scc':'SCC', 'scc_var':'SCC var', None: '',
@@ -443,7 +439,7 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                         print(e)
                 if nan_mask is not None and len(data[k][method]['scc']) != len(nan_mask):
                     # skip method if not performed for all samples
-                    print(f'skipping {method}, k={k}: {data[k][method]}')
+                    print(f'skipping {method}, k={k}: {data[k][method]["scc"]}')
                     continue
                 if first: # only write k for first row in section
                     k_label = k
@@ -493,7 +489,7 @@ def makeLatexTable(data, ofile, header, small, mode = 'w', sample_id = None,
                     if len(result) > 1:
                         result_mean = np.nanmean(result)
                         # print(metric, result, result_mean)
-                        if GNN_ref is not None:
+                        if GNN_ref is not None and test_significance:
                             ref_result = np.array(GNN_ref[metric], dtype=np.float64)
                             if nan_mask is not None:
                                 ref_result[nan_mask] = np.nan
@@ -554,18 +550,20 @@ def sort_method_keys(keys):
             id = key[pos+3:]
             label += id
 
-        if 'phi' in key:
-            label += f' (b{b}, $\phi${phi}'
-        elif 'v' in key:
-            label += f' (b{b}, v{v}'
+        if '_distance_' in key:
+            label += ' (distance)'
 
-        if 'angle' in key:
-            label += f', angle{angle})'
-        elif 'spheroid' in key:
-            label += f', ar{ar})'
-        else:
-            label += ')'
-
+        # if 'phi' in key:
+        #     label += f' (b{b}, $\phi${phi}'
+        # elif 'v' in key:
+        #     label += f' (b{b}, v{v}'
+        #
+        # if 'angle' in key:
+        #     label += f', angle{angle})'
+        # elif 'spheroid' in key:
+        #     label += f', ar{ar})'
+        # else:
+        #     label += ')'
 
         key_split = key.split('-')
         other = key_split[-1].split('_')
@@ -667,12 +665,14 @@ def main(args=None):
         # small
         makeLatexTable(data, ofile, temp_label, True, mode,
                         sample_id = args.sample, experimental = args.experimental,
-                        nan_mask = not_converged_mask)
+                        nan_mask = not_converged_mask,
+                        test_significance = args.test_significance)
         mode = 'a' # switch to append for remaning tables
 
         makeLatexTable(data, ofile, temp_label, False, mode,
                         sample_id = args.sample, experimental = args.experimental,
-                        nan_mask = not_converged_mask)
+                        nan_mask = not_converged_mask,
+                        test_significance = args.test_significance)
 
         # boxplot(data, osp.join(odir, f'boxplot_{defn}_convergence.png'))
 
@@ -688,13 +688,15 @@ if __name__ == '__main__':
 
     if samples is None:
         samples, _ = get_samples(dataset, train = True)
-        samples = samples
+        samples = samples[1:8]
     data_dir = osp.join('/home/erschultz', dataset)
     args = getArgs(data_folder = data_dir, samples = samples)
     args.experimental = True
     args.verbose = True
     args.convergence_definition = 'normal'
-    args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', '_700k', 'phi', 'GNN579-max_ent']
+    args.test_significance = False
+    args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', '_700k', 'phi',
+                        'GNN579-max_ent', '-gd_gamma', '10_distance']
     #for i in [2,3,4,5,6,7,8,9]:
     #    args.bad_methods.append(f'max_ent{i}')
 

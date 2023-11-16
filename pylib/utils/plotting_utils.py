@@ -186,6 +186,7 @@ def plot_matrix(arr, ofile=None, title=None, vmin=0, vmax='max',
 
     for line in lines:
         ax.axhline(line, color = 'k', lw=0.5)
+        ax.axvline(line, color = 'k', lw=0.5)
 
     if title is not None:
         plt.title(title, fontsize = 16)

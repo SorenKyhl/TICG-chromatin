@@ -223,7 +223,7 @@ def modify_plaid_chis(dataset, b, phi, v, k, ar):
         assert np.allclose(L, L_eig), L - L_eig
 
 
-def modify_maxent_diag_chi(dataset, b, phi, v, k, ar, edit=True):
+def modify_maxent_diag_chi(dataset, b, phi, v, k, ar, edit=True, plot=True):
     '''
     Inputs:
         k: number of marks
@@ -254,167 +254,152 @@ def modify_maxent_diag_chi(dataset, b, phi, v, k, ar, edit=True):
             os.mkdir(odir, mode = 0o755)
 
         final = get_final_max_ent_folder(max_ent_dir)
-
-        # diag_chis_file = osp.join(max_ent_dir, 'chis_diag.txt')
-        # diag_chis = np.loadtxt(diag_chis_file)
-        # diag_chis = np.atleast_2d(diag_chis)[-1]
-
         ifile = osp.join(final, 'config.json')
         with open(ifile, 'r') as f:
             config = json.load(f)
-        diag_chis = config['diag_chis']
-        diag_chis = np.atleast_1d(diag_chis)
-        
-        diag_chi_step = calculate_diag_chi_step(config, diag_chis)
+        diag_chi_step = calculate_diag_chi_step(config)
         m = len(diag_chi_step)
         x = np.arange(0, 2*m)
 
         S = load_max_ent_S(max_ent_dir)
         meanDist_S = DiagonalPreprocessing.genomic_distance_statistics(S, 'freq')
-        # poly4_log_fit = curve_fit_helper(Curves.poly4_curve, np.log(x[:m]), meanDist_S,
-        #                                 'poly4_log_meanDist_S', odir,
-        #                                 [1, 1, 1, 1, 1], start = 2)
-        poly6_log_fit = curve_fit_helper(Curves.poly6_curve, np.log(x[:m]), meanDist_S,
-                                        'poly6_log_meanDist_S', odir,
-                                        [1, 1, 1, 1, 1, 1, 1], start = 2)
-        # poly6_fit = curve_fit_helper(Curves.poly6_curve, x[:m], meanDist_S,
-        #                                 'poly6_meanDist_S', odir,
-        #                                 [1, 1, 1, 1, 1, 1, 1], start = 2)
-        poly8_log_fit = curve_fit_helper(Curves.poly8_curve, np.log(x[:m]), meanDist_S,
-                                        'poly8_log_meanDist_S', odir,
-                                        [1, 1, 1, 1, 1, 1, 1, 1, 1], start = 2)
-        # poly9_log_fit = curve_fit_helper(Curves.poly9_curve, np.log(x[:m]), meanDist_S,
-        #                                 'poly9_log_meanDist_S', odir,
-        #                                 [1, 1, 1, 1, 1, 1, 1, 1, 1, 1], start = 2)
-        poly12_log_fit = curve_fit_helper(Curves.poly12_curve, np.log(x[:m]), meanDist_S,
-                                        'poly12_log_meanDist_S', odir,
-                                        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], start = 2)
 
-        continue
+        curves = [Curves.poly6_curve, Curves.poly8_curve]
+        colors = ['b', 'r']
+        orders = [6, 8]
         X = x[:m]
-        plt.plot(X, meanDist_S, ls='-', c='k', label=r'$\delta^{ME(i)}$')
-        plt.plot(X[2:], poly4_log_fit[2:], ls=':', c='g',
-                label=r'$\hat{\delta}^{ME(i)}$ (4th order in log space)')
-        plt.plot(X[2:], poly6_log_fit[2:], ls=':', c='b',
-                label=r'$\hat{\delta}^{ME(i)}$ (6th order in log space)')
-        plt.plot(X[2:], poly8_log_fit[2:], ls=':', c='orange',
-                label=r'$\hat{\delta}^{ME(i)}$ (8th order in log space)')
-        plt.plot(X[2:], poly9_log_fit[2:], ls=':', c='magenta',
-                label=r'$\hat{\delta}^{ME(i)}$ (9th order in log space)')
-        plt.plot(X[2:], poly12_log_fit[2:], ls=':', c='cyan',
-                label=r'$\hat{\delta}^{ME(i)}$ (12th order in log space)')
-        plt.plot(X[2:], poly6_fit[2:], ls='--', c='b',
-                label=r'$\hat{\delta}^{ME(i)}$ (6th order in linear space)')
+        if plot:
+            plt.plot(X, meanDist_S, ls='-', c='k', label=r'$\delta^{ME(i)}$')
+        for curve, color, order in zip(curves, colors, orders):
+            init = [1]*(order+1)
+            for start in [5]:
+                # poly_fit = curve_fit_helper(curve, x[:m], meanDist_S,
+                #                                 f'poly{order}_meanDist_S', odir,
+                #                                 init, start = start)
+                poly_log_fit = curve_fit_helper(curve, np.log(x[:m]), meanDist_S,
+                                                f'poly{order}_log_start_{start}_meanDist_S', odir,
+                                                init, start = start)
 
-        plt.xlabel('d',fontsize=16)
-        plt.legend()
-        plt.savefig(osp.join(odir, 'delta_vs_delta_hat.png'))
-        plt.close()
+                if plot:
+                    # plt.plot(X[2:], poly_fit[2:], ls='--', c=color,
+                    #         label=r'$\hat{\delta}^{ME(i)}$' + f' ({order}th order linear)')
+                    plt.plot(X, poly_log_fit, ls=':', c=color,
+                            label=r'$\hat{\delta}^{ME(i)}$' + f' ({order}th order start={start})')
 
-        X = np.log(X)
-        plt.plot(X, meanDist_S, ls='-', c='k', label=r'$\delta^{ME(i)}$')
-        plt.plot(X[2:], poly4_log_fit[2:], ls=':', c='g',
-                label=r'$\hat{\delta}^{ME(i)}$ (4th order in log space)')
-        plt.plot(X[2:], poly6_log_fit[2:], ls=':', c='b',
-                label=r'$\hat{\delta}^{ME(i)}$ (6th order in log space)')
-        plt.plot(X[2:], poly8_log_fit[2:], ls=':', c='orange',
-                label=r'$\hat{\delta}^{ME(i)}$ (8th order in log space)')
-        plt.plot(X[2:], poly9_log_fit[2:], ls=':', c='magenta',
-                label=r'$\hat{\delta}^{ME(i)}$ (9th order in log space)')
-        plt.plot(X[2:], poly12_log_fit[2:], ls=':', c='cyan',
-            label=r'$\hat{\delta}^{ME(i)}$ (12th order in log space)')
-        plt.plot(X[2:], poly6_fit[2:], ls='--', c='b',
-                label=r'$\hat{\delta}^{ME(i)}$ (6th order in linear space)')
-        plt.xlabel('log(d)',fontsize=16)
-        plt.legend()
-        plt.savefig(osp.join(odir, 'delta_vs_delta_hat_log.png'))
-        plt.close()
-
-        smoothed_fit = gaussian_filter(meanDist_S[3:], sigma = 1)
-        smoothed_fit = np.append(meanDist_S[:3], smoothed_fit)
-        np.savetxt(osp.join(odir, 'smoothed_fit_meanDist_S.txt'), smoothed_fit)
-
-
-        if edit:
-            # make version that is flat at start
-            min_val = np.min(diag_chis[:20])
-            min_ind = np.argmin(diag_chis[:20])
-            diag_chis[0:min_ind] = min_val
-            np.savetxt(osp.join(odir, 'chis_diag_edit.txt'), diag_chis)
-
-            # make version with intercept 0
-            diag_chis_zero = np.copy(diag_chis)
-            diag_chis_zero -= np.min(diag_chis_zero)
-            np.savetxt(osp.join(odir, 'chis_diag_edit_zero.txt'), diag_chis_zero)
-
-        smoothed_fit = gaussian_filter(diag_chi_step[3:], sigma = 1)
-        smoothed_fit = np.append(diag_chi_step[:3], smoothed_fit)
-        np.savetxt(osp.join(odir, 'smoothed_fit.txt'), smoothed_fit)
-
-        log_fit = None
-        log_max_fit = None
-        logistic_fit = None
-        poly2_fit = curve_fit_helper(Curves.poly2_curve, x[:m], diag_chi_step,
-                                        'poly2', odir, [1, 1, 1],
-                                        start = 2)
-        poly2_log_fit = curve_fit_helper(Curves.poly2_curve, np.log(x[:m]), diag_chi_step,
-                                        'poly2_log', odir, [1, 1, 1], start = 2)
-
-        poly3_fit = curve_fit_helper(Curves.poly3_curve, x[:m], diag_chi_step,
-                                        'poly3', odir, [1, 1, 1, 1],
-                                        start = 2)
-        poly3_log_fit = curve_fit_helper(Curves.poly3_curve, np.log(x[:m]), diag_chi_step,
-                                        'poly3_log', odir, [1, 1, 1, 1], start = 2)
-        poly4_log_fit = curve_fit_helper(Curves.poly4_curve, np.log(x[:m]), diag_chi_step,
-                                        'poly4_log', odir, [1, 1, 1, 1, 1], start = 2)
-        poly6_log_fit = curve_fit_helper(Curves.poly6_curve, np.log(x[:m]), diag_chi_step,
-                                        'poly6_log', odir, [1, 1, 1, 1, 1, 1, 1], start = 2)
-
-
-        piecewise_linear_fit = curve_fit_helper(Curves.piecewise_linear_curve, x[:m],
-                                diag_chi_step, 'piecewise_linear', odir,
-                                [1, 1, 1, 1, 10], start = 2)
-        piecewise_poly2_fit = curve_fit_helper(Curves.piecewise_poly2_curve, x[:m],
-                                diag_chi_step, 'piecewise_poly2', odir,
-                                [1, 1, 1, 1, 1, 1, 10], start = 2)
-        piecewise_poly3_fit = curve_fit_helper(Curves.piecewise_poly3_curve, x[:m],
-                                diag_chi_step, 'piecewise_poly3', odir,
-                                [1, 1, 1, 1, 1, 1, 1, 1, 20], start = 2)
-        linear_max_fit = None
-        linear_fit = curve_fit_helper(Curves.linear_curve, x[:m], diag_chi_step,
-                                        'linear', odir)
-
-        for log in [True, False]:
-            plt.plot(diag_chi_step, label = 'Max Ent Edit', color = 'lightblue')
-            if smoothed_fit is not None:
-                plt.plot(smoothed_fit, label = 'Gaussian Filter',
-                        color = 'lightblue', ls='dashdot')
-            if log_fit is not None:
-                plt.plot(log_fit, label = 'log', color = 'orange')
-            # if log_max_fit is not None:
-            #     plt.plot(log_max_fit, label = 'log_max', color = 'yellow')
-            if logistic_fit is not None:
-                plt.plot(logistic_fit, label = 'logistic', color = 'purple')
-            # if linear_max_fit is not None:
-            #     plt.plot(linear_max_fit, label = 'linear_max', color = 'brown')
-            if linear_fit is not None:
-                plt.plot(linear_fit, label = 'linear', color = 'teal')
-
-
-            plt.legend()
-            plt.ylim(None, 2 * np.max(diag_chi_step))
-            if log:
-                plt.xscale('log')
-                plt.savefig(osp.join(odir, 'meanDist_fit_log.png'))
-            else:
-                plt.xlim(0, 50)
-                plt.savefig(osp.join(odir, 'meanDist_fit.png'))
+        if plot:
+            plt.ylim(np.min(meanDist_S), np.max(meanDist_S))
+            plt.xscale('log')
+            plt.xlabel('d',fontsize=16)
+            plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+            plt.tight_layout()
+            plt.savefig(osp.join(odir, 'delta_vs_delta_hat.png'))
             plt.close()
+
+        if False:
+            X = np.log(X)
+            plt.plot(X, meanDist_S, ls='-', c='k', label=r'$\delta^{ME(i)}$')
+            plt.plot(X[2:], poly4_log_fit[2:], ls=':', c='g',
+                    label=r'$\hat{\delta}^{ME(i)}$ (4th order in log space)')
+            plt.plot(X[2:], poly6_log_fit[2:], ls=':', c='b',
+                    label=r'$\hat{\delta}^{ME(i)}$ (6th order in log space)')
+            plt.plot(X[2:], poly8_log_fit[2:], ls=':', c='orange',
+                    label=r'$\hat{\delta}^{ME(i)}$ (8th order in log space)')
+            plt.plot(X[2:], poly9_log_fit[2:], ls=':', c='magenta',
+                    label=r'$\hat{\delta}^{ME(i)}$ (9th order in log space)')
+            plt.plot(X[2:], poly12_log_fit[2:], ls=':', c='cyan',
+                label=r'$\hat{\delta}^{ME(i)}$ (12th order in log space)')
+            plt.plot(X[2:], poly6_fit[2:], ls='--', c='b',
+                    label=r'$\hat{\delta}^{ME(i)}$ (6th order in linear space)')
+            plt.xlabel('log(d)',fontsize=16)
+            plt.legend()
+            plt.savefig(osp.join(odir, 'delta_vs_delta_hat_log.png'))
+            plt.close()
+
+            smoothed_fit = gaussian_filter(meanDist_S[3:], sigma = 1)
+            smoothed_fit = np.append(meanDist_S[:3], smoothed_fit)
+            np.savetxt(osp.join(odir, 'smoothed_fit_meanDist_S.txt'), smoothed_fit)
+
+
+            if edit:
+                # make version that is flat at start
+                min_val = np.min(diag_chis[:20])
+                min_ind = np.argmin(diag_chis[:20])
+                diag_chis[0:min_ind] = min_val
+                np.savetxt(osp.join(odir, 'chis_diag_edit.txt'), diag_chis)
+
+                # make version with intercept 0
+                diag_chis_zero = np.copy(diag_chis)
+                diag_chis_zero -= np.min(diag_chis_zero)
+                np.savetxt(osp.join(odir, 'chis_diag_edit_zero.txt'), diag_chis_zero)
+
+            smoothed_fit = gaussian_filter(diag_chi_step[3:], sigma = 1)
+            smoothed_fit = np.append(diag_chi_step[:3], smoothed_fit)
+            np.savetxt(osp.join(odir, 'smoothed_fit.txt'), smoothed_fit)
+
+            log_fit = None
+            log_max_fit = None
+            logistic_fit = None
+            poly2_fit = curve_fit_helper(Curves.poly2_curve, x[:m], diag_chi_step,
+                                            'poly2', odir, [1, 1, 1],
+                                            start = 2)
+            poly2_log_fit = curve_fit_helper(Curves.poly2_curve, np.log(x[:m]), diag_chi_step,
+                                            'poly2_log', odir, [1, 1, 1], start = 2)
+
+            poly3_fit = curve_fit_helper(Curves.poly3_curve, x[:m], diag_chi_step,
+                                            'poly3', odir, [1, 1, 1, 1],
+                                            start = 2)
+            poly3_log_fit = curve_fit_helper(Curves.poly3_curve, np.log(x[:m]), diag_chi_step,
+                                            'poly3_log', odir, [1, 1, 1, 1], start = 2)
+            poly4_log_fit = curve_fit_helper(Curves.poly4_curve, np.log(x[:m]), diag_chi_step,
+                                            'poly4_log', odir, [1, 1, 1, 1, 1], start = 2)
+            poly6_log_fit = curve_fit_helper(Curves.poly6_curve, np.log(x[:m]), diag_chi_step,
+                                            'poly6_log', odir, [1, 1, 1, 1, 1, 1, 1], start = 2)
+
+
+            piecewise_linear_fit = curve_fit_helper(Curves.piecewise_linear_curve, x[:m],
+                                    diag_chi_step, 'piecewise_linear', odir,
+                                    [1, 1, 1, 1, 10], start = 2)
+            piecewise_poly2_fit = curve_fit_helper(Curves.piecewise_poly2_curve, x[:m],
+                                    diag_chi_step, 'piecewise_poly2', odir,
+                                    [1, 1, 1, 1, 1, 1, 10], start = 2)
+            piecewise_poly3_fit = curve_fit_helper(Curves.piecewise_poly3_curve, x[:m],
+                                    diag_chi_step, 'piecewise_poly3', odir,
+                                    [1, 1, 1, 1, 1, 1, 1, 1, 20], start = 2)
+            linear_max_fit = None
+            linear_fit = curve_fit_helper(Curves.linear_curve, x[:m], diag_chi_step,
+                                            'linear', odir)
+
+            for log in [True, False]:
+                plt.plot(diag_chi_step, label = 'Max Ent Edit', color = 'lightblue')
+                if smoothed_fit is not None:
+                    plt.plot(smoothed_fit, label = 'Gaussian Filter',
+                            color = 'lightblue', ls='dashdot')
+                if log_fit is not None:
+                    plt.plot(log_fit, label = 'log', color = 'orange')
+                # if log_max_fit is not None:
+                #     plt.plot(log_max_fit, label = 'log_max', color = 'yellow')
+                if logistic_fit is not None:
+                    plt.plot(logistic_fit, label = 'logistic', color = 'purple')
+                # if linear_max_fit is not None:
+                #     plt.plot(linear_max_fit, label = 'linear_max', color = 'brown')
+                if linear_fit is not None:
+                    plt.plot(linear_fit, label = 'linear', color = 'teal')
+
+
+                plt.legend()
+                plt.ylim(None, 2 * np.max(diag_chi_step))
+                if log:
+                    plt.xscale('log')
+                    plt.savefig(osp.join(odir, 'meanDist_fit_log.png'))
+                else:
+                    plt.xlim(0, 50)
+                    plt.savefig(osp.join(odir, 'meanDist_fit.png'))
+                plt.close()
 
 def curve_fit_helper(fn, x, y, label, odir, init = [1,1], start = 0):
     try:
         popt, pcov = curve_fit(fn, x[start:], y[start:], p0 = init, maxfev = 2000)
-        print(f'\t{label} popt', popt)
+        # print(f'\t{label} popt', popt)
         fit = fn(x[start:], *popt)
         if start > 0:
             fit = np.append(np.zeros(start), fit)
@@ -494,9 +479,9 @@ class Curves():
         result = A + B*x + C*x**2 + D*x**3 + E*x**4 + F*x**5 + G*x**6  + H*x**7 + I*x**8
         return result
 
-    def poly9_curve(x, A, B, C, D, E, F, G, H, I, J):
-        result = A + B*x + C*x**2 + D*x**3 + E*x**4 + F*x**5 + G*x**6  + H*x**7
-        result += I*x**8 + J*x**9
+    def poly10_curve(x, A, B, C, D, E, F, G, H, I, J, K):
+        result = A + B*x + C*x**2 + D*x**3 + E*x**4 + F*x**5 + G*x**6 + H*x**7
+        result += I*x**8 + J*x**9 + K*x**10
         return result
 
     def poly12_curve(x, A, B, C, D, E, F, G, H, I, J, K, L, M):
@@ -1385,11 +1370,12 @@ def get_read_counts(dataset):
 
 if __name__ == '__main__':
     # modify_plaid_chis('dataset_06_29_23', b=180, phi=None, v=8, k=10, ar=1.5)
-    # modify_maxent_diag_chi('dataset_06_29_23', b=180, phi=None, v=8, k=10, ar=1.5, edit=False)
+    modify_maxent_diag_chi('dataset_06_29_23', b=180, phi=None, v=8, k=10, ar=1.5,
+                            edit=False, plot=False)
     # for i in range(221, 222):
         # plot_modified_max_ent(i, k = 10)
     # diagonal_dist('dataset_02_04_23', b=261, phi=0.01, k=10)
-    grid_dist('dataset_02_04_23', b=180, phi=None, v=8, ar=1.5)
+    # grid_dist('dataset_02_04_23', b=180, phi=None, v=8, ar=1.5)
     # plaid_dist('dataset_06_29_23', b=180, phi=None, v=8, k=10, ar=1.5, plot=True, eig_norm=True)
     # get_read_counts('dataset_04_28_23')
     # seq_dist('dataset_01_26_23', 4, True, True)

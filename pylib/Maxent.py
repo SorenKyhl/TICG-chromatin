@@ -319,8 +319,8 @@ class Maxent:
             if self.dampen_first_step and (it == 1):
                 gamma *= 0.25
 
-            print(f"gammma = {gamma}")
             print("self.gamma = " + str(self.params["gamma"]))
+            print(f"gammma = {gamma}")
 
             if self.params['mode'] == 'diag':
                 plaid, curr_chis = sim.split_chis(curr_chis)
@@ -378,6 +378,8 @@ class Maxent:
 
         # set up new config
         config = self.defaultsim.config.copy()
+        config['dump_observables'] = False # won't be needed - faster without
+        config['dump_stats_frequency'] = 10 # run more frequent dump_stats to get better contact map
         sweeps = self.final_it_sweeps // self.params["parallel"]
 
         sim = Pysim(

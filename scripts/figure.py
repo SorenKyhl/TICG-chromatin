@@ -7,12 +7,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 import seaborn as sns
-from pylib.utils.similarity_measures import SCC
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
                                       calculate_diag_chi_step, calculate_L,
                                       calculate_S)
 from pylib.utils.plotting_utils import RED_CMAP, rotate_bound
+from pylib.utils.similarity_measures import SCC
 from pylib.utils.utils import pearson_round
 from pylib.utils.xyz import xyz_load, xyz_write
 
@@ -23,7 +23,8 @@ from makeLatexTable_new import *
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_import_log, load_L, get_converged_max_ent_folder)
+    get_converged_max_ent_folder, get_final_max_ent_folder, load_import_log,
+    load_L)
 
 test=True
 label_fontsize=22
@@ -106,7 +107,7 @@ def get_pcs(input, smooth=False, h=1, verbose=False):
                         normalize = False, align = True)
     return seqs.T # k x m
 
-smooth = True; h = 1
+smooth = False; h = 1
 pcs = get_pcs(y, smooth, h)
 pcs_pca = get_pcs(y_pca, smooth, h)
 pcs_gnn = get_pcs(y_gnn, smooth, h)
@@ -147,7 +148,7 @@ if not test:
     max_ent_pearsons = [i for i in max_ent_pearsons if not np.isnan(i)]
     print(data)
 
-    
+
     args.convergence_definition = 'strict'
     args.bad_methods.remove('long')
     args.gnn_id = []
@@ -276,6 +277,7 @@ def figure(test=False):
     ax4.plot(pcs[0], label = 'Experiment', color = 'k')
     ax4.plot(pcs_pca[0], label = f'Max Ent', color = 'b')
     ax4.plot(pcs_gnn[0], label = f'GNN', color = 'r')
+
     title = f'Max Ent (r={pearson_round(pcs[0], pcs_pca[0])})\nGNN (r={pearson_round(pcs[0], pcs_gnn[0])})'
     print(title)
     # ax4.set_title(title)
