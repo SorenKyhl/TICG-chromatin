@@ -55,6 +55,8 @@ def getArgs():
                     help='where data will be found when running simulation')
     parser.add_argument('--exp_dataset', type=str, default='dataset_02_04_23',
                     help='dataset where experimental data is located')
+    parser.add_argument('--cell_line', type=str,
+                    help='cell_line to filter experimental data to')
     parser.add_argument('--b', type=int, default=140,
                         help='bond length')
     parser.add_argument('--phi', type=float,
@@ -87,6 +89,7 @@ class DatasetGenerator():
         self.max_L = args.max_L
         self.data_dir = args.data_dir
         self.exp_dataset = args.exp_dataset
+        self.cell_line = args.cell_line
         self.b = args.b
         self.phi = args.phi
         self.v = args.v
@@ -106,6 +109,9 @@ class DatasetGenerator():
             self.distributions_root += f'_spheroid_{args.ar}_distributions'
         else:
             self.distributions_root += '_distributions'
+        if self.cell_line is not None:
+            self.distributions_root += f'_{self.cell_line}'
+        print(f'Using {self.distributions_root}')
 
         self.get_exp_samples()
 
@@ -144,7 +150,12 @@ class DatasetGenerator():
         #     if chrom % 2 == 1:
         #         odd_samples.append(s)
 
-        samples, _, cell_lines = get_samples(self.exp_dataset, train=True, return_cell_lines=True)
+        if self.cell_line is not None:
+            samples, _, cell_lines = get_samples(self.exp_dataset, train=True,
+                                                return_cell_lines=True,
+                                                filter_cell_lines=set([self.cell_line]))
+        else:
+            samples, _, cell_lines = get_samples(self.exp_dataset, train=True, return_cell_lines=True)
         self.exp_samples = samples
         print(f'Using {len(self.exp_samples)} samples: {self.exp_samples}')
         print(f'Using cell lines: {set(cell_lines)}')

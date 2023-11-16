@@ -38,7 +38,7 @@ from sequences_to_contact_maps.scripts.plotting_utils import \
 
 LETTERS = 'ABCDEFGHIJKLMN'
 
-def get_samples(dataset, train=False, test=False, return_cell_lines=False):
+def get_samples(dataset, train=False, test=False, return_cell_lines=False, filter_cell_lines=None):
     '''
     Inputs:
         dataset: data directory
@@ -107,19 +107,23 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False):
                 s_dir = '/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/' + s_dir
             result = load_import_log(s_dir)
             chrom = int(result['chrom'])
-            cell_line = result['cell_line']
+            cell_line = result['cell_line'].lower()
             cell_lines.append(cell_line)
             if cell_line is None:
                 pass
                 # print(f'cell_line is None, skipping {s}: url={result["url"]}')
                 # continue
-            elif cell_line in {'kbm7', 'nhek', 'hela'}:
-                # not using these cell lines
-                continue
-            elif test and cell_line not in {'gm12878', 'hap1', 'huvec'} :
-                continue
-            elif train and cell_line not in {'imr90', 'k562', 'hmec'}:
-                continue
+            elif filter_cell_lines is not None:
+                if cell_line not in filter_cell_lines:
+                    continue
+            else:
+                if cell_line in {'kbm7', 'nhek', 'hela'}:
+                    # not using these cell lines
+                    continue
+                elif test and cell_line not in {'gm12878', 'hap1', 'huvec'} :
+                    continue
+                elif train and cell_line not in {'imr90', 'k562', 'hmec'}:
+                    continue
             if chrom % 2 == 1:
                 odd_samples.append(s)
                 odd_cell_lines.append(cell_line)
@@ -894,9 +898,15 @@ def seq_dist(dataset, k, plot=True, eig_norm=False):
 
     return x_list
 
-def plaid_dist(dataset, b, phi, v, k, ar, plot=True, eig_norm=False):
+def plaid_dist(dataset, b, phi, v, k, ar, plot=True, eig_norm=False, cell_line=None):
     # distribution of plaid params
-    samples, experimental = get_samples(dataset, True)
+    if cell_line is not None:
+        samples, experimental, cell_lines = get_samples(dataset, True, return_cell_lines=True,
+                                        filter_cell_lines=set([cell_line]))
+    else:
+        samples, experimental, cell_lines = get_samples(dataset, True, return_cell_lines=True)
+    print(len(samples), set(cell_lines))
+    N = len(samples)
     dir = '/project2/depablo/erschultz/'
     if not osp.exists(dir):
         dir = '/home/erschultz'
@@ -910,6 +920,9 @@ def plaid_dist(dataset, b, phi, v, k, ar, plot=True, eig_norm=False):
     if ar != 1.0:
         odir += f'_spheroid_{ar}'
     odir += '_distributions'
+    if cell_line is not None:
+        odir += f'_{cell_line}'
+
     if not osp.exists(odir):
         os.mkdir(odir, mode = 0o755)
     if eig_norm:
@@ -928,9 +941,8 @@ def plaid_dist(dataset, b, phi, v, k, ar, plot=True, eig_norm=False):
     chi_ii_list = []
     chi_list = []
     chi_flat_list = []
-    grid_size_arr = grid_dist(dataset, False, b=b, phi=phi, v=v, ar=ar)
+    grid_size_arr = grid_dist(dataset, False, b=b, phi=phi, v=v, ar=ar, cell_line=cell_line)
     for sample in samples:
-        print(sample)
         s_dir = osp.join(data_dir, f'samples/sample{sample}')
         if experimental:
             if v is None:
@@ -1227,9 +1239,13 @@ def plaid_dist(dataset, b, phi, v, k, ar, plot=True, eig_norm=False):
 
     return L_list, S_list, D_list, chi_ij_list
 
-def grid_dist(dataset, plot=True, b=140, phi=None, v=None, ar=1.0):
+def grid_dist(dataset, plot=True, b=140, phi=None, v=None, ar=1.0, cell_line=None):
     # distribution of plaid params
-    samples, experimental, cell_lines = get_samples(dataset, return_cell_lines=True)
+    if cell_line is not None:
+        samples, experimental, cell_lines = get_samples(dataset, True, return_cell_lines=True,
+                                                        filter_cell_lines = set([cell_line]))
+    else:
+        samples, experimental, cell_lines = get_samples(dataset, True, return_cell_lines=True)
     if not experimental:
         if plot:
             raise Exception('must be experimental')
@@ -1370,13 +1386,14 @@ def get_read_counts(dataset):
 
 if __name__ == '__main__':
     # modify_plaid_chis('dataset_06_29_23', b=180, phi=None, v=8, k=10, ar=1.5)
-    modify_maxent_diag_chi('dataset_06_29_23', b=180, phi=None, v=8, k=10, ar=1.5,
-                            edit=False, plot=False)
+    # modify_maxent_diag_chi('dataset_06_29_23', b=180, phi=None, v=8, k=10, ar=1.5,
+    #                         edit=False, plot=False)
     # for i in range(221, 222):
         # plot_modified_max_ent(i, k = 10)
     # diagonal_dist('dataset_02_04_23', b=261, phi=0.01, k=10)
     # grid_dist('dataset_02_04_23', b=180, phi=None, v=8, ar=1.5)
-    # plaid_dist('dataset_06_29_23', b=180, phi=None, v=8, k=10, ar=1.5, plot=True, eig_norm=True)
+    plaid_dist('dataset_06_29_23', b=180, phi=None, v=8, k=10, ar=1.5, plot=True, eig_norm=True,
+                cell_line='k562')
     # get_read_counts('dataset_04_28_23')
     # seq_dist('dataset_01_26_23', 4, True, True)
     # plot_params_test()
