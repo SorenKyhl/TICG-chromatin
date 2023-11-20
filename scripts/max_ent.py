@@ -9,13 +9,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import optimize_grid
 import pylib.analysis as analysis
+from data_generation.modify_maxent import get_samples
+from plotting.contact_map import getArgs, plot_all
 from pylib.Maxent import Maxent
 from pylib.Pysim import Pysim
 from pylib.utils import default, epilib, utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import *
-from scripts.contact_map import getArgs, plot_all
-from scripts.data_generation.modify_maxent import get_samples
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import load_import_log
@@ -261,8 +261,8 @@ def setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
 
     config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
 
-    config['diag_start'] = 10
-    root = osp.join(dir, f'{root}-max_ent{k}_start10')
+    # config['diag_start'] = 10
+    root = osp.join(dir, f'{root}-max_ent{k}_soren')
     if osp.exists(root):
         # shutil.rmtree(root)
         if verbose:
@@ -281,8 +281,8 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
     os.mkdir(root, mode=0o755)
 
     # get sequences
-    seqs = epilib.get_pcs(epilib.get_oe(y), k, normalize = True)
-    # seqs = epilib.get_sequences(y, k, randomized=True)
+    # seqs = epilib.get_pcs(epilib.get_oe(y), k, normalize = True)
+    seqs = epilib.get_sequences(y, k, randomized=True)
 
     params = default.params
     goals = epilib.get_goals(y, seqs, config)
@@ -333,12 +333,12 @@ def main():
 
     if samples is None:
         samples, _ = get_samples(dataset, train=True)
-        samples = samples[:1]
+        samples = samples
         print(samples)
 
     mapping = []
     k_angle=0;theta_0=180;b=180;ar=1.5;phi=None;v=8
-    contacts_distance=True
+    contacts_distance=False
     for i in samples:
         for k in [10]:
             mapping.append((dataset, i, f'samples', b, phi, v, None, ar,
@@ -347,11 +347,11 @@ def main():
 
     with mp.Pool(1) as p:
         # p.starmap(setup_config, mapping)
-        p.starmap(fit, mapping)
-        # p.starmap(check, mapping)
+        # p.starmap(fit, mapping)
+        p.starmap(check, mapping)
         # p.starmap(post_analysis, mapping)
         # p.starmap(cleanup, mapping)
 
 if __name__ == '__main__':
-    modify_maxent()
-    # main()
+    # modify_maxent()
+    main()

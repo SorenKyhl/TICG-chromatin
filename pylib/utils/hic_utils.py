@@ -6,16 +6,15 @@ from typing import Callable
 import numpy as np
 import scipy.ndimage as ndimage
 from numba import njit
-from skimage.measure import block_reduce
-
 from pylib.utils import default, epilib
+from skimage.measure import block_reduce
 
 """
 collection of functions for manipulating hic maps
 """
 
 
-def pool(inp, factor, fn=np.nansum, normalize=True):
+def pool(inp, factor, fn=np.nansum, normalize=True, normalize_method='ones'):
     """Resizes input matrix by factor using fn using modified sum pooling
 
     in modified sum pooling, the sum along the diagonal only includes
@@ -34,7 +33,7 @@ def pool(inp, factor, fn=np.nansum, normalize=True):
     out = processed + np.triu(processed, 1).T
 
     if normalize:
-        out = normalize_hic(out)
+        out = normalize_hic(out, normalize_method)
 
     return out
 

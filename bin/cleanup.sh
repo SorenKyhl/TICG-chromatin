@@ -69,32 +69,31 @@ dir='/home/erschultz/dataset_06_29_23/samples'
 cd $dir
 for i in {1..635}
 do
-  for k in 5
+  for k in 10
   do
     for j in {0..29}
     do
       cd  "${dir}/sample${i}"
-      cd "optimize_grid_b_180_v_8_spheroid_1.5-max_ent${k}"
+      cd "optimize_grid_b_180_v_8_spheroid_1.5-max_ent${k}_soren"
       cd "iteration${j}"
-      # pwd
-      # if [ -d "equilibration" ]
-      # then
-      #   tar -czf equilibration.tar.gz equilibration
-      #   rm -r equilibration
-      # fi
+      pwd
+      if [ -d "equilibration" ]
+      then
+        tar -czf equilibration.tar.gz equilibration
+        rm -r equilibration
+      fi
       rm S.npy
       rm L.npy
       rm experimental_hic.npy
       rm matrix*.png
       rm D.npy
-      rm *.png
       rm pc*.txt
       rm x.npy
-      # if [ -d "production_out" ]
-      # then
-      #   tar -czf production_out.tar.gz production_out
-      #   rm -r production_out
-      # fi
+      if [ -d "production_out" ]
+      then
+        tar -czf production_out.tar.gz production_out
+        rm -r production_out
+      fi
     done
   done
 done

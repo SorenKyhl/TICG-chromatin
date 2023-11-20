@@ -8,6 +8,8 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 import pylib.utils.epilib as epilib
+from data_generation.modify_maxent import simple_histogram
+from plotting.contact_map import plot_max_ent
 from pylib.optimize import get_bonded_simulation_xyz, optimize_config
 from pylib.Pysim import Pysim
 from pylib.utils import default, utils
@@ -17,8 +19,6 @@ from pylib.utils.xyz import (xyz_load, xyz_to_angles, xyz_to_contact_distance,
                              xyz_to_contact_grid, xyz_to_distance)
 from scipy import optimize
 from scipy.stats import norm
-from scripts.contact_map import plot_max_ent
-from scripts.data_generation.modify_maxent import simple_histogram
 from sklearn.metrics import mean_squared_error
 
 

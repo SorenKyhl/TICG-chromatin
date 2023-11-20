@@ -23,9 +23,12 @@ from sequences_to_contact_maps.scripts.utils import calc_dist_strat_corr
 
 
 def meanDist_comparison():
-    datasets = ['dataset_06_29_23', 'dataset_02_04_23']
-    m_list= [512, 1024]
-    labels = ['Mixed', 'Mixed2']
+    datasets = ['dataset_06_29_23', 'dataset_11_15_23', 'dataset_11_16_23_hmec', 'dataset_11_16_23_imr90', 'dataset_11_16_23_k562']
+    labels = ['experiment', 'syn_mixed', 'syn_hmec', 'syn_imr90', 'syn_k562']
+    # datasets = ['dataset_06_29_23', 'dataset_11_08_23',]
+    # labels = ['experiment', 'syn_mixed']
+    m_list= [512]*len(datasets)
+
     data_dir = osp.join('/home/erschultz', datasets[0])
 
     cmap = matplotlib.cm.get_cmap('tab10')
@@ -64,7 +67,7 @@ def meanDist_comparison():
     plt.savefig(osp.join(data_dir, 'meanDist_comparison.png'))
     plt.close()
 
-    fig, ax = plt.subplots()
+
     bin_width = 0.005
     arr_list = arr_list
     all_vals = arr_list[0].copy()
@@ -75,29 +78,30 @@ def meanDist_comparison():
     print(start, end, bin_width)
     bin_positions = np.arange(start - bin_width, end + bin_width, bin_width)
     for arr, label, dataset in zip(arr_list, labels, datasets):
-        _, _, cell_lines = get_samples(dataset, return_cell_lines=True)
-        if cell_lines is not None:
-            print(set(cell_lines))
-            for target_cell_line in sorted(set(cell_lines)):
+        _, _, all_cell_lines = get_samples(dataset, True, return_cell_lines=True)
+        if all_cell_lines is not None:
+            print(set(all_cell_lines))
+            for target_cell_line in sorted(set(all_cell_lines)):
                 print(target_cell_line)
                 cell_line_arr = []
-                for grid_size, cell_line in zip(arr, cell_lines):
+                print(len(arr), len(all_cell_lines))
+                for p_s, cell_line in zip(arr, all_cell_lines):
                     if cell_line == target_cell_line:
-                        cell_line_arr.append(grid_size)
-                print(cell_line_arr[:5], len(cell_line_arr))
-                plt.hist(cell_line_arr, weights = np.ones_like(cell_line_arr) / len(cell_line_arr),
-                        bins = bin_positions, alpha=0.5,
-                        label = target_cell_line)
-
-            plt.legend()
+                        cell_line_arr.append(p_s)
+                if len(cell_line_arr) > 0:
+                    print(cell_line_arr[:5], len(cell_line_arr))
+                    plt.hist(cell_line_arr, weights = np.ones_like(cell_line_arr) / len(cell_line_arr),
+                            bins = bin_positions, alpha=0.5,
+                            label = target_cell_line)
         else:
             print('cell_lines is None')
             plt.hist(arr, weights = np.ones_like(arr) / len(arr),
                     bins = bin_positions, alpha=0.5,
                     label = label)
+    plt.legend()
     plt.xlabel('P(s=1)', fontsize=16)
     plt.tight_layout()
-    plt.savefig(osp.join(data_dir, 'meanDist_p_s.png'))
+    plt.savefig(osp.join(data_dir, 'meanDist_p_s_cell_line.png'))
     plt.close()
 
 
@@ -681,5 +685,5 @@ if __name__ == '__main__':
 
     meanDist_comparison()
     # l_ij_comparison('dataset_09_28_23', 'dataset_02_04_23', 180, 0.008, 5, 1.5)
-    # p_s_comparison('dataset_02_04_23', None, 261, 0.01, 10)
+    # p_s_comparison('dataset_11_16_23_hmec', None, 261, 0.01, 10)
     # scc_comparison('dataset_02_04_23', 392, 8, True)

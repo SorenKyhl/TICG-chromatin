@@ -10,6 +10,7 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats as ss
+from data_generation.modify_maxent import get_samples
 from pylib.utils import epilib
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
@@ -18,10 +19,6 @@ from pylib.utils.similarity_measures import SCC
 from pylib.utils.utils import load_json, triu_to_full
 from scipy.stats import pearsonr
 from sklearn.metrics import mean_squared_error
-
-# from compare_contact import plotDistanceStratifiedPearsonCorrelation
-sys.path.append('/home/erschultz/TICG-chromatin/scripts')
-from data_generation.modify_maxent import get_samples
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (
@@ -688,7 +685,7 @@ if __name__ == '__main__':
 
     if samples is None:
         samples, _ = get_samples(dataset, train = True)
-        samples = samples[1:8]
+        samples = samples
     data_dir = osp.join('/home/erschultz', dataset)
     args = getArgs(data_folder = data_dir, samples = samples)
     args.experimental = True

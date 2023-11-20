@@ -14,7 +14,7 @@ from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
                                       calculate_L, calculate_S)
 from pylib.utils.plotting_utils import plot_matrix
-from pylib.utils.utils import pearson_round, triu_to_full
+from pylib.utils.utils import load_json, pearson_round, triu_to_full
 from scipy.ndimage import gaussian_filter
 from scipy.optimize import curve_fit
 from scipy.stats import (beta, gamma, laplace, multivariate_normal, norm,
@@ -27,7 +27,7 @@ sys.path.append('/home/erschultz/TICG-chromatin')
 from scripts.data_generation.ECDF import Ecdf
 from scripts.data_generation.MultivariateSkewNormal import \
     multivariate_skewnorm
-from scripts.get_params_old import Tester
+from scripts.max_ent_setup.get_params_old import Tester
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (
@@ -45,17 +45,12 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False, filte
         train: True to only return sample from odd chrom (training samples)
     '''
     experimental = False
-    if dataset == 'dataset_11_14_22':
-        samples = range(2201, 2214)
-        experimental = True
-    elif dataset == 'dataset_06_29_23':
+    if dataset == 'dataset_06_29_23':
         samples = range(1,636)
         experimental = True
     elif dataset in {'dataset_01_26_23', 'dataset_02_04_23', 'dataset_02_21_23',
                     'dataset_02_04_23_max_ent'}:
         samples = range(201, 283)
-        # samples = range(284, 293)
-        # samples = range(201, 210)
         experimental = True
     elif dataset == 'dataset_04_05_23':
         samples = range(1001, 1211)
@@ -66,8 +61,6 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False, filte
     elif dataset in {'dataset_12_20_22', 'dataset_02_13_23', 'dataset_02_06_23',
                     'dataset_02_22_23'}:
         samples = [324, 981, 1936, 2834, 3464]
-    elif dataset == 'dataset_11_21_22':
-        samples = [1, 2, 3, 410, 653, 1462, 1801, 2290]
     elif dataset in {'dataset_01_27_23'}:
         samples = range(1, 16)
     elif dataset in {'dataset_04_09_23', 'dataset_04_10_23',}:
@@ -77,15 +70,9 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False, filte
         samples = range(1001, 1286)
     elif dataset == 'dataset_04_07_23':
         samples = range(1021, 1027)
-    elif dataset in {'dataset_08_17_23', 'dataset_09_07_23'}:
+    elif dataset in {'dataset_08_17_23', 'dataset_09_07_23', 'dataset_11_15_23',
+                    'dataset_11_16_23_hmec', 'dataset_11_16_23_imr90'}:
         samples = range(1, 21)
-    elif dataset == 'dataset_08_25_23':
-        samples = list(range(1, 12)) + [981]
-    elif dataset in {'dataset_08_22_23', 'dataset_08_24_23', 'dataset_09_18_23',
-                    'dataset_09_19_23', 'dataset_10_12_23', 'dataset_11_08_23'}:
-        samples = range(1, 11)
-    elif dataset in {'dataset_08_24_23_v2', 'dataset_08_24_23_v3', 'dataset_08_24_23_v4'}:
-        samples = range(1, 16)
     elif dataset == 'dataset_09_28_23':
         samples = list(range(1, 26))
         samples.extend([324, 981, 1936, 2834, 3464])
@@ -96,7 +83,7 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False, filte
     elif dataset == 'dataset_09_28_23_s_100_cutoff_0.01':
         samples = [1191, 1478, 4990, 5612, 3073, 1351, 4128, 2768, 9627, 4127, 1160, 8932, 2929, 7699, 6629]
     else:
-        samples = [1, 2, 3, 4, 5, 324, 981, 1936, 2834, 3464]
+        samples = range(1, 11)
 
     if experimental:
         cell_lines = []; odd_cell_lines = []; even_cell_lines = []
@@ -107,7 +94,9 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False, filte
                 s_dir = '/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/' + s_dir
             result = load_import_log(s_dir)
             chrom = int(result['chrom'])
-            cell_line = result['cell_line'].lower()
+            cell_line = result['cell_line']
+            if cell_line is not None:
+                cell_line = cell_line.lower()
             cell_lines.append(cell_line)
             if cell_line is None:
                 pass
@@ -1246,10 +1235,6 @@ def grid_dist(dataset, plot=True, b=140, phi=None, v=None, ar=1.0, cell_line=Non
                                                         filter_cell_lines = set([cell_line]))
     else:
         samples, experimental, cell_lines = get_samples(dataset, True, return_cell_lines=True)
-    if not experimental:
-        if plot:
-            raise Exception('must be experimental')
-        return
     data_dir = osp.join('/home/erschultz', dataset)
 
     if v is None:
@@ -1267,18 +1252,23 @@ def grid_dist(dataset, plot=True, b=140, phi=None, v=None, ar=1.0, cell_line=Non
     for i, sample in enumerate(samples):
         s_dir = osp.join(data_dir, f'samples/sample{sample}')
         assert osp.exists(s_dir), s_dir
-        if v is None:
-            dir = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}')
+        if experimental:
+            if v is None:
+                dir = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}')
+            else:
+                assert v is not None
+                dir = osp.join(s_dir, f'optimize_grid_b_{b}_v_{v}')
+            if ar != 1:
+                dir += f'_spheroid_{ar}'
+            if not osp.exists(dir) or len(os.listdir(dir)) == 0:
+                print(f'issue with dir: {dir}')
+                continue
+            # get grid_size
+            grid_size_arr[i] = np.loadtxt(osp.join(dir, 'grid.txt'))
         else:
-            assert v is not None
-            dir = osp.join(s_dir, f'optimize_grid_b_{b}_v_{v}')
-        if ar != 1:
-            dir += f'_spheroid_{ar}'
-        if not osp.exists(dir) or len(os.listdir(dir)) == 0:
-            print(f'issue with dir: {dir}')
-            continue
-        # get grid_size
-        grid_size_arr[i] = np.loadtxt(osp.join(dir, 'grid.txt'))
+            config = load_json(osp.join(s_dir, 'config.json'))
+            grid_size_arr[i] = config['grid_size']
+            print(sample, config['grid_size'])
 
     if plot:
         # plot grid distribution
@@ -1391,9 +1381,9 @@ if __name__ == '__main__':
     # for i in range(221, 222):
         # plot_modified_max_ent(i, k = 10)
     # diagonal_dist('dataset_02_04_23', b=261, phi=0.01, k=10)
-    # grid_dist('dataset_02_04_23', b=180, phi=None, v=8, ar=1.5)
-    plaid_dist('dataset_06_29_23', b=180, phi=None, v=8, k=10, ar=1.5, plot=True, eig_norm=True,
-                cell_line='k562')
+    grid_dist('dataset_11_16_23_hmec', b=180, phi=None, v=8, ar=1.5)
+    # plaid_dist('dataset_06_29_23', b=180, phi=None, v=8, k=10, ar=1.5, plot=True, eig_norm=True,
+    #             cell_line='k562')
     # get_read_counts('dataset_04_28_23')
     # seq_dist('dataset_01_26_23', 4, True, True)
     # plot_params_test()

@@ -6,16 +6,14 @@ import shutil
 import sys
 
 import matplotlib.pyplot as plt
+import max_ent
 import numpy as np
+from data_generation.modify_maxent import get_samples
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import calculate_diag_chi_step
 from pylib.utils.plotting_utils import plot_matrix, plot_mean_dist
 from pylib.utils.utils import load_json
 from sklearn.metrics import mean_squared_error
-
-sys.path.append('/home/erschultz/TICG-chromatin')
-import max_ent
-from scripts.data_generation.modify_maxent import get_samples
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import \
@@ -353,6 +351,26 @@ def start_analysis():
         plt.xlabel('Distance', fontsize=16)
         plt.ylabel('Effective Diagonal Parameter', fontsize=16)
         plt.savefig(osp.join(odir, f'diag_chis_start{start}.png'))
+        plt.close()
+
+    for start in starts:
+        if start == 0:
+            max_ent_root = f'{bonded_root}-max_ent10'
+        else:
+            max_ent_root = f'{bonded_root}-max_ent10_start{start}'
+        for p in probabilities:
+            me_dir = osp.join(dir, f'samples_p{p}/sample201', max_ent_root)
+            final = get_final_max_ent_folder(me_dir)
+            config = load_json(osp.join(final, 'config.json'))
+            gs = config['grid_size']
+            chis = np.loadtxt(osp.join(me_dir, 'chis.txt'))
+            plt.plot(chis, label=f'{p}, $\Delta$={int(gs)}')
+
+        plt.ylim(-800, 400)
+        plt.legend(title='Sample', fontsize=14)
+        plt.xlabel('Index', fontsize=16)
+        plt.ylabel('Plaid Chi', fontsize=16)
+        plt.savefig(osp.join(odir, f'plaid_chis_start{start}.png'))
         plt.close()
 
 

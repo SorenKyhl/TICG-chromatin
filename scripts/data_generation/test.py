@@ -501,39 +501,6 @@ def compare_meanDist_S2():
         plt.savefig(osp.join(s_dir, 'meanDist_S_reg.png'))
         plt.close()
 
-
-def compare_p_s_modified():
-    dataset='dataset_02_04_23'
-    data_dir = osp.join('/home/erschultz', dataset)
-    fig, ax = plt.subplots()
-    ax2 = ax.twinx()
-    for sample in range(201, 211):
-        s_dir = osp.join(data_dir, 'samples', f'sample{sample}')
-        y_exp = np.load(osp.join(s_dir, 'y.npy'))
-        meanDist = DiagonalPreprocessing.genomic_distance_statistics(y_exp, 'prob')
-        ax.plot(meanDist, c = 'k')
-
-        b=261; phi=0.01; k=10
-        max_ent_dir = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}-max_ent{k}')
-        for f in ['copy_S_delta']:
-            f_dir = osp.join(max_ent_dir, f)
-            y = np.load(osp.join(f_dir, 'y.npy'))
-            meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
-            ax.plot(meanDist, label = sample)
-
-            S = np.load(osp.join(f_dir, 'S.npy'))
-            meanDist_S = DiagonalPreprocessing.genomic_distance_statistics(S, 'freq')
-            ax2.plot(meanDist_S)
-    ax.set_yscale('log')
-    ax.set_xscale('log')
-    ax.set_xlabel('Genomic Distance (s)')
-    ax.set_ylabel('P(s)')
-    ax.set_ylabel(r'Mean$(S_{|i-j|=s}$ ')
-    ax.legend()
-    plt.tight_layout()
-    plt.savefig(osp.join(data_dir, 'meanDist_modified.png'))
-    plt.close()
-
 def check_GNN_S():
     GNN_ID=484
     dataset='dataset_04_28_23'; b=140; phi=0.03
@@ -711,17 +678,16 @@ def visualize_max_ent_methods():
         plt.close()
 
 if __name__ == '__main__':
-    compare_diag_fits()
+    # compare_diag_fits()
     # compare_p_s_bonded3()
     # compare_d_s_bonded()
     # compare_d_s_bonded2()
     # compare_d_s_max_ent()
     # compare_p_s_exp()
     # compare_meanDist_S2()
-    # compare_cell_lines()
+    compare_cell_lines()
     # visualize_max_ent()
     # visualize_max_ent_methods()
-    # compare_p_s_modified()
     # compare_xyz()
     # check_GNN_S()
     # grid_sizes()

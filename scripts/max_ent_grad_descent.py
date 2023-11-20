@@ -9,14 +9,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import optimize_grid
 import pylib.analysis as analysis
+from data_generation.modify_maxent import get_samples
 from max_ent import setup_config
+from plotting.contact_map import getArgs, plot_all
 from pylib.Maxent import Maxent
 from pylib.Pysim import Pysim
 from pylib.utils import default, epilib, utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import *
-from scripts.contact_map import getArgs, plot_all
-from scripts.data_generation.modify_maxent import get_samples
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import load_import_log

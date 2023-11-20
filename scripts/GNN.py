@@ -12,6 +12,7 @@ import numpy as np
 import optimize_grid
 import pylib.analysis as analysis
 import torch
+from data_generation.modify_maxent import get_samples
 from max_ent import setup_config
 from pylib.Maxent import Maxent
 from pylib.Pysim import Pysim
@@ -19,8 +20,6 @@ from pylib.utils import default, epilib, utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import calculate_D
 from pylib.utils.goals import get_goals
-from scripts.data_generation.modify_maxent import get_samples
-from scripts.get_params import GetEnergy
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.result_summary_plots import \
@@ -145,7 +144,7 @@ def fit(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     config['nbeads'] = m
     config["smatrix_filename"] = "smatrix.txt"
 
-    gnn_root = f'{root}-GNN{GNN_ID}_test'
+    gnn_root = f'{root}-GNN{GNN_ID}'
     if osp.exists(gnn_root):
         # shutil.rmtree(gnn_root)
         print('WARNING: root exists')
@@ -159,15 +158,18 @@ def fit(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     ofile = osp.join(gnn_root, 'S.npy')
     args_str = f'--m {m} --gnn_model_path {model_path} --sample_path {dir} --bonded_path {root} --sub_dir {sub_dir} --ofile {ofile}'
     # using subprocess gaurantees that pytorch can't keep an GPU vram cached
-    sp.run(f"python3 /home/erschultz/TICG-chromatin/scripts/get_params.py {args_str} > {log_file}",
+    sp.run(f"python3 /home/erschultz/TICG-chromatin/scripts/max_ent_setup/get_params.py {args_str} > {log_file}",
             shell=True)
+    if not osp.exists(ofile):
+        print(f'{ofile} does not exist, SKIPPING')
+        return
     S = np.load(ofile)
 
     stdout = sys.stdout
     with open(osp.join(gnn_root, 'log.log'), 'w') as sys.stdout:
         sim = Pysim(gnn_root, config, None, y, randomize_seed = True,
                     mkdir = False, smatrix = S)
-        t = sim.run_eq(10000, 3000, 1)
+        t = sim.run_eq(10000, 300000, 1)
         print(f'Simulation took {np.round(t, 2)} seconds')
 
         analysis.main_no_maxent(dir=sim.root)
@@ -206,7 +208,6 @@ def check(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     else:
         print(f"{gnn_root} not started")
 
-
 def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     mode = 'grid'
     root = f"optimize_{mode}"
@@ -232,19 +233,19 @@ def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
 
 def main():
     samples=None
-    #dataset='dataset_02_04_23';
+    dataset='dataset_02_04_23';
     # dataset = 'Su2020'; samples=[1013, 1004]
-    dataset = 'dataset_06_29_23'
+    # dataset = 'dataset_06_29_23'
     # dataset = 'dataset_09_28_23';
     # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     mapping = []
 
     if samples is None:
-        samples, _ = get_samples(dataset, train=True)
-        samples = samples[:1]
+        samples, _ = get_samples(dataset, test=True)
+        samples = samples[:10]
     print(len(samples))
 
-    GNN_IDs = [600]; b=180; phi=None; v=8; ar=1.5
+    GNN_IDs = [600, 605, 606, 607, 608, 609, 610]; b=180; phi=None; v=8; ar=1.5
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
@@ -253,7 +254,7 @@ def main():
     print(len(mapping))
     # print(mapping)
 
-    with mp.Pool(1) as p:
+    with mp.Pool(15) as p:
         # p.starmap(cleanup, mapping)
         p.starmap(fit, mapping)
 

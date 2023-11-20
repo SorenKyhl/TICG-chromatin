@@ -8,11 +8,11 @@ import numpy as np
 import optimize_grid
 import pylib.analysis as analysis
 import scipy
+from get_params import GetSeq
 from pylib.Pysim import Pysim
 from pylib.utils import default, epilib, utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import *
-from scripts.get_params import GetSeq
 
 
 def smatrix_mode(config):

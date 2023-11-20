@@ -180,7 +180,7 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True, cap=100, m=512):
     else:
         ref_meanDist = None
 
-    samples, experimental = get_samples(dataset)
+    samples, experimental = get_samples(dataset, train=True)
     samples = np.array(samples)[:cap] # cap at 100
     print('samples:', samples)
 
@@ -325,7 +325,7 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True, cap=100, m=512):
                         S_dag_arr, k_means_rab, samples,
                         BLUE_RED_CMAP, vmin, vmax,
                         osp.join(data_dir, 'S_dag_ordered.png'))
-        
+
         # plot L_ij ordered by rab
         fig, ax = plt.subplots(rows, cols)
         fig.set_figheight(6*2)
@@ -344,7 +344,7 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True, cap=100, m=512):
                                         bins = bins,
                                         alpha = 0.5, label = 'Simulation')
             ax[row][col].set_title(f'Sample {sample}\nPlaid Score = {np.round(val, 1)}', fontsize = 16)
-        
+
             col += 1
             if col == cols:
                 col = 0
@@ -431,7 +431,7 @@ def molar_contact_ratio(dataset, model_ID=None, plot=True, cap=100, m=512):
 
     np.save(meanDist_file, meanDist_list)
 
-    return meanDist_list
+    return np.array(meanDist_list)
 
 if __name__ == '__main__':
     molar_contact_ratio('dataset_06_29_23', None, plot=True)
