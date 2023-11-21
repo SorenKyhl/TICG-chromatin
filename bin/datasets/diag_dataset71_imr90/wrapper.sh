@@ -20,7 +20,7 @@ end=1000
 for i in {1..5}
 do
   echo $i $start $end
-  sbatch ~/TICG-chromatin/bin/datasets/bash_files/diag_dataset${i}.sh $sourceFile $start $end 128 "68_"
+  sbatch ~/TICG-chromatin/bin/datasets/bash_files/diag_dataset${i}.sh $sourceFile $start $end 128 "71_"
   start=$(( $start + 1000 ))
   end=$(( $end + 1000 ))
 done
