@@ -17,9 +17,7 @@ from pylib.Pysim import Pysim
 from pylib.utils import default, epilib, utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import *
-
-sys.path.append('/home/erschultz')
-from sequences_to_contact_maps.scripts.load_utils import load_import_log
+from pylib.utils.utils import load_import_log
 
 
 def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,

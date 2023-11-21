@@ -16,7 +16,7 @@ from sklearn.neighbors import KernelDensity
 sys.path.insert(0, '/home/erschultz/TICG-chromatin')
 from scripts.data_generation.ECDF import Ecdf
 from scripts.data_generation.modify_maxent import get_samples
-from scripts.get_params_old import GetSeq
+from scripts.max_ent_setup.get_params_old import GetSeq
 
 sys.path.insert(0, '/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (load_import_log,

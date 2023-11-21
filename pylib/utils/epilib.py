@@ -15,7 +15,6 @@ import seaborn as sns
 from numba import njit
 from pylib.utils import hic_utils, utils
 from pylib.utils.goals import *
-from pylib.utils.hic_utils import get_diagonal
 from pylib.utils.plotting_utils import plot_matrix
 from pylib.utils.similarity_measures import *
 from sklearn.decomposition import PCA, KernelPCA

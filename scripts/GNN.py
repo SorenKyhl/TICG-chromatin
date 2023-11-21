@@ -20,11 +20,11 @@ from pylib.utils import default, epilib, utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import calculate_D
 from pylib.utils.goals import get_goals
+from pylib.utils.utils import load_import_log
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.result_summary_plots import \
     predict_chi_in_psi_basis
-from sequences_to_contact_maps.scripts.load_utils import load_import_log
 
 
 def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
@@ -233,7 +233,8 @@ def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
 
 def main():
     samples=None
-    dataset='dataset_02_04_23';
+    dataset='dataset_interp_test'; samples=[1]
+    # dataset='dataset_02_04_23';
     # dataset = 'Su2020'; samples=[1013, 1004]
     # dataset = 'dataset_06_29_23'
     # dataset = 'dataset_09_28_23';
@@ -241,20 +242,20 @@ def main():
     mapping = []
 
     if samples is None:
-        samples, _ = get_samples(dataset, test=True)
-        samples = samples[:10]
+        samples, _ = get_samples(dataset, train=True)
+        samples = samples[:1]
     print(len(samples))
 
-    GNN_IDs = [600, 605, 606, 607, 608, 609, 610]; b=180; phi=None; v=8; ar=1.5
+    GNN_IDs = [579]; b=180; phi=None; v=8; ar=1.5
     for GNN_ID in GNN_IDs:
         for i in samples:
-            mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
+            mapping.append((dataset, i, GNN_ID, f'samples_pool', b, phi, v, ar))
 
     print(samples)
     print(len(mapping))
     # print(mapping)
 
-    with mp.Pool(15) as p:
+    with mp.Pool(1) as p:
         # p.starmap(cleanup, mapping)
         p.starmap(fit, mapping)
 

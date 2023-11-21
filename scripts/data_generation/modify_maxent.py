@@ -48,6 +48,9 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False, filte
     if dataset == 'dataset_06_29_23':
         samples = range(1,636)
         experimental = True
+    elif dataset == 'dataset_11_20_23':
+        samples = range(1, 715)
+        experimental = True
     elif dataset in {'dataset_01_26_23', 'dataset_02_04_23', 'dataset_02_21_23',
                     'dataset_02_04_23_max_ent'}:
         samples = range(201, 283)
@@ -139,7 +142,7 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False, filte
 
 
 def modify_plaid_chis(dataset, b, phi, v, k, ar):
-    samples, _ = get_samples(dataset, train=True)
+    samples, _ = get_samples(dataset, train=True, filter_cell_lines=['imr90'])
     for sample in samples:
         s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{sample}')
         print(sample)
@@ -180,10 +183,10 @@ def modify_plaid_chis(dataset, b, phi, v, k, ar):
             assert np.isreal(val)
             chis_eig[i,i] = np.real(val)
 
-        np.save(osp.join(max_ent_dir, 'resources/x_eig.npy'), x_eig)
-        plot_seq_continuous(x_eig, ofile = osp.join(max_ent_dir, 'resources/x_eig.png'))
-        np.save(osp.join(max_ent_dir, 'chis_eig.npy'), chis_eig)
-        plot_matrix(chis_eig, osp.join(max_ent_dir, 'chis_eig.png'), cmap = 'blue-red')
+        # np.save(osp.join(max_ent_dir, 'resources/x_eig.npy'), x_eig)
+        # plot_seq_continuous(x_eig, ofile = osp.join(max_ent_dir, 'resources/x_eig.png'))
+        # np.save(osp.join(max_ent_dir, 'chis_eig.npy'), chis_eig)
+        # plot_matrix(chis_eig, osp.join(max_ent_dir, 'chis_eig.png'), cmap = 'blue-red')
         L_eig = x_eig @ chis_eig @ x_eig.T
         assert np.allclose(L, L_eig), L - L_eig
 
@@ -222,7 +225,7 @@ def modify_maxent_diag_chi(dataset, b, phi, v, k, ar, edit=True, plot=True):
         k: number of marks
         edit: True to modify maxent result so that is is flat at start
     '''
-    samples, _ = get_samples(dataset, train=True)
+    samples, _ = get_samples(dataset, train=True, filter_cell_lines=['imr90'])
     for sample in samples:
         print(f'sample {sample}')
         s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{sample}')
@@ -257,15 +260,15 @@ def modify_maxent_diag_chi(dataset, b, phi, v, k, ar, edit=True, plot=True):
         S = load_max_ent_S(max_ent_dir)
         meanDist_S = DiagonalPreprocessing.genomic_distance_statistics(S, 'freq')
 
-        curves = [Curves.poly6_curve, Curves.poly8_curve]
-        colors = ['b', 'r']
+        curves = [Curves.poly6_curve, Curves.poly8_curve, Curves.poly12_curve]
+        colors = ['b', 'r', 'g']
         orders = [6, 8]
         X = x[:m]
         if plot:
             plt.plot(X, meanDist_S, ls='-', c='k', label=r'$\delta^{ME(i)}$')
         for curve, color, order in zip(curves, colors, orders):
             init = [1]*(order+1)
-            for start in [5]:
+            for start in [1, 2, 5]:
                 # poly_fit = curve_fit_helper(curve, x[:m], meanDist_S,
                 #                                 f'poly{order}_meanDist_S', odir,
                 #                                 init, start = start)
@@ -277,7 +280,7 @@ def modify_maxent_diag_chi(dataset, b, phi, v, k, ar, edit=True, plot=True):
                     # plt.plot(X[2:], poly_fit[2:], ls='--', c=color,
                     #         label=r'$\hat{\delta}^{ME(i)}$' + f' ({order}th order linear)')
                     plt.plot(X, poly_log_fit, ls=':', c=color,
-                            label=r'$\hat{\delta}^{ME(i)}$' + f' ({order}th order start={start})')
+                            label=r'$\hat{\delta}^{ME(i)}$' + f' (o={order}th, s={start})')
 
         if plot:
             plt.ylim(np.min(meanDist_S), np.max(meanDist_S))
@@ -1019,7 +1022,6 @@ def plaid_dist(dataset, b, phi, v, k, ar, plot=True, eig_norm=False, cell_line=N
         legend_fontsize=16
         tick_fontsize=22
         letter_fontsize=26
-        x_list = seq_dist(dataset, k, plot, eig_norm)
         # plot plaid chi parameters
         if not eig_norm:
             simple_histogram(chi_ij_list, r'$\chi_{ij}$', odir,
@@ -1245,6 +1247,8 @@ def grid_dist(dataset, plot=True, b=140, phi=None, v=None, ar=1.0, cell_line=Non
     if ar != 1.0:
         odir += f'_spheroid_{ar}'
     odir += '_distributions'
+    if cell_line is not None:
+        odir += f'_{cell_line}'
     if not osp.exists(odir):
         os.mkdir(odir, mode = 0o755)
 
@@ -1375,15 +1379,15 @@ def get_read_counts(dataset):
 
 
 if __name__ == '__main__':
-    # modify_plaid_chis('dataset_06_29_23', b=180, phi=None, v=8, k=10, ar=1.5)
-    # modify_maxent_diag_chi('dataset_06_29_23', b=180, phi=None, v=8, k=10, ar=1.5,
-    #                         edit=False, plot=False)
+    # modify_plaid_chis('dataset_11_20_23', b=180, phi=None, v=8, k=10, ar=1.5)
+    modify_maxent_diag_chi('dataset_11_20_23', b=180, phi=None, v=8, k=10, ar=1.5,
+                            edit=False, plot=True)
     # for i in range(221, 222):
         # plot_modified_max_ent(i, k = 10)
     # diagonal_dist('dataset_02_04_23', b=261, phi=0.01, k=10)
-    grid_dist('dataset_11_16_23_hmec', b=180, phi=None, v=8, ar=1.5)
-    # plaid_dist('dataset_06_29_23', b=180, phi=None, v=8, k=10, ar=1.5, plot=True, eig_norm=True,
-    #             cell_line='k562')
+    # grid_dist('dataset_11_20_23', b=180, phi=None, v=8, ar=1.5, cell_line='hmec')
+    # plaid_dist('dataset_11_20_23', b=180, phi=None, v=8, k=10, ar=1.5, plot=True, eig_norm=True,
+    #             cell_line='imr90')
     # get_read_counts('dataset_04_28_23')
     # seq_dist('dataset_01_26_23', 4, True, True)
     # plot_params_test()

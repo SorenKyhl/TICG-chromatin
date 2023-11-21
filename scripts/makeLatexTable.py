@@ -674,7 +674,7 @@ def main(args=None):
         # boxplot(data, osp.join(odir, f'boxplot_{defn}_convergence.png'))
 
 if __name__ == '__main__':
-    samples = None
+    samples = None; sample = None
     # dataset = 'dataset_02_04_23'
     # dataset='dataset_09_28_23_s_100_cutoff_0.01'
     # dataset='dataset_09_28_23_s_10_cutoff_0.08'
@@ -684,10 +684,13 @@ if __name__ == '__main__':
     # dataset='Su2020'; samples = [1013]
 
     if samples is None:
-        samples, _ = get_samples(dataset, train = True)
-        samples = samples
+        samples, _ = get_samples(dataset, train = True, filter_cell_lines=['hmec'])
+        samples = samples[:15]
+    if len(samples) == 1:
+        sample = samples[0]
+        samples = None
     data_dir = osp.join('/home/erschultz', dataset)
-    args = getArgs(data_folder = data_dir, samples = samples)
+    args = getArgs(data_folder = data_dir, sample=sample, samples = samples)
     args.experimental = True
     args.verbose = True
     args.convergence_definition = 'normal'
@@ -704,7 +707,8 @@ if __name__ == '__main__':
     # args.gnn_id = [496, 541, 548, 549, 550, 551, 552, 553, 555, 556, 558, 560, 561, 562, 564, 565, 567, 568, 569, 570, 571, 572, 573, 574, 575, 576, 577, 578, 579, 580]
     # args.gnn_id = [569, 570, 571, 572, 573, 575, 575, 576, 577, 578, 579, 580, 581, 582, 583, 584, 585, 586, 587, 588, 589]
     # args.gnn_id = [434, 578, 579, 450, 451]
-    args.gnn_id = [600]
+    args.gnn_id = [600, 605, 606, 607, 608, 609, 610]
+    # args.gnn_id = [579, 600]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

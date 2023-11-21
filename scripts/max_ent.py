@@ -16,9 +16,7 @@ from pylib.Pysim import Pysim
 from pylib.utils import default, epilib, utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import *
-
-sys.path.append('/home/erschultz')
-from sequences_to_contact_maps.scripts.load_utils import load_import_log
+from pylib.utils.utils import load_import_log
 
 
 def run(dir, config, x=None, S=None):
@@ -117,7 +115,6 @@ def check(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
             print(f'{root}: complete')
     else:
         print(f'{root}: not started')
-
 
 
 def post_analysis(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
@@ -262,7 +259,7 @@ def setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
     config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
 
     # config['diag_start'] = 10
-    root = osp.join(dir, f'{root}-max_ent{k}_soren')
+    root = osp.join(dir, f'{root}-max_ent{k}')
     if osp.exists(root):
         # shutil.rmtree(root)
         if verbose:
@@ -281,8 +278,8 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
     os.mkdir(root, mode=0o755)
 
     # get sequences
-    # seqs = epilib.get_pcs(epilib.get_oe(y), k, normalize = True)
-    seqs = epilib.get_sequences(y, k, randomized=True)
+    seqs = epilib.get_pcs(epilib.get_oe(y), k, normalize = True)
+    # seqs = epilib.get_sequences(y, k, randomized=True)
 
     params = default.params
     goals = epilib.get_goals(y, seqs, config)
@@ -324,7 +321,7 @@ def main():
     samples = None
     # dataset = 'dataset_02_04_23'
     # dataset = 'Su2020'; samples = [1013, 1004]
-    dataset = 'dataset_06_29_23'
+    dataset = 'dataset_11_20_23'
     # samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     # dataset='dataset_HCT116_RAD21_KO'; samples=range(1,9)
     # dataset = 'dataset_08_25_23'; samples=[981]
@@ -332,7 +329,7 @@ def main():
     # dataset = 'timing_analysis/512'; samples = list(range(1, 16))
 
     if samples is None:
-        samples, _ = get_samples(dataset, train=True)
+        samples, _ = get_samples(dataset, filter_cell_lines=['gm12878'])
         samples = samples
         print(samples)
 
@@ -345,10 +342,10 @@ def main():
                         'gaussian', k, contacts_distance, k_angle, theta_0))
     print('len =', len(mapping))
 
-    with mp.Pool(1) as p:
-        # p.starmap(setup_config, mapping)
+    with mp.Pool(15) as p:
+        p.starmap(setup_config, mapping)
         # p.starmap(fit, mapping)
-        p.starmap(check, mapping)
+        # p.starmap(check, mapping)
         # p.starmap(post_analysis, mapping)
         # p.starmap(cleanup, mapping)
 
