@@ -145,8 +145,12 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False, filte
         return samples, experimental
 
 
-def modify_plaid_chis(dataset, b, phi, v, k, ar):
-    samples, _ = get_samples(dataset, train=True, filter_cell_lines=['imr90'])
+def modify_plaid_chis(dataset, b, phi, v, k, ar, cell_line=None):
+    if cell_line is None:
+        samples, _ = get_samples(dataset, train=True)
+    else:
+        samples, _ = get_samples(dataset, train=True, filter_cell_lines=[cell_line])
+
     for sample in samples:
         s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{sample}')
         print(sample)
@@ -223,13 +227,16 @@ def modify_plaid_chis(dataset, b, phi, v, k, ar):
         assert np.allclose(L, L_eig), L - L_eig
 
 
-def modify_maxent_diag_chi(dataset, b, phi, v, k, ar, edit=True, plot=True):
+def modify_maxent_diag_chi(dataset, b, phi, v, k, ar, edit=True, plot=True, cell_line=None):
     '''
     Inputs:
         k: number of marks
         edit: True to modify maxent result so that is is flat at start
     '''
-    samples, _ = get_samples(dataset, train=True, filter_cell_lines=['imr90'])
+    if cell_line is None:
+        samples, _ = get_samples(dataset, train=True)
+    else:
+        samples, _ = get_samples(dataset, train=True, filter_cell_lines=[cell_line])
     for sample in samples:
         print(f'sample {sample}')
         s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{sample}')
@@ -1383,15 +1390,15 @@ def get_read_counts(dataset):
 
 
 if __name__ == '__main__':
-    # modify_plaid_chis('dataset_11_20_23', b=180, phi=None, v=8, k=10, ar=1.5)
+    modify_plaid_chis('dataset_11_20_23', b=180, phi=None, v=8, k=10, ar=1.5, cell_line='hmec')
     modify_maxent_diag_chi('dataset_11_20_23', b=180, phi=None, v=8, k=10, ar=1.5,
-                            edit=False, plot=True)
+                            edit=False, plot=True, cell_line='hmec')
     # for i in range(221, 222):
         # plot_modified_max_ent(i, k = 10)
     # diagonal_dist('dataset_02_04_23', b=261, phi=0.01, k=10)
     # grid_dist('dataset_11_20_23', b=180, phi=None, v=8, ar=1.5, cell_line='hmec')
     # plaid_dist('dataset_11_20_23', b=180, phi=None, v=8, k=10, ar=1.5, plot=True, eig_norm=True,
-    #             cell_line='imr90')
+    #             cell_line='hmec')
     # get_read_counts('dataset_04_28_23')
     # seq_dist('dataset_01_26_23', 4, True, True)
     # plot_params_test()

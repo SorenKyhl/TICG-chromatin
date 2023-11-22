@@ -136,7 +136,10 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, v
                 verbose=True):
     if verbose:
         print(sample)
-    dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
+    data_dir = f'/home/erschultz/{dataset}'
+    if not osp.exists(data_dir):
+        data_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/', data_dir[1:])
+    dir = osp.join(data_dir, f'{samples}/sample{sample}')
 
     bonded_config = default.bonded_config.copy()
     bonded_config['bond_length'] = bl
@@ -331,7 +334,7 @@ def main():
     # dataset = 'timing_analysis/512'; samples = list(range(1, 16))
 
     if samples is None:
-        samples, _ = get_samples(dataset, train=False, test=False)
+        samples, _ = get_samples(dataset, train=True, filter_cell_lines='hmec')
         samples = samples
         print(samples)
 
@@ -344,10 +347,10 @@ def main():
                         'gaussian', k, contacts_distance, k_angle, theta_0))
     print('len =', len(mapping))
 
-    with mp.Pool(15) as p:
-        p.starmap(setup_config, mapping)
+    with mp.Pool(1) as p:
+        # p.starmap(setup_config, mapping)
         # p.starmap(fit, mapping)
-        # p.starmap(check, mapping)
+        p.starmap(check, mapping)
         # p.starmap(post_analysis, mapping)
         # p.starmap(cleanup, mapping)
 

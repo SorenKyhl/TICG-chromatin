@@ -9,7 +9,6 @@ import sys
 from time import sleep
 
 import numpy as np
-import optimize_grid
 import pylib.analysis as analysis
 import torch
 from data_generation.modify_maxent import get_samples
@@ -127,7 +126,10 @@ def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
 def fit(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     print(sample)
     mode = 'grid'
-    dir = f'/home/erschultz/{dataset}/{sub_dir}/sample{sample}'
+    data_dir = f'/home/erschultz/{dataset}'
+    if not osp.exists(data_dir):
+        data_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/', data_dir[1:])
+    dir = osp.join(data_dir, f'{sub_dir}/sample{sample}')
     y = np.load(osp.join(dir, 'y.npy')).astype(np.float64)
     y /= np.mean(np.diagonal(y))
     np.fill_diagonal(y, 1)
@@ -185,7 +187,10 @@ def check(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
         root = f"{root}_b_{b}_v_{v}"
     if ar != 1:
         root += f"_spheroid_{ar}"
-    dir = f'/home/erschultz/{dataset}/{sub_dir}/sample{sample}'
+    data_dir = f'/home/erschultz/{dataset}'
+    if not osp.exists(data_dir):
+        data_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/', data_dir[1:])
+    dir = osp.join(data_dir, f'{sub_dir}/sample{sample}')
     root = osp.join(dir, root)
     gnn_root = f'{root}-GNN{GNN_ID}'
     if osp.exists(gnn_root):
@@ -236,8 +241,8 @@ def main():
     # dataset='dataset_interp_test'; samples=[1]
     # dataset='dataset_02_04_23';
     # dataset = 'Su2020'; samples=[1013, 1004]
-    # dataset = 'dataset_06_29_23'
-    dataset = 'dataset_11_20_23';
+    dataset = 'dataset_06_29_23'; samples=[81]
+    # dataset = 'dataset_11_20_23';
     # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     mapping = []
 
@@ -246,7 +251,7 @@ def main():
         samples = samples[:10]
     print(len(samples))
 
-    GNN_IDs = [600]; b=180; phi=None; v=8; ar=1.5
+    GNN_IDs = [434]; b=140; phi=0.03; v=None; ar=1.0
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
@@ -255,7 +260,7 @@ def main():
     print(len(mapping))
     # print(mapping)
 
-    with mp.Pool(10) as p:
+    with mp.Pool(1) as p:
         # p.starmap(cleanup, mapping)
         p.starmap(fit, mapping)
 

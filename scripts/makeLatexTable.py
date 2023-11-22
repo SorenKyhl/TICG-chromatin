@@ -10,7 +10,7 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats as ss
-from .data_generation.modify_maxent import get_samples
+from data_generation.modify_maxent import get_samples
 from pylib.utils import epilib
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
@@ -89,7 +89,9 @@ def load_data(args):
         converged_mask: mask for list of replicate arrays, 1 if ALL max ent runs converged
     '''
     print(f'\nLOADING DATA with {args.convergence_definition} convergence')
-    data = defaultdict(lambda: defaultdict(lambda : defaultdict(list))) # k, method, metric : list of values acros samples
+    data = defaultdict(lambda: defaultdict(lambda : defaultdict(list)))
+    # k, method, metric : list of values acros samples
+
     converged_mask = np.ones(len(args.samples)).astype(bool)
 
     bad_methods = ['angle', '_old', '0.006', '0.06', 'bound', 'init_diag', "_repeat"]
@@ -115,8 +117,8 @@ def load_data(args):
         ground_truth_y, ground_truth_ydiag = load_Y(sample_folder)
         ground_truth_meanDist = DiagonalPreprocessing.genomic_distance_statistics(ground_truth_y, 'prob')
         ground_truth_pcs = epilib.get_pcs(ground_truth_ydiag, 12, align = True).T
-        ground_truth_pcs_soren = epilib.get_sequences(ground_truth_y, 5,
-                                                    randomized=True).T
+        # ground_truth_pcs_soren = epilib.get_sequences(ground_truth_y, 5,
+        #                                             randomized=True).T
 
         for fname in os.listdir(sample_folder):
             temp_dict = defaultdict(lambda: np.NaN)
@@ -283,9 +285,11 @@ def load_data(args):
                 # temp_dict['avg_dist_pearson'] = avg_diag
 
                 # rmse-diag
-                rmse_diag = mean_squared_error(ground_truth_meanDist, yhat_meanDist, squared = False)
+                rmse_diag = mean_squared_error(ground_truth_meanDist, yhat_meanDist,
+                                                squared = False)
                 temp_dict['rmse-diag'] = rmse_diag
-                rmse_diag10 = mean_squared_error(ground_truth_meanDist[:10], yhat_meanDist[:10], squared = False)
+                rmse_diag10 = mean_squared_error(ground_truth_meanDist[:10],
+                                                yhat_meanDist[:10], squared = False)
                 temp_dict['rmse-diag10'] = rmse_diag10
             else:
                 print(f'converged path is None: {method}')
@@ -313,11 +317,11 @@ def load_data(args):
                 assert pearson_pc_1 > 0
                 temp_dict['pearson_pc_1'] = pearson_pc_1
 
-                pcs_soren = epilib.get_sequences(yhat, 5, randomized=True).T
-                pearson_pc_1_soren, _ = pearsonr(pcs_soren[0], ground_truth_pcs_soren[0])
-                pearson_pc_1_soren *= np.sign(pearson_pc_1_soren) # ensure positive pearson
-                assert pearson_pc_1_soren > 0
-                temp_dict['pearson_pc_1_soren'] = pearson_pc_1_soren
+                # pcs_soren = epilib.get_sequences(yhat, 5, randomized=True).T
+                # pearson_pc_1_soren, _ = pearsonr(pcs_soren[0], ground_truth_pcs_soren[0])
+                # pearson_pc_1_soren *= np.sign(pearson_pc_1_soren) # ensure positive pearson
+                # assert pearson_pc_1_soren > 0
+                # temp_dict['pearson_pc_1_soren'] = pearson_pc_1_soren
 
 
             # append temp_dict to data
@@ -365,7 +369,7 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
                     'total_time':'Total Time', 'converged_it':'Converged It.',
                     'converged_time':'Converged Time', 'prcnt_converged': '\% Converged'}
     if small:
-        metrics = ['scc_var', 'rmse-diag', 'pearson_pc_1', 'pearson_pc_1_soren', 'converged_time']
+        metrics = ['scc_var', 'rmse-diag', 'pearson_pc_1', 'converged_time']
     else:
         metrics = ['rmse-y', 'rmse-ydiag', 'converged_time', 'converged_it', 'prcnt_converged']
 
@@ -688,14 +692,14 @@ def main(args=None):
 if __name__ == '__main__':
     samples = None; sample = None
     # dataset = 'dataset_02_04_23'
-    # dataset='dataset_11_20_23'
-    dataset = 'dataset_06_29_23'
+    dataset='dataset_11_20_23'
+    # dataset = 'dataset_06_29_23'
     # samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     # dataset='Su2020'; samples = [1013]
 
     if samples is None:
-        samples, _ = get_samples(dataset, train = True)
-        samples = samples[:20]
+        samples, _ = get_samples(dataset, train = True, filter_cell_lines=['gm12878'])
+        samples = samples[:10]
     if len(samples) == 1:
         sample = samples[0]
         samples = None
@@ -712,7 +716,7 @@ if __name__ == '__main__':
     # args.gnn_id=[490, 507, 511]
     # args.gnn_id = [434, 578, 579, 450, 451]
     # args.gnn_id = [600, 605, 606, 607, 608, 609, 610]
-    args.gnn_id = [579, 600]
+    args.gnn_id = [579, 600, 611]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))
