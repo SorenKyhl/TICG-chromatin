@@ -27,8 +27,8 @@ from pylib.utils.utils import load_json, pearson_round, triu_to_full
 from pylib.utils.xyz import xyz_load, xyz_to_distance
 from scipy.ndimage import uniform_filter
 from scripts.data_generation.modify_maxent import get_samples
-from scripts.get_params import GetEnergy
-from scripts.makeLatexTable_new import getArgs, load_data
+from scripts.max_ent_setup.get_params import GetEnergy
+from scripts.makeLatexTable import getArgs, load_data
 from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
 
@@ -650,7 +650,9 @@ def make_small(dataset):
         if not osp.exists(s_odir_grid):
             os.mkdir(s_odir_grid)
         for f in ['y.npy', 'grid.txt']:
-            shutil.copyfile(osp.join(s_dir_grid, f), osp.join(s_odir_grid, f))
+            source_file = osp.join(s_dir_grid, f)
+            if osp.exists(source_file):
+                shutil.copyfile(source_file, osp.join(s_odir_grid, f))
 
 def test_convergence(dataset, mode='loss'):
     dir = f'/home/erschultz/{dataset}/samples'
@@ -1047,8 +1049,8 @@ def distance_cutoff_diag_chis():
 
 
 if __name__ == '__main__':
-    # make_small('dataset_06_29_23')
-    distance_cutoff_diag_chis()
+    make_small('dataset_11_20_23')
+    # distance_cutoff_diag_chis()
     # test_time_contact_distance()
     # compare_scc()
     # check_dataset('dataset_10_12_23')

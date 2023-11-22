@@ -275,6 +275,8 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
     root, config, y = setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                                 aspect_ratio, bond_type, k, contacts_distance,
                                 k_angle, theta_0)
+    if osp.exists(root):
+        return
     os.mkdir(root, mode=0o755)
 
     # get sequences
@@ -329,7 +331,7 @@ def main():
     # dataset = 'timing_analysis/512'; samples = list(range(1, 16))
 
     if samples is None:
-        samples, _ = get_samples(dataset, filter_cell_lines=['gm12878'])
+        samples, _ = get_samples(dataset, train=False, test=False)
         samples = samples
         print(samples)
 

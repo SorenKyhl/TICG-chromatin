@@ -10,7 +10,7 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats as ss
-from data_generation.modify_maxent import get_samples
+from .data_generation.modify_maxent import get_samples
 from pylib.utils import epilib
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
@@ -115,6 +115,8 @@ def load_data(args):
         ground_truth_y, ground_truth_ydiag = load_Y(sample_folder)
         ground_truth_meanDist = DiagonalPreprocessing.genomic_distance_statistics(ground_truth_y, 'prob')
         ground_truth_pcs = epilib.get_pcs(ground_truth_ydiag, 12, align = True).T
+        ground_truth_pcs_soren = epilib.get_sequences(ground_truth_y, 5,
+                                                    randomized=True).T
 
         for fname in os.listdir(sample_folder):
             temp_dict = defaultdict(lambda: np.NaN)
@@ -295,6 +297,7 @@ def load_data(args):
 
             rmse_y = None
             pearson_pc_1 = None
+            pearson_pc_1_soren = None
             if yhat is not None:
                 # normalize yhat
                 yhat = yhat.astype(np.float64) / np.mean(np.diagonal(yhat))
@@ -310,6 +313,12 @@ def load_data(args):
                 assert pearson_pc_1 > 0
                 temp_dict['pearson_pc_1'] = pearson_pc_1
 
+                pcs_soren = epilib.get_sequences(yhat, 5, randomized=True).T
+                pearson_pc_1_soren, _ = pearsonr(pcs_soren[0], ground_truth_pcs_soren[0])
+                pearson_pc_1_soren *= np.sign(pearson_pc_1_soren) # ensure positive pearson
+                assert pearson_pc_1_soren > 0
+                temp_dict['pearson_pc_1_soren'] = pearson_pc_1_soren
+
 
             # append temp_dict to data
             data[k][method]['overall_pearson'].append(temp_dict['overall_pearson'])
@@ -320,6 +329,7 @@ def load_data(args):
             data[k][method]['rmse-y'].append(temp_dict['rmse-y'])
             data[k][method]['rmse-ydiag'].append(temp_dict['rmse-ydiag'])
             data[k][method]['pearson_pc_1'].append(temp_dict['pearson_pc_1'])
+            data[k][method]['pearson_pc_1_soren'].append(temp_dict['pearson_pc_1_soren'])
             data[k][method]['rmse-diag'].append(temp_dict['rmse-diag'])
             data[k][method]['rmse-diag10'].append(temp_dict['rmse-diag10'])
             data[k][method]['converged_time'].append(temp_dict['converged_time'])
@@ -349,13 +359,13 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
 
     metric_labels = {'scc':'SCC', 'scc_var':'SCC var', None: '',
             'rmse-S':'RMSE-Energy', 'rmse-y':'RMSE-Y', 'rmse-ydiag':'RMSE-Ydiag',
-                    'pearson_pc_1':'Corr PC 1',
+                    'pearson_pc_1':'Corr PC 1', 'pearson_pc_1_soren':'Corr Soren PC 1',
                     'rmse-diag':'RMSE-P(s)', 'rmse-diag10':'RMSE-P(s<10)',
                     'avg_dist_pearson':'SCC mean',
                     'total_time':'Total Time', 'converged_it':'Converged It.',
                     'converged_time':'Converged Time', 'prcnt_converged': '\% Converged'}
     if small:
-        metrics = ['scc_var', 'rmse-diag', 'pearson_pc_1', 'converged_time']
+        metrics = ['scc_var', 'rmse-diag', 'pearson_pc_1', 'pearson_pc_1_soren', 'converged_time']
     else:
         metrics = ['rmse-y', 'rmse-ydiag', 'converged_time', 'converged_it', 'prcnt_converged']
 
@@ -421,7 +431,9 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
                     id = method[pos+3:]
                     id = id.split('-')[0]
                     try:
-                        with open(f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{id}/argparse.txt', 'r') as f:
+                        argparse_file = osp.join('/home/erschultz/sequences_to_contact_maps/',
+                                                f'results/ContactGNNEnergy/{id}/argparse.txt')
+                        with open(argparse_file, 'r') as f:
                             for line in f:
                                 line = line.strip()
                                 if line == '--data_folder':
@@ -676,16 +688,14 @@ def main(args=None):
 if __name__ == '__main__':
     samples = None; sample = None
     # dataset = 'dataset_02_04_23'
-    # dataset='dataset_09_28_23_s_100_cutoff_0.01'
-    # dataset='dataset_09_28_23_s_10_cutoff_0.08'
-    # dataset='dataset_09_28_23_s_1_cutoff_0.36'
+    # dataset='dataset_11_20_23'
     dataset = 'dataset_06_29_23'
     # samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     # dataset='Su2020'; samples = [1013]
 
     if samples is None:
-        samples, _ = get_samples(dataset, train = True, filter_cell_lines=['hmec'])
-        samples = samples[:15]
+        samples, _ = get_samples(dataset, train = True)
+        samples = samples[:20]
     if len(samples) == 1:
         sample = samples[0]
         samples = None
@@ -696,19 +706,13 @@ if __name__ == '__main__':
     args.convergence_definition = 'normal'
     args.test_significance = False
     args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', '_700k', 'phi',
-                        'GNN579-max_ent', '-gd_gamma', '10_distance']
-    #for i in [2,3,4,5,6,7,8,9]:
-    #    args.bad_methods.append(f'max_ent{i}')
-
-    # args.gnn_id = [490, 496, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518, 519, 520, 521, 522, 523, 524, 525]
-    # args.gnn_id=[434, 451, 455, 456, 461, 462, 463, 470, 471, 472, 476, 477, 479, 480, 481, 484, 485, 486, 488]
+                        'GNN579-max_ent', '-gd_gamma', 'distance', 'start', 'stat', 'smooth']
+    for i in [2,3,4,5,6,7,8,9]:
+       args.bad_methods.append(f'max_ent{i}')
     # args.gnn_id=[490, 507, 511]
-    # args.gnn_id = [496, 506, 518, 519, 523, 524, 525, 526, 527, 528, 529, 530, 531, 532, 533, 534, 535, 536, 537, 538, 539, 540, 541, 542, 543, 544]
-    # args.gnn_id = [496, 541, 548, 549, 550, 551, 552, 553, 555, 556, 558, 560, 561, 562, 564, 565, 567, 568, 569, 570, 571, 572, 573, 574, 575, 576, 577, 578, 579, 580]
-    # args.gnn_id = [569, 570, 571, 572, 573, 575, 575, 576, 577, 578, 579, 580, 581, 582, 583, 584, 585, 586, 587, 588, 589]
     # args.gnn_id = [434, 578, 579, 450, 451]
-    args.gnn_id = [600, 605, 606, 607, 608, 609, 610]
-    # args.gnn_id = [579, 600]
+    # args.gnn_id = [600, 605, 606, 607, 608, 609, 610]
+    args.gnn_id = [579, 600]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

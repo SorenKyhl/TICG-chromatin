@@ -233,29 +233,29 @@ def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
 
 def main():
     samples=None
-    dataset='dataset_interp_test'; samples=[1]
+    # dataset='dataset_interp_test'; samples=[1]
     # dataset='dataset_02_04_23';
     # dataset = 'Su2020'; samples=[1013, 1004]
     # dataset = 'dataset_06_29_23'
-    # dataset = 'dataset_09_28_23';
+    dataset = 'dataset_11_20_23';
     # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     mapping = []
 
     if samples is None:
-        samples, _ = get_samples(dataset, train=True)
-        samples = samples[:1]
+        samples, _ = get_samples(dataset, train=True, filter_cell_lines='hmec')
+        samples = samples[:10]
     print(len(samples))
 
-    GNN_IDs = [579]; b=180; phi=None; v=8; ar=1.5
+    GNN_IDs = [600]; b=180; phi=None; v=8; ar=1.5
     for GNN_ID in GNN_IDs:
         for i in samples:
-            mapping.append((dataset, i, GNN_ID, f'samples_pool', b, phi, v, ar))
+            mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
 
     print(samples)
     print(len(mapping))
     # print(mapping)
 
-    with mp.Pool(1) as p:
+    with mp.Pool(10) as p:
         # p.starmap(cleanup, mapping)
         p.starmap(fit, mapping)
 

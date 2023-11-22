@@ -102,9 +102,9 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False, filte
                 cell_line = cell_line.lower()
             cell_lines.append(cell_line)
             if cell_line is None:
-                pass
-                # print(f'cell_line is None, skipping {s}: url={result["url"]}')
-                # continue
+                # pass
+                print(f'cell_line is None, skipping {s}: url={result["url"]}')
+                continue
             elif filter_cell_lines is not None:
                 if cell_line not in filter_cell_lines:
                     continue
@@ -125,9 +125,13 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False, filte
         if train:
             samples = odd_samples
             cell_lines = odd_cell_lines
-        if test:
+        elif test:
             samples = even_samples
             cell_lines = even_cell_lines
+        else:
+            samples = even_samples + odd_samples
+            cell_lines = even_cell_lines + odd_cell_lines
+
     else:
         cell_lines = None
 

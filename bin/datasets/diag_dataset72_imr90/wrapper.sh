@@ -14,7 +14,7 @@ echo "generate_params for ${dataset}"
 # cd "/home/erschultz/${dataset}"
 # tar -czvf setup.tar.gz setup
 
-sourceFile=~/TICG-chromatin/bin/datasets/diag_dataset71_imr90/diag_dataset_fns.sh
+sourceFile=~/TICG-chromatin/bin/datasets/diag_dataset72_imr90/diag_dataset_fns.sh
 start=1
 end=1000
 for i in {21..25}

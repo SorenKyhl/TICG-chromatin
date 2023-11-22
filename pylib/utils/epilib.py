@@ -609,7 +609,8 @@ def get_sequences(
     randomized=False,
     scaleby_singular_values=False,
     scaleby_sqrt_singular_values=False,
-    print_singular_values = True,
+    print_singular_values=True,
+    verbose=True
 ):
     """
     calculate polymer bead sequences using k principal components
@@ -619,10 +620,12 @@ def get_sequences(
     """
     OEmap = get_oe(hic)
     if randomized:
-        print("getting sequences with RANDOMIZED SVD")
+        if verbose:
+            print("getting sequences with RANDOMIZED SVD")
         U, S, VT = randomized_svd(np.corrcoef(OEmap), 2 * k)
     else:
-        print("getting sequences with np.linalg.svd")
+        if verbose:
+            print("getting sequences with np.linalg.svd")
         U, S, VT = np.linalg.svd(np.corrcoef(OEmap), full_matrices=0)
 
     # return VT can return here if you want
