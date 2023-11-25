@@ -98,7 +98,6 @@ def modify_maxent():
 def check(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
         aspect_ratio=1, bond_type='gaussian', k=10, contacts_distance=False,
         k_angle=0, theta_0=190):
-    dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
     root, _, _ = setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                                 aspect_ratio, bond_type, k, contacts_distance,
                                 k_angle, theta_0, False)
@@ -210,21 +209,21 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, v
         if key in bonded_config:
             config[key] = bonded_config[key]
 
-    return root, config
+    return dir, root, config
 
 def setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                 aspect_ratio, bond_type, k, contacts_distance,
                 k_angle, theta_0, verbose=True):
     if verbose:
         print(sample)
-    dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
+    dir, root, config = setup_config(dataset, sample, samples, bl, phi, v, vb,
+                                aspect_ratio, bond_type, k, contacts_distance,
+                                k_angle, theta_0, verbose)
+
     y = np.load(osp.join(dir, 'y.npy')).astype(float)
     y /= np.mean(np.diagonal(y))
     np.fill_diagonal(y, 1)
 
-    root, config = setup_config(dataset, sample, samples, bl, phi, v, vb,
-                                aspect_ratio, bond_type, k, contacts_distance,
-                                k_angle, theta_0, verbose)
     config['nspecies'] = k
     if k > 0:
         config['chis'] = np.zeros((k,k))
