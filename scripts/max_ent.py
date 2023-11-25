@@ -326,7 +326,7 @@ def main():
     samples = None
     # dataset = 'dataset_02_04_23'
     # dataset = 'Su2020'; samples = [1013, 1004]
-    dataset = 'dataset_11_20_23'
+    dataset = 'dataset_06_29_23'
     # samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     # dataset='dataset_HCT116_RAD21_KO'; samples=range(1,9)
     # dataset = 'dataset_08_25_23'; samples=[981]
@@ -334,8 +334,10 @@ def main():
     # dataset = 'timing_analysis/512'; samples = list(range(1, 16))
 
     if samples is None:
-        samples, _ = get_samples(dataset, train=True, filter_cell_lines='hmec')
-        samples = samples
+        samples = []
+        for cell_line in ['huvec', 'hap1', 'k562', 'gm12878', 'imr90', 'hmec']:
+            samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
+            samples.extend(samples_cell_line[:10])
         print(samples)
 
     mapping = []
@@ -347,7 +349,7 @@ def main():
                         'gaussian', k, contacts_distance, k_angle, theta_0))
     print('len =', len(mapping))
 
-    with mp.Pool(1) as p:
+    with mp.Pool(16) as p:
         # p.starmap(setup_config, mapping)
         # p.starmap(fit, mapping)
         p.starmap(check, mapping)
