@@ -19,7 +19,6 @@ from pylib.utils import default, epilib, utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import calculate_D
 from pylib.utils.goals import get_goals
-from pylib.utils.utils import load_import_log
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.result_summary_plots import \
@@ -126,16 +125,17 @@ def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
 def fit(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     print(sample)
     mode = 'grid'
-    data_dir = f'/home/erschultz/{dataset}'
-    if not osp.exists(data_dir):
-        data_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/', data_dir[1:])
-    dir = osp.join(data_dir, f'{sub_dir}/sample{sample}')
-    y = np.load(osp.join(dir, 'y.npy')).astype(np.float64)
+
+    dir, root, config = setup_config(dataset, sample, sub_dir, b, phi, v, None, ar)
+
+    y_file = osp.join(dir, 'y.npy')
+    if not osp.exists(y_file):
+        raise Exception(f'files does not exist: {y_file}')
+    y = np.load(y_file).astype(np.float64)
     y /= np.mean(np.diagonal(y))
     np.fill_diagonal(y, 1)
     m = len(y)
 
-    root, config = setup_config(dataset, sample, sub_dir, b, phi, v, None, ar)
     # config_ref = utils.load_json(osp.join(dir, 'config.json'))
     # config['grid_size'] = config_ref['grid_size']
     config['nspecies'] = 0
@@ -247,11 +247,13 @@ def main():
     mapping = []
 
     if samples is None:
-        samples, _ = get_samples(dataset, train=True, filter_cell_lines='imr90')
-        samples = samples[:10]
+        samples = []
+        for cell_line in ['imr90', 'hmec', 'gm12878', 'hap1', 'huvec']:
+            samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
+            samples.extend(samples_cell_line[:10])
     print(len(samples))
 
-    GNN_IDs = [614, 615, 616, 617, 618, 619]; b=180; phi=None; v=8; ar=1.5
+    GNN_IDs = [620, 621]; b=180; phi=None; v=8; ar=1.5
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
@@ -260,10 +262,10 @@ def main():
     print(len(mapping))
     # print(mapping)
 
-    with mp.Pool(15) as p:
+    # with mp.Pool(15) as p:
         # p.starmap(cleanup, mapping)
-        p.starmap(fit, mapping)
-#
+        # p.starmap(fit, mapping)
+
     for i in mapping:
         #fit_max_ent(*i)
         check(*i)

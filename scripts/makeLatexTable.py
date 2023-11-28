@@ -115,6 +115,7 @@ def load_data(args):
             L = load_L(sample_folder, save = True)
             ground_truth_S = calculate_S(L, D)
         ground_truth_y, ground_truth_ydiag = load_Y(sample_folder)
+        read_count = np.sum(np.triu(ground_truth_y))
         ground_truth_meanDist = DiagonalPreprocessing.genomic_distance_statistics(ground_truth_y, 'prob')
         ground_truth_pcs = epilib.get_pcs(ground_truth_ydiag, 12, align = True).T
         # ground_truth_pcs_soren = epilib.get_sequences(ground_truth_y, 5,
@@ -215,7 +216,7 @@ def load_data(args):
                     converged_path = osp.join(fpath, f'iteration{converged_it}')
                 else:
                     if args.verbose:
-                        print('\tDID NOT CONVERGE')
+                        print(f'\tDID NOT CONVERGE: {conv}')
                     converged_mask[i] = 0
                     converged_path = None
 
@@ -273,7 +274,7 @@ def load_data(args):
                     continue
                 yhat_meanDist = DiagonalPreprocessing.genomic_distance_statistics(yhat)
                 yhat_diag = DiagonalPreprocessing.process(yhat, yhat_meanDist, verbose = False)
-                scc = SCC(h=5)
+                scc = SCC(h=5, K=100) # TODO K
                 corr_scc_var = scc.scc(ground_truth_ydiag, yhat_diag, var_stabilized = True)
 
                 # result = plotDistanceStratifiedPearsonCorrelation(ground_truth_y,
@@ -326,6 +327,7 @@ def load_data(args):
 
             # append temp_dict to data
             data[k][method]['overall_pearson'].append(temp_dict['overall_pearson'])
+            data[k][method]['read_count'].append(read_count/1000)
             data[k][method]['scc'].append(temp_dict['scc'])
             data[k][method]['scc_var'].append(temp_dict['scc_var'])
             data[k][method]['avg_dist_pearson'].append(temp_dict['avg_dist_pearson'])
@@ -365,11 +367,11 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
             'rmse-S':'RMSE-Energy', 'rmse-y':'RMSE-Y', 'rmse-ydiag':'RMSE-Ydiag',
                     'pearson_pc_1':'Corr PC 1', 'pearson_pc_1_soren':'Corr Soren PC 1',
                     'rmse-diag':'RMSE-P(s)', 'rmse-diag10':'RMSE-P(s<10)',
-                    'avg_dist_pearson':'SCC mean',
+                    'avg_dist_pearson':'SCC mean', 'read_count':'Read Count (1k)',
                     'total_time':'Total Time', 'converged_it':'Converged It.',
                     'converged_time':'Converged Time', 'prcnt_converged': '\% Converged'}
     if small:
-        metrics = ['scc_var', 'rmse-diag', 'pearson_pc_1', 'converged_time']
+        metrics = ['scc_var', 'rmse-diag', 'pearson_pc_1', 'read_count', 'converged_time']
     else:
         metrics = ['rmse-y', 'rmse-ydiag', 'converged_time', 'converged_it', 'prcnt_converged']
 
@@ -487,7 +489,7 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
                     roundoff = 3
                     if metric is None:
                         pass # metric is None for filler column
-                    elif 'time' in metric:
+                    elif 'time' in metric or metric == 'read_count':
                         roundoff = 1
                     elif metric == 'rmse-S':
                         roundoff = 2
@@ -698,8 +700,8 @@ if __name__ == '__main__':
     # dataset='Su2020'; samples = [1013]
 
     if samples is None:
-        samples, _ = get_samples(dataset, train = True, filter_cell_lines=['imr90'])
-        samples = samples[:10]
+        samples, _ = get_samples(dataset, test = True, filter_cell_lines=['imr90'])
+        samples = samples[1:2]
     if len(samples) == 1:
         sample = samples[0]
         samples = None
@@ -711,12 +713,13 @@ if __name__ == '__main__':
     args.test_significance = False
     args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', '_700k', 'phi',
                         'GNN579-max_ent', '-gd_gamma', 'distance', 'start', 'stat', 'smooth']
-    for i in [2,3,4,5,6,7,8,9]:
-       args.bad_methods.append(f'max_ent{i}')
+    # for i in [2,3,4,5,6,7,8,9]:
+       # args.bad_methods.append(f'max_ent{i}')
     # args.gnn_id=[490, 507, 511]
     # args.gnn_id = [434, 578, 579, 450, 451]
     # args.gnn_id = [600, 605, 606, 607, 608, 609, 610]
-    args.gnn_id = [579, 600, 611, 612, 613, 614, 615, 616, 617, 618, 619]
+    args.gnn_id = [579, 600, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620, 621]
+    # args.gnn_id = [614]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

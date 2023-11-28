@@ -19,22 +19,22 @@ from pylib.utils.xyz import xyz_load, xyz_write
 sys.path.append('/home/erschultz/TICG-chromatin/scripts')
 from data_generation.modify_maxent import get_samples
 from distances_Su2020.su2020_analysis import plot_diagonal
-from makeLatexTable_new import *
+from makeLatexTable import *
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (
     get_converged_max_ent_folder, get_final_max_ent_folder, load_import_log,
     load_L)
 
-test=True
+test=False
 label_fontsize=22
 tick_fontsize=18
 letter_fontsize=26
-dataset = 'dataset_02_04_23'; sample = 223; GNN_ID = 579
+dataset = 'dataset_11_20_23'; sample = 9; GNN_ID = 614
 # dataset = 'dataset_04_05_23'; sample = 1001; GN_ID = 407
 # dataset = 'dataset_04_05_23'; sample = 1001; GNN_ID = 423
-samples, _ = get_samples(dataset, test=True)
-samples_list = samples
+samples, _ = get_samples(dataset, test=True, filter_cell_lines=['imr90'])
+samples_list = samples[:10]
 print(f'Samples: {samples_list}, len={len(samples_list)}')
 k=10
 grid_root = 'optimize_grid_b_180_v_8_spheroid_1.5'

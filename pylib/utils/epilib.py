@@ -531,7 +531,7 @@ def randomized_svd(X, r, q=10, p=1):
 
 def get_pcs(input, k, normalize=False, binarize=False, scale=False,
             use_kernel=False, kernel=None, manual=False, soren=False,
-            randomized=False, smooth=False, h=3, align=False):
+            randomized=False, smooth=False, h=3, align=False, split = False):
     '''
     Defines seq based on PCs of input.
 
@@ -576,20 +576,48 @@ def get_pcs(input, k, normalize=False, binarize=False, scale=False,
             V = pca.components_
 
     seq = np.zeros((m, k))
-    for j in range(k):
-        pc = V[j]
-        if normalize:
-            val = np.max(np.abs(pc))
-            # multiply by scale such that val x scale = 1
-            scale = 1/val
-            pc *= scale
+    if split:
+        seq_ind = 0
+        for j in range(int(k/2)):
+            pc = V[j]
+            pc_neg = np.abs(pc.copy())
+            pc_pos = np.abs(pc.copy())
+            pc_neg[pc > 0] = 0
+            pc_pos[pc < 0] = 0
 
-        if binarize:
-            # pc has already been normalized to [-1, 1]
-            pc[pc < 0] = 0
-            pc[pc > 0] = 1
+            if normalize:
+                val = np.max(np.abs(pc_neg))
+                # multiply by scale such that val x scale = 1
+                scale = 1/val
+                pc_neg *= scale
 
-        seq[:,j] = pc
+                val = np.max(np.abs(pc_pos))
+                # multiply by scale such that val x scale = 1
+                scale = 1/val
+                pc_pos *= scale
+
+            if binarize:
+                pc_neg[pc_neg > 0] = 1
+                pc_pos[pc_pos > 0] = 1
+
+            seq[:,seq_ind] = pc_neg
+            seq[:,seq_ind+1] = pc_pos
+            seq_ind += 2
+    else:
+        for j in range(k):
+            pc = V[j]
+            if normalize:
+                val = np.max(np.abs(pc))
+                # multiply by scale such that val x scale = 1
+                scale = 1/val
+                pc *= scale
+
+            if binarize:
+                # pc has already been normalized to [-1, 1]
+                pc[pc < 0] = 0
+                pc[pc > 0] = 1
+
+            seq[:,j] = pc
 
     if align:
         cutoff = int(0.2 * m)

@@ -127,7 +127,7 @@ def dist_distribution_seq(D, seq_a, seq_b):
 
     return all_aa, all_bb, all_ab
 
-def crop_hg38(dir, inp, start, m):
+def crop_hg38(inp, start, m, coords):
     '''
     Crop input distance map to m pixels starting from start.
 
@@ -135,12 +135,12 @@ def crop_hg38(dir, inp, start, m):
         inp (np array): distance map
         start (str): genomic coordinates
         m (int): desired len of output
+        coords: dictionary
     '''
-    coords_file = osp.join(dir, 'coords.json')
     with open(coords_file) as f:
         coords_dict = json.load(f)
 
-    i = coords_dict[start]
+    i = coords[start]
     print(i)
     if len(inp.shape) == 2:
         return inp[i:i+m, i:i+m]
@@ -940,8 +940,11 @@ def load_exp_gnn_pca(dir, GNN_ID=None, mode='mean', b=140, phi=None, v=None,
             raise Exception(f'Unrecognized chrom: {chrom}')
         D = np.load(osp.join(exp_dir, 'dist_mean.npy'))
         D_med = np.load(osp.join(exp_dir, 'dist_median.npy'))
-        D = crop_hg38(exp_dir, D, f'chr{chrom}:{start}-{start+resolution}', m)
-        D_med = crop_hg38(exp_dir, D_med, f'chr{chrom}:{start}-{start+resolution}', m)
+        with open(osp.join(exp_dir, f'coords.json')) as f:
+            coords_dict = json.load(f)
+
+        D = crop_hg38(D, f'chr{chrom}:{start}-{start+resolution}', m, coords_dict)
+        D_med = crop_hg38(D_med, f'chr{chrom}:{start}-{start+resolution}', m, coords_dict)
         np.save(osp.join(dir, 'D_crop.npy'), D)
     else:
         D = None
@@ -1274,7 +1277,10 @@ def compare_dist_distribution_plaid(sample, GNN_ID, b=140, phi=0.03):
         raise Exception(f'Unrecognized chrom: {chrom}')
     d_file = osp.join(exp_dir, 'dist.npy')
     D = np.load(d_file)
-    D = crop_hg38(exp_dir, D, f'chr{chrom}:{start}-{start+resolution}', len(y))
+    with open(osp.join(exp_dir, 'coords.json')) as f:
+        coords_dict = json.load(f)
+
+    D = crop_hg38(D, f'chr{chrom}:{start}-{start+resolution}', len(y), coords_dict)
 
     fig, ax = plt.subplots(1, 3)
     data = zip([D, D_max_ent, D_gnn], ['Experiment', 'Max Ent', 'GNN'])
@@ -1424,7 +1430,10 @@ def compare_bonded():
             raise Exception(f'Unrecognized chrom: {chrom}')
         D_file = osp.join(exp_dir, 'dist_mean.npy')
         D = np.load(D_file)
-        D = crop_hg38(exp_dir, D, f'chr{chrom}:{start}-{start+resolution}', m)
+        with open(osp.join(data_dir, f'coords_chr{chom}.json')) as f:
+            coords_dict = json.load(f)
+
+        D = crop_hg38(D, f'chr{chrom}:{start}-{start+resolution}', m, coords_dict)
 
     log_labels = np.linspace(0, resolution*(m-1), m)
     meanDist = DiagonalPreprocessing.genomic_distance_statistics(D, 'freq')
