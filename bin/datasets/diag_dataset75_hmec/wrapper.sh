@@ -1,8 +1,5 @@
 #! /bin/bash
 
-source activate python3.9_pytorch1.9_cuda10.2
-source activate python3.8_pytorch1.9
-
 # necessary to ensure log files are in right place
 cd ~/TICG-chromatin
 
@@ -14,7 +11,7 @@ echo "generate_params for ${dataset}"
 # cd "/home/erschultz/${dataset}"
 # tar -czvf setup.tar.gz setup
 
-sourceFile=~/TICG-chromatin/bin/datasets/diag_dataset73_hmec/diag_dataset_fns.sh
+sourceFile=~/TICG-chromatin/bin/datasets/diag_dataset75_hmec/diag_dataset_fns.sh
 start=1
 end=1000
 for i in {6..10}
