@@ -261,7 +261,7 @@ def setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
     config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
 
     # config['diag_start'] = 10
-    root = osp.join(dir, f'{root}-max_ent{k}_split_binarize')
+    root = osp.join(dir, f'{root}-max_ent{k}_soren')
     if osp.exists(root):
         # shutil.rmtree(root)
         if verbose:
@@ -282,8 +282,8 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
     os.mkdir(root, mode=0o755)
 
     # get sequences
-    seqs = epilib.get_pcs(epilib.get_oe(y), k, binarize=True, split=True)
-    # seqs = epilib.get_sequences(y, int(k/2), randomized=True, split=True)
+    # seqs = epilib.get_pcs(epilib.get_oe(y), k, normalize=True)
+    seqs = epilib.get_sequences(y, k, randomized=True)
 
     params = default.params
     goals = epilib.get_goals(y, seqs, config)
@@ -326,6 +326,8 @@ def main():
     # dataset = 'dataset_02_04_23'
     # dataset = 'Su2020'; samples = [1013, 1004]
     dataset = 'dataset_11_20_23'
+    # dataset = 'dataset_11_21_23_imr90'; samples = range(1, 16)
+
     # samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     # dataset='dataset_HCT116_RAD21_KO'; samples=range(1,9)
     # dataset = 'dataset_08_25_23'; samples=[981]
@@ -335,23 +337,23 @@ def main():
     if samples is None:
         samples = []
         for cell_line in ['imr90']:
-            samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
-            samples.extend(samples_cell_line[:2])
+            samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
+            samples.extend(samples_cell_line)
         print(samples)
 
     mapping = []
     k_angle=0;theta_0=180;b=180;ar=1.5;phi=None;v=8
     contacts_distance=False
     for i in samples:
-        for k in [2, 4, 6, 8]:
+        for k in [10]:
             mapping.append((dataset, i, f'samples', b, phi, v, None, ar,
                         'gaussian', k, contacts_distance, k_angle, theta_0))
     print('len =', len(mapping))
 
-    with mp.Pool(8) as p:
+    with mp.Pool(1) as p:
         # p.starmap(setup_config, mapping)
-        p.starmap(fit, mapping)
-        # p.starmap(check, mapping)
+        # p.starmap(fit, mapping)
+        p.starmap(check, mapping)
         # p.starmap(post_analysis, mapping)
         # p.starmap(cleanup, mapping)
 

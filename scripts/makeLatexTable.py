@@ -115,6 +115,8 @@ def load_data(args):
             L = load_L(sample_folder, save = True)
             ground_truth_S = calculate_S(L, D)
         ground_truth_y, ground_truth_ydiag = load_Y(sample_folder)
+        ground_truth_y /= np.mean(ground_truth_y.diagonal())
+        np.fill_diagonal(ground_truth_y, 1)
         read_count = np.sum(np.triu(ground_truth_y))
         ground_truth_meanDist = DiagonalPreprocessing.genomic_distance_statistics(ground_truth_y, 'prob')
         ground_truth_pcs = epilib.get_pcs(ground_truth_ydiag, 12, align = True).T
@@ -371,7 +373,7 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
                     'total_time':'Total Time', 'converged_it':'Converged It.',
                     'converged_time':'Converged Time', 'prcnt_converged': '\% Converged'}
     if small:
-        metrics = ['scc_var', 'rmse-diag', 'pearson_pc_1', 'read_count', 'converged_time']
+        metrics = ['scc_var', 'rmse-diag', 'pearson_pc_1', 'rmse-y', 'converged_time']
     else:
         metrics = ['rmse-y', 'rmse-ydiag', 'converged_time', 'converged_it', 'prcnt_converged']
 
@@ -695,6 +697,7 @@ if __name__ == '__main__':
     samples = None; sample = None
     # dataset = 'dataset_02_04_23'
     dataset='dataset_11_20_23'
+    # dataset='dataset_11_21_23_imr90'; samples=range(1,16)
     # dataset = 'dataset_06_29_23'
     # samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     # dataset='Su2020'; samples = [1013]
@@ -715,10 +718,9 @@ if __name__ == '__main__':
                         'GNN579-max_ent', '-gd_gamma', 'distance', 'start', 'stat', 'smooth']
     # for i in [2,3,4,5,6,7,8,9]:
        # args.bad_methods.append(f'max_ent{i}')
-    # args.gnn_id=[490, 507, 511]
     # args.gnn_id = [434, 578, 579, 450, 451]
     # args.gnn_id = [600, 605, 606, 607, 608, 609, 610]
-    args.gnn_id = [579, 600, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620, 621]
+    args.gnn_id = [579, 600, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620, 621, 622, 623, 624]
     # args.gnn_id = [614]
     main(args)
     # data, converged_mask = load_data(args)

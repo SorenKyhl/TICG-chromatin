@@ -17,18 +17,19 @@ import seaborn as sns
 import sympy
 import torch
 import torch_geometric
+from data_generation.modify_maxent import get_samples
+from makeLatexTable import getArgs, load_data
+from max_ent_setup.get_params import GetEnergy
 from pylib.utils import default, epilib, hic_utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
                                       calculate_diag_chi_step, calculate_S)
 from pylib.utils.plotting_utils import BLUE_RED_CMAP
 from pylib.utils.similarity_measures import SCC
-from pylib.utils.utils import load_json, pearson_round, triu_to_full
+from pylib.utils.utils import (load_json, make_composite, pearson_round,
+                               triu_to_full)
 from pylib.utils.xyz import xyz_load, xyz_to_distance
 from scipy.ndimage import uniform_filter
-from scripts.data_generation.modify_maxent import get_samples
-from scripts.max_ent_setup.get_params import GetEnergy
-from scripts.makeLatexTable import getArgs, load_data
 from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
 
@@ -1021,6 +1022,53 @@ def data_t_test():
     print(stat, pval)
     print(mean_effect_size)
 
+def data_corr():
+    "correlate pairs of results from latex table"
+    dataset = 'dataset_11_21_23_imr90'
+    samples_list = range(1, 31)
+    # samples, _ = get_samples(dataset, test = True)
+    # samples_list = samples[:10]
+    args = getArgs(data_folder = f'/home/erschultz/{dataset}',
+                    samples = samples_list)
+    args.experimental = False
+    args.verbose = False
+    args.convergence_definition = 'normal'
+    args.gnn_id = [614]
+    data, _ = load_data(args)
+
+    grid_root = 'optimize_grid_b_180_v_8_spheroid_1.5'
+    GNN_dir = f'{grid_root}-GNN614'
+    GNN_result = data[0][GNN_dir]
+    print(GNN_result)
+
+    fig, axes = plt.subplots(2,2)
+    Y = GNN_result['rmse-S']
+    metrics = ['scc_var', 'rmse-y', 'rmse-ydiag', 'pearson_pc_1']
+    labels = ['SCC', 'RMSE(H)', r'RMSE($\tilde{H}$)', 'Corr PC 1']
+    for ax, metric, label in zip(axes.flatten(), metrics, labels):
+        X = np.array(GNN_result[metric])
+        ax.scatter(X, Y)
+        a, b = np.polyfit(X, Y, 1)
+        X = np.linspace(min(X), max(X), 50)
+        ax.plot(X, a*X+b, c='k')
+        if 'rmse' in metric:
+            ax.set_xscale('log')
+        # ax.set_ylim(0, None)
+        ax.set_yscale('log')
+        ax.set_xlabel(label, fontsize=16)
+    fig.supylabel('RMSE(S)', fontsize=16)
+    plt.tight_layout()
+    plt.savefig(osp.join(f'/home/erschultz/{dataset}', 'data_corr.png'))
+
+def plot_triu_low_res():
+    dir = '/home/erschultz/dataset_11_20_23/samples/sample9/'
+    print(dir)
+    y = np.load(osp.join(dir, 'y.npy'))
+    dir = osp.join(dir, 'optimize_grid_b_180_v_8_spheroid_1.5-max_ent10/iteration30')
+    yhat = np.load(osp.join(dir, 'y.npy'))
+    comp = make_composite(hic_utils.pool(y, 2), hic_utils.pool(yhat, 2))
+    plot_matrix(comp, osp.join(dir, 'tri_coarse.png'), vmax='mean')
+
 def distance_cutoff_diag_chis():
     dir = '/home/erschultz/dataset_06_29_23/samples/'
     samples = [2,3,4,5,6,7,16]
@@ -1049,7 +1097,9 @@ def distance_cutoff_diag_chis():
 
 
 if __name__ == '__main__':
-    make_small('dataset_11_20_23')
+    # make_small('dataset_11_20_23')
+    data_corr()
+    # plot_triu_low_res()
     # distance_cutoff_diag_chis()
     # test_time_contact_distance()
     # compare_scc()

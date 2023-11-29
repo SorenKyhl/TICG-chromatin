@@ -587,13 +587,13 @@ def compare_cell_lines():
     plt.close()
 
 def visualize_max_ent():
-    dir_exp = '/home/erschultz/dataset_06_29_23/samples/sample1'
-    dir = osp.join(dir_exp, 'optimize_grid_b_180_v_8_spheroid_1.5-max_ent5/iteration30')
+    dir_exp = '/home/erschultz/dataset_11_20_23/samples/sample9'
+    dir = osp.join(dir_exp, 'optimize_grid_b_180_v_8_spheroid_1.5-max_ent4/iteration30')
     odir = osp.split(dir)[0]
     y_gt = np.load(osp.join(dir_exp, 'y.npy'))
     y_gt /= np.mean(y_gt.diagonal())
     y_me = np.load(osp.join(dir, 'y.npy'))
-    lines = [265, 290]
+    lines = [180, 280, 320, 500]
     y = make_composite(y_gt, y_me)
     plot_matrix(y, osp.join(odir, 'y.png'), vmax='mean', triu=True, lines=lines)
 
@@ -685,8 +685,8 @@ if __name__ == '__main__':
     # compare_d_s_max_ent()
     # compare_p_s_exp()
     # compare_meanDist_S2()
-    compare_cell_lines()
-    # visualize_max_ent()
+    # compare_cell_lines()
+    visualize_max_ent()
     # visualize_max_ent_methods()
     # compare_xyz()
     # check_GNN_S()

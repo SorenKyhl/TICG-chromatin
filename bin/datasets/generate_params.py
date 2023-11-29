@@ -65,6 +65,7 @@ def getArgs():
                     help='simulation volume')
     parser.add_argument('--conv_defn', type=str, default='loss')
     parser.add_argument('--plaid_mode', type=str, default='skewnorm')
+    parser.add_argument('--soren', action='store_true')
 
 
 
@@ -106,9 +107,10 @@ class DatasetGenerator():
 
         if args.ar != 1:
             self.grid_root += f'_spheroid_{args.ar}'
-            self.distributions_root += f'_spheroid_{args.ar}_distributions'
-        else:
-            self.distributions_root += '_distributions'
+            self.distributions_root += f'_spheroid_{args.ar}'
+        if args.soren:
+            self.distributions_root += '_soren'
+        self.distributions_root += '_distributions'
         if self.cell_line is not None:
             self.distributions_root += f'_{self.cell_line}'
         print(f'Using {self.distributions_root}')
