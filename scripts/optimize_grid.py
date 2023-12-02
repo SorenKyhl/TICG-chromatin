@@ -52,15 +52,15 @@ def bonded_simulations():
             bond_dir = osp.join(boundary_dir, f'bond_type_{bond_type}')
             if not osp.exists(bond_dir):
                 os.mkdir(bond_dir, mode=0o755)
-            for m in [512]:
+            for m in [1024]:
                 m_dir = osp.join(bond_dir, f'm_{m}')
                 if not osp.exists(m_dir):
                     os.mkdir(m_dir, mode=0o755)
-                for b in [160, 180, 200]:
+                for b in [180]:
                     b_dir = osp.join(m_dir, f'bond_length_{b}')
                     if not osp.exists(b_dir):
                         os.mkdir(b_dir, mode=0o755)
-                    for v in [7, 9]:
+                    for v in [8]:
                         v_dir = osp.join(b_dir, f'v_{v}')
                         if not osp.exists(v_dir):
                             os.mkdir(v_dir, mode=0o755)

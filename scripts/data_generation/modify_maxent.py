@@ -51,6 +51,12 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False, filte
     elif dataset == 'dataset_11_20_23':
         samples = range(1, 715)
         experimental = True
+    elif dataset == 'dataset_12_01_23':
+        samples = range(1, 641)
+        experimental = True
+    elif dataset == 'dataset_11_30_23':
+        samples = range(1, 242)
+        experimental = True
     elif dataset in {'dataset_01_26_23', 'dataset_02_04_23', 'dataset_02_21_23',
                     'dataset_02_04_23_max_ent'}:
         samples = range(201, 283)
@@ -162,7 +168,7 @@ def modify_plaid_chis(dataset, b, phi, v, k, ar, cell_line=None):
             max_ent_dir = osp.join(s_dir, f'optimize_grid_b_{b}_v_{v}')
         if ar != 1:
             max_ent_dir += f'_spheroid_{ar}'
-        max_ent_dir += f'-max_ent{k}'
+        max_ent_dir += f'-max_ent{k}_chrom_norm_n'
         if not osp.exists(max_ent_dir):
             print(f'{max_ent_dir} does not exist')
             continue
@@ -249,7 +255,7 @@ def modify_maxent_diag_chi(dataset, b, phi, v, k, ar, edit=True, plot=True, cell
             max_ent_dir = osp.join(s_dir, f'optimize_grid_b_{b}_v_{v}')
         if ar != 1:
             max_ent_dir += f'_spheroid_{ar}'
-        max_ent_dir += f'-max_ent{k}'
+        max_ent_dir += f'-max_ent{k}_chrom_norm_n'
         if not osp.exists(max_ent_dir):
             print(f'{max_ent_dir} does not exist')
             continue
@@ -902,7 +908,7 @@ def seq_dist(dataset, k, plot=True, eig_norm=False):
     return x_list
 
 def plaid_dist(dataset, b, phi, v, k, ar, plot=True, eig_norm=False, cell_line=None,
-                soren=False):
+                mode=None):
     # distribution of plaid params
     if cell_line is not None:
         samples, experimental, cell_lines = get_samples(dataset, True, return_cell_lines=True,
@@ -923,8 +929,8 @@ def plaid_dist(dataset, b, phi, v, k, ar, plot=True, eig_norm=False, cell_line=N
         odir = osp.join(data_dir, f'b_{b}_v_{v}')
     if ar != 1.0:
         odir += f'_spheroid_{ar}'
-    if soren:
-        odir += '_soren'
+    if mode is not None:
+        odir += f'_{mode}'
     odir += '_distributions'
     if cell_line is not None:
         odir += f'_{cell_line}'
@@ -959,8 +965,8 @@ def plaid_dist(dataset, b, phi, v, k, ar, plot=True, eig_norm=False, cell_line=N
             if ar != 1:
                 s_dir += f'_spheroid_{ar}'
             s_dir += f'-max_ent{k}'
-            if soren:
-                s_dir += '_soren'
+            if mode is not None:
+                s_dir += f'_{mode}'
 
         if not osp.exists(s_dir):
             print(f'WARNING: {s_dir} does not exist')
@@ -1395,15 +1401,15 @@ def get_read_counts(dataset):
 
 
 if __name__ == '__main__':
-    # modify_plaid_chis('dataset_11_20_23', b=180, phi=None, v=8, k=10, ar=1.5, cell_line='imr90')
-    # modify_maxent_diag_chi('dataset_11_20_23', b=180, phi=None, v=8, k=10, ar=1.5,
+    # modify_plaid_chis('dataset_12_01_23', b=180, phi=None, v=8, k=10, ar=1.5, cell_line='imr90')
+    # modify_maxent_diag_chi('dataset_12_01_23', b=180, phi=None, v=8, k=10, ar=1.5,
     #                         edit=False, plot=True, cell_line='imr90')
     # for i in range(221, 222):
         # plot_modified_max_ent(i, k = 10)
     # diagonal_dist('dataset_02_04_23', b=261, phi=0.01, k=10)
     # grid_dist('dataset_11_20_23', b=180, phi=None, v=8, ar=1.5, cell_line='hmec')
-    plaid_dist('dataset_11_20_23', b=180, phi=None, v=8, k=10, ar=1.5, plot=True, eig_norm=True,
-                cell_line='imr90', soren=True)
+    plaid_dist('dataset_12_01_23', b=180, phi=None, v=8, k=10, ar=1.5, plot=True, eig_norm=True,
+                cell_line='imr90', mode='chrom_norm_n')
     # get_read_counts('dataset_04_28_23')
     # seq_dist('dataset_01_26_23', 4, True, True)
     # plot_params_test()

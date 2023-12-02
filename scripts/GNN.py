@@ -242,20 +242,20 @@ def main():
     # dataset='dataset_02_04_23';
     # dataset = 'Su2020'; samples=[1013, 1004]
     # dataset = 'dataset_06_29_23'; samples=[81]
-    # dataset = 'dataset_11_20_23';
-    dataset = 'dataset_11_21_23_imr90'; samples = range(16, 31)
+    dataset = 'dataset_11_20_23';
+    # dataset = 'dataset_11_21_23_imr90'; samples = range(16, 31)
     # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     mapping = []
 
     if samples is None:
         samples = []
-        for cell_line in ['imr90', 'hmec']:
+        for cell_line in ['imr90']:
             # 'gm12878', 'hap1', 'huvec'
             samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
             samples.extend(samples_cell_line[:10])
     print(len(samples))
 
-    GNN_IDs = [614]; b=180; phi=None; v=8; ar=1.5
+    GNN_IDs = [625]; b=180; phi=None; v=8; ar=1.5
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
@@ -264,9 +264,9 @@ def main():
     print(len(mapping))
     # print(mapping)
 
-    # with mp.Pool(2) as p:
+    with mp.Pool(10) as p:
         # p.starmap(cleanup, mapping)
-        # p.starmap(fit, mapping)
+        p.starmap(fit, mapping)
 
     for i in mapping:
         #fit_max_ent(*i)

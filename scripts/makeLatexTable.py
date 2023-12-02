@@ -169,7 +169,8 @@ def load_data(args):
                 k = config['nspecies']
                 # convergence
                 convergence_file = osp.join(fpath, 'convergence.txt')
-                assert osp.exists(convergence_file)
+                if not osp.exists(convergence_file):
+                    continue
                 conv = np.atleast_1d(np.loadtxt(convergence_file))
                 converged_it = None
                 if args.convergence_definition is None:
@@ -276,8 +277,8 @@ def load_data(args):
                     continue
                 yhat_meanDist = DiagonalPreprocessing.genomic_distance_statistics(yhat)
                 yhat_diag = DiagonalPreprocessing.process(yhat, yhat_meanDist, verbose = False)
-                scc = SCC(h=5, K=100) # TODO K
-                corr_scc_var = scc.scc(ground_truth_ydiag, yhat_diag, var_stabilized = True)
+                scc = SCC(h=5) # TODO K
+                corr_scc_var = scc.scc(ground_truth_y, yhat, var_stabilized = True)
 
                 # result = plotDistanceStratifiedPearsonCorrelation(ground_truth_y,
                                 # yhat, converged_path)
@@ -365,15 +366,18 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
         test_significance: True to perform two-sided paired t-tests for significance
     '''
 
-    metric_labels = {'scc':'SCC', 'scc_var':'SCC var', None: '',
-            'rmse-S':'RMSE-Energy', 'rmse-y':'RMSE-Y', 'rmse-ydiag':'RMSE-Ydiag',
+    metric_labels = {'scc':'SCC', 'scc_var':'SCC', None: '',
+            'rmse-S':'RMSE-Energy', 'rmse-y':'RMSE(H)', 'rmse-ydiag':r'RMSE($\tilde{H}$)',
                     'pearson_pc_1':'Corr PC 1', 'pearson_pc_1_soren':'Corr Soren PC 1',
                     'rmse-diag':'RMSE-P(s)', 'rmse-diag10':'RMSE-P(s<10)',
                     'avg_dist_pearson':'SCC mean', 'read_count':'Read Count (1k)',
                     'total_time':'Total Time', 'converged_it':'Converged It.',
                     'converged_time':'Converged Time', 'prcnt_converged': '\% Converged'}
+    for k, v in metric_labels.items():
+        metric_labels[k] = r'\thead{' + v + '}'
     if small:
-        metrics = ['scc_var', 'rmse-diag', 'pearson_pc_1', 'rmse-y', 'converged_time']
+        metrics = ['scc_var', 'pearson_pc_1', 'rmse-y', 'rmse-ydiag', 'converged_time']
+        # 'rmse-diag',
     else:
         metrics = ['rmse-y', 'rmse-ydiag', 'converged_time', 'converged_it', 'prcnt_converged']
 
@@ -522,7 +526,8 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
                         result_sem = ss.sem(result, nan_policy = 'omit')
                         result_std = np.round(result_std, roundoff)
                         result_sem = np.round(result_sem, roundoff)
-                        text += f" & {result_mean} $\pm$ {result_sem}"
+                        # text += f" & {result_mean} $\pm$ {result_sem}"
+                        text += f" & {result_mean}"
                         if pval is None:
                             pass
                         elif pval < 0.001:
@@ -697,14 +702,13 @@ if __name__ == '__main__':
     samples = None; sample = None
     # dataset = 'dataset_02_04_23'
     dataset='dataset_11_20_23'
+    dataset='dataset_12_01_23'
     # dataset='dataset_11_21_23_imr90'; samples=range(1,16)
-    # dataset = 'dataset_06_29_23'
-    # samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     # dataset='Su2020'; samples = [1013]
 
     if samples is None:
-        samples, _ = get_samples(dataset, test = True, filter_cell_lines=['imr90'])
-        samples = samples[1:2]
+        samples, _ = get_samples(dataset, train = True, filter_cell_lines=['imr90'])
+        samples = samples
     if len(samples) == 1:
         sample = samples[0]
         samples = None
@@ -715,13 +719,14 @@ if __name__ == '__main__':
     args.convergence_definition = 'normal'
     args.test_significance = False
     args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', '_700k', 'phi',
-                        'GNN579-max_ent', '-gd_gamma', 'distance', 'start', 'stat', 'smooth']
-    # for i in [2,3,4,5,6,7,8,9]:
-       # args.bad_methods.append(f'max_ent{i}')
+                        'GNN579-max_ent', '-gd_gamma', 'distance', 'start', 'stat',
+                        'diagbins', 'binarize']
+    for i in [2,3,4,5,6,7,8,9]:
+       args.bad_methods.append(f'max_ent{i}')
     # args.gnn_id = [434, 578, 579, 450, 451]
     # args.gnn_id = [600, 605, 606, 607, 608, 609, 610]
-    args.gnn_id = [579, 600, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620, 621, 622, 623, 624]
-    # args.gnn_id = [614]
+    # args.gnn_id = [579, 600, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620, 621, 622, 623, 624, 625]
+    args.gnn_id = [614]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

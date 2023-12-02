@@ -65,7 +65,8 @@ def getArgs():
                     help='simulation volume')
     parser.add_argument('--conv_defn', type=str, default='loss')
     parser.add_argument('--plaid_mode', type=str, default='skewnorm')
-    parser.add_argument('--soren', action='store_true')
+    parser.add_argument('--mode', type=str,
+                        help='mode for max ent (None for baseline)')
 
 
 
@@ -105,15 +106,22 @@ class DatasetGenerator():
             self.grid_root = f'optimize_grid_b_{self.b}_v_{self.v}'
             self.distributions_root = f'b_{self.b}_v_{self.v}'
 
+
         if args.ar != 1:
             self.grid_root += f'_spheroid_{args.ar}'
             self.distributions_root += f'_spheroid_{args.ar}'
-        if args.soren:
-            self.distributions_root += '_soren'
+        if args.mode is not None:
+            self.distributions_root += f'_{args.mode}'
         self.distributions_root += '_distributions'
         if self.cell_line is not None:
             self.distributions_root += f'_{self.cell_line}'
         print(f'Using {self.distributions_root}')
+
+
+        self.max_ent_root = f'{self.grid_root}-max_ent{self.k}'
+        if args.mode is not None:
+            self.max_ent_root += f'_{args.mode}'
+
 
         self.get_exp_samples()
 
@@ -246,7 +254,9 @@ class DatasetGenerator():
         x_dict = {} # id : x
         for j in self.exp_samples:
             sample_folder = osp.join(self.exp_dir,  f'sample{j}')
-            max_ent_folder = osp.join(sample_folder, f'{self.grid_root}-max_ent{self.k}/resources')
+            assert osp.exists(sample_folder)
+            max_ent_folder = osp.join(sample_folder, f'{self.max_ent_root}/resources')
+            assert osp.exists(max_ent_folder), f'{max_ent_folder} does not exist'
             x = np.load(osp.join(max_ent_folder, 'x_eig_norm.npy'))
             x_dict[j] = x
 
@@ -449,7 +459,7 @@ class DatasetGenerator():
 
         converged_samples = self.get_converged_samples()
         for j in converged_samples:
-            sample_folder = osp.join(self.exp_dir, f'sample{j}', f'{self.grid_root}-max_ent{self.k}')
+            sample_folder = osp.join(self.exp_dir, f'sample{j}', self.max_ent_root)
             file = osp.join(sample_folder, 'fitting2', diag_mode)
             assert osp.exists(file), file
             meanDist_S = np.loadtxt(file)

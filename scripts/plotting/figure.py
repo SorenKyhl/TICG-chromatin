@@ -18,7 +18,7 @@ from pylib.utils.xyz import xyz_load, xyz_write
 
 sys.path.append('/home/erschultz/TICG-chromatin/scripts')
 from data_generation.modify_maxent import get_samples
-from distances_Su2020.su2020_analysis import plot_diagonal
+from distances_Su2020.utils import plot_diagonal
 from makeLatexTable import *
 
 sys.path.append('/home/erschultz')
@@ -30,7 +30,7 @@ test=False
 label_fontsize=22
 tick_fontsize=18
 letter_fontsize=26
-dataset = 'dataset_11_20_23'; sample = 9; GNN_ID = 614
+dataset = 'dataset_11_20_23'; sample = 23; GNN_ID = 614
 # dataset = 'dataset_04_05_23'; sample = 1001; GN_ID = 407
 # dataset = 'dataset_04_05_23'; sample = 1001; GNN_ID = 423
 samples, _ = get_samples(dataset, test=True, filter_cell_lines=['imr90'])
@@ -40,7 +40,7 @@ k=10
 grid_root = 'optimize_grid_b_180_v_8_spheroid_1.5'
 def get_dirs(sample_dir):
     grid_dir = osp.join(sample_dir, grid_root)
-    max_ent_dir = f'{grid_dir}-max_ent{k}'
+    max_ent_dir = f'{grid_dir}-max_ent{k}_soren'
     gnn_dir = f'{grid_dir}-GNN{GNN_ID}'
 
     return max_ent_dir, gnn_dir
@@ -241,13 +241,14 @@ def figure(test=False):
 
 
     vmin = 0
+    # vmax = np.percentile(y, 80)
     vmax = np.mean(y)
     # combined hic maps
     npixels = np.shape(y)[0]
     indu = np.triu_indices(npixels)
     indl = np.tril_indices(npixels)
     data = zip([y_gnn, y_pca], ['GNN', 'Max Ent'], [ax1, ax2])
-    scc = SCC(h=1)
+    scc = SCC(h=5, K=100)
     for i, (y_sim, label, ax) in enumerate(data):
         # make composite contact map
         composite = np.zeros((npixels, npixels))
@@ -266,7 +267,7 @@ def figure(test=False):
         scc_var = np.round(scc_var, 3)
         title = f'SCC={scc_var}'
         print(f'{label}: ' + title)
-        # s.set_title(title, fontsize = label_fontsize, loc='left')
+        s.set_title(title, fontsize = label_fontsize, loc='left')
         s.axline((0,0), slope=1, color = 'k', lw=1)
         s.text(0.99*m, -0.08*m, label, fontsize=label_fontsize, ha='right', va='top', weight='bold')
         s.text(0.01*m, 1.08*m, 'Experiment', fontsize=label_fontsize, weight='bold')
@@ -280,7 +281,7 @@ def figure(test=False):
 
     title = f'Max Ent (r={pearson_round(pcs[0], pcs_pca[0])})\nGNN (r={pearson_round(pcs[0], pcs_gnn[0])})'
     print(title)
-    # ax4.set_title(title)
+    ax4.set_title(title)
     ax4.set_xticks(genome_ticks, labels = genome_labels, rotation = 0,
                     fontsize = tick_fontsize)
     ax4.set_yticks([])

@@ -19,6 +19,60 @@ from pylib.utils.energy_utils import *
 from pylib.utils.utils import load_import_log
 
 
+def compute_pcs(dataset, cell_line):
+    def plot_save(seq, fname):
+        m, k = seq.shape
+        fig, axes = plt.subplots(2, 3)
+        fig.set_figheight(6)
+        fig.set_figwidth(12)
+        for i, ax in enumerate(axes.flatten()):
+            if i >= k:
+                continue
+            ax.plot(np.arange(0, m), seq[:, i])
+
+        fig.supxlabel('Distance', fontsize=16)
+        fig.supylabel('Label Value', fontsize=16)
+        plt.tight_layout()
+        plt.savefig(osp.join(chrom_dir, f'{fname}.png'))
+        plt.close()
+
+        np.save(osp.join(chrom_dir, f'{fname}.npy'), seq)
+
+    data_dir = osp.join('/home/erschultz', dataset, f'chroms_{cell_line}')
+    for chrom in range(1, 22):
+        chrom_dir = osp.join(data_dir, f'chr{chrom}')
+        y = np.loadtxt(osp.join(chrom_dir, 'y_multiHiCcompare.txt'))
+        y /= np.mean(y.diagonal())
+        np.fill_diagonal(y, 1)
+
+        y_smooth = scipy.ndimage.gaussian_filter(y, (3, 3))
+        seq = epilib.get_pcs(epilib.get_oe(y_smooth), 20, normalize=True)
+        plot_save(seq, 'seq_smooth_norm')
+        # seq = epilib.get_pcs(epilib.get_oe(y), 20, normalize=False)
+        # plot_save(seq, 'seq')
+        # seq = epilib.get_pcs(epilib.get_oe(y), 20, normalize=True)
+        # plot_save(seq, 'seq_norm')
+        # seq = epilib.get_pcs(np.corrcoef(epilib.get_oe(y)), 20, normalize=True)
+        # plot_save(seq, 'seq_corr_norm')
+        # seq = epilib.get_sequences(y, 20, randomized=True).T
+        # plot_save(seq, 'seq_soren')
+
+def load_pcs(dataset, import_log, mode, k, norm=False):
+    cell_line = import_log['cell_line']
+    chrom = import_log['chrom']
+    seq = np.load(f'/home/erschultz/{dataset}/chroms_{cell_line}/chr{chrom}/seq_{mode}.npy')
+
+    res = import_log['resolution']
+    start = import_log['start'] // res
+    end = import_log['end'] // res
+
+    seq = seq[start:end, :k]
+    if norm:
+        for j in range(k):
+            seq[:, j] /= np.max(np.abs(seq[:, j]))
+    return seq
+
+
 def run(dir, config, x=None, S=None):
     print(dir)
     if S is not None:
@@ -57,7 +111,7 @@ def modify_maxent():
         check = DiagonalPreprocessing.genomic_distance_statistics(S_target, 'freq')
         assert np.allclose(target, check), f'{target-check}'
 
-        # for arr, label in zip([L,D,S],['L', 'D', 'S']):
+        # for arr, label in zip([L, D, S],['L', 'D', 'S']):
         #     meanDist = DiagonalPreprocessing.genomic_distance_statistics(arr, 'freq')
         #     plt.plot(meanDist, label = label)
         # plt.xscale('log')
@@ -261,7 +315,7 @@ def setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
     config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
 
     # config['diag_start'] = 10
-    root = osp.join(dir, f'{root}-max_ent{k}_soren')
+    root = osp.join(dir, f'{root}-max_ent{k}')
     if osp.exists(root):
         # shutil.rmtree(root)
         if verbose:
@@ -277,13 +331,16 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
     root, config, y = setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                                 aspect_ratio, bond_type, k, contacts_distance,
                                 k_angle, theta_0)
+    import_log = load_import_log(dir)
     if osp.exists(root):
         return
     os.mkdir(root, mode=0o755)
 
     # get sequences
-    # seqs = epilib.get_pcs(epilib.get_oe(y), k, normalize=True)
-    seqs = epilib.get_sequences(y, k, randomized=True)
+    # seqs = load_pcs('dataset_11_20_23', import_log, 'norm', k, norm=False)
+    seqs = epilib.get_pcs(epilib.get_oe(y), k, normalize=True)
+    # seqs = epilib.get_pcs(np.corrcoef(epilib.get_oe(y)), k, normalize=True)
+    # seqs = epilib.get_sequences(y, k, randomized=True)
 
     params = default.params
     goals = epilib.get_goals(y, seqs, config)
@@ -325,14 +382,10 @@ def main():
     samples = None
     # dataset = 'dataset_02_04_23'
     # dataset = 'Su2020'; samples = [1013, 1004]
-    dataset = 'dataset_11_20_23'
+    # dataset = 'dataset_11_20_23'
+    dataset = 'dataset_12_01_23'
     # dataset = 'dataset_11_21_23_imr90'; samples = range(1, 16)
-
-    # samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     # dataset='dataset_HCT116_RAD21_KO'; samples=range(1,9)
-    # dataset = 'dataset_08_25_23'; samples=[981]
-    # samples = sorted(np.random.choice(samples, 12, replace = False))
-    # dataset = 'timing_analysis/512'; samples = list(range(1, 16))
 
     if samples is None:
         samples = []
@@ -350,10 +403,10 @@ def main():
                         'gaussian', k, contacts_distance, k_angle, theta_0))
     print('len =', len(mapping))
 
-    with mp.Pool(1) as p:
+    with mp.Pool(15) as p:
         # p.starmap(setup_config, mapping)
-        # p.starmap(fit, mapping)
-        p.starmap(check, mapping)
+        p.starmap(fit, mapping)
+        # p.starmap(check, mapping)
         # p.starmap(post_analysis, mapping)
         # p.starmap(cleanup, mapping)
 
@@ -364,3 +417,4 @@ def main():
 if __name__ == '__main__':
     # modify_maxent()
     main()
+    # compute_pcs('dataset_11_20_23', 'imr90')

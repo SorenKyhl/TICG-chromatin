@@ -5,6 +5,7 @@ import os.path as osp
 import string
 import sys
 
+import liftover
 import matplotlib
 import matplotlib.patheffects as pe
 import matplotlib.pyplot as plt
@@ -28,48 +29,6 @@ from sequences_to_contact_maps.scripts.load_utils import (
 sys.path.append('/home/erschultz/TICG-chromatin')
 from scripts.distances_Su2020.utils import (dist_distribution_a_b, get_dirs,
                                             get_pcs, min_MSE, rescale_mu_sigma)
-
-
-def load_exp_gnn_pca(dir, GNN_ID=None):
-    result = load_import_log(dir)
-    start = result['start']
-    resolution = result['resolution']
-    chrom = int(result['chrom'])
-    genome = result['genome']
-
-    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, 180, None, 8, 1.5)
-    if osp.exists(max_ent_dir):
-        D_pca, _ = sim_xyz_to_dist(max_ent_dir, True)
-        m = len(D_pca)
-    else:
-        print(f'{max_ent_dir} does not exist')
-        D_pca = None
-        D_med_pca = None
-
-    if GNN_ID is not None and osp.exists(gnn_dir):
-        D_gnn, _ = sim_xyz_to_dist(gnn_dir, False)
-        m = len(D_gnn)
-    else:
-        print(f'{gnn_dir} does not exist')
-
-        D_gnn = None
-        D_med_gnn = None
-
-    # process experimental distance map
-    data_dir = os.sep.join(dir.split(os.sep)[:-2])
-    print(dat_dir)
-    D = np.load(osp.join(data_dir, f'dist_mean_chr{chrom}.npy'))
-    with open(osp.join(data_dir, f'coords_chr{chom}.json')) as f:
-        coords_dict = json.load(f)
-    if genome == 'hg38':
-        D = crop_hg38(exp_dir, D, f'chr{chrom}:{start}-{start+resolution}', m)
-    elif genome == 'hg19':
-        D = None
-    else:
-        raise Exception()
-
-    np.save(osp.join(dir, 'D_crop.npy'), D)
-    return D, D_gnn, D_pca
 
 
 def load_exp_gnn_pca_contact_maps(dir, GNN_ID=None, b=140, phi=0.03, v=None, ar=1.0):
@@ -767,4 +726,4 @@ if __name__ == '__main__':
     # old_figure(1013, 490, bl=180, phi=0.008, ar=1.5)
     # new_figure(1004, 490, bl=180, phi=0.008, ar=1.5)
     # new_figure(1013, 579, bl=180, v=8, ar=1.5)
-    supp_figure(1013, 579, bl=180, v=8, ar=1.5)
+    # supp_figure(1013, 579, bl=180, v=8, ar=1.5)

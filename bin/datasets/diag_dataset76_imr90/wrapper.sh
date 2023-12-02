@@ -6,11 +6,11 @@ source activate python3.8_pytorch1.9
 # necessary to ensure log files are in right place
 cd ~/TICG-chromatin
 
-dataset="dataset_11_28_23_imr90"
+dataset="dataset_11_28_23_imr90_repeat"
 echo "generate_params for ${dataset}"
 # uses poly12 fit to meandistS params + grid
-# python  ~/TICG-chromatin/bin/datasets/generate_params.py --samples 5000 --b 180 --v 8 --k 10 --ar 1.5 --m 512 --dataset $dataset --exp_dataset 'dataset_11_20_23' --soren --cell_line 'imr90' --seq_mode 'eig_norm' --diag_mode 'meanDist_S_grid_poly8_log_start1' --data_dir '/project2/depablo/erschultz'
-
+# python  ~/TICG-chromatin/bin/datasets/generate_params.py --samples 5000 --b 180 --v 8 --k 10 --ar 1.5 --m 512 --dataset $dataset --exp_dataset 'dataset_11_20_23' --mode 'soren' --cell_line 'imr90' --seq_mode 'eig_norm' --diag_mode 'meanDist_S_grid_poly8_log_start1' --data_dir '/project/depablo/erschultz'
+#
 # cd "/home/erschultz/${dataset}"
 # tar -czvf setup.tar.gz setup
 
