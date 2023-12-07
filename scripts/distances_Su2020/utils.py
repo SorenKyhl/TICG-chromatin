@@ -21,7 +21,7 @@ from pylib.utils.plotting_utils import (BLUE_CMAP, BLUE_RED_CMAP,
                                         RED_BLUE_CMAP, RED_CMAP, plot_matrix,
                                         plot_mean_dist, rotate_bound)
 from pylib.utils.similarity_measures import SCC
-from pylib.utils.utils import pearson_round
+from pylib.utils.utils import load_import_log, pearson_round
 from pylib.utils.xyz import calculate_rg, xyz_load, xyz_to_distance, xyz_write
 from scipy.optimize import minimize
 from scipy.spatial import ConvexHull
@@ -33,13 +33,13 @@ from sklearn.metrics import mean_squared_error
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
 from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_import_log, load_Y)
+    get_final_max_ent_folder, load_Y)
 from sequences_to_contact_maps.scripts.utils import (calc_dist_strat_corr,
                                                      nan_pearsonr)
 
 
 # load data
-def load_exp_gnn_pca(dir, GNN_ID=None, b=180, phi=None, v=8, ar=1.5):
+def load_exp_gnn_pca(dir, GNN_ID=None, b=180, phi=None, v=8, ar=1.5, mode='mean'):
     result = load_import_log(dir)
     start = result['start']
     end = result['end']
@@ -66,7 +66,6 @@ def load_exp_gnn_pca(dir, GNN_ID=None, b=180, phi=None, v=8, ar=1.5):
 
     # process experimental distance map
     data_dir = os.sep.join(dir.split(os.sep)[:-2])
-    print('data_dir', data_dir)
     D = np.load(osp.join(data_dir, f'dist_mean_chr{chrom}.npy'))
     with open(osp.join(data_dir, f'coords_chr{chrom}.json')) as f:
         coords_dict = json.load(f)
@@ -86,6 +85,7 @@ def load_exp_gnn_pca(dir, GNN_ID=None, b=180, phi=None, v=8, ar=1.5):
         raise Exception()
 
     np.save(osp.join(dir, 'D_crop.npy'), D)
+    assert mode == 'mean', 'not implemented'
     return D, D_gnn, D_pca
 
 
@@ -190,7 +190,6 @@ def crop_hg38(inp, start, m, coords):
         coords: dictionary
     '''
     i = coords[start]
-    print(i)
     if len(inp.shape) == 2:
         return inp[i:i+m, i:i+m]
     elif len(inp.shape) == 3:
@@ -678,7 +677,7 @@ def compare_D_to_sim_D(sample, GNN_ID=None, b=180, phi=None, v=8, ar=1.5):
     # process experimental distance map
     nans = np.isnan(D)
     nan_rows = np.zeros(m).astype(bool)
-    nan_rows[np.sum(nans, axis=0) == 512] = True
+    nan_rows[np.sum(nans, axis=0) == m] = True
     D_no_nan = D[~nan_rows][:, ~nan_rows]
     plot_distance_map(D, max_ent_dir, 'exp')
     plot_distance_map(D_no_nan, max_ent_dir, 'exp_no_nan')

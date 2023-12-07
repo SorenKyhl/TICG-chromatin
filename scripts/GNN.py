@@ -239,10 +239,10 @@ def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
 def main():
     samples=None
     # dataset='dataset_interp_test'; samples=[1]
-    # dataset='dataset_02_04_23';
+    dataset='dataset_12_01_23';
     # dataset = 'Su2020'; samples=[1013, 1004]
     # dataset = 'dataset_06_29_23'; samples=[81]
-    dataset = 'dataset_11_20_23';
+    # dataset = 'dataset_11_20_23';
     # dataset = 'dataset_11_21_23_imr90'; samples = range(16, 31)
     # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     mapping = []
@@ -255,7 +255,7 @@ def main():
             samples.extend(samples_cell_line[:10])
     print(len(samples))
 
-    GNN_IDs = [625]; b=180; phi=None; v=8; ar=1.5
+    GNN_IDs = [627]; b=180; phi=None; v=8; ar=1.5
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
@@ -269,7 +269,7 @@ def main():
         p.starmap(fit, mapping)
 
     for i in mapping:
-        #fit_max_ent(*i)
+        # fit_max_ent(*i)
         check(*i)
 
 if __name__ == '__main__':

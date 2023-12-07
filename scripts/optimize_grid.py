@@ -8,8 +8,6 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 import pylib.utils.epilib as epilib
-from data_generation.modify_maxent import simple_histogram
-from plotting.contact_map import plot_max_ent
 from pylib.optimize import get_bonded_simulation_xyz, optimize_config
 from pylib.Pysim import Pysim
 from pylib.utils import default, utils
@@ -20,6 +18,10 @@ from pylib.utils.xyz import (xyz_load, xyz_to_angles, xyz_to_contact_distance,
 from scipy import optimize
 from scipy.stats import norm
 from sklearn.metrics import mean_squared_error
+
+sys.path.append('/home/erschultz/TICG-chromatin')
+from scripts.data_generation.modify_maxent import simple_histogram
+from scripts.plotting.contact_map import plot_max_ent
 
 
 def run(dir, config):
@@ -41,7 +43,8 @@ def bonded_simulations():
     base_config['grid_size'] = 1000
 
     mapping = []
-    for boundary_type, ar in [('spherical', 1.0), ('spheroid', 1.5), ('spheroid', 2.0)]:
+    for boundary_type, ar in [('spheroid', 1.5)]:
+        # ('spherical', 1.0), , ('spheroid', 2.0)
         boundary_dir = f'boundary_{boundary_type}'
         if ar != 1.0:
             boundary_dir += f'_{ar}'
@@ -52,11 +55,11 @@ def bonded_simulations():
             bond_dir = osp.join(boundary_dir, f'bond_type_{bond_type}')
             if not osp.exists(bond_dir):
                 os.mkdir(bond_dir, mode=0o755)
-            for m in [1024]:
+            for m in [512]:
                 m_dir = osp.join(bond_dir, f'm_{m}')
                 if not osp.exists(m_dir):
                     os.mkdir(m_dir, mode=0o755)
-                for b in [180]:
+                for b in [100, 120]:
                     b_dir = osp.join(m_dir, f'bond_length_{b}')
                     if not osp.exists(b_dir):
                         os.mkdir(b_dir, mode=0o755)
@@ -92,7 +95,7 @@ def bonded_simulations():
                                 mapping.append((k_angle_dir, config))
 
     print(len(mapping))
-    with mp.Pool(min(len(mapping), 16)) as p:
+    with mp.Pool(min(len(mapping), 2)) as p:
         p.starmap(run, mapping)
 
 def plot_bond_length():

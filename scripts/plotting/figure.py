@@ -26,11 +26,11 @@ from sequences_to_contact_maps.scripts.load_utils import (
     get_converged_max_ent_folder, get_final_max_ent_folder, load_import_log,
     load_L)
 
-test=False
+test=True
 label_fontsize=22
 tick_fontsize=18
 letter_fontsize=26
-dataset = 'dataset_11_20_23'; sample = 23; GNN_ID = 614
+dataset = 'dataset_12_01_23'; sample = 10; GNN_ID = 614
 # dataset = 'dataset_04_05_23'; sample = 1001; GN_ID = 407
 # dataset = 'dataset_04_05_23'; sample = 1001; GNN_ID = 423
 samples, _ = get_samples(dataset, test=True, filter_cell_lines=['imr90'])
@@ -40,7 +40,7 @@ k=10
 grid_root = 'optimize_grid_b_180_v_8_spheroid_1.5'
 def get_dirs(sample_dir):
     grid_dir = osp.join(sample_dir, grid_root)
-    max_ent_dir = f'{grid_dir}-max_ent{k}_soren'
+    max_ent_dir = f'{grid_dir}-max_ent{k}'
     gnn_dir = f'{grid_dir}-GNN{GNN_ID}'
 
     return max_ent_dir, gnn_dir

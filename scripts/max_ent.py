@@ -7,16 +7,18 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
-import optimize_grid
 import pylib.analysis as analysis
-from data_generation.modify_maxent import get_samples
-from plotting.contact_map import getArgs, plot_all
 from pylib.Maxent import Maxent
 from pylib.Pysim import Pysim
 from pylib.utils import default, epilib, utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import *
 from pylib.utils.utils import load_import_log
+
+sys.path.append('/home/erschultz/TICG-chromatin')
+import scripts.optimize_grid as optimize_grid
+from scripts.data_generation.modify_maxent import get_samples
+from scripts.plotting.contact_map import getArgs, plot_all
 
 
 def compute_pcs(dataset, cell_line):
@@ -40,18 +42,19 @@ def compute_pcs(dataset, cell_line):
 
     data_dir = osp.join('/home/erschultz', dataset, f'chroms_{cell_line}')
     for chrom in range(1, 22):
+        print(chrom)
         chrom_dir = osp.join(data_dir, f'chr{chrom}')
         y = np.loadtxt(osp.join(chrom_dir, 'y_multiHiCcompare.txt'))
         y /= np.mean(y.diagonal())
         np.fill_diagonal(y, 1)
 
-        y_smooth = scipy.ndimage.gaussian_filter(y, (3, 3))
-        seq = epilib.get_pcs(epilib.get_oe(y_smooth), 20, normalize=True)
-        plot_save(seq, 'seq_smooth_norm')
-        # seq = epilib.get_pcs(epilib.get_oe(y), 20, normalize=False)
-        # plot_save(seq, 'seq')
-        # seq = epilib.get_pcs(epilib.get_oe(y), 20, normalize=True)
-        # plot_save(seq, 'seq_norm')
+        # y_smooth = scipy.ndimage.gaussian_filter(y, (3, 3))
+        # seq = epilib.get_pcs(epilib.get_oe(y_smooth), 20, normalize=True)
+        # plot_save(seq, 'seq_smooth_norm')
+        seq = epilib.get_pcs(epilib.get_oe(y), 20, normalize=False)
+        plot_save(seq, 'seq')
+        seq = epilib.get_pcs(epilib.get_oe(y), 20, normalize=True)
+        plot_save(seq, 'seq_norm')
         # seq = epilib.get_pcs(np.corrcoef(epilib.get_oe(y)), 20, normalize=True)
         # plot_save(seq, 'seq_corr_norm')
         # seq = epilib.get_sequences(y, 20, randomized=True).T
@@ -337,7 +340,7 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
     os.mkdir(root, mode=0o755)
 
     # get sequences
-    # seqs = load_pcs('dataset_11_20_23', import_log, 'norm', k, norm=False)
+    # seqs = load_pcs('dataset_11_20_23', import_log, 'norm', k, norm=True)
     seqs = epilib.get_pcs(epilib.get_oe(y), k, normalize=True)
     # seqs = epilib.get_pcs(np.corrcoef(epilib.get_oe(y)), k, normalize=True)
     # seqs = epilib.get_sequences(y, k, randomized=True)
@@ -381,29 +384,32 @@ def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=Non
 def main():
     samples = None
     # dataset = 'dataset_02_04_23'
-    # dataset = 'Su2020'; samples = [1013, 1004]
+    dataset = 'Su2020'; samples = ['1013_rescale1', '1013_rescale2']
     # dataset = 'dataset_11_20_23'
-    dataset = 'dataset_12_01_23'
+    # dataset = 'dataset_12_01_23'; samples=[1]
     # dataset = 'dataset_11_21_23_imr90'; samples = range(1, 16)
     # dataset='dataset_HCT116_RAD21_KO'; samples=range(1,9)
 
     if samples is None:
         samples = []
         for cell_line in ['imr90']:
-            samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
+            samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
             samples.extend(samples_cell_line)
         print(samples)
 
     mapping = []
     k_angle=0;theta_0=180;b=180;ar=1.5;phi=None;v=8
+    k=10
     contacts_distance=False
     for i in samples:
-        for k in [10]:
-            mapping.append((dataset, i, f'samples', b, phi, v, None, ar,
-                        'gaussian', k, contacts_distance, k_angle, theta_0))
+        for b in [160, 180, 200, 220]:
+            for v in [6, 8, 10, 12]:
+                mapping.append((dataset, i, f'samples', b, phi, v, None, ar,
+                            'gaussian', k, contacts_distance, k_angle, theta_0))
+
     print('len =', len(mapping))
 
-    with mp.Pool(15) as p:
+    with mp.Pool(16) as p:
         # p.starmap(setup_config, mapping)
         p.starmap(fit, mapping)
         # p.starmap(check, mapping)
@@ -417,4 +423,4 @@ def main():
 if __name__ == '__main__':
     # modify_maxent()
     main()
-    # compute_pcs('dataset_11_20_23', 'imr90')
+    # compute_pcs('dataset_11_20_23', 'gm12878')

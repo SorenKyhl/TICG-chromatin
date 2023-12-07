@@ -1097,8 +1097,8 @@ def distance_cutoff_diag_chis():
 
 
 if __name__ == '__main__':
-    # make_small('dataset_11_20_23')
-    data_corr()
+    make_small('dataset_12_01_23')
+    # data_corr()
     # plot_triu_low_res()
     # distance_cutoff_diag_chis()
     # test_time_contact_distance()

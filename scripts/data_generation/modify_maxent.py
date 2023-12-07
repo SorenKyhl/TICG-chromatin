@@ -108,9 +108,9 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False, filte
                 cell_line = cell_line.lower()
             cell_lines.append(cell_line)
             if cell_line is None:
-                # pass
-                print(f'cell_line is None, skipping {s}: url={result["url"]}')
-                continue
+                pass
+                # print(f'cell_line is None, skipping {s}: url={result["url"]}')
+                # continue
             elif filter_cell_lines is not None:
                 if cell_line not in filter_cell_lines:
                     continue
@@ -168,7 +168,7 @@ def modify_plaid_chis(dataset, b, phi, v, k, ar, cell_line=None):
             max_ent_dir = osp.join(s_dir, f'optimize_grid_b_{b}_v_{v}')
         if ar != 1:
             max_ent_dir += f'_spheroid_{ar}'
-        max_ent_dir += f'-max_ent{k}_chrom_norm_n'
+        max_ent_dir += f'-max_ent{k}'
         if not osp.exists(max_ent_dir):
             print(f'{max_ent_dir} does not exist')
             continue
@@ -255,7 +255,7 @@ def modify_maxent_diag_chi(dataset, b, phi, v, k, ar, edit=True, plot=True, cell
             max_ent_dir = osp.join(s_dir, f'optimize_grid_b_{b}_v_{v}')
         if ar != 1:
             max_ent_dir += f'_spheroid_{ar}'
-        max_ent_dir += f'-max_ent{k}_chrom_norm_n'
+        max_ent_dir += f'-max_ent{k}'
         if not osp.exists(max_ent_dir):
             print(f'{max_ent_dir} does not exist')
             continue
@@ -1409,7 +1409,7 @@ if __name__ == '__main__':
     # diagonal_dist('dataset_02_04_23', b=261, phi=0.01, k=10)
     # grid_dist('dataset_11_20_23', b=180, phi=None, v=8, ar=1.5, cell_line='hmec')
     plaid_dist('dataset_12_01_23', b=180, phi=None, v=8, k=10, ar=1.5, plot=True, eig_norm=True,
-                cell_line='imr90', mode='chrom_norm_n')
+                cell_line='imr90')
     # get_read_counts('dataset_04_28_23')
     # seq_dist('dataset_01_26_23', 4, True, True)
     # plot_params_test()

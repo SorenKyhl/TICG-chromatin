@@ -554,16 +554,6 @@ def compare_xyz():
         if val1 != val2:
             print(k, val1, val2)
 
-def grid_sizes():
-    grid_arr = np.array([198., 364., 254.]) # nm
-    grid_arr /= 1000 # um
-    grid_v_list = [g**3 for g in grid_arr]
-    v_list = [2.21867, 6.656, 6.656]# um
-    m=512
-
-    v_ratio = np.divide(grid_v_list, v_list)
-    print(v_ratio*512)
-
 def compare_cell_lines():
     odir='/home/erschultz/dataset_HCT116_RAD21_KO'
     dir1='/home/erschultz/dataset_HCT116_RAD21_KO/samples/sample1'
@@ -620,7 +610,6 @@ if __name__ == '__main__':
     # visualize_max_ent_methods()
     # compare_xyz()
     # check_GNN_S()
-    # grid_sizes()
     split_dataset('dataset_09_28_23', 1, 0.36)
     # split_dataset('dataset_09_28_23', 10, 0.08)
     # split_dataset('dataset_09_28_23', 100, 0.01)

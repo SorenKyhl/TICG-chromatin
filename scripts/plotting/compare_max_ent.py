@@ -11,6 +11,7 @@ from pylib.utils.plotting_utils import BLUE_RED_CMAP, RED_CMAP, plot_matrix
 from pylib.utils.similarity_measures import SCC
 from pylib.utils.utils import make_composite
 from scipy.stats import pearsonr
+from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import \
@@ -81,12 +82,13 @@ def compare_methods(dataset):
     if not osp.exists(odir):
         os.mkdir(odir, mode=0o755)
     max_ent_roots = ['optimize_grid_b_180_v_8_spheroid_1.5-max_ent10',
-                    'optimize_grid_b_180_v_8_spheroid_1.5-max_ent10_chrom_norm_n',
-                    'optimize_grid_b_180_v_8_spheroid_1.5-max_ent10_grid190',
+                    'optimize_grid_b_180_v_8_spheroid_1.5-max_ent10_long',
+                    'optimize_grid_b_180_v_8_spheroid_1.5-GNN614',
                     ]
-    names = ['Baseline', 'Chrom Norm', 'Grid 190']
+    names = ['Baseline', 'Long', 'GNN 614']
     # samples = get_samples(dataset, test=True, filter_cell_lines='imr90')
-    samples = [9, 10, 11]
+    # samples = [1,2,3,4,5,13,14,15]
+    samples = [6, 7, 8, 9, 10, 11, 12]
 
     scc = SCC(h=5, K=100)
 
@@ -94,17 +96,21 @@ def compare_methods(dataset):
         s_dir = osp.join(dir, f'sample{sample}')
         y_gt = np.load(osp.join(s_dir, 'y.npy'))
         y_gt /= np.mean(y_gt.diagonal())
+        y_diag_gt = epilib.get_oe(y_gt)
 
         pcs_gt = epilib.get_pcs(epilib.get_oe(y_gt), 12).T
 
 
         fig, axes = plt.subplots(1, 3)
         fig.set_figheight(6)
-        fig.set_figwidth(12)
+        fig.set_figwidth(14)
 
-        for max_ent_root, ax, name in zip(max_ent_roots, axes, names):
+        for i, (max_ent_root, ax, name) in enumerate(zip(max_ent_roots, axes, names)):
             me_dir = osp.join(s_dir, max_ent_root)
-            final = get_final_max_ent_folder(me_dir)
+            if name.startswith('GNN'):
+                final = me_dir
+            else:
+                final = get_final_max_ent_folder(me_dir)
             y_me = np.load(osp.join(final, 'y.npy'))
             y = make_composite(y_gt, y_me)
             m = len(y)
@@ -118,9 +124,12 @@ def compare_methods(dataset):
             assert pearson_pc_1 > 0
             pearson_pc_1 = np.round(pearson_pc_1, 3)
 
+            y_diag_me = epilib.get_oe(y_me)
+            rmse_y_tilde = mean_squared_error(y_diag_gt, y_diag_me, squared=False)
+            rmse_y_tilde = np.round(rmse_y_tilde, 3)
 
 
-            title = f'SCC={scc_var}\nCorr PC 1={pearson_pc_1}'
+            title = f'SCC={scc_var}\nCorr PC 1={pearson_pc_1}\n'+r'RMSE($\tilde{H}$)'+f'={rmse_y_tilde}'
 
             s = sns.heatmap(y, linewidth = 0, vmin = 0, vmax = np.mean(y_gt), cmap = RED_CMAP,
                             ax = ax, cbar = False)
@@ -129,12 +138,16 @@ def compare_methods(dataset):
             ax.axline((0,0), slope=1, color = 'k', lw=1)
             s.text(0.99*m, -0.08*m, name, fontsize=16, ha='right', va='top', weight='bold')
             s.text(0.01*m, 1.08*m, 'Experiment', fontsize=16, weight='bold')
+
             s.set_xticks([])
-            s.set_yticks([])
+            if i > 0:
+                s.set_yticks([])
+            else:
+                s.set_yticks([0, 100, 512], [0, 100, 512], fontsize=16)
 
         plt.tight_layout()
         plt.savefig(osp.join(odir, f'max_ent_comparison_sample{sample}.png'))
         plt.close()
 
 if __name__ == '__main__':
-    compare_methods('dataset_11_20_23')
+    compare_methods('dataset_12_01_23')

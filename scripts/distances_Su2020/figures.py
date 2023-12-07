@@ -28,7 +28,7 @@ from sequences_to_contact_maps.scripts.load_utils import (
 
 sys.path.append('/home/erschultz/TICG-chromatin')
 from scripts.distances_Su2020.utils import (dist_distribution_a_b, get_dirs,
-                                            get_pcs, min_MSE, rescale_mu_sigma)
+                                            get_pcs, load_exp_gnn_pca)
 
 
 def load_exp_gnn_pca_contact_maps(dir, GNN_ID=None, b=140, phi=0.03, v=None, ar=1.0):
@@ -69,12 +69,6 @@ def old_figure(sample, GNN_ID, bl=140, phi=0.03, ar=1.0):
     D2 = np.load('/home/erschultz/Su2020/samples/sample1/dist2_mean.npy')
     nan_rows = np.isnan(D[0])
     D_no_nan = D[~nan_rows][:, ~nan_rows] # ignore nan_rows
-    # mu_D_pca, sigma_D_pca, mu_D, sigma_D = rescale_mu_sigma(D, D_pca, True)
-    # mu_D_gnn, sigma_D_gnn, _, _ = rescale_mu_sigma(D, D_gnn, True)
-    # D_pca = rescale_mu_sigma(D, D_pca)
-    # D_gnn = rescale_mu_sigma(D, D_gnn)
-    # alpha_pca = min_MSE(D_no_nan, D_pca[~nan_rows][:, ~nan_rows])
-    # alpha_gnn = min_MSE(D_no_nan, D_gnn[~nan_rows][:, ~nan_rows])
     alpha_pca = 1; alpha_gnn = 1
     D_pca = D_pca * alpha_pca
     if D_gnn is not None:
@@ -82,7 +76,7 @@ def old_figure(sample, GNN_ID, bl=140, phi=0.03, ar=1.0):
 
 
     # compare PCs
-    smooth = False; h = 1
+    smooth = True; h = 2
     V_D = get_pcs(D, nan_rows, smooth=smooth, h = h)
     V_D_pca = get_pcs(D_pca, nan_rows, smooth=smooth, h = h)
     V_D_gnn = get_pcs(D_gnn, nan_rows, smooth=smooth, h = h)
@@ -294,14 +288,18 @@ def new_figure(sample, GNN_ID, bl=140, phi=None, v=None, ar=1.0):
     label_fontsize=24
     tick_fontsize=22
     letter_fontsize=26
-    dir = f'/home/erschultz/Su2020/samples/sample{sample}'
+    data_dir = '/home/erschultz/Su2020'
+    dir = osp.join(data_dir, f'samples/sample{sample}')
     D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=bl, phi=phi, v=v, ar=ar, mode='mean')
+    m = len(D)
     D2 = np.load('/home/erschultz/Su2020/samples/sample1/dist2_mean.npy')
-    nan_rows = np.isnan(D[0])
+    nans = np.isnan(D)
+    nan_rows = np.zeros(m).astype(bool)
+    nan_rows[np.sum(nans, axis=0) == m] = True
     D_no_nan = D[~nan_rows][:, ~nan_rows] # ignore nan_rows
 
     # compare PCs
-    smooth = False; h = 1
+    smooth = True; h = 1
     V_D = get_pcs(D, nan_rows, smooth=smooth, h = h)
     V_D_pca = get_pcs(D_pca, nan_rows, smooth=smooth, h = h)
     V_D_gnn = get_pcs(D_gnn, nan_rows, smooth=smooth, h = h)
@@ -316,17 +314,13 @@ def new_figure(sample, GNN_ID, bl=140, phi=None, v=None, ar=1.0):
     resolution = result['resolution']
 
     # distance distribution
-    if chrom == 21:
-        exp_dir = '/home/erschultz/Su2020/samples/sample1'
-    elif chrom == 2:
-        exp_dir = '/home/erschultz/Su2020/samples/sample10'
     coords_a = f"chr{chrom}:15500001-15550001"
     coords_b = f"chr{chrom}:20000001-20050001"
     coords_a_label =  f"chr{chrom}:15.5 -15.55 Mb"
     coords_b_label = f"chr{chrom}:20-20.05 Mb"
-    xyz_file = osp.join(exp_dir, 'xyz.npy')
+    xyz_file = osp.join(data_dir, f'chr{chrom}_xyz.npy')
     xyz = np.load(xyz_file)
-    coords_file = osp.join(exp_dir, 'coords.json')
+    coords_file = osp.join(data_dir, f'coords_chr{chrom}.json')
     with open(coords_file) as f:
         coords_dict = json.load(f)
 
@@ -338,18 +332,18 @@ def new_figure(sample, GNN_ID, bl=140, phi=None, v=None, ar=1.0):
     shift = coords_dict[f"chr{chrom}:{start}-{start+resolution}"]
 
     max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, bl, phi, v, ar)
-    final_dir = get_final_max_ent_folder(max_ent_dir)
-    file = osp.join(final_dir, 'production_out/output.xyz')
-    xyz_max_ent = xyz_load(file, multiple_timesteps = True)
-    dist_max_ent = dist_distribution_a_b(xyz_max_ent, a - shift, b - shift)
+    dist_max_ent = None
+    # final_dir = get_final_max_ent_folder(max_ent_dir)
+    # file = osp.join(final_dir, 'production_out/output.xyz')
+    # xyz_max_ent = xyz_load(file, multiple_timesteps = True)
+    # dist_max_ent = dist_distribution_a_b(xyz_max_ent, a - shift, b - shift)
 
-    if gnn_dir is not None and osp.exists(gnn_dir):
-        file = osp.join(gnn_dir, 'production_out/output.xyz')
-        print(file)
-        xyz_gnn = xyz_load(file, multiple_timesteps = True)
-        dist_gnn = dist_distribution_a_b(xyz_gnn, a - shift, b - shift)
-    else:
-        dist_gnn = None
+    dist_gnn = None
+    # if gnn_dir is not None and osp.exists(gnn_dir):
+    #     file = osp.join(gnn_dir, 'production_out/output.xyz')
+    #     print(file)
+    #     xyz_gnn = xyz_load(file, multiple_timesteps = True)
+    #     dist_gnn = dist_distribution_a_b(xyz_gnn, a - shift, b - shift)
 
     m = len(D[~nan_rows][:, ~nan_rows])
     all_labels = np.linspace(start_mb, end_mb, m)
@@ -430,17 +424,17 @@ def new_figure(sample, GNN_ID, bl=140, phi=None, v=None, ar=1.0):
         # print(label)
         if D_i is not None:
             meanDist = DiagonalPreprocessing.genomic_distance_statistics(D_i, 'freq')
-            nan_rows = np.isnan(meanDist)
-            nan_rows[0] = True # ignore first entry (guaranteed to be 0)
+            nan_meanDist = np.isnan(meanDist)
+            nan_meanDist[0] = True # ignore first entry (guaranteed to be 0)
             # print(meanDist[:10], meanDist.shape)
-            ax1.plot(log_labels[~nan_rows], meanDist[~nan_rows], label = label,
+            ax1.plot(log_labels[~nan_meanDist], meanDist[~nan_meanDist], label = label,
                         color = color)
 
     meanDist = DiagonalPreprocessing.genomic_distance_statistics(D2, 'freq')
     log_labels = np.linspace(0, 30000*(len(meanDist)-1), len(meanDist))
-    nan_rows = np.isnan(meanDist)
+    nan_meanDist = np.isnan(meanDist)
     print(meanDist[:10], meanDist.shape)
-    ax1.plot(log_labels[~nan_rows], meanDist[~nan_rows], label = 'Experiment2',
+    ax1.plot(log_labels[~nan_meanDist], meanDist[~nan_meanDist], label = 'Experiment2',
                 color = 'k', ls=':')
 
     ax1.set_xlim(50000, None)
@@ -459,7 +453,7 @@ def new_figure(sample, GNN_ID, bl=140, phi=None, v=None, ar=1.0):
     if D_gnn is not None:
         print(D_gnn.shape)
         x = D_no_nan.flatten()[::10]
-        nan_rows = np.isnan(D[0])
+        print(nan_rows.shape)
         y = D_gnn[~nan_rows][:, ~nan_rows].flatten()[::10]
         # Calculate the point density
         xy = np.vstack([x,y])
@@ -724,6 +718,6 @@ def supp_figure(sample, GNN_ID, bl, phi=None, v=None, ar=1.0):
 
 if __name__ == '__main__':
     # old_figure(1013, 490, bl=180, phi=0.008, ar=1.5)
-    # new_figure(1004, 490, bl=180, phi=0.008, ar=1.5)
-    # new_figure(1013, 579, bl=180, v=8, ar=1.5)
+    # new_figure(79, 614, bl=180, v=8, ar=1.5)
+    new_figure(1004, 614, bl=180, v=8, ar=1.5)
     # supp_figure(1013, 579, bl=180, v=8, ar=1.5)
