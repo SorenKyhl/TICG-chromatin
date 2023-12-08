@@ -25,6 +25,7 @@ sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
 from sequences_to_contact_maps.scripts.load_utils import (
     get_final_max_ent_folder, load_import_log, load_Y)
+from sequences_to_contact_maps.scripts.utils import calc_dist_strat_corr
 
 sys.path.append('/home/erschultz/TICG-chromatin')
 from scripts.distances_Su2020.utils import (dist_distribution_a_b, get_dirs,
@@ -76,11 +77,23 @@ def old_figure(sample, GNN_ID, bl=140, phi=0.03, ar=1.0):
 
 
     # compare PCs
-    smooth = True; h = 2
+    smooth = False; h = 2
     V_D = get_pcs(D, nan_rows, smooth=smooth, h = h)
     V_D_pca = get_pcs(D_pca, nan_rows, smooth=smooth, h = h)
     V_D_gnn = get_pcs(D_gnn, nan_rows, smooth=smooth, h = h)
 
+    # SCC
+    scc = SCC()
+    corr_scc_pca = scc.scc(D, D_pca, var_stabilized = True)
+    _, corr_arr_pca = calc_dist_strat_corr(D, D_pca, mode = 'pearson',
+                                            return_arr = True)
+    if D_gnn is not None:
+        corr_scc_gnn = scc.scc(D, D_gnn, var_stabilized = True)
+        _, corr_arr_gnn = calc_dist_strat_corr(D, D_gnn, mode = 'pearson',
+                                                return_arr = True)
+    else:
+        corr_scc_gnn = None
+        corr_arr_gnn = None
 
     result = load_import_log(dir)
     start = result['start']
@@ -304,6 +317,18 @@ def new_figure(sample, GNN_ID, bl=140, phi=None, v=None, ar=1.0):
     V_D_pca = get_pcs(D_pca, nan_rows, smooth=smooth, h = h)
     V_D_gnn = get_pcs(D_gnn, nan_rows, smooth=smooth, h = h)
 
+    # SCC
+    scc = SCC()
+    corr_scc_pca = scc.scc(D_no_nan, D_pca[~nan_rows][:, ~nan_rows], var_stabilized = True)
+    _, corr_arr_pca = calc_dist_strat_corr(D_no_nan, D_pca[~nan_rows][:, ~nan_rows], mode = 'pearson',
+                                            return_arr = True)
+    if D_gnn is not None:
+        corr_scc_gnn = scc.scc(D_no_nan, D_gnn[~nan_rows][:, ~nan_rows], var_stabilized = True)
+        _, corr_arr_gnn = calc_dist_strat_corr(D_no_nan, D_gnn[~nan_rows][:, ~nan_rows], mode = 'pearson',
+                                                return_arr = True)
+    else:
+        corr_scc_gnn = None
+        corr_arr_gnn = None
 
     result = load_import_log(dir)
     start = result['start']
@@ -471,19 +496,32 @@ def new_figure(sample, GNN_ID, bl=140, phi=None, v=None, ar=1.0):
 
 
     # plot pcs
-    ax5.plot(V_D[0], label = 'Experiment', color = 'k')
-    if V_D_pca is not None:
-        V_D_pca[0] *= np.sign(pearson_round(V_D[0], V_D_pca[0]))
-        ax5.plot(V_D_pca[0], label = f'Maximum Entropy', color = 'blue')
-        print(f'Max Ent (r={pearson_round(V_D[0], V_D_pca[0])})')
-    if V_D_gnn is not None:
-        V_D_gnn[0] *= np.sign(pearson_round(V_D[0], V_D_gnn[0]))
-        ax5.plot(V_D_gnn[0], label = f'GNN', color = 'red')
-        print(f'GNN (r={pearson_round(V_D[0], V_D_gnn[0])})')
-    ax5.set_ylabel('PC 1', fontsize=label_fontsize)
+    # ax5.plot(V_D[0], label = 'Experiment', color = 'k')
+    # if V_D_pca is not None:
+    #     V_D_pca[0] *= np.sign(pearson_round(V_D[0], V_D_pca[0]))
+    #     ax5.plot(V_D_pca[0], label = f'Maximum Entropy', color = 'blue')
+    #     print(f'Max Ent (r={pearson_round(V_D[0], V_D_pca[0])})')
+    # if V_D_gnn is not None:
+    #     V_D_gnn[0] *= np.sign(pearson_round(V_D[0], V_D_gnn[0]))
+    #     ax5.plot(V_D_gnn[0], label = f'GNN', color = 'red')
+    #     print(f'GNN (r={pearson_round(V_D[0], V_D_gnn[0])})')
+    # ax5.set_ylabel('PC 1', fontsize=label_fontsize)
+    # ax5.tick_params(axis='both', which='major', labelsize=tick_fontsize)
+    # ax5.set_xticks(genome_ticks, labels = genome_labels, rotation = 0)
+    # ax5.set_yticks([])
+    # ax5.set_xlabel('Genomic Distance (Mb)', fontsize=label_fontsize)
+
+    # plot SCC
+    if corr_arr_pca is not None:
+        ax5.plot(corr_arr_pca, label = f'Maximum Entropy', color = 'blue')
+        print(f'Max Ent (SCC={corr_scc_pca})')
+    if corr_arr_gnn is not None:
+        ax5.plot(corr_arr_gnn, label = f'GNN', color = 'red')
+        print(f'GNN ((SCC={corr_scc_gnn})')
+    ax5.set_ylabel('Pearson Correlation', fontsize=label_fontsize)
     ax5.tick_params(axis='both', which='major', labelsize=tick_fontsize)
     ax5.set_xticks(genome_ticks, labels = genome_labels, rotation = 0)
-    ax5.set_yticks([])
+    # ax5.set_yticks([])
     ax5.set_xlabel('Genomic Distance (Mb)', fontsize=label_fontsize)
 
     # plot a-b distribution
@@ -719,5 +757,5 @@ def supp_figure(sample, GNN_ID, bl, phi=None, v=None, ar=1.0):
 if __name__ == '__main__':
     # old_figure(1013, 490, bl=180, phi=0.008, ar=1.5)
     # new_figure(79, 614, bl=180, v=8, ar=1.5)
-    new_figure(1004, 614, bl=180, v=8, ar=1.5)
+    new_figure('1013_rescale1', None, bl=200, v=8, ar=1.5)
     # supp_figure(1013, 579, bl=180, v=8, ar=1.5)

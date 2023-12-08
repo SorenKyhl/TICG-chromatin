@@ -81,11 +81,12 @@ def compare_methods(dataset):
     odir = f'/home/erschultz/{dataset}/figures'
     if not osp.exists(odir):
         os.mkdir(odir, mode=0o755)
-    max_ent_roots = ['optimize_grid_b_180_v_8_spheroid_1.5-max_ent10',
-                    'optimize_grid_b_180_v_8_spheroid_1.5-max_ent10_long',
-                    'optimize_grid_b_180_v_8_spheroid_1.5-GNN614',
-                    ]
-    names = ['Baseline', 'Long', 'GNN 614']
+    max_ent_roots = ['optimize_grid_b_200_v_8_spheroid_1.5-max_ent10']
+                    # 'optimize_grid_b_180_v_8_spheroid_1.5-max_ent10_long',
+                    # 'optimize_grid_b_180_v_8_spheroid_1.5-GNN614',
+                    # ]
+    names = ['Baseline']
+    # , 'Long', 'GNN 614']
     # samples = get_samples(dataset, test=True, filter_cell_lines='imr90')
     # samples = [1,2,3,4,5,13,14,15]
     samples = [6, 7, 8, 9, 10, 11, 12]
@@ -101,9 +102,11 @@ def compare_methods(dataset):
         pcs_gt = epilib.get_pcs(epilib.get_oe(y_gt), 12).T
 
 
-        fig, axes = plt.subplots(1, 3)
+        fig, axes = plt.subplots(1, len(names))
+        if len(names) == 1:
+            axes = [axes]
         fig.set_figheight(6)
-        fig.set_figwidth(14)
+        fig.set_figwidth(14/3*len(names))
 
         for i, (max_ent_root, ax, name) in enumerate(zip(max_ent_roots, axes, names)):
             me_dir = osp.join(s_dir, max_ent_root)
@@ -150,4 +153,4 @@ def compare_methods(dataset):
         plt.close()
 
 if __name__ == '__main__':
-    compare_methods('dataset_12_01_23')
+    compare_methods('dataset_12_06_23')

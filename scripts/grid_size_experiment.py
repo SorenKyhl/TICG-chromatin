@@ -13,6 +13,7 @@ from data_generation.modify_maxent import get_samples
 from pylib.utils import epilib
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import calculate_diag_chi_step
+from pylib.utils.hic_utils import rescale_p_s_1
 from pylib.utils.plotting_utils import RED_CMAP, plot_matrix, plot_mean_dist
 from pylib.utils.similarity_measures import SCC
 from pylib.utils.utils import load_json, make_composite
@@ -26,24 +27,13 @@ from sequences_to_contact_maps.scripts.load_utils import \
 EXP_DATASET='dataset_02_04_23'
 OVERWRITE=False
 
-def rescale(y, target_p):
-    y /= np.mean(y.diagonal())
-    diag = y.diagonal().copy()
-    y_copy = y.copy()
-    np.fill_diagonal(y_copy, 0)
-    y_copy /= np.mean(y_copy.diagonal(offset=1))
-    y_copy *= target_p
-    np.fill_diagonal(y_copy, diag)
-
-    return y_copy
-
 def rescale_su2020():
     dir = '/home/erschultz/Su2020/samples/sample1013'
     odir = dir + '_rescale2'
     if not osp.exists(odir):
         os.mkdir(odir, mode=0o755)
     y = np.load(osp.join(dir, 'y.npy'))
-    y_copy = rescale(y, 0.2)
+    y_copy = rescale_p_s_1(y, 0.2)
 
     np.save(osp.join(odir, 'y.npy'), y_copy)
     plot_matrix(y_copy, osp.join(odir, 'y.png'), vmax = 'mean')
@@ -81,7 +71,7 @@ def make_samples():
                     continue
             os.mkdir(odir, mode = 0o755)
 
-            y_copy = rescale(y, p)
+            y_copy = rescale_p_s_1(y, p)
 
             print(np.mean(y_copy.diagonal(offset=0)))
             print(np.mean(y_copy.diagonal(offset=1)))

@@ -702,13 +702,13 @@ if __name__ == '__main__':
     samples = None; sample = None
     # dataset = 'dataset_02_04_23'
     # dataset='dataset_11_20_23'
-    dataset='dataset_12_01_23'
+    dataset='dataset_12_06_23'
     # dataset='dataset_11_21_23_imr90'; samples=range(1,16)
     # dataset='Su2020'; samples = [1013]
 
     if samples is None:
         samples, _ = get_samples(dataset, test = True, filter_cell_lines=['imr90'])
-        samples = samples[:15]
+        samples = samples
     if len(samples) == 1:
         sample = samples[0]
         samples = None
@@ -716,7 +716,7 @@ if __name__ == '__main__':
     args = getArgs(data_folder = data_dir, sample=sample, samples = samples)
     args.experimental = True
     args.verbose = True
-    args.convergence_definition = 'strict'
+    args.convergence_definition = 'normal'
     args.test_significance = False
     args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', '_700k', 'phi',
                         'GNN579-max_ent', '-gd_gamma', 'distance', 'start', 'stat',

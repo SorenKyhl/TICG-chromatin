@@ -239,3 +239,14 @@ def get_diagonal(contact):
     for k in range(rows):
         d[k] = np.mean(np.diag(contact, k))
     return d
+
+def rescale_p_s_1(y, target_p):
+    y /= np.mean(y.diagonal())
+    diag = y.diagonal().copy()
+    y_copy = y.copy()
+    np.fill_diagonal(y_copy, 0)
+    y_copy /= np.mean(y_copy.diagonal(offset=1))
+    y_copy *= target_p
+    np.fill_diagonal(y_copy, diag)
+
+    return y_copy
