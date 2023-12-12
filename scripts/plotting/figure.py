@@ -26,18 +26,18 @@ from sequences_to_contact_maps.scripts.load_utils import (
     get_converged_max_ent_folder, get_final_max_ent_folder, load_import_log,
     load_L)
 
-test=True
+test=False
 label_fontsize=22
 tick_fontsize=18
 letter_fontsize=26
-dataset = 'dataset_12_01_23'; sample = 10; GNN_ID = 614
+dataset = 'dataset_12_06_23'; sample = 6; GNN_ID = 629
 # dataset = 'dataset_04_05_23'; sample = 1001; GN_ID = 407
 # dataset = 'dataset_04_05_23'; sample = 1001; GNN_ID = 423
 samples, _ = get_samples(dataset, test=True, filter_cell_lines=['imr90'])
-samples_list = samples[:10]
+samples_list = samples
 print(f'Samples: {samples_list}, len={len(samples_list)}')
 k=10
-grid_root = 'optimize_grid_b_180_v_8_spheroid_1.5'
+grid_root = 'optimize_grid_b_200_v_8_spheroid_1.5'
 def get_dirs(sample_dir):
     grid_dir = osp.join(sample_dir, grid_root)
     max_ent_dir = f'{grid_dir}-max_ent{k}'
@@ -267,7 +267,7 @@ def figure(test=False):
         scc_var = np.round(scc_var, 3)
         title = f'SCC={scc_var}'
         print(f'{label}: ' + title)
-        s.set_title(title, fontsize = label_fontsize, loc='left')
+        # s.set_title(title, fontsize = label_fontsize, loc='left')
         s.axline((0,0), slope=1, color = 'k', lw=1)
         s.text(0.99*m, -0.08*m, label, fontsize=label_fontsize, ha='right', va='top', weight='bold')
         s.text(0.01*m, 1.08*m, 'Experiment', fontsize=label_fontsize, weight='bold')
@@ -281,7 +281,7 @@ def figure(test=False):
 
     title = f'Max Ent (r={pearson_round(pcs[0], pcs_pca[0])})\nGNN (r={pearson_round(pcs[0], pcs_gnn[0])})'
     print(title)
-    ax4.set_title(title)
+    # ax4.set_title(title)
     ax4.set_xticks(genome_ticks, labels = genome_labels, rotation = 0,
                     fontsize = tick_fontsize)
     ax4.set_yticks([])
@@ -314,6 +314,7 @@ def figure(test=False):
 
     ax5.set_yscale('log')
     ax5.set_xscale('log')
+    ax5.set_ylim(None, 2e-1)
     ax5.set_ylabel('Contact Probability', fontsize = label_fontsize)
     ax5.set_xlabel('Genomic Separation (bp)', fontsize = label_fontsize)
     ax5.tick_params(axis='both', which='major', labelsize=tick_fontsize)

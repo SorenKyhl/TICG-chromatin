@@ -189,6 +189,7 @@ def crop_hg38(inp, start, m, coords):
         m (int): desired len of output
         coords: dictionary
     '''
+    assert len(inp) == len(coords)
     i = coords[start]
     if len(inp.shape) == 2:
         return inp[i:i+m, i:i+m]

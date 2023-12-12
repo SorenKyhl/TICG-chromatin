@@ -167,6 +167,11 @@ def check(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
                     it = i
             prcnt = np.round(it/30*100, 1)
             print(f'{root}: {prcnt}')
+        elif not osp.exists(osp.join(root, 'iteration30/tri.png')):
+            traj = np.loadtxt(osp.join(root, 'iteration30/production_out/energy.traj'))
+            sweep = traj[-1][0]
+            prcnt = np.round(sweep/300000*100, 1)
+            print(f'{root}: final {prcnt}')
         else:
             print(f'{root}: complete')
     else:
@@ -316,6 +321,7 @@ def setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
         raise Exception(f'Need to specify bin sizes for size={len(y)}')
 
     config['diag_chis'] = np.zeros(config['n_small_bins']+config["n_big_bins"])
+    # config['grid_size'] = 200
 
     # config['diag_start'] = 10
     root = osp.join(dir, f'{root}-max_ent{k}')
@@ -384,17 +390,19 @@ def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=Non
 def main():
     samples = None
     # dataset = 'dataset_02_04_23'
-    # dataset = 'Su2020'; samples = ['1013_rescale1', '1013_rescale2']
+    # dataset = 'Su2020'; samples = ['1013_rescale1', '1004_rescale1']
     dataset = 'dataset_12_06_23'
-    # dataset = 'dataset_12_01_23'; samples=[1]
+    # dataset = 'dataset_12_06_23'
     # dataset = 'dataset_11_21_23_imr90'; samples = range(1, 16)
     # dataset='dataset_HCT116_RAD21_KO'; samples=range(1,9)
 
     if samples is None:
         samples = []
-        for cell_line in ['imr90']:
-            samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
-            samples.extend(samples_cell_line)
+        for cell_line in ['huvec', 'hap1']:
+            # running: 'huvec', 'hap1'
+            # done: 'hmec', 'gm12878'
+            # samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
+            # samples.extend(samples_cell_line)
             samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
             samples.extend(samples_cell_line)
 

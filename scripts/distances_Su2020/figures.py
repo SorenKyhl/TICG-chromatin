@@ -496,33 +496,33 @@ def new_figure(sample, GNN_ID, bl=140, phi=None, v=None, ar=1.0):
 
 
     # plot pcs
-    # ax5.plot(V_D[0], label = 'Experiment', color = 'k')
-    # if V_D_pca is not None:
-    #     V_D_pca[0] *= np.sign(pearson_round(V_D[0], V_D_pca[0]))
-    #     ax5.plot(V_D_pca[0], label = f'Maximum Entropy', color = 'blue')
-    #     print(f'Max Ent (r={pearson_round(V_D[0], V_D_pca[0])})')
-    # if V_D_gnn is not None:
-    #     V_D_gnn[0] *= np.sign(pearson_round(V_D[0], V_D_gnn[0]))
-    #     ax5.plot(V_D_gnn[0], label = f'GNN', color = 'red')
-    #     print(f'GNN (r={pearson_round(V_D[0], V_D_gnn[0])})')
-    # ax5.set_ylabel('PC 1', fontsize=label_fontsize)
-    # ax5.tick_params(axis='both', which='major', labelsize=tick_fontsize)
-    # ax5.set_xticks(genome_ticks, labels = genome_labels, rotation = 0)
-    # ax5.set_yticks([])
-    # ax5.set_xlabel('Genomic Distance (Mb)', fontsize=label_fontsize)
-
-    # plot SCC
-    if corr_arr_pca is not None:
-        ax5.plot(corr_arr_pca, label = f'Maximum Entropy', color = 'blue')
-        print(f'Max Ent (SCC={corr_scc_pca})')
-    if corr_arr_gnn is not None:
-        ax5.plot(corr_arr_gnn, label = f'GNN', color = 'red')
-        print(f'GNN ((SCC={corr_scc_gnn})')
-    ax5.set_ylabel('Pearson Correlation', fontsize=label_fontsize)
+    ax5.plot(V_D[0], label = 'Experiment', color = 'k')
+    if V_D_pca is not None:
+        V_D_pca[0] *= np.sign(pearson_round(V_D[0], V_D_pca[0]))
+        ax5.plot(V_D_pca[0], label = f'Maximum Entropy', color = 'blue')
+        print(f'Max Ent (r={pearson_round(V_D[0], V_D_pca[0])})')
+    if V_D_gnn is not None:
+        V_D_gnn[0] *= np.sign(pearson_round(V_D[0], V_D_gnn[0]))
+        ax5.plot(V_D_gnn[0], label = f'GNN', color = 'red')
+        print(f'GNN (r={pearson_round(V_D[0], V_D_gnn[0])})')
+    ax5.set_ylabel('PC 1', fontsize=label_fontsize)
     ax5.tick_params(axis='both', which='major', labelsize=tick_fontsize)
     ax5.set_xticks(genome_ticks, labels = genome_labels, rotation = 0)
-    # ax5.set_yticks([])
+    ax5.set_yticks([])
     ax5.set_xlabel('Genomic Distance (Mb)', fontsize=label_fontsize)
+
+    # plot SCC
+    # if corr_arr_pca is not None:
+    #     ax5.plot(corr_arr_pca, label = f'Maximum Entropy', color = 'blue')
+    #     print(f'Max Ent (SCC={corr_scc_pca})')
+    # if corr_arr_gnn is not None:
+    #     ax5.plot(corr_arr_gnn, label = f'GNN', color = 'red')
+    #     print(f'GNN ((SCC={corr_scc_gnn})')
+    # ax5.set_ylabel('Pearson Correlation', fontsize=label_fontsize)
+    # ax5.tick_params(axis='both', which='major', labelsize=tick_fontsize)
+    # ax5.set_xticks(genome_ticks, labels = genome_labels, rotation = 0)
+    # # ax5.set_yticks([])
+    # ax5.set_xlabel('Genomic Distance (Mb)', fontsize=label_fontsize)
 
     # plot a-b distribution
     bin_width = 50
@@ -559,144 +559,192 @@ def new_figure(sample, GNN_ID, bl=140, phi=None, v=None, ar=1.0):
     plt.close()
 
 
-
-def small_figure(sample, GNN_ID, bl=140, phi=0.03):
-    label_fontsize=24
+def both_chroms_figure(GNN_ID, bl=None, phi=None, v=None, ar=1):
+    label_fontsize=22
     tick_fontsize=22
     letter_fontsize=26
-    dir = f'/home/erschultz/Su2020/samples/sample{sample}'
-    D, D_gnn, _ = load_exp_gnn_pca(dir, GNN_ID, b=bl, phi=phi)
-    nan_rows = np.isnan(D[0])
-
-    # compare PCs
-    smooth = False; h = 1
-    V_D = get_pcs(D, nan_rows, smooth=smooth, h = h)
-    V_D_gnn = get_pcs(D_gnn, nan_rows, smooth=smooth, h = h)
-
-    result = load_import_log(dir)
-    start = result['start']
-    end = result['end']
-    start_mb = result['start_mb']
-    end_mb = result['end_mb']
-    chrom = int(result['chrom'])
-    resolution = result['resolution']
-
-    # distance distribution
-    if chrom == 21:
-        exp_dir = '/home/erschultz/Su2020/samples/sample1'
-    elif chrom == 2:
-        exp_dir = '/home/erschultz/Su2020/samples/sample10'
-    coords_a = f"chr{chrom}:15500001-15550001"
-    coords_b = f"chr{chrom}:20000001-20050001"
-    coords_a_label =  f"chr{chrom}:15.5 -15.55 Mb"
-    coords_b_label = f"chr{chrom}:20-20.05 Mb"
-    xyz_file = osp.join(exp_dir, 'xyz.npy')
-    xyz = np.load(xyz_file)
-    coords_file = osp.join(exp_dir, 'coords.json')
-    with open(coords_file) as f:
-        coords_dict = json.load(f)
-
-    a = coords_dict[coords_a]
-    b = coords_dict[coords_b]
-    dist = dist_distribution_a_b(xyz, a, b)
-
-    # shift ind such that start is at 0
-    shift = coords_dict[f"chr{chrom}:{start}-{start+resolution}"]
-
-    _, gnn_dir = get_dirs(dir, GNN_ID, bl, phi)
-    if gnn_dir is not None and osp.exists(gnn_dir):
-        file = osp.join(gnn_dir, 'production_out/output.xyz')
-        print(file)
-        xyz_gnn = xyz_load(file, multiple_timesteps = True)
-        dist_gnn = dist_distribution_a_b(xyz_gnn, a - shift, b - shift)
-    else:
-        dist_gnn = None
-
-    m = len(D[~nan_rows][:, ~nan_rows])
-    all_labels = np.linspace(start_mb, end_mb, m)
-    all_labels = np.round(all_labels, 0).astype(int)
-    genome_ticks = [0, m-1]
-    genome_labels = [f'{all_labels[i]}' for i in genome_ticks]
+    data_dir = '/home/erschultz/Su2020'
 
     ### combined figure ###
     print('---'*9)
     print('Starting Figure')
-    plt.figure(figsize=(18, 6))
-    ax3 = plt.subplot(1, 24, (1, 6))
-    ax4 = plt.subplot(1, 24, (8, 16)) # pc
-    ax5 = plt.subplot(1, 24, (18, 24)) # dist a-b
+    plt.figure(figsize=(18, 11.5))
+    ax1 = plt.subplot(2, 24, (1, 6))
+    ax2 = plt.subplot(2, 24, (9, 14))
+    ax3 = plt.subplot(2, 24, (16, 21))
+    ax_cb1 = plt.subplot(2, 48, 45)
+    ax4 = plt.subplot(2, 24, (25, 30))
+    ax5 = plt.subplot(2, 24, (33, 38))
+    ax6 = plt.subplot(2, 24, (40, 45))
+    ax_cb2 = plt.subplot(2, 48, 93)
+    for sample, axes in zip(['1013_rescale1', '1004_rescale1'],
+                            [(ax1, ax2, ax3, ax_cb1), (ax4, ax5, ax6, ax_cb2)]):
+        dir = osp.join(data_dir, f'samples/sample{sample}')
+        D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=bl, phi=phi, v=v, ar=ar, mode='mean')
+        m = len(D)
+        nans = np.isnan(D)
+        nan_rows = np.zeros(m).astype(bool)
+        nan_rows[np.sum(nans, axis=0) == m] = True
+        D_no_nan = D[~nan_rows][:, ~nan_rows] # ignore nan_rows
 
-    # plot scaling
-    m = len(D)
-    log_labels = np.linspace(0, resolution*(m-1), m)
-    # print('h1204', log_labels.shape)
-    data = zip([D, D_gnn], ['Experiment', 'GNN'], ['k','r'])
-    for D_i, label, color in data:
-        # print(label)
-        if D_i is not None:
-            meanDist = DiagonalPreprocessing.genomic_distance_statistics(D_i, 'freq')
-            nan_rows = np.isnan(meanDist)
-            # print(meanDist[:10], meanDist.shape)
-            ax3.plot(log_labels[~nan_rows], meanDist[~nan_rows], label = label, color = color)
-    ax3.tick_params(axis='both', which='major', labelsize=tick_fontsize)
-    ax3.set_ylabel('Distance (nm)', fontsize = label_fontsize)
-    ax3.set_xlabel('Genomic Separation (bp)', fontsize = label_fontsize)
-    ax3.set_xscale('log')
-    # ax3.set_yscale('log')
-    # X = np.arange(1*10**5, 9*10**6, resolution)
-    # A = .001/resolution
-    # Y = A*np.power(X, 1/2) + 200
-    # ax3.plot(X, Y, ls='dashed', color = 'grey')
-    # ax3.legend(fontsize=legend_fontsize)
+        result = load_import_log(dir)
+        start = result['start']
+        end = result['end']
+        start_mb = result['start_mb']
+        end_mb = result['end_mb']
+        chrom = int(result['chrom'])
+        resolution = result['resolution']
 
-    # plot pcs
-    ax4.plot(V_D[0], label = 'Experiment', color = 'k')
-    if V_D_gnn is not None:
-        V_D_gnn[0] *= np.sign(pearson_round(V_D[0], V_D_gnn[0]))
-        ax4.plot(V_D_gnn[0], label = f'GNN', color = 'red')
-        print(f'GNN (r={pearson_round(V_D[0], V_D_gnn[0])})')
-    ax4.set_ylabel('PC 1', fontsize=label_fontsize)
-    ax4.tick_params(axis='both', which='major', labelsize=tick_fontsize)
-    ax4.set_xticks(genome_ticks, labels = genome_labels, rotation = 0)
-    ax4.set_yticks([])
-    ax4.set_xlabel('Genomic Distance (Mb)', fontsize=label_fontsize)
-    # ax4.legend(fontsize=legend_fontsize)
+        m = len(D[~nan_rows][:, ~nan_rows])
+        all_labels = np.linspace(start_mb, end_mb, m)
+        all_labels = np.round(all_labels, 0).astype(int)
+        genome_ticks = [0, m-1]
+        genome_labels = [f'{all_labels[i]}' for i in genome_ticks]
 
-    # plot a-b distribution
-    bin_width = 50
-    arrs = [dist[~np.isnan(dist)], dist_gnn]
-    labels = ['Experiment', 'GNN']
-    colors = ['k', 'r']
-    data = zip(arrs, labels, colors)
-    for arr, label, color in data:
-        if arr is None:
-            continue
-        ax5.hist(arr, label = label, alpha = 0.5, color = color,
-                    weights = np.ones_like(arr) / len(arr),
-                    bins = range(math.floor(min(arr)), math.ceil(max(arr)) + bin_width, bin_width))
-    ax5.set_ylabel('Probability', fontsize=label_fontsize)
-    ax5.tick_params(axis='both', which='major', labelsize=tick_fontsize)
-    # ax5.legend(fontsize=legend_fontsize)
-    ax5.set_xlabel('Spatial Distance (nm)', fontsize=label_fontsize)
-    ax5.set_xlim(None, 3000)
-    ax5.set_yticks([])
-    print(f'Distance between\n{coords_a_label} and {coords_b_label}')
+        # plot dmaps
+        vmin = np.nanpercentile(D_no_nan, 5)
+        vmed = np.nanpercentile(D_no_nan, 50)
+        vmax = np.nanpercentile(D_no_nan, 95)
 
-    ax4.legend(bbox_to_anchor=(0.5, -0.25), loc='upper center',
-                fontsize = label_fontsize,
-                borderaxespad=0, ncol = 3)
+        print(vmin, vmed, vmax)
+        npixels = np.shape(D_no_nan)[0]
+        indu = np.triu_indices(npixels)
+        indl = np.tril_indices(npixels)
+        data = zip([D_gnn, D_pca], ['GNN', 'Max Ent'])
+        for i, (D_sim, label) in enumerate(data):
+            if D_sim is None:
+                continue
 
-    for n, ax in enumerate([ax3, ax4, ax5]):
+            D_sim = D_sim[~nan_rows][:, ~nan_rows] # ignore nan_rows
+
+            # make composite contact map
+            composite = np.zeros((npixels, npixels))
+            composite[indu] = D_sim[indu]
+            composite[indl] = D_no_nan[indl]
+
+            # get corr
+            triu_ind = np.triu_indices(len(D_sim))
+            corr = pearson_round(D_no_nan[triu_ind], D_sim[triu_ind], stat = 'nan_pearson')
+
+            if i == 0:
+                s = sns.heatmap(composite, linewidth = 0, vmin = vmin, vmax = vmax,
+                                cmap = RED_BLUE_CMAP,
+                                ax = axes[i+1], cbar = False)
+            else:
+                s = sns.heatmap(composite, linewidth = 0, vmin = vmin, vmax = vmax,
+                                cmap = RED_BLUE_CMAP,
+                                ax = axes[i+1], cbar_ax = axes[-1])
+            s.axline((0,0), slope=1, color = 'k', lw=1)
+            s.text(0.99*m, -0.08*m, label, fontsize=label_fontsize, ha='right', va='top',
+                    weight = 'bold')
+                    # path_effects=[pe.withStroke(linewidth=4, foreground="white")])
+            s.text(0.01*m, 1.08*m, 'Experiment', fontsize=label_fontsize, weight='bold')
+                    # path_effects=[pe.withStroke(linewidth=4, foreground="white")])
+            print(f'\nCorr(Exp, {label})={np.round(corr, 3)}')
+            # s.set_xticks(genome_ticks, labels = genome_labels, rotation = 0,
+            #             fontsize = tick_fontsize)
+            s.set_xticks([])
+
+            if i > 0:
+                s.set_yticks([])
+            else:
+                s.set_yticks(genome_ticks, labels = genome_labels,
+                            fontsize = tick_fontsize)
+
+        axes[-1].tick_params(labelsize=tick_fontsize)
+
+        # plot scaling
+        m = len(D)
+        log_labels = np.linspace(0, resolution*(m-1), m)
+        # print('h1204', log_labels.shape)
+        data = zip([D, D_pca, D_gnn], ['Experiment', 'Max Ent', 'GNN'], ['k', 'b', 'r'])
+        for D_i, label, color in data:
+            # print(label)
+            if D_i is not None:
+                meanDist = DiagonalPreprocessing.genomic_distance_statistics(D_i, 'freq')
+                nan_meanDist = np.isnan(meanDist)
+                nan_meanDist[0] = True # ignore first entry (guaranteed to be 0)
+                # print(meanDist[:10], meanDist.shape)
+                axes[0].plot(log_labels[~nan_meanDist], meanDist[~nan_meanDist], label = label,
+                            color = color)
+
+        if sample.startswith('1004'):
+            D2 = np.load('/home/erschultz/Su2020/samples/sample1/dist2_mean.npy')
+            meanDist = DiagonalPreprocessing.genomic_distance_statistics(D2, 'freq')
+            log_labels = np.linspace(0, 30000*(len(meanDist)-1), len(meanDist))
+            nan_meanDist = np.isnan(meanDist)
+            print(meanDist[:10], meanDist.shape)
+            axes[0].plot(log_labels[~nan_meanDist], meanDist[~nan_meanDist], label = 'Experiment2',
+                        color = 'k', ls=':')
+
+        axes[0].set_xlim(50000, None)
+        axes[0].tick_params(axis='both', which='major', labelsize=tick_fontsize)
+        axes[0].set_ylabel('Distance (nm)', fontsize = label_fontsize)
+        axes[0].set_xlabel('Genomic Separation (bp)', fontsize = label_fontsize)
+        axes[0].set_xscale('log')
+
+    for n, ax in enumerate([ax1, ax4, ax2, ax5]):
         ax.text(-0.0, 1.05, string.ascii_uppercase[n], transform=ax.transAxes,
                 size=letter_fontsize, weight='bold')
 
-
-    plt.subplots_adjust(bottom=0.275, top = 0.9, left = 0.15, right = 0.95,
-                    hspace = 0.25, wspace = 0.45)
+    plt.subplots_adjust(bottom=0.16, top = 0.95, left = 0.1, right = 0.95,
+                    hspace = 0.45, wspace = 0.35)
     plt.tight_layout()
-    plt.savefig('/home/erschultz/TICG-chromatin/figures/distances.png')
+    plt.savefig('/home/erschultz/TICG-chromatin/figures/distances_both_chroms.png')
     plt.close()
 
+
+
+    ### supp figure with hicmaps ###
+    print('---'*9)
+    print('Starting Supp Figure')
+    fig, axes = plt.subplots(2, 2)
+    axes = axes.flatten()
+    fig.set_figheight(13.5)
+    fig.set_figwidth(12)
+
+    ax_i = 0
+    for sample in ['1013_rescale1', '1004_rescale1']:
+        dir = osp.join(data_dir, f'samples/sample{sample}')
+        y, y_gnn, y_pca = load_exp_gnn_pca_contact_maps(dir, GNN_ID, b=bl, phi=phi, v=v, ar=ar)
+        m = len(y)
+
+        npixels = np.shape(y)[0]
+        indu = np.triu_indices(npixels)
+        indl = np.tril_indices(npixels)
+        composites = []
+        for y_i in [y_gnn, y_pca]:
+            # make composite contact map
+            composite = np.zeros((npixels, npixels))
+            composite[indu] = y_i[indu]
+            composite[indl] = y[indl]
+            composites.append(composite)
+
+        # plot cmaps
+        arr = np.array(composites)
+        vmax = np.mean(arr)
+        for composite, label in zip(composites, ['GNN', 'Max Ent']):
+            ax = axes[ax_i]
+            ax_i += 1
+            s = sns.heatmap(composite, linewidth = 0, vmin = 0, vmax = vmax, cmap = RED_CMAP,
+                            ax = ax, cbar = False)
+            ax.axline((0,0), slope=1, color = 'k', lw=1)
+            ax.text(0.99*m, -0.08*m, label, fontsize=label_fontsize, ha='right', va='top',
+                    weight='bold')
+            ax.text(0.01*m, 1.08*m, 'Experiment', fontsize=label_fontsize, weight='bold')
+            # s.set_xticks(genome_ticks, labels = genome_labels, rotation = 0)
+            # s.set_yticks(genome_ticks, labels = genome_labels)
+            s.set_xticks([])
+            s.set_yticks([])
+            s.tick_params(axis='both', which='major', labelsize=tick_fontsize)
+
+    for n, ax in enumerate([axes[0], axes[2]]):
+        ax.text(-0.1, 1.05, string.ascii_uppercase[n], transform=ax.transAxes,
+                size=letter_fontsize, weight='bold')
+
+    plt.tight_layout()
+    plt.savefig('/home/erschultz/TICG-chromatin/figures/distances_both_chroms_hic.png')
+    plt.close()
 
 
 def supp_figure(sample, GNN_ID, bl, phi=None, v=None, ar=1.0):
@@ -756,6 +804,7 @@ def supp_figure(sample, GNN_ID, bl, phi=None, v=None, ar=1.0):
 
 if __name__ == '__main__':
     # old_figure(1013, 490, bl=180, phi=0.008, ar=1.5)
-    # new_figure(79, 614, bl=180, v=8, ar=1.5)
-    new_figure('1013_rescale1', None, bl=200, v=8, ar=1.5)
+    # new_figure('1004_rescale1', 614, bl=200, v=8, ar=1.5)
+    # new_figure('1013_rescale1', 614, bl=160, v=8, ar=1.5)
+    both_chroms_figure(629, bl=200, v=8, ar=1.5)
     # supp_figure(1013, 579, bl=180, v=8, ar=1.5)

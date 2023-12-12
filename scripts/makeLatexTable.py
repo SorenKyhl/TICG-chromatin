@@ -277,7 +277,7 @@ def load_data(args):
                     continue
                 yhat_meanDist = DiagonalPreprocessing.genomic_distance_statistics(yhat)
                 yhat_diag = DiagonalPreprocessing.process(yhat, yhat_meanDist, verbose = False)
-                scc = SCC(h=5) # TODO K
+                scc = SCC(h=5, K=100)
                 corr_scc_var = scc.scc(ground_truth_y, yhat, var_stabilized = True)
 
                 # result = plotDistanceStratifiedPearsonCorrelation(ground_truth_y,
@@ -500,7 +500,8 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
                     elif metric == 'rmse-S':
                         roundoff = 2
                     elif metric == 'rmse-y' or metric.startswith('rmse-diag'):
-                        roundoff = 4
+                        roundoff = 5
+                    print(metric, roundoff)
 
                     # if metric == 'scc_var':
                     #     print('scc_var: ')
@@ -526,8 +527,8 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
                         result_sem = ss.sem(result, nan_policy = 'omit')
                         result_std = np.round(result_std, roundoff)
                         result_sem = np.round(result_sem, roundoff)
-                        # text += f" & {result_mean} $\pm$ {result_sem}"
-                        text += f" & {result_mean}"
+                        text += f" & {result_mean} $\pm$ {result_sem}"
+                        # text += f" & {result_mean}"
                         if pval is None:
                             pass
                         elif pval < 0.001:
@@ -707,7 +708,7 @@ if __name__ == '__main__':
     # dataset='Su2020'; samples = [1013]
 
     if samples is None:
-        samples, _ = get_samples(dataset, test = True, filter_cell_lines=['imr90'])
+        samples, _ = get_samples(dataset, test = True, filter_cell_lines=['hmec'])
         samples = samples
     if len(samples) == 1:
         sample = samples[0]
@@ -726,7 +727,7 @@ if __name__ == '__main__':
     # args.gnn_id = [434, 578, 579, 450, 451]
     # args.gnn_id = [600, 605, 606, 607, 608, 609, 610]
     # args.gnn_id = [579, 600, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620, 621, 622, 623, 624, 625]
-    args.gnn_id = [614, 627]
+    args.gnn_id = [614, 627, 628, 629]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

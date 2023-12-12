@@ -28,12 +28,12 @@ EXP_DATASET='dataset_02_04_23'
 OVERWRITE=False
 
 def rescale_su2020():
-    dir = '/home/erschultz/Su2020/samples/sample1013'
-    odir = dir + '_rescale2'
+    dir = '/home/erschultz/Su2020/samples/sample1004'
+    odir = dir + '_rescale1'
     if not osp.exists(odir):
         os.mkdir(odir, mode=0o755)
     y = np.load(osp.join(dir, 'y.npy'))
-    y_copy = rescale_p_s_1(y, 0.2)
+    y_copy = rescale_p_s_1(y, 0.1)
 
     np.save(osp.join(odir, 'y.npy'), y_copy)
     plot_matrix(y_copy, osp.join(odir, 'y.png'), vmax = 'mean')

@@ -137,7 +137,7 @@ def fit(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     m = len(y)
 
     # config_ref = utils.load_json(osp.join(dir, 'config.json'))
-    # config['grid_size'] = config_ref['grid_size']
+    # config['grid_size'] = 200
     config['nspecies'] = 0
     config['load_bead_types'] = False
     config['lmatrix_on'] = False
@@ -239,8 +239,8 @@ def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
 def main():
     samples=None
     # dataset='dataset_interp_test'; samples=[1]
-    dataset='dataset_12_01_23';
-    # dataset = 'Su2020'; samples=[1013, 1004]
+    dataset='dataset_12_06_23';
+    # dataset = 'Su2020'; samples=['1004_rescale1']
     # dataset = 'dataset_06_29_23'; samples=[81]
     # dataset = 'dataset_11_20_23';
     # dataset = 'dataset_11_21_23_imr90'; samples = range(16, 31)
@@ -252,10 +252,10 @@ def main():
         for cell_line in ['imr90']:
             # 'gm12878', 'hap1', 'huvec'
             samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
-            samples.extend(samples_cell_line[:10])
+            samples.extend(samples_cell_line)
     print(len(samples))
 
-    GNN_IDs = [627]; b=180; phi=None; v=8; ar=1.5
+    GNN_IDs = [629]; b=200; phi=None; v=8; ar=1.5
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
@@ -264,9 +264,9 @@ def main():
     print(len(mapping))
     # print(mapping)
 
-    with mp.Pool(10) as p:
+    # with mp.Pool(1) as p:
         # p.starmap(cleanup, mapping)
-        p.starmap(fit, mapping)
+        # p.starmap(fit, mapping)
 
     for i in mapping:
         # fit_max_ent(*i)
