@@ -53,7 +53,7 @@ def get_config(
     # if nbeads > 10241:
     #    config['contact_resolution'] = 5
 
-    assert base in ["gaussian", "gaussian-5k", "persistent", "persistent-5k"]
+    assert base in ["gaussian", "gaussian-5k", "persistent", "persistent-5k", "load"]
     if base == "gaussian":
         baseb = 16.5
         baseg = grid_bond_ratio * baseb
