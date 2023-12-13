@@ -78,5 +78,8 @@ dir='/home/erschultz'
 
 dir='/project2/depablo/erschultz'
 cd $dir
-compress dataset_10_12_23
-rm -r *_cutoff*
+compress dataset_10_13_23
+compress dataset_10_14_23
+compress dataset_10_16_23_hmec
+compress dataset_10_16_23_imr90
+compress dataset_10_16_23_k562

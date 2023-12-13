@@ -1,11 +1,13 @@
 import csv
-import json
 import os
 import os.path as osp
 import time
 from collections import defaultdict
 
+import matplotlib.pyplot as plt
 import numpy as np
+from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
+from pylib.utils.utils import load_json
 from scipy.sparse import csr_array
 from sklearn.metrics.pairwise import nan_euclidean_distances
 
@@ -134,20 +136,10 @@ def xyz_to_contact_distance(xyz, cutoff_distance, dtype = np.int32, verbose = Fa
         m = xyz.shape[0]
         xyz = xyz.reshape(-1, m, 3)
 
-    contact_map = np.zeros((m, m)).astype(dtype)
     t0 = time.time()
-    for n in range(N):
-        if verbose:
-            prcnt_done = n/N * 100
-            t = time.time() - t0
-            if prcnt_done % 5 == 0:
-                print(f'{prcnt_done}%')
-        for i in range(m):
-            for j in range(i+1):
-                dist = np.linalg.norm(xyz[n, i, :] -xyz[n, j, :])
-                if dist <= cutoff_distance:
-                    contact_map[i,j] += 1
-                    contact_map[j,i] += 1
+    D = xyz_to_distance(xyz, verbose)
+    contact_map = D <= cutoff_distance
+    contact_map = np.sum(contact_map, axis = 0).astype(dtype)
 
     return contact_map
 
@@ -207,3 +199,39 @@ def calculate_rg(xyz, verbose=False):
         print('rgs', rgs)
         print('result', result)
     return result
+
+def time_contact_distance():
+    N=2
+    m=4
+    xyz = np.random.rand(N*m*3).reshape(N, m, 3)
+    xyz_to_contact_distance(xyz, 0.5, verbose=True)
+
+def compare_python_to_cpp():
+    dir = '/home/erschultz/dataset_bonded/boundary_spheroid_2.0/bond_type_gaussian/m_512/bond_length_180/v_8/angle_0'
+    y_cpp = None
+    xyz = xyz_load(osp.join(dir, 'production_out/output.xyz'))
+    dir = '/home/erschultz/dataset_06_29_23/samples/sample1/optimize_distance_b_180_v_8_spheroid_1.5-max_ent10/iteration0'
+    # y_cpp = np.load(osp.join(dir, 'y.npy'))
+    config = load_json(osp.join(dir, 'config.json'))
+    cutoff = config['distance_cutoff']
+    print(cutoff)
+    y_p = xyz_to_contact_distance(xyz, cutoff, verbose=True)
+
+    for y, name in zip([y_p, y_cpp], ['python', 'cpp']):
+        if y is None:
+            continue
+        meanDist = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
+        plt.plot(meanDist, label=name)
+
+    plt.yscale('log')
+    plt.xscale('log')
+    plt.ylabel('Contact Probability', fontsize = 16)
+    plt.xlabel('Polymer Distance (beads)', fontsize = 16)
+    plt.legend()
+    # plt.set_ylim(10**-5, None)
+    plt.tight_layout()
+    plt.show()
+
+if __name__ == '__main__':
+    # time_contact_distance()
+    compare_python_to_cpp()

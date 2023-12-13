@@ -20,11 +20,11 @@ from sequences_to_contact_maps.scripts.load_utils import (
     get_final_max_ent_folder, load_import_log)
 
 sys.path.append('/home/erschultz/TICG-chromatin')
-import GNN
-import max_ent
+# import scripts.GNN
+import scripts.max_ent as max_ent
 from scripts.data_generation.modify_maxent import get_samples
 
-EXP_DATASET='dataset_02_04_23'
+EXP_DATASET='dataset_12_01_23'
 
 def make_samples():
     exponents = np.arange(4, 9)
@@ -35,7 +35,7 @@ def make_samples():
             os.mkdir(e_dir, mode=0o755)
 
     tot_count_list = []
-    samples, _ = get_samples(EXP_DATASET, test=True)
+    samples, _ = get_samples(EXP_DATASET, test=True, filter_cell_lines=['imr90'])
     for s_exp in samples[:10]:
         print(s_exp)
         exp_dir = f'/home/erschultz/{EXP_DATASET}/samples/sample{s_exp}'
@@ -45,8 +45,7 @@ def make_samples():
         p_flat = y_flat / np.sum(y_flat)
         pos = np.arange(0, len(p_flat))
 
-        exp_dir = f'/home/erschultz/{EXP_DATASET}/samples_10k/sample{s_exp-200}'
-
+        exp_dir = f'/home/erschultz/{EXP_DATASET}/samples/sample{s_exp}'
         y = np.triu(np.load(osp.join(exp_dir, 'y.npy')))
         tot_count = np.sum(y)
         print(f'Total Read Depth: {tot_count}')
@@ -70,7 +69,7 @@ def make_samples():
             np.save(osp.join(odir, 'y.npy'), y_i)
             plot_matrix(y_i, osp.join(odir, 'y.png'), vmax = 'mean')
     tot_count_mean = np.mean(tot_count_list)
-    print(f'Mean Total Read Depth: {tot_count_mean}')
+    print(f'Mean Total Read Depth: {np.round(tot_count_mean, 1)}')
 
 def fit_gnn(GNN_id):
     dataset='downsampling_analysis'
@@ -95,7 +94,7 @@ def fit_gnn(GNN_id):
 
 def fit_max_ent():
     dataset='downsampling_analysis'
-    samples, _ = get_samples(EXP_DATASET, test=True)
+    samples, _ = get_samples(EXP_DATASET, test=True, filter_cell_lines=['imr90'])
     N = 10
     samples = samples[:N]
 
@@ -108,8 +107,8 @@ def fit_max_ent():
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(16) as p:
-        p.starmap(max_ent.fit, mapping)
+    with mp.Pool(1) as p:
+        p.starmap(max_ent.check, mapping)
 
 
 def figure(GNN_ID):

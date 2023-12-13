@@ -16,7 +16,7 @@ from sklearn.neighbors import KernelDensity
 sys.path.insert(0, '/home/erschultz/TICG-chromatin')
 from scripts.data_generation.ECDF import Ecdf
 from scripts.data_generation.modify_maxent import get_samples
-from scripts.get_params_old import GetSeq
+from scripts.max_ent_setup.get_params_old import GetSeq
 
 sys.path.insert(0, '/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (load_import_log,
@@ -55,6 +55,8 @@ def getArgs():
                     help='where data will be found when running simulation')
     parser.add_argument('--exp_dataset', type=str, default='dataset_02_04_23',
                     help='dataset where experimental data is located')
+    parser.add_argument('--cell_line', type=str,
+                    help='cell_line to filter experimental data to')
     parser.add_argument('--b', type=int, default=140,
                         help='bond length')
     parser.add_argument('--phi', type=float,
@@ -63,6 +65,8 @@ def getArgs():
                     help='simulation volume')
     parser.add_argument('--conv_defn', type=str, default='loss')
     parser.add_argument('--plaid_mode', type=str, default='skewnorm')
+    parser.add_argument('--mode', type=str,
+                        help='mode for max ent (None for baseline)')
 
 
 
@@ -87,6 +91,7 @@ class DatasetGenerator():
         self.max_L = args.max_L
         self.data_dir = args.data_dir
         self.exp_dataset = args.exp_dataset
+        self.cell_line = args.cell_line
         self.b = args.b
         self.phi = args.phi
         self.v = args.v
@@ -101,11 +106,22 @@ class DatasetGenerator():
             self.grid_root = f'optimize_grid_b_{self.b}_v_{self.v}'
             self.distributions_root = f'b_{self.b}_v_{self.v}'
 
+
         if args.ar != 1:
             self.grid_root += f'_spheroid_{args.ar}'
-            self.distributions_root += f'_spheroid_{args.ar}_distributions'
-        else:
-            self.distributions_root += '_distributions'
+            self.distributions_root += f'_spheroid_{args.ar}'
+        if args.mode is not None:
+            self.distributions_root += f'_{args.mode}'
+        self.distributions_root += '_distributions'
+        if self.cell_line is not None:
+            self.distributions_root += f'_{self.cell_line}'
+        print(f'Using {self.distributions_root}')
+
+
+        self.max_ent_root = f'{self.grid_root}-max_ent{self.k}'
+        if args.mode is not None:
+            self.max_ent_root += f'_{args.mode}'
+
 
         self.get_exp_samples()
 
@@ -144,7 +160,12 @@ class DatasetGenerator():
         #     if chrom % 2 == 1:
         #         odd_samples.append(s)
 
-        samples, _, cell_lines = get_samples(self.exp_dataset, train=True, return_cell_lines=True)
+        if self.cell_line is not None:
+            samples, _, cell_lines = get_samples(self.exp_dataset, train=True,
+                                                return_cell_lines=True,
+                                                filter_cell_lines=set([self.cell_line]))
+        else:
+            samples, _, cell_lines = get_samples(self.exp_dataset, train=True, return_cell_lines=True)
         self.exp_samples = samples
         print(f'Using {len(self.exp_samples)} samples: {self.exp_samples}')
         print(f'Using cell lines: {set(cell_lines)}')
@@ -233,7 +254,9 @@ class DatasetGenerator():
         x_dict = {} # id : x
         for j in self.exp_samples:
             sample_folder = osp.join(self.exp_dir,  f'sample{j}')
-            max_ent_folder = osp.join(sample_folder, f'{self.grid_root}-max_ent{self.k}/resources')
+            assert osp.exists(sample_folder)
+            max_ent_folder = osp.join(sample_folder, f'{self.max_ent_root}/resources')
+            assert osp.exists(max_ent_folder), f'{max_ent_folder} does not exist'
             x = np.load(osp.join(max_ent_folder, 'x_eig_norm.npy'))
             x_dict[j] = x
 
@@ -412,23 +435,34 @@ class DatasetGenerator():
 
 
     def meanDist_S_params(self):
+        # meanDist_S_grid_poly8_log_start5
         meanDist_S_dict = {} # id : meanDist_S
         grid_dict = {} # id : grid_size
-        get_grid = False
-        if 'grid' in self.diag_mode:
-            get_grid = True
-        poly12 = False
-        if 'poly12' in self.diag_mode:
-            poly12 = True
-            print('Using poly12 for meanDist_S')
+        get_grid = False; start = 2; log = False
+        modes = self.diag_mode.split('_')
+
+        for mode in modes:
+            if mode == 'grid':
+                get_grid = True
+            if mode.startswith('poly'):
+                order = int(mode[4:])
+            if mode == 'log':
+                use_log = True
+            if mode.startswith('start'):
+                start = int(mode[5:])
+
+        diag_mode = f'poly{order}'
+        if use_log:
+            diag_mode += '_log'
+        diag_mode += f'_start_{start}_meanDist_S_fit.txt'
+        print(f'Using diag_mode: {diag_mode}')
 
         converged_samples = self.get_converged_samples()
         for j in converged_samples:
-            sample_folder = osp.join(self.exp_dir, f'sample{j}', f'{self.grid_root}-max_ent{self.k}')
-            if poly12:
-                meanDist_S = np.loadtxt(osp.join(sample_folder, 'fitting2/poly12_log_meanDist_S_fit.txt'))
-            else:
-                meanDist_S = np.loadtxt(osp.join(sample_folder, 'fitting2/poly6_log_meanDist_S_fit.txt'))
+            sample_folder = osp.join(self.exp_dir, f'sample{j}', self.max_ent_root)
+            file = osp.join(sample_folder, 'fitting2', diag_mode)
+            assert osp.exists(file), file
+            meanDist_S = np.loadtxt(file)
             meanDist_S_dict[j] = meanDist_S
 
             # get grid_size

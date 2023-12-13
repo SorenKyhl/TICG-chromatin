@@ -21,7 +21,7 @@ def main(use_max_ent=True, use_v=False):
     tick_fontsize=18
     letter_fontsize=26
 
-    s = 1004
+    s = '1013_rescale1'
     s_dir = f'/home/erschultz/Su2020/samples/sample{s}'
     m=512
     bonded_dir = f'/home/erschultz/dataset_bonded/boundary_spherical/bond_type_gaussian/m_{m}'
@@ -70,7 +70,7 @@ def main(use_max_ent=True, use_v=False):
         v = 8; phi = 0.008; ar=1.5
         cmap = mpl.colormaps["Greens"]
         colors = [cmap(0.4), cmap(.6), cmap(.8), cmap(1.0)]
-        ls_list = ['solid', 'dashed', 'solid', 'solid']
+        ls_list = ['solid', 'solid', 'dashed', 'solid']
         for b, c, ls in zip([160, 180, 200, 220], colors, ls_list):
             if use_max_ent:
                 if use_v:
@@ -87,7 +87,7 @@ def main(use_max_ent=True, use_v=False):
                     dir = osp.join(bonded_dir, f'bond_length_{b}/phi_{phi}/angle_0')
             plot_meanDist_D(axes[0], log, c, dir, b, ls)
 
-        b = 180
+        b = 200
         cmap = mpl.colormaps["Purples"]
         if use_v:
             colors = [cmap(0.4), cmap(0.6), cmap(0.8), cmap(1.0)]
@@ -138,7 +138,7 @@ def main(use_max_ent=True, use_v=False):
         #             dir = osp.join(bonded_dir, f'bond_length_{b}/phi_{phi}/angle_0')
         #         plot_meanDist_D(axes[2], log, c, dir, phi)
 
-        b = 180; v = 8; phi=0.008
+        b = 200; v = 8; phi=0.008
         cmap = mpl.colormaps["Oranges"]
         colors = [ cmap(0.4), cmap(0.7), cmap(1.0)]
         ls_list = ['solid', 'dashed', 'solid']

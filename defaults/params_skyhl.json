@@ -9,5 +9,5 @@
 	"parallel": 7,
 	"randomize_seed": 1,
 	"mode": "all",
-    "method": "n"
+  "method": "n"
 }

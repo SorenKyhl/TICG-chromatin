@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import os.path as osp
 from contextlib import contextmanager
 from multiprocessing import Process
 from pathlib import Path
@@ -22,6 +23,67 @@ def load_json(path):
     with open(path) as f:
         myjson = json.load(f)
     return myjson
+
+def load_import_log(dir, obj=None):
+    import_file = osp.join(dir, 'import.log')
+    if not osp.exists(import_file):
+        print(f'{import_file} does not exist')
+        return
+
+    results = {}
+    url = None
+    cell_line = None
+    genome = None
+    with open(import_file) as f:
+        lines = f.readlines()
+        for line in lines:
+            line = line.strip().split('=')
+            if line[0].startswith('https') or line[0].endswith('.hic'):
+                url = line[0]
+                url_split = url.split('/')
+                cell_line = url_split[-3]
+            elif line[0] == 'chrom':
+                chrom = line[1]
+            elif line[0] == 'start':
+                start = int(line[1])
+                start_mb = start / 1000000
+            elif line[0] == 'end':
+                end = int(line[1])
+                end_mb = end / 1000000
+            elif line[0] == 'resolution':
+                resolution = int(line[1])
+                resolution_mb = resolution / 1000000
+            elif line[0] == 'norm':
+                norm = line[1]
+            elif line[0] == 'genome':
+                genome = line[1]
+
+    results['url'] = url
+    results['cell_line'] = cell_line
+    results['start'] = start
+    results['end'] = end
+    results['start_mb'] = start_mb
+    results['end_mb'] = end_mb
+    results['resolution'] = resolution
+    results['resolution_mb'] = resolution_mb
+    results['norm'] = norm
+    results['genome'] = genome
+    results['chrom'] = chrom
+
+    if obj is not None:
+        obj.url = url
+        obj.cell_line = cell_line
+        obj.start = start
+        obj.end = end
+        obj.start_mb = start_mb
+        obj.end_mb = end_mb
+        obj.resolution = resolution
+        obj.resolution_mb = resolution_mb
+        obj.norm = norm
+        obj.genome = genome
+        obj.chrom = chrom
+
+    return results
 
 
 def write_json(data, path):
@@ -222,8 +284,9 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method, norm=Fal
         B /= np.outer(obj_goal, obj_goal)
 
     difference = obj_goal - lam  # pyright: ignore
-    Binv = np.linalg.pinv(B)
+
     if method == "n":
+        Binv = np.linalg.pinv(B)
         step = Binv @ difference
         if norm:
             step /= obj_goal
