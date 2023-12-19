@@ -805,6 +805,6 @@ def supp_figure(sample, GNN_ID, bl, phi=None, v=None, ar=1.0):
 if __name__ == '__main__':
     # old_figure(1013, 490, bl=180, phi=0.008, ar=1.5)
     # new_figure('1004_rescale1', 614, bl=200, v=8, ar=1.5)
-    # new_figure('1013_rescale1', 614, bl=160, v=8, ar=1.5)
-    both_chroms_figure(629, bl=200, v=8, ar=1.5)
+    new_figure('1013_rescale1', 629, bl=200, v=8, ar=1.5)
+    # both_chroms_figure(629, bl=200, v=8, ar=1.5)
     # supp_figure(1013, 579, bl=180, v=8, ar=1.5)

@@ -7,7 +7,6 @@
 #include <memory>
 
 #include "Eigen/Dense"
-#include <Eigen/StdVector>
 #include "nlohmann/json.hpp"
 
 #include "Bead.h"

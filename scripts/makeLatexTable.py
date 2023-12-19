@@ -15,15 +15,15 @@ from pylib.utils import epilib
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
                                       calculate_L, calculate_S)
-from pylib.utils.similarity_measures import SCC
+from pylib.utils.similarity_measures import SCC, genome_disco, hic_spector
 from pylib.utils.utils import load_json, triu_to_full
 from scipy.stats import pearsonr
 from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_import_log, load_L, load_max_ent_chi,
-    load_psi, load_Y)
+    get_converged_max_ent_folder, get_final_max_ent_folder, load_import_log,
+    load_L, load_max_ent_chi, load_psi, load_Y)
 from sequences_to_contact_maps.scripts.utils import load_time_dir, print_time
 
 
@@ -200,23 +200,15 @@ def load_data(args):
                             break
                 else:
                     # loss convergence
-                    if args.convergence_definition == 'strict':
-                        eps = 1e-3
-                    elif args.convergence_definition == 'normal':
-                        eps = 1e-2
-                    else:
-                        raise Exception('Unrecognized convergence_definition: '
-                                        f'{args.convergence_definition}')
-
-
-                    for j in range(1, len(conv)):
-                        diff = conv[j] - conv[j-1]
-                        if np.abs(diff) < eps and conv[j] < conv[0]:
-                            converged_it = j
-                            break
+                    converged_it = get_converged_max_ent_folder(fpath,
+                                                                args.convergence_definition,
+                                                                throw_exception = False,
+                                                                return_it = True)
                 temp_dict['converged_it'] = converged_it
                 if converged_it is not None:
-                    converged_path = osp.join(fpath, f'iteration{converged_it}')
+                    converged_path = osp.join(fpath, f'iteration{converged_it+1}')
+                    if not osp.exists(converged_path):
+                        converged_path = get_final_max_ent_folder(fpath)
                 else:
                     if args.verbose:
                         print(f'\tDID NOT CONVERGE: {conv}')
@@ -288,6 +280,12 @@ def load_data(args):
                 temp_dict['scc_var'] = corr_scc_var
                 # temp_dict['avg_dist_pearson'] = avg_diag
 
+                corr_hic_spector = hic_spector(ground_truth_y, yhat, 10)
+                temp_dict['hic_spector'] = corr_hic_spector
+
+                # corr_genome_disco = genome_disco(ground_truth_y, yhat, 3)
+                # temp_dict['genome_disco'] = corr_genome_disco
+
                 # rmse-diag
                 rmse_diag = mean_squared_error(ground_truth_meanDist, yhat_meanDist,
                                                 squared = False)
@@ -333,6 +331,8 @@ def load_data(args):
             data[k][method]['read_count'].append(read_count/1000)
             data[k][method]['scc'].append(temp_dict['scc'])
             data[k][method]['scc_var'].append(temp_dict['scc_var'])
+            data[k][method]['hic_spector'].append(temp_dict['hic_spector'])
+            data[k][method]['genome_disco'].append(temp_dict['genome_disco'])
             data[k][method]['avg_dist_pearson'].append(temp_dict['avg_dist_pearson'])
             data[k][method]['rmse-S'].append(temp_dict['rmse-S'])
             data[k][method]['rmse-y'].append(temp_dict['rmse-y'])
@@ -366,8 +366,9 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
         test_significance: True to perform two-sided paired t-tests for significance
     '''
 
-    metric_labels = {'scc':'SCC', 'scc_var':'SCC', None: '',
-            'rmse-S':'RMSE-Energy', 'rmse-y':'RMSE(H)', 'rmse-ydiag':r'RMSE($\tilde{H}$)',
+    metric_labels = {'scc':'SCC', 'scc_var':'SCC', None: '', 'k': 'k',
+                    'hic_spector': 'HiC-Spector', 'genome_disco': 'GenomeDISCO',
+                    'rmse-S':'RMSE-Energy', 'rmse-y':'RMSE(H)', 'rmse-ydiag':r'RMSE($\tilde{H}$)',
                     'pearson_pc_1':'Corr PC 1', 'pearson_pc_1_soren':'Corr Soren PC 1',
                     'rmse-diag':'RMSE-P(s)', 'rmse-diag10':'RMSE-P(s<10)',
                     'avg_dist_pearson':'SCC mean', 'read_count':'Read Count (1k)',
@@ -376,10 +377,10 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
     for k, v in metric_labels.items():
         metric_labels[k] = r'\thead{' + v + '}'
     if small:
-        metrics = ['scc_var', 'pearson_pc_1', 'rmse-y', 'rmse-ydiag', 'converged_time']
+        metrics = ['scc_var', 'hic_spector', 'pearson_pc_1', 'rmse-ydiag', 'converged_time']
         # 'rmse-diag',
     else:
-        metrics = ['rmse-y', 'rmse-ydiag', 'converged_time', 'converged_it', 'prcnt_converged']
+        metrics = ['rmse-y', 'rmse-ydiag',  'converged_time', 'converged_it', 'prcnt_converged']
 
 
     print(f'\nMAKING TABLE-small={small}')
@@ -389,7 +390,7 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
         o.write("\\begin{center}\n")
         if experimental and 'rmse-S' in metrics:
             metrics.remove('rmse-S')
-        num_cols = len(metrics) + 2
+        num_cols = len(metrics) + 1
         num_cols_str = str(num_cols)
 
         o.write("\\begin{tabular}{|" + "c|"*num_cols + "}\n")
@@ -401,7 +402,7 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
 
         o.write("\\hline\n")
 
-        row = "Method & k"
+        row = "Method"
         for metric in metrics:
             label = metric_labels[metric]
             row += f" & {label}"
@@ -462,17 +463,21 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
                     # skip method if not performed for all samples
                     print(f'skipping {method}, k={k}: {data[k][method]["scc"]}')
                     continue
-                if first: # only write k for first row in section
-                    k_label = k
-                    if k_label == 0:
-                        k_label = '-'
-                    first = False
-                else:
-                    k_label = ''
+
                 if dataset is None:
-                    text = f"{label} & {k_label}"
+                    text = f"{label}"
                 else:
-                    text = f"{label} ({dataset}) & {k_label}"
+                    text = f"{label} ({dataset})"
+
+                if 'k' in metrics:
+                    if first: # only write k for first row in section
+                        k_label = k
+                        if k_label == 0:
+                            k_label = '-'
+                        first = False
+                    else:
+                        k_label = ''
+                    text += f" & {k_label}"
 
                 for metric in metrics:
                     significant = False # two sided t test
@@ -485,6 +490,8 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
                         result = 1 - not_converged / len(converged_it)
                         result *= 100
                         result = np.array([result])
+                    elif metric == 'k':
+                        continue
                     elif metric is None:
                         result = np.array([np.NaN])
                     else:
@@ -492,7 +499,7 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
                         if nan_mask is not None:
                             result[nan_mask] = np.NaN
 
-                    roundoff = 3
+                    roundoff = 2
                     if metric is None:
                         pass # metric is None for filler column
                     elif 'time' in metric or metric == 'read_count':
@@ -501,7 +508,6 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
                         roundoff = 2
                     elif metric == 'rmse-y' or metric.startswith('rmse-diag'):
                         roundoff = 5
-                    print(metric, roundoff)
 
                     # if metric == 'scc_var':
                     #     print('scc_var: ')
@@ -708,26 +714,27 @@ if __name__ == '__main__':
     # dataset='Su2020'; samples = [1013]
 
     if samples is None:
-        samples, _ = get_samples(dataset, test = True, filter_cell_lines=['hmec'])
+        samples, _ = get_samples(dataset, test = True, filter_cell_lines=['gm12878', 'hmec', 'hap1', 'huvec'])
         samples = samples
     if len(samples) == 1:
         sample = samples[0]
         samples = None
+    print(samples, len(samples))
     data_dir = osp.join('/home/erschultz', dataset)
     args = getArgs(data_folder = data_dir, sample=sample, samples = samples)
     args.experimental = True
     args.verbose = True
     args.convergence_definition = 'normal'
-    args.test_significance = False
+    args.test_significance = True
     args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', '_700k', 'phi',
                         'GNN579-max_ent', '-gd_gamma', 'distance', 'start', 'stat',
-                        'diagbins', 'binarize', 'chrom']
+                        'diagbins', 'binarize', 'chrom', 'grid200', 'long']
     for i in [2,3,4,5,6,7,8,9]:
        args.bad_methods.append(f'max_ent{i}')
     # args.gnn_id = [434, 578, 579, 450, 451]
     # args.gnn_id = [600, 605, 606, 607, 608, 609, 610]
     # args.gnn_id = [579, 600, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620, 621, 622, 623, 624, 625]
-    args.gnn_id = [614, 627, 628, 629]
+    args.gnn_id = [631, 632, 633, 634, 635, 636, 637, 638, 639, 640]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

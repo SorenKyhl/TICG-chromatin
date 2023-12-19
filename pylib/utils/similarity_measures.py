@@ -7,7 +7,10 @@ import hicrep
 import numpy as np
 import scipy
 import sklearn.metrics
+from pylib.utils import epilib
 from pylib.utils.utils import triu_to_full
+from scipy.sparse import lil_matrix
+from scipy.sparse.linalg import eigsh
 from scipy.stats import pearsonr, zscore
 
 
@@ -263,3 +266,125 @@ def get_RMSLE(hic1, hic2):
 
 def get_pearson(hic1, hic2):
     return np.corrcoef(hic1.flatten(), hic2.flatten())[0, 1]
+
+def hic_spector(y1, y2, num_evec):
+    '''HiC-spector metric from https://github.com/gersteinlab/HiC-spector.'''
+    def evec_distance(v1,v2):
+        d1=np.dot(v1-v2,v1-v2)
+        d2=np.dot(v1+v2,v1+v2)
+        if d1<d2:
+            d=d1
+        else:
+            d=d2
+        return np.sqrt(d)
+
+    def get_ipr(evec):
+        ipr=1.0/(evec*evec*evec*evec).sum()
+        return ipr
+
+    def get_Laplacian(M):
+        S=M.sum(1)
+        i_nz=np.where(S>0)[0]
+        S=S[i_nz]
+        M=(M[i_nz].T)[i_nz].T
+        S=1/np.sqrt(S)
+        M=S*M
+        M=(S*M.T).T
+        n=np.size(S)
+        M=np.identity(n)-M
+        M=(M+M.T)/2
+        return M
+
+    M1=lil_matrix(y1)
+    M2=lil_matrix(y2)
+
+    k1=np.sign(M1.A).sum(1)
+    d1=np.diag(M1.A)
+    kd1=~((k1==1)*(d1>0))
+    k2=np.sign(M2.A).sum(1)
+    d2=np.diag(M2.A)
+    kd2=~((k2==1)*(d2>0))
+    iz=np.nonzero((k1+k2>0)*(kd1>0)*(kd2>0))[0]
+    M1b=(M1[iz].A.T)[iz].T
+    M2b=(M2[iz].A.T)[iz].T
+
+    i_nz1=np.where(M1b.sum(1)>0)[0]
+    i_nz2=np.where(M2b.sum(1)>0)[0]
+    i_z1=np.where(M1b.sum(1)==0)[0]
+    i_z2=np.where(M2b.sum(1)==0)[0]
+
+    M1b_L=get_Laplacian(M1b)
+    M2b_L=get_Laplacian(M2b)
+
+    a1, b1=eigsh(M1b_L,k=num_evec,which="SM")
+    a2, b2=eigsh(M2b_L,k=num_evec,which="SM")
+
+    b1_extend=np.zeros((np.size(M1b,0),num_evec))
+    b2_extend=np.zeros((np.size(M2b,0),num_evec))
+    for i in range(num_evec):
+        b1_extend[i_nz1,i]=b1[:,i]
+        b2_extend[i_nz2,i]=b2[:,i]
+
+    ipr_cut=5
+    ipr1=np.zeros(num_evec)
+    ipr2=np.zeros(num_evec)
+    for i in range(num_evec):
+        ipr1[i]=get_ipr(b1_extend[:,i])
+        ipr2[i]=get_ipr(b2_extend[:,i])
+
+    b1_extend_eff=b1_extend[:,ipr1>ipr_cut]
+    b2_extend_eff=b2_extend[:,ipr2>ipr_cut]
+    num_evec_eff=min(np.size(b1_extend_eff,1),np.size(b2_extend_eff,1))
+
+    evd=np.zeros(num_evec_eff)
+    for i in range(num_evec_eff):
+        evd[i]=evec_distance(b1_extend_eff[:,i],b2_extend_eff[:,i])
+
+    Sd=evd.sum()
+    l=np.sqrt(2)
+    evs=abs(l-Sd/num_evec_eff)/l
+
+    N=float(M1.shape[1]);
+    if (np.sum(ipr1>N/100)<=1)|(np.sum(ipr2>N/100)<=1):
+        print("at least one of the maps does not look like typical Hi-C maps")
+    # else:
+    #     print("size of maps: %d" %(np.size(M1,0)))
+    #     print("reproducibility score: %6.3f " %(evs))
+    #     print("num_evec_eff: %d" %(num_evec_eff))
+    return evs
+
+def genome_disco(y1, y2, t):
+    def normalize(y):
+        # normalize y such that rows sum to 1
+        row_sums = y.sum(axis=1, keepdims=True)
+        y /= row_sums
+
+    normalize(y1)
+    normalize(y2)
+
+    norm = np.sum(np.abs(np.power(y1, t) - np.power(y2, t)))
+
+    denom = 0.5 * (np.sum(np.sum(y1, axis=1) > 0) +  np.sum(np.sum(y2, axis=1) > 0))
+
+    diff_score = norm / denom
+
+    score = 1 - diff_score
+
+    return score
+
+def test():
+    y1 = np.load('/home/erschultz/dataset_12_06_23/samples/sample1/y.npy')
+    # y2 = np.load('/home/erschultz/dataset_12_06_23/samples/sample2/y.npy')
+    # y1 = np.load('/home/erschultz/dataset_11_20_23/samples/sample3/y.npy')
+    # y2 = np.load('/home/erschultz/dataset_11_20_23/samples/sample202/y.npy')
+    y2 = np.load('/home/erschultz/dataset_12_06_23/samples/sample1/optimize_grid_b_200_v_8_spheroid_1.5-max_ent10/iteration30/y.npy')
+    # y1 = np.eye(512)
+    # y2 = np.ones((512, 512))
+
+    # s = genome_disco(epilib.get_oe(y1), epilib.get_oe(y2), 3)
+    s = genome_disco(y1, y2, 3)
+
+    print('score', s)
+
+if __name__ == '__main__':
+    test()

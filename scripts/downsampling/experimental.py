@@ -6,6 +6,7 @@ import string
 import sys
 from collections import defaultdict
 
+from pylib.utils.hic_utils import rescale_p_s_1
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
@@ -24,7 +25,7 @@ sys.path.append('/home/erschultz/TICG-chromatin')
 import scripts.max_ent as max_ent
 from scripts.data_generation.modify_maxent import get_samples
 
-EXP_DATASET='dataset_12_01_23'
+EXP_DATASET='dataset_12_06_23'
 
 def make_samples():
     exponents = np.arange(4, 9)
@@ -66,6 +67,10 @@ def make_samples():
                 y_i_flat[j] += 1
             print(np.sum(y_i_flat))
             y_i = triu_to_full(y_i_flat)
+            
+            # rescale
+            y_i = rescale_p_s_1(y_i, 1e-1)
+
             np.save(osp.join(odir, 'y.npy'), y_i)
             plot_matrix(y_i, osp.join(odir, 'y.png'), vmax = 'mean')
     tot_count_mean = np.mean(tot_count_list)
@@ -102,13 +107,13 @@ def fit_max_ent():
     for downsampling in [4, 5, 6, 7, 8]:
         for i in samples:
             mapping.append((dataset, i, f'samples_exp{downsampling}',
-                            180, None, 8, None, 1.5))
+                            200, None, 8, None, 1.5))
 
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(1) as p:
-        p.starmap(max_ent.check, mapping)
+    with mp.Pool(15) as p:
+        p.starmap(max_ent.cleanup, mapping)
 
 
 def figure(GNN_ID):

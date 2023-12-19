@@ -1093,52 +1093,10 @@ def distance_cutoff_diag_chis():
     plt.savefig(osp.join(odir, f'diag_chis_distance_cutoff.png'))
     plt.close()
 
-def scc_across_cell_lines():
-    dataset = 'dataset_12_06_23'
-    samples_imr90, _ = get_samples(dataset, filter_cell_lines=['imr90'])
-    samples_gm12878, _ = get_samples(dataset, filter_cell_lines=['gm12878'])
-    # assert len(samples_imr90) == len(samples_gm12878), f'{len(samples_imr90)} != {len(samples_gm12878)}'
-    print(samples_imr90)
-    print(samples_gm12878)
-    i=min(samples_imr90)
-    j=min(samples_gm12878)
-    matches = 0
-    scc = SCC(h=5, K=100)
-    scc_list = []
-    while i < max(samples_imr90) and j < max(samples_gm12878):
-        d1 = osp.join('/home/erschultz', dataset, f'samples/sample{i}')
-        d2 = osp.join('/home/erschultz', dataset, f'samples/sample{j}')
-        result1 = load_import_log(d1)
-        result2 = load_import_log(d2)
-        str1 = f'chr{result1["chrom"]}:{result1["start"]}-{result1["end"]}'
-        str2 = f'chr{result2["chrom"]}:{result2["start"]}-{result2["end"]}'
-
-        if result1['chrom'] < result2['chrom']:
-            i += 1
-        elif result1['chrom'] > result2['chrom']:
-            j += 1
-        elif result1['start'] < result2['start']:
-            i += 1
-        elif result1['start'] > result2['start']:
-            j += 1
-        else:
-            i += 1
-            j += 1
-            y1 = np.load(osp.join(d1, 'y.npy'))
-            y2 = np.load(osp.join(d2, 'y.npy'))
-            scc_val = scc.scc(y1, y2, var_stabilized=True)
-            scc_list.append(scc_val)
-            print(scc_val)
-            matches += 1
-    print(matches)
-    print(np.mean(scc_list))
-
-
 
 
 if __name__ == '__main__':
-    scc_across_cell_lines()
-    # make_small('dataset_12_06_23')
+    make_small('dataset_12_06_23')
     # data_corr()
     # plot_triu_low_res()
     # distance_cutoff_diag_chis()

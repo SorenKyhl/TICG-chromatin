@@ -235,6 +235,9 @@ def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
         elif not osp.exists(osp.join(gnn_root, 'production_out')):
             shutil.rmtree(gnn_root)
             print(f'removing {gnn_root}')
+        elif not osp.exists(osp.join(gnn_root, 'y.npy')):
+            shutil.rmtree(gnn_root)
+            print(f'removing {gnn_root}')
 
 def main():
     samples=None
@@ -250,12 +253,11 @@ def main():
     if samples is None:
         samples = []
         for cell_line in ['imr90']:
-            # 'gm12878', 'hap1', 'huvec'
-            samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
+            samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
             samples.extend(samples_cell_line)
     print(len(samples))
 
-    GNN_IDs = [629]; b=200; phi=None; v=8; ar=1.5
+    GNN_IDs = [633, 634, 636, 637, 638, 640]; b=200; phi=None; v=8; ar=1.5
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
@@ -264,9 +266,9 @@ def main():
     print(len(mapping))
     # print(mapping)
 
-    # with mp.Pool(1) as p:
+    with mp.Pool(15) as p:
         # p.starmap(cleanup, mapping)
-        # p.starmap(fit, mapping)
+        p.starmap(fit, mapping)
 
     for i in mapping:
         # fit_max_ent(*i)

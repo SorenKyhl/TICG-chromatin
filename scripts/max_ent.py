@@ -160,18 +160,25 @@ def check(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
                                 k_angle, theta_0, False)
 
     if osp.exists(root):
-        if not osp.exists(osp.join(root, 'iteration30')):
+        params = utils.load_json(osp.join(root, 'resources/params.json'))
+        max_it = params['iterations']
+        prod_sweeps = params['production_sweeps']
+        if not osp.exists(osp.join(root, f'iteration{max_it}')):
             it=0
-            for i in range(30):
+            for i in range(max_it):
                 if osp.exists(osp.join(root, f'iteration{i}')):
                     it = i
-            prcnt = np.round(it/30*100, 1)
+            prcnt = np.round(it/max_it*100, 1)
             print(f'{root}: {prcnt}')
-        elif not osp.exists(osp.join(root, 'iteration30/tri.png')):
-            traj = np.loadtxt(osp.join(root, 'iteration30/production_out/energy.traj'))
-            sweep = traj[-1][0]
-            prcnt = np.round(sweep/300000*100, 1)
-            print(f'{root}: final {prcnt}')
+        elif not osp.exists(osp.join(root, f'iteration{max_it}/tri.png')):
+            traj_file = osp.join(root, f'iteration{max_it}/production_out/energy.traj')
+            if osp.exists(traj_file):
+                traj = np.loadtxt(traj_file)
+                sweep = traj[-1][0]
+                prcnt = np.round(sweep/prod_sweeps*100, 1)
+                print(f'{root}: final {prcnt}')
+            else:
+                print(f'{root}: final 0.0')
         else:
             print(f'{root}: complete')
     else:
@@ -324,7 +331,7 @@ def setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
     # config['grid_size'] = 200
 
     # config['diag_start'] = 10
-    root = osp.join(dir, f'{root}-max_ent{k}')
+    root = osp.join(dir, f'{root}-max_ent{k}_strict')
     if osp.exists(root):
         # shutil.rmtree(root)
         if verbose:
@@ -354,7 +361,7 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
     params = default.params
     goals = epilib.get_goals(y, seqs, config)
     params["goals"] = goals
-    params['iterations'] = 30
+    params['iterations'] = 20
     params['equilib_sweeps'] = 10000
     params['production_sweeps'] = 300000
     params['stop_at_convergence'] = True
@@ -398,9 +405,7 @@ def main():
 
     if samples is None:
         samples = []
-        for cell_line in ['huvec', 'hap1']:
-            # running: 'huvec', 'hap1'
-            # done: 'hmec', 'gm12878'
+        for cell_line in ['imr90']:
             # samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
             # samples.extend(samples_cell_line)
             samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
