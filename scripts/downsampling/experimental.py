@@ -14,7 +14,7 @@ import scipy.stats as ss
 import seaborn as sns
 from pylib.utils.plotting_utils import RED_CMAP, plot_matrix
 from pylib.utils.similarity_measures import SCC
-from pylib.utils.utils import triu_to_full
+from pylib.utils.utils import triu_to_full, make_composite
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (
@@ -67,7 +67,7 @@ def make_samples():
                 y_i_flat[j] += 1
             print(np.sum(y_i_flat))
             y_i = triu_to_full(y_i_flat)
-            
+
             # rescale
             y_i = rescale_p_s_1(y_i, 1e-1)
 
@@ -128,12 +128,19 @@ def figure(GNN_ID):
     read_counts = 10**exponents
     dir = '/home/erschultz/downsampling_analysis'
     m=512
-    gnn_scc_dense = defaultdict(lambda: np.zeros(N))
-                    # exponent : list of sccs
-    max_ent_scc_dense = defaultdict(lambda: np.zeros(N))
-    experiment_scc_dense = defaultdict(lambda: np.zeros(N))
-    gnn_scc_sparse = defaultdict(lambda: np.zeros(N))
-    max_ent_scc_sparse = defaultdict(lambda: np.zeros(N))
+    gnn_data = defaultdict( # dense / sparse
+                lambda: defaultdict( # metric
+                lambda: defaultdict( # exponent
+                lambda: np.zeros(N)))) # array of values
+    max_ent_data =  defaultdict(
+                lambda: defaultdict(
+                lambda: defaultdict(
+                lambda: np.zeros(N))))
+    experiment_data =  defaultdict(
+                lambda: defaultdict(
+                lambda: defaultdict(
+                lambda: np.zeros(N))))
+
     composite_dict = defaultdict(lambda: np.zeros((N,m,m)))
     max_ent_composite_dict = defaultdict(lambda: np.zeros((N,m,m)))
 
@@ -155,71 +162,27 @@ def figure(GNN_ID):
             indu = np.triu_indices(m)
             indl = np.tril_indices(m)
 
-
             # experiment
-            corr_scc_var = scc.scc(y_dense, y_sparse)
-            experiment_scc_dense[exp][i] = corr_scc_var
+            experiment_data['dense']['scc'][exp][i] = scc.scc(y_dense, y_sparse)
+            experiment_data['dense']['spector'][exp][i] = hic_spector(y_dense, y_sparse, 10)
 
             grid_root = 'optimize_grid_b_200_v_8_spheroid_1.5'
 
             # gnn
             gnn_dir = osp.join(s_dir, f'{grid_root}-GNN{GNN_ID}')
-            yhat = np.load(osp.join(gnn_dir, 'y.npy'))
-            gnn_scc_dense[exp][i] = scc.scc(y_dense, yhat)
-            gnn_scc_sparse[exp][i] = scc.scc(y_sparse, yhat)
-
-            # make composite contact map
-            composite = np.zeros((m, m))
-            composite[indu] = yhat[indu]
-            composite[indl] = y_sparse[indl]
-            composite_dict[exp][i] = composite
+            y_gnn = np.load(osp.join(gnn_dir, 'y.npy'))
+            composite_dict[exp][i] = make_composite(y_sparse, y_gnn)
 
             # max ent
             max_ent_dir = osp.join(s_dir, f'{grid_root}-max_ent10')
             final = get_final_max_ent_folder(max_ent_dir)
-            yhat = np.load(osp.join(final, 'y.npy'))
-            max_ent_scc_dense[exp][i] = scc.scc(y_dense, yhat)
-            max_ent_scc_sparse[exp][i] = scc.scc(y_sparse, yhat)
+            y_me = np.load(osp.join(final, 'y.npy'))
+            max_ent_composite_dict[exp][i] =  make_composite(y_sparse, y_me)
 
-            # make max ent composite contact map
-            composite = np.zeros((m, m))
-            composite[indu] = yhat[indu]
-            composite[indl] = y_sparse[indl]
-            max_ent_composite_dict[exp][i] = composite
-
-    # compute statistics
-    gnn_scc_stats = defaultdict(
-                            lambda: defaultdict(
-                            lambda: np.zeros_like(exponents, dtype=float)))
-                            # {sparse, dense} : {mean, std} : list of values
-    max_ent_scc_stats = defaultdict(
-                            lambda: defaultdict(
-                            lambda: np.zeros_like(exponents, dtype=float)))
-    experiment_scc_stats = defaultdict(
-                            lambda: defaultdict(
-                            lambda: np.zeros_like(exponents, dtype=float)))
-    for i, exp in enumerate(exponents):
-        # sparse
-        gnn_scc_stats['sparse']['mean'][i] = np.mean(gnn_scc_sparse[exp])
-        max_ent_scc_stats['sparse']['mean'][i] = np.mean(max_ent_scc_sparse[exp])
-        gnn_scc_stats['sparse']['std'][i] = np.std(gnn_scc_sparse[exp], ddof=1)
-        max_ent_scc_stats['sparse']['std'][i] = np.std(max_ent_scc_sparse[exp], ddof=1)
-        gnn_scc_stats['sparse']['sem'][i] = ss.sem(gnn_scc_sparse[exp])
-        max_ent_scc_stats['sparse']['sem'][i] = ss.sem(max_ent_scc_sparse[exp])
-
-        # dense
-        gnn_scc_stats['dense']['mean'][i] = np.mean(gnn_scc_dense[exp])
-        max_ent_scc_stats['dense']['mean'][i]= np.mean(max_ent_scc_dense[exp])
-        experiment_scc_stats['dense']['mean'][i] = np.mean(experiment_scc_dense[exp])
-        gnn_scc_stats['dense']['std'][i] = np.std(gnn_scc_dense[exp], ddof=1)
-        max_ent_scc_stats['dense']['std'][i]= np.std(max_ent_scc_dense[exp], ddof=1)
-        gnn_scc_stats['dense']['sem'][i] = ss.sem(gnn_scc_dense[exp])
-        max_ent_scc_stats['dense']['sem'][i] = ss.sem(max_ent_scc_dense[exp])
-        experiment_scc_stats['dense']['std'][i] = np.std(experiment_scc_dense[exp], ddof=1)
-        experiment_scc_stats['dense']['sem'][i] = ss.sem(experiment_scc_dense[exp])
-
-    print(experiment_scc_stats['dense'])
-    print(gnn_scc_stats['sparse'])
+            for mode, y_gt in zip(['sparse', 'dense'], [y_sparse, y_dense]):
+                for data_dict, yhat in zip([gnn_data, max_ent_data], [y_gnn, y_me]):
+                    data_dict[mode]['scc'][exp][i] = scc.scc(y_gt, yhat)
+                    data_dict[mode]['spector'][exp][i] = hic_spector(y_gt, yhat, 10)
 
     ### combined plot ##
     # select which composites to plot
@@ -245,8 +208,8 @@ def figure(GNN_ID):
     ax4 = plt.subplot(3, 24, (25, 32))
     ax5 = plt.subplot(3, 24, (33, 40))
     ax6 = plt.subplot(3, 24, (41, 48))
-    ax7 = plt.subplot(3, 2, 5) # scc sparse
-    ax8 = plt.subplot(3, 2, 6) # scc dense
+    ax7 = plt.subplot(3, 2, 5) # scc dense
+    ax8 = plt.subplot(3, 2, 6) # hic spector
     axes = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8]
 
     # hic
@@ -296,26 +259,28 @@ def figure(GNN_ID):
         ax.text(0.01*m, 1.08*m, 'Reference', fontsize=label_fontsize, weight='bold')
 
     # scc
-    for ax, mode in zip([ax7, ax8], ['sparse', 'dense']):
-        print(mode)
+    mode='dense'
+    for ax, metric in zip([ax7, ax8], ['scc', 'spector']):
         if mode == 'dense':
-            experiment_mean = experiment_scc_stats[mode]['mean']
-            experiment_std = experiment_scc_stats[mode]['std']
-            ax.errorbar(read_counts, experiment_mean, experiment_std,
+            data_mean = np.zeros_like(exponents, dtype=float)
+            data_sem = np.zeros_like(exponents, dtype=float)
+            for i, exp in enumerate(exponents):
+                data_mean[i] = np.mean(experiment_data[mode][metric][exp])
+                data_sem[i] = ss.sem(experiment_data[mode][metric][exp])
+            ax.errorbar(read_counts, data_mean, data_sem,
                     color='k', label='Subsampled Experiment')
 
-        max_ent_mean = max_ent_scc_stats[mode]['mean']
-        print('ME', max_ent_mean)
-        max_ent_std = max_ent_scc_stats[mode]['sem']
-        ax.errorbar(read_counts, max_ent_mean, max_ent_std,
-                        color='blue', label = 'Maximum Entropy')
-
-        gnn_mean = gnn_scc_stats[mode]['mean']
-        print('GNN', gnn_mean)
-        gnn_std = gnn_scc_stats[mode]['sem']
-        ax.errorbar(read_counts, gnn_mean, gnn_std,
-                        color='red', label='GNN')
-
+        for label, color, data_dict in zip(['Maximum Entropy','GNN'],
+                                            ['blue', 'red'],
+                                            [max_ent_data, gnn_data]):
+            data_mean = np.zeros_like(exponents, dtype=float)
+            data_std = np.zeros_like(exponents, dtype=float)
+            for i, exp in enumerate(exponents):
+                data_mean[i] = np.mean(data_dict[mode][metric][exp])
+                data_sem[i] = ss.sem(data_dict[mode][metric][exp])
+            print(label, data_mean)
+            ax.errorbar(read_counts, data_mean, data_sem,
+                            color=color, label = label)
 
         ax.set_xlabel('Read Depth', fontsize=label_fontsize)
         ax.set_xscale('log')
