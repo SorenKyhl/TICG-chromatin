@@ -11,8 +11,8 @@ from time import sleep
 import numpy as np
 import pylib.analysis as analysis
 import torch
-from data_generation.modify_maxent import get_samples
-from max_ent import setup_config
+# from data_generation.modify_maxent import get_samples
+# from max_ent import setup_config
 from pylib.Maxent import Maxent
 from pylib.Pysim import Pysim
 from pylib.utils import default, epilib, utils
@@ -24,6 +24,9 @@ sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.result_summary_plots import \
     predict_chi_in_psi_basis
 
+sys.path.append('/home/erschultz/TICG-chromatin')
+from scripts.data_generation.modify_maxent import get_samples
+from scripts.max_ent import setup_config
 
 def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     print(sample)

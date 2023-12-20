@@ -235,17 +235,29 @@ def scc_h():
             corr_gnn = scc.scc(y, y_gnn, var_stabilized = True)
             scc_gnn_dict[h].append(corr_gnn)
 
-
-    data_gnn = []
-    data_me = []
-    for h in range(h_max):
+    X = np.arange(0, h_max)
+    mean_gnn = np.empty(len(X))
+    mean_me = np.empty(len(X))
+    std_gnn = np.empty(len(X))
+    std_me = np.empty(len(X))
+    for i, h in enumerate(X):
         print(scc_gnn_dict[h])
-        data_gnn.append(np.mean(scc_gnn_dict[h]))
-        data_me.append(np.mean(scc_me_dict[h]))
+        mean_gnn[i] = np.mean(scc_gnn_dict[h])
+        mean_me[i] = np.mean(scc_me_dict[h])
+        std_gnn[i] = np.std(scc_gnn_dict[h])
+        std_me[i] = np.std(scc_me_dict[h])
 
-    plt.plot(data_gnn, label='GNN', c='blue')
-    plt.plot(data_me, label='ME', c='red')
-    plt.legend()
+    # plt.plot(X, mean_gnn, label='GNN', c='blue')
+    # plt.fill_between(X, mean_gnn - std_gnn, mean_gnn + std_gnn, color='blue', alpha=0.5)
+    # plt.plot(X, mean_me, label='Maximum Entropy', c='red')
+    # plt.fill_between(X, mean_me - std_me, mean_me + std_me, color='red', alpha=0.5)
+    plt.errorbar(X, mean_gnn, yerr = std_gnn, color='red', label='GNN')
+    plt.errorbar(X, mean_me, yerr=std_me, color='blue', label='Maximum Entropy')
+    plt.legend(loc='upper left')
+    plt.ylim(None, 0.95)
+    plt.ylabel('SCC', fontsize=16)
+    plt.xlabel(r'Filter Span Size, $h$', fontsize=16)
+    plt.tight_layout()
     plt.savefig('/home/erschultz/TICG-chromatin/figures/scc_h.png')
     plt.close()
 

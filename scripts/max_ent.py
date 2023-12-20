@@ -331,7 +331,7 @@ def setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
     # config['grid_size'] = 200
 
     # config['diag_start'] = 10
-    root = osp.join(dir, f'{root}-max_ent{k}_strict')
+    root = osp.join(dir, f'{root}-max_ent{k}')
     if osp.exists(root):
         # shutil.rmtree(root)
         if verbose:
@@ -397,8 +397,8 @@ def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=Non
 def main():
     samples = None
     # dataset = 'dataset_02_04_23'
-    # dataset = 'Su2020'; samples = ['1013_rescale1', '1004_rescale1']
-    dataset = 'dataset_12_06_23'
+    dataset = 'Su2020'; samples = ['1013_rescale1']
+    # dataset = 'dataset_12_06_23'
     # dataset = 'dataset_12_06_23'
     # dataset = 'dataset_11_21_23_imr90'; samples = range(1, 16)
     # dataset='dataset_HCT116_RAD21_KO'; samples=range(1,9)
@@ -414,7 +414,7 @@ def main():
         print(samples)
 
     mapping = []
-    k_angle=0;theta_0=180;b=180;ar=1.5;phi=None;v=8
+    k_angle=0;theta_0=180;b=180;ar=2.0;phi=None;v=8
     k=10
     contacts_distance=False
     for i in samples:
@@ -427,8 +427,8 @@ def main():
 
     with mp.Pool(1) as p:
         # p.starmap(setup_config, mapping)
-        # p.starmap(fit, mapping)
-        p.starmap(check, mapping)
+        p.starmap(fit, mapping)
+        # p.starmap(check, mapping)
         # p.starmap(post_analysis, mapping)
         # p.starmap(cleanup, mapping)
 

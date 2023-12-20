@@ -21,7 +21,7 @@ from sequences_to_contact_maps.scripts.load_utils import (
     get_final_max_ent_folder, load_import_log)
 
 sys.path.append('/home/erschultz/TICG-chromatin')
-# import scripts.GNN
+import scripts.GNN as GNN
 import scripts.max_ent as max_ent
 from scripts.data_generation.modify_maxent import get_samples
 
@@ -78,7 +78,7 @@ def make_samples():
 
 def fit_gnn(GNN_id):
     dataset='downsampling_analysis'
-    samples, _ = get_samples(EXP_DATASET, test=True)
+    samples, _ = get_samples(EXP_DATASET, test=True, filter_cell_lines=['imr90'])
     N = 10
     samples = samples[:N]
 
@@ -88,13 +88,13 @@ def fit_gnn(GNN_id):
 
         for GNN_ID in GNN_IDs:
             for i in samples:
-                mapping.append((dataset, i, GNN_ID, f'samples_exp{downsampling}', 180, None, 8, 1.5))
+                mapping.append((dataset, i, GNN_ID, f'samples_exp{downsampling}', 200, None, 8, 1.5))
 
         print(len(mapping))
         print(mapping)
 
         # this must be nested because of how GNN uses scratch
-        with mp.Pool(N) as p:
+        with mp.Pool(1) as p:
             p.starmap(GNN.check, mapping)
 
 def fit_max_ent():
@@ -112,16 +112,16 @@ def fit_max_ent():
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(15) as p:
-        p.starmap(max_ent.cleanup, mapping)
+    with mp.Pool(1) as p:
+        p.starmap(max_ent.check, mapping)
 
 
 def figure(GNN_ID):
-    label_fontsize=24
-    tick_fontsize=22
+    label_fontsize=22
+    tick_fontsize=18
     letter_fontsize=26
 
-    samples, _ = get_samples(EXP_DATASET, test=True)
+    samples, _ = get_samples(EXP_DATASET, test=True, filter_cell_lines=['imr90'])
     N = 10
     samples = samples[:N]
     exponents = np.arange(4, 9)
@@ -144,7 +144,7 @@ def figure(GNN_ID):
         y_list.append(y)
 
     # collect data
-    scc = SCC(h=1)
+    scc = SCC(h=5, K=100)
     for exp in exponents:
         for i, s in enumerate(samples):
             s_dir = osp.join(dir, f'samples_exp{exp}/sample{s}')
@@ -160,7 +160,7 @@ def figure(GNN_ID):
             corr_scc_var = scc.scc(y_dense, y_sparse)
             experiment_scc_dense[exp][i] = corr_scc_var
 
-            grid_root = 'optimize_grid_b_180_v_8_spheroid_1.5'
+            grid_root = 'optimize_grid_b_200_v_8_spheroid_1.5'
 
             # gnn
             gnn_dir = osp.join(s_dir, f'{grid_root}-GNN{GNN_ID}')
@@ -259,7 +259,7 @@ def figure(GNN_ID):
         scc = np.round(scc, 3)
         s = sns.heatmap(composite, linewidth = 0, vmin = 0, vmax = vmax,
                         cmap = RED_CMAP, ax = axes[i], cbar = False)
-        s.set_title(f'Read Depth = $10^{{{exp}}}$\nSCC={scc}',
+        s.set_title(f'Read Depth = $10^{{{exp}}}$\n',
                     fontsize = label_fontsize)
         # s.set_xticks(genome_ticks, labels = genome_labels, rotation = 0,
         #             fontsize = tick_fontsize)
@@ -268,9 +268,9 @@ def figure(GNN_ID):
         s.set_xticks([])
         s.set_yticks([])
         axes[i].axline((0,0), slope=1, color = 'k', lw=1)
-        axes[i].text(0.99*m, 0.01*m, 'GNN', fontsize=letter_fontsize, ha='right',
+        axes[i].text(0.99*m, -0.08*m, 'GNN', fontsize=label_fontsize, ha='right',
                     va='top', weight='bold')
-        axes[i].text(0.01*m, 0.99*m, 'Reference', fontsize=letter_fontsize,
+        axes[i].text(0.01*m, 1.08*m, 'Reference', fontsize=label_fontsize,
                     weight='bold')
 
     composites = np.zeros((len(exponents_hic), m, m))
@@ -283,7 +283,7 @@ def figure(GNN_ID):
         scc = np.round(scc, 3)
         s = sns.heatmap(composite, linewidth = 0, vmin = 0, vmax = vmax,
                         cmap = RED_CMAP, ax = ax, cbar = False)
-        s.set_title(f'SCC={scc}', fontsize = label_fontsize)
+        #s.set_title(f'SCC={scc}', fontsize = label_fontsize)
         # s.set_xticks(genome_ticks, labels = genome_labels, rotation = 0,
         #             fontsize = tick_fontsize)
         # s.set_yticks(genome_ticks, labels = genome_labels, rotation = 0,
@@ -291,9 +291,9 @@ def figure(GNN_ID):
         s.set_xticks([])
         s.set_yticks([])
         ax.axline((0,0), slope=1, color = 'k', lw=1)
-        ax.text(0.99*m, 0.01*m, 'Max Ent', fontsize=letter_fontsize, ha='right',
+        ax.text(0.99*m, -0.08*m, 'Max Ent', fontsize=label_fontsize, ha='right',
                 va='top', weight='bold')
-        ax.text(0.01*m, 0.99*m, 'Reference', fontsize=letter_fontsize, weight='bold')
+        ax.text(0.01*m, 1.08*m, 'Reference', fontsize=label_fontsize, weight='bold')
 
     # scc
     for ax, mode in zip([ax7, ax8], ['sparse', 'dense']):
@@ -305,13 +305,13 @@ def figure(GNN_ID):
                     color='k', label='Subsampled Experiment')
 
         max_ent_mean = max_ent_scc_stats[mode]['mean']
-        print(max_ent_mean)
+        print('ME', max_ent_mean)
         max_ent_std = max_ent_scc_stats[mode]['sem']
         ax.errorbar(read_counts, max_ent_mean, max_ent_std,
                         color='blue', label = 'Maximum Entropy')
 
         gnn_mean = gnn_scc_stats[mode]['mean']
-        print(gnn_mean)
+        print('GNN', gnn_mean)
         gnn_std = gnn_scc_stats[mode]['sem']
         ax.errorbar(read_counts, gnn_mean, gnn_std,
                         color='red', label='GNN')
@@ -338,7 +338,7 @@ def figure(GNN_ID):
                 size=letter_fontsize, weight='bold')
 
 
-    # plt.subplots_adjust(hspace=0.3)
+    plt.subplots_adjust(hspace=0.3)
     plt.tight_layout()
     plt.savefig('/home/erschultz/downsampling_analysis/downsampling_figure_exp.png')
     plt.savefig('/home/erschultz/TICG-chromatin/figures/downsampling_figure_exp.png')
@@ -351,6 +351,6 @@ def figure(GNN_ID):
 if __name__ == '__main__':
     mp.set_start_method('spawn')
     # make_samples()
-    fit_max_ent()
-    # fit_gnn(579)
-    # figure(579)
+    # fit_max_ent()
+    # fit_gnn(631)
+    figure(631)
