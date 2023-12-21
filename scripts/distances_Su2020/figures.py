@@ -4,6 +4,7 @@ import os
 import os.path as osp
 import string
 import sys
+from scipy.stats import pearsonr
 
 import liftover
 import matplotlib
@@ -11,11 +12,12 @@ import matplotlib.patheffects as pe
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+from pylib.utils.utils import make_composite
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.plotting_utils import (BLUE_CMAP, BLUE_RED_CMAP,
                                         RED_BLUE_CMAP, RED_CMAP, plot_matrix,
                                         plot_mean_dist, rotate_bound)
-from pylib.utils.similarity_measures import SCC
+from pylib.utils.similarity_measures import SCC, hic_spector
 from pylib.utils.utils import pearson_round
 from pylib.utils.xyz import xyz_load
 from scipy.stats import gaussian_kde
@@ -318,7 +320,7 @@ def new_figure(sample, GNN_ID, bl=140, phi=None, v=None, ar=1.0):
     V_D_gnn = get_pcs(D_gnn, nan_rows, smooth=smooth, h = h)
 
     # SCC
-    scc = SCC()
+    scc = SCC(h=5, K=100)
     corr_scc_pca = scc.scc(D_no_nan, D_pca[~nan_rows][:, ~nan_rows], var_stabilized = True)
     _, corr_arr_pca = calc_dist_strat_corr(D_no_nan, D_pca[~nan_rows][:, ~nan_rows], mode = 'pearson',
                                             return_arr = True)
@@ -715,20 +717,39 @@ def both_chroms_figure(GNN_ID, bl=None, phi=None, v=None, ar=1):
         indl = np.tril_indices(npixels)
         composites = []
         for y_i in [y_gnn, y_pca]:
-            # make composite contact map
-            composite = np.zeros((npixels, npixels))
-            composite[indu] = y_i[indu]
-            composite[indl] = y[indl]
-            composites.append(composite)
+            composites.append(make_composite(y, y_i))
 
         # plot cmaps
         arr = np.array(composites)
         vmax = np.mean(arr)
-        for composite, label in zip(composites, ['GNN', 'Max Ent']):
+        scc = SCC(h=5, K=100)
+        for y_sim, composite, label in zip([y_gnn, y_pca], ['GNN', 'Max Ent']):
             ax = axes[ax_i]
             ax_i += 1
+
+            # get metrics
+            corr_scc = scc.scc(y, y_sim)
+            corr_scc = np.round(corr_scc, 3)
+
+            corr_spector = hic_spector(y, y_sim, 10)
+            corr_spector = np.round(corr_spector, 3)
+
+            pcs_gt = epilib.get_pcs(epilib.get_oe(y), 12).T
+            pcs_sim = epilib.get_pcs(epilib.get_oe(y_sim), 12).T
+            pearson_pc_1, _ = pearsonr(pcs_sim[0], pcs_gt[0])
+            pearson_pc_1 *= np.sign(pearson_pc_1) # ensure positive pearson
+            assert pearson_pc_1 > 0
+            pearson_pc_1 = np.round(pearson_pc_1, 3)
+
+            y_exp_diag = epilib.get_oe(y)
+            rmse_y_tilde = mean_squared_error(y_exp_diag, epilib.get_oe(y_sim), squared=False)
+            rmse_y_tilde = np.round(rmse_y_tilde, 3)
+
             s = sns.heatmap(composite, linewidth = 0, vmin = 0, vmax = vmax, cmap = RED_CMAP,
                             ax = ax, cbar = False)
+            title = f'SCC={scc}\nHiC-Spector={spector}\n'+r'Corr PC1($\tilde{H}$)'+f'={pearson_pc_1}\n'+r'RMSE($\tilde{H}$)'+f'={rmse_y_tilde}'
+            s.set_title(title, fontsize = 16, loc='left')
+
             ax.axline((0,0), slope=1, color = 'k', lw=1)
             ax.text(0.99*m, -0.08*m, label, fontsize=label_fontsize, ha='right', va='top',
                     weight='bold')
@@ -744,6 +765,7 @@ def both_chroms_figure(GNN_ID, bl=None, phi=None, v=None, ar=1):
                 size=letter_fontsize, weight='bold')
 
     plt.tight_layout()
+    # plt.subplots_adjust(hspace=0.4)
     plt.savefig('/home/erschultz/TICG-chromatin/figures/distances_both_chroms_hic.png')
     plt.close()
 
