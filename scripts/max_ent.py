@@ -397,35 +397,34 @@ def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=Non
 def main():
     samples = None
     # dataset = 'dataset_02_04_23'
-    dataset = 'Su2020'; samples = ['1013_rescale1']
-    # dataset = 'dataset_12_06_23'
-    # dataset = 'dataset_12_06_23'
+    # dataset = 'Su2020'; samples = ['1013_rescale1']
+    dataset = 'dataset_12_06_23'
     # dataset = 'dataset_11_21_23_imr90'; samples = range(1, 16)
     # dataset='dataset_HCT116_RAD21_KO'; samples=range(1,9)
 
     if samples is None:
         samples = []
         for cell_line in ['imr90']:
-            # samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
-            # samples.extend(samples_cell_line)
-            samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
-            samples.extend(samples_cell_line)
+            samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
+            samples.extend(samples_cell_line[:10])
+            # samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
+            #samples.extend(samples_cell_line)
 
         print(samples)
 
     mapping = []
-    k_angle=0;theta_0=180;b=180;ar=2.0;phi=None;v=8
+    k_angle=0;theta_0=180;b=180;ar=1.5;phi=None;v=8
     k=10
     contacts_distance=False
     for i in samples:
         for b in [200]:
-            for v in [8]:
+            for k in [1,2,3,4,5,6,7,8,9]:
                 mapping.append((dataset, i, f'samples', b, phi, v, None, ar,
                             'gaussian', k, contacts_distance, k_angle, theta_0))
 
     print('len =', len(mapping))
 
-    with mp.Pool(1) as p:
+    with mp.Pool(16) as p:
         # p.starmap(setup_config, mapping)
         p.starmap(fit, mapping)
         # p.starmap(check, mapping)

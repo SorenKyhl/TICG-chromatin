@@ -13,7 +13,7 @@ from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
                                       calculate_diag_chi_step, calculate_L,
                                       calculate_S)
 from pylib.utils.plotting_utils import RED_CMAP, rotate_bound
-from pylib.utils.similarity_measures import SCC
+from pylib.utils.similarity_measures import SCC, hic_spector
 from pylib.utils.utils import pearson_round
 from pylib.utils.xyz import xyz_load, xyz_write
 
@@ -69,7 +69,7 @@ def metric_figure():
 
     print('---'*9)
     print('Starting Figure')
-    fig = plt.figure(figsize=(22, 12))
+    fig = plt.figure(figsize=(22, 12.5))
     ax1 = plt.subplot(2, 17, (1, 4))
     ax2 = plt.subplot(2, 17, (5, 8))
     ax3 = plt.subplot(2, 17, (10, 13))
@@ -141,8 +141,11 @@ def metric_figure():
 
             scc_var = scc.scc(y_gt, y_sim, var_stabilized = True)
             scc_var = np.round(scc_var, 3)
+            
+            corr_spector = hic_spector(y_gt, y_sim, 10)
+            corr_spector = np.round(corr_spector, 3)
 
-            title = f'SCC={scc_var}\nCorr PC 1={pearson_pc_1}\n'+r'RMSE($\tilde{H}$)'+f'={rmse_y_tilde}'
+            title = f'SCC={scc_var}\nHiC-Spector={corr_spector}\nCorr PC1('+r'$\tilde{H}$)'+f'={pearson_pc_1}\n'+r'RMSE($\tilde{H}$)'+f'={rmse_y_tilde}'
             s.set_title(title, fontsize = 16, loc='left')
 
 
@@ -266,6 +269,6 @@ def scc_h():
 
 
 if __name__ == '__main__':
-    # metric_figure()
+    metric_figure()
     # scc_across_cell_lines()
-    scc_h()
+    # scc_h()

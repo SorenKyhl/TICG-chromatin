@@ -363,8 +363,9 @@ def new_figure(test=False):
     ax2 = plt.subplot(2, 21, (8, 13))
     ax4 = plt.subplot(2, 21, (17, 21)) # p(s)
     ax5 = plt.subplot(2, 21, (22, 29)) # pc 1
-    ax6 = plt.subplot(2, 21, (32, 35)) # timing
-    axes = [ax1, ax4, ax5, ax6]
+    ax6 = plt.subplot(2, 21, (31, 35))
+    ax7 = plt.subplot(2, 21, (38, 42)) # timing
+    axes = [ax1, ax4, ax5, ax6, ax7]
 
 
     vmin = 0
@@ -454,16 +455,17 @@ def new_figure(test=False):
     # ax6.set_ylabel('Correlation', fontsize=label_fontsize)
     # ax6.set_xlabel('Genomic Separation (beads)', fontsize=label_fontsize)
 
+    ax6.set_axis_off()
+
     data = [max_ent_times, max_ent_times_strict, gnn_times]
     labels = [r'Max Ent ($\epsilon$=1e-2)', r'Max Ent ($\epsilon$=1e-3)', 'GNN']    
     ticks = range(1, len(labels)+1)
-    b1 = ax6.boxplot(data,  vert = True,
+    b1 = ax7.boxplot(data,  vert = True,
                         patch_artist = True, labels = labels)
-    # ax8.set_yticks([10, 50, 100])
-    ax6.set_yscale('log')
+    ax7.set_yscale('log')
 
-    ax6.set_ylim(0, None)
-    ax6.set_ylabel('Time (mins)', fontsize=label_fontsize)
+    ax7.set_ylim(0, None)
+    ax7.set_ylabel('Time (mins)', fontsize=label_fontsize)
 
     # fill with colors
     colors = ['b', 'b', 'r']
@@ -475,7 +477,7 @@ def new_figure(test=False):
     # Create offset transform by 5 points in x direction
     dx = 15/72.; dy = 0/72.
     offset = matplotlib.transforms.ScaledTranslation(dx, dy, fig.dpi_scale_trans)
-    for ax in [ax6]:
+    for ax in [ax7]:
         ax.set_xticks(ticks, labels, rotation=40, ha='right')
         # apply offset transform to all x ticklabels.
         for label in ax.xaxis.get_majorticklabels():
@@ -486,8 +488,8 @@ def new_figure(test=False):
         ax.text(-0.1, 1.05, string.ascii_uppercase[n], transform=ax.transAxes,
                 size=letter_fontsize, weight='bold')
 
-    axes[-1].text(1.25, 1.05, string.ascii_uppercase[n+1], transform=ax.transAxes,
-            size=letter_fontsize, weight='bold')
+    # axes[-1].text(1.25, 1.05, string.ascii_uppercase[n+1], transform=ax.transAxes,
+    #         size=letter_fontsize, weight='bold')
 
     plt.tight_layout()
     plt.subplots_adjust(bottom=0.16, top = 0.95, left = 0.05, right = 0.95,

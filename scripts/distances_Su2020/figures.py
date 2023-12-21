@@ -579,6 +579,7 @@ def both_chroms_figure(GNN_ID, bl=None, phi=None, v=None, ar=1):
     ax_cb2 = plt.subplot(2, 48, 93)
     for sample, axes in zip(['1013_rescale1', '1004_rescale1'],
                             [(ax1, ax2, ax3, ax_cb1), (ax4, ax5, ax6, ax_cb2)]):
+        print(sample)
         dir = osp.join(data_dir, f'samples/sample{sample}')
         D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=bl, phi=phi, v=v, ar=ar, mode='mean')
         m = len(D)
@@ -606,7 +607,7 @@ def both_chroms_figure(GNN_ID, bl=None, phi=None, v=None, ar=1):
         vmed = np.nanpercentile(D_no_nan, 50)
         vmax = np.nanpercentile(D_no_nan, 95)
 
-        print(vmin, vmed, vmax)
+        print('cmap vals', vmin, vmed, vmax)
         npixels = np.shape(D_no_nan)[0]
         indu = np.triu_indices(npixels)
         indl = np.tril_indices(npixels)
@@ -805,6 +806,6 @@ def supp_figure(sample, GNN_ID, bl, phi=None, v=None, ar=1.0):
 if __name__ == '__main__':
     # old_figure(1013, 490, bl=180, phi=0.008, ar=1.5)
     # new_figure('1004_rescale1', 614, bl=200, v=8, ar=1.5)
-    new_figure('1013_rescale1', 629, bl=200, v=8, ar=1.5)
-    # both_chroms_figure(629, bl=200, v=8, ar=1.5)
+    new_figure('1004_rescale1', 631, bl=200, v=8, ar=1.5)
+    # both_chroms_figure(631, bl=200, v=8, ar=1.5)
     # supp_figure(1013, 579, bl=180, v=8, ar=1.5)

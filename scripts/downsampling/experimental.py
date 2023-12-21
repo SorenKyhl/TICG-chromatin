@@ -13,7 +13,7 @@ import scipy
 import scipy.stats as ss
 import seaborn as sns
 from pylib.utils.plotting_utils import RED_CMAP, plot_matrix
-from pylib.utils.similarity_measures import SCC
+from pylib.utils.similarity_measures import SCC, hic_spector
 from pylib.utils.utils import triu_to_full, make_composite
 
 sys.path.append('/home/erschultz')
@@ -188,6 +188,7 @@ def figure(GNN_ID):
     # select which composites to plot
     sample_i = 4
     sample = samples[sample_i]
+    print('sample', sample)
     exponents_hic = [5, 6, 7]
     result = load_import_log(f'/home/erschultz/{EXP_DATASET}/samples/sample{sample}')
     start = result['start_mb']
@@ -218,8 +219,6 @@ def figure(GNN_ID):
         composites[i] = composite_dict[exp][sample_i]
     vmax = np.mean(composites)
     for i, (exp, composite) in enumerate(zip(exponents_hic, composites)):
-        scc = gnn_scc_sparse[exp][sample_i]
-        scc = np.round(scc, 3)
         s = sns.heatmap(composite, linewidth = 0, vmin = 0, vmax = vmax,
                         cmap = RED_CMAP, ax = axes[i], cbar = False)
         s.set_title(f'Read Depth = $10^{{{exp}}}$\n',
@@ -242,8 +241,6 @@ def figure(GNN_ID):
     vmax = np.mean(composites)
     for i, (exp, composite) in enumerate(zip(exponents_hic, composites)):
         ax = axes[i+3]
-        scc = max_ent_scc_sparse[exp][sample_i]
-        scc = np.round(scc, 3)
         s = sns.heatmap(composite, linewidth = 0, vmin = 0, vmax = vmax,
                         cmap = RED_CMAP, ax = ax, cbar = False)
         #s.set_title(f'SCC={scc}', fontsize = label_fontsize)
@@ -261,7 +258,7 @@ def figure(GNN_ID):
     # scc
     mode='dense'
     for ax, metric in zip([ax7, ax8], ['scc', 'spector']):
-        if mode == 'dense':
+        if False:
             data_mean = np.zeros_like(exponents, dtype=float)
             data_sem = np.zeros_like(exponents, dtype=float)
             for i, exp in enumerate(exponents):
@@ -274,7 +271,7 @@ def figure(GNN_ID):
                                             ['blue', 'red'],
                                             [max_ent_data, gnn_data]):
             data_mean = np.zeros_like(exponents, dtype=float)
-            data_std = np.zeros_like(exponents, dtype=float)
+            data_sem = np.zeros_like(exponents, dtype=float)
             for i, exp in enumerate(exponents):
                 data_mean[i] = np.mean(data_dict[mode][metric][exp])
                 data_sem[i] = ss.sem(data_dict[mode][metric][exp])
@@ -288,10 +285,10 @@ def figure(GNN_ID):
 
         ax.tick_params(axis='both', which='major', labelsize=tick_fontsize)
 
-    ax7.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1])
-    ax8.set_yticks([])
-    ax7.set_ylabel('SCC (subsampled)', fontsize=label_fontsize)
-    ax8.set_ylabel('SCC (original)', fontsize=label_fontsize)
+    # ax7.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1])
+    #ax8.set_yticks([])
+    ax7.set_ylabel('SCC', fontsize=label_fontsize)
+    ax8.set_ylabel('HiC-Spector', fontsize=label_fontsize)
 
     ax8.legend(bbox_to_anchor=(-0.15, -0.25), loc="upper center",
                 fontsize = label_fontsize,
