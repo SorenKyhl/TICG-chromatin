@@ -6,7 +6,7 @@ import os.path as osp
 import shutil
 import subprocess as sp
 import sys
-from time import sleep
+from time import sleep, time
 
 import numpy as np
 import pylib.analysis as analysis
@@ -27,6 +27,7 @@ from sequences_to_contact_maps.result_summary_plots import \
 sys.path.append('/home/erschultz/TICG-chromatin')
 from scripts.data_generation.modify_maxent import get_samples
 from scripts.max_ent import setup_config
+
 
 def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     print(sample)
@@ -158,13 +159,16 @@ def fit(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
 
     # sleep for random # of seconds so as not to overload gpu
     sleep(np.random.rand()*10)
+    t0 = time()
     model_path = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{GNN_ID}'
     log_file = osp.join(gnn_root, 'energy.log')
     ofile = osp.join(gnn_root, 'S.npy')
     args_str = f'--m {m} --gnn_model_path {model_path} --sample_path {dir} --bonded_path {root} --sub_dir {sub_dir} --ofile {ofile}'
-    # using subprocess gaurantees that pytorch can't keep an GPU vram cached
+    # using subprocess gaurantees that pytorch can't keep any GPU vram cached
     sp.run(f"python3 /home/erschultz/TICG-chromatin/scripts/max_ent_setup/get_params.py {args_str} > {log_file}",
             shell=True)
+    tf = time()
+    utils.print_time(t0, tf, 'gnn')
     if not osp.exists(ofile):
         print(f'{ofile} does not exist, SKIPPING')
         return
@@ -245,8 +249,8 @@ def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
 def main():
     samples=None
     # dataset='dataset_interp_test'; samples=[1]
-    # dataset='dataset_12_06_23';
-    dataset = 'Su2020'; samples=['1013_rescale1', '1004_rescale1']
+    dataset='dataset_12_06_23';
+    # dataset = 'Su2020'; samples=['1013_rescale1', '1004_rescale1']
     # dataset = 'dataset_06_29_23'; samples=[81]
     # dataset = 'dataset_11_20_23';
     # dataset = 'dataset_11_21_23_imr90'; samples = range(16, 31)
@@ -255,9 +259,9 @@ def main():
 
     if samples is None:
         samples = []
-        for cell_line in ['imr90']:
+        for cell_line in ['kbm7']:
             samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
-            samples.extend(samples_cell_line)
+            samples.extend(samples_cell_line[:2])
     print(len(samples))
 
     GNN_IDs = [631]; b=200; phi=None; v=8; ar=1.5
@@ -269,13 +273,13 @@ def main():
     print(len(mapping))
     # print(mapping)
 
-    with mp.Pool(2) as p:
+    with mp.Pool(1) as p:
         # p.starmap(cleanup, mapping)
         p.starmap(fit, mapping)
 
-    for i in mapping:
+    # for i in mapping:
         # fit_max_ent(*i)
-        check(*i)
+        # check(*i)
 
 if __name__ == '__main__':
     mp.set_start_method('spawn')

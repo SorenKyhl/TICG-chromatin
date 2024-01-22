@@ -188,6 +188,16 @@ def test2():
     diag_chi = diag_chi_step_to_dense(diag_chi_step, 4, 1, 2, 3)
     print(diag_chi)
 
+def test_sdag():
+    S = np.random.rand(5)*-1
+    print(S)
+    Sdag = np.sign(S) * np.log(np.abs(S)+1)
+    print(Sdag)
+    S2 = np.sign(Sdag) * (np.exp(np.abs(Sdag))-1)
+    print(S2)
+    assert np.allclose(S, S2)
+
 if __name__ == '__main__':
     # test()
-    test2()
+    # test2()
+    test_sdag()

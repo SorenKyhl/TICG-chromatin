@@ -418,16 +418,16 @@ def main():
     contacts_distance=False
     for i in samples:
         for b in [200]:
-            for k in [1,2,3,4,5,6,7,8,9]:
+            for k in [11,12,13,14,15]:
                 mapping.append((dataset, i, f'samples', b, phi, v, None, ar,
                             'gaussian', k, contacts_distance, k_angle, theta_0))
 
     print('len =', len(mapping))
 
-    with mp.Pool(16) as p:
+    with mp.Pool(1) as p:
         # p.starmap(setup_config, mapping)
-        p.starmap(fit, mapping)
-        # p.starmap(check, mapping)
+        # p.starmap(fit, mapping)
+        p.starmap(check, mapping)
         # p.starmap(post_analysis, mapping)
         # p.starmap(cleanup, mapping)
 

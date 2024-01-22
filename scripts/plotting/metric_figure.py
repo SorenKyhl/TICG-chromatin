@@ -12,7 +12,7 @@ from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
                                       calculate_diag_chi_step, calculate_L,
                                       calculate_S)
-from pylib.utils.plotting_utils import RED_CMAP, rotate_bound
+from pylib.utils.plotting_utils import BLUE_RED_CMAP, RED_CMAP, rotate_bound
 from pylib.utils.similarity_measures import SCC, hic_spector
 from pylib.utils.utils import pearson_round
 from pylib.utils.xyz import xyz_load, xyz_write
@@ -28,7 +28,7 @@ from sequences_to_contact_maps.scripts.load_utils import (
     load_L)
 
 
-def metric_figure():
+def metric_figure(oe=False):
     test=False
     label_fontsize=22
     tick_fontsize=18
@@ -69,15 +69,28 @@ def metric_figure():
 
     print('---'*9)
     print('Starting Figure')
-    fig = plt.figure(figsize=(22, 12.5))
-    ax1 = plt.subplot(2, 17, (1, 4))
-    ax2 = plt.subplot(2, 17, (5, 8))
-    ax3 = plt.subplot(2, 17, (10, 13))
-    ax4 = plt.subplot(2, 17, (14, 17))
-    ax5 = plt.subplot(2, 17, (18, 21))
-    ax6 = plt.subplot(2, 17, (22, 25))
-    ax7 = plt.subplot(2, 17, (27, 30))
-    ax8 = plt.subplot(2, 17, (31, 34))
+    if oe:
+        fig = plt.figure(figsize=(24, 12.5))
+        ax1 = plt.subplot(2, 18, (1, 4))
+        ax2 = plt.subplot(2, 18, (5, 8))
+        ax3 = plt.subplot(2, 18, (10, 13))
+        ax4 = plt.subplot(2, 18, (14, 17))
+        ax5 = plt.subplot(2, 18, (19, 22))
+        ax6 = plt.subplot(2, 18, (23, 26))
+        ax7 = plt.subplot(2, 18, (28, 31))
+        ax8 = plt.subplot(2, 18, (32, 35))
+        ax_cb = plt.subplot(1, 18, 18)
+    else:
+        fig = plt.figure(figsize=(22, 12.5))
+        ax1 = plt.subplot(2, 17, (1, 4))
+        ax2 = plt.subplot(2, 17, (5, 8))
+        ax3 = plt.subplot(2, 17, (10, 13))
+        ax4 = plt.subplot(2, 17, (14, 17))
+        ax5 = plt.subplot(2, 17, (18, 21))
+        ax6 = plt.subplot(2, 17, (22, 25))
+        ax7 = plt.subplot(2, 17, (27, 30))
+        ax8 = plt.subplot(2, 17, (31, 34))
+        ax_cb = None
     axes = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8]
 
     ax_i = 0
@@ -88,8 +101,9 @@ def metric_figure():
         sample_dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
         max_ent_dir, gnn_dir = get_dirs(sample_dir)
         y_gt, y_pca, y_gnn = get_y(sample_dir)
-        meanDist = DiagonalPreprocessing.genomic_distance_statistics(y_gt)
-        y_gt_diag = DiagonalPreprocessing.process(y_gt, meanDist)
+        y_gt_oe = epilib.get_oe(y_gt)
+        pcs_gt = epilib.get_pcs(y_gt_oe, 12).T
+
         m = len(y_gt)
 
         result = load_import_log(sample_dir)
@@ -104,8 +118,17 @@ def metric_figure():
         genome_ticks = [0, len(y_gt)-1]
         genome_labels = [f'{all_labels[i]}' for i in genome_ticks]
 
-        vmin = 0
-        vmax = np.mean(y_gt)
+        if oe:
+            vmin = np.nanpercentile(y_gt_oe, 1)
+            vmax = np.nanpercentile(y_gt_oe, 99)
+            d_vmin = 1-vmin
+            d_vmax = vmax-1
+            d = max(d_vmax, d_vmin)
+            vmin = 1 - d
+            vmax = 1 + d
+        else:
+            vmin = 0
+            vmax = np.mean(y_gt)
         npixels = np.shape(y_gt)[0]
         indu = np.triu_indices(npixels)
         indl = np.tril_indices(npixels)
@@ -114,11 +137,23 @@ def metric_figure():
         for i, (y_sim, label) in enumerate(data):
             # make composite contact map
             composite = np.zeros((npixels, npixels))
-            composite[indu] = y_sim[indu]
-            composite[indl] = y_gt[indl]
+            y_sim_oe = epilib.get_oe(y_sim)
+            if oe:
+                composite[indu] = y_sim_oe[indu]
+                composite[indl] = y_gt_oe[indl]
+                cmap = BLUE_RED_CMAP
+                cbar = True
+                cbar_ax = ax_cb
+            else:
+                composite[indu] = y_sim[indu]
+                composite[indl] = y_gt[indl]
+                cmap = RED_CMAP
+                cbar = False
+                cbar_ax = None
 
-            s = sns.heatmap(composite, linewidth = 0, vmin = vmin, vmax = vmax, cmap = RED_CMAP,
-                            ax = axes[ax_i], cbar = None)
+            s = sns.heatmap(composite, linewidth = 0, vmin = vmin, vmax = vmax,
+                            cmap = cmap, ax = axes[ax_i],
+                            cbar = cbar, cbar_ax = cbar_ax)
             ax_i += 1
             if i == 0:
                 s.set_yticks(genome_ticks, labels = genome_labels,
@@ -127,21 +162,18 @@ def metric_figure():
                 s.set_yticks([])
             s.set_xticks([])
 
-            pcs_gt = epilib.get_pcs(epilib.get_oe(y_gt), 12).T
-
-            pcs_sim = epilib.get_pcs(epilib.get_oe(y_sim), 12).T
+            pcs_sim = epilib.get_pcs(y_sim_oe, 12).T
             pearson_pc_1, _ = pearsonr(pcs_sim[0], pcs_gt[0])
             pearson_pc_1 *= np.sign(pearson_pc_1) # ensure positive pearson
             assert pearson_pc_1 > 0
             pearson_pc_1 = np.round(pearson_pc_1, 3)
 
-            y_diag_sim = epilib.get_oe(y_sim)
-            rmse_y_tilde = mean_squared_error(y_gt_diag, y_diag_sim, squared=False)
+            rmse_y_tilde = mean_squared_error(y_gt_oe, y_sim_oe, squared=False)
             rmse_y_tilde = np.round(rmse_y_tilde, 3)
 
             scc_var = scc.scc(y_gt, y_sim, var_stabilized = True)
             scc_var = np.round(scc_var, 3)
-            
+
             corr_spector = hic_spector(y_gt, y_sim, 10)
             corr_spector = np.round(corr_spector, 3)
 
@@ -158,6 +190,8 @@ def metric_figure():
             ellipse = matplotlib.patches.Ellipse((y, x), ry, rx, color='b', fill=False)
             s.add_patch(ellipse)
 
+    if ax_cb is not None:
+        ax_cb.tick_params(labelsize=16)
 
     for n, ax in enumerate([ax1, ax3, ax5, ax7]):
         ax.text(-0.1, 1.05, string.ascii_uppercase[n], transform=ax.transAxes,
@@ -165,7 +199,10 @@ def metric_figure():
 
     plt.tight_layout()
 
-    plt.savefig('/home/erschultz/TICG-chromatin/figures/hic_metrics.png')
+    if oe:
+        plt.savefig('/home/erschultz/TICG-chromatin/figures/hic_metrics_oe.png')
+    else:
+        plt.savefig('/home/erschultz/TICG-chromatin/figures/hic_metrics.png')
     plt.close()
 
 def scc_across_cell_lines():
@@ -247,8 +284,8 @@ def scc_h():
         print(scc_gnn_dict[h])
         mean_gnn[i] = np.mean(scc_gnn_dict[h])
         mean_me[i] = np.mean(scc_me_dict[h])
-        std_gnn[i] = np.std(scc_gnn_dict[h])
-        std_me[i] = np.std(scc_me_dict[h])
+        std_gnn[i] = ss.sem(scc_gnn_dict[h])
+        std_me[i] = ss.sem(scc_me_dict[h])
 
     # plt.plot(X, mean_gnn, label='GNN', c='blue')
     # plt.fill_between(X, mean_gnn - std_gnn, mean_gnn + std_gnn, color='blue', alpha=0.5)
@@ -256,10 +293,11 @@ def scc_h():
     # plt.fill_between(X, mean_me - std_me, mean_me + std_me, color='red', alpha=0.5)
     plt.errorbar(X, mean_gnn, yerr = std_gnn, color='red', label='GNN')
     plt.errorbar(X, mean_me, yerr=std_me, color='blue', label='Maximum Entropy')
-    plt.legend(loc='upper left')
-    plt.ylim(None, 0.95)
-    plt.ylabel('SCC', fontsize=16)
+    plt.legend(loc='lower left', fontsize=16)
+    plt.ylim(0, 0.9)
+    plt.ylabel('Mean SCC', fontsize=16)
     plt.xlabel(r'Filter Span Size, $h$', fontsize=16)
+    plt.tick_params(axis='both', which='major', labelsize=12)
     plt.tight_layout()
     plt.savefig('/home/erschultz/TICG-chromatin/figures/scc_h.png')
     plt.close()
@@ -269,6 +307,6 @@ def scc_h():
 
 
 if __name__ == '__main__':
-    metric_figure()
+    # metric_figure(oe=True)
     # scc_across_cell_lines()
-    # scc_h()
+    scc_h()

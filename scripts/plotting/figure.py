@@ -253,9 +253,9 @@ def figure(test=False):
                     fontsize = tick_fontsize)
     ax4.set_yticks([])
     ax4.set_ylabel('PC 1', fontsize=label_fontsize)
-    ax4.set_ylim(None, .14)
+    ax4.set_ylim(None, .13)
     ax4.legend(bbox_to_anchor=(0.5, .98), loc="upper center",
-                fontsize = 14, borderaxespad=0, ncol=3)
+                fontsize = 14, borderaxespad=0, ncol=3, frameon=False)
 
     # resized = rotate_bound(y,-45)
     # height=50
@@ -363,7 +363,7 @@ def new_figure(test=False):
     ax2 = plt.subplot(2, 21, (8, 13))
     ax4 = plt.subplot(2, 21, (17, 21)) # p(s)
     ax5 = plt.subplot(2, 21, (22, 29)) # pc 1
-    ax6 = plt.subplot(2, 21, (31, 35))
+    ax6 = plt.subplot(2, 21, (31, 35)) # structure
     ax7 = plt.subplot(2, 21, (38, 42)) # timing
     axes = [ax1, ax4, ax5, ax6, ax7]
 
@@ -433,9 +433,9 @@ def new_figure(test=False):
                     fontsize = tick_fontsize)
     ax5.set_yticks([])
     ax5.set_ylabel('PC 1', fontsize=label_fontsize)
-    ax5.set_ylim(None, .14)
+    ax5.set_ylim(None, .12)
     ax5.legend(bbox_to_anchor=(0.5, .98), loc="upper center",
-                fontsize = 14, borderaxespad=0, ncol=3)
+                fontsize = 14, borderaxespad=0, ncol=3, frameon=True)
     ax5.set_xlabel('Genomic Position (Mb)', fontsize=label_fontsize)
 
 
@@ -456,9 +456,11 @@ def new_figure(test=False):
     # ax6.set_xlabel('Genomic Separation (beads)', fontsize=label_fontsize)
 
     ax6.set_axis_off()
+    ax6.text(0.5, 0.85, 'Simulated Structures', fontsize=label_fontsize,
+            horizontalalignment='center')
 
     data = [max_ent_times, max_ent_times_strict, gnn_times]
-    labels = [r'Max Ent ($\epsilon$=1e-2)', r'Max Ent ($\epsilon$=1e-3)', 'GNN']    
+    labels = [r'Max Ent ($\epsilon$=1e-2)', r'Max Ent ($\epsilon$=1e-3)', 'GNN']
     ticks = range(1, len(labels)+1)
     b1 = ax7.boxplot(data,  vert = True,
                         patch_artist = True, labels = labels)

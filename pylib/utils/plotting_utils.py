@@ -142,7 +142,6 @@ def plot_matrix(arr, ofile=None, title=None, vmin=0, vmax='max',
     else:
         if vmin == 'min':
             vmin = np.nanpercentile(arr, percentile)
-            print(vmin)
             # uses 1st percentile instead of absolute min
         elif vmin == 'abs_min':
             vmin = np.min(arr)

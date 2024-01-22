@@ -4,7 +4,6 @@ import os
 import os.path as osp
 import string
 import sys
-from scipy.stats import pearsonr
 
 import liftover
 import matplotlib
@@ -12,16 +11,17 @@ import matplotlib.patheffects as pe
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-from pylib.utils.utils import make_composite
+from pylib.utils import epilib
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.plotting_utils import (BLUE_CMAP, BLUE_RED_CMAP,
                                         RED_BLUE_CMAP, RED_CMAP, plot_matrix,
                                         plot_mean_dist, rotate_bound)
 from pylib.utils.similarity_measures import SCC, hic_spector
-from pylib.utils.utils import pearson_round
+from pylib.utils.utils import make_composite, pearson_round
 from pylib.utils.xyz import xyz_load
-from scipy.stats import gaussian_kde
+from scipy.stats import gaussian_kde, pearsonr
 from sklearn.decomposition import PCA
+from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
@@ -658,33 +658,32 @@ def both_chroms_figure(GNN_ID, bl=None, phi=None, v=None, ar=1):
 
         # plot scaling
         m = len(D)
-        log_labels = np.linspace(0, resolution*(m-1), m)
-        # print('h1204', log_labels.shape)
-        data = zip([D, D_pca, D_gnn], ['Experiment', 'Max Ent', 'GNN'], ['k', 'b', 'r'])
-        for D_i, label, color in data:
-            # print(label)
+        D2 = np.load('/home/erschultz/Su2020/samples/sample1/dist2_mean.npy')
+        data = zip([D, D2, D_pca, D_gnn],
+                    ['Experiment (50 kb)', 'Experiment (30 kb)', 'Max Ent', 'GNN'],
+                    ['k', 'k', 'b', 'r'],
+                    ['solid', ':', 'solid', 'solid'],
+                    [50000, 30000, 50000, 50000])
+        for D_i, label, color, ls, res in data:
+            if '30 kb' in label and not sample.startswith('1004'):
+                continue
             if D_i is not None:
                 meanDist = DiagonalPreprocessing.genomic_distance_statistics(D_i, 'freq')
                 nan_meanDist = np.isnan(meanDist)
                 nan_meanDist[0] = True # ignore first entry (guaranteed to be 0)
                 # print(meanDist[:10], meanDist.shape)
+                log_labels = np.linspace(0, res*(len(meanDist)-1), len(meanDist))
                 axes[0].plot(log_labels[~nan_meanDist], meanDist[~nan_meanDist], label = label,
-                            color = color)
-
-        if sample.startswith('1004'):
-            D2 = np.load('/home/erschultz/Su2020/samples/sample1/dist2_mean.npy')
-            meanDist = DiagonalPreprocessing.genomic_distance_statistics(D2, 'freq')
-            log_labels = np.linspace(0, 30000*(len(meanDist)-1), len(meanDist))
-            nan_meanDist = np.isnan(meanDist)
-            print(meanDist[:10], meanDist.shape)
-            axes[0].plot(log_labels[~nan_meanDist], meanDist[~nan_meanDist], label = 'Experiment2',
-                        color = 'k', ls=':')
+                            color = color, ls=ls)
 
         axes[0].set_xlim(50000, None)
+        axes[0].set_ylim(0, 1500)
         axes[0].tick_params(axis='both', which='major', labelsize=tick_fontsize)
         axes[0].set_ylabel('Distance (nm)', fontsize = label_fontsize)
         axes[0].set_xlabel('Genomic Separation (bp)', fontsize = label_fontsize)
         axes[0].set_xscale('log')
+
+        axes[0].legend(fontsize=16, loc='upper left', frameon=False)
 
     for n, ax in enumerate([ax1, ax4, ax2, ax5]):
         ax.text(-0.0, 1.05, string.ascii_uppercase[n], transform=ax.transAxes,
@@ -703,8 +702,8 @@ def both_chroms_figure(GNN_ID, bl=None, phi=None, v=None, ar=1):
     print('Starting Supp Figure')
     fig, axes = plt.subplots(2, 2)
     axes = axes.flatten()
-    fig.set_figheight(13.5)
-    fig.set_figwidth(12)
+    fig.set_figheight(14)
+    fig.set_figwidth(11)
 
     ax_i = 0
     for sample in ['1013_rescale1', '1004_rescale1']:
@@ -723,7 +722,7 @@ def both_chroms_figure(GNN_ID, bl=None, phi=None, v=None, ar=1):
         arr = np.array(composites)
         vmax = np.mean(arr)
         scc = SCC(h=5, K=100)
-        for y_sim, composite, label in zip([y_gnn, y_pca], ['GNN', 'Max Ent']):
+        for y_sim, composite, label in zip([y_gnn, y_pca], composites, ['GNN', 'Max Ent']):
             ax = axes[ax_i]
             ax_i += 1
 
@@ -747,7 +746,7 @@ def both_chroms_figure(GNN_ID, bl=None, phi=None, v=None, ar=1):
 
             s = sns.heatmap(composite, linewidth = 0, vmin = 0, vmax = vmax, cmap = RED_CMAP,
                             ax = ax, cbar = False)
-            title = f'SCC={scc}\nHiC-Spector={spector}\n'+r'Corr PC1($\tilde{H}$)'+f'={pearson_pc_1}\n'+r'RMSE($\tilde{H}$)'+f'={rmse_y_tilde}'
+            title = f'SCC={corr_scc}\nHiC-Spector={corr_spector}\n'+r'Corr PC1($\tilde{H}$)'+f'={pearson_pc_1}\n'+r'RMSE($\tilde{H}$)'+f'={rmse_y_tilde}'
             s.set_title(title, fontsize = 16, loc='left')
 
             ax.axline((0,0), slope=1, color = 'k', lw=1)
@@ -765,7 +764,7 @@ def both_chroms_figure(GNN_ID, bl=None, phi=None, v=None, ar=1):
                 size=letter_fontsize, weight='bold')
 
     plt.tight_layout()
-    # plt.subplots_adjust(hspace=0.4)
+    plt.subplots_adjust(hspace=0.4)
     plt.savefig('/home/erschultz/TICG-chromatin/figures/distances_both_chroms_hic.png')
     plt.close()
 
@@ -828,6 +827,6 @@ def supp_figure(sample, GNN_ID, bl, phi=None, v=None, ar=1.0):
 if __name__ == '__main__':
     # old_figure(1013, 490, bl=180, phi=0.008, ar=1.5)
     # new_figure('1004_rescale1', 614, bl=200, v=8, ar=1.5)
-    new_figure('1004_rescale1', 631, bl=200, v=8, ar=1.5)
-    # both_chroms_figure(631, bl=200, v=8, ar=1.5)
+    # new_figure('1004_rescale1', 631, bl=200, v=8, ar=1.5)
+    both_chroms_figure(631, bl=200, v=8, ar=1.5)
     # supp_figure(1013, 579, bl=180, v=8, ar=1.5)

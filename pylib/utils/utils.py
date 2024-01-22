@@ -2,6 +2,8 @@ import json
 import logging
 import os
 import os.path as osp
+import subprocess
+import sys
 from contextlib import contextmanager
 from multiprocessing import Process
 from pathlib import Path
@@ -16,8 +18,7 @@ from sympy import solve, symbols
 utility functions
 """
 
-
-LETTERS= 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 def load_json(path):
     with open(path) as f:
@@ -85,6 +86,8 @@ def load_import_log(dir, obj=None):
 
     return results
 
+def print_time(t0, tf, name = '', file = sys.stdout):
+    print(f'{name} time: {np.round(tf - t0, 3)} s', file = file)
 
 def write_json(data, path):
     """
@@ -120,9 +123,6 @@ def cat(outfilename, infilenames, header=False):
                         # ignore lines that are purely whitespace
                         outfile.write(line)
             first = False
-
-
-import subprocess
 
 
 def copy_last_snapshot(xyz_in, xyz_out, nbeads):
@@ -161,7 +161,6 @@ def cd(newdir):
         yield
     finally:
         os.chdir(prevdir)
-
 
 def load_sequences(config):
     """load sequences from files specified in config file"""

@@ -6,15 +6,15 @@ import string
 import sys
 from collections import defaultdict
 
-from pylib.utils.hic_utils import rescale_p_s_1
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 import scipy.stats as ss
 import seaborn as sns
+from pylib.utils.hic_utils import rescale_p_s_1
 from pylib.utils.plotting_utils import RED_CMAP, plot_matrix
 from pylib.utils.similarity_measures import SCC, hic_spector
-from pylib.utils.utils import triu_to_full, make_composite
+from pylib.utils.utils import make_composite, triu_to_full
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (
@@ -49,7 +49,7 @@ def make_samples():
         exp_dir = f'/home/erschultz/{EXP_DATASET}/samples/sample{s_exp}'
         y = np.triu(np.load(osp.join(exp_dir, 'y.npy')))
         tot_count = np.sum(y)
-        print(f'Total Read Depth: {tot_count}')
+        print(f'Total Contacts: {tot_count}')
         tot_count_list.append(tot_count)
 
         for exponent in exponents:
@@ -74,7 +74,7 @@ def make_samples():
             np.save(osp.join(odir, 'y.npy'), y_i)
             plot_matrix(y_i, osp.join(odir, 'y.png'), vmax = 'mean')
     tot_count_mean = np.mean(tot_count_list)
-    print(f'Mean Total Read Depth: {np.round(tot_count_mean, 1)}')
+    print(f'Mean Total Contacts: {np.round(tot_count_mean, 1)}')
 
 def fit_gnn(GNN_id):
     dataset='downsampling_analysis'
@@ -221,7 +221,7 @@ def figure(GNN_ID):
     for i, (exp, composite) in enumerate(zip(exponents_hic, composites)):
         s = sns.heatmap(composite, linewidth = 0, vmin = 0, vmax = vmax,
                         cmap = RED_CMAP, ax = axes[i], cbar = False)
-        s.set_title(f'Read Depth = $10^{{{exp}}}$\n',
+        s.set_title(f'Total Contacts = $10^{{{exp}}}$\n',
                     fontsize = label_fontsize)
         # s.set_xticks(genome_ticks, labels = genome_labels, rotation = 0,
         #             fontsize = tick_fontsize)
@@ -279,14 +279,14 @@ def figure(GNN_ID):
             ax.errorbar(read_counts, data_mean, data_sem,
                             color=color, label = label)
 
-        ax.set_xlabel('Read Depth', fontsize=label_fontsize)
+        ax.set_xlabel('Total Contacts', fontsize=label_fontsize)
         ax.set_xscale('log')
         ax.set_xticks(read_counts)
 
         ax.tick_params(axis='both', which='major', labelsize=tick_fontsize)
 
-    # ax7.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1])
-    #ax8.set_yticks([])
+    ax7.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1])
+    ax8.set_yticks([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
     ax7.set_ylabel('SCC', fontsize=label_fontsize)
     ax8.set_ylabel('HiC-Spector', fontsize=label_fontsize)
 

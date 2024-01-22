@@ -7,10 +7,69 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 import numpy as np
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
-from pylib.utils.utils import load_json
+from pylib.utils.utils import load_json, print_time
 from scipy.sparse import csr_array
 from sklearn.metrics.pairwise import nan_euclidean_distances
 
+
+def lammps_load(filepath, save = False, N_min = None, N_max = None, down_sampling = 1):
+    xyz_npy_file = osp.join(osp.split(filepath)[0], 'xyz.npy')
+    x_npy_file = osp.join(osp.split(filepath)[0], 'x.npy')
+    t0 = time.time()
+    if osp.exists(xyz_npy_file):
+        xyz = np.load(xyz_npy_file)
+    else:
+        xyz = []
+        with open(filepath, 'r') as f:
+            line = 'null'
+            while line != '':
+                line = f.readline().strip()
+                if line == 'ITEM: NUMBER OF ATOMS':
+                    N = int(f.readline().strip())
+                    xyz_timestep = np.empty((N, 3))
+
+                if line == 'ITEM: ATOMS id type xu yu zu':
+                    line = f.readline().strip().split(' ')
+                    while line[0].isnumeric():
+                        i = int(line[0]) - 1
+                        xyz_timestep[i, :] = [float(j) for j in line[2:5]]
+                        if i == N-1:
+                            xyz.append(xyz_timestep)
+                        line = f.readline().strip().split(' ')
+        xyz = np.array(xyz)
+        if save:
+            np.save(xyz_npy_file, xyz)
+
+    if osp.exists(x_npy_file):
+        x = np.load(x_npy_file)
+    else:
+        x = []
+        with open(filepath, 'r') as f:
+            keep_reading = True
+            while keep_reading:
+                line = f.readline().strip()
+                if line == 'ITEM: ATOMS id type xu yu zu':
+                    keep_reading = False
+                    line = f.readline().strip().split(' ')
+                    while line[0].isnumeric():
+                        i = int(line[0]) - 1
+                        x.append(int(line[1])-1)
+                        line = f.readline().strip().split(' ')
+        N = len(x)
+        x_arr = np.zeros((N, np.max(x)+1))
+        x_arr[np.arange(N), x] = 1
+        if save:
+            np.save(x_npy_file, x_arr)
+
+    if N_min is None:
+        N_min = 0
+    if N_max is None:
+        N_max = len(xyz)
+    xyz = xyz[N_min:N_max:down_sampling]
+    tf = time.time()
+    print(f'Loaded xyz with shape {xyz.shape}')
+    print_time(t0, tf, 'xyz load')
+    return xyz, x_arr
 
 def xyz_load(xyz_filepath, delim = '\t', multiple_timesteps = True, save = False,
             N_min = 1, N_max = None, down_sampling = 1, verbose = True):
@@ -184,13 +243,19 @@ def calculate_rg(xyz, verbose=False):
     if len(xyz.shape) == 2:
         xyz.reshape(1, -1, 3)
 
-    rgs = np.zeros(len(xyz))
-    for i, xyz_i in enumerate(xyz):
-        center = np.nanmean(xyz_i, axis = 0)
-        delta = xyz_i - center
-        rg = np.sqrt(np.nanmean(delta**2))
-        rgs[i] = rg
+    # rgs = np.zeros(len(xyz))
+    # for i, xyz_i in enumerate(xyz):
+    #     mean_i = np.nanmean(xyz_i, axis = 0)
+    #     center_i = xyz_i - mean_i
+    #     delta_i_2 = np.nansum(center_i**2, 1)
+    #     rg = np.sqrt(np.nanmean(delta_i_2))
+    #     rgs[i] = rg
 
+    xyz_mean = np.nanmean(xyz, axis = 1)
+    xyz = np.transpose(xyz, (1, 0, 2)) # transpose so broadcasting works (m, N, 3)
+    center = xyz - xyz_mean
+    delta_2 = np.nansum(center**2, 2)
+    rgs = np.sqrt(np.nanmean(delta_2, axis=0))
 
     rg_mean = np.nanmean(rgs)
     rg_std = np.nanstd(rgs)
@@ -232,6 +297,58 @@ def compare_python_to_cpp():
     plt.tight_layout()
     plt.show()
 
+def test_calc_rg():
+    N = 100
+    m = 512
+    xyz = np.random.rand(N*m*3).reshape(N, m, 3)
+    print('xyz', xyz.shape)
+    t0 = time.time()
+    mean, _ = calculate_rg(xyz)
+    tf = time.time()
+    print_time(t0, tf, 'calculate_rg')
+    print(mean)
+
+    print('---')
+    t0 = time.time()
+    xyz_mean = np.nanmean(xyz, axis = 1)
+    # print(xyz_mean)
+    # print('xyz_mean', xyz_mean.shape)
+    xyz_r = np.transpose(xyz, (1, 0, 2))
+    center_r = xyz_r - xyz_mean
+    # center = np.transpose(center_r, (1, 0, 2))
+    # print(center)
+    # print('center_r', center_r.shape)
+    delta_r_2 = np.nansum(center_r**2, 2)
+    # print('delta_r_2', delta_r_2.shape)
+    # delta_2 = np.nansum(center**2, 2)
+    # print(delta_2)
+    # print('delta_2', delta_2.shape)
+    rg = np.sqrt(np.nanmean(delta_r_2, axis=0))
+    # print('rg', rg)
+    print(np.mean(rg))
+    tf = time.time()
+    print_time(t0, tf, 'vectorized')
+
+
+    # print('---')
+    # rgs = np.zeros(len(xyz))
+    # for i, xyz_i in enumerate(xyz):
+    #     xyz_mean_i = np.nanmean(xyz_i, axis = 0)
+    #     # print(xyz_mean_i)
+    #     center_i = xyz_i - xyz_mean_i
+    #     # print(center_i)
+    #     # print(center_i.shape)
+    #     delta_i_2 = np.nansum(center_i**2, 1)
+    #     # print(delta_i_2)
+    #     # print(delta_i_2.shape)
+    #     rg = np.sqrt(np.nanmean(delta_i_2))
+    #     rgs[i] = rg
+    # print(rgs)
+    # mean = np.nanmean(rgs)
+    # print(mean)
+
+
 if __name__ == '__main__':
     # time_contact_distance()
-    compare_python_to_cpp()
+    test_calc_rg()
+    # compare_python_to_cpp()

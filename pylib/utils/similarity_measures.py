@@ -5,6 +5,7 @@ import os.path as osp
 
 import hicrep
 import numpy as np
+import pylib.utils.hic_utils as hic_utils
 import scipy
 import sklearn.metrics
 from pylib.utils import epilib
@@ -61,7 +62,7 @@ class SCC():
             return math.sqrt(np.var(x_k) * np.var(y_k))
 
     def scc_file(self, xfile, yfile, h=None, K=None, var_stabilized=None,
-                verbose=False, distance=False):
+                verbose=False, distance=False, chr=None, resolution=None):
         '''
         Wrapper for scc that takes file path as input. Must be .npy file.
 
@@ -80,12 +81,12 @@ class SCC():
             else:
                 return result
 
-        x = np.load(xfile)
-        y = np.load(yfile)
+        x = hic_utils.load_contact_map(xfile, chr, resolution)
+        y = hic_utils.load_contact_map(yfile, chr, resolution)
         return self.scc(x, y, h, K, var_stabilized, verbose, distance)
 
     def mean_filter(self, x, size):
-        return scipy.ndimage.uniform_filter(x, size, mode="constant") / (size) ** 2
+        return scipy.ndimage.uniform_filter(x, size, mode="constant") / (size ** 2)
 
     def scc(self, x, y, h=None, K=None, var_stabilized=None, verbose=False,
             debug=False, distance=False):
@@ -115,8 +116,9 @@ class SCC():
 
         if h is None:
             h = self.h
-        x = self.mean_filter(x.astype(np.float64), 1+2*h)
-        y = self.mean_filter(y.astype(np.float64), 1+2*h)
+        if h is not None:
+            x = self.mean_filter(x.astype(np.float64), 1+2*h)
+            y = self.mean_filter(y.astype(np.float64), 1+2*h)
 
         nan_list = []
         p_arr = []
@@ -217,8 +219,13 @@ class InnerProduct():
             self.files = files
 
 
-        with multiprocessing.Pool(jobs) as p:
-            self.zscores = p.map(self.get_zscore_feature, self.files)
+        if jobs > 1:
+            with multiprocessing.Pool(jobs) as p:
+                self.zscores = p.map(self.get_zscore_feature, self.files)
+        else:
+            self.zscores = []
+            for f in files:
+                self.zscores.append(self.get_zscore_feature(f))
         self.zscores = np.array(self.zscores)
 
     def get_distance_matrix(self):
@@ -230,8 +237,8 @@ class InnerProduct():
         return distance_mat
 
     def get_zscore_feature(self, file):
-        y = load_contact_map(file, self.chr, self.resolution)
-        if len(y) == 1:
+        y = hic_utils.load_contact_map(file, self.chr, self.resolution)
+        if len(y.shape) == 1:
             y = triu_to_full(y)
         zscores = []
         for k in range(self.K):
@@ -247,25 +254,6 @@ def get_symmetry_score(A, order="fro"):
     skew_symmetric = np.linalg.norm(1 / 2 * (A - A.T), order)
 
     return symmetric / (symmetric + skew_symmetric)
-
-
-def get_SCC(hic1, hic2):
-    # oe1 = get_oe(hic1)
-    # oe2 = get_oe(hic2)
-    # return np.corrcoef(oe1.flatten(), oe2.flatten())[0,1]
-    return SCC().scc(hic1, hic2)
-
-
-def get_RMSE(hic1, hic2):
-    return np.sqrt(sklearn.metrics.mean_squared_error(hic1, hic2))
-
-
-def get_RMSLE(hic1, hic2):
-    return np.sqrt(sklearn.metrics.mean_squared_log_error(hic1, hic2))
-
-
-def get_pearson(hic1, hic2):
-    return np.corrcoef(hic1.flatten(), hic2.flatten())[0, 1]
 
 def hic_spector(y1, y2, num_evec):
     '''HiC-spector metric from https://github.com/gersteinlab/HiC-spector.'''
@@ -372,6 +360,23 @@ def genome_disco(y1, y2, t):
 
     return score
 
+## wrapper functions - Soren ##
+def get_SCC(hic1, hic2):
+    # oe1 = get_oe(hic1)
+    # oe2 = get_oe(hic2)
+    # return np.corrcoef(oe1.flatten(), oe2.flatten())[0,1]
+    return SCC().scc(hic1, hic2)
+
+def get_RMSE(hic1, hic2):
+    return np.sqrt(sklearn.metrics.mean_squared_error(hic1, hic2))
+
+def get_RMSLE(hic1, hic2):
+    return np.sqrt(sklearn.metrics.mean_squared_log_error(hic1, hic2))
+## ##
+
+def get_pearson(hic1, hic2):
+    return np.corrcoef(hic1.flatten(), hic2.flatten())[0, 1]
+
 def test():
     y1 = np.load('/home/erschultz/dataset_12_06_23/samples/sample1/y.npy')
     # y2 = np.load('/home/erschultz/dataset_12_06_23/samples/sample2/y.npy')
@@ -382,9 +387,17 @@ def test():
     # y2 = np.ones((512, 512))
 
     # s = genome_disco(epilib.get_oe(y1), epilib.get_oe(y2), 3)
-    s = genome_disco(y1, y2, 3)
+    # s = genome_disco(y1, y2, 3)
+    # print('score', s)
 
-    print('score', s)
+    files = ['/home/erschultz/scratch/contact_diffusion_kNN17inner_product/iteration_0/sc_contacts/y_sc_76.npy',
+            '/home/erschultz/scratch/contact_diffusion_kNN17inner_product/iteration_0/sc_contacts/y_sc_78.npy']
+    IP = InnerProduct(files = files, K = 20, jobs = 1,
+                    resolution = None, chr = None)
+    D = IP.get_distance_matrix()
+    print(D)
+
+
 
 if __name__ == '__main__':
     test()

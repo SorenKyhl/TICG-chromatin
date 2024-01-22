@@ -36,12 +36,10 @@ from sklearn.metrics import mean_squared_error
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.knightRuiz import knightRuiz
 from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_all, load_contact_map, load_max_ent_D,
-    load_max_ent_L, load_Y)
+    get_final_max_ent_folder, load_all, load_max_ent_D, load_max_ent_L, load_Y)
 from sequences_to_contact_maps.scripts.plotting_utils import (plot_diag_chi,
                                                               plot_matrix,
                                                               plot_seq_binary)
-from sequences_to_contact_maps.scripts.R_pca import R_pca
 from sequences_to_contact_maps.scripts.utils import (calc_dist_strat_corr,
                                                      load_time_dir,
                                                      rescale_matrix)
@@ -185,7 +183,7 @@ def plot_sc_p_s():
             phase = phase_dict[dir]
             phase_count_dict[phase] += 1
 
-            y = load_contact_map(ifile, chrom=10, resolution=50000)
+            y = hic_utils.load_contact_map(ifile, chrom=10, resolution=50000)
 
             ofile = osp.join(data_dir, 'sc_contacts_time', f'y_sc_{i}_chrom10.png')
             contacts = int(np.sum(y) / 2)
@@ -1093,10 +1091,17 @@ def distance_cutoff_diag_chis():
     plt.savefig(osp.join(odir, f'diag_chis_distance_cutoff.png'))
     plt.close()
 
-
+def test_tile():
+    b = np.array([[1, 2], [3, 4]])
+    print(b, b.shape)
+    r = np.tile(b, 2)
+    print(r, r.shape)
+    r = np.tile(b, (4,1)).reshape(4, 2, 2)
+    print(r, r.shape)
 
 if __name__ == '__main__':
-    make_small('dataset_12_06_23')
+    test_tile()
+    # make_small('dataset_12_06_23')
     # data_corr()
     # plot_triu_low_res()
     # distance_cutoff_diag_chis()

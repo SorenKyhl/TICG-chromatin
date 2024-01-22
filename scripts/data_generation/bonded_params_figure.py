@@ -164,17 +164,17 @@ def main(use_max_ent=True, use_v=False):
 
             plot_meanDist_D(axes[2], log, c, dir, ar, ls)
 
-    for axes in all_axes:
-        for ax in axes:
-            ax.tick_params(axis='both', which='major', labelsize=tick_fontsize)
-            nan_rows = np.isnan(meanDist_D_exp)
-            ax.plot(log_labels[~nan_rows][1:], meanDist_D_exp[~nan_rows][1:],
-                        label='', color='k')
-            ax.set_yticks([250, 500, 750, 1000, 1250, 1500])
+    for ax in all_axes.flatten():
+        ax.tick_params(axis='both', which='major', labelsize=tick_fontsize)
+        nan_rows = np.isnan(meanDist_D_exp)
+        ax.plot(log_labels[~nan_rows][1:], meanDist_D_exp[~nan_rows][1:],
+                    label='', color='k')
+        ax.set_ylim([0, None])
+        ax.set_yticks([0, 250, 500, 750, 1000, 1250, 1500])
 
-            nan_rows = np.isnan(meanDist_D_exp2)
-            ax.plot(np.linspace(0, 30000*(m2-1), m2)[~nan_rows][1:], meanDist_D_exp2[~nan_rows][1:],
-                        label='', color='k', ls=':')
+        nan_rows = np.isnan(meanDist_D_exp2)
+        ax.plot(np.linspace(0, 30000*(m2-1), m2)[~nan_rows][1:], meanDist_D_exp2[~nan_rows][1:],
+                    label='', color='k', ls=':')
 
     for n, ax in enumerate(all_axes[:,0]):
         inds = [0, m/4, m/2, 3*m/4, m-1]
@@ -185,6 +185,9 @@ def main(use_max_ent=True, use_v=False):
         ax.set_xticks(ticks, labels = labels)
         ax.text(-0.1, 1.05, string.ascii_uppercase[n], transform=ax.transAxes,
                     size=letter_fontsize, weight='bold')
+
+    for ax in all_axes[:,1]:
+        ax.set_xlim([50000, None])
 
     if use_v:
         labels = [r'Bond Length, $b$', r'Volume, $V$', 'Aspect Ratio']
