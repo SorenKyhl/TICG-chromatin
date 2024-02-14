@@ -485,6 +485,8 @@ class DatasetGenerator():
 
                 meanDist_L = DiagonalPreprocessing.genomic_distance_statistics(L, 'freq')
                 diag_chis = meanDist_S - meanDist_L
+                diag_chis[0] = 0
+                diag_chis[1] = 0
             else:
                 diag_chis = meanDist_S
 

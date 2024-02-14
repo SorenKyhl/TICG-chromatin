@@ -714,7 +714,7 @@ if __name__ == '__main__':
     # dataset='Su2020'; samples = [1013]
 
     if samples is None:
-        samples, _ = get_samples(dataset, test = True, filter_cell_lines=['gm12878', 'hmec', 'hap1', 'huvec'])
+        samples, _ = get_samples(dataset, test = True, filter_cell_lines=['imr90'])
         samples = samples
     if len(samples) == 1:
         sample = samples[0]
@@ -734,7 +734,7 @@ if __name__ == '__main__':
     # args.gnn_id = [434, 578, 579, 450, 451]
     # args.gnn_id = [600, 605, 606, 607, 608, 609, 610]
     # args.gnn_id = [579, 600, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620, 621, 622, 623, 624, 625]
-    args.gnn_id = [631, 632, 633, 634, 635, 636, 637, 638, 639, 640]
+    args.gnn_id = [631, 658]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))
