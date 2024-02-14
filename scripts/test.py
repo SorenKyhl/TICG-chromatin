@@ -20,6 +20,10 @@ import torch_geometric
 from data_generation.modify_maxent import get_samples
 from makeLatexTable import getArgs, load_data
 from max_ent_setup.get_params import GetEnergy
+from scipy.ndimage import uniform_filter
+from sklearn.decomposition import PCA
+from sklearn.metrics import mean_squared_error
+
 from pylib.utils import default, epilib, hic_utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
@@ -29,9 +33,6 @@ from pylib.utils.similarity_measures import SCC
 from pylib.utils.utils import (load_import_log, load_json, make_composite,
                                pearson_round, triu_to_full)
 from pylib.utils.xyz import xyz_load, xyz_to_distance
-from scipy.ndimage import uniform_filter
-from sklearn.decomposition import PCA
-from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.knightRuiz import knightRuiz
@@ -773,19 +774,18 @@ def compare_s_per_iteration():
 
 def compare_p_s():
     dir = '/home/erschultz'
-    datasets = ['Su2020', 'dataset_02_04_23']
-    samples = [1013, 243]
-    cell_lines = ['IMR90', 'GM12878']
+    datasets = ['dataset_HIRES', 'dataset_HIRES', 'dataset_HIRES', 'dataset_HIRES']
+    samples = [1, 2,3,4]
+    # cell_lines = ['IMR90', 'GM12878']
 
-    for dataset, sample, cell_line in zip(datasets, samples, cell_lines):
+    for dataset, sample in zip(datasets, samples):
         s_dir = osp.join(dir, dataset, f'samples/sample{sample}')
         y = np.load(osp.join(s_dir, 'y.npy')).astype(float)
-        y /= np.mean(np.diagonal(y))
         meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
-        plt.plot(meanDist, label = f'{cell_line} sample {sample}')
+        plt.plot(meanDist, label = f'sample {sample}')
 
     plt.yscale('log')
-    # plt.xscale('log')
+    plt.xscale('log')
     plt.ylabel('Probability', fontsize=16)
     plt.xlabel('Beads', fontsize=16)
     plt.legend()
@@ -1100,7 +1100,7 @@ def test_tile():
     print(r, r.shape)
 
 if __name__ == '__main__':
-    test_tile()
+    # test_tile()
     # make_small('dataset_12_06_23')
     # data_corr()
     # plot_triu_low_res()
@@ -1110,3 +1110,4 @@ if __name__ == '__main__':
     # check_dataset('dataset_10_12_23')
     # compare_gnn_p_s('dataset_02_04_23', 579)
     # compare_max_ent_p_s('dataset_02_04_23')
+    compare_p_s()

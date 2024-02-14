@@ -12,7 +12,8 @@ import torch
 import torch_geometric
 from modify_maxent import get_samples, plaid_dist
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
-from pylib.utils.plotting_utils import BLUE_RED_CMAP, RED_BLUE_CMAP, RED_CMAP
+from pylib.utils.plotting_utils import (BLUE_RED_CMAP, RED_BLUE_CMAP, RED_CMAP,
+                                        plot_matrix_layout)
 from pylib.utils.utils import pearson_round, triu_to_full
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
@@ -120,34 +121,6 @@ def get_gnn_mse(model_ID, data_dir, samples):
     clean_directories(GNN_path = opt.root)
 
     return mse_dict
-
-def plot_matrix_layout(rows, cols, ind, data_arr, val_arr, samples_arr, cmap, vmin, vmax, ofile):
-    height = 6*rows; width = 3*cols
-    width_ratios = [1]*cols+[0.08]
-    fig, ax = plt.subplots(rows, cols+1,
-                            gridspec_kw={'width_ratios':width_ratios})
-    fig.set_figheight(height)
-    fig.set_figwidth(width)
-    row = 0; col=0
-    for y, val, sample in zip(data_arr[ind], val_arr[ind], samples_arr[ind]):
-        if col == 0:
-            s = sns.heatmap(y, linewidth = 0, vmin = vmin, vmax = vmax, cmap = cmap,
-                ax = ax[row][col], cbar_ax = ax[row][-1])
-        else:
-            s = sns.heatmap(y, linewidth = 0, vmin = vmin, vmax = vmax, cmap = cmap,
-                ax = ax[row][col], cbar = False)
-        s.set_title(f'Sample {sample}\nPlaid Score = {np.round(val, 1)}', fontsize = 16)
-        s.set_xticks([])
-        s.set_yticks([])
-
-        col += 1
-        if col == cols:
-            col = 0
-            row += 1
-
-    plt.tight_layout()
-    plt.savefig(ofile)
-    plt.close()
 
 def molar_contact_ratio(dataset, model_ID=None, plot=True, cap=100, m=512):
     dir = '/project2/depablo/erschultz/'

@@ -32,7 +32,7 @@ class SCC():
         self.var_stabilized = var_stabilized
 
 
-    def r_2k(self, x_k, y_k, var_stabilized):
+    def r_2k(self, x_k, y_k):
         '''
         Compute r_2k (numerator of pearson correlation)
 
@@ -41,11 +41,9 @@ class SCC():
             y: contact map of same shape as x
             var_stabilized: True to use var_stabilized version
         '''
-        if var_stabilized is None:
-            var_stabilized = self.var_stabilized
 
         # x and y are stratums
-        if var_stabilized:
+        if self.var_stabilized:
             # var_stabilized computes variance of ranks
             N_k = len(x_k)
             if N_k in self.r_2k_dict:
@@ -61,7 +59,7 @@ class SCC():
         else:
             return math.sqrt(np.var(x_k) * np.var(y_k))
 
-    def scc_file(self, xfile, yfile, h=None, K=None, var_stabilized=None,
+    def scc_file(self, xfile, yfile, h=None, K=None,
                 verbose=False, distance=False, chr=None, resolution=None):
         '''
         Wrapper for scc that takes file path as input. Must be .npy file.
@@ -83,12 +81,12 @@ class SCC():
 
         x = hic_utils.load_contact_map(xfile, chr, resolution)
         y = hic_utils.load_contact_map(yfile, chr, resolution)
-        return self.scc(x, y, h, K, var_stabilized, verbose, distance)
+        return self.scc(x, y, h, K, verbose, distance)
 
     def mean_filter(self, x, size):
         return scipy.ndimage.uniform_filter(x, size, mode="constant") / (size ** 2)
 
-    def scc(self, x, y, h=None, K=None, var_stabilized=None, verbose=False,
+    def scc(self, x, y, K=None, verbose=False,
             debug=False, distance=False):
         '''
         Compute scc between contact map x and y.
@@ -98,7 +96,6 @@ class SCC():
             y: contact map of same shape as x
             h: span of mean filter (width = (1+2h)) (None or 0 to skip)
             K: maximum stratum (diagonal) to consider (5 Mb recommended)
-            var_stabilized: True to use var_stabilized r_2k (default = True)
             verbose: True to print when nan found
             debug: True to return p_arr and w_arr
             distance: True to return 1 - scc
@@ -114,11 +111,10 @@ class SCC():
             else:
                 K = self.K
 
-        if h is None:
-            h = self.h
-        if h is not None:
-            x = self.mean_filter(x.astype(np.float64), 1+2*h)
-            y = self.mean_filter(y.astype(np.float64), 1+2*h)
+
+        if self.h is not None:
+            x = self.mean_filter(x.astype(np.float64), 1+2*self.h)
+            y = self.mean_filter(y.astype(np.float64), 1+2*self.h)
 
         nan_list = []
         p_arr = []
@@ -150,7 +146,7 @@ class SCC():
                     nan_list.append(k)
                 else:
                     p_arr.append(p_k)
-                    r_2k = self.r_2k(x_k, y_k, var_stabilized)
+                    r_2k = self.r_2k(x_k, y_k)
                     w_k = N_k * r_2k
                     w_arr.append(w_k)
 
@@ -383,20 +379,23 @@ def test():
     # y1 = np.load('/home/erschultz/dataset_11_20_23/samples/sample3/y.npy')
     # y2 = np.load('/home/erschultz/dataset_11_20_23/samples/sample202/y.npy')
     y2 = np.load('/home/erschultz/dataset_12_06_23/samples/sample1/optimize_grid_b_200_v_8_spheroid_1.5-max_ent10/iteration30/y.npy')
-    # y1 = np.eye(512)
-    # y2 = np.ones((512, 512))
+    y1 = np.eye(10)
+    y2 = np.ones((10, 10))
 
     # s = genome_disco(epilib.get_oe(y1), epilib.get_oe(y2), 3)
     # s = genome_disco(y1, y2, 3)
     # print('score', s)
 
-    files = ['/home/erschultz/scratch/contact_diffusion_kNN17inner_product/iteration_0/sc_contacts/y_sc_76.npy',
-            '/home/erschultz/scratch/contact_diffusion_kNN17inner_product/iteration_0/sc_contacts/y_sc_78.npy']
-    IP = InnerProduct(files = files, K = 20, jobs = 1,
-                    resolution = None, chr = None)
-    D = IP.get_distance_matrix()
-    print(D)
+    # files = ['/home/erschultz/scratch/contact_diffusion_kNN17inner_product/iteration_0/sc_contacts/y_sc_76.npy',
+    #         '/home/erschultz/scratch/contact_diffusion_kNN17inner_product/iteration_0/sc_contacts/y_sc_78.npy']
+    # IP = InnerProduct(files = files, K = 20, jobs = 1,
+    #                 resolution = None, chr = None)
+    # D = IP.get_distance_matrix()
+    # print(D)
 
+    scc = SCC()
+    scc, p_arr, w_arr = scc.scc(y1, y2, debug = True, var_stabilized=True)
+    print(w_arr, w_arr.shape)
 
 
 if __name__ == '__main__':

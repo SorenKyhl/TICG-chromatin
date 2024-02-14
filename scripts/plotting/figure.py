@@ -104,7 +104,6 @@ pcs_gnn = get_pcs(y_gnn, smooth, h)
 # pcs_pca = epilib.get_pcs(epilib.get_oe(y_pca), 12).T
 # pcs_gnn = epilib.get_pcs(epilib.get_oe(y_gnn), 12).T
 
-
 # make sure they are aligned by ensuring corr is positive
 pcs_pca[0] *= np.sign(pearson_round(pcs[0], pcs_pca[0]))
 pcs_gnn[0] *= np.sign(pearson_round(pcs[0], pcs_gnn[0]))
@@ -149,7 +148,6 @@ if not test:
     max_ent_sccs_strict = [i for i in max_ent_sccs_strict if not np.isnan(i)]
     max_ent_pearsons_strict = data[k][max_ent]['pearson_pc_1']
     max_ent_pearsons_strict = [i for i in max_ent_pearsons_strict if not np.isnan(i)]
-
 else:
     max_ent_times = np.random.normal(size=100)
     max_ent_sccs = np.random.normal(loc=0.7, scale = 0.1, size=100)

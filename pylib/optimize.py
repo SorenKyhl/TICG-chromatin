@@ -5,14 +5,15 @@ import os.path as osp
 
 import numpy as np
 from bayes_opt import BayesianOptimization
+from scipy import optimize
+from sklearn.metrics import mean_squared_error
+
 from pylib.Pysim import Pysim
 from pylib.utils import default, hic_utils, utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.epilib import Sim
 from pylib.utils.xyz import (xyz_load, xyz_to_contact_distance,
                              xyz_to_contact_grid)
-from scipy import optimize
-from sklearn.metrics import mean_squared_error
 
 """
 module for optimizing simulation parameters
@@ -96,6 +97,7 @@ class ErrorMetric():
         elif self.metric == 'mse':
             error = self.mse_error()
 
+        print(val, error)
         return error
 
     def neighbor_error(self):
@@ -176,6 +178,7 @@ def optimize_config(config, gthic, mode, low_bound, high_bound,
     error_metric = ErrorMetric(metric, mode, gthic, config, sim_engine)
     if metric.startswith('neighbor'):
         try:
+            print(low_bound, high_bound)
             result = optimize.brentq(
                 error_metric,
                 low_bound,

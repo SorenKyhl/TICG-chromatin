@@ -387,7 +387,7 @@ def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=Non
     if osp.exists(root):
         # if not osp.exists(osp.join(root, 'iteration1')):
         #     remove = True
-        if not osp.exists(osp.join(root, 'iteration30/tri.png')):
+        if not osp.exists(osp.join(root, 'iteration20/tri.png')):
             remove = True
         # remove = True
         if remove:
@@ -396,9 +396,9 @@ def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=Non
 
 def main():
     samples = None
-    # dataset = 'dataset_02_04_23'
+    dataset = 'dataset_HIRES'; samples = [1, 2, 3, 4]
     # dataset = 'Su2020'; samples = ['1013_rescale1']
-    dataset = 'dataset_12_06_23'
+    # dataset = 'dataset_12_06_23';samples = [17]
     # dataset = 'dataset_11_21_23_imr90'; samples = range(1, 16)
     # dataset='dataset_HCT116_RAD21_KO'; samples=range(1,9)
 
@@ -413,18 +413,20 @@ def main():
         print(samples)
 
     mapping = []
-    k_angle=0;theta_0=180;b=180;ar=1.5;phi=None;v=8
+    k_angle=0;theta_0=180;b=180;ar=2.0;phi=None;v=4
     k=10
     contacts_distance=False
     for i in samples:
-        for b in [200]:
-            for k in [11,12,13,14,15]:
-                mapping.append((dataset, i, f'samples', b, phi, v, None, ar,
-                            'gaussian', k, contacts_distance, k_angle, theta_0))
+        for v in [8]:
+            for b in [200]:
+                for ar in [1.5]:
+                    for k in [10]:
+                        mapping.append((dataset, i, f'samples', b, phi, v, None, ar,
+                                    'gaussian', k, contacts_distance, k_angle, theta_0))
 
     print('len =', len(mapping))
 
-    with mp.Pool(1) as p:
+    with mp.Pool(4) as p:
         # p.starmap(setup_config, mapping)
         # p.starmap(fit, mapping)
         p.starmap(check, mapping)

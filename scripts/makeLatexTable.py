@@ -270,7 +270,7 @@ def load_data(args):
                 yhat_meanDist = DiagonalPreprocessing.genomic_distance_statistics(yhat)
                 yhat_diag = DiagonalPreprocessing.process(yhat, yhat_meanDist, verbose = False)
                 scc = SCC(h=5, K=100)
-                corr_scc_var = scc.scc(ground_truth_y, yhat, var_stabilized = True)
+                corr_scc_var = scc.scc(ground_truth_y, yhat)
 
                 # result = plotDistanceStratifiedPearsonCorrelation(ground_truth_y,
                                 # yhat, converged_path)

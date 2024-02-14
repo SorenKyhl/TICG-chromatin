@@ -261,9 +261,10 @@ def plot_dist_stratified_pearson_r(y, yhat):
 
     triu_ind = np.triu_indices(m)
     overall_corr, _ = pearsonr(y[triu_ind], yhat[triu_ind])
+    scc = SCC(var_stabilized=False, h=5, K=100)
+    corr_scc = scc.scc(y, yhat)
     scc = SCC()
-    corr_scc = scc.scc(y, yhat, var_stabilized = False)
-    corr_scc_var = scc.scc(y, yhat, var_stabilized = True)
+    corr_scc_var = scc.scc(y, yhat)
     avg_diag, corr_arr = calc_dist_strat_corr(y, yhat, mode = 'pearson',
                                             return_arr = True)
 

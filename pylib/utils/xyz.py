@@ -6,6 +6,7 @@ from collections import defaultdict
 
 import matplotlib.pyplot as plt
 import numpy as np
+from numba import jit, njit
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.utils import load_json, print_time
 from scipy.sparse import csr_array
@@ -238,11 +239,30 @@ def xyz_to_angles(xyz, verbose = False):
         angles[i] = angles_temp
     return angles
 
+def calculate_rg_old(xyz, verbose=False):
+    if len(xyz.shape) == 2:
+        xyz.reshape(1, -1, 3)
+
+    rgs = np.zeros(len(xyz))
+    for i, xyz_i in enumerate(xyz):
+        center = np.nanmean(xyz_i, axis = 0)
+        delta = xyz_i - center
+        rg = np.sqrt(np.nanmean(delta**2))
+        rgs[i] = rg
+
+    rg_mean = np.nanmean(rgs)
+    rg_std = np.nanstd(rgs)
+    result = (rg_mean, rg_std)
+    if verbose:
+        print('rgs', rgs)
+        print('result', result)
+    return result
 
 def calculate_rg(xyz, verbose=False):
     if len(xyz.shape) == 2:
         xyz.reshape(1, -1, 3)
 
+    # this is equivalent
     # rgs = np.zeros(len(xyz))
     # for i, xyz_i in enumerate(xyz):
     #     mean_i = np.nanmean(xyz_i, axis = 0)
@@ -264,6 +284,24 @@ def calculate_rg(xyz, verbose=False):
         print('rgs', rgs)
         print('result', result)
     return result
+
+def calculate_rg_matrix(xyz, ofile=None, verbose=False):
+    N, m, _ = xyz.shape
+    rg_arr = np.zeros((m,m))
+    for i in range(m):
+        if verbose and i % 10 == 0:
+            print(i)
+        for j in range(i+2, m):
+            mean, std = calculate_rg(xyz[:, i:j, :])
+            rg_arr[i, j] = mean
+
+    # make symmetric
+    rg_arr = rg_arr + rg_arr.T
+
+    if ofile is not None:
+        np.save(ofile, rg_arr)
+
+    return rg_arr
 
 def time_contact_distance():
     N=2
@@ -298,54 +336,28 @@ def compare_python_to_cpp():
     plt.show()
 
 def test_calc_rg():
-    N = 100
+    N = 30
     m = 512
     xyz = np.random.rand(N*m*3).reshape(N, m, 3)
     print('xyz', xyz.shape)
-    t0 = time.time()
-    mean, _ = calculate_rg(xyz)
-    tf = time.time()
-    print_time(t0, tf, 'calculate_rg')
-    print(mean)
-
-    print('---')
-    t0 = time.time()
-    xyz_mean = np.nanmean(xyz, axis = 1)
-    # print(xyz_mean)
-    # print('xyz_mean', xyz_mean.shape)
-    xyz_r = np.transpose(xyz, (1, 0, 2))
-    center_r = xyz_r - xyz_mean
-    # center = np.transpose(center_r, (1, 0, 2))
-    # print(center)
-    # print('center_r', center_r.shape)
-    delta_r_2 = np.nansum(center_r**2, 2)
-    # print('delta_r_2', delta_r_2.shape)
-    # delta_2 = np.nansum(center**2, 2)
-    # print(delta_2)
-    # print('delta_2', delta_2.shape)
-    rg = np.sqrt(np.nanmean(delta_r_2, axis=0))
-    # print('rg', rg)
-    print(np.mean(rg))
-    tf = time.time()
-    print_time(t0, tf, 'vectorized')
-
-
-    # print('---')
-    # rgs = np.zeros(len(xyz))
-    # for i, xyz_i in enumerate(xyz):
-    #     xyz_mean_i = np.nanmean(xyz_i, axis = 0)
-    #     # print(xyz_mean_i)
-    #     center_i = xyz_i - xyz_mean_i
-    #     # print(center_i)
-    #     # print(center_i.shape)
-    #     delta_i_2 = np.nansum(center_i**2, 1)
-    #     # print(delta_i_2)
-    #     # print(delta_i_2.shape)
-    #     rg = np.sqrt(np.nanmean(delta_i_2))
-    #     rgs[i] = rg
-    # print(rgs)
-    # mean = np.nanmean(rgs)
+    # t0 = time.time()
+    # mean, _ = calculate_rg(xyz)
+    # tf = time.time()
+    # print_time(t0, tf, 'calculate_rg')
     # print(mean)
+
+    # t0 = time.time()
+    # mean, _ = calculate_rg_old(xyz)
+    # tf = time.time()
+    # print_time(t0, tf, 'calculate_rg_old')
+    # print(mean)
+
+    t0 = time.time()
+    rg_arr = calculate_rg_matrix(xyz[:100], verbose=True)
+    # print(rg_arr)
+    tf = time.time()
+    print_time(t0, tf, 'calculate_rg_matrix')
+
 
 
 if __name__ == '__main__':

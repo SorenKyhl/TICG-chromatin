@@ -10,11 +10,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import statsmodels.api as sm
 import tqdm
-from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
-from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
-                                      calculate_L, calculate_S)
-from pylib.utils.plotting_utils import plot_matrix
-from pylib.utils.utils import load_json, pearson_round, triu_to_full
 from scipy.ndimage import gaussian_filter
 from scipy.optimize import curve_fit
 from scipy.stats import (beta, gamma, laplace, multivariate_normal, norm,
@@ -22,6 +17,12 @@ from scipy.stats import (beta, gamma, laplace, multivariate_normal, norm,
 from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
 from sklearn.neighbors import KernelDensity
+
+from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
+from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
+                                      calculate_L, calculate_S)
+from pylib.utils.plotting_utils import plot_matrix
+from pylib.utils.utils import load_json, pearson_round, triu_to_full
 
 sys.path.append('/home/erschultz/TICG-chromatin')
 from scripts.data_generation.ECDF import Ecdf
@@ -160,6 +161,7 @@ def modify_plaid_chis(dataset, b, phi, v, k, ar, cell_line=None):
     else:
         samples, _ = get_samples(dataset, train=True, filter_cell_lines=[cell_line])
 
+    print(f'{len(samples)} samples')
     for sample in samples:
         s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{sample}')
         print(sample)
@@ -1404,15 +1406,15 @@ def get_read_counts(dataset):
 
 
 if __name__ == '__main__':
-    # modify_plaid_chis('dataset_12_06_23', b=200, phi=None, v=8, k=10, ar=1.5, cell_line='imr90')
+    modify_plaid_chis('dataset_12_06_23', b=200, phi=None, v=8, k=10, ar=1.5, cell_line='imr90')
     # modify_maxent_diag_chi('dataset_12_06_23', b=200, phi=None, v=8, k=10, ar=1.5,
     #                         edit=False, plot=True, cell_line='imr90')
     # for i in range(221, 222):
         # plot_modified_max_ent(i, k = 10)
     # diagonal_dist('dataset_02_04_23', b=261, phi=0.01, k=10)
     # grid_dist('dataset_11_20_23', b=180, phi=None, v=8, ar=1.5, cell_line='hmec')
-    plaid_dist('dataset_12_06_23', b=200, phi=None, v=8, k=10, ar=1.5, plot=True, eig_norm=True,
-                cell_line='imr90')
+    # plaid_dist('dataset_12_06_23', b=200, phi=None, v=8, k=10, ar=1.5, plot=True, eig_norm=True,
+                # cell_line='imr90')
     # get_read_counts('dataset_04_28_23')
     # seq_dist('dataset_01_26_23', 4, True, True)
     # plot_params_test()

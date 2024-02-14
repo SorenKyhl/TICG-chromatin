@@ -234,22 +234,22 @@ def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     root = osp.join(dir, root)
     gnn_root = f'{root}-GNN{GNN_ID}'
     if osp.exists(gnn_root):
-        # shutil.rmtree(gnn_root)
-        # print(f'removing {gnn_root}')
+        remove = False
         if not osp.exists(osp.join(gnn_root, 'equilibration')):
-            shutil.rmtree(gnn_root)
-            print(f'removing {gnn_root}')
-        elif not osp.exists(osp.join(gnn_root, 'production_out')):
-            shutil.rmtree(gnn_root)
-            print(f'removing {gnn_root}')
-        elif not osp.exists(osp.join(gnn_root, 'y.npy')):
+            remove=True
+        # elif not osp.exists(osp.join(gnn_root, 'production_out')):
+        #     remove = True
+        # elif not osp.exists(osp.join(gnn_root, 'y.npy')):
+        #     remove = True
+        if remove:
             shutil.rmtree(gnn_root)
             print(f'removing {gnn_root}')
 
 def main():
     samples=None
-    # dataset='dataset_interp_test'; samples=[1]
-    dataset='dataset_12_06_23';
+    # dataset = 'dataset_HIRES'; samples = [1, 2, 3, 4]
+    dataset='dataset_12_06_23'
+    # samples = [42, 114, 475, 331, 402, 543]
     # dataset = 'Su2020'; samples=['1013_rescale1', '1004_rescale1']
     # dataset = 'dataset_06_29_23'; samples=[81]
     # dataset = 'dataset_11_20_23';
@@ -259,12 +259,12 @@ def main():
 
     if samples is None:
         samples = []
-        for cell_line in ['kbm7']:
+        for cell_line in ['imr90']:
             samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
-            samples.extend(samples_cell_line[:2])
+            samples.extend(samples_cell_line)
     print(len(samples))
 
-    GNN_IDs = [631]; b=200; phi=None; v=8; ar=1.5
+    GNN_IDs = [657, 658]; b=200; phi=None; v=8; ar=1.5
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
@@ -273,13 +273,13 @@ def main():
     print(len(mapping))
     # print(mapping)
 
-    with mp.Pool(1) as p:
+    with mp.Pool(14) as p:
         # p.starmap(cleanup, mapping)
         p.starmap(fit, mapping)
 
-    # for i in mapping:
+    for i in mapping:
         # fit_max_ent(*i)
-        # check(*i)
+        check(*i)
 
 if __name__ == '__main__':
     mp.set_start_method('spawn')
