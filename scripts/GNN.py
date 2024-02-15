@@ -260,11 +260,11 @@ def main():
     if samples is None:
         samples = []
         for cell_line in ['imr90']:
-            samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
-            samples.extend(samples_cell_line)
+            samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
+            samples.extend(samples_cell_line[:12])
     print(len(samples))
 
-    GNN_IDs = [658]; b=200; phi=None; v=8; ar=1.5
+    GNN_IDs = [655, 656]; b=200; phi=None; v=8; ar=1.5
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))

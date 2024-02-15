@@ -105,8 +105,6 @@ def meanDist_comparison():
     plt.close()
 
 
-
-
 def p_s_comparison(dataset, GNN_ID, b, phi, k=8, max_ent=False):
     samples, experimental = get_samples(dataset, True)
     data_dir = osp.join('/home/erschultz', dataset)
@@ -300,7 +298,7 @@ def scc_comparison(dataset, ID=None, k=8, max_ent=False):
     print(f'GNN={np.mean(scc_GNN)}, PCA={np.mean(scc_PCA)}')
 
 
-def l_ij_comparison(dataset, dataset_exp, b, phi, k, ar):
+def l_ij_comparison(dataset, dataset_exp, b, v, k, ar):
     data_dir = osp.join('/home/erschultz', dataset)
 
     L_list = []
@@ -308,14 +306,15 @@ def l_ij_comparison(dataset, dataset_exp, b, phi, k, ar):
     S_list = []
     chi_list = []
     label_list = []
-    L_max_ent, S_max_ent, D_max_ent, chi_max_ent = plaid_dist(dataset_exp, b, phi, k, ar, False)
+    L_max_ent, S_max_ent, D_max_ent, chi_max_ent = plaid_dist(dataset_exp, b,
+                                                                None, v, k, ar, False)
     L_list.append(L_max_ent)
     D_list.append(D_max_ent)
     S_list.append(S_max_ent)
     # chi_list.append(chi_max_ent)
     label_list.append('Max Ent')
 
-    L_sim, S_sim, D_sim, chi_sim = plaid_dist(dataset, b, phi, None, ar, False)
+    L_sim, S_sim, D_sim, chi_sim = plaid_dist(dataset, b, None, v, None, ar, False)
     L_list.append(L_sim)
     D_list.append(D_sim)
     S_list.append(S_sim)
@@ -683,7 +682,7 @@ if __name__ == '__main__':
     # plot_y_S('dataset_02_04_23', 180, 0.01, 2.0)
     # plot_y_S('dataset_')
 
-    meanDist_comparison()
-    # l_ij_comparison('dataset_09_28_23', 'dataset_02_04_23', 180, 0.008, 5, 1.5)
+    # meanDist_comparison()
+    l_ij_comparison('dataset_12_12_23_imr90', 'dataset_12_06_23', 200, 8, 10, 1.5)
     # p_s_comparison('dataset_11_16_23_hmec', None, 261, 0.01, 10)
     # scc_comparison('dataset_02_04_23', 392, 8, True)
