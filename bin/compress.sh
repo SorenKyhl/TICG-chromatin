@@ -17,8 +17,7 @@ compress(){
     rm e.npy &
     rm s.npy &
     rm L.npy &
-    rm S.npy &
-
+    # rm S.npy &
 
     rm chis.tek &
     rm chis.npy &
@@ -33,10 +32,10 @@ compress(){
     rm *.traj
   done
 
-  cd $dir
-  rm -r "${dataset}.tar.gz"
-  tar -czf "${dataset}.tar.gz" $dataset
-  rm -r $dataset
+  # cd $dir
+  # rm -r "${dataset}.tar.gz"
+  # tar -czf "${dataset}.tar.gz" $dataset
+  # rm -r $dataset
 }
 
 to_small(){
@@ -76,10 +75,8 @@ cleanup(){
 
 dir='/home/erschultz'
 
-dir='/project2/depablo/erschultz'
+dir='/project/depablo/erschultz'
 cd $dir
-compress dataset_10_13_23
-compress dataset_10_14_23
-compress dataset_10_16_23_hmec
-compress dataset_10_16_23_imr90
-compress dataset_10_16_23_k562
+compress dataset_12_08_23_imr90
+compress dataset_12_12_23_imr90
+compress dataset_02_14_24_imr90

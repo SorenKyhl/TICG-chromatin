@@ -734,7 +734,7 @@ if __name__ == '__main__':
     # args.gnn_id = [434, 578, 579, 450, 451]
     # args.gnn_id = [600, 605, 606, 607, 608, 609, 610]
     # args.gnn_id = [579, 600, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620, 621, 622, 623, 624, 625]
-    args.gnn_id = [631, 658]
+    args.gnn_id = [631, 667]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))
