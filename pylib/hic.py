@@ -216,7 +216,7 @@ def load_seqs(nbeads, k, chrom="2", cell="HCT116_auxin"):
     return seqs_final
 
 
-def load_chipseq(nbeads, encode_only=False, chrom=2, return_gthic=False):
+def load_chipseq(nbeads, encode_only=False, chrom=2, return_gthic=False, data_dir=default.HCT116_chipseq, chipseq_pipeline=default.chipseq_pipeline):
     wig_method = "max"
     pipe = copy.deepcopy(default.data_pipeline)
 
@@ -229,7 +229,7 @@ def load_chipseq(nbeads, encode_only=False, chrom=2, return_gthic=False):
     # need to load gthic to know which indices to drop when loading chip
     gthic = pipe.load_hic(default.HCT116_hic)
     gthic = hiclib.pool_sum(gthic, factor)
-    sequences_total = pipe.load_chipseq_from_directory(default.HCT116_chipseq, wig_method)
+    sequences_total = pipe.load_chipseq_from_directory(data_dir, wig_method)
 
     encode_seqs = ["H3K4me3", "H3K27ac", "H3K27me3", "H3K4me1", "H3K36me3", "H3K9me3"]
     if encode_only:
@@ -241,7 +241,7 @@ def load_chipseq(nbeads, encode_only=False, chrom=2, return_gthic=False):
     pooled = {}
     for seq in sequences:
         pooled[seq] = pool_seqs(sequences[seq], factor)
-        chip[seq] = default.chipseq_pipeline.fit(pooled[seq])
+        chip[seq] = chipseq_pipeline.fit(pooled[seq])
 
     if return_gthic:
         return np.array(list(chip.values())), gthic
