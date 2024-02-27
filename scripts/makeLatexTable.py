@@ -327,9 +327,7 @@ def load_data(args):
 
 
             # append temp_dict to data
-            data[k][method]['overall_pearson'].append(temp_dict['overall_pearson'])
             data[k][method]['read_count'].append(read_count/1000)
-            data[k][method]['scc'].append(temp_dict['scc'])
             data[k][method]['scc_var'].append(temp_dict['scc_var'])
             data[k][method]['hic_spector'].append(temp_dict['hic_spector'])
             data[k][method]['genome_disco'].append(temp_dict['genome_disco'])
@@ -421,18 +419,20 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
                 for key in data.keys():
                     print(f'key 1: {key}, key 2: {data[key].keys()}')
 
-        GNN_ref = None
         GNN_ref_method = None
         if 0 in data.keys():
             for method in sorted(data[0].keys()):
                 if 'GNN' in method:
-                    GNN_ref = data[0][method]
                     GNN_ref_method = method
                     break # takes first GNN found
+        # GNN_ref_method = 'optimize_grid_b_200_v_8_spheroid_1.5-GNN673'
 
-        if GNN_ref is not None:
+        if GNN_ref_method is not None:
+            GNN_ref = data[0][GNN_ref_method]
             print(f'GNN found: using GNN {GNN_ref_method}')
             print(GNN_ref)
+        else:
+            GNN_ref = None
 
         for k in sorted(data.keys()):
             first = True # only write k for first row in section
@@ -459,9 +459,9 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
                     except Exception as e:
                         dataset = None
                         print(e)
-                if nan_mask is not None and len(data[k][method]['scc']) != len(nan_mask):
+                if nan_mask is not None and len(data[k][method]['scc_var']) != len(nan_mask):
                     # skip method if not performed for all samples
-                    print(f'skipping {method}, k={k}: {data[k][method]["scc"]}')
+                    print(f'skipping {method}, k={k}: {data[k][method]["scc_var"]}')
                     continue
 
                 if dataset is None:
@@ -520,8 +520,14 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
                         if GNN_ref is not None and test_significance:
                             ref_result = np.array(GNN_ref[metric], dtype=np.float64)
                             if nan_mask is not None:
-                                ref_result[nan_mask] = np.nan
-                            stat, pval = ss.ttest_rel(ref_result, result)
+                                try:
+                                    ref_result[nan_mask] = np.nan
+                                except IndexError:
+                                    print(nan_mask.shape)
+                                    print(metric)
+                                    print(ref_result.shape)
+                                    raise
+                            stat, pval = ss.ttest_rel(ref_result, result, nan_policy='omit')
                             mean_effect_size = np.mean(result - ref_result)
                             mean_effect_size = np.round(mean_effect_size, 3)
                             if pval < 0.05:
@@ -538,11 +544,11 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
                         if pval is None:
                             pass
                         elif pval < 0.001:
-                            text += f' ***({mean_effect_size})'
+                            text += f' ***'
                         elif pval < 0.01:
-                            text += f' **({mean_effect_size})'
+                            text += f' **'
                         elif pval < 0.05:
-                            text += f' *({mean_effect_size})'
+                            text += f' *'
                     else:
                         result = result[0]
                         if result is not None:
@@ -714,7 +720,7 @@ if __name__ == '__main__':
     # dataset='Su2020'; samples = [1013]
 
     if samples is None:
-        samples, _ = get_samples(dataset, test = True, filter_cell_lines=['imr90'])
+        samples, _ = get_samples(dataset, test = True, filter_cell_lines=['huvec'])
         samples = samples
     if len(samples) == 1:
         sample = samples[0]
@@ -734,7 +740,7 @@ if __name__ == '__main__':
     # args.gnn_id = [434, 578, 579, 450, 451]
     # args.gnn_id = [600, 605, 606, 607, 608, 609, 610]
     # args.gnn_id = [579, 600, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620, 621, 622, 623, 624, 625]
-    args.gnn_id = [631, 667]
+    args.gnn_id = [673]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

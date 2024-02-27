@@ -35,8 +35,8 @@ for i, k in enumerate(k_list):
 
 plt.errorbar(k_list, mean_arr, std_arr, c='b')
 plt.ylim([0,0.9])
-plt.xlabel('k', fontsize=16)
-plt.ylabel('Mean SCC', fontsize=16)
+plt.xlabel('$k$', fontsize=16)
+plt.ylabel('SCC', fontsize=16)
 plt.tick_params(axis='both', which='major', labelsize=12)
 plt.tight_layout()
 plt.savefig('/home/erschultz/TICG-chromatin/figures/max_ent_k_fig.png')

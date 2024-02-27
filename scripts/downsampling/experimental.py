@@ -311,8 +311,8 @@ def figure(GNN_ID):
 
 
 if __name__ == '__main__':
-    mp.set_start_method('spawn')
+    # mp.set_start_method('spawn')
     # make_samples()
     # fit_max_ent()
-    # fit_gnn(631)
-    figure(631)
+    fit_gnn(673)
+    # figure(631)

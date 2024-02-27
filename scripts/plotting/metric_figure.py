@@ -269,10 +269,10 @@ def scc_h():
         for h in range(h_max):
             scc = SCC(h=h, K=100)
 
-            corr_me = scc.scc(y, y_me, var_stabilized = True)
+            corr_me = scc.scc(y, y_me)
             scc_me_dict[h].append(corr_me)
 
-            corr_gnn = scc.scc(y, y_gnn, var_stabilized = True)
+            corr_gnn = scc.scc(y, y_gnn)
             scc_gnn_dict[h].append(corr_gnn)
 
     X = np.arange(0, h_max)
@@ -295,7 +295,7 @@ def scc_h():
     plt.errorbar(X, mean_me, yerr=std_me, color='blue', label='Maximum Entropy')
     plt.legend(loc='lower left', fontsize=16)
     plt.ylim(0, 0.9)
-    plt.ylabel('Mean SCC', fontsize=16)
+    plt.ylabel('SCC', fontsize=16)
     plt.xlabel(r'Filter Span Size, $h$', fontsize=16)
     plt.tick_params(axis='both', which='major', labelsize=12)
     plt.tight_layout()

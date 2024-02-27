@@ -30,7 +30,7 @@ test=False
 label_fontsize=22
 tick_fontsize=18
 letter_fontsize=26
-dataset = 'dataset_12_06_23'; sample = 8; GNN_ID = 631
+dataset = 'dataset_12_06_23'; sample = 8; GNN_ID = 673
 # dataset = 'dataset_04_05_23'; sample = 1001; GN_ID = 407
 # dataset = 'dataset_04_05_23'; sample = 1001; GNN_ID = 423
 samples, _ = get_samples(dataset, test=True, filter_cell_lines=['imr90'])
@@ -388,7 +388,7 @@ def new_figure(test=False):
         else:
             s.set_yticks([])
 
-        scc_var = scc.scc(y, y_sim, var_stabilized = True)
+        scc_var = scc.scc(y, y_sim)
         scc_var = np.round(scc_var, 3)
         title = f'SCC={scc_var}'
         print(f'{label}: ' + title)

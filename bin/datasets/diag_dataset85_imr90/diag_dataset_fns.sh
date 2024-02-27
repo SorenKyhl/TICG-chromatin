@@ -2,12 +2,12 @@
 
 source ~/TICG-chromatin/bin/datasets/dataset_fns.sh
 
-dataset="dataset_GNN_test"
-# dataFolder="/project/depablo/erschultz/${dataset}"
-# scratchDir='/home/erschultz/scratch'
-#
-dataFolder="/home/erschultz/${dataset}"
+dataset="dataset_02_28_24_imr90"
+dataFolder="/project/depablo/erschultz/${dataset}"
 scratchDir='/home/erschultz/scratch'
+#
+# dataFolder="/home/erschultz/${dataset}"
+# scratchDir='/home/erschultz/scratch'
 # nSweeps=3000
 # dumpFrequency=500
 
@@ -16,7 +16,7 @@ useL='true'
 useS='true'
 useD='true'
 
-nSweeps=100000
+nSweeps=300000
 dumpFrequency=50000
 TICGSeed=10
 dense='false'

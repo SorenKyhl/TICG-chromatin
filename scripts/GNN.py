@@ -158,7 +158,10 @@ def fit(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     os.mkdir(gnn_root, mode=0o755)
 
     # sleep for random # of seconds so as not to overload gpu
-    sleep(np.random.rand()*10)
+    # sleep_time = np.random.normal()*30
+    # print('time', sleep_time)
+    # sleep(sleep_time)
+
     t0 = time()
     model_path = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{GNN_ID}'
     log_file = osp.join(gnn_root, 'energy.log')
@@ -259,12 +262,13 @@ def main():
 
     if samples is None:
         samples = []
-        for cell_line in ['imr90']:
+        for cell_line in ['huvec', 'gm12878', 'imr90', 'hmec', 'hap1']:
             samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
             samples.extend(samples_cell_line)
+
             print(len(samples))
 
-    GNN_IDs = [673, 669, 658]; b=200; phi=None; v=8; ar=1.5
+    GNN_IDs = [673]; b=200; phi=None; v=8; ar=1.5
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
@@ -273,12 +277,12 @@ def main():
     print(len(mapping))
     # print(mapping)
 
-    # with mp.Pool(14) as p:
+    with mp.Pool(8) as p:
         # p.starmap(cleanup, mapping)
-        # p.starmap(fit, mapping)
+        p.starmap(fit, mapping)
 
     for i in mapping:
-        # fit_max_ent(*i)
+        # fit_max_ent(*i);
         check(*i)
 
 if __name__ == '__main__':
