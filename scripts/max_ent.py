@@ -396,19 +396,19 @@ def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=Non
 
 def main():
     samples = None
-    dataset = 'dataset_HIRES'; samples = [1, 2, 3, 4]
+    # dataset = 'dataset_HIRES'; samples = [1, 2, 3, 4]
     # dataset = 'Su2020'; samples = ['1013_rescale1']
-    # dataset = 'dataset_12_06_23';samples = [17]
+    dataset = 'dataset_12_06_23'
     # dataset = 'dataset_11_21_23_imr90'; samples = range(1, 16)
     # dataset='dataset_HCT116_RAD21_KO'; samples=range(1,9)
 
     if samples is None:
         samples = []
-        for cell_line in ['imr90']:
+        for cell_line in ['imr90', 'gm12878', 'hmec', 'hap1', 'hela', 'huvec']:
             samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
-            samples.extend(samples_cell_line[:10])
+            samples.extend(samples_cell_line)
             # samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
-            #samples.extend(samples_cell_line)
+            # samples.extend(samples_cell_line)
 
         print(samples)
 
@@ -426,7 +426,7 @@ def main():
 
     print('len =', len(mapping))
 
-    with mp.Pool(4) as p:
+    with mp.Pool(1) as p:
         # p.starmap(setup_config, mapping)
         # p.starmap(fit, mapping)
         p.starmap(check, mapping)

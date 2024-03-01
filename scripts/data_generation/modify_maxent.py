@@ -94,8 +94,8 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False, filte
         samples = [68, 3180, 7880, 5787, 833, 8285, 765, 4392, 8467, 9142, 9245, 8668, 4354, 265, 7738]
     elif dataset == 'dataset_09_28_23_s_100_cutoff_0.01':
         samples = [1191, 1478, 4990, 5612, 3073, 1351, 4128, 2768, 9627, 4127, 1160, 8932, 2929, 7699, 6629]
-    elif dataset == 'dataset_12_12_23_imr90':
-        samples = range(1000, 1020)
+    elif dataset in {'dataset_12_12_23_imr90', "dataset_02_14_24_imr90"}:
+        samples = [1640, 1672, 3464, 831, 1651, 2678, 861, 3660, 267, 810, 2325, 2890]
     else:
         samples = range(1, 11)
 
