@@ -13,6 +13,7 @@ from pylib.Pysim import Pysim
 from pylib.utils import default, epilib, utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import *
+from pylib.utils.plotting_utils import plot_matrix
 from pylib.utils.utils import load_import_log
 
 sys.path.append('/home/erschultz/TICG-chromatin')
@@ -20,6 +21,45 @@ import scripts.optimize_grid as optimize_grid
 from scripts.data_generation.modify_maxent import get_samples
 from scripts.plotting.contact_map import getArgs, plot_all
 
+sys.path.append('/home/erschultz')
+from sequences_to_contact_maps.scripts.load_utils import \
+    get_final_max_ent_folder
+
+
+def max_ent_dataset(use_exp_hic=False):
+    dataset = 'dataset_12_06_23'
+    data_dir = osp.join('/home/erschultz', dataset)
+    odir = data_dir + '_max_ent'
+    if use_exp_hic:
+        odir += '_exp'
+    if not osp.exists(odir):
+        os.mkdir(odir)
+        os.mkdir(osp.join(odir, 'samples'))
+    samples = []
+    for cell_line in ['imr90', 'gm12878', 'hmec', 'hap1', 'hela', 'huvec']:
+        # 'k652', 'kbm7', 'nhek'
+        samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
+        samples.extend(samples_cell_line)
+
+    me_root = 'optimize_grid_b_200_v_8_spheroid_1.5-max_ent10'
+    for i, sample in enumerate(samples):
+        s_dir = osp.join(data_dir, f'samples/sample{sample}', me_root)
+        final = get_final_max_ent_folder(s_dir)
+        s_odir = osp.join(odir, f'samples/sample{sample}')
+        if not osp.exists(s_odir):
+            os.mkdir(s_odir)
+
+        if use_exp_hic:
+            y = np.load(osp.join(data_dir, f'samples/sample{sample}/y.npy'))
+        else:
+            y = np.load(osp.join(final, 'y.npy'))
+        if i < 10:
+            plot_matrix(y, osp.join(s_odir, 'y.png'), vmax = 'mean')
+        np.save(osp.join(s_odir, 'y.npy'), y)
+        config = utils.load_json(osp.join(final, 'config.json'))
+        np.save(osp.join(s_odir, 'diag_chis.npy'), calculate_diag_chi_step(config))
+        shutil.copyfile(osp.join(final, 'config.json'), osp.join(s_odir, 'config.json'))
+        shutil.copyfile(osp.join(final, 'x.npy'), osp.join(s_odir, 'x.npy'))
 
 def compute_pcs(dataset, cell_line):
     def plot_save(seq, fname):
@@ -387,7 +427,7 @@ def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=Non
     if osp.exists(root):
         # if not osp.exists(osp.join(root, 'iteration1')):
         #     remove = True
-        if not osp.exists(osp.join(root, 'iteration20/tri.png')):
+        if not (osp.exists(osp.join(root, 'iteration20/tri.png')) or osp.exists(osp.join(root, 'iteration30/tri.png'))):
             remove = True
         # remove = True
         if remove:
@@ -404,13 +444,15 @@ def main():
 
     if samples is None:
         samples = []
-        for cell_line in ['imr90', 'gm12878', 'hmec', 'hap1', 'hela', 'huvec']:
+        for cell_line in ['imr90', 'gm12878', 'hmec', 'hap1', 'hela', 'huvec', 'k652', 'kbm7', 'nhek']:
             samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
             samples.extend(samples_cell_line)
             # samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
             # samples.extend(samples_cell_line)
 
         print(samples)
+
+    # dataset = 'dataset_12_06_23_max_ent_exp'
 
     mapping = []
     k_angle=0;theta_0=180;b=180;ar=2.0;phi=None;v=4
@@ -426,10 +468,10 @@ def main():
 
     print('len =', len(mapping))
 
-    with mp.Pool(1) as p:
+    with mp.Pool(17) as p:
         # p.starmap(setup_config, mapping)
-        # p.starmap(fit, mapping)
-        p.starmap(check, mapping)
+        p.starmap(fit, mapping)
+        # p.starmap(check, mapping)
         # p.starmap(post_analysis, mapping)
         # p.starmap(cleanup, mapping)
 
@@ -440,4 +482,6 @@ def main():
 if __name__ == '__main__':
     # modify_maxent()
     main()
+    # max_ent_dataset(False)
+    # max_ent_dataset(True)
     # compute_pcs('dataset_11_20_23', 'gm12878')

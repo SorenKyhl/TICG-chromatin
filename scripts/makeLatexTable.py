@@ -371,11 +371,12 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
                     'rmse-diag':'RMSE-P(s)', 'rmse-diag10':'RMSE-P(s<10)',
                     'avg_dist_pearson':'SCC mean', 'read_count':'Read Count (1k)',
                     'total_time':'Total Time', 'converged_it':'Converged It.',
-                    'converged_time':'Converged Time', 'prcnt_converged': '\% Converged'}
+                    'converged_time':'Simulation Time', 'prcnt_converged': '\% Converged'}
     for k, v in metric_labels.items():
         metric_labels[k] = r'\thead{' + v + '}'
     if small:
-        metrics = ['scc_var', 'hic_spector', 'pearson_pc_1', 'rmse-ydiag', 'converged_time']
+        metrics = ['scc_var', 'hic_spector', 'converged_time']
+                # 'pearson_pc_1', 'rmse-ydiag', 'converged_time']
         # 'rmse-diag',
     else:
         metrics = ['rmse-y', 'rmse-ydiag',  'converged_time', 'converged_it', 'prcnt_converged']
@@ -715,12 +716,12 @@ if __name__ == '__main__':
     samples = None; sample = None
     # dataset = 'dataset_02_04_23'
     # dataset='dataset_11_20_23'
-    # dataset='dataset_12_06_23'
-    dataset='dataset_02_14_24_imr90'
+    dataset='dataset_12_06_23'
+    # dataset='dataset_02_14_24_imr90'
     # dataset='Su2020'; samples = [1013]
 
     if samples is None:
-        samples, _ = get_samples(dataset, test = True, filter_cell_lines=['huvec'])
+        samples, _ = get_samples(dataset, test = True, filter_cell_lines=['imr90'])
         samples = samples
     if len(samples) == 1:
         sample = samples[0]
@@ -740,7 +741,7 @@ if __name__ == '__main__':
     # args.gnn_id = [434, 578, 579, 450, 451]
     # args.gnn_id = [600, 605, 606, 607, 608, 609, 610]
     # args.gnn_id = [579, 600, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620, 621, 622, 623, 624, 625]
-    # args.gnn_id = [673]
+    args.gnn_id = [685, 687]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

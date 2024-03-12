@@ -22,8 +22,8 @@ from distances_Su2020.utils import plot_diagonal
 from makeLatexTable import *
 
 sys.path.append('/home/erschultz')
-from sequences_to_contact_maps.scripts.load_utils import (
-    get_converged_max_ent_folder, load_import_log, load_L)
+from sequences_to_contact_maps.scripts.load_utils import (load_import_log,
+                                                          load_L)
 from sequences_to_contact_maps.scripts.utils import calc_dist_strat_corr
 
 test=False

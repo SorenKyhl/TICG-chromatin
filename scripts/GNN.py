@@ -250,9 +250,9 @@ def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
 def main():
     samples=None
     # dataset = 'dataset_HIRES'; samples = [1, 2, 3, 4]
-    # dataset='dataset_12_06_23'
+    dataset='dataset_12_06_23'
     # dataset='dataset_12_12_23_imr90'
-    dataset='dataset_02_14_24_imr90'
+    # dataset='dataset_02_14_24_imr90'
     # samples = [42, 114, 475, 331, 402, 543]
     # dataset = 'Su2020'; samples=['1013_rescale1', '1004_rescale1']
     # dataset = 'dataset_06_29_23'; samples=[81]
@@ -269,7 +269,7 @@ def main():
 
             print(len(samples))
 
-    GNN_IDs = [680, 673, 678]; b=200; phi=None; v=8; ar=1.5
+    GNN_IDs = [688, 689]; b=200; phi=None; v=8; ar=1.5
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
@@ -278,7 +278,7 @@ def main():
     print(len(mapping))
     # print(mapping)
 
-    # with mp.Pool(4) as p:
+    # with mp.Pool(16) as p:
         # p.starmap(cleanup, mapping)
         # p.starmap(fit, mapping)
 
