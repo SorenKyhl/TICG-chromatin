@@ -3,7 +3,7 @@
 #SBATCH --output=logFiles/compress.out
 #SBATCH --time=24:00:00
 #SBATCH --account=pi-depablo
-#SBATCH --partition=depablo
+#SBATCH --partition=amd
 #SBATCH --ntasks=10
 #SBATCH --mem-per-cpu=1000
 
@@ -77,6 +77,4 @@ dir='/home/erschultz'
 
 dir='/project/depablo/erschultz'
 cd $dir
-compress dataset_12_08_23_imr90
-compress dataset_12_12_23_imr90
-compress dataset_02_14_24_imr90
+compress dataset_02_19_24_imr90
