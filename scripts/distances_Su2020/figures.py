@@ -18,7 +18,8 @@ from pylib.utils.plotting_utils import (BLUE_CMAP, BLUE_RED_CMAP,
                                         plot_mean_dist, rotate_bound)
 from pylib.utils.similarity_measures import SCC, hic_spector
 from pylib.utils.utils import make_composite, pearson_round
-from pylib.utils.xyz import xyz_load
+from pylib.utils.xyz import xyz_load, xyz_to_distance
+from scipy.spatial.distance import jensenshannon
 from scipy.stats import gaussian_kde, pearsonr
 from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
@@ -822,11 +823,138 @@ def supp_figure(sample, GNN_ID, bl, phi=None, v=None, ar=1.0):
     plt.savefig('/home/erschultz/TICG-chromatin/figures/distances_hic.png')
     plt.close()
 
+def jsd_figure(GNN_ID, b, v, ar):
+    odir = '/home/erschultz/TICG-chromatin/figures'
+    tick_fontsize=18
+    letter_fontsize=26
+    plt.figure(figsize=(14, 11))
+    ax1 = plt.subplot(2, 48, (1, 21))
+    ax2 = plt.subplot(2, 48, (23, 42))
+    ax_cb1 = plt.subplot(2, 48, 45)
+    ax3 = plt.subplot(2, 48, (49, 69))
+    ax4 = plt.subplot(2, 48, (71, 91))
+    ax_cb2 = plt.subplot(2, 48, 93)
+    axes = [ax1, ax2, ax3, ax4]
+    axes_cb = [ax_cb1, ax_cb2]
+    ax_i = 0
+
+    for sample in [1013, 1004]:
+        print(sample)
+        dir = f'/home/erschultz/Su2020/samples/sample{sample}_rescale1'
+        result = load_import_log(dir)
+        start_mb = result['start_mb']
+        end_mb = result['end_mb']
+        start = result['start']
+        end = result['end']
+        chrom = int(result['chrom'])
+        resolution = result['resolution']
+        resolution_mb = result['resolution_mb']
+
+        max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, b, None, v, ar)
+        max_ent_dir += '_xyz'
+        gnn_dir += f'_xyz'
+        final_dir = get_final_max_ent_folder(max_ent_dir)
+        file = osp.join(final_dir, 'production_out/output.xyz')
+        xyz_max_ent = xyz_load(file, multiple_timesteps = True, verbose = False)
+        _, m, _ = xyz_max_ent.shape
+
+        if gnn_dir is not None and osp.exists(gnn_dir):
+            file = osp.join(gnn_dir, 'production_out/output.xyz')
+            print(file)
+            xyz_gnn = xyz_load(file, multiple_timesteps = True, verbose = False)
+        else:
+            xyz_gnn = None
+
+        # get experiment
+        if chrom == 21:
+            exp_dir = '/home/erschultz/Su2020/samples/sample1'
+        elif chrom == 2:
+            exp_dir = '/home/erschultz/Su2020/samples/sample10'
+        xyz_file = osp.join(exp_dir, 'xyz.npy')
+        xyz = np.load(xyz_file)
+
+        # crop coordinates
+        data_dir = os.sep.join(dir.split(os.sep)[:-2])
+        with open(osp.join(data_dir, f'coords_chr{chrom}.json')) as f:
+            coords_dict = json.load(f)
+        i = coords_dict[f'chr{chrom}:{start}-{start+resolution}']
+        xyz = xyz[:, i:i+m, :]
+
+        # crop samples
+        s_crop = 100000
+        D = xyz_to_distance(xyz[:s_crop], False)
+        min_d = 0
+        max_d = 3000
+
+        # set up xlabels
+        all_labels_float = np.linspace(start_mb, end_mb, m)
+        all_labels_int = np.round(all_labels_float, 0).astype(int)
+        genome_ticks = [0, m-1]
+        genome_labels = [f'{all_labels_int[i]}' for i in genome_ticks]
+
+        JSD = np.zeros((2, m, m))
+        for i, (xyz_i, label) in enumerate(zip([xyz_gnn, xyz_max_ent],
+                                                ['GNN', 'Max Ent'])):
+            if xyz_i is None:
+                continue
+            D_i = xyz_to_distance(xyz_i[:s_crop], False)
+
+
+            bins=40
+            for j in range(m):
+                if j % 100 == 0:
+                    print(j)
+                for k in range(j, m):
+                    left, bins = np.histogram(D[:,j,k], bins, (min_d, max_d))
+                    left = left.astype(float) / np.nansum(left)
+                    right, _ = np.histogram(D_i[:,j,k], bins, (min_d, max_d))
+                    right = right.astype(float) / np.nansum(right)
+                    jsd = jensenshannon(left, right)**2
+                    JSD[i, j,k] = jsd
+                    JSD[i, k,j] = jsd
+
+
+        nans = np.isnan(JSD[0])
+        nan_rows = np.zeros(m).astype(bool)
+        nan_rows[np.sum(nans, axis=0) == m] = True
+
+        vmax = np.nanpercentile(JSD, 99)
+        for i in [0, 1]:
+            ax = axes[ax_i]
+            if ax_i % 2 == 0:
+                use_cbar = False
+                cbar_ax = None
+            else:
+                use_cbar = True
+                cbar_ax = axes_cb[ax_i // 2]
+            mean = np.nanmean(JSD[i])
+            s = sns.heatmap(JSD[i][~nan_rows][:, ~nan_rows], linewidth = 0,
+                            vmin = 0, vmax = vmax,
+                            cmap = plt.get_cmap("plasma"), ax = ax,
+                            cbar = use_cbar, cbar_ax = cbar_ax)
+            s.set_title(r'$\overline{JSD}=$' + f'{np.round(mean, 3)}', fontsize = 16)
+            ax_i += 1
+
+            # s.set_xticks(genome_ticks, labels = genome_labels, rotation = 0)
+            # s.set_yticks(genome_ticks, labels = genome_labels)
+            s.set_xticks([])
+            s.set_yticks([])
+            s.tick_params(axis='both', which='major', labelsize=tick_fontsize)
+
+    for n, ax in enumerate([axes[0], axes[2]]):
+        ax.text(-0.1, 1.05, string.ascii_uppercase[n], transform=ax.transAxes,
+                size=letter_fontsize, weight='bold')
+
+    plt.tight_layout()
+    plt.savefig('/home/erschultz/TICG-chromatin/figures/both_chroms_jsd.png')
+    plt.close()
+
 
 
 if __name__ == '__main__':
     # old_figure(1013, 490, bl=180, phi=0.008, ar=1.5)
     # new_figure('1004_rescale1', 614, bl=200, v=8, ar=1.5)
     # new_figure('1004_rescale1', 631, bl=200, v=8, ar=1.5)
-    both_chroms_figure(673, bl=200, v=8, ar=1.5)
+    both_chroms_figure(690, bl=200, v=8, ar=1.5)
+    # jsd_figure(631, b=200, v=8, ar=1.5)
     # supp_figure(1013, 579, bl=180, v=8, ar=1.5)

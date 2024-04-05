@@ -5,15 +5,14 @@ import os.path as osp
 
 import numpy as np
 from bayes_opt import BayesianOptimization
-from scipy import optimize
-from sklearn.metrics import mean_squared_error
-
 from pylib.Pysim import Pysim
 from pylib.utils import default, hic_utils, utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.epilib import Sim
 from pylib.utils.xyz import (xyz_load, xyz_to_contact_distance,
                              xyz_to_contact_grid)
+from scipy import optimize
+from sklearn.metrics import mean_squared_error
 
 """
 module for optimizing simulation parameters
@@ -115,23 +114,29 @@ class ErrorMetric():
 
 def get_bonded_simulation_xyz(config, throw_exception=False):
     dataset = osp.join(default.root, 'dataset_bonded')
-    m = config['nbeads']
-    b = config['bond_length']
 
-    bond_type = config['bond_type']
     boundary_type = config['boundary_type']
     if boundary_type == 'spheroid':
         boundary_type += f'_{config["aspect_ratio"]}'
     beadvol = config['beadvol']
-    assert beadvol == 130000, f'not supported for {beadvol}'
+    bond_type = config['bond_type']
+    dir = osp.join(dataset, f'boundary_{boundary_type}/beadvol_{beadvol}/bond_type_{bond_type}')
+    if bond_type == 'SC':
+        k_bond = config['k_bond']
+        dir = osp.join(dir, f'k_bond_{k_bond}')
+
+    m = config['nbeads']
+    b = config['bond_length']
+    dir = osp.join(dir,f'm_{m}/bond_length_{b}')
+
     k_angle = config['k_angle']
     theta_0 = config['theta_0']
     if 'phi_chromatin' in config:
         phi = config['phi_chromatin']
-        dir = osp.join(dataset, f'boundary_{boundary_type}/bond_type_{bond_type}/m_{m}/bond_length_{b}/phi_{phi}/angle_{k_angle}')
+        dir = osp.join(dir, f'phi_{phi}/angle_{k_angle}')
     elif 'target_volume' in config:
         v = config['target_volume']
-        dir = osp.join(dataset, f'boundary_{boundary_type}/bond_type_{bond_type}/m_{m}/bond_length_{b}/v_{v}/angle_{k_angle}')
+        dir = osp.join(dir, f'v_{v}/angle_{k_angle}')
     else:
         raise Exception('One of phi_chromatin and target_volume is required')
     if theta_0 != 180:

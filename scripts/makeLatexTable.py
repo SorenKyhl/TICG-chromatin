@@ -131,7 +131,7 @@ def load_data(args):
                 continue
             skip = False
             for bad_method in bad_methods:
-                if bad_method in fname:
+                if fname.endswith(bad_method):
                     skip = True
             if skip:
                 continue
@@ -375,8 +375,7 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
     for k, v in metric_labels.items():
         metric_labels[k] = r'\thead{' + v + '}'
     if small:
-        metrics = ['scc_var', 'hic_spector', 'converged_time']
-                # 'pearson_pc_1', 'rmse-ydiag', 'converged_time']
+        metrics = ['scc_var', 'hic_spector', 'pearson_pc_1', 'rmse-ydiag', 'converged_time']
         # 'rmse-diag',
     else:
         metrics = ['rmse-y', 'rmse-ydiag',  'converged_time', 'converged_it', 'prcnt_converged']
@@ -721,7 +720,8 @@ if __name__ == '__main__':
     # dataset='Su2020'; samples = [1013]
 
     if samples is None:
-        samples, _ = get_samples(dataset, test = True, filter_cell_lines=['imr90'])
+        samples, _ = get_samples(dataset, test = True,
+                                filter_cell_lines=['imr90'])
         samples = samples
     if len(samples) == 1:
         sample = samples[0]
@@ -735,13 +735,13 @@ if __name__ == '__main__':
     args.test_significance = True
     args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', '_700k', 'phi',
                         'GNN579-max_ent', '-gd_gamma', 'distance', 'start', 'stat',
-                        'diagbins', 'binarize', 'chrom', 'grid200', 'long']
-    for i in [2,3,4,5,6,7,8,9]:
+                        'diagbins', 'binarize', 'chrom', 'grid200', 'long', 'strict']
+    for i in [1, 2,3,4,5,6,7,8,9, 11, 12, 13, 14, 15]:
        args.bad_methods.append(f'max_ent{i}')
     # args.gnn_id = [434, 578, 579, 450, 451]
     # args.gnn_id = [600, 605, 606, 607, 608, 609, 610]
     # args.gnn_id = [579, 600, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620, 621, 622, 623, 624, 625]
-    args.gnn_id = [685, 687]
+    args.gnn_id = [690]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

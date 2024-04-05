@@ -78,6 +78,9 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False, filte
     elif dataset in {'dataset_04_09_23', 'dataset_04_10_23',}:
         samples = range(1001, 1028)
         experimental = True
+    elif 'gm12878' in dataset:
+        samples = range(1, 42)
+        experimental = True
     elif dataset == 'dataset_04_06_23':
         samples = range(1001, 1286)
     elif dataset == 'dataset_04_07_23':

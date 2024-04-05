@@ -207,40 +207,53 @@ def compare_p_s_bonded2():
 def compare_d_s_bonded():
     '''Compare d(s) curves in dataset_bonded'''
     dataset = '/home/erschultz/dataset_bonded'
-    m=512; phi=0.01; b=261; bond_type='gaussian'
-    ls='-'
+    m=1024; bond_type='SC'; beadvol=13000; k_bond=0.02
+    log_labels = np.linspace(0, 5000*(m-1), m)
     for boundary_type, ar in [('spherical', 1.0)]:
         if boundary_type == 'spheroid':
             boundary_type += f'_{ar}'
-        for b in [140, 261]:
-            for k_angle in np.arange(0.1, 1, .2):
-                k_angle = np.round(k_angle, 1)
-                dir = osp.join(dataset, f'boundary_{boundary_type}',
-                            f'bond_type_{bond_type}/m_{m}/bond_length_{b}/phi_{phi}')
-                if k_angle != 0:
-                    dir = osp.join(dir, f'angle_{k_angle}')
-                print(dir)
-                xyz_file = osp.join(dir, 'production_out/output.xyz')
-                xyz = xyz_load(xyz_file, multiple_timesteps=True)
-                D = xyz_to_distance(xyz)
-                log_labels = np.linspace(0, (m-1), m)
-                D = np.nanmean(D, axis = 0)
-                meanDist_D = DiagonalPreprocessing.genomic_distance_statistics(D, mode='freq')
-                plt.plot(log_labels, meanDist_D, ls = ls, label = f'ar_{ar}_k_angle_{k_angle}')
+        for b in [63, 100]:
+            for v in [0.5, 1]:
+                for k_angle in [0, 2]:
+                    k_angle = np.round(k_angle, 1)
+                    dir = osp.join(dataset, f'boundary_{boundary_type}/beadvol_{beadvol}',
+                                f'bond_type_{bond_type}')
+                    if bond_type == 'SC':
+                        dir = osp.join(dir, f'k_bond_{k_bond}')
+                    assert osp.exists(dir)
+                    dir = osp.join(dir, f'm_{m}/bond_length_{b}/v_{v}/angle_{k_angle}')
+                    print(dir)
+                    xyz_file = osp.join(dir, 'production_out/output.xyz')
+                    xyz = xyz_load(xyz_file, multiple_timesteps=True, N_max=50, verbose=False)
+                    D = xyz_to_distance(xyz)
+                    D = np.nanmean(D, axis = 0)
+                    meanDist_D = DiagonalPreprocessing.genomic_distance_statistics(D, mode='freq')
+                    if k_angle == 0:
+                        ls = '-'
+                    else:
+                        ls = ':'
+                    plt.plot(log_labels, meanDist_D, ls = ls, label = f'bt_{bond_type}_b_{b}_v_{v}_k_{k_angle}')
 
-    D_exp = np.load('/home/erschultz/Su2020/samples/sample1013/D_crop.npy')
+    D_exp = np.load(f'/home/erschultz/Su2020/samples/sample1013/D_crop.npy')
     meanDist_D_exp = DiagonalPreprocessing.genomic_distance_statistics(D_exp, mode='freq')
+    m1 = len(meanDist_D_exp)
     nan_rows = np.isnan(meanDist_D_exp)
-    plt.plot(log_labels[~nan_rows], meanDist_D_exp[~nan_rows],
-                label='Experiment', color='k')
+    plt.plot(np.linspace(0, 50000*(m1-1), m1)[~nan_rows][1:m//40],
+                meanDist_D_exp[~nan_rows][1:m//40], color='k')
+
+    D_exp2 = np.load('/home/erschultz/Su2020/samples/sample1/dist2_mean.npy')
+    meanDist_D_exp2 = DiagonalPreprocessing.genomic_distance_statistics(D_exp2, mode='freq')
+    m2 = len(meanDist_D_exp2)
+    nan_rows = np.isnan(meanDist_D_exp2)
+    plt.plot(np.linspace(0, 30000*(m2-1), m2)[~nan_rows][1:],
+                meanDist_D_exp2[~nan_rows][1:], label='Experiment', color='k')
 
     # plt.yscale('log')
     plt.xscale('log')
     plt.ylabel('Distance (nm)')
-    plt.xlabel('Polymer Distance (m)')
+    plt.xlabel('Genomic Distance (bp)')
     plt.legend(title='bonded params')
-    plt.savefig(osp.join(osp.join(dataset, f'boundary_{boundary_type}',
-                f'bond_type_{bond_type}/m_{m}/bond_length_{b}/phi_{phi}'), 'd_s_bonded.png'))
+    plt.savefig(osp.join(dataset, 'd_s_bonded.png'))
     plt.close()
 
 def compare_d_s_bonded2():
@@ -600,7 +613,7 @@ def soren_seq():
 if __name__ == '__main__':
     # compare_diag_fits()
     # compare_p_s_bonded3()
-    # compare_d_s_bonded()
+    compare_d_s_bonded()
     # compare_d_s_bonded2()
     # compare_d_s_max_ent()
     # compare_p_s_exp()
@@ -610,7 +623,8 @@ if __name__ == '__main__':
     # visualize_max_ent_methods()
     # compare_xyz()
     # check_GNN_S()
-    split_dataset('dataset_09_28_23', 1, 0.36)
+
+    # split_dataset('dataset_09_28_23', 1, 0.36)
     # split_dataset('dataset_09_28_23', 10, 0.08)
     # split_dataset('dataset_09_28_23', 100, 0.01)
     # split_dataset2('dataset_09_28_23', 0.02)

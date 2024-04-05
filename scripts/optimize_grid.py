@@ -7,10 +7,6 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy import optimize
-from scipy.stats import norm
-from sklearn.metrics import mean_squared_error
-
 import pylib.utils.epilib as epilib
 from pylib.optimize import get_bonded_simulation_xyz, optimize_config
 from pylib.Pysim import Pysim
@@ -19,6 +15,9 @@ from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.plotting_utils import plot_matrix, plot_mean_dist
 from pylib.utils.xyz import (xyz_load, xyz_to_angles, xyz_to_contact_distance,
                              xyz_to_contact_grid, xyz_to_distance)
+from scipy import optimize
+from scipy.stats import norm
+from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz/TICG-chromatin')
 from scripts.data_generation.modify_maxent import simple_histogram
@@ -27,8 +26,10 @@ from scripts.plotting.contact_map import plot_max_ent
 
 def run(dir, config):
     print(dir)
-    sim = Pysim(dir, config, None, randomize_seed = False, overwrite = True)
-    sim.run_eq(10000, config['nSweeps'], 1)
+    if not osp.exists(dir):
+        os.mkdir(dir, mode=0o755)
+        sim = Pysim(dir, config, None, randomize_seed = False, overwrite = True)
+        sim.run_eq(10000, config['nSweeps'], 1)
 
 def bonded_simulations():
     dataset = osp.join(default.root, 'dataset_bonded')
@@ -36,7 +37,6 @@ def bonded_simulations():
         os.mkdir(dataset, mode=0o755)
 
     base_config = default.bonded_config
-    base_config['beadvol'] = 130000
     base_config['seed'] = 1
     base_config["nSweeps"] = 350000
     base_config["dump_frequency"] = 1000
@@ -44,7 +44,7 @@ def bonded_simulations():
     base_config['grid_size'] = 1000
 
     mapping = []
-    for boundary_type, ar in [('spheroid', 1.5)]:
+    for boundary_type, ar in [('spherical', 1.0)]:
         # ('spherical', 1.0), , ('spheroid', 2.0)
         boundary_dir = f'boundary_{boundary_type}'
         if ar != 1.0:
@@ -52,51 +52,63 @@ def bonded_simulations():
         boundary_dir = osp.join(dataset, boundary_dir)
         if not osp.exists(boundary_dir):
             os.mkdir(boundary_dir, mode=0o755)
-        for bond_type in ['gaussian']:
-            bond_dir = osp.join(boundary_dir, f'bond_type_{bond_type}')
-            if not osp.exists(bond_dir):
-                os.mkdir(bond_dir, mode=0o755)
-            for m in [512]:
-                m_dir = osp.join(bond_dir, f'm_{m}')
-                if not osp.exists(m_dir):
-                    os.mkdir(m_dir, mode=0o755)
-                for b in [180, 200]:
-                    b_dir = osp.join(m_dir, f'bond_length_{b}')
-                    if not osp.exists(b_dir):
-                        os.mkdir(b_dir, mode=0o755)
-                    for v in [8]:
-                        v_dir = osp.join(b_dir, f'v_{v}')
-                        if not osp.exists(v_dir):
-                            os.mkdir(v_dir, mode=0o755)
-                        for k_angle in [0.1, 1, 10, 100]:
-                            if bond_type == 'DSS'and k_angle != 0:
-                                continue
-                            for theta_0 in [180]:
-                                if theta_0 == 180:
-                                    k_angle_dir = osp.join(v_dir, f'angle_{k_angle}')
-                                elif k_angle == 0:
+        for beadvol in [13000]:
+            beadvol_dir = osp.join(boundary_dir, f'beadvol_{beadvol}')
+            if not osp.exists(beadvol_dir):
+                os.mkdir(beadvol_dir, mode=0o755)
+            for bond_type in ['SC', 'gaussian']:
+                bond_dir = osp.join(beadvol_dir, f'bond_type_{bond_type}')
+                if not osp.exists(bond_dir):
+                    os.mkdir(bond_dir, mode=0o755)
+                if bond_type == 'SC':
+                    k_bond = 0.02
+                else:
+                    k_bond = None
+                if k_bond is not None:
+                    bond_dir = osp.join(bond_dir, f'k_bond_{k_bond}')
+                    if not osp.exists(bond_dir):
+                        os.mkdir(bond_dir, mode=0o755)
+                for m in [1024]:
+                    m_dir = osp.join(bond_dir, f'm_{m}')
+                    if not osp.exists(m_dir):
+                        os.mkdir(m_dir, mode=0o755)
+                    for b in [63, 80, 100]:
+                        b_dir = osp.join(m_dir, f'bond_length_{b}')
+                        if not osp.exists(b_dir):
+                            os.mkdir(b_dir, mode=0o755)
+                        for v in [1.6]:
+                            v_dir = osp.join(b_dir, f'v_{v}')
+                            if not osp.exists(v_dir):
+                                os.mkdir(v_dir, mode=0o755)
+                            for k_angle in [2]:
+                                if bond_type == 'DSS'and k_angle != 0:
                                     continue
-                                else:
-                                    k_angle_dir = osp.join(v_dir, f'angle_{k_angle}_theta0_{theta_0}')
+                                for theta_0 in [180]:
+                                    if theta_0 == 180:
+                                        k_angle_dir = osp.join(v_dir, f'angle_{k_angle}')
+                                    elif k_angle == 0:
+                                        continue
+                                    else:
+                                        k_angle_dir = osp.join(v_dir, f'angle_{k_angle}_theta0_{theta_0}')
 
-                                if not osp.exists(k_angle_dir):
-                                    os.mkdir(k_angle_dir, mode=0o755)
-
-                                config = base_config.copy()
-                                config['bond_length'] = b
-                                config['target_volume'] = v
-                                config['nbeads'] = m
-                                config["bond_type"] = bond_type
-                                config['boundary_type'] = boundary_type
-                                config['aspect_ratio'] = ar
-                                if k_angle != 0:
-                                    config['angles_on'] = True
-                                    config['k_angle'] = k_angle
-                                    config['theta_0'] = theta_0
-                                mapping.append((k_angle_dir, config))
+                                    config = base_config.copy()
+                                    config['beadvol'] = beadvol
+                                    config['bond_length'] = b
+                                    if k_bond is not None:
+                                        config['k_bond'] = k_bond
+                                    config['target_volume'] = v
+                                    config['nbeads'] = m
+                                    config["bond_type"] = bond_type
+                                    config['boundary_type'] = boundary_type
+                                    config['aspect_ratio'] = ar
+                                    if k_angle != 0:
+                                        config['angles_on'] = True
+                                        config['k_angle'] = k_angle
+                                        config['theta_0'] = theta_0
+                                    mapping.append((k_angle_dir, config))
 
     print(len(mapping))
-    with mp.Pool(min(len(mapping), 10)) as p:
+    with mp.Pool(min(len(mapping), 12)) as p:
         p.starmap(run, mapping)
 
 def plot_bond_length():
@@ -178,7 +190,7 @@ def main(root, config, mode='grid_angle10'):
     # config["dump_stats_frequency"] = 100
 
     if mode in {'grid', 'distance'}:
-        optimum = optimize_config(config, gthic, mode, 0.5, 2.0, root)
+        optimum = optimize_config(config, gthic, mode, 0.3, 2.4, root)
         p_s_exp = DiagonalPreprocessing.genomic_distance_statistics(gthic, 'prob')
         xyz = get_bonded_simulation_xyz(config)
         if mode == 'grid':

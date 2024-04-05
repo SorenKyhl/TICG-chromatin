@@ -239,10 +239,10 @@ def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
         remove = False
         if not osp.exists(osp.join(gnn_root, 'equilibration')):
             remove=True
-        elif not osp.exists(osp.join(gnn_root, 'production_out')):
-            remove = True
-        # elif not osp.exists(osp.join(gnn_root, 'y.npy')):
-        #     remove = True
+        # elif not osp.exists(osp.join(gnn_root, 'production_out')):
+            # remove = True
+        elif not osp.exists(osp.join(gnn_root, 'y.npy')):
+             remove = True
         if remove:
             shutil.rmtree(gnn_root)
             print(f'removing {gnn_root}')
@@ -263,13 +263,15 @@ def main():
 
     if samples is None:
         samples = []
-        for cell_line in ['imr90']:
-            samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
+        for cell_line in ['gm12878', 'hap1', 'hmec', 'huvec']:
+            # samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
+            # samples.extend(samples_cell_line)
+            samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
             samples.extend(samples_cell_line)
 
             print(len(samples))
 
-    GNN_IDs = [688, 689]; b=200; phi=None; v=8; ar=1.5
+    GNN_IDs = [690]; b=200; phi=None; v=8; ar=1.5
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))

@@ -85,6 +85,8 @@ def xyz_load(xyz_filepath, delim = '\t', multiple_timesteps = True, save = False
             reader = csv.reader(f, delimiter = delim)
             xyz_timestep = np.empty((N, 3))
             for line in reader:
+                if N_max is not None and len(xyz) == N_max:
+                    break
                 if len(line) > 1:
                     i = int(line[0])
                     try:
@@ -208,7 +210,7 @@ def xyz_to_distance(xyz, verbose = False):
     N, m, _ = xyz.shape
     D = np.zeros((N, m, m), dtype = np.float32)
     for i in range(N):
-        if verbose:
+        if verbose and i % 100 == 0:
             print(i)
         D_i = nan_euclidean_distances(xyz[i])
         D[i] = D_i
