@@ -33,7 +33,7 @@ def metric_figure(oe=False):
     label_fontsize=22
     tick_fontsize=18
     letter_fontsize=26
-    dataset = 'dataset_12_06_23'; GNN_ID = 631
+    dataset = 'dataset_12_06_23'; GNN_ID = 690
     # dataset = 'dataset_04_05_23'; sample = 1001; GN_ID = 407
     # dataset = 'dataset_04_05_23'; sample = 1001; GNN_ID = 423
     samples, _ = get_samples(dataset, test=True, filter_cell_lines=['imr90'])
@@ -171,7 +171,7 @@ def metric_figure(oe=False):
             rmse_y_tilde = mean_squared_error(y_gt_oe, y_sim_oe, squared=False)
             rmse_y_tilde = np.round(rmse_y_tilde, 3)
 
-            scc_var = scc.scc(y_gt, y_sim, var_stabilized = True)
+            scc_var = scc.scc(y_gt, y_sim)
             scc_var = np.round(scc_var, 3)
 
             corr_spector = hic_spector(y_gt, y_sim, 10)
@@ -307,6 +307,6 @@ def scc_h():
 
 
 if __name__ == '__main__':
-    # metric_figure(oe=True)
+    metric_figure(oe=False)
     # scc_across_cell_lines()
-    scc_h()
+    # scc_h()

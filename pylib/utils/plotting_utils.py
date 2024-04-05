@@ -86,6 +86,8 @@ def plot_matrix(arr, ofile=None, title=None, vmin=0, vmax='max',
     """
     if isinstance(cmap, matplotlib.colors.LinearSegmentedColormap):
         pass
+    elif isinstance(cmap, matplotlib.colors.ListedColormap):
+        pass
     elif cmap is None:
         cmap = RED_CMAP
     elif prcnt:

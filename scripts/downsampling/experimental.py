@@ -94,7 +94,7 @@ def fit_gnn(GNN_id):
         print(mapping)
 
         # this must be nested because of how GNN uses scratch
-        with mp.Pool(1) as p:
+        with mp.Pool(5) as p:
             p.starmap(GNN.check, mapping)
 
 def fit_max_ent():
@@ -112,8 +112,8 @@ def fit_max_ent():
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(1) as p:
-        p.starmap(max_ent.check, mapping)
+    with mp.Pool(10) as p:
+        p.starmap(max_ent.fit, mapping)
 
 
 def figure(GNN_ID):
@@ -314,5 +314,5 @@ if __name__ == '__main__':
     # mp.set_start_method('spawn')
     # make_samples()
     # fit_max_ent()
-    fit_gnn(673)
-    # figure(631)
+    # fit_gnn(690)
+    figure(690)

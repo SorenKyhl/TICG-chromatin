@@ -30,7 +30,7 @@ test=False
 label_fontsize=22
 tick_fontsize=18
 letter_fontsize=26
-dataset = 'dataset_12_06_23'; sample = 8; GNN_ID = 673
+dataset = 'dataset_12_06_23'; sample = 8; GNN_ID = 690
 # dataset = 'dataset_04_05_23'; sample = 1001; GN_ID = 407
 # dataset = 'dataset_04_05_23'; sample = 1001; GNN_ID = 423
 samples, _ = get_samples(dataset, test=True, filter_cell_lines=['imr90'])
@@ -454,11 +454,12 @@ def new_figure(test=False):
     # ax6.set_xlabel('Genomic Separation (beads)', fontsize=label_fontsize)
 
     ax6.set_axis_off()
-    ax6.text(0.5, 0.85, 'Simulated Structures', fontsize=label_fontsize,
+    ax6.text(0.5, 0.87, 'Simulated Structures', fontsize=label_fontsize,
             horizontalalignment='center')
 
-    data = [max_ent_times, max_ent_times_strict, gnn_times]
-    labels = [r'Max Ent ($\epsilon$=1e-2)', r'Max Ent ($\epsilon$=1e-3)', 'GNN']
+    data = [max_ent_times, gnn_times] # max_ent_times_strict
+    # labels = [r'Max Ent ($\epsilon$=1e-2)', r'Max Ent ($\epsilon$=1e-3)', 'GNN']
+    labels = ['Max Ent', 'GNN']
     ticks = range(1, len(labels)+1)
     b1 = ax7.boxplot(data,  vert = True,
                         patch_artist = True, labels = labels)
@@ -468,7 +469,7 @@ def new_figure(test=False):
     ax7.set_ylabel('Time (mins)', fontsize=label_fontsize)
 
     # fill with colors
-    colors = ['b', 'b', 'r']
+    colors = ['b', 'r']
     for bplot in [b1]:
         for patch, color in zip(bplot['boxes'], colors):
             patch.set_facecolor(color)

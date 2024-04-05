@@ -29,15 +29,14 @@ from sequences_to_contact_maps.scripts.load_utils import \
 def max_ent_dataset(use_exp_hic=False):
     dataset = 'dataset_12_06_23'
     data_dir = osp.join('/home/erschultz', dataset)
-    odir = data_dir + '_max_ent'
+    odir = data_dir + '_max_ent_all'
     if use_exp_hic:
         odir += '_exp'
     if not osp.exists(odir):
         os.mkdir(odir)
         os.mkdir(osp.join(odir, 'samples'))
     samples = []
-    for cell_line in ['imr90', 'gm12878', 'hmec', 'hap1', 'hela', 'huvec']:
-        # 'k652', 'kbm7', 'nhek'
+    for cell_line in ['hap1', 'hela', 'kbm7', 'nhek', 'huvec', 'hmec', 'gm12878']:
         samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
         samples.extend(samples_cell_line)
 
@@ -257,6 +256,8 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, v
     if v is not None:
         bonded_config['target_volume'] = v
     bonded_config['bond_type'] = bond_type
+    if bond_type == 'SC':
+        bonded_config['k_bond'] = 0.02
     bonded_config['update_contacts_distance'] = contacts_distance
     if k_angle != 0:
         bonded_config['angles_on'] = True
@@ -269,12 +270,8 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, v
     if vb is not None:
         bonded_config['beadvol'] = vb
     else:
-        if bonded_config['bond_length'] == 16.5:
-            bonded_config['beadvol'] = 520
-        if bonded_config['bond_length'] == 117:
-            bonded_config['beadvol'] = 26000
-        elif bonded_config['bond_length'] == 224:
-            bonded_config['beadvol'] = 260000
+        if bonded_config['bond_length'] <= 100:
+            bonded_config['beadvol'] = 13000
         else:
             bonded_config['beadvol'] = 130000
     if aspect_ratio != 1.0:
@@ -291,8 +288,8 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, v
         root += f"_angle_{bonded_config['k_angle']}_theta0_{bonded_config['theta_0']}"
     if bonded_config['boundary_type'] == 'spheroid':
         root += f'_spheroid_{aspect_ratio}'
-    if bonded_config['bond_type'] == 'DSS':
-        root += '_DSS'
+    if bonded_config['bond_type'] != 'gaussian':
+        root += f'_{bonded_config["bond_type"]}'
 
     if verbose:
         print(root)
@@ -309,6 +306,8 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, v
             bonded_config['k_angle'] = np.loadtxt(angle_file)
             bonded_config['angles_on'] = True
     else:
+        if osp.exists(root):
+            shutil.rmtree(root)
         root, bonded_config = optimize_grid.main(root, bonded_config, mode)
 
     config = default.config
@@ -437,38 +436,42 @@ def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=Non
 def main():
     samples = None
     # dataset = 'dataset_HIRES'; samples = [1, 2, 3, 4]
-    # dataset = 'Su2020'; samples = ['1013_rescale1']
-    dataset = 'dataset_12_06_23'
+    # dataset = 'Su2020'; samples = ['1013_rescale1', '1004_rescale1']
+    # dataset = 'dataset_12_06_23'
+    dataset = 'dataset_gm12878_5k'
     # dataset = 'dataset_11_21_23_imr90'; samples = range(1, 16)
     # dataset='dataset_HCT116_RAD21_KO'; samples=range(1,9)
 
     if samples is None:
         samples = []
-        for cell_line in ['imr90', 'gm12878', 'hmec', 'hap1', 'hela', 'huvec', 'k652', 'kbm7', 'nhek']:
+        for cell_line in ['gm12878']:
+            # , 'hela', 'k562', 'kbm7', 'nhek'
             samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
-            samples.extend(samples_cell_line)
+            samples.extend(samples_cell_line[:1])
             # samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
             # samples.extend(samples_cell_line)
 
         print(samples)
 
-    # dataset = 'dataset_12_06_23_max_ent_exp'
+    # dataset = 'dataset_12_06_23_max_ent_all_exp'
 
     mapping = []
     k_angle=0;theta_0=180;b=180;ar=2.0;phi=None;v=4
     k=10
     contacts_distance=False
     for i in samples:
-        for v in [8]:
-            for b in [200]:
-                for ar in [1.5]:
+        for v in [1]:
+            for b in [63]:
+                for ar in [1.0]:
                     for k in [10]:
-                        mapping.append((dataset, i, f'samples', b, phi, v, None, ar,
-                                    'gaussian', k, contacts_distance, k_angle, theta_0))
+                        for k_angle in [2]:
+                            for bond_type in ['SC']:
+                                mapping.append((dataset, i, f'samples', b, phi, v, None, ar,
+                                            bond_type, k, contacts_distance, k_angle, theta_0))
 
     print('len =', len(mapping))
 
-    with mp.Pool(17) as p:
+    with mp.Pool(1) as p:
         # p.starmap(setup_config, mapping)
         p.starmap(fit, mapping)
         # p.starmap(check, mapping)
