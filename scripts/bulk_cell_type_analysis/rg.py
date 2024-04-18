@@ -3,14 +3,13 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.cluster import KMeans
-from utils import get_samples
-
 from pylib.utils import epilib
 from pylib.utils.plotting_utils import (RED_CMAP, plot_matrix,
                                         plot_matrix_layout)
 from pylib.utils.utils import load_import_log
 from pylib.utils.xyz import calculate_rg, xyz_load
+from sklearn.cluster import KMeans
+from utils import get_samples
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import load_Y
@@ -129,21 +128,26 @@ def compartments():
 
 def genes():
     dir = '/home/erschultz/dataset_12_06_23/samples'
-    odir = '/home/erschultz/dataset_12_06_23/figures'
+    odir = '/home/erschultz/dataset_12_06_23/figures/rg'
     xyz_list = []
     m=512
     samples, cell_lines = get_samples('dataset_12_06_23')
     samples = np.array(samples)
     cell_lines = np.array(cell_lines)
-    gnn_root = 'optimize_grid_b_200_v_8_spheroid_1.5-GNN631'
+    gnn_root = 'optimize_grid_b_200_v_8_spheroid_1.5-GNN690'
+    # me_root = 'optimize_grid_b_200_v_8_spheroid_1.5-max_ent10'
     N = len(samples)
     y_arr = np.zeros((N, m, m))
+    pc_list = []
     for i, sample in enumerate(samples):
         # print(sample)
         s_dir = osp.join(dir, f'sample{sample}')
 
         y, y_diag = load_Y(s_dir)
         y_arr[i] = y
+
+        pc1 = epilib.get_pcs(epilib.get_oe(y), 1, normalize=True).reshape(-1)
+        pc_list.append(pc1)
 
         xyz_file = osp.join(s_dir, gnn_root, 'production_out/output.xyz')
         xyz = xyz_load(xyz_file, multiple_timesteps = True, N_min = 5, verbose = False)
@@ -161,7 +165,7 @@ def genes():
     all_labels_int = np.round(all_labels_float, 0).astype(int)
     genome_ticks = [0, m//2, m-1]
     genome_labels = [f'{all_labels_int[i]}' for i in genome_ticks]
-    print(genome_labels)
+    print('genome labels', genome_labels)
 
 
     window_sizes = [16, 32, 64]
@@ -169,6 +173,7 @@ def genes():
         length = int(m/size)
         X = np.linspace(size, m-size, m).astype(int)
 
+        rg_list = []
         for xyz_i, cell_line in zip(xyz_list, cell_lines):
             mean_arr = np.zeros(m)
             std_arr = np.zeros(m)
@@ -184,6 +189,8 @@ def genes():
                 right += 1
                 i += 1
 
+            rg_list.append(mean_arr)
+
             plt.plot(X, mean_arr, label = cell_line)
 
         plt.xticks(genome_ticks, labels = genome_labels)
@@ -195,7 +202,71 @@ def genes():
         plt.savefig(osp.join(odir, f'rg_gene_comparison_{size}.png'))
         plt.close()
 
+        # rg vs pc1
+        pc_arr = np.array(pc_list).flatten()
+        rg_arr = np.array(rg_list).flatten()
+        include = rg_arr != 0
+        plt.scatter(pc_arr[include], rg_arr[include])
+        plt.ylabel('Rg', fontsize=16)
+        plt.xlabel('PC1', fontsize=16)
+        plt.tight_layout()
+        plt.savefig(osp.join(odir, f'pc1_vs_rg_{size}.png'))
+        plt.close()
+
+def cell_lines():
+    dir = '/home/erschultz/dataset_12_06_23/samples'
+    odir = '/home/erschultz/dataset_12_06_23/figures/rg/cell_lines'
+    m=512
+    samples, cell_lines = get_samples('dataset_12_06_23')
+    samples = np.array(samples)
+    cell_lines = np.array(cell_lines)
+    gnn_root = 'optimize_grid_b_200_v_8_spheroid_1.5-GNN690'
+    # me_root = 'optimize_grid_b_200_v_8_spheroid_1.5-max_ent10'
+    N = len(samples)
+    y_arr = np.zeros((N, m, m))
+    for i, (sample, cell_line) in enumerate(zip(samples, cell_lines)):
+        # print(sample)
+        s_dir = osp.join(dir, f'sample{sample}')
+
+        y, y_diag = load_Y(s_dir)
+        y_arr[i] = y
+
+        pc1 = epilib.get_pcs(epilib.get_oe(y), 1, normalize=True).reshape(-1)
+
+        xyz_file = osp.join(s_dir, gnn_root, 'production_out/output.xyz')
+        xyz = xyz_load(xyz_file, multiple_timesteps = True, N_min = 5, verbose = False)
+
+        window_sizes = [16, 32, 64]
+        for i, size in enumerate(window_sizes):
+            length = int(m/size)
+            X = np.linspace(size, m-size, m).astype(int)
+
+            mean_arr = np.zeros(m)
+            std_arr = np.zeros(m)
+
+            left = 0; right = left + size; i=0
+            while right <= m:
+                xyz_size = xyz[:, left:right, :]
+                mean, std = calculate_rg(xyz_size)
+                mean_arr[i] = mean
+                std_arr[i] = std
+
+                left += 1
+                right += 1
+                i += 1
+
+            # density vs pc1
+            include = mean_arr != 0
+            plt.scatter(pc1[include], mean_arr[include])
+            plt.ylabel('Rg', fontsize=16)
+            plt.xlabel('PC1', fontsize=16)
+            plt.tight_layout()
+            plt.savefig(osp.join(odir, f'pc1_vs_rg_{size}_{cell_line}.png'))
+            plt.close()
+
+
 
 if __name__ == '__main__':
     # compartments()
-    genes()
+    # genes()
+    cell_lines()

@@ -14,7 +14,7 @@ def get_samples(dataset):
     samples_dir = osp.join('/home/erschultz/', dataset, 'samples')
     samples = os.listdir(samples_dir)
 
-    target_import_log = load_import_log(osp.join(samples_dir, 'sample114'))
+    target_import_log = load_import_log(osp.join(samples_dir, 'sample8'))
 
     final_samples = []
     cell_lines = []
@@ -64,4 +64,4 @@ def test_loci_to_coords():
 
 if __name__ == '__main__':
     get_samples('dataset_12_06_23')
-    # test_plot_loci()
+    # test_loci_to_coords()

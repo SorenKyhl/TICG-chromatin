@@ -52,7 +52,7 @@ def bonded_simulations():
         boundary_dir = osp.join(dataset, boundary_dir)
         if not osp.exists(boundary_dir):
             os.mkdir(boundary_dir, mode=0o755)
-        for beadvol in [13000]:
+        for beadvol in [65000]:
             beadvol_dir = osp.join(boundary_dir, f'beadvol_{beadvol}')
             if not osp.exists(beadvol_dir):
                 os.mkdir(beadvol_dir, mode=0o755)
@@ -72,15 +72,15 @@ def bonded_simulations():
                     m_dir = osp.join(bond_dir, f'm_{m}')
                     if not osp.exists(m_dir):
                         os.mkdir(m_dir, mode=0o755)
-                    for b in [63, 80, 100]:
+                    for b in [140]:
                         b_dir = osp.join(m_dir, f'bond_length_{b}')
                         if not osp.exists(b_dir):
                             os.mkdir(b_dir, mode=0o755)
-                        for v in [1.6]:
+                        for v in [6, 8, 10]:
                             v_dir = osp.join(b_dir, f'v_{v}')
                             if not osp.exists(v_dir):
                                 os.mkdir(v_dir, mode=0o755)
-                            for k_angle in [2]:
+                            for k_angle in [0, 2]:
                                 if bond_type == 'DSS'and k_angle != 0:
                                     continue
                                 for theta_0 in [180]:

@@ -74,7 +74,8 @@ cleanup(){
 }
 
 dir='/home/erschultz'
-
 dir='/project/depablo/erschultz'
 cd $dir
-compress dataset_02_19_24_imr90
+compress dataset_02_27_24_imr90
+compress dataset_02_28_24_imr90
+compress dataset_02_29_24_imr90

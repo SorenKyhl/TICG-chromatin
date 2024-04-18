@@ -272,6 +272,8 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, v
     else:
         if bonded_config['bond_length'] <= 100:
             bonded_config['beadvol'] = 13000
+        elif bonded_config['bond_length'] == 140:
+            bonded_config['beadvol'] = 65000
         else:
             bonded_config['beadvol'] = 130000
     if aspect_ratio != 1.0:
@@ -438,7 +440,7 @@ def main():
     # dataset = 'dataset_HIRES'; samples = [1, 2, 3, 4]
     # dataset = 'Su2020'; samples = ['1013_rescale1', '1004_rescale1']
     # dataset = 'dataset_12_06_23'
-    dataset = 'dataset_gm12878_5k'
+    dataset = 'dataset_gm12878_25k'
     # dataset = 'dataset_11_21_23_imr90'; samples = range(1, 16)
     # dataset='dataset_HCT116_RAD21_KO'; samples=range(1,9)
 
@@ -447,7 +449,7 @@ def main():
         for cell_line in ['gm12878']:
             # , 'hela', 'k562', 'kbm7', 'nhek'
             samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
-            samples.extend(samples_cell_line[:1])
+            samples.extend(samples_cell_line[:10])
             # samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
             # samples.extend(samples_cell_line)
 
@@ -460,20 +462,20 @@ def main():
     k=10
     contacts_distance=False
     for i in samples:
-        for v in [1]:
-            for b in [63]:
+        for v in [8]:
+            for b in [140]:
                 for ar in [1.0]:
                     for k in [10]:
-                        for k_angle in [2]:
-                            for bond_type in ['SC']:
+                        for k_angle in [0]:
+                            for bond_type in ['gaussian']:
                                 mapping.append((dataset, i, f'samples', b, phi, v, None, ar,
                                             bond_type, k, contacts_distance, k_angle, theta_0))
 
     print('len =', len(mapping))
 
-    with mp.Pool(1) as p:
-        # p.starmap(setup_config, mapping)
-        p.starmap(fit, mapping)
+    with mp.Pool(12) as p:
+        p.starmap(setup_config, mapping)
+        # p.starmap(fit, mapping)
         # p.starmap(check, mapping)
         # p.starmap(post_analysis, mapping)
         # p.starmap(cleanup, mapping)

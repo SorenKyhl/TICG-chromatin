@@ -382,7 +382,7 @@ class DatasetGenerator():
         grid_dict = {} # id : grid_size
         get_grid = False
         linear = False
-        poly3 = False; poly6_log = False
+        poly3 = False; poly6_log = False; poly8_log = False
         if 'grid' in self.diag_mode:
             get_grid = True
         if 'linear' in self.diag_mode:

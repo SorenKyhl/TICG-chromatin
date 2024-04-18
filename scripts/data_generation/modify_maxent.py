@@ -78,7 +78,7 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False, filte
     elif dataset in {'dataset_04_09_23', 'dataset_04_10_23',}:
         samples = range(1001, 1028)
         experimental = True
-    elif 'gm12878' in dataset:
+    elif dataset == 'dataset_gm12878_5k':
         samples = range(1, 42)
         experimental = True
     elif dataset == 'dataset_04_06_23':
@@ -99,6 +99,8 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False, filte
         samples = [1191, 1478, 4990, 5612, 3073, 1351, 4128, 2768, 9627, 4127, 1160, 8932, 2929, 7699, 6629]
     elif dataset in {'dataset_12_12_23_imr90', "dataset_02_14_24_imr90"}:
         samples = [1640, 1672, 3464, 831, 1651, 2678, 861, 3660, 267, 810, 2325, 2890]
+    elif dataset == "dataset_gm12878_25k":
+        samples = range(1, 11)
     else:
         samples = range(1, 11)
 
