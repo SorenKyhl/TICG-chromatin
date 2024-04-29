@@ -34,7 +34,6 @@ def get_samples(dataset):
     print(final_samples, cell_lines)
     return final_samples, cell_lines
 
-
 def loci_to_coords(loci, import_log, mode='b'):
     '''Convert loci tuple to genomic coords.'''
     chrom = int(import_log['chrom'])
@@ -63,5 +62,5 @@ def test_loci_to_coords():
 
 
 if __name__ == '__main__':
-    get_samples('dataset_12_06_23')
-    # test_loci_to_coords()
+    # get_samples('dataset_12_06_23')
+    test_loci_to_coords()

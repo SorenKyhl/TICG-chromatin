@@ -73,7 +73,8 @@ def lammps_load(filepath, save = False, N_min = None, N_max = None, down_samplin
     return xyz, x_arr
 
 def xyz_load(xyz_filepath, delim = '\t', multiple_timesteps = True, save = False,
-            N_min = 1, N_max = None, down_sampling = 1, verbose = True):
+            N_min = 1, N_max = None, down_sampling = 1,
+            verbose = True, throw_exception=True):
     t0 = time.time()
     xyz_npy_file = osp.join(osp.split(xyz_filepath)[0], 'xyz.npy')
     if osp.exists(xyz_npy_file):
@@ -93,7 +94,10 @@ def xyz_load(xyz_filepath, delim = '\t', multiple_timesteps = True, save = False
                         xyz_timestep[i, :] = [float(j) for j in line[1:4]]
                     except:
                         print(line)
-                        raise
+                        if throw_exception:
+                            raise
+                        else:
+                            return None
                     if i == N-1:
                         xyz.append(xyz_timestep)
                         xyz_timestep=np.empty((N, 3))
@@ -115,6 +119,38 @@ def xyz_load(xyz_filepath, delim = '\t', multiple_timesteps = True, save = False
         print(f'Loaded xyz with shape {xyz.shape}')
         print(f'time: {np.round(tf - t0, 3)} s')
     return xyz
+
+def xyz_load_cores(filepath, save = False, verbose = True):
+    t0 = time.time()
+    xyz_npy_file = osp.join(filepath, 'xyz.npy')
+    if osp.exists(xyz_npy_file):
+        xyz = np.load(xyz_npy_file)
+    else:
+        xyz = []
+        core_files = [f for f in os.listdir(filepath) if f.startswith('core')]
+        for core in core_files:
+            xyz_filepath = osp.join(filepath, core, 'output.xyz')
+            if verbose:
+                print(xyz_filepath)
+            xyz_core = xyz_load(xyz_filepath, verbose = verbose, save = True,
+                                throw_exception = False)
+            if xyz_core is not None:
+                xyz.append(xyz_core)
+
+        if verbose:
+            print(f'Using {len(xyz)} cores, each core is shape {xyz[0].shape}')
+
+        xyz = np.concatenate(xyz)
+        if save:
+            np.save(xyz_npy_file, xyz)
+
+    tf = time.time()
+    if verbose:
+        print(f'Loaded xyz with shape {xyz.shape}')
+        print(f'time: {np.round(tf - t0, 3)} s')
+
+    return xyz
+
 
 def xyz_write(xyz, outfile, writestyle, comment = '', x = None):
     '''
@@ -260,9 +296,10 @@ def calculate_rg_old(xyz, verbose=False):
         print('result', result)
     return result
 
-def calculate_rg(xyz, verbose=False):
+def calculate_rg(xyz, verbose=False, full_distribution=False):
     if len(xyz.shape) == 2:
         xyz.reshape(1, -1, 3)
+    N, m, _ = xyz.shape
 
     # this is equivalent
     # rgs = np.zeros(len(xyz))
@@ -276,16 +313,21 @@ def calculate_rg(xyz, verbose=False):
     xyz_mean = np.nanmean(xyz, axis = 1)
     xyz = np.transpose(xyz, (1, 0, 2)) # transpose so broadcasting works (m, N, 3)
     center = xyz - xyz_mean
-    delta_2 = np.nansum(center**2, 2)
-    rgs = np.sqrt(np.nanmean(delta_2, axis=0))
+    delta_2 = np.nansum(center**2, 2) # sum over spatial dimension
+    rgs = np.sqrt(np.nanmean(delta_2, axis=0)) # mean over particles
 
-    rg_mean = np.nanmean(rgs)
-    rg_std = np.nanstd(rgs)
-    result = (rg_mean, rg_std)
     if verbose:
         print('rgs', rgs)
-        print('result', result)
-    return result
+
+    if full_distribution:
+        return rgs
+    else:
+        rg_mean = np.nanmean(rgs)
+        rg_std = np.nanstd(rgs)
+        result = (rg_mean, rg_std)
+        if verbose:
+            print('result', result)
+        return result
 
 def calculate_rg_matrix(xyz, ofile=None, verbose=False):
     N, m, _ = xyz.shape
@@ -312,10 +354,12 @@ def time_contact_distance():
     xyz_to_contact_distance(xyz, 0.5, verbose=True)
 
 def compare_python_to_cpp():
-    dir = '/home/erschultz/dataset_bonded/boundary_spheroid_2.0/bond_type_gaussian/m_512/bond_length_180/v_8/angle_0'
+    dir = osp.join('/home/erschultz/dataset_bonded/boundary_spheroid_2.0',
+                    'bond_type_gaussian/m_512/bond_length_180/v_8/angle_0')
     y_cpp = None
     xyz = xyz_load(osp.join(dir, 'production_out/output.xyz'))
-    dir = '/home/erschultz/dataset_06_29_23/samples/sample1/optimize_distance_b_180_v_8_spheroid_1.5-max_ent10/iteration0'
+    dir = osp.join('/home/erschultz/dataset_06_29_23/samples/sample1/',
+                    'optimize_distance_b_180_v_8_spheroid_1.5-max_ent10/iteration0')
     # y_cpp = np.load(osp.join(dir, 'y.npy'))
     config = load_json(osp.join(dir, 'config.json'))
     cutoff = config['distance_cutoff']
@@ -338,15 +382,16 @@ def compare_python_to_cpp():
     plt.show()
 
 def test_calc_rg():
-    N = 30
-    m = 512
+    N = 1
+    m = 15
+    np.random.seed(12)
     xyz = np.random.rand(N*m*3).reshape(N, m, 3)
     print('xyz', xyz.shape)
-    # t0 = time.time()
-    # mean, _ = calculate_rg(xyz)
-    # tf = time.time()
-    # print_time(t0, tf, 'calculate_rg')
-    # print(mean)
+    t0 = time.time()
+    mean, _ = calculate_rg(xyz)
+    tf = time.time()
+    print_time(t0, tf, 'calculate_rg')
+    print(mean)
 
     # t0 = time.time()
     # mean, _ = calculate_rg_old(xyz)
@@ -355,14 +400,53 @@ def test_calc_rg():
     # print(mean)
 
     t0 = time.time()
-    rg_arr = calculate_rg_matrix(xyz[:100], verbose=True)
+    # rg_arr = calculate_rg_matrix(xyz[:100], verbose=True)
     # print(rg_arr)
     tf = time.time()
     print_time(t0, tf, 'calculate_rg_matrix')
 
+def Q_similarity(D1, D2, delta, diff=False):
+    """
+    Calculate Q collective variable given distances matrices D1, D2.
 
+    Inputs:
+        D1, D2: distance matrices for two individual configurations
+        delta: resolution length scale
+        diff: True to return 1 - Q
+    """
+    assert len(D1) == len(D1)
+    m = len(D1) # number of particles
+
+    D_diff = D1-D2
+    D_diff_squared = D_diff ** 2
+    denom = 2 * delta**2
+    values = np.exp(-D_diff_squared/denom)
+    triu_ind = np.triu_indices(m, 1)
+    Q = np.nanmean(values[triu_ind])
+
+    if diff:
+        return 1 - Q
+    else:
+        return Q
+
+def test_Q():
+    m = 10
+    D1 = np.random.normal(size=(m,m))
+    D1[0, 5] = np.nan
+    D2 = np.random.normal(size=(m,m))
+
+    # print(D1)
+    Q = Q_similarity(D1, D2, delta = 165)
+    print(Q)
+
+def test_load_cores():
+    dir = '/home/erschultz/soren_scaleup/20k-1k/final-20480'
+    xyz = xyz_load_cores(dir)
+    print(xyz.shape)
 
 if __name__ == '__main__':
     # time_contact_distance()
-    test_calc_rg()
+    # test_calc_rg()
+    # test_Q()
+    test_load_cores()
     # compare_python_to_cpp()

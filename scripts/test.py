@@ -20,10 +20,6 @@ import torch_geometric
 from data_generation.modify_maxent import get_samples
 from makeLatexTable import getArgs, load_data
 from max_ent_setup.get_params import GetEnergy
-from scipy.ndimage import uniform_filter
-from sklearn.decomposition import PCA
-from sklearn.metrics import mean_squared_error
-
 from pylib.utils import default, epilib, hic_utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
@@ -33,6 +29,9 @@ from pylib.utils.similarity_measures import SCC
 from pylib.utils.utils import (load_import_log, load_json, make_composite,
                                pearson_round, triu_to_full)
 from pylib.utils.xyz import xyz_load, xyz_to_distance
+from scipy.ndimage import uniform_filter
+from sklearn.decomposition import PCA
+from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.knightRuiz import knightRuiz
@@ -1099,6 +1098,20 @@ def test_tile():
     r = np.tile(b, (4,1)).reshape(4, 2, 2)
     print(r, r.shape)
 
+def cleanup():
+    dir = '/home/erschultz/dataset_12_06_23'
+    samples, _ = get_samples(dir, test=True)
+    for s in samples:
+        s_dir = osp.join(dir, 'samples', f'sample{s}')
+        for f in os.listdir(s_dir):
+            f_dir = osp.join(s_dir, f)
+            if 'GNN' in f_dir:
+                pos = f.find('GNN')
+                id = int(f[pos+3:pos+6])
+                if id < 690:
+                    shutil.rmtree(f_dir)
+
+
 if __name__ == '__main__':
     # test_tile()
     # make_small('dataset_12_06_23')
@@ -1110,4 +1123,5 @@ if __name__ == '__main__':
     # check_dataset('dataset_10_12_23')
     # compare_gnn_p_s('dataset_02_04_23', 579)
     # compare_max_ent_p_s('dataset_02_04_23')
-    compare_p_s()
+    # compare_p_s()
+    cleanup()

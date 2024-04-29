@@ -25,10 +25,12 @@ sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import \
     get_final_max_ent_folder
 
+ROOT = '/home/erschultz'
+PROJECT2 = '/project2/depablo/erschultz'
 
 def max_ent_dataset(use_exp_hic=False):
     dataset = 'dataset_12_06_23'
-    data_dir = osp.join('/home/erschultz', dataset)
+    data_dir = osp.join(ROOT, dataset)
     odir = data_dir + '_max_ent_all'
     if use_exp_hic:
         odir += '_exp'
@@ -36,7 +38,9 @@ def max_ent_dataset(use_exp_hic=False):
         os.mkdir(odir)
         os.mkdir(osp.join(odir, 'samples'))
     samples = []
-    for cell_line in ['hap1', 'hela', 'kbm7', 'nhek', 'huvec', 'hmec', 'gm12878']:
+    all = ['hap1', 'hela', 'kbm7', 'nhek', 'huvec', 'hmec', 'gm12878']
+    other =  ['hap1', 'hela', 'kbm7', 'nhek', 'k562']
+    for cell_line in all:
         samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
         samples.extend(samples_cell_line)
 
@@ -79,7 +83,7 @@ def compute_pcs(dataset, cell_line):
 
         np.save(osp.join(chrom_dir, f'{fname}.npy'), seq)
 
-    data_dir = osp.join('/home/erschultz', dataset, f'chroms_{cell_line}')
+    data_dir = osp.join(ROOT, dataset, f'chroms_{cell_line}')
     for chrom in range(1, 22):
         print(chrom)
         chrom_dir = osp.join(data_dir, f'chr{chrom}')
@@ -102,7 +106,8 @@ def compute_pcs(dataset, cell_line):
 def load_pcs(dataset, import_log, mode, k, norm=False):
     cell_line = import_log['cell_line']
     chrom = import_log['chrom']
-    seq = np.load(f'/home/erschultz/{dataset}/chroms_{cell_line}/chr{chrom}/seq_{mode}.npy')
+    seq_file = osp.join(ROOT, dataset, f'chroms_{cell_line}/chr{chrom}/seq_{mode}.npy')
+    seq = np.load(seq_file)
 
     res = import_log['resolution']
     start = import_log['start'] // res
@@ -226,7 +231,7 @@ def check(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
 
 def post_analysis(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
         aspect_ratio=1, bond_type='gaussian', k=10, contacts_distance=False,
-        k_angle=0, theta_0=190):
+        k_angle=0, theta_0=180):
     root, _, _ = setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                                 aspect_ratio, bond_type, k, contacts_distance,
                                 k_angle, theta_0)
@@ -243,9 +248,11 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, v
                 verbose=True):
     if verbose:
         print(sample)
-    data_dir = f'/home/erschultz/{dataset}'
+    data_dir = osp.join(ROOT, dataset)
     if not osp.exists(data_dir):
-        data_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/', data_dir[1:])
+        data_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/', dataset)
+    if not osp.exists(data_dir):
+        data_dir = osp.join(PROJECT2, dataset)
     dir = osp.join(data_dir, f'{samples}/sample{sample}')
 
     bonded_config = default.bonded_config.copy()
@@ -323,7 +330,7 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, v
 
 def setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                 aspect_ratio, bond_type, k, contacts_distance,
-                k_angle, theta_0, verbose=True):
+                k_angle, theta_0, verbose=True, return_dir=False):
     if verbose:
         print(sample)
     dir, root, config = setup_config(dataset, sample, samples, bl, phi, v, vb,
@@ -372,19 +379,22 @@ def setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
     # config['grid_size'] = 200
 
     # config['diag_start'] = 10
-    root = osp.join(dir, f'{root}-max_ent{k}')
+    root = osp.join(dir, f'{root}-max_ent{k}_repeat')
     if osp.exists(root):
         # shutil.rmtree(root)
         if verbose:
-            print('WARNING: root exists')
-        return root, None, None
-    return root, config, y
+            print(f'WARNING: root exists: {root}')
+
+    if return_dir:
+        return dir, root, config, y
+    else:
+        return root, config, y
 
 
 def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
         aspect_ratio=1, bond_type='gaussian', k=10, contacts_distance=False,
         k_angle=0, theta_0=180):
-    dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
+    dir = osp.join(ROOT, dataset, samples, f'sample{sample}')
     root, config, y = setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                                 aspect_ratio, bond_type, k, contacts_distance,
                                 k_angle, theta_0)
@@ -419,12 +429,11 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
 def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
         aspect_ratio=1, bond_type='gaussian', k=10, contacts_distance=False,
         k_angle=0, theta_0=180):
-    dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
     root, _, _ = setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                                 aspect_ratio, bond_type, k, contacts_distance,
                                 k_angle, theta_0, False)
 
-    remove = False
+    remove = True
     if osp.exists(root):
         # if not osp.exists(osp.join(root, 'iteration1')):
         #     remove = True
@@ -439,23 +448,23 @@ def main():
     samples = None
     # dataset = 'dataset_HIRES'; samples = [1, 2, 3, 4]
     # dataset = 'Su2020'; samples = ['1013_rescale1', '1004_rescale1']
-    # dataset = 'dataset_12_06_23'
-    dataset = 'dataset_gm12878_25k'
+    dataset = 'dataset_12_06_23'
+    # dataset = 'dataset_HCT116_RAD21_KO'
+    # dataset = 'dataset_gm12878_25k'
     # dataset = 'dataset_11_21_23_imr90'; samples = range(1, 16)
     # dataset='dataset_HCT116_RAD21_KO'; samples=range(1,9)
 
     if samples is None:
         samples = []
-        for cell_line in ['gm12878']:
-            # , 'hela', 'k562', 'kbm7', 'nhek'
-            samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
-            samples.extend(samples_cell_line[:10])
-            # samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
+        for cell_line in ['imr90', 'gm12878', 'hmec', 'huvec', 'hap1']:
+            # samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
             # samples.extend(samples_cell_line)
+            samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
+            samples.extend(samples_cell_line)
 
         print(samples)
 
-    # dataset = 'dataset_12_06_23_max_ent_all_exp'
+    # dataset = 'dataset_12_06_23_max_ent_all'
 
     mapping = []
     k_angle=0;theta_0=180;b=180;ar=2.0;phi=None;v=4
@@ -463,8 +472,8 @@ def main():
     contacts_distance=False
     for i in samples:
         for v in [8]:
-            for b in [140]:
-                for ar in [1.0]:
+            for b in [200]:
+                for ar in [1.5]:
                     for k in [10]:
                         for k_angle in [0]:
                             for bond_type in ['gaussian']:
@@ -473,10 +482,10 @@ def main():
 
     print('len =', len(mapping))
 
-    with mp.Pool(12) as p:
-        p.starmap(setup_config, mapping)
+    with mp.Pool(1) as p:
+        # p.starmap(setup_config, mapping)
         # p.starmap(fit, mapping)
-        # p.starmap(check, mapping)
+        p.starmap(check, mapping)
         # p.starmap(post_analysis, mapping)
         # p.starmap(cleanup, mapping)
 

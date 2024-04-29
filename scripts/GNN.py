@@ -26,42 +26,56 @@ from sequences_to_contact_maps.result_summary_plots import \
 
 sys.path.append('/home/erschultz/TICG-chromatin')
 from scripts.data_generation.modify_maxent import get_samples
-from scripts.max_ent import setup_config
+from scripts.max_ent import setup_config, setup_max_ent
 
 
-def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
-    print(sample)
-    mode = 'grid'
-    dir = f'/home/erschultz/{dataset}/{sub_dir}/sample{sample}'
-    y = np.load(osp.join(dir, 'y.npy')).astype(np.float64)
-    y /= np.mean(np.diagonal(y))
-    np.fill_diagonal(y, 1)
-    m = len(y)
-
-    root, config = setup_config(dataset, sample, sub_dir, b, phi, v, None, ar)
-    k=10
-    config['nspecies'] = k
-    config['dump_frequency'] = 10000
-    config['nbeads'] = m
-    config['dump_observables'] = True
-
-    gnn_root = f'{root}-GNN{GNN_ID}-max_ent'
-    if osp.exists(gnn_root):
-        # shutil.rmtree(gnn_root)
-        print('WARNING: root exists')
-        return
-    os.mkdir(gnn_root, mode=0o755)
-
+def run_GNN(GNN_ID, gnn_root, m, dir, root, sub_dir):
     # sleep for random # of seconds so as not to overload gpu
-    sleep(np.random.rand()*10)
+    sleep_time = (np.random.uniform())*15
+    sleep(sleep_time)
+
+    t0 = time()
     model_path = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{GNN_ID}'
     log_file = osp.join(gnn_root, 'energy.log')
     ofile = osp.join(gnn_root, 'S.npy')
     args_str = f'--m {m} --gnn_model_path {model_path} --sample_path {dir} --bonded_path {root} --sub_dir {sub_dir} --ofile {ofile}'
-    # using subprocess gaurantees that pytorch can't keep an GPU vram cached
-    sp.run(f"python3 /home/erschultz/TICG-chromatin/scripts/get_params.py {args_str} > {log_file}",
+    # using subprocess gaurantees that pytorch can't keep any GPU vram cached
+    print('line 43')
+    sp.run(f"python3 /home/erschultz/TICG-chromatin/scripts/max_ent_setup/get_params.py {args_str} > {log_file}",
             shell=True)
+    tf = time()
+    utils.print_time(t0, tf, 'gnn')
+
+    if not osp.exists(ofile):
+        print(f'{ofile} does not exist, SKIPPING')
+        return
+
     S = np.load(ofile)
+    return S
+
+
+def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar, k=10):
+    print(sample)
+    mode = 'grid'
+    dir, root, config, y = setup_max_ent(dataset, sample, sub_dir, b, phi, v, None,
+                                ar, bond_type='gaussian',
+                                k=k, contacts_distance=False,
+                                k_angle=0, theta_0=180,
+                                verbose=False, return_dir=True)
+    m = len(y)
+
+
+    gnn_root = f'{root}-GNN{GNN_ID}'
+    if osp.exists(gnn_root):
+        # shutil.rmtree(gnn_root)
+        print(f'WARNING: root exists: {gnn_root}')
+        return
+    os.mkdir(gnn_root, mode=0o755)
+
+    S = run_GNN(GNN_ID, gnn_root, m, dir, root, sub_dir)
+    if S is None:
+        return
+
     meanDist_S = DiagonalPreprocessing.genomic_distance_statistics(S, 'freq')
     D = calculate_D(meanDist_S)
     L = S - D
@@ -76,16 +90,7 @@ def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     config['chis'] = chi
 
 
-    config['diagonal_on'] = True
-    config['dense_diagonal_on'] = True
-    config["small_binsize"] = 1
-    if len(y) == 512:
-        config['n_small_bins'] = 64
-        config["n_big_bins"] = 16
-        config["big_binsize"] = 28
-
     diag_chis = np.zeros(config['n_small_bins']+config["n_big_bins"])
-
     left = 0
     right = left + config["small_binsize"]
     bin = 0
@@ -105,16 +110,13 @@ def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     all_chis = np.concatenate((chi_flat, diag_chis))
 
     params = default.params
-    goals = get_goals(y, None, config)
+    goals = get_goals(y, seqs, config)
     params["goals"] = goals
-    params['mode'] = 'diag'
     params['iterations'] = 20
-    params['parallel'] = 1
     params['equilib_sweeps'] = 10000
     params['production_sweeps'] = 300000
     params['stop_at_convergence'] = True
     params['conv_defn'] = 'normal'
-    params['run_longer_at_convergence'] = False
 
     stdout = sys.stdout
     with open(osp.join(gnn_root, 'log.log'), 'w') as sys.stdout:
@@ -124,7 +126,6 @@ def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
         t = me.fit()
         print(f'Simulation took {np.round(t, 2)} seconds')
     sys.stdout = stdout
-
 
 def fit(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     print(sample)
@@ -146,35 +147,20 @@ def fit(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     config['load_bead_types'] = False
     config['lmatrix_on'] = False
     config['dmatrix_on'] = False
-    config['dump_frequency'] = 10000
+    config['dump_frequency'] = 1000
     config['nbeads'] = m
     config["smatrix_filename"] = "smatrix.txt"
 
-    gnn_root = f'{root}-GNN{GNN_ID}'
+    gnn_root = f'{root}-GNN{GNN_ID}_xyz'
     if osp.exists(gnn_root):
         # shutil.rmtree(gnn_root)
         print('WARNING: root exists')
         return
     os.mkdir(gnn_root, mode=0o755)
 
-    # sleep for random # of seconds so as not to overload gpu
-    sleep_time = (np.random.uniform())*15
-    sleep(sleep_time)
-
-    t0 = time()
-    model_path = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{GNN_ID}'
-    log_file = osp.join(gnn_root, 'energy.log')
-    ofile = osp.join(gnn_root, 'S.npy')
-    args_str = f'--m {m} --gnn_model_path {model_path} --sample_path {dir} --bonded_path {root} --sub_dir {sub_dir} --ofile {ofile}'
-    # using subprocess gaurantees that pytorch can't keep any GPU vram cached
-    sp.run(f"python3 /home/erschultz/TICG-chromatin/scripts/max_ent_setup/get_params.py {args_str} > {log_file}",
-            shell=True)
-    tf = time()
-    utils.print_time(t0, tf, 'gnn')
-    if not osp.exists(ofile):
-        print(f'{ofile} does not exist, SKIPPING')
+    S = run_GNN(GNN_ID, gnn_root, m, dir, root, sub_dir)
+    if S is None:
         return
-    S = np.load(ofile)
 
     stdout = sys.stdout
     with open(osp.join(gnn_root, 'log.log'), 'w') as sys.stdout:
@@ -247,10 +233,27 @@ def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
             shutil.rmtree(gnn_root)
             print(f'removing {gnn_root}')
 
+def rename(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
+    mode = 'grid'
+    root = f"optimize_{mode}"
+    if phi is not None:
+        assert v is None
+        root = f"{root}_b_{b}_phi_{phi}"
+    else:
+        root = f"{root}_b_{b}_v_{v}"
+    if ar != 1:
+        root += f"_spheroid_{ar}"
+    dir = f'/home/erschultz/{dataset}/{sub_dir}/sample{sample}'
+    root = osp.join(dir, root)
+    gnn_root = f'{root}-GNN{GNN_ID}'
+    if osp.exists(gnn_root):
+        os.rename(gnn_root, f'{root}_GNN{GNN_ID}')
+
 def main():
     samples=None
     # dataset = 'dataset_HIRES'; samples = [1, 2, 3, 4]
-    dataset='dataset_12_06_23';
+    # dataset='dataset_12_06_23';
+    dataset='dataset_HCT116_RAD21_KO'
     # samples = [441, 81, 8, 578, 368, 297, 153, 510, 225]
     # dataset='dataset_12_12_23_imr90'
     # dataset='dataset_02_14_24_imr90'
@@ -264,30 +267,31 @@ def main():
 
     if samples is None:
         samples = []
-        for cell_line in ['imr90']:
+        for cell_line in ['hct116']:
             samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
-            samples.extend(samples_cell_line)
+            samples.extend(samples_cell_line[:10])
             # samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
             # samples.extend(samples_cell_line)
 
             print(len(samples))
 
-    GNN_IDs = [710]; b=200; phi=None; v=8; ar=1.5
+    GNN_IDs = [690]; b=200; phi=None; v=8; ar=1.5
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
 
-    print(samples)
-    print(len(mapping))
+    print(f'samples: {samples}')
+    print(f'len of mapping: {len(mapping)}')
     # print(mapping)
 
-    # with mp.Pool(5) as p:
+    with mp.Pool(10) as p:
         # p.starmap(cleanup, mapping)
-        # p.starmap(fit, mapping)
+        p.starmap(fit, mapping)
 
     for i in mapping:
         # fit_max_ent(*i);
         check(*i)
+        # rename(*i)
 
 if __name__ == '__main__':
     mp.set_start_method('spawn')

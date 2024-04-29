@@ -7,7 +7,7 @@ from pylib.utils import epilib
 from pylib.utils.plotting_utils import (RED_CMAP, plot_matrix,
                                         plot_matrix_layout)
 from pylib.utils.utils import load_import_log
-from pylib.utils.xyz import calculate_rg, xyz_load
+from pylib.utils.xyz import calculate_rg, xyz_load, xyz_load_cores
 from sklearn.cluster import KMeans
 from utils import get_samples
 
@@ -84,7 +84,6 @@ def compartments():
         else:
             mean_arr = np.zeros((N, m))
             std_arr = np.zeros((N, m))
-            length = int(m/size)
             X = np.linspace(0, m, m)
             for j, xyz in enumerate(xyz_list):
                 left = 0; right = left + size; i=0
@@ -170,7 +169,6 @@ def genes():
 
     window_sizes = [16, 32, 64]
     for i, size in enumerate(window_sizes):
-        length = int(m/size)
         X = np.linspace(size, m-size, m).astype(int)
 
         rg_list = []
@@ -234,11 +232,10 @@ def cell_lines():
         pc1 = epilib.get_pcs(epilib.get_oe(y), 1, normalize=True).reshape(-1)
 
         xyz_file = osp.join(s_dir, gnn_root, 'production_out/output.xyz')
-        xyz = xyz_load(xyz_file, multiple_timesteps = True, N_min = 5, verbose = False)
+        xyz = xyz_load(xyz_file, multiple_timesteps = True, N_min = 5, verbose = True)
 
         window_sizes = [16, 32, 64]
         for i, size in enumerate(window_sizes):
-            length = int(m/size)
             X = np.linspace(size, m-size, m).astype(int)
 
             mean_arr = np.zeros(m)
@@ -264,9 +261,55 @@ def cell_lines():
             plt.savefig(osp.join(odir, f'pc1_vs_rg_{size}_{cell_line}.png'))
             plt.close()
 
+def soren_20k():
+    dir = '/home/erschultz/soren_scaleup/20k-1k/final-20480'
+    odir = '/home/erschultz/soren_scaleup/20k-1k/rg20k'
+    m = 20480
+    y = np.load(osp.join(dir, 'experimental_hic.npy'))
+
+    pc1 = epilib.get_pcs(epilib.get_oe(y), 1, normalize=True).reshape(-1)
+    plt.plot(pc1)
+    plt.ylabel('PC1', fontsize=16)
+    plt.savefig(osp.join(odir, 'pc1.png'))
+    plt.close()
+
+    xyz = xyz_load_cores(dir, save = True)
+
+    window_sizes = [1, 2, 4] # num of beads at coarse resolution
+    for i, size in enumerate(window_sizes):
+        print(size)
+        mean_arr = np.zeros(1024)
+        std_arr = np.zeros(1024)
+
+        left = 0; right = left + size; i=0
+        for i in range(1024):
+            if i % 100 == 0:
+                print(i)
+            # choose left and right such that left:right at 20k reslution is bead i at 1k resolution
+            left = i * 20
+            right = left + 19
+
+            # add window size
+            left_window = max(0, left - size * 10)
+            right_window = min(right + size * 10, m)
+
+            xyz_size = xyz[:, left_window:right_window, :]
+            mean, std = calculate_rg(xyz_size)
+            mean_arr[i] = mean
+            std_arr[i] = std
+
+        # density vs pc1
+        include = mean_arr != 0
+        plt.scatter(pc1[include], mean_arr[include])
+        plt.ylabel('Rg', fontsize=16)
+        plt.xlabel('PC1', fontsize=16)
+        plt.tight_layout()
+        plt.savefig(osp.join(odir, f'pc1_vs_rg_{size}.png'))
+        plt.close()
 
 
 if __name__ == '__main__':
     # compartments()
     # genes()
     cell_lines()
+    # soren_20k()

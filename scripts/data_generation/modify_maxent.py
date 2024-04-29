@@ -14,7 +14,8 @@ from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
                                       calculate_L, calculate_S)
 from pylib.utils.plotting_utils import plot_matrix
-from pylib.utils.utils import load_json, pearson_round, triu_to_full
+from pylib.utils.utils import (load_import_log, load_json, pearson_round,
+                               triu_to_full)
 from scipy.ndimage import gaussian_filter
 from scipy.optimize import curve_fit
 from scipy.stats import (beta, gamma, laplace, multivariate_normal, norm,
@@ -31,8 +32,8 @@ from scripts.max_ent_setup.get_params_old import Tester
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_import_log, load_L, load_max_ent_D,
-    load_max_ent_L, load_max_ent_S, load_psi)
+    get_final_max_ent_folder, load_L, load_max_ent_D, load_max_ent_L,
+    load_max_ent_S, load_psi)
 from sequences_to_contact_maps.scripts.plotting_utils import \
     plot_seq_continuous
 
@@ -80,6 +81,9 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False, filte
         experimental = True
     elif dataset == 'dataset_gm12878_5k':
         samples = range(1, 42)
+        experimental = True
+    elif dataset == 'dataset_HCT116_RAD21_KO':
+        samples = range(1, 68)
         experimental = True
     elif dataset == 'dataset_04_06_23':
         samples = range(1001, 1286)

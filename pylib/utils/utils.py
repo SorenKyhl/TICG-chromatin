@@ -43,6 +43,8 @@ def load_import_log(dir, obj=None):
                 url = line[0]
                 url_split = url.split('/')
                 cell_line = url_split[-3]
+                if cell_line.lower() == 'gse104333':
+                    cell_line = 'HCT116'
             elif line[0] == 'chrom':
                 chrom = line[1]
             elif line[0] == 'start':
@@ -405,3 +407,10 @@ def newton_trust_region(gradient, hessian, trust_region, log=False):
 
             lamda = lamda + (p@p)/(q@q) * (np.linalg.norm(p) - trust_region)/trust_region
         return p
+
+def test_import():
+    result = load_import_log('/home/erschultz/dataset_HCT116_RAD21_KO/samples/sample47')
+    print(result)
+
+if __name__ == '__main__':
+    test_import()

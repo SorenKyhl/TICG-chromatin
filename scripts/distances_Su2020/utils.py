@@ -444,14 +444,13 @@ def compare_dist_distribution_a_b(sample):
 def xyz_to_dist2():
     '''Convert experimental xyz to distance map.'''
     chr=21
-    dir = '/home/erschultz/Su2020/samples/sample1'
-    log_file = osp.join(dir, 'xyz_to_dist2.log')
+    dir = '/home/erschultz/Su2020/Bintu/K562'
+    log_file = osp.join(dir, 'xyz_to_dist.log')
     log_file = open(log_file, 'w')
     file = osp.join(dir, f'chromosome{chr}-28-30Mb.csv')
-    xyz_file = osp.join(dir, 'xyz2.npy')
-    coords_file = osp.join(dir, 'coords2.json')
+    print('ifile: ', file)
 
-    num_coords=65
+    num_coords = 65
 
     # create xyz_file
     # count number of cells
@@ -483,6 +482,7 @@ def xyz_to_dist2():
             cell -= 1
 
             xyz[cell, i, :] = [x, y, z]
+    xyz_file = osp.join(dir, 'xyz2.npy')
     np.save(xyz_file, xyz)
 
     print(xyz[0])
@@ -1521,7 +1521,7 @@ if __name__ == '__main__':
     # tsv_to_npy()
     # test_pcs()
     # load_exp_gnn_pca(osp.join(dir, 'samples/sample1002'))
-    # xyz_to_dist2()
+    xyz_to_dist2()
     # xyz_to_xyz()
     # compare_D_to_sim_D(10)
     # compare_diagonal(1013, 434)
@@ -1534,7 +1534,7 @@ if __name__ == '__main__':
     # compare_dist_distribution_a_b()
     # compare_dist_distribution_plaid(1013, None, 261, 0.01)
     # compare_rg('1004_rescale1', None, b=200, phi=None, v=8, ar=1.5)
-    compare_rg_pos('1004_rescale1', 690, b=200, phi=None, v=8, ar=1.5)
+    # compare_rg_pos('1004_rescale1', 690, b=200, phi=None, v=8, ar=1.5)
     # compare_rg_matrix('1004_rescale1', 631, b=200, phi=None, v=8, ar=1.5)
     # compare_dist_ij(1004, None, b=200, v=8, ar=1.5)
     # jsd(1004, 631, b=200, v=8, ar=1.5)

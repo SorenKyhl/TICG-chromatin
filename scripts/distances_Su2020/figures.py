@@ -70,7 +70,7 @@ def old_figure(sample, GNN_ID, bl=140, phi=0.03, ar=1.0):
     letter_fontsize=26
     dir = f'/home/erschultz/Su2020/samples/sample{sample}'
     D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=bl, phi=phi, ar=ar, mode='mean')
-    D2 = np.load('/home/erschultz/Su2020/samples/sample1/dist2_mean.npy')
+    D2 = np.load('/home/erschultz/Su2020/Bintu/dist2_mean.npy')
     nan_rows = np.isnan(D[0])
     D_no_nan = D[~nan_rows][:, ~nan_rows] # ignore nan_rows
     alpha_pca = 1; alpha_gnn = 1
@@ -308,7 +308,7 @@ def new_figure(sample, GNN_ID, bl=140, phi=None, v=None, ar=1.0):
     dir = osp.join(data_dir, f'samples/sample{sample}')
     D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=bl, phi=phi, v=v, ar=ar, mode='mean')
     m = len(D)
-    D2 = np.load('/home/erschultz/Su2020/samples/sample1/dist2_mean.npy')
+    D2 = np.load('/home/erschultz/Su2020/Bintu/dist2_mean.npy')
     nans = np.isnan(D)
     nan_rows = np.zeros(m).astype(bool)
     nan_rows[np.sum(nans, axis=0) == m] = True
@@ -659,7 +659,7 @@ def both_chroms_figure(GNN_ID, bl=None, phi=None, v=None, ar=1):
 
         # plot scaling
         m = len(D)
-        D2 = np.load('/home/erschultz/Su2020/samples/sample1/dist2_mean.npy')
+        D2 = np.load('/home/erschultz/Su2020/Bintu/dist2_mean.npy')
         data = zip([D, D2, D_pca, D_gnn],
                     ['Experiment (50 kb)', 'Experiment (30 kb)', 'Max Ent', 'GNN'],
                     ['k', 'k', 'b', 'r'],
@@ -948,7 +948,6 @@ def jsd_figure(GNN_ID, b, v, ar):
     plt.tight_layout()
     plt.savefig('/home/erschultz/TICG-chromatin/figures/both_chroms_jsd.png')
     plt.close()
-
 
 
 if __name__ == '__main__':

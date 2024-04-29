@@ -16,14 +16,15 @@ from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
                                       calculate_L, calculate_S)
 from pylib.utils.similarity_measures import SCC, genome_disco, hic_spector
-from pylib.utils.utils import load_json, print_time, triu_to_full
+from pylib.utils.utils import (load_import_log, load_json, print_time,
+                               triu_to_full)
 from scipy.stats import pearsonr
 from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (
-    get_converged_max_ent_folder, get_final_max_ent_folder, load_import_log,
-    load_L, load_max_ent_chi, load_psi, load_Y)
+    get_converged_max_ent_folder, get_final_max_ent_folder, load_L,
+    load_max_ent_chi, load_psi, load_Y)
 from sequences_to_contact_maps.scripts.utils import load_time_dir
 
 
@@ -94,7 +95,7 @@ def load_data(args):
 
     converged_mask = np.ones(len(args.samples)).astype(bool)
 
-    bad_methods = ['angle', '_old', '0.006', '0.06', 'bound', 'init_diag', "_repeat"]
+    bad_methods = ['angle', '_old', '0.006', '0.06', 'bound', 'init_diag']
     if args.bad_methods is not None:
         bad_methods.extend(args.bad_methods)
         print(f"bad methods: {bad_methods}")
@@ -137,7 +138,7 @@ def load_data(args):
                 continue
 
             method = fname
-            method_type = fname.split('-')[1]
+            method_type = '-'.join(fname.split('-')[1:])
             if method_type.startswith('GNN'):
                 GNN_ID = None
                 type_split = re.split('[-_]', method_type)
@@ -243,7 +244,6 @@ def load_data(args):
             else:
                 # method must be GNN or max_ent
                 continue
-
 
             # time
             if converged_it is None:
@@ -439,7 +439,7 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
             keys_labels = sort_method_keys(data[k].keys())
             for method, label in keys_labels:
                 dataset = None
-                if 'GNN' in method:
+                if 'GNN' in method and 'max_ent' not in method:
                     pos = method.find('GNN')
                     id = method[pos+3:]
                     id = id.split('-')[0]
@@ -610,13 +610,16 @@ def sort_method_keys(keys):
 
         return label
 
-    for method, label in zip(['max_ent', 'gnn'], ['Max Ent', 'GNN']):
-        key_labels = [] # list of (key, label) tuples of type method
-        for key in keys:
-            if method in key.lower():
-                key_labels.append((key, format(key, label)))
+    gnn_key_labels = [] # list of (key, label) tuples of type method
+    me_key_labels = []
+    for key in keys:
+        if 'max_ent' in key.lower():
+            me_key_labels.append((key, format(key, 'Max Ent')))
+        elif 'gnn' in key.lower():
+            me_key_labels.append((key, format(key, 'GNN')))
 
-        sorted_key_labels.extend(sorted(key_labels))
+    sorted_key_labels.extend(sorted(gnn_key_labels))
+    sorted_key_labels.extend(sorted(me_key_labels))
 
     return sorted_key_labels
 
@@ -719,29 +722,30 @@ if __name__ == '__main__':
     # dataset='dataset_02_14_24_imr90'
     # dataset='Su2020'; samples = [1013]
 
-    if samples is None:
+    if samples is None and sample is None:
         samples, _ = get_samples(dataset, test = True,
                                 filter_cell_lines=['imr90'])
         samples = samples
-    if len(samples) == 1:
+        print(samples, len(samples))
+    if samples is not None and len(samples) == 1:
         sample = samples[0]
         samples = None
-    print(samples, len(samples))
+
     data_dir = osp.join('/home/erschultz', dataset)
-    args = getArgs(data_folder = data_dir, sample=sample, samples = samples)
+    args = getArgs(data_folder = data_dir, sample = sample, samples = samples)
     args.experimental = True
     args.verbose = True
     args.convergence_definition = 'normal'
     args.test_significance = True
     args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', '_700k', 'phi',
                         'GNN579-max_ent', '-gd_gamma', 'distance', 'start', 'stat',
-                        'diagbins', 'binarize', 'chrom', 'grid200', 'long', 'strict']
-    for i in [1, 2,3,4,5,6,7,8,9, 11, 12, 13, 14, 15]:
+                        'diagbins', 'binarize', 'chrom', 'grid200', 'long', 'long5', 'strict']
+    for i in [1,2,3,4,5,6,7,8,9, 11,12,13,14,15]:
        args.bad_methods.append(f'max_ent{i}')
     # args.gnn_id = [434, 578, 579, 450, 451]
     # args.gnn_id = [600, 605, 606, 607, 608, 609, 610]
     # args.gnn_id = [579, 600, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620, 621, 622, 623, 624, 625]
-    args.gnn_id = [690]
+    args.gnn_id = []
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))
