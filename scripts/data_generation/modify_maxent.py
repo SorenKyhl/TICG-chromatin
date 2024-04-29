@@ -38,6 +38,9 @@ from sequences_to_contact_maps.scripts.plotting_utils import \
     plot_seq_continuous
 
 LETTERS = 'ABCDEFGHIJKLMN'
+ROOT = '/home/erschultz'
+PROJECT2 = '/project2/depablo/erschultz'
+
 
 def get_samples(dataset, train=False, test=False, return_cell_lines=False, filter_cell_lines=None):
     '''
@@ -114,7 +117,10 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False, filte
         for s in samples:
             s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{s}')
             if not osp.exists(s_dir):
-                s_dir = '/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/' + s_dir
+                s_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c', s_dir)
+            if not osp.exists(s_dir):
+                s_dir = osp.join(PROJECT2, s_dir)
+
             result = load_import_log(s_dir)
             chrom = int(result['chrom'])
             cell_line = result['cell_line']

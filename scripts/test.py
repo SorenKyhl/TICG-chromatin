@@ -641,13 +641,14 @@ def make_small(dataset):
     if not osp.exists(odir):
         os.mkdir(odir)
     for s in os.listdir(dir):
+        if 'sample' not in s:
+            continue
         s_dir_grid = osp.join(dir, s, grid_root)
         s_odir = osp.join(odir, s)
-        if not osp.exists(s_odir):
-            os.mkdir(s_odir)
+        shutil.copyfile( osp.join(dir, s, 'y.npy'), osp.join(s_odir, 'y.npy'))
+        shutil.copyfile( osp.join(dir, s, 'import.log'), osp.join(s_odir, 'import.log'))
         s_odir_grid = osp.join(s_odir, grid_root)
-        if not osp.exists(s_odir_grid):
-            os.mkdir(s_odir_grid)
+        os.makedirs(s_odir_grid, exist_ok=True)
         for f in ['y.npy', 'grid.txt']:
             source_file = osp.join(s_dir_grid, f)
             if osp.exists(source_file):
@@ -1114,7 +1115,7 @@ def cleanup():
 
 if __name__ == '__main__':
     # test_tile()
-    # make_small('dataset_12_06_23')
+    make_small('dataset_12_06_23')
     # data_corr()
     # plot_triu_low_res()
     # distance_cutoff_diag_chis()
@@ -1124,4 +1125,4 @@ if __name__ == '__main__':
     # compare_gnn_p_s('dataset_02_04_23', 579)
     # compare_max_ent_p_s('dataset_02_04_23')
     # compare_p_s()
-    cleanup()
+    # cleanup()
