@@ -3,8 +3,9 @@
 #SBATCH --output=logFiles/max_ent.out
 #SBATCH --time=24:00:00
 #SBATCH --account=pi-depablo
-#SBATCH --partition=amd
-#SBATCH --ntasks=128
+#SBATCH --partition=depablo
+#SBATCH --ntasks=48
+#SBATCH --nodes=1
 #SBATCH --mem-per-cpu=2000
 #SBATCH --mail-type=END
 #SBATCH --mail-user=erschultz@uchicago.edu
