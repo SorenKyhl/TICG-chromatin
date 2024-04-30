@@ -7,6 +7,7 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 import pylib.analysis as analysis
 from pylib.Maxent import Maxent
 from pylib.Pysim import Pysim
@@ -27,6 +28,7 @@ from sequences_to_contact_maps.scripts.load_utils import \
 
 ROOT = '/home/erschultz'
 PROJECT2 = '/project2/depablo/erschultz'
+MEDIA = '/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/'
 
 def max_ent_dataset(use_exp_hic=False):
     dataset = 'dataset_12_06_23'
@@ -229,9 +231,9 @@ def check(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
         print(f'{root}: not started')
 
 
-def post_analysis(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
-        aspect_ratio=1, bond_type='gaussian', k=10, contacts_distance=False,
-        k_angle=0, theta_0=180):
+def post_analysis(dataset, sample, samples='samples', bl=140, phi=0.03, v=None,
+        vb=None, aspect_ratio=1, bond_type='gaussian', k=10,
+        contacts_distance=False, k_angle=0, theta_0=180):
     root, _, _ = setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                                 aspect_ratio, bond_type, k, contacts_distance,
                                 k_angle, theta_0)
@@ -242,15 +244,14 @@ def post_analysis(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, 
     sys.stdout = stdout
 
 
-def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
-                aspect_ratio=1.0, bond_type='gaussian', k=None, contacts_distance=False,
-                k_angle=0, theta_0=180,
-                verbose=True):
+def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None,
+                vb=None, aspect_ratio=1.0, bond_type='gaussian', k=None,
+                contacts_distance=False, k_angle=0, theta_0=180, verbose=True):
     if verbose:
         print(sample)
     data_dir = osp.join(ROOT, dataset)
     if not osp.exists(data_dir):
-        data_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/', dataset)
+        data_dir = osp.join(MEDIA, dataset)
     if not osp.exists(data_dir):
         data_dir = osp.join(PROJECT2, dataset)
     dir = osp.join(data_dir, f'{samples}/sample{sample}')

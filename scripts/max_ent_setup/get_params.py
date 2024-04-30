@@ -188,7 +188,8 @@ class GetEnergy():
 
         energy = yhat.cpu().detach().numpy().reshape((opt.m,opt.m))
         if verbose:
-            # print(f'Took {num_it} iterations')
+            if use_gpu:
+                print(f'Took {num_it} iterations')
             print('energy', energy)
 
 

@@ -9,8 +9,9 @@ import sys
 from time import sleep, time
 
 import numpy as np
-import pylib.analysis as analysis
 import torch
+
+import pylib.analysis as analysis
 # from data_generation.modify_maxent import get_samples
 # from max_ent import setup_config
 from pylib.Maxent import Maxent
@@ -27,23 +28,38 @@ from sequences_to_contact_maps.result_summary_plots import \
 sys.path.append('/home/erschultz/TICG-chromatin')
 from scripts.data_generation.modify_maxent import get_samples
 from scripts.max_ent import setup_config, setup_max_ent
+from scripts.max_ent_setup.get_params import GetEnergy
 
 ROOT = '/home/erschultz'
-PROJECT2 = '/project2/depablo/erschultz'
 
-def run_GNN(GNN_ID, gnn_root, m, dir, root, sub_dir):
+def run_GNN(GNN_ID, gnn_root, m, dir, root, sub_dir, use_GPU=True, verbose=True):
     # sleep for random # of seconds so as not to overload gpu
-    sleep_time = (np.random.uniform())*15
-    sleep(sleep_time)
-
-    t0 = time()
-    model_path = osp.join(ROOT, 'sequences_to_contact_maps/results/ContactGNNEnergy', str(GNN_ID))
+    model_path = osp.join(ROOT, 'sequences_to_contact_maps/results/ContactGNNEnergy',
+                        str(GNN_ID))
     log_file = osp.join(gnn_root, 'energy.log')
     ofile = osp.join(gnn_root, 'S.npy')
-    args_str = f'--m {m} --gnn_model_path {model_path} --sample_path {dir} --bonded_path {root} --sub_dir {sub_dir} --ofile {ofile} --use_gpu false --verbose true'
-    # using subprocess gaurantees that pytorch can't keep any GPU vram cached
-    sp.run(f"python3 {ROOT}/TICG-chromatin/scripts/max_ent_setup/get_params.py {args_str} > {log_file}",
-            shell=True)
+    if use_GPU:
+        sleep_time = (np.random.uniform())*15
+        sleep(sleep_time)
+        t0 = time()
+        args_str = f'--m {m} --gnn_model_path {model_path} --sample_path {dir}'
+        args_str += f' --bonded_path {root} --sub_dir {sub_dir} --ofile {ofile}'
+        args_str += f' --use_gpu true --verbose {verbose}'
+        # using subprocess gaurantees that pytorch can't keep any GPU vram cached
+        file = 'TICG-chromatin/scripts/max_ent_setup/get_params.py'
+        sp.run(f"python3 {ROOT}/{file} {args_str} > {log_file}",
+                shell=True)
+    else:
+        t0 = time()
+        getenergy = GetEnergy(m)
+        stdout = sys.stdout
+        with open(log_file, 'w') as sys.stdout:
+            S = getenergy.get_energy_gnn(model_path, dir,
+                                        bonded_path = root,
+                                        sub_dir = sub_dir, use_gpu = False,
+                                        verbose = verbose)
+            np.save(ofile, S)
+        sys.stdout = stdout
     tf = time()
     utils.print_time(t0, tf, 'gnn')
 
@@ -54,7 +70,6 @@ def run_GNN(GNN_ID, gnn_root, m, dir, root, sub_dir):
     S = np.load(ofile)
     return S
 
-
 def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar, k=10):
     print(sample)
     mode = 'grid'
@@ -64,7 +79,6 @@ def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar, k=10):
                                 k_angle=0, theta_0=180,
                                 verbose=False, return_dir=True)
     m = len(y)
-
 
     gnn_root = f'{root}-GNN{GNN_ID}'
     if osp.exists(gnn_root):
@@ -128,11 +142,9 @@ def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar, k=10):
         print(f'Simulation took {np.round(t, 2)} seconds')
     sys.stdout = stdout
 
-def fit(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
-    print(sample)
-    mode = 'grid'
-
-    dir, root, config = setup_config(dataset, sample, sub_dir, b, phi, v, None, ar)
+def setup_GNN(dataset, sample, sub_dir, b, phi, v, ar, GNN_ID):
+    dir, root, config = setup_config(dataset, sample, sub_dir, b, phi, v, None,
+                                    ar, verbose = False)
 
     y_file = osp.join(dir, 'y.npy')
     if not osp.exists(y_file):
@@ -148,18 +160,28 @@ def fit(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     config['load_bead_types'] = False
     config['lmatrix_on'] = False
     config['dmatrix_on'] = False
-    config['dump_frequency'] = 10000
+    config['dump_frequency'] = 1000
+    config['nSweeps'] = 3000
+    config['nSweeps_eq'] = 1000
     config['nbeads'] = m
     config["smatrix_filename"] = "smatrix.txt"
 
-    gnn_root = f'{root}-GNN{GNN_ID}'
+    gnn_root = f'{root}-GNN{GNN_ID}_test'
+
+    return dir, root, gnn_root, config, y
+
+def fit(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
+    print(sample)
+    mode = 'grid'
+
+    dir, root, gnn_root, config, y = setup_GNN(dataset, sample, sub_dir, b, phi, v, ar, GNN_ID)
+    m = len(y)
+
     if osp.exists(gnn_root):
-        # shutil.rmtree(gnn_root)
-        print('WARNING: root exists')
         return
     os.mkdir(gnn_root, mode=0o755)
 
-    S = run_GNN(GNN_ID, gnn_root, m, dir, root, sub_dir)
+    S = run_GNN(GNN_ID, gnn_root, m, dir, root, sub_dir, use_GPU=False)
     if S is None:
         return
 
@@ -167,30 +189,14 @@ def fit(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     with open(osp.join(gnn_root, 'log.log'), 'w') as sys.stdout:
         sim = Pysim(gnn_root, config, None, y, randomize_seed = True,
                     mkdir = False, smatrix = S)
-        t = sim.run_eq(10000, 300000, 1)
+        t = sim.run_eq(config['nSweeps_eq'], config['nSweeps'], 1)
         print(f'Simulation took {np.round(t, 2)} seconds')
 
         analysis.main_no_maxent(dir=sim.root)
     sys.stdout = stdout
 
 def check(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
-    mode = 'grid'
-    root = f"optimize_{mode}"
-    if phi is not None:
-        assert v is None
-        root = f"{root}_b_{b}_phi_{phi}"
-    else:
-        root = f"{root}_b_{b}_v_{v}"
-    if ar != 1:
-        root += f"_spheroid_{ar}"
-    data_dir = osp.join(ROOT, dataset)
-    if not osp.exists(data_dir):
-        data_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/', dataset)
-    if not osp.exists(data_dir):
-        data_dir = osp.join(PROJECT2, dataset)
-    dir = osp.join(data_dir, f'{sub_dir}/sample{sample}')
-    root = osp.join(dir, root)
-    gnn_root = f'{root}-GNN{GNN_ID}'
+    dir, _, gnn_root, config, y = setup_GNN(dataset, sample, sub_dir, b, phi, v, ar, GNN_ID)
     if osp.exists(gnn_root):
         production = osp.join(gnn_root, 'production_out')
         equilibration = osp.join(gnn_root, 'equilibration')
@@ -212,23 +218,7 @@ def check(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
         print(f"{gnn_root} not started")
 
 def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
-    mode = 'grid'
-    root = f"optimize_{mode}"
-    if phi is not None:
-        assert v is None
-        root = f"{root}_b_{b}_phi_{phi}"
-    else:
-        root = f"{root}_b_{b}_v_{v}"
-    if ar != 1:
-        root += f"_spheroid_{ar}"
-    data_dir = osp.join(ROOT, dataset)
-    if not osp.exists(data_dir):
-        data_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/', dataset)
-    if not osp.exists(data_dir):
-        data_dir = osp.join(PROJECT2, dataset)
-    dir = osp.join(data_dir, f'{sub_dir}/sample{sample}')
-    root = osp.join(dir, root)
-    gnn_root = f'{root}-GNN{GNN_ID}'
+    dir, _, gnn_root, config, y = setup_GNN(dataset, sample, sub_dir, b, phi, v, ar, GNN_ID)
     if osp.exists(gnn_root):
         remove = False
         if not osp.exists(osp.join(gnn_root, 'equilibration')):
@@ -242,23 +232,7 @@ def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
             print(f'removing {gnn_root}')
 
 def rename(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
-    mode = 'grid'
-    root = f"optimize_{mode}"
-    if phi is not None:
-        assert v is None
-        root = f"{root}_b_{b}_phi_{phi}"
-    else:
-        root = f"{root}_b_{b}_v_{v}"
-    if ar != 1:
-        root += f"_spheroid_{ar}"
-    data_dir = osp.join(ROOT, dataset)
-    if not osp.exists(data_dir):
-        data_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/', dataset)
-    if not osp.exists(data_dir):
-        data_dir = osp.join(PROJECT2, dataset)
-    dir = osp.join(data_dir, f'{sub_dir}/sample{sample}')
-    root = osp.join(dir, root)
-    gnn_root = f'{root}-GNN{GNN_ID}'
+    dir, _, gnn_root, config, y = setup_GNN(dataset, sample, sub_dir, b, phi, v, ar, GNN_ID)
     if osp.exists(gnn_root):
         os.rename(gnn_root, f'{root}_GNN{GNN_ID}')
 
@@ -272,19 +246,18 @@ def main():
     # dataset='dataset_02_14_24_imr90'
     # samples = [42, 114, 475, 331, 402, 543]
     # dataset = 'Su2020'; samples=['1013_rescale1', '1004_rescale1']
-    # dataset = 'dataset_06_29_23'; samples=[81]
     # dataset = 'dataset_11_20_23';
-    # dataset = 'dataset_11_21_23_imr90'; samples = range(16, 31)
-    # dataset = 'dataset_06_29_23'; samples = [1,2,3,4,5, 101,102,103,104,105, 601,602,603,604,605]
     mapping = []
 
     if samples is None:
         samples = []
         for cell_line in ['imr90']:
-            # samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
+            # samples_cell_line, _ = get_samples(dataset, train=True,
+            #                                     filter_cell_lines=cell_line)
             # samples.extend(samples_cell_line[:10])
-            samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
-            samples.extend(samples_cell_line)
+            samples_cell_line, _ = get_samples(dataset, test=True,
+                                                filter_cell_lines=cell_line)
+            samples.extend(samples_cell_line[:1])
 
             print(len(samples))
 
@@ -302,10 +275,11 @@ def main():
         # p.starmap(fit, mapping)
 
     for i in mapping:
-        # fit_max_ent(*i);
+        # fit_max_ent(*i)
         fit(*i)
-        check(*i)
+        # check(*i)
         # rename(*i)
+        # cleanup(*i)
 
 if __name__ == '__main__':
     mp.set_start_method('spawn')
