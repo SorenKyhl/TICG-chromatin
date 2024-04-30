@@ -28,6 +28,8 @@ sys.path.append('/home/erschultz/TICG-chromatin')
 from scripts.data_generation.modify_maxent import get_samples
 from scripts.max_ent import setup_config, setup_max_ent
 
+ROOT = '/home/erschultz'
+PROJECT2 = '/project2/depablo/erschultz'
 
 def run_GNN(GNN_ID, gnn_root, m, dir, root, sub_dir):
     # sleep for random # of seconds so as not to overload gpu
@@ -35,13 +37,12 @@ def run_GNN(GNN_ID, gnn_root, m, dir, root, sub_dir):
     sleep(sleep_time)
 
     t0 = time()
-    model_path = f'/home/erschultz/sequences_to_contact_maps/results/ContactGNNEnergy/{GNN_ID}'
+    model_path = osp.join(ROOT, 'sequences_to_contact_maps/results/ContactGNNEnergy', str(GNN_ID))
     log_file = osp.join(gnn_root, 'energy.log')
     ofile = osp.join(gnn_root, 'S.npy')
     args_str = f'--m {m} --gnn_model_path {model_path} --sample_path {dir} --bonded_path {root} --sub_dir {sub_dir} --ofile {ofile}'
     # using subprocess gaurantees that pytorch can't keep any GPU vram cached
-    print('line 43')
-    sp.run(f"python3 /home/erschultz/TICG-chromatin/scripts/max_ent_setup/get_params.py {args_str} > {log_file}",
+    sp.run(f"python3 {ROOT}/TICG-chromatin/scripts/max_ent_setup/get_params.py {args_str} > {log_file}",
             shell=True)
     tf = time()
     utils.print_time(t0, tf, 'gnn')
@@ -182,10 +183,12 @@ def check(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
         root = f"{root}_b_{b}_v_{v}"
     if ar != 1:
         root += f"_spheroid_{ar}"
-    data_dir = f'/home/erschultz/{dataset}'
+    data_dir = osp.join(ROOT, dataset)
     if not osp.exists(data_dir):
-        data_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/', data_dir[1:])
-    dir = osp.join(data_dir, f'{sub_dir}/sample{sample}')
+        data_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/', dataset)
+    if not osp.exists(data_dir):
+        data_dir = osp.join(PROJECT2, dataset)
+    dir = osp.join(data_dir, f'{samples}/sample{sample}')
     root = osp.join(dir, root)
     gnn_root = f'{root}-GNN{GNN_ID}'
     if osp.exists(gnn_root):
@@ -218,7 +221,12 @@ def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
         root = f"{root}_b_{b}_v_{v}"
     if ar != 1:
         root += f"_spheroid_{ar}"
-    dir = f'/home/erschultz/{dataset}/{sub_dir}/sample{sample}'
+    data_dir = osp.join(ROOT, dataset)
+    if not osp.exists(data_dir):
+        data_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/', dataset)
+    if not osp.exists(data_dir):
+        data_dir = osp.join(PROJECT2, dataset)
+    dir = osp.join(data_dir, f'{samples}/sample{sample}')
     root = osp.join(dir, root)
     gnn_root = f'{root}-GNN{GNN_ID}'
     if osp.exists(gnn_root):
@@ -243,7 +251,12 @@ def rename(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
         root = f"{root}_b_{b}_v_{v}"
     if ar != 1:
         root += f"_spheroid_{ar}"
-    dir = f'/home/erschultz/{dataset}/{sub_dir}/sample{sample}'
+    data_dir = osp.join(ROOT, dataset)
+    if not osp.exists(data_dir):
+        data_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/', dataset)
+    if not osp.exists(data_dir):
+        data_dir = osp.join(PROJECT2, dataset)
+    dir = osp.join(data_dir, f'{samples}/sample{sample}')
     root = osp.join(dir, root)
     gnn_root = f'{root}-GNN{GNN_ID}'
     if osp.exists(gnn_root):
@@ -252,8 +265,8 @@ def rename(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
 def main():
     samples=None
     # dataset = 'dataset_HIRES'; samples = [1, 2, 3, 4]
-    # dataset='dataset_12_06_23';
-    dataset='dataset_HCT116_RAD21_KO'
+    dataset='dataset_12_06_23';
+    # dataset='dataset_HCT116_RAD21_KO'
     # samples = [441, 81, 8, 578, 368, 297, 153, 510, 225]
     # dataset='dataset_12_12_23_imr90'
     # dataset='dataset_02_14_24_imr90'
@@ -267,11 +280,11 @@ def main():
 
     if samples is None:
         samples = []
-        for cell_line in ['hct116']:
-            samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
-            samples.extend(samples_cell_line[:10])
-            # samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
-            # samples.extend(samples_cell_line)
+        for cell_line in ['imr90']:
+            # samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
+            # samples.extend(samples_cell_line[:10])
+            samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
+            samples.extend(samples_cell_line)
 
             print(len(samples))
 
@@ -284,9 +297,9 @@ def main():
     print(f'len of mapping: {len(mapping)}')
     # print(mapping)
 
-    with mp.Pool(10) as p:
+    # with mp.Pool(10) as p:
         # p.starmap(cleanup, mapping)
-        p.starmap(fit, mapping)
+        # p.starmap(fit, mapping)
 
     for i in mapping:
         # fit_max_ent(*i);
