@@ -52,6 +52,10 @@ class GetEnergy():
                             help='name of samples directory')
         parser.add_argument('--ofile', type=str,
                             help='save file')
+        parser.add_argument('--verbose', type=AC.str2bool, default=False,
+                            help='True to verbose mode')
+        parser.add_argument('--use_gpu', type=AC.str2bool, default=True,
+                            help='True to GPU')
 
         args, _ = parser.parse_known_args()
         print('Args:')
@@ -59,7 +63,7 @@ class GetEnergy():
         return args
 
     def get_energy_gnn(self, model_path, sample_path, kr=False, bonded_path=None,
-                        sub_dir='samples', verbose=True,
+                        sub_dir='samples', use_gpu=True, verbose=True,
                         return_plaid_diag=False, return_model_data=False):
         '''
         Loads output from GNN model to use as energy matrix
@@ -156,24 +160,28 @@ class GetEnergy():
         if verbose:
             print(data)
 
-        num_it = 0
-        max_it = 15
-        vram = get_gpu_memory()
-        yhat = None
-        while yhat is None and num_it < max_it:
-            print(f'GPU vram: {vram}')
-            if vram > 3500:
-                model = model.to('cuda:0')
-                data = data.to('cuda:0')
-                with torch.no_grad():
-                    yhat = model(data, verbose=verbose)
-            else:
-                sleep(15)
-            num_it += 1
+        if use_gpu:
+            num_it = 0
+            max_it = 15
+            yhat = None
             vram = get_gpu_memory()
-        if num_it == max_it:
-            clean_directories(GNN_path = opt.root)
-            raise Exception(f'max_it exceeded: {opt.root}')
+            while yhat is None and num_it < max_it:
+                print(f'GPU vram: {vram}')
+                if vram > 3500:
+                    model = model.to('cuda:0')
+                    data = data.to('cuda:0')
+                    with torch.no_grad():
+                        yhat = model(data, verbose=verbose)
+                else:
+                    sleep(15)
+                num_it += 1
+                vram = get_gpu_memory()
+            if num_it == max_it:
+                clean_directories(GNN_path = opt.root)
+                raise Exception(f'max_it exceeded: {opt.root}')
+        else:
+            with torch.no_grad():
+                yhat = model(data, verbose=verbose)
         if torch.isnan(yhat).any():
             clean_directories(GNN_path = opt.root)
             raise Exception(f'nan in yhat: {opt.root}')
@@ -265,13 +273,13 @@ class Tester():
     def test_suite(self):
         self.test_energy_GNN()
 
-
 def main():
     args = GetEnergy.get_args()
     getenergy = GetEnergy(args.m)
     S = getenergy.get_energy_gnn(args.gnn_model_path, args.sample_path,
                                 bonded_path = args.bonded_path,
-                                sub_dir = args.sub_dir)
+                                sub_dir = args.sub_dir, use_gpu = args.use_gpu,
+                                verbose = args.verbose)
     np.save(args.ofile, S)
 
 
