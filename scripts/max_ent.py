@@ -482,16 +482,17 @@ def main():
 
     print('len =', len(mapping))
 
-    with mp.Pool(1) as p:
+    with mp.Pool(48) as p:
         # p.starmap(setup_config, mapping)
-        # p.starmap(fit, mapping)
-        p.starmap(check, mapping)
+        p.starmap(fit, mapping)
+        # p.starmap(check, mapping)
         # p.starmap(post_analysis, mapping)
         # p.starmap(cleanup, mapping)
 
-    # for i in mapping:
+    for i in mapping:
         #fit_max_ent(*i)
         # fit(*i)
+        check(*i)
 
 if __name__ == '__main__':
     # modify_maxent()

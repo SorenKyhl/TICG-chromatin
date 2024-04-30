@@ -119,7 +119,8 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False, filte
             if not osp.exists(s_dir):
                 s_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c', s_dir)
             if not osp.exists(s_dir):
-                s_dir = osp.join(PROJECT2, s_dir)
+                s_dir = osp.join(PROJECT2, dataset, f'samples/sample{s}')
+            assert(osp.exists(s_dir)), s_dir
 
             result = load_import_log(s_dir)
             chrom = int(result['chrom'])

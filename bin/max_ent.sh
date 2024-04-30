@@ -1,4 +1,4 @@
-#! bin/bash
+#! /bin/bash
 #SBATCH --job-name=max_ent
 #SBATCH --output=logFiles/max_ent.out
 #SBATCH --time=24:00:00

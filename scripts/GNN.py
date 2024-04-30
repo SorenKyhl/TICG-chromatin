@@ -40,7 +40,7 @@ def run_GNN(GNN_ID, gnn_root, m, dir, root, sub_dir):
     model_path = osp.join(ROOT, 'sequences_to_contact_maps/results/ContactGNNEnergy', str(GNN_ID))
     log_file = osp.join(gnn_root, 'energy.log')
     ofile = osp.join(gnn_root, 'S.npy')
-    args_str = f'--m {m} --gnn_model_path {model_path} --sample_path {dir} --bonded_path {root} --sub_dir {sub_dir} --ofile {ofile}'
+    args_str = f'--m {m} --gnn_model_path {model_path} --sample_path {dir} --bonded_path {root} --sub_dir {sub_dir} --ofile {ofile} --use_gpu false --verbose true'
     # using subprocess gaurantees that pytorch can't keep any GPU vram cached
     sp.run(f"python3 {ROOT}/TICG-chromatin/scripts/max_ent_setup/get_params.py {args_str} > {log_file}",
             shell=True)
@@ -148,11 +148,11 @@ def fit(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     config['load_bead_types'] = False
     config['lmatrix_on'] = False
     config['dmatrix_on'] = False
-    config['dump_frequency'] = 1000
+    config['dump_frequency'] = 10000
     config['nbeads'] = m
     config["smatrix_filename"] = "smatrix.txt"
 
-    gnn_root = f'{root}-GNN{GNN_ID}_xyz'
+    gnn_root = f'{root}-GNN{GNN_ID}'
     if osp.exists(gnn_root):
         # shutil.rmtree(gnn_root)
         print('WARNING: root exists')
@@ -188,7 +188,7 @@ def check(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
         data_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/', dataset)
     if not osp.exists(data_dir):
         data_dir = osp.join(PROJECT2, dataset)
-    dir = osp.join(data_dir, f'{samples}/sample{sample}')
+    dir = osp.join(data_dir, f'{sub_dir}/sample{sample}')
     root = osp.join(dir, root)
     gnn_root = f'{root}-GNN{GNN_ID}'
     if osp.exists(gnn_root):
@@ -226,7 +226,7 @@ def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
         data_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/', dataset)
     if not osp.exists(data_dir):
         data_dir = osp.join(PROJECT2, dataset)
-    dir = osp.join(data_dir, f'{samples}/sample{sample}')
+    dir = osp.join(data_dir, f'{sub_dir}/sample{sample}')
     root = osp.join(dir, root)
     gnn_root = f'{root}-GNN{GNN_ID}'
     if osp.exists(gnn_root):
@@ -256,7 +256,7 @@ def rename(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
         data_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/', dataset)
     if not osp.exists(data_dir):
         data_dir = osp.join(PROJECT2, dataset)
-    dir = osp.join(data_dir, f'{samples}/sample{sample}')
+    dir = osp.join(data_dir, f'{sub_dir}/sample{sample}')
     root = osp.join(dir, root)
     gnn_root = f'{root}-GNN{GNN_ID}'
     if osp.exists(gnn_root):
@@ -297,12 +297,13 @@ def main():
     print(f'len of mapping: {len(mapping)}')
     # print(mapping)
 
-    # with mp.Pool(10) as p:
+    # with mp.Pool(1) as p:
         # p.starmap(cleanup, mapping)
         # p.starmap(fit, mapping)
 
     for i in mapping:
         # fit_max_ent(*i);
+        fit(*i)
         check(*i)
         # rename(*i)
 

@@ -4,7 +4,7 @@
 #SBATCH --time=24:00:00
 #SBATCH --account=pi-depablo
 #SBATCH --partition=amd
-#SBATCH --ntasks=10
+#SBATCH --ntasks=8
 #SBATCH --mem-per-cpu=1000
 
 compress(){
@@ -31,7 +31,7 @@ compress(){
     cd production_out
     rm *.traj
   done
-
+ 
   # cd $dir
   # rm -r "${dataset}.tar.gz"
   # tar -czf "${dataset}.tar.gz" $dataset
@@ -74,8 +74,7 @@ cleanup(){
 }
 
 dir='/home/erschultz'
-dir='/project/depablo/erschultz'
+dir='/project2/depablo/erschultz'
 cd $dir
-compress dataset_02_27_24_imr90
-compress dataset_02_28_24_imr90
-compress dataset_02_29_24_imr90
+compress dataset_04_05_24_imr90
+compress dataset_04_18_24_imr90
