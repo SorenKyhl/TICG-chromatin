@@ -4,7 +4,10 @@ import os
 import os.path as osp
 import sys
 
-import cv2
+try:
+    import cv2  # opencv-python
+except ImportError as e:
+    pass
 import imageio
 import matplotlib.cm
 import matplotlib.colors

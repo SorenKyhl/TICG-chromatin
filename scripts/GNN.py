@@ -275,8 +275,8 @@ def main():
         # p.starmap(fit, mapping)
 
     for i in mapping:
-        # fit_max_ent(*i)
-        fit(*i)
+        fit_max_ent(*i)
+        # fit(*i)
         # check(*i)
         # rename(*i)
         # cleanup(*i)
