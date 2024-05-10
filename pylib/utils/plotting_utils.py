@@ -17,9 +17,6 @@ import seaborn as sns
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import calculate_diag_chi_step
 
-sys.path.append('/home/erschultz')
-from sequences_to_contact_maps.scripts.load_utils import load_Y
-
 RED_CMAP = matplotlib.colors.LinearSegmentedColormap.from_list('custom',
                                          [(0,    'white'),
                                           (1,    'red')], N=126)
