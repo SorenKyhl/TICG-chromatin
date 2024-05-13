@@ -22,9 +22,11 @@ from pylib.utils.plotting_utils import (BLUE_CMAP, BLUE_RED_CMAP,
                                         plot_mean_dist, rotate_bound)
 from pylib.utils.similarity_measures import SCC
 from pylib.utils.utils import load_import_log, pearson_round
-from pylib.utils.xyz import calculate_rg, xyz_load, xyz_to_distance, xyz_write
+from pylib.utils.xyz import (calculate_rg, calculate_rg_matrix, xyz_load,
+                             xyz_to_distance, xyz_write)
 from scipy.optimize import minimize
 from scipy.spatial import ConvexHull
+from scipy.spatial.distance import jensenshannon
 from scipy.stats import gaussian_kde
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
@@ -87,7 +89,6 @@ def load_exp_gnn_pca(dir, GNN_ID=None, b=180, phi=None, v=8, ar=1.5, mode='mean'
     np.save(osp.join(dir, 'D_crop.npy'), D)
     assert mode == 'mean', 'not implemented'
     return D, D_gnn, D_pca
-
 
 # plotting functions
 def plot_diagonal(exp, sim, ofile=None, height=30):
@@ -264,9 +265,9 @@ def find_volume():
     '''Find average volume of cells in dataset.'''
     dir = '/home/erschultz/Su2020/samples'
     odir = '/home/erschultz/TICG-chromatin/figures/distances'
-    s_dir = osp.join(dir, 'sample1013')
-    b = 180; phi = 0.008; ar=1.5
-    xyz_file = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}_spheroid_{ar}-max_ent5',
+    s_dir = osp.join(dir, 'sample1013_rescale1')
+    b = 200; v = 8; ar=1.5
+    xyz_file = osp.join(s_dir, f'optimize_grid_b_{b}_v_{v}_spheroid_{ar}-max_ent10',
                         'iteration30/production_out/output.xyz')
     xyz_sim = xyz_load(xyz_file, multiple_timesteps = True)
     N, m, _ = xyz_sim.shape
@@ -351,7 +352,7 @@ def find_volume():
                             bin_width))
 
     plt.xlim(None, np.nanpercentile(exp_hull, 99))
-    plt.title(f'b={b}, phi={phi}')
+    plt.title(f'b={b}, v={v}')
     plt.xlabel(r'Volume $\mu m^3$')
     plt.ylabel('Probability')
     plt.xlabel('Convex Hull of Structure')
@@ -443,14 +444,13 @@ def compare_dist_distribution_a_b(sample):
 def xyz_to_dist2():
     '''Convert experimental xyz to distance map.'''
     chr=21
-    dir = '/home/erschultz/Su2020/samples/sample1'
-    log_file = osp.join(dir, 'xyz_to_dist2.log')
+    dir = '/home/erschultz/Su2020/Bintu/K562'
+    log_file = osp.join(dir, 'xyz_to_dist.log')
     log_file = open(log_file, 'w')
     file = osp.join(dir, f'chromosome{chr}-28-30Mb.csv')
-    xyz_file = osp.join(dir, 'xyz2.npy')
-    coords_file = osp.join(dir, 'coords2.json')
+    print('ifile: ', file)
 
-    num_coords=65
+    num_coords = 65
 
     # create xyz_file
     # count number of cells
@@ -482,6 +482,7 @@ def xyz_to_dist2():
             cell -= 1
 
             xyz[cell, i, :] = [x, y, z]
+    xyz_file = osp.join(dir, 'xyz2.npy')
     np.save(xyz_file, xyz)
 
     print(xyz[0])
@@ -495,7 +496,6 @@ def xyz_to_dist2():
     print(D_mean, file = log_file)
     print('mean', np.nanmean(np.diagonal(D_mean, 1)), file = log_file)
     np.save(osp.join(dir, 'dist2_mean.npy'), D_mean)
-
 
     log_file.close()
 
@@ -863,8 +863,6 @@ def compare_d_maps(sample, GNN_ID):
     D_list = [D_gnn, D_pca, D]
     labels = ['GNN', 'Max Ent', 'Experiment']
 
-
-
     fig, ax = plt.subplots(1, 3, gridspec_kw={'width_ratios':[1,1,1]})
     fig.set_figheight(6)
     fig.set_figwidth(6*2.5)
@@ -896,7 +894,7 @@ def compare_d_maps(sample, GNN_ID):
     plt.savefig(osp.join(dir, 'D_PCA_vs_GNN.png'))
     plt.close()
 
-def compare_rg(sample, GNN_ID, b, phi, ar):
+def compare_rg(sample, GNN_ID, b, phi, v, ar):
     dir = f'/home/erschultz/Su2020/samples/sample{sample}'
     result = load_import_log(dir)
     resolution = result['resolution']
@@ -910,7 +908,7 @@ def compare_rg(sample, GNN_ID, b, phi, ar):
     xyz_file = osp.join(exp_dir, 'xyz.npy')
     xyz = np.load(xyz_file)
 
-    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, b, phi, ar)
+    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, b, phi, v, ar)
     final_dir = get_final_max_ent_folder(max_ent_dir)
     file = osp.join(final_dir, 'production_out/output.xyz')
     xyz_max_ent = xyz_load(file, multiple_timesteps = True)
@@ -949,11 +947,11 @@ def compare_rg(sample, GNN_ID, b, phi, ar):
 
     X = np.linspace(log_labels[0], log_labels[-1], 100)
     Y = np.power(X, 1/3)
-    Y = Y * ref_rgs[0, 0] / np.min(Y) * 1.1
+    Y = Y * ref_rgs[0, 0] / np.min(Y) * 1.05
     plt.plot(X, Y, label = '1/3', ls='dotted', color = 'gray')
 
     Y = np.power(X, 1/4)
-    Y = Y * ref_rgs[0, 0] / np.min(Y) * 0.9
+    Y = Y * ref_rgs[0, 0] / np.min(Y) * 0.65
     plt.plot(X, Y, label = '1/4', ls='dashed', color = 'gray')
 
     plt.ylabel('Radius of Gyration', fontsize=16)
@@ -964,7 +962,7 @@ def compare_rg(sample, GNN_ID, b, phi, ar):
     plt.tight_layout()
     plt.savefig(osp.join(odir, 'rg_comparison.png'))
 
-def compare_rg_pos(sample, GNN_ID, b, phi, ar):
+def compare_rg_pos(sample, GNN_ID, b, phi, v, ar):
     odir = '/home/erschultz/TICG-chromatin/figures/distances'
 
     dir = f'/home/erschultz/Su2020/samples/sample{sample}'
@@ -984,7 +982,7 @@ def compare_rg_pos(sample, GNN_ID, b, phi, ar):
     xyz = np.load(xyz_file)
 
     # get max ent and GNN
-    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, b, phi, ar)
+    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, b, phi, v, ar)
     final_dir = get_final_max_ent_folder(max_ent_dir)
     file = osp.join(final_dir, 'production_out/output.xyz')
     xyz_max_ent = xyz_load(file, multiple_timesteps = True)
@@ -993,7 +991,7 @@ def compare_rg_pos(sample, GNN_ID, b, phi, ar):
     # set up xlabels
     all_labels_float = np.linspace(start, end, m)
     all_labels_int = np.round(all_labels_float, 0).astype(int)
-    genome_ticks = [0, m-1]
+    genome_ticks = [0, m//3, 2*m//3, m-1]
     genome_labels = [f'{all_labels_int[i]}' for i in genome_ticks]
     print(genome_labels)
 
@@ -1003,7 +1001,7 @@ def compare_rg_pos(sample, GNN_ID, b, phi, ar):
     else:
         xyz_gnn = None
 
-    window_sizes = [16, 32, 64]
+    window_sizes = [8, 16, 32]
     for i, size in enumerate(window_sizes):
         size_mb = size * resolution / 1000 / 1000
         print(size_mb, 'mb')
@@ -1014,6 +1012,8 @@ def compare_rg_pos(sample, GNN_ID, b, phi, ar):
 
         for xyz_i, label in zip([xyz, xyz_max_ent, xyz_gnn],
                                 ['Experiment', 'Max Ent', 'GNN']):
+            if label == 'Experiment':
+                continue
             mean_arr = np.zeros(length)
             std_arr = np.zeros(length)
             if xyz_i is None:
@@ -1036,12 +1036,116 @@ def compare_rg_pos(sample, GNN_ID, b, phi, ar):
         plt.title(f'b={b}, phi={phi}, ar={ar}')
         plt.xticks(genome_ticks, labels = genome_labels)
         plt.ylabel('Radius of Gyration', fontsize=16)
-        plt.xlabel('Genomic Position (bp)', fontsize=16)
+        plt.xlabel('Genomic Position (Mp)', fontsize=16)
         plt.legend(fontsize=16)
         plt.yscale('log')
         plt.tight_layout()
         plt.savefig(osp.join(odir, f'rg_comparison_{size}.png'))
         plt.close()
+
+def compare_rg_matrix(sample, GNN_ID, b, phi, v, ar):
+    odir = '/home/erschultz/TICG-chromatin/figures/distances'
+    dir = f'/home/erschultz/Su2020/samples/sample{sample}'
+    result = load_import_log(dir)
+    start_mb = result['start_mb']
+    end_mb = result['end_mb']
+    start = result['start']
+    end = result['end']
+    chrom = int(result['chrom'])
+    resolution = result['resolution']
+    resolution_mb = result['resolution_mb']
+
+
+    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, b, phi, v, ar)
+    final_dir = get_final_max_ent_folder(max_ent_dir)
+    file = osp.join(final_dir, 'production_out/output.xyz')
+    xyz_max_ent = xyz_load(file, multiple_timesteps = True)
+    _, m, _ = xyz_max_ent.shape
+
+    if gnn_dir is not None and osp.exists(gnn_dir):
+        file = osp.join(gnn_dir, 'production_out/output.xyz')
+        xyz_gnn = xyz_load(file, multiple_timesteps = True)
+    else:
+        xyz_gnn = None
+
+    # get experiment
+    if chrom == 21:
+        exp_dir = '/home/erschultz/Su2020/samples/sample1'
+    elif chrom == 2:
+        exp_dir = '/home/erschultz/Su2020/samples/sample10'
+    xyz_file = osp.join(exp_dir, 'xyz.npy')
+    xyz = np.load(xyz_file)
+    print('Experimental xyz:', xyz.shape)
+    # crop
+    data_dir = os.sep.join(dir.split(os.sep)[:-2])
+    D = np.load(osp.join(data_dir, f'dist_mean_chr{chrom}.npy'))
+    with open(osp.join(data_dir, f'coords_chr{chrom}.json')) as f:
+        coords_dict = json.load(f)
+    i = coords_dict[f'chr{chrom}:{start}-{start+resolution}']
+    xyz = xyz[:, i:i+m, :]
+
+    # set up xlabels
+    all_labels_float = np.linspace(start_mb, end_mb, m)
+    all_labels_int = np.round(all_labels_float, 0).astype(int)
+    genome_ticks = [0, m-1]
+    genome_labels = [f'{all_labels_int[i]}' for i in genome_ticks]
+    print(genome_labels)
+    rg_list = [None]*3
+    files = ['rg_exp.npy', 'rg_me.npy', 'rg_gnn.npy']
+    for i, (xyz_i, file_i, label) in enumerate(zip([xyz, xyz_max_ent, xyz_gnn],
+                                            files,
+                                            ['Experiment', 'Max Ent', 'GNN'])):
+        if xyz_i is None:
+            continue
+        file_i = osp.join(dir, file_i)
+        if osp.exists(file_i):
+            rg_i = np.load(file_i)
+            rg_list[i] = rg_i
+        else:
+            rg_list[i] = calculate_rg_matrix(xyz_i[:100], file_i, True)
+    print('---'*9)
+    tick_fontsize=18
+    letter_fontsize=26
+    fig, axes = plt.subplots(1, 2)
+    fig.set_figheight(6.15)
+    fig.set_figwidth(12)
+
+    indu = np.triu_indices(m)
+    indl = np.tril_indices(m)
+    composites = []
+    for rg_i in rg_list[1:]:
+        # make composite contact map
+        composite = np.zeros((m, m))
+        composite[indu] = rg_i[indu]
+        composite[indl] = rg_list[0][indl]
+        composites.append(composite)
+
+    # plot rg matrices
+    arr = np.array(composites)
+    vmax = np.nanmean(arr)
+    data = zip(composites, ['GNN', 'Max Ent'])
+    for i, (composite, label) in enumerate(data):
+        ax = axes[i]
+        s = sns.heatmap(composite, linewidth = 0, vmin = 0, vmax = vmax, cmap = BLUE_RED_CMAP,
+                        ax = ax, cbar = True)
+        ax.axline((0,0), slope=1, color = 'k', lw=1)
+        ax.text(0.99*m, 0.01*m, label, fontsize=letter_fontsize, ha='right', va='top',
+                weight='bold')
+        ax.text(0.01*m, 0.99*m, 'Experiment', fontsize=letter_fontsize, weight='bold')
+        # s.set_xticks(genome_ticks, labels = genome_labels, rotation = 0)
+        # s.set_yticks(genome_ticks, labels = genome_labels)
+        s.set_xticks([])
+        s.set_yticks([])
+        s.tick_params(axis='both', which='major', labelsize=tick_fontsize)
+
+    for n, ax in enumerate(axes):
+        ax.text(-0.1, 1.05, string.ascii_uppercase[n], transform=ax.transAxes,
+                size=letter_fontsize, weight='bold')
+
+    plt.tight_layout()
+    plt.savefig(osp.join(odir, f'rg_comparison_matrix.png'))
+    plt.close()
+
 
 def compare_scaling(sample, GNN_ID=None, b=140, phi=0.03):
     dir = f'/home/erschultz/Su2020/samples/sample{sample}'
@@ -1165,12 +1269,13 @@ def compare_diagonal(sample, GNN_ID, b, phi, v, ar):
     plot_diagonal(D_no_nan, D_pca[~nan_rows][:, ~nan_rows], osp.join(dir, 'diagonal_pca.png'))
     plot_diagonal(D_no_nan, D_gnn[~nan_rows][:, ~nan_rows], osp.join(dir, 'diagonal_gnn.png'))
 
-def compare_dist_ij(sample, GNN_ID, b, phi, ar):
-    dir = f'/home/erschultz/Su2020/samples/sample{sample}'
+def compare_dist_ij(sample, GNN_ID, b, v, ar):
+    dir = f'/home/erschultz/Su2020/samples/sample{sample}_rescale1'
     odir = '/home/erschultz/TICG-chromatin/figures/distances'
 
-    D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=b, phi=phi, ar=ar)
+    D, D_gnn, D_pca = load_exp_gnn_pca(dir, GNN_ID, b=b, phi=None, v=v, ar=ar)
     nan_rows = np.isnan(D[0])
+    m = len(D_pca)
     D_no_nan = D[~nan_rows][:, ~nan_rows] # ignore nan_rows
     D_pca_no_nan = D_pca[~nan_rows][:, ~nan_rows]
 
@@ -1309,14 +1414,116 @@ def compare_bonded():
     plt.legend()
     plt.show()
 
+def jsd(sample, GNN_ID, b, v, ar):
+    odir = '/home/erschultz/TICG-chromatin/figures/distances'
+    dir = f'/home/erschultz/Su2020/samples/sample{sample}_rescale1'
+    result = load_import_log(dir)
+    start_mb = result['start_mb']
+    end_mb = result['end_mb']
+    start = result['start']
+    end = result['end']
+    chrom = int(result['chrom'])
+    resolution = result['resolution']
+    resolution_mb = result['resolution_mb']
+
+
+    max_ent_dir, gnn_dir = get_dirs(dir, GNN_ID, b, None, v, ar)
+    final_dir = get_final_max_ent_folder(max_ent_dir)
+    file = osp.join(final_dir, 'production_out/output.xyz')
+    xyz_max_ent = xyz_load(file, multiple_timesteps = True)
+    _, m, _ = xyz_max_ent.shape
+
+    if gnn_dir is not None and osp.exists(gnn_dir):
+        file = osp.join(gnn_dir, 'production_out/output.xyz')
+        print(file)
+        xyz_gnn = xyz_load(file, multiple_timesteps = True)
+    else:
+        xyz_gnn = None
+
+    # get experiment
+    if chrom == 21:
+        exp_dir = '/home/erschultz/Su2020/samples/sample1'
+    elif chrom == 2:
+        exp_dir = '/home/erschultz/Su2020/samples/sample10'
+    xyz_file = osp.join(exp_dir, 'xyz.npy')
+    xyz = np.load(xyz_file)
+    print('Experimental xyz:', xyz.shape)
+
+    # crop coordinates
+    data_dir = os.sep.join(dir.split(os.sep)[:-2])
+    with open(osp.join(data_dir, f'coords_chr{chrom}.json')) as f:
+        coords_dict = json.load(f)
+    i = coords_dict[f'chr{chrom}:{start}-{start+resolution}']
+    xyz = xyz[:, i:i+m, :]
+
+    # crop samples
+    s_crop = 500
+    D = xyz_to_distance(xyz[:s_crop], False)
+    min_d = 0
+    max_d = 3000
+
+    # set up xlabels
+    all_labels_float = np.linspace(start_mb, end_mb, m)
+    all_labels_int = np.round(all_labels_float, 0).astype(int)
+    genome_ticks = [0, m-1]
+    genome_labels = [f'{all_labels_int[i]}' for i in genome_ticks]
+    print(genome_labels)
+
+    for i, (xyz_i, label) in enumerate(zip([xyz_gnn],
+                                            ['GNN'])):
+        if xyz_i is None:
+            continue
+        D_i = xyz_to_distance(xyz_i[:s_crop], False)
+
+        JSD = np.zeros((m,m))
+        bins=40
+        for j in range(m):
+            if j % 50 == 0:
+                print(j)
+            for k in range(j, m):
+                left, bins = np.histogram(D[:,j,k], bins, (min_d, max_d))
+                left = left.astype(float) / np.sum(left)
+                right, _ = np.histogram(D_i[:,j,k], bins, (min_d, max_d))
+                right = right.astype(float) / np.sum(right)
+                jsd = jensenshannon(left, right)**2
+                JSD[j,k] = jsd
+                JSD[k,j] = jsd
+                if (j - k) % 50 == 0 and j % 50 == 0:
+                    print('\t\t', j, k)
+                    # plt.hist(D[:,j,k], bins, (min_d, max_d), label='ref',
+                    #         alpha=0.5, weights = np.ones_like(D[:,j,k]) / len(D[:,j,k]))
+                    # plt.hist(D_i[:,j,k], bins, (min_d, max_d), label='sim',
+                    #         alpha=0.5, weights = np.ones_like(D[:,j,k]) / len(D[:,j,k]))
+                    plt.stairs(left, bins, label='ref', alpha=0.5, fill=True)
+                    plt.stairs(right, bins, label='sim', alpha=0.5, fill=True)
+                    plt.legend(loc='upper right')
+                    plt.title(f'JSD={np.round(jsd, 6)}')
+                    plt.savefig(osp.join(odir, f'temp/hist_{j}_{k}.png'))
+                    plt.close()
+        print(JSD, np.nanmean(JSD))
+
+
+    print('---'*9)
+    tick_fontsize=18
+    letter_fontsize=26
+    plot_matrix(JSD, osp.join(odir, 'jsd_matrix'),
+                cmap=plt.get_cmap("plasma"), vmax=0.4)
+    # fig, axes = plt.subplots(1, 2)
+    # fig.set_figheight(6.15)
+    # fig.set_figwidth(12)
+    # plt.tight_layout()
+    # plt.savefig(osp.join(odir, f'jsd_matrix.png'))
+    # plt.close()
+
+
 if __name__ == '__main__':
     dir = '/home/erschultz/Su2020'
     # tsv_to_npy()
     # test_pcs()
     # load_exp_gnn_pca(osp.join(dir, 'samples/sample1002'))
-    # xyz_to_dist2()
+    xyz_to_dist2()
     # xyz_to_xyz()
-    compare_D_to_sim_D(10)
+    # compare_D_to_sim_D(10)
     # compare_diagonal(1013, 434)
     # sim_xyz_to_dist(osp.join(dir, 'samples/sample1011/optimize_grid_b_140_phi_0.03-GNN403'),
     #                 False)
@@ -1326,7 +1533,9 @@ if __name__ == '__main__':
     # compare_d_maps(1003, None)
     # compare_dist_distribution_a_b()
     # compare_dist_distribution_plaid(1013, None, 261, 0.01)
-    # compare_rg(1013, None, b=180, phi=0.01, ar=2.0)
-    # compare_rg_pos(1013, None, b=180, phi=0.008, ar=1.5)
-    # compare_dist_ij(1004, None, b=180, phi=0.008, ar=1.5)
+    # compare_rg('1004_rescale1', None, b=200, phi=None, v=8, ar=1.5)
+    # compare_rg_pos('1004_rescale1', 690, b=200, phi=None, v=8, ar=1.5)
+    # compare_rg_matrix('1004_rescale1', 631, b=200, phi=None, v=8, ar=1.5)
+    # compare_dist_ij(1004, None, b=200, v=8, ar=1.5)
+    # jsd(1004, 631, b=200, v=8, ar=1.5)
     # compare_scaling(1002, None, 261, 0.006)

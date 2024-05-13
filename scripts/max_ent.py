@@ -7,12 +7,14 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 import pylib.analysis as analysis
 from pylib.Maxent import Maxent
 from pylib.Pysim import Pysim
 from pylib.utils import default, epilib, utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import *
+from pylib.utils.plotting_utils import plot_matrix
 from pylib.utils.utils import load_import_log
 
 sys.path.append('/home/erschultz/TICG-chromatin')
@@ -20,6 +22,49 @@ import scripts.optimize_grid as optimize_grid
 from scripts.data_generation.modify_maxent import get_samples
 from scripts.plotting.contact_map import getArgs, plot_all
 
+sys.path.append('/home/erschultz')
+from sequences_to_contact_maps.scripts.load_utils import \
+    get_final_max_ent_folder
+
+ROOT = '/home/erschultz'
+PROJECT2 = '/project2/depablo/erschultz'
+MEDIA = '/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/'
+
+def max_ent_dataset(use_exp_hic=False):
+    dataset = 'dataset_12_06_23'
+    data_dir = osp.join(ROOT, dataset)
+    odir = data_dir + '_max_ent_all'
+    if use_exp_hic:
+        odir += '_exp'
+    if not osp.exists(odir):
+        os.mkdir(odir)
+        os.mkdir(osp.join(odir, 'samples'))
+    samples = []
+    all = ['hap1', 'hela', 'kbm7', 'nhek', 'huvec', 'hmec', 'gm12878']
+    other =  ['hap1', 'hela', 'kbm7', 'nhek', 'k562']
+    for cell_line in all:
+        samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
+        samples.extend(samples_cell_line)
+
+    me_root = 'optimize_grid_b_200_v_8_spheroid_1.5-max_ent10'
+    for i, sample in enumerate(samples):
+        s_dir = osp.join(data_dir, f'samples/sample{sample}', me_root)
+        final = get_final_max_ent_folder(s_dir)
+        s_odir = osp.join(odir, f'samples/sample{sample}')
+        if not osp.exists(s_odir):
+            os.mkdir(s_odir)
+
+        if use_exp_hic:
+            y = np.load(osp.join(data_dir, f'samples/sample{sample}/y.npy'))
+        else:
+            y = np.load(osp.join(final, 'y.npy'))
+        if i < 10:
+            plot_matrix(y, osp.join(s_odir, 'y.png'), vmax = 'mean')
+        np.save(osp.join(s_odir, 'y.npy'), y)
+        config = utils.load_json(osp.join(final, 'config.json'))
+        np.save(osp.join(s_odir, 'diag_chis.npy'), calculate_diag_chi_step(config))
+        shutil.copyfile(osp.join(final, 'config.json'), osp.join(s_odir, 'config.json'))
+        shutil.copyfile(osp.join(final, 'x.npy'), osp.join(s_odir, 'x.npy'))
 
 def compute_pcs(dataset, cell_line):
     def plot_save(seq, fname):
@@ -40,7 +85,7 @@ def compute_pcs(dataset, cell_line):
 
         np.save(osp.join(chrom_dir, f'{fname}.npy'), seq)
 
-    data_dir = osp.join('/home/erschultz', dataset, f'chroms_{cell_line}')
+    data_dir = osp.join(ROOT, dataset, f'chroms_{cell_line}')
     for chrom in range(1, 22):
         print(chrom)
         chrom_dir = osp.join(data_dir, f'chr{chrom}')
@@ -63,7 +108,8 @@ def compute_pcs(dataset, cell_line):
 def load_pcs(dataset, import_log, mode, k, norm=False):
     cell_line = import_log['cell_line']
     chrom = import_log['chrom']
-    seq = np.load(f'/home/erschultz/{dataset}/chroms_{cell_line}/chr{chrom}/seq_{mode}.npy')
+    seq_file = osp.join(ROOT, dataset, f'chroms_{cell_line}/chr{chrom}/seq_{mode}.npy')
+    seq = np.load(seq_file)
 
     res = import_log['resolution']
     start = import_log['start'] // res
@@ -160,27 +206,34 @@ def check(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
                                 k_angle, theta_0, False)
 
     if osp.exists(root):
-        if not osp.exists(osp.join(root, 'iteration30')):
+        params = utils.load_json(osp.join(root, 'resources/params.json'))
+        max_it = params['iterations']
+        prod_sweeps = params['production_sweeps']
+        if not osp.exists(osp.join(root, f'iteration{max_it}')):
             it=0
-            for i in range(30):
+            for i in range(max_it):
                 if osp.exists(osp.join(root, f'iteration{i}')):
                     it = i
-            prcnt = np.round(it/30*100, 1)
+            prcnt = np.round(it/max_it*100, 1)
             print(f'{root}: {prcnt}')
-        elif not osp.exists(osp.join(root, 'iteration30/tri.png')):
-            traj = np.loadtxt(osp.join(root, 'iteration30/production_out/energy.traj'))
-            sweep = traj[-1][0]
-            prcnt = np.round(sweep/300000*100, 1)
-            print(f'{root}: final {prcnt}')
+        elif not osp.exists(osp.join(root, f'iteration{max_it}/tri.png')):
+            traj_file = osp.join(root, f'iteration{max_it}/production_out/energy.traj')
+            if osp.exists(traj_file):
+                traj = np.loadtxt(traj_file)
+                sweep = traj[-1][0]
+                prcnt = np.round(sweep/prod_sweeps*100, 1)
+                print(f'{root}: final {prcnt}')
+            else:
+                print(f'{root}: final 0.0')
         else:
             print(f'{root}: complete')
     else:
         print(f'{root}: not started')
 
 
-def post_analysis(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
-        aspect_ratio=1, bond_type='gaussian', k=10, contacts_distance=False,
-        k_angle=0, theta_0=190):
+def post_analysis(dataset, sample, samples='samples', bl=140, phi=0.03, v=None,
+        vb=None, aspect_ratio=1, bond_type='gaussian', k=10,
+        contacts_distance=False, k_angle=0, theta_0=180):
     root, _, _ = setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                                 aspect_ratio, bond_type, k, contacts_distance,
                                 k_angle, theta_0)
@@ -191,15 +244,16 @@ def post_analysis(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, 
     sys.stdout = stdout
 
 
-def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
-                aspect_ratio=1.0, bond_type='gaussian', k=None, contacts_distance=False,
-                k_angle=0, theta_0=180,
-                verbose=True):
+def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None,
+                vb=None, aspect_ratio=1.0, bond_type='gaussian', k=None,
+                contacts_distance=False, k_angle=0, theta_0=180, verbose=True):
     if verbose:
         print(sample)
-    data_dir = f'/home/erschultz/{dataset}'
+    data_dir = osp.join(ROOT, dataset)
     if not osp.exists(data_dir):
-        data_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/', data_dir[1:])
+        data_dir = osp.join(MEDIA, dataset)
+    if not osp.exists(data_dir):
+        data_dir = osp.join(PROJECT2, dataset)
     dir = osp.join(data_dir, f'{samples}/sample{sample}')
 
     bonded_config = default.bonded_config.copy()
@@ -210,6 +264,8 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, v
     if v is not None:
         bonded_config['target_volume'] = v
     bonded_config['bond_type'] = bond_type
+    if bond_type == 'SC':
+        bonded_config['k_bond'] = 0.02
     bonded_config['update_contacts_distance'] = contacts_distance
     if k_angle != 0:
         bonded_config['angles_on'] = True
@@ -222,12 +278,10 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, v
     if vb is not None:
         bonded_config['beadvol'] = vb
     else:
-        if bonded_config['bond_length'] == 16.5:
-            bonded_config['beadvol'] = 520
-        if bonded_config['bond_length'] == 117:
-            bonded_config['beadvol'] = 26000
-        elif bonded_config['bond_length'] == 224:
-            bonded_config['beadvol'] = 260000
+        if bonded_config['bond_length'] <= 100:
+            bonded_config['beadvol'] = 13000
+        elif bonded_config['bond_length'] == 140:
+            bonded_config['beadvol'] = 65000
         else:
             bonded_config['beadvol'] = 130000
     if aspect_ratio != 1.0:
@@ -244,8 +298,8 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, v
         root += f"_angle_{bonded_config['k_angle']}_theta0_{bonded_config['theta_0']}"
     if bonded_config['boundary_type'] == 'spheroid':
         root += f'_spheroid_{aspect_ratio}'
-    if bonded_config['bond_type'] == 'DSS':
-        root += '_DSS'
+    if bonded_config['bond_type'] != 'gaussian':
+        root += f'_{bonded_config["bond_type"]}'
 
     if verbose:
         print(root)
@@ -262,6 +316,8 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, v
             bonded_config['k_angle'] = np.loadtxt(angle_file)
             bonded_config['angles_on'] = True
     else:
+        if osp.exists(root):
+            shutil.rmtree(root)
         root, bonded_config = optimize_grid.main(root, bonded_config, mode)
 
     config = default.config
@@ -275,7 +331,7 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, v
 
 def setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                 aspect_ratio, bond_type, k, contacts_distance,
-                k_angle, theta_0, verbose=True):
+                k_angle, theta_0, verbose=True, return_dir=False):
     if verbose:
         print(sample)
     dir, root, config = setup_config(dataset, sample, samples, bl, phi, v, vb,
@@ -324,19 +380,22 @@ def setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
     # config['grid_size'] = 200
 
     # config['diag_start'] = 10
-    root = osp.join(dir, f'{root}-max_ent{k}')
+    root = osp.join(dir, f'{root}-max_ent{k}_repeat')
     if osp.exists(root):
         # shutil.rmtree(root)
         if verbose:
-            print('WARNING: root exists')
-        return root, None, None
-    return root, config, y
+            print(f'WARNING: root exists: {root}')
+
+    if return_dir:
+        return dir, root, config, y
+    else:
+        return root, config, y
 
 
 def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
         aspect_ratio=1, bond_type='gaussian', k=10, contacts_distance=False,
         k_angle=0, theta_0=180):
-    dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
+    dir = osp.join(ROOT, dataset, samples, f'sample{sample}')
     root, config, y = setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                                 aspect_ratio, bond_type, k, contacts_distance,
                                 k_angle, theta_0)
@@ -354,7 +413,7 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
     params = default.params
     goals = epilib.get_goals(y, seqs, config)
     params["goals"] = goals
-    params['iterations'] = 30
+    params['iterations'] = 20
     params['equilib_sweeps'] = 10000
     params['production_sweeps'] = 300000
     params['stop_at_convergence'] = True
@@ -371,16 +430,15 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
 def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
         aspect_ratio=1, bond_type='gaussian', k=10, contacts_distance=False,
         k_angle=0, theta_0=180):
-    dir = f'/home/erschultz/{dataset}/{samples}/sample{sample}'
     root, _, _ = setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                                 aspect_ratio, bond_type, k, contacts_distance,
                                 k_angle, theta_0, False)
 
-    remove = False
+    remove = True
     if osp.exists(root):
         # if not osp.exists(osp.join(root, 'iteration1')):
         #     remove = True
-        if not osp.exists(osp.join(root, 'iteration30/tri.png')):
+        if not (osp.exists(osp.join(root, 'iteration20/tri.png')) or osp.exists(osp.join(root, 'iteration30/tri.png'))):
             remove = True
         # remove = True
         if remove:
@@ -389,18 +447,17 @@ def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=Non
 
 def main():
     samples = None
-    # dataset = 'dataset_02_04_23'
+    # dataset = 'dataset_HIRES'; samples = [1, 2, 3, 4]
     # dataset = 'Su2020'; samples = ['1013_rescale1', '1004_rescale1']
     dataset = 'dataset_12_06_23'
-    # dataset = 'dataset_12_06_23'
+    # dataset = 'dataset_HCT116_RAD21_KO'
+    # dataset = 'dataset_gm12878_25k'
     # dataset = 'dataset_11_21_23_imr90'; samples = range(1, 16)
     # dataset='dataset_HCT116_RAD21_KO'; samples=range(1,9)
 
     if samples is None:
         samples = []
-        for cell_line in ['huvec', 'hap1']:
-            # running: 'huvec', 'hap1'
-            # done: 'hmec', 'gm12878'
+        for cell_line in ['imr90', 'gm12878', 'hmec', 'huvec', 'hap1']:
             # samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
             # samples.extend(samples_cell_line)
             samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
@@ -408,30 +465,39 @@ def main():
 
         print(samples)
 
+    # dataset = 'dataset_12_06_23_max_ent_all'
+
     mapping = []
-    k_angle=0;theta_0=180;b=180;ar=1.5;phi=None;v=8
+    k_angle=0;theta_0=180;b=180;ar=2.0;phi=None;v=4
     k=10
     contacts_distance=False
     for i in samples:
-        for b in [200]:
-            for v in [8]:
-                mapping.append((dataset, i, f'samples', b, phi, v, None, ar,
-                            'gaussian', k, contacts_distance, k_angle, theta_0))
+        for v in [8]:
+            for b in [200]:
+                for ar in [1.5]:
+                    for k in [10]:
+                        for k_angle in [0]:
+                            for bond_type in ['gaussian']:
+                                mapping.append((dataset, i, f'samples', b, phi, v, None, ar,
+                                            bond_type, k, contacts_distance, k_angle, theta_0))
 
     print('len =', len(mapping))
 
-    with mp.Pool(1) as p:
+    with mp.Pool(48) as p:
         # p.starmap(setup_config, mapping)
-        # p.starmap(fit, mapping)
-        p.starmap(check, mapping)
+        p.starmap(fit, mapping)
+        # p.starmap(check, mapping)
         # p.starmap(post_analysis, mapping)
         # p.starmap(cleanup, mapping)
 
-    # for i in mapping:
+    for i in mapping:
         #fit_max_ent(*i)
         # fit(*i)
+        check(*i)
 
 if __name__ == '__main__':
     # modify_maxent()
     main()
+    # max_ent_dataset(False)
+    # max_ent_dataset(True)
     # compute_pcs('dataset_11_20_23', 'gm12878')

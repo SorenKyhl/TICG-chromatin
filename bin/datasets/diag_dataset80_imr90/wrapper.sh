@@ -8,7 +8,6 @@ cd ~/TICG-chromatin
 
 dataset="dataset_12_12_23_imr90"
 echo "generate_params for ${dataset}"
-# uses poly12 fit to meandistS params + grid
 # python  ~/TICG-chromatin/bin/datasets/generate_params.py --samples 5000 --b 200 --v 8 --k 10 --ar 1.5 --m 512 --dataset $dataset --exp_dataset 'dataset_12_06_23' --cell_line 'imr90' --seq_mode 'eig_norm' --diag_mode 'meanDist_S_grid_poly8_log_start1' --plaid_mode 'KDE' --data_dir '/project/depablo/erschultz'
 
 # cd "/home/erschultz/${dataset}"

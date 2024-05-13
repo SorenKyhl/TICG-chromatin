@@ -14,7 +14,8 @@ from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
                                       calculate_L, calculate_S)
 from pylib.utils.plotting_utils import plot_matrix
-from pylib.utils.utils import load_json, pearson_round, triu_to_full
+from pylib.utils.utils import (load_import_log, load_json, pearson_round,
+                               triu_to_full)
 from scipy.ndimage import gaussian_filter
 from scipy.optimize import curve_fit
 from scipy.stats import (beta, gamma, laplace, multivariate_normal, norm,
@@ -31,12 +32,15 @@ from scripts.max_ent_setup.get_params_old import Tester
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_import_log, load_L, load_max_ent_D,
-    load_max_ent_L, load_max_ent_S, load_psi)
+    get_final_max_ent_folder, load_L, load_max_ent_D, load_max_ent_L,
+    load_max_ent_S, load_psi)
 from sequences_to_contact_maps.scripts.plotting_utils import \
     plot_seq_continuous
 
 LETTERS = 'ABCDEFGHIJKLMN'
+ROOT = '/home/erschultz'
+PROJECT2 = '/project2/depablo/erschultz'
+
 
 def get_samples(dataset, train=False, test=False, return_cell_lines=False, filter_cell_lines=None):
     '''
@@ -78,6 +82,12 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False, filte
     elif dataset in {'dataset_04_09_23', 'dataset_04_10_23',}:
         samples = range(1001, 1028)
         experimental = True
+    elif dataset == 'dataset_gm12878_5k':
+        samples = range(1, 42)
+        experimental = True
+    elif dataset == 'dataset_HCT116_RAD21_KO':
+        samples = range(1, 68)
+        experimental = True
     elif dataset == 'dataset_04_06_23':
         samples = range(1001, 1286)
     elif dataset == 'dataset_04_07_23':
@@ -94,6 +104,10 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False, filte
         samples = [68, 3180, 7880, 5787, 833, 8285, 765, 4392, 8467, 9142, 9245, 8668, 4354, 265, 7738]
     elif dataset == 'dataset_09_28_23_s_100_cutoff_0.01':
         samples = [1191, 1478, 4990, 5612, 3073, 1351, 4128, 2768, 9627, 4127, 1160, 8932, 2929, 7699, 6629]
+    elif dataset in {'dataset_12_12_23_imr90', "dataset_02_14_24_imr90"}:
+        samples = [1640, 1672, 3464, 831, 1651, 2678, 861, 3660, 267, 810, 2325, 2890]
+    elif dataset == "dataset_gm12878_25k":
+        samples = range(1, 11)
     else:
         samples = range(1, 11)
 
@@ -103,7 +117,11 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False, filte
         for s in samples:
             s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{s}')
             if not osp.exists(s_dir):
-                s_dir = '/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/' + s_dir
+                s_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c', s_dir)
+            if not osp.exists(s_dir):
+                s_dir = osp.join(PROJECT2, dataset, f'samples/sample{s}')
+            assert(osp.exists(s_dir)), s_dir
+
             result = load_import_log(s_dir)
             chrom = int(result['chrom'])
             cell_line = result['cell_line']
@@ -160,6 +178,7 @@ def modify_plaid_chis(dataset, b, phi, v, k, ar, cell_line=None):
     else:
         samples, _ = get_samples(dataset, train=True, filter_cell_lines=[cell_line])
 
+    print(f'{len(samples)} samples')
     for sample in samples:
         s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{sample}')
         print(sample)
@@ -918,7 +937,7 @@ def plaid_dist(dataset, b, phi, v, k, ar, plot=True, eig_norm=False, cell_line=N
                                         filter_cell_lines=set([cell_line]))
     else:
         samples, experimental, cell_lines = get_samples(dataset, True, return_cell_lines=True)
-    print(len(samples), set(cell_lines))
+    print(len(samples))
     N = len(samples)
     dir = '/project2/depablo/erschultz/'
     if not osp.exists(dir):
@@ -1404,15 +1423,15 @@ def get_read_counts(dataset):
 
 
 if __name__ == '__main__':
-    # modify_plaid_chis('dataset_12_06_23', b=200, phi=None, v=8, k=10, ar=1.5, cell_line='imr90')
+    modify_plaid_chis('dataset_12_06_23', b=200, phi=None, v=8, k=10, ar=1.5, cell_line='imr90')
     # modify_maxent_diag_chi('dataset_12_06_23', b=200, phi=None, v=8, k=10, ar=1.5,
     #                         edit=False, plot=True, cell_line='imr90')
     # for i in range(221, 222):
         # plot_modified_max_ent(i, k = 10)
     # diagonal_dist('dataset_02_04_23', b=261, phi=0.01, k=10)
     # grid_dist('dataset_11_20_23', b=180, phi=None, v=8, ar=1.5, cell_line='hmec')
-    plaid_dist('dataset_12_06_23', b=200, phi=None, v=8, k=10, ar=1.5, plot=True, eig_norm=True,
-                cell_line='imr90')
+    # plaid_dist('dataset_12_06_23', b=200, phi=None, v=8, k=10, ar=1.5, plot=True, eig_norm=True,
+                # cell_line='imr90')
     # get_read_counts('dataset_04_28_23')
     # seq_dist('dataset_01_26_23', 4, True, True)
     # plot_params_test()

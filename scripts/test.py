@@ -36,12 +36,10 @@ from sklearn.metrics import mean_squared_error
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.knightRuiz import knightRuiz
 from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_all, load_contact_map, load_max_ent_D,
-    load_max_ent_L, load_Y)
+    get_final_max_ent_folder, load_all, load_max_ent_D, load_max_ent_L, load_Y)
 from sequences_to_contact_maps.scripts.plotting_utils import (plot_diag_chi,
                                                               plot_matrix,
                                                               plot_seq_binary)
-from sequences_to_contact_maps.scripts.R_pca import R_pca
 from sequences_to_contact_maps.scripts.utils import (calc_dist_strat_corr,
                                                      load_time_dir,
                                                      rescale_matrix)
@@ -185,7 +183,7 @@ def plot_sc_p_s():
             phase = phase_dict[dir]
             phase_count_dict[phase] += 1
 
-            y = load_contact_map(ifile, chrom=10, resolution=50000)
+            y = hic_utils.load_contact_map(ifile, chrom=10, resolution=50000)
 
             ofile = osp.join(data_dir, 'sc_contacts_time', f'y_sc_{i}_chrom10.png')
             contacts = int(np.sum(y) / 2)
@@ -643,13 +641,14 @@ def make_small(dataset):
     if not osp.exists(odir):
         os.mkdir(odir)
     for s in os.listdir(dir):
+        if 'sample' not in s:
+            continue
         s_dir_grid = osp.join(dir, s, grid_root)
         s_odir = osp.join(odir, s)
-        if not osp.exists(s_odir):
-            os.mkdir(s_odir)
+        shutil.copyfile( osp.join(dir, s, 'y.npy'), osp.join(s_odir, 'y.npy'))
+        shutil.copyfile( osp.join(dir, s, 'import.log'), osp.join(s_odir, 'import.log'))
         s_odir_grid = osp.join(s_odir, grid_root)
-        if not osp.exists(s_odir_grid):
-            os.mkdir(s_odir_grid)
+        os.makedirs(s_odir_grid, exist_ok=True)
         for f in ['y.npy', 'grid.txt']:
             source_file = osp.join(s_dir_grid, f)
             if osp.exists(source_file):
@@ -775,19 +774,18 @@ def compare_s_per_iteration():
 
 def compare_p_s():
     dir = '/home/erschultz'
-    datasets = ['Su2020', 'dataset_02_04_23']
-    samples = [1013, 243]
-    cell_lines = ['IMR90', 'GM12878']
+    datasets = ['dataset_HIRES', 'dataset_HIRES', 'dataset_HIRES', 'dataset_HIRES']
+    samples = [1, 2,3,4]
+    # cell_lines = ['IMR90', 'GM12878']
 
-    for dataset, sample, cell_line in zip(datasets, samples, cell_lines):
+    for dataset, sample in zip(datasets, samples):
         s_dir = osp.join(dir, dataset, f'samples/sample{sample}')
         y = np.load(osp.join(s_dir, 'y.npy')).astype(float)
-        y /= np.mean(np.diagonal(y))
         meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
-        plt.plot(meanDist, label = f'{cell_line} sample {sample}')
+        plt.plot(meanDist, label = f'sample {sample}')
 
     plt.yscale('log')
-    # plt.xscale('log')
+    plt.xscale('log')
     plt.ylabel('Probability', fontsize=16)
     plt.xlabel('Beads', fontsize=16)
     plt.legend()
@@ -1093,52 +1091,31 @@ def distance_cutoff_diag_chis():
     plt.savefig(osp.join(odir, f'diag_chis_distance_cutoff.png'))
     plt.close()
 
-def scc_across_cell_lines():
-    dataset = 'dataset_12_06_23'
-    samples_imr90, _ = get_samples(dataset, filter_cell_lines=['imr90'])
-    samples_gm12878, _ = get_samples(dataset, filter_cell_lines=['gm12878'])
-    # assert len(samples_imr90) == len(samples_gm12878), f'{len(samples_imr90)} != {len(samples_gm12878)}'
-    print(samples_imr90)
-    print(samples_gm12878)
-    i=min(samples_imr90)
-    j=min(samples_gm12878)
-    matches = 0
-    scc = SCC(h=5, K=100)
-    scc_list = []
-    while i < max(samples_imr90) and j < max(samples_gm12878):
-        d1 = osp.join('/home/erschultz', dataset, f'samples/sample{i}')
-        d2 = osp.join('/home/erschultz', dataset, f'samples/sample{j}')
-        result1 = load_import_log(d1)
-        result2 = load_import_log(d2)
-        str1 = f'chr{result1["chrom"]}:{result1["start"]}-{result1["end"]}'
-        str2 = f'chr{result2["chrom"]}:{result2["start"]}-{result2["end"]}'
+def test_tile():
+    b = np.array([[1, 2], [3, 4]])
+    print(b, b.shape)
+    r = np.tile(b, 2)
+    print(r, r.shape)
+    r = np.tile(b, (4,1)).reshape(4, 2, 2)
+    print(r, r.shape)
 
-        if result1['chrom'] < result2['chrom']:
-            i += 1
-        elif result1['chrom'] > result2['chrom']:
-            j += 1
-        elif result1['start'] < result2['start']:
-            i += 1
-        elif result1['start'] > result2['start']:
-            j += 1
-        else:
-            i += 1
-            j += 1
-            y1 = np.load(osp.join(d1, 'y.npy'))
-            y2 = np.load(osp.join(d2, 'y.npy'))
-            scc_val = scc.scc(y1, y2, var_stabilized=True)
-            scc_list.append(scc_val)
-            print(scc_val)
-            matches += 1
-    print(matches)
-    print(np.mean(scc_list))
-
-
+def cleanup():
+    dir = '/home/erschultz/dataset_12_06_23'
+    samples, _ = get_samples(dir, test=True)
+    for s in samples:
+        s_dir = osp.join(dir, 'samples', f'sample{s}')
+        for f in os.listdir(s_dir):
+            f_dir = osp.join(s_dir, f)
+            if 'GNN' in f_dir:
+                pos = f.find('GNN')
+                id = int(f[pos+3:pos+6])
+                if id < 690:
+                    shutil.rmtree(f_dir)
 
 
 if __name__ == '__main__':
-    scc_across_cell_lines()
-    # make_small('dataset_12_06_23')
+    # test_tile()
+    make_small('dataset_12_06_23')
     # data_corr()
     # plot_triu_low_res()
     # distance_cutoff_diag_chis()
@@ -1147,3 +1124,5 @@ if __name__ == '__main__':
     # check_dataset('dataset_10_12_23')
     # compare_gnn_p_s('dataset_02_04_23', 579)
     # compare_max_ent_p_s('dataset_02_04_23')
+    # compare_p_s()
+    # cleanup()

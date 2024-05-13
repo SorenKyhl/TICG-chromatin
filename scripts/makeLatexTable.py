@@ -15,16 +15,17 @@ from pylib.utils import epilib
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
                                       calculate_L, calculate_S)
-from pylib.utils.similarity_measures import SCC
-from pylib.utils.utils import load_json, triu_to_full
+from pylib.utils.similarity_measures import SCC, genome_disco, hic_spector
+from pylib.utils.utils import (load_import_log, load_json, print_time,
+                               triu_to_full)
 from scipy.stats import pearsonr
 from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_import_log, load_L, load_max_ent_chi,
-    load_psi, load_Y)
-from sequences_to_contact_maps.scripts.utils import load_time_dir, print_time
+    get_converged_max_ent_folder, get_final_max_ent_folder, load_L,
+    load_max_ent_chi, load_psi, load_Y)
+from sequences_to_contact_maps.scripts.utils import load_time_dir
 
 
 def getArgs(data_folder = None, sample = None, samples = None):
@@ -94,7 +95,7 @@ def load_data(args):
 
     converged_mask = np.ones(len(args.samples)).astype(bool)
 
-    bad_methods = ['angle', '_old', '0.006', '0.06', 'bound', 'init_diag', "_repeat"]
+    bad_methods = ['angle', '_old', '0.006', '0.06', 'bound', 'init_diag']
     if args.bad_methods is not None:
         bad_methods.extend(args.bad_methods)
         print(f"bad methods: {bad_methods}")
@@ -131,13 +132,13 @@ def load_data(args):
                 continue
             skip = False
             for bad_method in bad_methods:
-                if bad_method in fname:
+                if fname.endswith(bad_method):
                     skip = True
             if skip:
                 continue
 
             method = fname
-            method_type = fname.split('-')[1]
+            method_type = '-'.join(fname.split('-')[1:])
             if method_type.startswith('GNN'):
                 GNN_ID = None
                 type_split = re.split('[-_]', method_type)
@@ -200,23 +201,15 @@ def load_data(args):
                             break
                 else:
                     # loss convergence
-                    if args.convergence_definition == 'strict':
-                        eps = 1e-3
-                    elif args.convergence_definition == 'normal':
-                        eps = 1e-2
-                    else:
-                        raise Exception('Unrecognized convergence_definition: '
-                                        f'{args.convergence_definition}')
-
-
-                    for j in range(1, len(conv)):
-                        diff = conv[j] - conv[j-1]
-                        if np.abs(diff) < eps and conv[j] < conv[0]:
-                            converged_it = j
-                            break
+                    converged_it = get_converged_max_ent_folder(fpath,
+                                                                args.convergence_definition,
+                                                                throw_exception = False,
+                                                                return_it = True)
                 temp_dict['converged_it'] = converged_it
                 if converged_it is not None:
-                    converged_path = osp.join(fpath, f'iteration{converged_it}')
+                    converged_path = osp.join(fpath, f'iteration{converged_it+1}')
+                    if not osp.exists(converged_path):
+                        converged_path = get_final_max_ent_folder(fpath)
                 else:
                     if args.verbose:
                         print(f'\tDID NOT CONVERGE: {conv}')
@@ -252,7 +245,6 @@ def load_data(args):
                 # method must be GNN or max_ent
                 continue
 
-
             # time
             if converged_it is None:
                 converge_time = np.sum(times) / 60
@@ -278,7 +270,7 @@ def load_data(args):
                 yhat_meanDist = DiagonalPreprocessing.genomic_distance_statistics(yhat)
                 yhat_diag = DiagonalPreprocessing.process(yhat, yhat_meanDist, verbose = False)
                 scc = SCC(h=5, K=100)
-                corr_scc_var = scc.scc(ground_truth_y, yhat, var_stabilized = True)
+                corr_scc_var = scc.scc(ground_truth_y, yhat)
 
                 # result = plotDistanceStratifiedPearsonCorrelation(ground_truth_y,
                                 # yhat, converged_path)
@@ -287,6 +279,12 @@ def load_data(args):
                 # temp_dict['scc'] = corr_scc
                 temp_dict['scc_var'] = corr_scc_var
                 # temp_dict['avg_dist_pearson'] = avg_diag
+
+                corr_hic_spector = hic_spector(ground_truth_y, yhat, 10)
+                temp_dict['hic_spector'] = corr_hic_spector
+
+                # corr_genome_disco = genome_disco(ground_truth_y, yhat, 3)
+                # temp_dict['genome_disco'] = corr_genome_disco
 
                 # rmse-diag
                 rmse_diag = mean_squared_error(ground_truth_meanDist, yhat_meanDist,
@@ -329,10 +327,10 @@ def load_data(args):
 
 
             # append temp_dict to data
-            data[k][method]['overall_pearson'].append(temp_dict['overall_pearson'])
             data[k][method]['read_count'].append(read_count/1000)
-            data[k][method]['scc'].append(temp_dict['scc'])
             data[k][method]['scc_var'].append(temp_dict['scc_var'])
+            data[k][method]['hic_spector'].append(temp_dict['hic_spector'])
+            data[k][method]['genome_disco'].append(temp_dict['genome_disco'])
             data[k][method]['avg_dist_pearson'].append(temp_dict['avg_dist_pearson'])
             data[k][method]['rmse-S'].append(temp_dict['rmse-S'])
             data[k][method]['rmse-y'].append(temp_dict['rmse-y'])
@@ -366,20 +364,21 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
         test_significance: True to perform two-sided paired t-tests for significance
     '''
 
-    metric_labels = {'scc':'SCC', 'scc_var':'SCC', None: '',
-            'rmse-S':'RMSE-Energy', 'rmse-y':'RMSE(H)', 'rmse-ydiag':r'RMSE($\tilde{H}$)',
+    metric_labels = {'scc':'SCC', 'scc_var':'SCC', None: '', 'k': 'k',
+                    'hic_spector': 'HiC-Spector', 'genome_disco': 'GenomeDISCO',
+                    'rmse-S':'RMSE-Energy', 'rmse-y':'RMSE(H)', 'rmse-ydiag':r'RMSE($\tilde{H}$)',
                     'pearson_pc_1':'Corr PC 1', 'pearson_pc_1_soren':'Corr Soren PC 1',
                     'rmse-diag':'RMSE-P(s)', 'rmse-diag10':'RMSE-P(s<10)',
                     'avg_dist_pearson':'SCC mean', 'read_count':'Read Count (1k)',
                     'total_time':'Total Time', 'converged_it':'Converged It.',
-                    'converged_time':'Converged Time', 'prcnt_converged': '\% Converged'}
+                    'converged_time':'Simulation Time', 'prcnt_converged': '\% Converged'}
     for k, v in metric_labels.items():
         metric_labels[k] = r'\thead{' + v + '}'
     if small:
-        metrics = ['scc_var', 'pearson_pc_1', 'rmse-y', 'rmse-ydiag', 'converged_time']
+        metrics = ['scc_var', 'hic_spector', 'pearson_pc_1', 'rmse-ydiag', 'converged_time']
         # 'rmse-diag',
     else:
-        metrics = ['rmse-y', 'rmse-ydiag', 'converged_time', 'converged_it', 'prcnt_converged']
+        metrics = ['rmse-y', 'rmse-ydiag',  'converged_time', 'converged_it', 'prcnt_converged']
 
 
     print(f'\nMAKING TABLE-small={small}')
@@ -389,7 +388,7 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
         o.write("\\begin{center}\n")
         if experimental and 'rmse-S' in metrics:
             metrics.remove('rmse-S')
-        num_cols = len(metrics) + 2
+        num_cols = len(metrics) + 1
         num_cols_str = str(num_cols)
 
         o.write("\\begin{tabular}{|" + "c|"*num_cols + "}\n")
@@ -401,7 +400,7 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
 
         o.write("\\hline\n")
 
-        row = "Method & k"
+        row = "Method"
         for metric in metrics:
             label = metric_labels[metric]
             row += f" & {label}"
@@ -420,25 +419,27 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
                 for key in data.keys():
                     print(f'key 1: {key}, key 2: {data[key].keys()}')
 
-        GNN_ref = None
         GNN_ref_method = None
         if 0 in data.keys():
             for method in sorted(data[0].keys()):
                 if 'GNN' in method:
-                    GNN_ref = data[0][method]
                     GNN_ref_method = method
                     break # takes first GNN found
+        # GNN_ref_method = 'optimize_grid_b_200_v_8_spheroid_1.5-GNN673'
 
-        if GNN_ref is not None:
+        if GNN_ref_method is not None:
+            GNN_ref = data[0][GNN_ref_method]
             print(f'GNN found: using GNN {GNN_ref_method}')
             print(GNN_ref)
+        else:
+            GNN_ref = None
 
         for k in sorted(data.keys()):
             first = True # only write k for first row in section
             keys_labels = sort_method_keys(data[k].keys())
             for method, label in keys_labels:
                 dataset = None
-                if 'GNN' in method:
+                if 'GNN' in method and 'max_ent' not in method:
                     pos = method.find('GNN')
                     id = method[pos+3:]
                     id = id.split('-')[0]
@@ -458,21 +459,25 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
                     except Exception as e:
                         dataset = None
                         print(e)
-                if nan_mask is not None and len(data[k][method]['scc']) != len(nan_mask):
+                if nan_mask is not None and len(data[k][method]['scc_var']) != len(nan_mask):
                     # skip method if not performed for all samples
-                    print(f'skipping {method}, k={k}: {data[k][method]["scc"]}')
+                    print(f'skipping {method}, k={k}: {data[k][method]["scc_var"]}')
                     continue
-                if first: # only write k for first row in section
-                    k_label = k
-                    if k_label == 0:
-                        k_label = '-'
-                    first = False
-                else:
-                    k_label = ''
+
                 if dataset is None:
-                    text = f"{label} & {k_label}"
+                    text = f"{label}"
                 else:
-                    text = f"{label} ({dataset}) & {k_label}"
+                    text = f"{label} ({dataset})"
+
+                if 'k' in metrics:
+                    if first: # only write k for first row in section
+                        k_label = k
+                        if k_label == 0:
+                            k_label = '-'
+                        first = False
+                    else:
+                        k_label = ''
+                    text += f" & {k_label}"
 
                 for metric in metrics:
                     significant = False # two sided t test
@@ -485,6 +490,8 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
                         result = 1 - not_converged / len(converged_it)
                         result *= 100
                         result = np.array([result])
+                    elif metric == 'k':
+                        continue
                     elif metric is None:
                         result = np.array([np.NaN])
                     else:
@@ -492,7 +499,7 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
                         if nan_mask is not None:
                             result[nan_mask] = np.NaN
 
-                    roundoff = 3
+                    roundoff = 2
                     if metric is None:
                         pass # metric is None for filler column
                     elif 'time' in metric or metric == 'read_count':
@@ -501,7 +508,6 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
                         roundoff = 2
                     elif metric == 'rmse-y' or metric.startswith('rmse-diag'):
                         roundoff = 5
-                    print(metric, roundoff)
 
                     # if metric == 'scc_var':
                     #     print('scc_var: ')
@@ -514,8 +520,14 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
                         if GNN_ref is not None and test_significance:
                             ref_result = np.array(GNN_ref[metric], dtype=np.float64)
                             if nan_mask is not None:
-                                ref_result[nan_mask] = np.nan
-                            stat, pval = ss.ttest_rel(ref_result, result)
+                                try:
+                                    ref_result[nan_mask] = np.nan
+                                except IndexError:
+                                    print(nan_mask.shape)
+                                    print(metric)
+                                    print(ref_result.shape)
+                                    raise
+                            stat, pval = ss.ttest_rel(ref_result, result, nan_policy='omit')
                             mean_effect_size = np.mean(result - ref_result)
                             mean_effect_size = np.round(mean_effect_size, 3)
                             if pval < 0.05:
@@ -532,11 +544,11 @@ def makeLatexTable(data, ofile, header, small, mode='w', sample_id=None,
                         if pval is None:
                             pass
                         elif pval < 0.001:
-                            text += f' ***({mean_effect_size})'
+                            text += f' ***'
                         elif pval < 0.01:
-                            text += f' **({mean_effect_size})'
+                            text += f' **'
                         elif pval < 0.05:
-                            text += f' *({mean_effect_size})'
+                            text += f' *'
                     else:
                         result = result[0]
                         if result is not None:
@@ -598,13 +610,16 @@ def sort_method_keys(keys):
 
         return label
 
-    for method, label in zip(['max_ent', 'gnn'], ['Max Ent', 'GNN']):
-        key_labels = [] # list of (key, label) tuples of type method
-        for key in keys:
-            if method in key.lower():
-                key_labels.append((key, format(key, label)))
+    gnn_key_labels = [] # list of (key, label) tuples of type method
+    me_key_labels = []
+    for key in keys:
+        if 'max_ent' in key.lower():
+            me_key_labels.append((key, format(key, 'Max Ent')))
+        elif 'gnn' in key.lower():
+            me_key_labels.append((key, format(key, 'GNN')))
 
-        sorted_key_labels.extend(sorted(key_labels))
+    sorted_key_labels.extend(sorted(gnn_key_labels))
+    sorted_key_labels.extend(sorted(me_key_labels))
 
     return sorted_key_labels
 
@@ -704,30 +719,33 @@ if __name__ == '__main__':
     # dataset = 'dataset_02_04_23'
     # dataset='dataset_11_20_23'
     dataset='dataset_12_06_23'
-    # dataset='dataset_11_21_23_imr90'; samples=range(1,16)
+    # dataset='dataset_02_14_24_imr90'
     # dataset='Su2020'; samples = [1013]
 
-    if samples is None:
-        samples, _ = get_samples(dataset, test = True, filter_cell_lines=['hmec'])
+    if samples is None and sample is None:
+        samples, _ = get_samples(dataset, test = True,
+                                filter_cell_lines=['imr90'])
         samples = samples
-    if len(samples) == 1:
+        print(samples, len(samples))
+    if samples is not None and len(samples) == 1:
         sample = samples[0]
         samples = None
+
     data_dir = osp.join('/home/erschultz', dataset)
-    args = getArgs(data_folder = data_dir, sample=sample, samples = samples)
+    args = getArgs(data_folder = data_dir, sample = sample, samples = samples)
     args.experimental = True
     args.verbose = True
     args.convergence_definition = 'normal'
-    args.test_significance = False
+    args.test_significance = True
     args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', '_700k', 'phi',
                         'GNN579-max_ent', '-gd_gamma', 'distance', 'start', 'stat',
-                        'diagbins', 'binarize', 'chrom']
-    for i in [2,3,4,5,6,7,8,9]:
+                        'diagbins', 'binarize', 'chrom', 'grid200', 'long', 'long5', 'strict']
+    for i in [1,2,3,4,5,6,7,8,9, 11,12,13,14,15]:
        args.bad_methods.append(f'max_ent{i}')
     # args.gnn_id = [434, 578, 579, 450, 451]
     # args.gnn_id = [600, 605, 606, 607, 608, 609, 610]
     # args.gnn_id = [579, 600, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620, 621, 622, 623, 624, 625]
-    args.gnn_id = [614, 627, 628, 629]
+    args.gnn_id = []
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

@@ -16,6 +16,8 @@ setup(
     description='set up library',
     author='Soren Kyhl',
     license='MIT',
-	install_requires=['hic-straw','jsbeautifier'],#, 'hicrep', 'numba'],
+	install_requires=['hic-straw', 'jsbeautifier', 'imageio',
+                        'matplotlib', 'seaborn', 'scipy', 'hicrep', 'numba',
+                        'scikit-learn'],
     ext_modules=[module1],
 )

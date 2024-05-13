@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 from typing import Callable
 
+import hicrep
 import numpy as np
 import scipy.ndimage as ndimage
 from numba import njit
@@ -168,6 +169,35 @@ def load_hic(nbeads, pool_fn=pool_sum, chrom=2, cell="HCT116_auxin"):
     factor = int(len(gthic) / nbeads)
     pooled = pool_fn(gthic, factor)
     return pooled
+
+def load_contact_map(file, chrom = None, resolution = None):
+    '''Load contact map from cool, mcool, or npy format.'''
+    file_type = file.split('.')[-1]
+    if file_type == 'cool':
+        clr, binsize = hicrep.utils.readMcool(file, -1)
+        if resolution is not None:
+            assert resolution == binsize, f"{resolution} != {binsize}"
+        if chrom is None:
+            y = []
+            for chrom in clr.chromnames:
+                y.append(clr.matrix(balance=False).fetch(f'{chrom}'))
+        else:
+            y = clr.matrix(balance=False).fetch(f'{chrom}')
+    elif file_type == 'mcool':
+        assert resolution is not None
+        clr, _ = hicrep.utils.readMcool(file, resolution)
+        if chrom is None:
+            y = []
+            for chrom in clr.chromnames:
+                y.append(clr.matrix(balance=False).fetch(f'{chrom}'))
+        else:
+            y = clr.matrix(balance=False).fetch(f'{chrom}')
+    elif file_type == 'npy':
+        y = np.load(file)
+    else:
+        raise Exception(f'Unaccepted file type: {file_type}')
+
+    return y
 
 
 def load_seqs(nbeads, k, chrom="2", cell="HCT116_auxin"):

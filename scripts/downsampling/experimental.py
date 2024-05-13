@@ -11,20 +11,21 @@ import numpy as np
 import scipy
 import scipy.stats as ss
 import seaborn as sns
+from pylib.utils.hic_utils import rescale_p_s_1
 from pylib.utils.plotting_utils import RED_CMAP, plot_matrix
-from pylib.utils.similarity_measures import SCC
-from pylib.utils.utils import triu_to_full
+from pylib.utils.similarity_measures import SCC, hic_spector
+from pylib.utils.utils import make_composite, triu_to_full
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import (
     get_final_max_ent_folder, load_import_log)
 
 sys.path.append('/home/erschultz/TICG-chromatin')
-# import scripts.GNN
+import scripts.GNN as GNN
 import scripts.max_ent as max_ent
 from scripts.data_generation.modify_maxent import get_samples
 
-EXP_DATASET='dataset_12_01_23'
+EXP_DATASET='dataset_12_06_23'
 
 def make_samples():
     exponents = np.arange(4, 9)
@@ -48,7 +49,7 @@ def make_samples():
         exp_dir = f'/home/erschultz/{EXP_DATASET}/samples/sample{s_exp}'
         y = np.triu(np.load(osp.join(exp_dir, 'y.npy')))
         tot_count = np.sum(y)
-        print(f'Total Read Depth: {tot_count}')
+        print(f'Total Contacts: {tot_count}')
         tot_count_list.append(tot_count)
 
         for exponent in exponents:
@@ -66,14 +67,18 @@ def make_samples():
                 y_i_flat[j] += 1
             print(np.sum(y_i_flat))
             y_i = triu_to_full(y_i_flat)
+
+            # rescale
+            y_i = rescale_p_s_1(y_i, 1e-1)
+
             np.save(osp.join(odir, 'y.npy'), y_i)
             plot_matrix(y_i, osp.join(odir, 'y.png'), vmax = 'mean')
     tot_count_mean = np.mean(tot_count_list)
-    print(f'Mean Total Read Depth: {np.round(tot_count_mean, 1)}')
+    print(f'Mean Total Contacts: {np.round(tot_count_mean, 1)}')
 
 def fit_gnn(GNN_id):
     dataset='downsampling_analysis'
-    samples, _ = get_samples(EXP_DATASET, test=True)
+    samples, _ = get_samples(EXP_DATASET, test=True, filter_cell_lines=['imr90'])
     N = 10
     samples = samples[:N]
 
@@ -83,13 +88,13 @@ def fit_gnn(GNN_id):
 
         for GNN_ID in GNN_IDs:
             for i in samples:
-                mapping.append((dataset, i, GNN_ID, f'samples_exp{downsampling}', 180, None, 8, 1.5))
+                mapping.append((dataset, i, GNN_ID, f'samples_exp{downsampling}', 200, None, 8, 1.5))
 
         print(len(mapping))
         print(mapping)
 
         # this must be nested because of how GNN uses scratch
-        with mp.Pool(N) as p:
+        with mp.Pool(5) as p:
             p.starmap(GNN.check, mapping)
 
 def fit_max_ent():
@@ -102,33 +107,40 @@ def fit_max_ent():
     for downsampling in [4, 5, 6, 7, 8]:
         for i in samples:
             mapping.append((dataset, i, f'samples_exp{downsampling}',
-                            180, None, 8, None, 1.5))
+                            200, None, 8, None, 1.5))
 
     print(len(mapping))
     print(mapping)
 
-    with mp.Pool(1) as p:
-        p.starmap(max_ent.check, mapping)
+    with mp.Pool(10) as p:
+        p.starmap(max_ent.fit, mapping)
 
 
 def figure(GNN_ID):
-    label_fontsize=24
-    tick_fontsize=22
+    label_fontsize=22
+    tick_fontsize=18
     letter_fontsize=26
 
-    samples, _ = get_samples(EXP_DATASET, test=True)
+    samples, _ = get_samples(EXP_DATASET, test=True, filter_cell_lines=['imr90'])
     N = 10
     samples = samples[:N]
     exponents = np.arange(4, 9)
     read_counts = 10**exponents
     dir = '/home/erschultz/downsampling_analysis'
     m=512
-    gnn_scc_dense = defaultdict(lambda: np.zeros(N))
-                    # exponent : list of sccs
-    max_ent_scc_dense = defaultdict(lambda: np.zeros(N))
-    experiment_scc_dense = defaultdict(lambda: np.zeros(N))
-    gnn_scc_sparse = defaultdict(lambda: np.zeros(N))
-    max_ent_scc_sparse = defaultdict(lambda: np.zeros(N))
+    gnn_data = defaultdict( # dense / sparse
+                lambda: defaultdict( # metric
+                lambda: defaultdict( # exponent
+                lambda: np.zeros(N)))) # array of values
+    max_ent_data =  defaultdict(
+                lambda: defaultdict(
+                lambda: defaultdict(
+                lambda: np.zeros(N))))
+    experiment_data =  defaultdict(
+                lambda: defaultdict(
+                lambda: defaultdict(
+                lambda: np.zeros(N))))
+
     composite_dict = defaultdict(lambda: np.zeros((N,m,m)))
     max_ent_composite_dict = defaultdict(lambda: np.zeros((N,m,m)))
 
@@ -139,7 +151,7 @@ def figure(GNN_ID):
         y_list.append(y)
 
     # collect data
-    scc = SCC(h=1)
+    scc = SCC(h=5, K=100)
     for exp in exponents:
         for i, s in enumerate(samples):
             s_dir = osp.join(dir, f'samples_exp{exp}/sample{s}')
@@ -150,76 +162,33 @@ def figure(GNN_ID):
             indu = np.triu_indices(m)
             indl = np.tril_indices(m)
 
-
             # experiment
-            corr_scc_var = scc.scc(y_dense, y_sparse)
-            experiment_scc_dense[exp][i] = corr_scc_var
+            experiment_data['dense']['scc'][exp][i] = scc.scc(y_dense, y_sparse)
+            experiment_data['dense']['spector'][exp][i] = hic_spector(y_dense, y_sparse, 10)
 
-            grid_root = 'optimize_grid_b_180_v_8_spheroid_1.5'
+            grid_root = 'optimize_grid_b_200_v_8_spheroid_1.5'
 
             # gnn
             gnn_dir = osp.join(s_dir, f'{grid_root}-GNN{GNN_ID}')
-            yhat = np.load(osp.join(gnn_dir, 'y.npy'))
-            gnn_scc_dense[exp][i] = scc.scc(y_dense, yhat)
-            gnn_scc_sparse[exp][i] = scc.scc(y_sparse, yhat)
-
-            # make composite contact map
-            composite = np.zeros((m, m))
-            composite[indu] = yhat[indu]
-            composite[indl] = y_sparse[indl]
-            composite_dict[exp][i] = composite
+            y_gnn = np.load(osp.join(gnn_dir, 'y.npy'))
+            composite_dict[exp][i] = make_composite(y_sparse, y_gnn)
 
             # max ent
             max_ent_dir = osp.join(s_dir, f'{grid_root}-max_ent10')
             final = get_final_max_ent_folder(max_ent_dir)
-            yhat = np.load(osp.join(final, 'y.npy'))
-            max_ent_scc_dense[exp][i] = scc.scc(y_dense, yhat)
-            max_ent_scc_sparse[exp][i] = scc.scc(y_sparse, yhat)
+            y_me = np.load(osp.join(final, 'y.npy'))
+            max_ent_composite_dict[exp][i] =  make_composite(y_sparse, y_me)
 
-            # make max ent composite contact map
-            composite = np.zeros((m, m))
-            composite[indu] = yhat[indu]
-            composite[indl] = y_sparse[indl]
-            max_ent_composite_dict[exp][i] = composite
-
-    # compute statistics
-    gnn_scc_stats = defaultdict(
-                            lambda: defaultdict(
-                            lambda: np.zeros_like(exponents, dtype=float)))
-                            # {sparse, dense} : {mean, std} : list of values
-    max_ent_scc_stats = defaultdict(
-                            lambda: defaultdict(
-                            lambda: np.zeros_like(exponents, dtype=float)))
-    experiment_scc_stats = defaultdict(
-                            lambda: defaultdict(
-                            lambda: np.zeros_like(exponents, dtype=float)))
-    for i, exp in enumerate(exponents):
-        # sparse
-        gnn_scc_stats['sparse']['mean'][i] = np.mean(gnn_scc_sparse[exp])
-        max_ent_scc_stats['sparse']['mean'][i] = np.mean(max_ent_scc_sparse[exp])
-        gnn_scc_stats['sparse']['std'][i] = np.std(gnn_scc_sparse[exp], ddof=1)
-        max_ent_scc_stats['sparse']['std'][i] = np.std(max_ent_scc_sparse[exp], ddof=1)
-        gnn_scc_stats['sparse']['sem'][i] = ss.sem(gnn_scc_sparse[exp])
-        max_ent_scc_stats['sparse']['sem'][i] = ss.sem(max_ent_scc_sparse[exp])
-
-        # dense
-        gnn_scc_stats['dense']['mean'][i] = np.mean(gnn_scc_dense[exp])
-        max_ent_scc_stats['dense']['mean'][i]= np.mean(max_ent_scc_dense[exp])
-        experiment_scc_stats['dense']['mean'][i] = np.mean(experiment_scc_dense[exp])
-        gnn_scc_stats['dense']['std'][i] = np.std(gnn_scc_dense[exp], ddof=1)
-        max_ent_scc_stats['dense']['std'][i]= np.std(max_ent_scc_dense[exp], ddof=1)
-        gnn_scc_stats['dense']['sem'][i] = ss.sem(gnn_scc_dense[exp])
-        max_ent_scc_stats['dense']['sem'][i] = ss.sem(max_ent_scc_dense[exp])
-        experiment_scc_stats['dense']['std'][i] = np.std(experiment_scc_dense[exp], ddof=1)
-        experiment_scc_stats['dense']['sem'][i] = ss.sem(experiment_scc_dense[exp])
-
-    print(experiment_scc_stats['dense'])
-    print(gnn_scc_stats['sparse'])
+            for mode, y_gt in zip(['sparse', 'dense'], [y_sparse, y_dense]):
+                for data_dict, yhat in zip([gnn_data, max_ent_data], [y_gnn, y_me]):
+                    data_dict[mode]['scc'][exp][i] = scc.scc(y_gt, yhat)
+                    data_dict[mode]['spector'][exp][i] = hic_spector(y_gt, yhat, 10)
 
     ### combined plot ##
     # select which composites to plot
     sample_i = 4
     sample = samples[sample_i]
+    print('sample', sample)
     exponents_hic = [5, 6, 7]
     result = load_import_log(f'/home/erschultz/{EXP_DATASET}/samples/sample{sample}')
     start = result['start_mb']
@@ -240,8 +209,8 @@ def figure(GNN_ID):
     ax4 = plt.subplot(3, 24, (25, 32))
     ax5 = plt.subplot(3, 24, (33, 40))
     ax6 = plt.subplot(3, 24, (41, 48))
-    ax7 = plt.subplot(3, 2, 5) # scc sparse
-    ax8 = plt.subplot(3, 2, 6) # scc dense
+    ax7 = plt.subplot(3, 2, 5) # scc dense
+    ax8 = plt.subplot(3, 2, 6) # hic spector
     axes = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8]
 
     # hic
@@ -250,11 +219,9 @@ def figure(GNN_ID):
         composites[i] = composite_dict[exp][sample_i]
     vmax = np.mean(composites)
     for i, (exp, composite) in enumerate(zip(exponents_hic, composites)):
-        scc = gnn_scc_sparse[exp][sample_i]
-        scc = np.round(scc, 3)
         s = sns.heatmap(composite, linewidth = 0, vmin = 0, vmax = vmax,
                         cmap = RED_CMAP, ax = axes[i], cbar = False)
-        s.set_title(f'Read Depth = $10^{{{exp}}}$\nSCC={scc}',
+        s.set_title(f'Total Contacts = $10^{{{exp}}}$\n',
                     fontsize = label_fontsize)
         # s.set_xticks(genome_ticks, labels = genome_labels, rotation = 0,
         #             fontsize = tick_fontsize)
@@ -263,9 +230,9 @@ def figure(GNN_ID):
         s.set_xticks([])
         s.set_yticks([])
         axes[i].axline((0,0), slope=1, color = 'k', lw=1)
-        axes[i].text(0.99*m, 0.01*m, 'GNN', fontsize=letter_fontsize, ha='right',
+        axes[i].text(0.99*m, -0.08*m, 'GNN', fontsize=label_fontsize, ha='right',
                     va='top', weight='bold')
-        axes[i].text(0.01*m, 0.99*m, 'Reference', fontsize=letter_fontsize,
+        axes[i].text(0.01*m, 1.08*m, 'Reference', fontsize=label_fontsize,
                     weight='bold')
 
     composites = np.zeros((len(exponents_hic), m, m))
@@ -274,11 +241,9 @@ def figure(GNN_ID):
     vmax = np.mean(composites)
     for i, (exp, composite) in enumerate(zip(exponents_hic, composites)):
         ax = axes[i+3]
-        scc = max_ent_scc_sparse[exp][sample_i]
-        scc = np.round(scc, 3)
         s = sns.heatmap(composite, linewidth = 0, vmin = 0, vmax = vmax,
                         cmap = RED_CMAP, ax = ax, cbar = False)
-        s.set_title(f'SCC={scc}', fontsize = label_fontsize)
+        #s.set_title(f'SCC={scc}', fontsize = label_fontsize)
         # s.set_xticks(genome_ticks, labels = genome_labels, rotation = 0,
         #             fontsize = tick_fontsize)
         # s.set_yticks(genome_ticks, labels = genome_labels, rotation = 0,
@@ -286,42 +251,44 @@ def figure(GNN_ID):
         s.set_xticks([])
         s.set_yticks([])
         ax.axline((0,0), slope=1, color = 'k', lw=1)
-        ax.text(0.99*m, 0.01*m, 'Max Ent', fontsize=letter_fontsize, ha='right',
+        ax.text(0.99*m, -0.08*m, 'Max Ent', fontsize=label_fontsize, ha='right',
                 va='top', weight='bold')
-        ax.text(0.01*m, 0.99*m, 'Reference', fontsize=letter_fontsize, weight='bold')
+        ax.text(0.01*m, 1.08*m, 'Reference', fontsize=label_fontsize, weight='bold')
 
     # scc
-    for ax, mode in zip([ax7, ax8], ['sparse', 'dense']):
-        print(mode)
-        if mode == 'dense':
-            experiment_mean = experiment_scc_stats[mode]['mean']
-            experiment_std = experiment_scc_stats[mode]['std']
-            ax.errorbar(read_counts, experiment_mean, experiment_std,
+    mode='dense'
+    for ax, metric in zip([ax7, ax8], ['scc', 'spector']):
+        if False:
+            data_mean = np.zeros_like(exponents, dtype=float)
+            data_sem = np.zeros_like(exponents, dtype=float)
+            for i, exp in enumerate(exponents):
+                data_mean[i] = np.mean(experiment_data[mode][metric][exp])
+                data_sem[i] = ss.sem(experiment_data[mode][metric][exp])
+            ax.errorbar(read_counts, data_mean, data_sem,
                     color='k', label='Subsampled Experiment')
 
-        max_ent_mean = max_ent_scc_stats[mode]['mean']
-        print(max_ent_mean)
-        max_ent_std = max_ent_scc_stats[mode]['sem']
-        ax.errorbar(read_counts, max_ent_mean, max_ent_std,
-                        color='blue', label = 'Maximum Entropy')
+        for label, color, data_dict in zip(['Maximum Entropy','GNN'],
+                                            ['blue', 'red'],
+                                            [max_ent_data, gnn_data]):
+            data_mean = np.zeros_like(exponents, dtype=float)
+            data_sem = np.zeros_like(exponents, dtype=float)
+            for i, exp in enumerate(exponents):
+                data_mean[i] = np.mean(data_dict[mode][metric][exp])
+                data_sem[i] = ss.sem(data_dict[mode][metric][exp])
+            print(label, data_mean)
+            ax.errorbar(read_counts, data_mean, data_sem,
+                            color=color, label = label)
 
-        gnn_mean = gnn_scc_stats[mode]['mean']
-        print(gnn_mean)
-        gnn_std = gnn_scc_stats[mode]['sem']
-        ax.errorbar(read_counts, gnn_mean, gnn_std,
-                        color='red', label='GNN')
-
-
-        ax.set_xlabel('Read Depth', fontsize=label_fontsize)
+        ax.set_xlabel('Total Contacts', fontsize=label_fontsize)
         ax.set_xscale('log')
         ax.set_xticks(read_counts)
 
         ax.tick_params(axis='both', which='major', labelsize=tick_fontsize)
 
     ax7.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1])
-    ax8.set_yticks([])
-    ax7.set_ylabel('SCC (subsampled)', fontsize=label_fontsize)
-    ax8.set_ylabel('SCC (original)', fontsize=label_fontsize)
+    ax8.set_yticks([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
+    ax7.set_ylabel('SCC', fontsize=label_fontsize)
+    ax8.set_ylabel('HiC-Spector', fontsize=label_fontsize)
 
     ax8.legend(bbox_to_anchor=(-0.15, -0.25), loc="upper center",
                 fontsize = label_fontsize,
@@ -333,7 +300,7 @@ def figure(GNN_ID):
                 size=letter_fontsize, weight='bold')
 
 
-    # plt.subplots_adjust(hspace=0.3)
+    plt.subplots_adjust(hspace=0.3)
     plt.tight_layout()
     plt.savefig('/home/erschultz/downsampling_analysis/downsampling_figure_exp.png')
     plt.savefig('/home/erschultz/TICG-chromatin/figures/downsampling_figure_exp.png')
@@ -344,8 +311,8 @@ def figure(GNN_ID):
 
 
 if __name__ == '__main__':
-    mp.set_start_method('spawn')
+    # mp.set_start_method('spawn')
     # make_samples()
-    fit_max_ent()
-    # fit_gnn(579)
-    # figure(579)
+    # fit_max_ent()
+    # fit_gnn(690)
+    figure(690)

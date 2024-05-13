@@ -2,6 +2,8 @@ import json
 import logging
 import os
 import os.path as osp
+import subprocess
+import sys
 from contextlib import contextmanager
 from multiprocessing import Process
 from pathlib import Path
@@ -16,8 +18,7 @@ from sympy import solve, symbols
 utility functions
 """
 
-
-LETTERS= 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 def load_json(path):
     with open(path) as f:
@@ -42,6 +43,8 @@ def load_import_log(dir, obj=None):
                 url = line[0]
                 url_split = url.split('/')
                 cell_line = url_split[-3]
+                if cell_line.lower() == 'gse104333':
+                    cell_line = 'HCT116'
             elif line[0] == 'chrom':
                 chrom = line[1]
             elif line[0] == 'start':
@@ -85,6 +88,8 @@ def load_import_log(dir, obj=None):
 
     return results
 
+def print_time(t0, tf, name = '', file = sys.stdout):
+    print(f'{name} time: {np.round(tf - t0, 3)} s', file = file)
 
 def write_json(data, path):
     """
@@ -120,9 +125,6 @@ def cat(outfilename, infilenames, header=False):
                         # ignore lines that are purely whitespace
                         outfile.write(line)
             first = False
-
-
-import subprocess
 
 
 def copy_last_snapshot(xyz_in, xyz_out, nbeads):
@@ -161,7 +163,6 @@ def cd(newdir):
         yield
     finally:
         os.chdir(prevdir)
-
 
 def load_sequences(config):
     """load sequences from files specified in config file"""
@@ -406,3 +407,10 @@ def newton_trust_region(gradient, hessian, trust_region, log=False):
 
             lamda = lamda + (p@p)/(q@q) * (np.linalg.norm(p) - trust_region)/trust_region
         return p
+
+def test_import():
+    result = load_import_log('/home/erschultz/dataset_HCT116_RAD21_KO/samples/sample47')
+    print(result)
+
+if __name__ == '__main__':
+    test_import()

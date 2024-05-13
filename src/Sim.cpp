@@ -492,6 +492,11 @@ void Sim::readInput() {
     assert(config.contains("bond_type"));
     bond_type = config["bond_type"];
     assert(config.contains("bond_length"));
+    if (config.contains("k_bond")) {
+        k_bond = config["k_bond"];
+    } else {
+        k_bond = 0;
+    }
     bond_length = config["bond_length"];
     if (config.contains("contact_bead_skipping")) {
       contact_bead_skipping = config["contact_bead_skipping"];
@@ -949,6 +954,11 @@ void Sim::constructBonds() {
             double k = 3 / (2 * bond_length * bond_length);
             bonds[i] =
                 std::make_unique<Harmonic_Bond>(&beads[i], &beads[i + 1], k, 0);
+        } else if (bond_type == "SC"){
+            assert(k_bond > 0);
+            std::cout << " using SC bond with k_bond = " << k_bond << std::endl;
+            bonds[i] =
+                std::make_unique<SC_Bond>(&beads[i], &beads[i + 1], k_bond, bond_length);
         }
     }
     std::cout << " bonds constructed " << std::endl;
@@ -963,7 +973,7 @@ void Sim::constructAngles() {
               &beads[i], &beads[i + 1], &beads[i + 2], k_angle, theta_0);
         }
     }
-    std::cout << "angles constructed with k_angle " << k_angle << "and theta_0 " << theta_0 << std::endl;
+    std::cout << " angles constructed with k_angle = " << k_angle << " and theta_0 = " << theta_0 << std::endl;
 }
 
 void Sim::print() {
