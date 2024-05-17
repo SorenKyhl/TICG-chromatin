@@ -40,14 +40,16 @@ Context:
 
 class ErrorMetric():
     """Calculate difference between sim and exp p(s) for different metrics."""
-    def __init__(self, metric, mode, gthic, config, sim_engine):
+    def __init__(self, metric, mode, gthic, config, sim_engine, dataset=None):
         self.counter = 0 # number of iterations
         self.metric = metric
         self.mode = mode # what is being optimized
         self.gthic = gthic # experiment
         self.config = config
-        self.xyz = get_bonded_simulation_xyz(config, False) # bonded xyz
         self.sim_engine = sim_engine
+        self.dataset = dataset
+        self.xyz = get_bonded_simulation_xyz(config, self.dataset, False) # bonded xyz
+
 
     def __call__(self, val):
         '''
@@ -112,8 +114,13 @@ class ErrorMetric():
         error = mean_squared_error(p_s_sim, p_s_exp)
         return error
 
-def get_bonded_simulation_xyz(config, throw_exception=False):
-    dataset = osp.join(default.root, 'dataset_bonded')
+def get_bonded_simulation_xyz(config, dataset, throw_exception=False):
+    if dataset is None:
+        if throw_exception:
+            raise Exception('dataset is None')
+        else:
+            print('get_bonded_simulation_xyz: dataset is None')
+            return None
 
     boundary_type = config['boundary_type']
     if boundary_type == 'spheroid':
@@ -146,16 +153,17 @@ def get_bonded_simulation_xyz(config, throw_exception=False):
         if throw_exception:
             raise Exception(f'{dir} does not exist')
         else:
-            print(f'{dir} does not exist')
+            print(f'get_bonded_simulation_xyz: {dir} does not exist')
             return None
 
     xyz_file = osp.join(dir, 'production_out/output.xyz')
     xyz = xyz_load(xyz_file, multiple_timesteps=True)
     return xyz
 
-def optimize_config(config, gthic, mode, low_bound, high_bound,
-                        root=None, metric='neighbor_1'):
-    """tune grid size until simulated nearest neighbor contact probability
+def optimize_config(config, gthic, mode='grid', low_bound=0.1, high_bound=3,
+                        root=None, metric='neighbor_1', dataset=None):
+    """
+    Tune grid size until simulated nearest neighbor contact probability
     is equal to the same probability derived from the ground truth hic matrix.
 
     Args:
@@ -180,7 +188,7 @@ def optimize_config(config, gthic, mode, low_bound, high_bound,
 
 
     sim_engine = Pysim(root, config, seqs=None, overwrite=False, mkdir=False)
-    error_metric = ErrorMetric(metric, mode, gthic, config, sim_engine)
+    error_metric = ErrorMetric(metric, mode, gthic, config, sim_engine, dataset)
     if metric.startswith('neighbor'):
         try:
             print(low_bound, high_bound)
@@ -346,5 +354,5 @@ if __name__ == "__main__":
         pipe = default.data_pipeline.resize(config["nbeads"])
         gthic = pipe.load_hic(default.HCT116_hic)
 
-    optimal_grid_size = optimize_grid_size(config, gthic)
+    optimal_grid_size = optimize_config(config, gthic)
     print("optimal grid size is:", optimal_grid_size)

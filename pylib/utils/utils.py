@@ -335,7 +335,6 @@ def newton(lam, obj_goal, B, gamma, current_chis, trust_region, method, norm=Fal
 
     return new_chis, howfar
 
-
 def get_last_iteration(directory):
     """get path to final iteration of optimization directory
 
@@ -350,6 +349,14 @@ def get_last_iteration(directory):
     iterations = sorted(iterations, key=lambda path: path.name[-1])
     return iterations[-1]
 
+def crop(input, size):
+    '''
+    Crop input np array to have ncols and nrows (size < 0 returns original input).
+    '''
+    if size > 0:
+        return input[:size, :size]
+    else:
+        return input
 
 def clean_diag_chis(config):
     """set beginning diagonal chis to zero"""

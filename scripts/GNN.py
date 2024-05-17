@@ -9,9 +9,8 @@ import sys
 from time import sleep, time
 
 import numpy as np
-import torch
-
 import pylib.analysis as analysis
+import torch
 # from data_generation.modify_maxent import get_samples
 # from max_ent import setup_config
 from pylib.Maxent import Maxent
@@ -164,7 +163,7 @@ def setup_GNN(dataset, sample, sub_dir, b, phi, v, ar, GNN_ID):
     config['nSweeps'] = 3000
     config['nSweeps_eq'] = 1000
     config['nbeads'] = m
-    config["smatrix_filename"] = "smatrix.txt"
+    config["umatrix_filename"] = "umatrix.txt"
 
     gnn_root = f'{root}-GNN{GNN_ID}_test'
 
@@ -188,7 +187,7 @@ def fit(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     stdout = sys.stdout
     with open(osp.join(gnn_root, 'log.log'), 'w') as sys.stdout:
         sim = Pysim(gnn_root, config, None, y, randomize_seed = True,
-                    mkdir = False, smatrix = S)
+                    mkdir = False, umatrix = U)
         t = sim.run_eq(config['nSweeps_eq'], config['nSweeps'], 1)
         print(f'Simulation took {np.round(t, 2)} seconds')
 
@@ -261,7 +260,7 @@ def main():
 
             print(len(samples))
 
-    GNN_IDs = [690]; b=200; phi=None; v=8; ar=1.5
+    GNN_IDs = [689]; b=200; phi=None; v=8; ar=1.5
     for GNN_ID in GNN_IDs:
         for i in samples:
             mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
@@ -275,8 +274,8 @@ def main():
         # p.starmap(fit, mapping)
 
     for i in mapping:
-        fit_max_ent(*i)
-        # fit(*i)
+        # fit_max_ent(*i)
+        fit(*i)
         # check(*i)
         # rename(*i)
         # cleanup(*i)

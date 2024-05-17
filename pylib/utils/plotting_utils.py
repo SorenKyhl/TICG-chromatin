@@ -385,57 +385,124 @@ def plot_mean_vs_genomic_distance(y, path, ofile, diag_chis_step = None,
 
     return meanDist
 
-def test():
-    y = np.random.normal(size=(512, 512))
-    plot_matrix(y)
+def plot_diag_chi(config, path, ref = None, ref_label = '', logx = False,
+                ofile = None, diag_chis_step = None, ylim = (None, None),
+                title = None, label = ''):
+    '''
+    config: config file
+    path: save file path
+    ref: reference parameters
+    ref_label: label for reference parameters
+    '''
+    if config is None:
+        assert diag_chis_step is not None
+    else:
+        diag_chis_step = calculate_diag_chi_step(config)
 
-def test_plot_loci():
-    s_dir = '/home/erschultz/dataset_12_06_23/samples/sample451'
-    y, y_diag = load_Y(s_dir)
-    # 1.3830591865462468e-17 [298, 320] Chr3:185200000-186300000
-    loci = [298, 320]
+    fig, ax = plt.subplots()
+    ax.plot(diag_chis_step, color = 'k', label = label)
+    ax.set_xlabel('Polymer Distance', fontsize = 16)
+    ax.set_ylabel('Diagonal Parameter', fontsize = 16)
+    if ref is not None:
+        if isinstance(ref, str) and osp.exists(ref):
+            ref = np.load(ref)
 
-    plot_matrix(y_diag, osp.join(s_dir, 'loci_test.png'), vmin = 'center1',
-                loci = loci, use_cbar=False, loci_size=5)
+        if isinstance(ref, np.ndarray):
+            ax.plot(ref, color = 'k', ls = '--', label = ref_label)
+            if ref_label != '':
+                plt.legend()
 
-    w = 30
-    left = np.min(loci) - w
-    right = np.max(loci) + w
-    new_loci = [i - left for i in loci]
-    plot_matrix(y_diag[left:right, left:right], osp.join(s_dir, 'loci_crop_test.png'), vmin = 'center1',
-                loci = new_loci, use_cbar=False, loci_size=5, lines = new_loci)
+    ax.set_ylim(ylim[0], ylim[1])
+    if logx:
+        ax.set_xscale('log')
+    if title is not None:
+        plt.title(title)
 
-def border_test():
-    s_dir = '/home/erschultz/dataset_12_06_23/samples/sample451'
-    y, y_diag = load_Y(s_dir)
-    # 1.3830591865462468e-17 [298, 320] Chr3:185200000-186300000
-    loci = [298, 320]
+    if ofile is None:
+        if logx:
+            ofile = osp.join(path, 'chi_diag_step_log.png')
+        else:
+            ofile = osp.join(path, 'chi_diag_step.png')
+    else:
+        ofile = osp.join(path, ofile)
 
-    plot_matrix(y, osp.join(s_dir, 'border_test.png'), vmax = 'max',
-                use_cbar=False, x_ticks = [], y_ticks = [],
-                border=True)
+    plt.savefig(ofile)
+    plt.close()
 
-def test_plot_matrix_layout():
-    y_arr = np.random.normal(size=(12,100,100))
-    y_arr = np.ones_like(y_arr)
-    plot_matrix_layout(2, 3, [1,2,3,4,5,6], y_arr, None, np.array(['a', 'b', 'c', 'd', 'e', 'f', 'g']),
-                        loci=[27, 65], ofile = '/home/erschultz/dataset_12_06_23/test.png')
+    return diag_chis_step
 
-def test_mean_dist():
-    root = '/home/erschultz/dataset_12_06_23/samples/sample451/optimize_grid_b_200_v_8_spheroid_1.5'
-    gthic = np.load(osp.join(osp.split(root)[0], 'y.npy')).astype(float)
-    y = np.load(osp.join(root, 'y.npy'))
-    p_s_exp = DiagonalPreprocessing.genomic_distance_statistics(gthic, 'prob')
-    p_s_sim = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
 
-    plot_mean_dist(p_s_sim, root, 'mean_dist_test.png',
-                    None, True, ref = p_s_exp,
-                    ref_label = 'Experiment',  label = 'Gaussian bonded potential',
-                    color = 'b')
+### Functions for plotting sequences ###
+def plot_seq_binary(seq, show=False, save=True, title=None, labels=None,
+                    x_axis=True, ofile='seq.png', split=False):
+    '''Plotting function for *non* mutually exclusive binary particle types'''
+    m, k = seq.shape
+    cmap = matplotlib.cm.get_cmap('tab10')
+    ind = np.arange(k) % cmap.N
+    colors = cmap(ind)
 
-if __name__ == '__main__':
-    # test()
-    # border_test()
-    test_mean_dist()
-    # test_plot_loci()
-    # test_plot_matrix_layout()
+    plt.figure(figsize=(6, 3))
+    j = 0
+    for i in range(k):
+        c = colors[j]
+        if split:
+            j += i % 2
+        else:
+            j += 1
+        x = np.argwhere(seq[:, i] == 1)
+        if labels is None:
+            label_i = i
+        else:
+            label_i = labels[i]
+        plt.scatter(x, np.ones_like(x) * i * 0.2, label = label_i, color = c, s=3)
+
+    ax = plt.gca()
+    # ax.axes.get_yaxis().set_visible(False)
+    if not x_axis:
+        ax.axes.get_xaxis().set_visible(False)
+    # else:
+    #     ax.set_xticks(range(0, 1040, 40))
+    #     ax.axes.set_xticklabels(labels = range(0, 1040, 40), rotation=-90)
+    ax.set_yticks([i*0.2 for i in range(k)])
+    ax.axes.set_yticklabels(labels = [f'Label {i}' for i in range(1,k+1)],
+                            rotation='horizontal', fontsize=14)
+    if title is not None:
+        plt.title(title, fontsize=16)
+    plt.xlabel('Distance', fontsize=16)
+    plt.tight_layout()
+    if save:
+        plt.savefig(ofile)
+    if show:
+        plt.show()
+    plt.close()
+
+def plot_seq_continuous(seq, show=False, save=True, title=None, ofile='seq.png',
+                    split=False):
+    m, k = seq.shape
+    cmap = matplotlib.cm.get_cmap('tab10')
+    ind = np.arange(k) % cmap.N
+    colors = cmap(ind)
+
+    plt.figure(figsize=(6, 3))
+    j=0
+    for i in range(k):
+        c = colors[j]
+        if split:
+            j += i % 2
+        else:
+            j += 1
+        plt.plot(np.arange(0, m), seq[:, i], label = f'Label {i+1}', color = c)
+        # i+1 to switch to 1-indexing
+
+    ax = plt.gca()
+    if title is not None:
+        plt.title(title, fontsize=16)
+    plt.legend(loc='upper right')
+    plt.xlabel('Distance', fontsize=16)
+    plt.ylabel('Label Value', fontsize=16)
+    plt.tight_layout()
+    if show:
+        plt.show()
+    if save:
+        plt.savefig(ofile)
+    plt.close()

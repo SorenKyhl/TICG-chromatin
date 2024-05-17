@@ -11,18 +11,18 @@ def calculate_all_energy(config, seq, chi, diag_chis=None):
     diag_chis_continuous = calculate_diag_chi_step(config, diag_chis)
     D = calculate_D(diag_chis_continuous)
     L = calculate_L(seq, chi)
-    S = calculate_S(L, D)
-    return L, D, S
+    U = calculate_U(L, D)
+    return L, D, U
 
-def calculate_S(L, D):
-    # S is symmetric net energy
+def calculate_U(L, D):
+    # U is symmetric net energy
     if D is None:
         return L
     elif L is None:
         return D
     else:
-        S = L + D
-        return S
+        U = L + D
+        return U
 
 def convert_L_to_Lp(L):
     # Lp only requires upper triangle
@@ -128,76 +128,5 @@ def diag_chi_step_to_dense(diag_chi_step, n_small_bins, small_binsize,
 
     return diag_chi
 
-
 def calculate_D(diag_chi_continuous):
     return scipy.linalg.toeplitz(diag_chi_continuous)
-
-def test():
-    m = 100
-    I = np.random.choice([0, 1], size=(m*m,)).reshape(m, m)
-    I = np.triu(I) + np.triu(I, 1).T
-    print(I)
-
-    psi = np.random.rand(m, 5)
-    print('psi', psi)
-
-    chi = np.random.rand(5,5)*5
-    chi = np.triu(chi)
-    print('chi\n', chi)
-
-    Lp = calculate_L_prime(psi, chi)
-    L = calculate_L(psi, chi)
-
-    d = np.linspace(0, 2, m)
-    D = calculate_D(d)
-    print('D\n', D)
-
-    def psi_chi_energy():
-        print('psi, chi')
-        sum = 0
-        for i in range(m):
-            for j in range(m):
-                sum += I[i,j]* (psi[i] @ chi @ psi[j])
-        print(sum)
-
-    def Lp_energy():
-        print('Lp')
-        sum = 0
-        for i in range(m):
-            for j in range(m):
-                sum += I[i,j]*Lp[i,j]
-
-        print(sum)
-
-    def L_energy():
-        print('L')
-        sum = 0
-        for i in range(m):
-            for j in range(i+1):
-                sum += I[i,j]*L[i,j]
-
-        print(sum)
-
-    psi_chi_energy()
-    Lp_energy()
-    L_energy()
-
-def test2():
-    diag_chi_step = np.arange(0, 10, 1)
-    print(diag_chi_step)
-    diag_chi = diag_chi_step_to_dense(diag_chi_step, 4, 1, 2, 3)
-    print(diag_chi)
-
-def test_sdag():
-    S = np.random.rand(5)*-1
-    print(S)
-    Sdag = np.sign(S) * np.log(np.abs(S)+1)
-    print(Sdag)
-    S2 = np.sign(Sdag) * (np.exp(np.abs(Sdag))-1)
-    print(S2)
-    assert np.allclose(S, S2)
-
-if __name__ == '__main__':
-    # test()
-    # test2()
-    test_sdag()

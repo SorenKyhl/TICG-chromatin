@@ -381,7 +381,7 @@ void Sim::readInput() {
       constant_chi_on = false;
       constant_chi = 0;
     }
-    smatrix_filename = "none";
+    umatrix_filename = "none";
     lmatrix_filename = "none";
     dmatrix_filename = "none";
     assert(config.contains("lmatrix_on"));
@@ -389,10 +389,10 @@ void Sim::readInput() {
     if (config.contains("lmatrix_filename")) {
         lmatrix_filename = config["lmatrix_filename"];
     }
-    assert(config.contains("smatrix_on"));
-    smatrix_on = config["smatrix_on"];
-    if (config.contains("smatrix_filename")) {
-        smatrix_filename = config["smatrix_filename"];
+    assert(config.contains("umatrix_on"));
+    umatrix_on = config["umatrix_on"];
+    if (config.contains("umatrix_filename")) {
+        umatrix_filename = config["umatrix_filename"];
     }
     assert(config.contains("dmatrix_on"));
     dmatrix_on = config["dmatrix_on"];
@@ -553,11 +553,11 @@ void Sim::readInput() {
     }
 
 
-	if (config.contains("write_smatrix_prime")) {
-		write_smatrix_prime = config["write_smatrix_prime"];
+	if (config.contains("write_umatrix_prime")) {
+		write_umatrix_prime = config["write_umatrix_prime"];
 	}
 	else {
-		write_smatrix_prime = false;
+		write_umatrix_prime = false;
 	}
 
     assert(config.contains("seed"));
@@ -683,8 +683,8 @@ void Sim::initializeObjects() {
     if (lmatrix_on) {
         setupLmatrix();
     }
-    if (smatrix_on) {
-        std::ifstream smatrixfile(smatrix_filename);
+    if (umatrix_on) {
+        std::ifstream umatrixfile(umatrix_filename);
         setupSmatrix();
     }
 
@@ -1034,11 +1034,11 @@ Sim::getNonBondedEnergy(const std::unordered_set<Cell *> &flagged_cells) {
   	{
       if (lmatrix_on)
       {
-        U += grid.SLmatrixEnergy(flagged_cells, lmatrix);
+        U += grid.ULmatrixEnergy(flagged_cells, lmatrix);
       }
-  		else if (smatrix_on)
+  		else if (umatrix_on)
   		{
-  			U += grid.SLmatrixEnergy(flagged_cells, smatrix);
+  			U += grid.ULmatrixEnergy(flagged_cells, umatrix);
   		}
   		else
   		{
@@ -1700,10 +1700,10 @@ void Sim::saveEnergy(int sweep) {
     double plaid = 0;
     if (plaid_on) {
         if (lmatrix_on) {
-          plaid = grid.SLmatrixEnergy(grid.active_cells, lmatrix);
+          plaid = grid.ULmatrixEnergy(grid.active_cells, lmatrix);
         }
-        else if (smatrix_on) {
-          plaid = grid.SLmatrixEnergy(grid.active_cells, smatrix);
+        else if (umatrix_on) {
+          plaid = grid.ULmatrixEnergy(grid.active_cells, umatrix);
         }
         else {
             plaid = grid.energy(grid.active_cells, chis);
@@ -1763,7 +1763,7 @@ void Sim::saveObservables(int sweep) {
         }
 
         if (diagonal_on || dmatrix_on)
-        // if dmatrix_on and smatrix_on , diagonal_on will be set to False for computational efficiency
+        // if dmatrix_on and umatrix_on , diagonal_on will be set to False for computational efficiency
         {
             double Udiag = grid.diagEnergy(
                 grid.active_cells, diag_chis); // to update phis_diag? jan 28-2022
@@ -1808,7 +1808,7 @@ void Sim::saveObservables(int sweep) {
 
 void Sim::saveObservablesDistance(int sweep) {
     if (plaid_on) {
-        assert(lmatrix_on || smatrix_on);
+        assert(lmatrix_on || umatrix_on);
         obs_out = fopen(obs_out_filename.c_str(), "a");
         fprintf(obs_out, "%d", sweep);
 
@@ -1825,7 +1825,7 @@ void Sim::saveObservablesDistance(int sweep) {
     }
 
     if (diagonal_on || dmatrix_on)
-    // if dmatrix_on and smatrix_on , diagonal_on will be set to False for computational efficiency
+    // if dmatrix_on and umatrix_on , diagonal_on will be set to False for computational efficiency
     {
         diag_obs_out = fopen(diag_obs_out_filename.c_str(), "a");
         fprintf(diag_obs_out, "%d", sweep);
@@ -1950,37 +1950,37 @@ void Sim::setupLmatrix() {
 }
 
 void Sim::setupSmatrix() {
-	std::ifstream smatrixfile(smatrix_filename);
-  smatrix.resize(nbeads, nbeads);
+	std::ifstream umatrixfile(umatrix_filename);
+  umatrix.resize(nbeads, nbeads);
 
-	if ( smatrixfile.good() ) {
-    std::cout << smatrix_filename << " smatrix_filename is good\n";
+	if ( umatrixfile.good() ) {
+    std::cout << umatrix_filename << " umatrix_filename is good\n";
     for (int i=0; i<nbeads; i++) {
   		for (int j=0; j<nbeads; j++) {
-  			smatrixfile >> smatrix(i,j);
+  			umatrixfile >> umatrix(i,j);
   		}
   	}
-    std::cout << "loaded S, first row: " << smatrix.row(0) << std::endl;
+    std::cout << "loaded S, first row: " << umatrix.row(0) << std::endl;
 
     // convert to S prime
-    Eigen::MatrixXd left = smatrix + smatrix.transpose();
-    Eigen::MatrixXd right = smatrix.diagonal().asDiagonal();
+    Eigen::MatrixXd left = umatrix + umatrix.transpose();
+    Eigen::MatrixXd right = umatrix.diagonal().asDiagonal();
 
-    smatrix = left - right;
+    umatrix = left - right;
 	}
   else
   {
-    smatrix = lmatrix + (dmatrix * 2); //lmatrix is lmatrix prime
+    umatrix = lmatrix + (dmatrix * 2); //lmatrix is lmatrix prime
   }
-  std::cout << "Converted to S prime, first row: " << smatrix.row(0) << std::endl;
+  std::cout << "Converted to U prime, first row: " << umatrix.row(0) << std::endl;
   diagonal_on = false;
   lmatrix_on = false;
 
-  // write out smatrix
-  if (write_smatrix_prime)
+  // write out umatrix
+  if (write_umatrix_prime)
   {
-	  std::ofstream file("./" + data_out_filename + "/smatrix_prime.txt");
-	  file << smatrix;
+	  std::ofstream file("./" + data_out_filename + "/umatrix_prime.txt");
+	  file << umatrix;
   }
 }
 

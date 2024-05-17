@@ -260,12 +260,12 @@ double Grid::boundaryEnergy(const std::unordered_set<Cell *> &flagged_cells,
     return U;
 };
 
-double Grid::SLmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const Eigen::MatrixXd &SLmatrix) {
+double Grid::ULmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const Eigen::MatrixXd &ULmatrix) {
 	// nonbonded volume interactions
 	double U = 0;
 	for(Cell* cell : flagged_cells)
 	{
-		double energy = cell->getSLmatrixEnergy(SLmatrix);
+		double energy = cell->getULmatrixEnergy(ULmatrix);
 		U += energy;
 	}
 	return U;

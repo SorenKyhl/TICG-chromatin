@@ -31,7 +31,7 @@ class Pysim:
         mkdir: bool = True,
         setup_needed: bool = True,
         overwrite: Optional[bool] = False,
-        smatrix: Optional[ArrayLike] = None,
+        umatrix: Optional[ArrayLike] = None,
         lmatrix: Optional[ArrayLike] = None,
         dmatrix: Optional[ArrayLike] = None
 
@@ -43,7 +43,7 @@ class Pysim:
             self.seqs = seqs.T
         else:
             self.seqs = seqs
-        self.S = smatrix
+        self.U = umatrix
         self.L = lmatrix
         self.D = dmatrix
 
@@ -114,9 +114,9 @@ class Pysim:
                 else:
                     self.write_sequence(self.seqs, Path(self.root, "pcf1.txt"))
                 np.save(Path(self.root, f"x.npy"), self.seqs)
-            if self.S is not None:
-                np.save(Path(self.root, f"S.npy"), self.S)
-                np.savetxt(Path(self.root, f"smatrix.txt"), self.S)
+            if self.U is not None:
+                np.save(Path(self.root, f"U.npy"), self.U)
+                np.savetxt(Path(self.root, f"umatrix.txt"), self.U)
             if self.L is not None:
                 np.save(Path(self.root, f"L.npy"), self.L)
                 np.savetxt(Path(self.root, f"lmatrix.txt"), self.L)

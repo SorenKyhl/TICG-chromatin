@@ -12,17 +12,17 @@ import pandas as pd
 import seaborn as sns
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
-                                      calculate_S)
+                                      calculate_U)
+from pylib.utils.load_utils import (get_final_max_ent_folder, load_L,
+                                    load_max_ent_L)
 from pylib.utils.plotting_utils import (plot_matrix, plot_mean_dist,
                                         plot_mean_vs_genomic_distance)
+from pylib.utils.utils import crop
 from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
-from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_L, load_max_ent_L)
 from sequences_to_contact_maps.scripts.plotting_utils import plot_diag_chi
-from sequences_to_contact_maps.scripts.utils import crop
 
 
 def getArgs(sample_folder=''):
@@ -136,7 +136,7 @@ def plot_all(args):
     # get S
     S = None
     if L is not None:
-        S = calculate_S(L, D)
+        S = calculate_U(L, D)
         print(S)
     else:
         S_file = osp.join(args.sample_folder, 'S.npy')

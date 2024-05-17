@@ -18,7 +18,8 @@ import scipy.ndimage as ndimage
 import torch
 import torch_geometric
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
-from pylib.utils.utils import load_json, triu_to_full
+from pylib.utils.load_utils import load_L, load_psi, load_Y, load_Y_diag
+from pylib.utils.utils import LETTERS, crop, load_json, triu_to_full
 from sklearn.cluster import KMeans
 from sklearn.decomposition import NMF, PCA, KernelPCA
 
@@ -30,14 +31,11 @@ from sequences_to_contact_maps.scripts.clean_directories import \
 from sequences_to_contact_maps.scripts.InteractionConverter import \
     InteractionConverter
 from sequences_to_contact_maps.scripts.knightRuiz import knightRuiz
-from sequences_to_contact_maps.scripts.load_utils import (load_L, load_psi,
-                                                          load_Y, load_Y_diag)
 from sequences_to_contact_maps.scripts.neural_nets.utils import (
     get_dataset, load_saved_model)
 from sequences_to_contact_maps.scripts.plotting_utils import (
     plot_matrix, plot_seq_binary, plot_seq_continuous)
 from sequences_to_contact_maps.scripts.R_pca import R_pca
-from sequences_to_contact_maps.scripts.utils import LETTERS, crop
 
 
 def get_gpu_memory():

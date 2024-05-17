@@ -159,14 +159,14 @@ public:
 
 
 	bool lmatrix_on;
-	bool smatrix_on;
+	bool umatrix_on; // script U matrix from GNN paper
 	bool dmatrix_on;
-	bool write_smatrix_prime;
+	bool write_umatrix_prime;
 
 	Eigen::MatrixXd lmatrix;
 	std::string lmatrix_filename;
-	Eigen::MatrixXd smatrix;
-	std::string smatrix_filename;
+	Eigen::MatrixXd umatrix;
+	std::string umatrix_filename;
 	Eigen::MatrixXd dmatrix;
 	std::string dmatrix_filename;
 

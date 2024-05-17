@@ -7,13 +7,13 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
-
 import pylib.analysis as analysis
 from pylib.Maxent import Maxent
 from pylib.Pysim import Pysim
 from pylib.utils import default, epilib, utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import *
+from pylib.utils.load_utils import get_final_max_ent_folder
 from pylib.utils.plotting_utils import plot_matrix
 from pylib.utils.utils import load_import_log
 
@@ -21,10 +21,6 @@ sys.path.append('/home/erschultz/TICG-chromatin')
 import scripts.optimize_grid as optimize_grid
 from scripts.data_generation.modify_maxent import get_samples
 from scripts.plotting.contact_map import getArgs, plot_all
-
-sys.path.append('/home/erschultz')
-from sequences_to_contact_maps.scripts.load_utils import \
-    get_final_max_ent_folder
 
 ROOT = '/home/erschultz'
 PROJECT2 = '/project2/depablo/erschultz'

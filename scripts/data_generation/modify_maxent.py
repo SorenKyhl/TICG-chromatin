@@ -12,10 +12,13 @@ import statsmodels.api as sm
 import tqdm
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
-                                      calculate_L, calculate_S)
-from pylib.utils.plotting_utils import plot_matrix
-from pylib.utils.utils import (load_import_log, load_json, pearson_round,
-                               triu_to_full)
+                                      calculate_L, calculate_U)
+from pylib.utils.load_utils import (get_final_max_ent_folder, load_L,
+                                    load_max_ent_D, load_max_ent_L,
+                                    load_max_ent_U, load_psi)
+from pylib.utils.plotting_utils import plot_matrix, plot_seq_continuous
+from pylib.utils.utils import (LETTERS, load_import_log, load_json,
+                               pearson_round, triu_to_full)
 from scipy.ndimage import gaussian_filter
 from scipy.optimize import curve_fit
 from scipy.stats import (beta, gamma, laplace, multivariate_normal, norm,
@@ -30,14 +33,6 @@ from scripts.data_generation.MultivariateSkewNormal import \
     multivariate_skewnorm
 from scripts.max_ent_setup.get_params_old import Tester
 
-sys.path.append('/home/erschultz')
-from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_L, load_max_ent_D, load_max_ent_L,
-    load_max_ent_S, load_psi)
-from sequences_to_contact_maps.scripts.plotting_utils import \
-    plot_seq_continuous
-
-LETTERS = 'ABCDEFGHIJKLMN'
 ROOT = '/home/erschultz'
 PROJECT2 = '/project2/depablo/erschultz'
 
@@ -296,7 +291,7 @@ def modify_maxent_diag_chi(dataset, b, phi, v, k, ar, edit=True, plot=True, cell
         m = len(diag_chi_step)
         x = np.arange(0, 2*m)
 
-        S = load_max_ent_S(max_ent_dir)
+        S = load_max_ent_U(max_ent_dir)
         meanDist_S = DiagonalPreprocessing.genomic_distance_statistics(S, 'freq')
 
         curves = [Curves.poly6_curve, Curves.poly8_curve, Curves.poly12_curve]
@@ -1012,7 +1007,7 @@ def plaid_dist(dataset, b, phi, v, k, ar, plot=True, eig_norm=False, cell_line=N
             else:
                 diag_chis = np.load(osp.join(s_dir, 'diag_chis.npy'))
             D = calculate_D(diag_chis)
-        S = calculate_S(L, D)
+        S = calculate_U(L, D)
 
         m = len(L)
         L_list.append(L[np.triu_indices(m)])
