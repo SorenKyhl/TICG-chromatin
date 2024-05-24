@@ -3,8 +3,8 @@
 #SBATCH --output=logFiles/compress.out
 #SBATCH --time=24:00:00
 #SBATCH --account=pi-depablo
-#SBATCH --partition=depablo
-#SBATCH --ntasks=10
+#SBATCH --partition=amd
+#SBATCH --ntasks=8
 #SBATCH --mem-per-cpu=1000
 
 compress(){
@@ -17,8 +17,7 @@ compress(){
     rm e.npy &
     rm s.npy &
     rm L.npy &
-    rm S.npy &
-
+    # rm S.npy &
 
     rm chis.tek &
     rm chis.npy &
@@ -32,11 +31,11 @@ compress(){
     cd production_out
     rm *.traj
   done
-
-  cd $dir
-  rm -r "${dataset}.tar.gz"
-  tar -czvf "${dataset}.tar.gz" $dataset
-  rm -r $dataset
+ 
+  # cd $dir
+  # rm -r "${dataset}.tar.gz"
+  # tar -czf "${dataset}.tar.gz" $dataset
+  # rm -r $dataset
 }
 
 to_small(){
@@ -75,10 +74,7 @@ cleanup(){
 }
 
 dir='/home/erschultz'
-
 dir='/project2/depablo/erschultz'
 cd $dir
-compress dataset_08_25_23
-compress dataset_09_11_23
-compress dataset_09_17_23
-compress dataset_09_19_23
+compress dataset_04_05_24_imr90
+compress dataset_04_18_24_imr90

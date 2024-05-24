@@ -1,5 +1,5 @@
 {
-  "conservative_contact_pooling": false,
+  "conservative_contact_pooling": true,
   "double_count_main_diagonal": false,
   "angles_on": true,
   "k_angle": 0,
@@ -27,7 +27,7 @@
   "constant_chi_on": false,
 
   "lmatrix_on": false,
-  "smatrix_on": false,
+  "umatrix_on": false,
   "dmatrix_on": false,
 
   "decay_length": 500,

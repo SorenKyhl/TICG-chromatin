@@ -23,10 +23,12 @@ from sequences_to_contact_maps.scripts.utils import calc_dist_strat_corr
 
 
 def meanDist_comparison():
-    # datasets = ['dataset_01_26_23', 'dataset_02_16_23']
-    # datasets = ['dataset_01_26_23', 'dataset_02_04_23', 'dataset_02_21_23']
-    datasets = ['dataset_02_04_23', 'dataset_09_28_23']
-    labels = ['Experiment', 'synthetic']
+    datasets = ['dataset_06_29_23', 'dataset_11_15_23', 'dataset_11_16_23_hmec', 'dataset_11_16_23_imr90', 'dataset_11_16_23_k562']
+    labels = ['experiment', 'syn_mixed', 'syn_hmec', 'syn_imr90', 'syn_k562']
+    # datasets = ['dataset_06_29_23', 'dataset_11_08_23',]
+    # labels = ['experiment', 'syn_mixed']
+    m_list= [512]*len(datasets)
+
     data_dir = osp.join('/home/erschultz', datasets[0])
 
     cmap = matplotlib.cm.get_cmap('tab10')
@@ -36,25 +38,27 @@ def meanDist_comparison():
     ax2 = ax.twinx()
     ax2.get_yaxis().set_visible(False)
 
-    s=100; cutoff = 0.01
-    for i, (dataset, label) in enumerate(zip(datasets, labels)):
-        meanDist_list = molar_contact_ratio(dataset, None, False)
-        print(f'Retrieved meanDist_list for dataset {dataset}')
+    s=1; cutoff = None
+    arr_list = []
+    for i, (dataset, label, m) in enumerate(zip(datasets, labels, m_list)):
+        meanDist_list = molar_contact_ratio(dataset, None, False, cap=1000, m=m)
+        print(f'Retrieved meanDist_list for dataset {dataset}: size={meanDist_list.shape}')
         arr = []
         for meanDist in meanDist_list:
             arr.append(meanDist[s])
             if cutoff is not None and meanDist[s] > cutoff:
                 continue
-            ax.plot(meanDist, c = colors[i], alpha=0.6)
+            ax.plot(meanDist, c = colors[i], alpha=0.3)
         ax2.plot(np.NaN, np.NaN, label = label, c = colors[i])
         print(np.mean(arr), np.max(arr))
+        arr_list.append(arr)
 
     ax.set_yscale('log')
     ax.set_xscale('log')
 
     if cutoff is not None:
         ax.axhline(cutoff, c='k')
-    ax.axvline(s, c='k')
+        ax.axvline(s, c='k')
     ax.set_ylabel('Contact Probability', fontsize = 16)
     ax.set_xlabel('Polymer Distance (beads)', fontsize = 16)
 
@@ -62,6 +66,44 @@ def meanDist_comparison():
     plt.tight_layout()
     plt.savefig(osp.join(data_dir, 'meanDist_comparison.png'))
     plt.close()
+
+
+    bin_width = 0.005
+    arr_list = arr_list
+    all_vals = arr_list[0].copy()
+    all_vals.extend(arr_list[1])
+    print('a,', all_vals)
+    start = np.round(np.min(all_vals), 2)
+    end = np.round(np.max(all_vals), 2)
+    print(start, end, bin_width)
+    bin_positions = np.arange(start - bin_width, end + bin_width, bin_width)
+    for arr, label, dataset in zip(arr_list, labels, datasets):
+        _, _, all_cell_lines = get_samples(dataset, True, return_cell_lines=True)
+        if all_cell_lines is not None:
+            print(set(all_cell_lines))
+            for target_cell_line in sorted(set(all_cell_lines)):
+                print(target_cell_line)
+                cell_line_arr = []
+                print(len(arr), len(all_cell_lines))
+                for p_s, cell_line in zip(arr, all_cell_lines):
+                    if cell_line == target_cell_line:
+                        cell_line_arr.append(p_s)
+                if len(cell_line_arr) > 0:
+                    print(cell_line_arr[:5], len(cell_line_arr))
+                    plt.hist(cell_line_arr, weights = np.ones_like(cell_line_arr) / len(cell_line_arr),
+                            bins = bin_positions, alpha=0.5,
+                            label = target_cell_line)
+        else:
+            print('cell_lines is None')
+            plt.hist(arr, weights = np.ones_like(arr) / len(arr),
+                    bins = bin_positions, alpha=0.5,
+                    label = label)
+    plt.legend()
+    plt.xlabel('P(s=1)', fontsize=16)
+    plt.tight_layout()
+    plt.savefig(osp.join(data_dir, 'meanDist_p_s_cell_line.png'))
+    plt.close()
+
 
 def p_s_comparison(dataset, GNN_ID, b, phi, k=8, max_ent=False):
     samples, experimental = get_samples(dataset, True)
@@ -256,7 +298,7 @@ def scc_comparison(dataset, ID=None, k=8, max_ent=False):
     print(f'GNN={np.mean(scc_GNN)}, PCA={np.mean(scc_PCA)}')
 
 
-def l_ij_comparison(dataset, dataset_exp, b, phi, k, ar):
+def l_ij_comparison(dataset, dataset_exp, b, v, k, ar):
     data_dir = osp.join('/home/erschultz', dataset)
 
     L_list = []
@@ -264,14 +306,15 @@ def l_ij_comparison(dataset, dataset_exp, b, phi, k, ar):
     S_list = []
     chi_list = []
     label_list = []
-    L_max_ent, S_max_ent, D_max_ent, chi_max_ent = plaid_dist(dataset_exp, b, phi, k, ar, False)
+    L_max_ent, S_max_ent, D_max_ent, chi_max_ent = plaid_dist(dataset_exp, b,
+                                                                None, v, k, ar, False)
     L_list.append(L_max_ent)
     D_list.append(D_max_ent)
     S_list.append(S_max_ent)
     # chi_list.append(chi_max_ent)
     label_list.append('Max Ent')
 
-    L_sim, S_sim, D_sim, chi_sim = plaid_dist(dataset, b, phi, None, ar, False)
+    L_sim, S_sim, D_sim, chi_sim = plaid_dist(dataset, b, None, v, None, ar, False)
     L_list.append(L_sim)
     D_list.append(D_sim)
     S_list.append(S_sim)
@@ -639,7 +682,7 @@ if __name__ == '__main__':
     # plot_y_S('dataset_02_04_23', 180, 0.01, 2.0)
     # plot_y_S('dataset_')
 
-    meanDist_comparison()
-    # l_ij_comparison('dataset_09_28_23', 'dataset_02_04_23', 180, 0.008, 5, 1.5)
-    # p_s_comparison('dataset_02_04_23', None, 261, 0.01, 10)
+    # meanDist_comparison()
+    l_ij_comparison('dataset_12_12_23_imr90', 'dataset_12_06_23', 200, 8, 10, 1.5)
+    # p_s_comparison('dataset_11_16_23_hmec', None, 261, 0.01, 10)
     # scc_comparison('dataset_02_04_23', 392, 8, True)

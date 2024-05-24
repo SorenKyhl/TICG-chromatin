@@ -40,14 +40,16 @@ Context:
 
 class ErrorMetric():
     """Calculate difference between sim and exp p(s) for different metrics."""
-    def __init__(self, metric, mode, gthic, config, sim_engine):
+    def __init__(self, metric, mode, gthic, config, sim_engine, dataset=None):
         self.counter = 0 # number of iterations
         self.metric = metric
         self.mode = mode # what is being optimized
         self.gthic = gthic # experiment
         self.config = config
-        self.xyz = get_bonded_simulation_xyz(config, False) # bonded xyz
         self.sim_engine = sim_engine
+        self.dataset = dataset
+        self.xyz = get_bonded_simulation_xyz(config, self.dataset, False) # bonded xyz
+
 
     def __call__(self, val):
         '''
@@ -96,6 +98,7 @@ class ErrorMetric():
         elif self.metric == 'mse':
             error = self.mse_error()
 
+        print(val, error)
         return error
 
     def neighbor_error(self):
@@ -111,25 +114,36 @@ class ErrorMetric():
         error = mean_squared_error(p_s_sim, p_s_exp)
         return error
 
-def get_bonded_simulation_xyz(config, throw_exception=False):
-    dataset = osp.join(default.root, 'dataset_bonded')
-    m = config['nbeads']
-    b = config['bond_length']
+def get_bonded_simulation_xyz(config, dataset, throw_exception=False):
+    if dataset is None:
+        if throw_exception:
+            raise Exception('dataset is None')
+        else:
+            print('get_bonded_simulation_xyz: dataset is None')
+            return None
 
-    bond_type = config['bond_type']
     boundary_type = config['boundary_type']
     if boundary_type == 'spheroid':
         boundary_type += f'_{config["aspect_ratio"]}'
     beadvol = config['beadvol']
-    assert beadvol == 130000, f'not supported for {beadvol}'
+    bond_type = config['bond_type']
+    dir = osp.join(dataset, f'boundary_{boundary_type}/beadvol_{beadvol}/bond_type_{bond_type}')
+    if bond_type == 'SC':
+        k_bond = config['k_bond']
+        dir = osp.join(dir, f'k_bond_{k_bond}')
+
+    m = config['nbeads']
+    b = config['bond_length']
+    dir = osp.join(dir,f'm_{m}/bond_length_{b}')
+
     k_angle = config['k_angle']
     theta_0 = config['theta_0']
     if 'phi_chromatin' in config:
         phi = config['phi_chromatin']
-        dir = osp.join(dataset, f'boundary_{boundary_type}/bond_type_{bond_type}/m_{m}/bond_length_{b}/phi_{phi}/angle_{k_angle}')
+        dir = osp.join(dir, f'phi_{phi}/angle_{k_angle}')
     elif 'target_volume' in config:
         v = config['target_volume']
-        dir = osp.join(dataset, f'boundary_{boundary_type}/bond_type_{bond_type}/m_{m}/bond_length_{b}/v_{v}/angle_{k_angle}')
+        dir = osp.join(dir, f'v_{v}/angle_{k_angle}')
     else:
         raise Exception('One of phi_chromatin and target_volume is required')
     if theta_0 != 180:
@@ -139,16 +153,17 @@ def get_bonded_simulation_xyz(config, throw_exception=False):
         if throw_exception:
             raise Exception(f'{dir} does not exist')
         else:
-            print(f'{dir} does not exist')
+            print(f'get_bonded_simulation_xyz: {dir} does not exist')
             return None
 
     xyz_file = osp.join(dir, 'production_out/output.xyz')
     xyz = xyz_load(xyz_file, multiple_timesteps=True)
     return xyz
 
-def optimize_config(config, gthic, mode, low_bound, high_bound,
-                        root=None, metric='neighbor_1'):
-    """tune grid size until simulated nearest neighbor contact probability
+def optimize_config(config, gthic, mode='grid', low_bound=0.1, high_bound=3,
+                        root=None, metric='neighbor_1', dataset=None):
+    """
+    Tune grid size until simulated nearest neighbor contact probability
     is equal to the same probability derived from the ground truth hic matrix.
 
     Args:
@@ -172,17 +187,17 @@ def optimize_config(config, gthic, mode, low_bound, high_bound,
     gthic /= np.mean(np.diagonal(gthic))
 
 
-
     sim_engine = Pysim(root, config, seqs=None, overwrite=False, mkdir=False)
-    error_metric = ErrorMetric(metric, mode, gthic, config, sim_engine)
+    error_metric = ErrorMetric(metric, mode, gthic, config, sim_engine, dataset)
     if metric.startswith('neighbor'):
         try:
+            print(low_bound, high_bound)
             result = optimize.brentq(
                 error_metric,
                 low_bound,
                 high_bound,
                 xtol=1e-3,
-                maxiter=15,
+                maxiter=15
             )
         except RuntimeError as e:
             print(e)
@@ -211,8 +226,8 @@ def optimize_config(config, gthic, mode, low_bound, high_bound,
             raise
         result = result.x
 
-    if mode == 'grid':
-        # optimizer returns the grid_to_bond ratio... have to convert to real units.
+    if mode in {'grid', 'distance'}:
+        # optimizer returns the grid_to_bond ratio, have to convert to real units.
         optimum = result * config["bond_length"]
     elif mode == 'angle':
         optimum = result
@@ -339,5 +354,5 @@ if __name__ == "__main__":
         pipe = default.data_pipeline.resize(config["nbeads"])
         gthic = pipe.load_hic(default.HCT116_hic)
 
-    optimal_grid_size = optimize_grid_size(config, gthic)
+    optimal_grid_size = optimize_config(config, gthic)
     print("optimal grid size is:", optimal_grid_size)

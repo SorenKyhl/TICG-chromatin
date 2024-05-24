@@ -19,7 +19,7 @@ public:
 	double side_length;           // size of cubic boundary in units of nm
 	double radius;                // radius of simulation volume in [nanometers]
 	int boundary_radius;          // radius of boundary in units of grid cells
-	double equitorial_radius;     // radius of spheroidal boundary 
+	double equitorial_radius;     // radius of spheroidal boundary
 	double polar_radius;          // radius of spheroidal boundary
 	double aspect_ratio;          // aspect ratio of spheroidal boundary
 	Eigen::RowVector3d sphere_center; // fixed: center of spherical (or spheroidal) boundary
@@ -49,7 +49,7 @@ public:
 	double diagEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<double> diag_chis);
 	double boundaryEnergy(const std::unordered_set<Cell*>& flagged_cells, const double boundary_chi);
 	// double boundaryEnergy(const std::unordered_set<Cell*>& flagged_cells, const std::vector<std::vector<double>> &Smatrix);
-	double SLmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const Eigen::MatrixXd &SLmatrix);
+	double ULmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const Eigen::MatrixXd &ULmatrix);
 	double DmatrixEnergy(const std::unordered_set<Cell*>& flagged_cells, const Eigen::MatrixXd &Dmatrix);
 	double get_ij_Contacts(int i, int j);
 	double getContacts();

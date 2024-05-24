@@ -22,7 +22,7 @@
   "aspect_ratio": 1.0,
 
   "lmatrix_on": true,
-  "smatrix_on": true,
+  "umatrix_on": true,
   "dmatrix_on": true,
 
   "nSweeps": 300000,

@@ -5,9 +5,13 @@ import os.path as osp
 
 import hicrep
 import numpy as np
+import pylib.utils.hic_utils as hic_utils
 import scipy
 import sklearn.metrics
+from pylib.utils import epilib
 from pylib.utils.utils import triu_to_full
+from scipy.sparse import lil_matrix
+from scipy.sparse.linalg import eigsh
 from scipy.stats import pearsonr, zscore
 
 
@@ -17,13 +21,18 @@ class SCC():
     Calculate Stratified Correlation Coefficient (SCC)
     as defined by https://pubmed.ncbi.nlm.nih.gov/28855260/.
     """
-    def __init__(self, h=1, K=None, var_stabilized=True):
+    def __init__(self, h=1, K=None, var_stabilized=True, start=None):
         self.r_2k_dict = {} # memoized solution for var_stabilized r_2k
         self.h = h
         self.K = K
+        if start is None:
+            self.start = 0
+        else:
+            self.start = start
         self.var_stabilized = var_stabilized
 
-    def r_2k(self, x_k, y_k, var_stabilized):
+
+    def r_2k(self, x_k, y_k):
         '''
         Compute r_2k (numerator of pearson correlation)
 
@@ -32,11 +41,9 @@ class SCC():
             y: contact map of same shape as x
             var_stabilized: True to use var_stabilized version
         '''
-        if var_stabilized is None:
-            var_stabilized = self.var_stabilized
 
         # x and y are stratums
-        if var_stabilized:
+        if self.var_stabilized:
             # var_stabilized computes variance of ranks
             N_k = len(x_k)
             if N_k in self.r_2k_dict:
@@ -52,8 +59,8 @@ class SCC():
         else:
             return math.sqrt(np.var(x_k) * np.var(y_k))
 
-    def scc_file(self, xfile, yfile, h=None, K=None, var_stabilized=None,
-                verbose=False, distance=False):
+    def scc_file(self, xfile, yfile, h=None, K=None,
+                verbose=False, distance=False, chr=None, resolution=None):
         '''
         Wrapper for scc that takes file path as input. Must be .npy file.
 
@@ -72,14 +79,14 @@ class SCC():
             else:
                 return result
 
-        x = np.load(xfile)
-        y = np.load(yfile)
-        return self.scc(x, y, h, K, var_stabilized, verbose, distance)
+        x = hic_utils.load_contact_map(xfile, chr, resolution)
+        y = hic_utils.load_contact_map(yfile, chr, resolution)
+        return self.scc(x, y, h, K, verbose, distance)
 
     def mean_filter(self, x, size):
-        return scipy.ndimage.uniform_filter(x, size, mode="constant") / (size) ** 2
+        return scipy.ndimage.uniform_filter(x, size, mode="constant") / (size ** 2)
 
-    def scc(self, x, y, h=None, K=None, var_stabilized=None, verbose=False,
+    def scc(self, x, y, K=None, verbose=False,
             debug=False, distance=False):
         '''
         Compute scc between contact map x and y.
@@ -89,7 +96,6 @@ class SCC():
             y: contact map of same shape as x
             h: span of mean filter (width = (1+2h)) (None or 0 to skip)
             K: maximum stratum (diagonal) to consider (5 Mb recommended)
-            var_stabilized: True to use var_stabilized r_2k (default = True)
             verbose: True to print when nan found
             debug: True to return p_arr and w_arr
             distance: True to return 1 - scc
@@ -105,15 +111,15 @@ class SCC():
             else:
                 K = self.K
 
-        if h is None:
-            h = self.h
-        x = self.mean_filter(x.astype(np.float64), 1+2*h)
-        y = self.mean_filter(y.astype(np.float64), 1+2*h)
+
+        if self.h is not None:
+            x = self.mean_filter(x.astype(np.float64), 1+2*self.h)
+            y = self.mean_filter(y.astype(np.float64), 1+2*self.h)
 
         nan_list = []
         p_arr = []
         w_arr = []
-        for k in range(K):
+        for k in range(self.start, K):
             # get stratum (diagonal) of contact map
             x_k = np.diagonal(x, k)
             y_k = np.diagonal(y, k)
@@ -140,7 +146,7 @@ class SCC():
                     nan_list.append(k)
                 else:
                     p_arr.append(p_k)
-                    r_2k = self.r_2k(x_k, y_k, var_stabilized)
+                    r_2k = self.r_2k(x_k, y_k)
                     w_k = N_k * r_2k
                     w_arr.append(w_k)
 
@@ -209,8 +215,13 @@ class InnerProduct():
             self.files = files
 
 
-        with multiprocessing.Pool(jobs) as p:
-            self.zscores = p.map(self.get_zscore_feature, self.files)
+        if jobs > 1:
+            with multiprocessing.Pool(jobs) as p:
+                self.zscores = p.map(self.get_zscore_feature, self.files)
+        else:
+            self.zscores = []
+            for f in files:
+                self.zscores.append(self.get_zscore_feature(f))
         self.zscores = np.array(self.zscores)
 
     def get_distance_matrix(self):
@@ -222,8 +233,8 @@ class InnerProduct():
         return distance_mat
 
     def get_zscore_feature(self, file):
-        y = load_contact_map(file, self.chr, self.resolution)
-        if len(y) == 1:
+        y = hic_utils.load_contact_map(file, self.chr, self.resolution)
+        if len(y.shape) == 1:
             y = triu_to_full(y)
         zscores = []
         for k in range(self.K):
@@ -240,21 +251,152 @@ def get_symmetry_score(A, order="fro"):
 
     return symmetric / (symmetric + skew_symmetric)
 
+def hic_spector(y1, y2, num_evec):
+    '''HiC-spector metric from https://github.com/gersteinlab/HiC-spector.'''
+    def evec_distance(v1,v2):
+        d1=np.dot(v1-v2,v1-v2)
+        d2=np.dot(v1+v2,v1+v2)
+        if d1<d2:
+            d=d1
+        else:
+            d=d2
+        return np.sqrt(d)
 
+    def get_ipr(evec):
+        ipr=1.0/(evec*evec*evec*evec).sum()
+        return ipr
+
+    def get_Laplacian(M):
+        S=M.sum(1)
+        i_nz=np.where(S>0)[0]
+        S=S[i_nz]
+        M=(M[i_nz].T)[i_nz].T
+        S=1/np.sqrt(S)
+        M=S*M
+        M=(S*M.T).T
+        n=np.size(S)
+        M=np.identity(n)-M
+        M=(M+M.T)/2
+        return M
+
+    M1=lil_matrix(y1)
+    M2=lil_matrix(y2)
+
+    k1=np.sign(M1.A).sum(1)
+    d1=np.diag(M1.A)
+    kd1=~((k1==1)*(d1>0))
+    k2=np.sign(M2.A).sum(1)
+    d2=np.diag(M2.A)
+    kd2=~((k2==1)*(d2>0))
+    iz=np.nonzero((k1+k2>0)*(kd1>0)*(kd2>0))[0]
+    M1b=(M1[iz].A.T)[iz].T
+    M2b=(M2[iz].A.T)[iz].T
+
+    i_nz1=np.where(M1b.sum(1)>0)[0]
+    i_nz2=np.where(M2b.sum(1)>0)[0]
+    i_z1=np.where(M1b.sum(1)==0)[0]
+    i_z2=np.where(M2b.sum(1)==0)[0]
+
+    M1b_L=get_Laplacian(M1b)
+    M2b_L=get_Laplacian(M2b)
+
+    a1, b1=eigsh(M1b_L,k=num_evec,which="SM")
+    a2, b2=eigsh(M2b_L,k=num_evec,which="SM")
+
+    b1_extend=np.zeros((np.size(M1b,0),num_evec))
+    b2_extend=np.zeros((np.size(M2b,0),num_evec))
+    for i in range(num_evec):
+        b1_extend[i_nz1,i]=b1[:,i]
+        b2_extend[i_nz2,i]=b2[:,i]
+
+    ipr_cut=5
+    ipr1=np.zeros(num_evec)
+    ipr2=np.zeros(num_evec)
+    for i in range(num_evec):
+        ipr1[i]=get_ipr(b1_extend[:,i])
+        ipr2[i]=get_ipr(b2_extend[:,i])
+
+    b1_extend_eff=b1_extend[:,ipr1>ipr_cut]
+    b2_extend_eff=b2_extend[:,ipr2>ipr_cut]
+    num_evec_eff=min(np.size(b1_extend_eff,1),np.size(b2_extend_eff,1))
+
+    evd=np.zeros(num_evec_eff)
+    for i in range(num_evec_eff):
+        evd[i]=evec_distance(b1_extend_eff[:,i],b2_extend_eff[:,i])
+
+    Sd=evd.sum()
+    l=np.sqrt(2)
+    evs=abs(l-Sd/num_evec_eff)/l
+
+    N=float(M1.shape[1]);
+    if (np.sum(ipr1>N/100)<=1)|(np.sum(ipr2>N/100)<=1):
+        print("at least one of the maps does not look like typical Hi-C maps")
+    # else:
+    #     print("size of maps: %d" %(np.size(M1,0)))
+    #     print("reproducibility score: %6.3f " %(evs))
+    #     print("num_evec_eff: %d" %(num_evec_eff))
+    return evs
+
+def genome_disco(y1, y2, t):
+    def normalize(y):
+        # normalize y such that rows sum to 1
+        row_sums = y.sum(axis=1, keepdims=True)
+        y /= row_sums
+
+    normalize(y1)
+    normalize(y2)
+
+    norm = np.sum(np.abs(np.power(y1, t) - np.power(y2, t)))
+
+    denom = 0.5 * (np.sum(np.sum(y1, axis=1) > 0) +  np.sum(np.sum(y2, axis=1) > 0))
+
+    diff_score = norm / denom
+
+    score = 1 - diff_score
+
+    return score
+
+## wrapper functions - Soren ##
 def get_SCC(hic1, hic2):
     # oe1 = get_oe(hic1)
     # oe2 = get_oe(hic2)
     # return np.corrcoef(oe1.flatten(), oe2.flatten())[0,1]
     return SCC().scc(hic1, hic2)
 
-
 def get_RMSE(hic1, hic2):
     return np.sqrt(sklearn.metrics.mean_squared_error(hic1, hic2))
 
-
 def get_RMSLE(hic1, hic2):
     return np.sqrt(sklearn.metrics.mean_squared_log_error(hic1, hic2))
-
+## ##
 
 def get_pearson(hic1, hic2):
     return np.corrcoef(hic1.flatten(), hic2.flatten())[0, 1]
+
+def test():
+    y1 = np.load('/home/erschultz/dataset_12_06_23/samples/sample1/y.npy')
+    # y2 = np.load('/home/erschultz/dataset_12_06_23/samples/sample2/y.npy')
+    # y1 = np.load('/home/erschultz/dataset_11_20_23/samples/sample3/y.npy')
+    # y2 = np.load('/home/erschultz/dataset_11_20_23/samples/sample202/y.npy')
+    y2 = np.load('/home/erschultz/dataset_12_06_23/samples/sample1/optimize_grid_b_200_v_8_spheroid_1.5-max_ent10/iteration30/y.npy')
+    y1 = np.eye(10)
+    y2 = np.ones((10, 10))
+
+    # s = genome_disco(epilib.get_oe(y1), epilib.get_oe(y2), 3)
+    # s = genome_disco(y1, y2, 3)
+    # print('score', s)
+
+    # files = ['/home/erschultz/scratch/contact_diffusion_kNN17inner_product/iteration_0/sc_contacts/y_sc_76.npy',
+    #         '/home/erschultz/scratch/contact_diffusion_kNN17inner_product/iteration_0/sc_contacts/y_sc_78.npy']
+    # IP = InnerProduct(files = files, K = 20, jobs = 1,
+    #                 resolution = None, chr = None)
+    # D = IP.get_distance_matrix()
+    # print(D)
+
+    scc = SCC()
+    scc, p_arr, w_arr = scc.scc(y1, y2, debug = True, var_stabilized=True)
+    print(w_arr, w_arr.shape)
+
+
+if __name__ == '__main__':
+    test()

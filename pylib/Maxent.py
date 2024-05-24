@@ -54,6 +54,7 @@ class Maxent:
         gthic: ground truth hic
         overwrite: will overwrite existing files
         bound_diag_chis: will ensure that diag chis start at 0
+        plaid_diagonly: True to constrain plaid chis to be a diagonal matrix
         """
 
         # maxent things
@@ -247,7 +248,7 @@ class Maxent:
 
     def analyze(self, dir):
         if self.analysis_on:
-            analysis.main(self.fast_analysis, dir)
+            analysis.main(self.fast_analysis, dir, self.params['mode'])
 
     def fit(self):
         """execute maxent optimization"""
@@ -300,7 +301,7 @@ class Maxent:
             )
 
             curr_chis = sim.flatten_chis()
-            obs, jac = sim.load_observables(jacobian=True)
+            obs, jac = sim.load_observables(jacobian=True, mode = self.params['mode'])
             obj_goal = np.array(self.params["goals"])
 
 
@@ -318,9 +319,11 @@ class Maxent:
             if self.dampen_first_step and (it == 1):
                 gamma *= 0.25
 
-            print(f"gammma = {gamma}")
             print("self.gamma = " + str(self.params["gamma"]))
+            print(f"gammma = {gamma}")
 
+            if self.params['mode'] == 'diag':
+                plaid, curr_chis = sim.split_chis(curr_chis)
             newchis, newloss = utils.newton(
                 lam=obs,
                 obj_goal=obj_goal,
@@ -330,6 +333,8 @@ class Maxent:
                 trust_region=self.params["trust_region"],
                 method=self.params["method"],
             )
+            if self.params['mode'] == 'diag':
+                newchis = np.concatenate((plaid, newchis))
 
             if self.bound_diag_chis:
                 plaid, diag = sim.split_chis(newchis) # these are a view (reference type)
@@ -342,6 +347,7 @@ class Maxent:
                 new_chis_diagonly[inds] = newchis
                 newchis = new_chis_diagonly
 
+            print(newchis)
             converged = self.track_progress(newchis, newloss, sim)
             os.symlink(
                 self.resources / "experimental_hic.npy",
@@ -372,6 +378,8 @@ class Maxent:
 
         # set up new config
         config = self.defaultsim.config.copy()
+        config['dump_observables'] = False # won't be needed - faster without
+        config['dump_stats_frequency'] = 10 # run more frequent dump_stats to get better contact map
         sweeps = self.final_it_sweeps // self.params["parallel"]
 
         sim = Pysim(

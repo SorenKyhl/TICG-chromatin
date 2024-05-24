@@ -12,6 +12,7 @@
 #include "Bead.h"
 #include "DSS_Bond.h"
 #include "FENE_Bond.h"
+#include "SC_Bond.h"
 #include "Harmonic_Bond.h"
 #include "Harmonic_Angle.h"
 #include "Cell.h"
@@ -19,7 +20,6 @@
 #include "Analytics.h"
 #include "prof_timer.cpp"
 #include "random_mars.h"
-
 
 class Sim {
 public:
@@ -45,6 +45,7 @@ public:
 	double total_volume;
 	double grid_size; // nm
 	double bond_length; // nm
+	double k_bond;
 	std::string bond_type;
 	double k_angle;
 	double theta_0;
@@ -145,6 +146,9 @@ public:
 	int num_threads;
 
 	std::vector<std::vector<int>> contact_map;
+	Eigen::MatrixXd contact_map_matrix;
+	std::vector<Eigen::MatrixXd> masks;
+	Eigen::MatrixXd psi;
 	int contact_resolution; //= 500;
 	bool dump_density;
 	bool dump_observables;
@@ -155,14 +159,14 @@ public:
 
 
 	bool lmatrix_on;
-	bool smatrix_on;
+	bool umatrix_on; // script U matrix from GNN paper
 	bool dmatrix_on;
-	bool write_smatrix_prime;
+	bool write_umatrix_prime;
 
 	Eigen::MatrixXd lmatrix;
 	std::string lmatrix_filename;
-	Eigen::MatrixXd smatrix;
-	std::string smatrix_filename;
+	Eigen::MatrixXd umatrix;
+	std::string umatrix_filename;
 	Eigen::MatrixXd dmatrix;
 	std::string dmatrix_filename;
 
@@ -218,6 +222,9 @@ public:
 	void saveXyz() ;
 	void saveEnergy(int sweep);
 	void saveObservables(int sweep);
+	void saveObservablesDistance(int sweep);
+	Eigen::MatrixXd contactMatrix();
+	void initializeMasks();
 	void saveContacts(int sweep);
 	void makeDataAndLogFiles();
 	void redirectStdout();

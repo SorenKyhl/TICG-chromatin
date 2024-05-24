@@ -3,19 +3,19 @@ import sys
 from pathlib import Path
 from typing import Callable
 
+import hicrep
 import numpy as np
 import scipy.ndimage as ndimage
 from numba import njit
-from skimage.measure import block_reduce
-
 from pylib.utils import default, epilib
+from skimage.measure import block_reduce
 
 """
 collection of functions for manipulating hic maps
 """
 
 
-def pool(inp, factor, fn=np.nansum, normalize=True):
+def pool(inp, factor, fn=np.nansum, normalize=True, normalize_method='ones'):
     """Resizes input matrix by factor using fn using modified sum pooling
 
     in modified sum pooling, the sum along the diagonal only includes
@@ -34,7 +34,7 @@ def pool(inp, factor, fn=np.nansum, normalize=True):
     out = processed + np.triu(processed, 1).T
 
     if normalize:
-        out = normalize_hic(out)
+        out = normalize_hic(out, normalize_method)
 
     return out
 
@@ -170,6 +170,35 @@ def load_hic(nbeads, pool_fn=pool_sum, chrom=2, cell="HCT116_auxin"):
     pooled = pool_fn(gthic, factor)
     return pooled
 
+def load_contact_map(file, chrom = None, resolution = None):
+    '''Load contact map from cool, mcool, or npy format.'''
+    file_type = file.split('.')[-1]
+    if file_type == 'cool':
+        clr, binsize = hicrep.utils.readMcool(file, -1)
+        if resolution is not None:
+            assert resolution == binsize, f"{resolution} != {binsize}"
+        if chrom is None:
+            y = []
+            for chrom in clr.chromnames:
+                y.append(clr.matrix(balance=False).fetch(f'{chrom}'))
+        else:
+            y = clr.matrix(balance=False).fetch(f'{chrom}')
+    elif file_type == 'mcool':
+        assert resolution is not None
+        clr, _ = hicrep.utils.readMcool(file, resolution)
+        if chrom is None:
+            y = []
+            for chrom in clr.chromnames:
+                y.append(clr.matrix(balance=False).fetch(f'{chrom}'))
+        else:
+            y = clr.matrix(balance=False).fetch(f'{chrom}')
+    elif file_type == 'npy':
+        y = np.load(file)
+    else:
+        raise Exception(f'Unaccepted file type: {file_type}')
+
+    return y
+
 
 def load_seqs(nbeads, k, chrom="2", cell="HCT116_auxin"):
     """load sequences by pooling preloaded high resolution sequences"""
@@ -240,3 +269,14 @@ def get_diagonal(contact):
     for k in range(rows):
         d[k] = np.mean(np.diag(contact, k))
     return d
+
+def rescale_p_s_1(y, target_p):
+    y /= np.mean(y.diagonal())
+    diag = y.diagonal().copy()
+    y_copy = y.copy()
+    np.fill_diagonal(y_copy, 0)
+    y_copy /= np.mean(y_copy.diagonal(offset=1))
+    y_copy *= target_p
+    np.fill_diagonal(y_copy, diag)
+
+    return y_copy

@@ -12,9 +12,13 @@ import statsmodels.api as sm
 import tqdm
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
-                                      calculate_L, calculate_S)
-from pylib.utils.plotting_utils import plot_matrix
-from pylib.utils.utils import pearson_round, triu_to_full
+                                      calculate_L, calculate_U)
+from pylib.utils.load_utils import (get_final_max_ent_folder, load_L,
+                                    load_max_ent_D, load_max_ent_L,
+                                    load_max_ent_U, load_psi)
+from pylib.utils.plotting_utils import plot_matrix, plot_seq_continuous
+from pylib.utils.utils import (LETTERS, load_import_log, load_json,
+                               pearson_round, triu_to_full)
 from scipy.ndimage import gaussian_filter
 from scipy.optimize import curve_fit
 from scipy.stats import (beta, gamma, laplace, multivariate_normal, norm,
@@ -27,61 +31,65 @@ sys.path.append('/home/erschultz/TICG-chromatin')
 from scripts.data_generation.ECDF import Ecdf
 from scripts.data_generation.MultivariateSkewNormal import \
     multivariate_skewnorm
-from scripts.get_params_old import Tester
+from scripts.max_ent_setup.get_params_old import Tester
 
-sys.path.append('/home/erschultz')
-from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_import_log, load_L, load_max_ent_D,
-    load_max_ent_L, load_max_ent_S, load_psi)
-from sequences_to_contact_maps.scripts.plotting_utils import \
-    plot_seq_continuous
+ROOT = '/home/erschultz'
+PROJECT2 = '/project2/depablo/erschultz'
 
-LETTERS = 'ABCDEFGHIJKLMN'
 
-def get_samples(dataset, train=False, test=False):
+def get_samples(dataset, train=False, test=False, return_cell_lines=False, filter_cell_lines=None):
     '''
     Inputs:
         dataset: data directory
         train: True to only return sample from odd chrom (training samples)
     '''
     experimental = False
-    if dataset == 'dataset_11_14_22':
-        samples = range(2201, 2214)
-        experimental = True
-    elif dataset == 'dataset_06_29_23':
+    if dataset == 'dataset_06_29_23':
         samples = range(1,636)
+        experimental = True
+    elif dataset == 'dataset_11_20_23':
+        samples = range(1, 715)
+        experimental = True
+    elif dataset == 'dataset_12_01_23':
+        samples = range(1, 641)
+        experimental = True
+    elif dataset == 'dataset_12_06_23':
+        samples = range(1, 642)
+        experimental = True
+    elif dataset == 'dataset_11_30_23':
+        samples = range(1, 242)
         experimental = True
     elif dataset in {'dataset_01_26_23', 'dataset_02_04_23', 'dataset_02_21_23',
                     'dataset_02_04_23_max_ent'}:
         samples = range(201, 283)
-        # samples = range(284, 293)
-        # samples = range(201, 210)
         experimental = True
     elif dataset == 'dataset_04_05_23':
         samples = range(1001, 1211)
         experimental = True
+    elif dataset == 'dataset_11_07_23':
+        samples = range(1, 136)
+        experimental = True
     elif dataset in {'dataset_12_20_22', 'dataset_02_13_23', 'dataset_02_06_23',
                     'dataset_02_22_23'}:
         samples = [324, 981, 1936, 2834, 3464]
-    elif dataset == 'dataset_11_21_22':
-        samples = [1, 2, 3, 410, 653, 1462, 1801, 2290]
     elif dataset in {'dataset_01_27_23'}:
         samples = range(1, 16)
     elif dataset in {'dataset_04_09_23', 'dataset_04_10_23',}:
         samples = range(1001, 1028)
         experimental = True
+    elif dataset == 'dataset_gm12878_5k':
+        samples = range(1, 42)
+        experimental = True
+    elif dataset == 'dataset_HCT116_RAD21_KO':
+        samples = range(1, 68)
+        experimental = True
     elif dataset == 'dataset_04_06_23':
         samples = range(1001, 1286)
     elif dataset == 'dataset_04_07_23':
         samples = range(1021, 1027)
-    elif dataset in {'dataset_08_17_23', 'dataset_09_07_23'}:
+    elif dataset in {'dataset_08_17_23', 'dataset_09_07_23', 'dataset_11_15_23',
+                    'dataset_11_16_23_hmec', 'dataset_11_16_23_imr90'}:
         samples = range(1, 21)
-    elif dataset == 'dataset_08_25_23':
-        samples = list(range(1, 12)) + [981]
-    elif dataset in {'dataset_08_22_23', 'dataset_08_24_23', 'dataset_09_18_23', 'dataset_09_19_23'}:
-        samples = range(1, 11)
-    elif dataset in {'dataset_08_24_23_v2', 'dataset_08_24_23_v3', 'dataset_08_24_23_v4'}:
-        samples = range(1, 16)
     elif dataset == 'dataset_09_28_23':
         samples = list(range(1, 26))
         samples.extend([324, 981, 1936, 2834, 3464])
@@ -91,28 +99,81 @@ def get_samples(dataset, train=False, test=False):
         samples = [68, 3180, 7880, 5787, 833, 8285, 765, 4392, 8467, 9142, 9245, 8668, 4354, 265, 7738]
     elif dataset == 'dataset_09_28_23_s_100_cutoff_0.01':
         samples = [1191, 1478, 4990, 5612, 3073, 1351, 4128, 2768, 9627, 4127, 1160, 8932, 2929, 7699, 6629]
+    elif dataset in {'dataset_12_12_23_imr90', "dataset_02_14_24_imr90"}:
+        samples = [1640, 1672, 3464, 831, 1651, 2678, 861, 3660, 267, 810, 2325, 2890]
+    elif dataset == "dataset_gm12878_25k":
+        samples = range(1, 11)
     else:
-        samples = [1, 2, 3, 4, 5, 324, 981, 1936, 2834, 3464]
+        samples = range(1, 11)
 
     if experimental:
+        cell_lines = []; odd_cell_lines = []; even_cell_lines = []
         odd_samples = []; even_samples = []
         for s in samples:
             s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{s}')
+            if not osp.exists(s_dir):
+                s_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c', s_dir)
+            if not osp.exists(s_dir):
+                s_dir = osp.join(PROJECT2, dataset, f'samples/sample{s}')
+            assert(osp.exists(s_dir)), s_dir
+
             result = load_import_log(s_dir)
             chrom = int(result['chrom'])
+            cell_line = result['cell_line']
+            if cell_line is not None:
+                cell_line = cell_line.lower()
+            cell_lines.append(cell_line)
+            if cell_line is None:
+                pass
+                # print(f'cell_line is None, skipping {s}: url={result["url"]}')
+                # continue
+            elif filter_cell_lines is not None:
+                if cell_line not in filter_cell_lines:
+                    continue
+            else:
+                if cell_line in {'kbm7', 'nhek', 'hela'}:
+                    # not using these cell lines
+                    continue
+                elif test and cell_line not in {'gm12878', 'hap1', 'huvec'} :
+                    continue
+                elif train and cell_line not in {'imr90', 'k562', 'hmec'}:
+                    continue
             if chrom % 2 == 1:
                 odd_samples.append(s)
+                odd_cell_lines.append(cell_line)
             else:
                 even_samples.append(s)
+                even_cell_lines.append(cell_line)
         if train:
             samples = odd_samples
-        if test:
+            cell_lines = odd_cell_lines
+        elif test:
             samples = even_samples
+            cell_lines = even_cell_lines
+        else:
+            samples = even_samples + odd_samples
+            cell_lines = even_cell_lines + odd_cell_lines
 
-    return samples, experimental
+    else:
+        cell_lines = None
 
-def modify_plaid_chis(dataset, b, phi, v, k, ar):
-    samples, _ = get_samples(dataset, True)
+    if return_cell_lines:
+        if cell_lines is not None:
+            unique_cell_lines = set(cell_lines)
+            if len(unique_cell_lines) == 1 and None in unique_cell_lines:
+                cell_lines = None
+        return samples, experimental, cell_lines
+    else:
+        return samples, experimental
+
+
+def modify_plaid_chis(dataset, b, phi, v, k, ar, cell_line=None):
+    if cell_line is None:
+        samples, _ = get_samples(dataset, train=True)
+    else:
+        samples, _ = get_samples(dataset, train=True, filter_cell_lines=[cell_line])
+
+    print(f'{len(samples)} samples')
     for sample in samples:
         s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{sample}')
         print(sample)
@@ -153,10 +214,10 @@ def modify_plaid_chis(dataset, b, phi, v, k, ar):
             assert np.isreal(val)
             chis_eig[i,i] = np.real(val)
 
-        np.save(osp.join(max_ent_dir, 'resources/x_eig.npy'), x_eig)
-        plot_seq_continuous(x_eig, ofile = osp.join(max_ent_dir, 'resources/x_eig.png'))
-        np.save(osp.join(max_ent_dir, 'chis_eig.npy'), chis_eig)
-        plot_matrix(chis_eig, osp.join(max_ent_dir, 'chis_eig.png'), cmap = 'blue-red')
+        # np.save(osp.join(max_ent_dir, 'resources/x_eig.npy'), x_eig)
+        # plot_seq_continuous(x_eig, ofile = osp.join(max_ent_dir, 'resources/x_eig.png'))
+        # np.save(osp.join(max_ent_dir, 'chis_eig.npy'), chis_eig)
+        # plot_matrix(chis_eig, osp.join(max_ent_dir, 'chis_eig.png'), cmap = 'blue-red')
         L_eig = x_eig @ chis_eig @ x_eig.T
         assert np.allclose(L, L_eig), L - L_eig
 
@@ -189,14 +250,18 @@ def modify_plaid_chis(dataset, b, phi, v, k, ar):
         assert np.allclose(L, L_eig), L - L_eig
 
 
-def modify_maxent_diag_chi(dataset, b, phi, v, k, ar, edit=True):
+def modify_maxent_diag_chi(dataset, b, phi, v, k, ar, edit=True, plot=True, cell_line=None):
     '''
     Inputs:
         k: number of marks
         edit: True to modify maxent result so that is is flat at start
     '''
-    samples, _ = get_samples(dataset, train=True)
+    if cell_line is None:
+        samples, _ = get_samples(dataset, train=True)
+    else:
+        samples, _ = get_samples(dataset, train=True, filter_cell_lines=[cell_line])
     for sample in samples:
+        print(f'sample {sample}')
         s_dir = osp.join('/home/erschultz', dataset, f'samples/sample{sample}')
 
         # try different modifications to diag chis learned by max ent
@@ -218,163 +283,153 @@ def modify_maxent_diag_chi(dataset, b, phi, v, k, ar, edit=True):
         if not osp.exists(odir):
             os.mkdir(odir, mode = 0o755)
 
-        diag_chis = np.loadtxt(osp.join(max_ent_dir, 'chis_diag.txt'))
-        diag_chis = np.atleast_2d(diag_chis)[-1]
-
-        ifile = osp.join(max_ent_dir, 'resources/config.json')
+        final = get_final_max_ent_folder(max_ent_dir)
+        ifile = osp.join(final, 'config.json')
         with open(ifile, 'r') as f:
             config = json.load(f)
-
-        diag_chi_step = calculate_diag_chi_step(config, diag_chis)
+        diag_chi_step = calculate_diag_chi_step(config)
         m = len(diag_chi_step)
         x = np.arange(0, 2*m)
 
-        S = load_max_ent_S(max_ent_dir)
+        S = load_max_ent_U(max_ent_dir)
         meanDist_S = DiagonalPreprocessing.genomic_distance_statistics(S, 'freq')
-        poly4_log_fit = curve_fit_helper(Curves.poly4_curve, np.log(x[:m]), meanDist_S,
-                                        'poly4_log_meanDist_S', odir,
-                                        [1, 1, 1, 1, 1], start = 2)
-        poly6_log_fit = curve_fit_helper(Curves.poly6_curve, np.log(x[:m]), meanDist_S,
-                                        'poly6_log_meanDist_S', odir,
-                                        [1, 1, 1, 1, 1, 1, 1], start = 2)
-        poly6_fit = curve_fit_helper(Curves.poly6_curve, x[:m], meanDist_S,
-                                        'poly6_meanDist_S', odir,
-                                        [1, 1, 1, 1, 1, 1, 1], start = 2)
-        poly8_log_fit = curve_fit_helper(Curves.poly8_curve, np.log(x[:m]), meanDist_S,
-                                        'poly8_log_meanDist_S', odir,
-                                        [1, 1, 1, 1, 1, 1, 1, 1, 1], start = 2)
-        poly9_log_fit = curve_fit_helper(Curves.poly9_curve, np.log(x[:m]), meanDist_S,
-                                        'poly9_log_meanDist_S', odir,
-                                        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1], start = 2)
-        poly12_log_fit = curve_fit_helper(Curves.poly12_curve, np.log(x[:m]), meanDist_S,
-                                        'poly12_log_meanDist_S', odir,
-                                        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], start = 2)
 
-
+        curves = [Curves.poly6_curve, Curves.poly8_curve, Curves.poly12_curve]
+        colors = ['b', 'r', 'g']
+        orders = [6, 8]
         X = x[:m]
-        plt.plot(X, meanDist_S, ls='-', c='k', label=r'$\delta^{ME(i)}$')
-        plt.plot(X[2:], poly4_log_fit[2:], ls=':', c='g',
-                label=r'$\hat{\delta}^{ME(i)}$ (4th order in log space)')
-        plt.plot(X[2:], poly6_log_fit[2:], ls=':', c='b',
-                label=r'$\hat{\delta}^{ME(i)}$ (6th order in log space)')
-        plt.plot(X[2:], poly8_log_fit[2:], ls=':', c='orange',
-                label=r'$\hat{\delta}^{ME(i)}$ (8th order in log space)')
-        plt.plot(X[2:], poly9_log_fit[2:], ls=':', c='magenta',
-                label=r'$\hat{\delta}^{ME(i)}$ (9th order in log space)')
-        plt.plot(X[2:], poly12_log_fit[2:], ls=':', c='cyan',
-                label=r'$\hat{\delta}^{ME(i)}$ (12th order in log space)')
-        plt.plot(X[2:], poly6_fit[2:], ls='--', c='b',
-                label=r'$\hat{\delta}^{ME(i)}$ (6th order in linear space)')
+        if plot:
+            plt.plot(X, meanDist_S, ls='-', c='k', label=r'$\delta^{ME(i)}$')
+        for curve, color, order in zip(curves, colors, orders):
+            init = [1]*(order+1)
+            for start in [1, 2, 5]:
+                # poly_fit = curve_fit_helper(curve, x[:m], meanDist_S,
+                #                                 f'poly{order}_meanDist_S', odir,
+                #                                 init, start = start)
+                poly_log_fit = curve_fit_helper(curve, np.log(x[:m]), meanDist_S,
+                                                f'poly{order}_log_start_{start}_meanDist_S', odir,
+                                                init, start = start)
 
-        plt.xlabel('d',fontsize=16)
-        plt.legend()
-        plt.savefig(osp.join(odir, 'delta_vs_delta_hat.png'))
-        plt.close()
+                if plot:
+                    # plt.plot(X[2:], poly_fit[2:], ls='--', c=color,
+                    #         label=r'$\hat{\delta}^{ME(i)}$' + f' ({order}th order linear)')
+                    plt.plot(X, poly_log_fit, ls=':', c=color,
+                            label=r'$\hat{\delta}^{ME(i)}$' + f' (o={order}th, s={start})')
 
-        X = np.log(X)
-        plt.plot(X, meanDist_S, ls='-', c='k', label=r'$\delta^{ME(i)}$')
-        plt.plot(X[2:], poly4_log_fit[2:], ls=':', c='g',
-                label=r'$\hat{\delta}^{ME(i)}$ (4th order in log space)')
-        plt.plot(X[2:], poly6_log_fit[2:], ls=':', c='b',
-                label=r'$\hat{\delta}^{ME(i)}$ (6th order in log space)')
-        plt.plot(X[2:], poly8_log_fit[2:], ls=':', c='orange',
-                label=r'$\hat{\delta}^{ME(i)}$ (8th order in log space)')
-        plt.plot(X[2:], poly9_log_fit[2:], ls=':', c='magenta',
-                label=r'$\hat{\delta}^{ME(i)}$ (9th order in log space)')
-        plt.plot(X[2:], poly12_log_fit[2:], ls=':', c='cyan',
-            label=r'$\hat{\delta}^{ME(i)}$ (12th order in log space)')
-        plt.plot(X[2:], poly6_fit[2:], ls='--', c='b',
-                label=r'$\hat{\delta}^{ME(i)}$ (6th order in linear space)')
-        plt.xlabel('log(d)',fontsize=16)
-        plt.legend()
-        plt.savefig(osp.join(odir, 'delta_vs_delta_hat_log.png'))
-        plt.close()
-
-        smoothed_fit = gaussian_filter(meanDist_S[3:], sigma = 1)
-        smoothed_fit = np.append(meanDist_S[:3], smoothed_fit)
-        np.savetxt(osp.join(odir, 'smoothed_fit_meanDist_S.txt'), smoothed_fit)
-
-
-        if edit:
-            # make version that is flat at start
-            min_val = np.min(diag_chis[:20])
-            min_ind = np.argmin(diag_chis[:20])
-            diag_chis[0:min_ind] = min_val
-            np.savetxt(osp.join(odir, 'chis_diag_edit.txt'), diag_chis)
-
-            # make version with intercept 0
-            diag_chis_zero = np.copy(diag_chis)
-            diag_chis_zero -= np.min(diag_chis_zero)
-            np.savetxt(osp.join(odir, 'chis_diag_edit_zero.txt'), diag_chis_zero)
-
-        smoothed_fit = gaussian_filter(diag_chi_step[3:], sigma = 1)
-        smoothed_fit = np.append(diag_chi_step[:3], smoothed_fit)
-        np.savetxt(osp.join(odir, 'smoothed_fit.txt'), smoothed_fit)
-
-        log_fit = None
-        log_max_fit = None
-        logistic_fit = None
-        poly2_fit = curve_fit_helper(Curves.poly2_curve, x[:m], diag_chi_step,
-                                        'poly2', odir, [1, 1, 1],
-                                        start = 2)
-        poly2_log_fit = curve_fit_helper(Curves.poly2_curve, np.log(x[:m]), diag_chi_step,
-                                        'poly2_log', odir, [1, 1, 1], start = 2)
-
-        poly3_fit = curve_fit_helper(Curves.poly3_curve, x[:m], diag_chi_step,
-                                        'poly3', odir, [1, 1, 1, 1],
-                                        start = 2)
-        poly3_log_fit = curve_fit_helper(Curves.poly3_curve, np.log(x[:m]), diag_chi_step,
-                                        'poly3_log', odir, [1, 1, 1, 1], start = 2)
-        poly4_log_fit = curve_fit_helper(Curves.poly4_curve, np.log(x[:m]), diag_chi_step,
-                                        'poly4_log', odir, [1, 1, 1, 1, 1], start = 2)
-        poly6_log_fit = curve_fit_helper(Curves.poly6_curve, np.log(x[:m]), diag_chi_step,
-                                        'poly6_log', odir, [1, 1, 1, 1, 1, 1, 1], start = 2)
-
-
-        piecewise_linear_fit = curve_fit_helper(Curves.piecewise_linear_curve, x[:m],
-                                diag_chi_step, 'piecewise_linear', odir,
-                                [1, 1, 1, 1, 10], start = 2)
-        piecewise_poly2_fit = curve_fit_helper(Curves.piecewise_poly2_curve, x[:m],
-                                diag_chi_step, 'piecewise_poly2', odir,
-                                [1, 1, 1, 1, 1, 1, 10], start = 2)
-        piecewise_poly3_fit = curve_fit_helper(Curves.piecewise_poly3_curve, x[:m],
-                                diag_chi_step, 'piecewise_poly3', odir,
-                                [1, 1, 1, 1, 1, 1, 1, 1, 20], start = 2)
-        linear_max_fit = None
-        linear_fit = curve_fit_helper(Curves.linear_curve, x[:m], diag_chi_step,
-                                        'linear', odir)
-
-        for log in [True, False]:
-            plt.plot(diag_chi_step, label = 'Max Ent Edit', color = 'lightblue')
-            if smoothed_fit is not None:
-                plt.plot(smoothed_fit, label = 'Gaussian Filter',
-                        color = 'lightblue', ls='dashdot')
-            if log_fit is not None:
-                plt.plot(log_fit, label = 'log', color = 'orange')
-            # if log_max_fit is not None:
-            #     plt.plot(log_max_fit, label = 'log_max', color = 'yellow')
-            if logistic_fit is not None:
-                plt.plot(logistic_fit, label = 'logistic', color = 'purple')
-            # if linear_max_fit is not None:
-            #     plt.plot(linear_max_fit, label = 'linear_max', color = 'brown')
-            if linear_fit is not None:
-                plt.plot(linear_fit, label = 'linear', color = 'teal')
-
-
-            plt.legend()
-            plt.ylim(None, 2 * np.max(diag_chi_step))
-            if log:
-                plt.xscale('log')
-                plt.savefig(osp.join(odir, 'meanDist_fit_log.png'))
-            else:
-                plt.xlim(0, 50)
-                plt.savefig(osp.join(odir, 'meanDist_fit.png'))
+        if plot:
+            plt.ylim(np.min(meanDist_S), np.max(meanDist_S))
+            plt.xscale('log')
+            plt.xlabel('d',fontsize=16)
+            plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+            plt.tight_layout()
+            plt.savefig(osp.join(odir, 'delta_vs_delta_hat.png'))
             plt.close()
+
+        if False:
+            X = np.log(X)
+            plt.plot(X, meanDist_S, ls='-', c='k', label=r'$\delta^{ME(i)}$')
+            plt.plot(X[2:], poly4_log_fit[2:], ls=':', c='g',
+                    label=r'$\hat{\delta}^{ME(i)}$ (4th order in log space)')
+            plt.plot(X[2:], poly6_log_fit[2:], ls=':', c='b',
+                    label=r'$\hat{\delta}^{ME(i)}$ (6th order in log space)')
+            plt.plot(X[2:], poly8_log_fit[2:], ls=':', c='orange',
+                    label=r'$\hat{\delta}^{ME(i)}$ (8th order in log space)')
+            plt.plot(X[2:], poly9_log_fit[2:], ls=':', c='magenta',
+                    label=r'$\hat{\delta}^{ME(i)}$ (9th order in log space)')
+            plt.plot(X[2:], poly12_log_fit[2:], ls=':', c='cyan',
+                label=r'$\hat{\delta}^{ME(i)}$ (12th order in log space)')
+            plt.plot(X[2:], poly6_fit[2:], ls='--', c='b',
+                    label=r'$\hat{\delta}^{ME(i)}$ (6th order in linear space)')
+            plt.xlabel('log(d)',fontsize=16)
+            plt.legend()
+            plt.savefig(osp.join(odir, 'delta_vs_delta_hat_log.png'))
+            plt.close()
+
+            smoothed_fit = gaussian_filter(meanDist_S[3:], sigma = 1)
+            smoothed_fit = np.append(meanDist_S[:3], smoothed_fit)
+            np.savetxt(osp.join(odir, 'smoothed_fit_meanDist_S.txt'), smoothed_fit)
+
+
+            if edit:
+                # make version that is flat at start
+                min_val = np.min(diag_chis[:20])
+                min_ind = np.argmin(diag_chis[:20])
+                diag_chis[0:min_ind] = min_val
+                np.savetxt(osp.join(odir, 'chis_diag_edit.txt'), diag_chis)
+
+                # make version with intercept 0
+                diag_chis_zero = np.copy(diag_chis)
+                diag_chis_zero -= np.min(diag_chis_zero)
+                np.savetxt(osp.join(odir, 'chis_diag_edit_zero.txt'), diag_chis_zero)
+
+            smoothed_fit = gaussian_filter(diag_chi_step[3:], sigma = 1)
+            smoothed_fit = np.append(diag_chi_step[:3], smoothed_fit)
+            np.savetxt(osp.join(odir, 'smoothed_fit.txt'), smoothed_fit)
+
+            log_fit = None
+            log_max_fit = None
+            logistic_fit = None
+            poly2_fit = curve_fit_helper(Curves.poly2_curve, x[:m], diag_chi_step,
+                                            'poly2', odir, [1, 1, 1],
+                                            start = 2)
+            poly2_log_fit = curve_fit_helper(Curves.poly2_curve, np.log(x[:m]), diag_chi_step,
+                                            'poly2_log', odir, [1, 1, 1], start = 2)
+
+            poly3_fit = curve_fit_helper(Curves.poly3_curve, x[:m], diag_chi_step,
+                                            'poly3', odir, [1, 1, 1, 1],
+                                            start = 2)
+            poly3_log_fit = curve_fit_helper(Curves.poly3_curve, np.log(x[:m]), diag_chi_step,
+                                            'poly3_log', odir, [1, 1, 1, 1], start = 2)
+            poly4_log_fit = curve_fit_helper(Curves.poly4_curve, np.log(x[:m]), diag_chi_step,
+                                            'poly4_log', odir, [1, 1, 1, 1, 1], start = 2)
+            poly6_log_fit = curve_fit_helper(Curves.poly6_curve, np.log(x[:m]), diag_chi_step,
+                                            'poly6_log', odir, [1, 1, 1, 1, 1, 1, 1], start = 2)
+
+
+            piecewise_linear_fit = curve_fit_helper(Curves.piecewise_linear_curve, x[:m],
+                                    diag_chi_step, 'piecewise_linear', odir,
+                                    [1, 1, 1, 1, 10], start = 2)
+            piecewise_poly2_fit = curve_fit_helper(Curves.piecewise_poly2_curve, x[:m],
+                                    diag_chi_step, 'piecewise_poly2', odir,
+                                    [1, 1, 1, 1, 1, 1, 10], start = 2)
+            piecewise_poly3_fit = curve_fit_helper(Curves.piecewise_poly3_curve, x[:m],
+                                    diag_chi_step, 'piecewise_poly3', odir,
+                                    [1, 1, 1, 1, 1, 1, 1, 1, 20], start = 2)
+            linear_max_fit = None
+            linear_fit = curve_fit_helper(Curves.linear_curve, x[:m], diag_chi_step,
+                                            'linear', odir)
+
+            for log in [True, False]:
+                plt.plot(diag_chi_step, label = 'Max Ent Edit', color = 'lightblue')
+                if smoothed_fit is not None:
+                    plt.plot(smoothed_fit, label = 'Gaussian Filter',
+                            color = 'lightblue', ls='dashdot')
+                if log_fit is not None:
+                    plt.plot(log_fit, label = 'log', color = 'orange')
+                # if log_max_fit is not None:
+                #     plt.plot(log_max_fit, label = 'log_max', color = 'yellow')
+                if logistic_fit is not None:
+                    plt.plot(logistic_fit, label = 'logistic', color = 'purple')
+                # if linear_max_fit is not None:
+                #     plt.plot(linear_max_fit, label = 'linear_max', color = 'brown')
+                if linear_fit is not None:
+                    plt.plot(linear_fit, label = 'linear', color = 'teal')
+
+
+                plt.legend()
+                plt.ylim(None, 2 * np.max(diag_chi_step))
+                if log:
+                    plt.xscale('log')
+                    plt.savefig(osp.join(odir, 'meanDist_fit_log.png'))
+                else:
+                    plt.xlim(0, 50)
+                    plt.savefig(osp.join(odir, 'meanDist_fit.png'))
+                plt.close()
 
 def curve_fit_helper(fn, x, y, label, odir, init = [1,1], start = 0):
     try:
         popt, pcov = curve_fit(fn, x[start:], y[start:], p0 = init, maxfev = 2000)
-        print(f'\t{label} popt', popt)
+        # print(f'\t{label} popt', popt)
         fit = fn(x[start:], *popt)
         if start > 0:
             fit = np.append(np.zeros(start), fit)
@@ -454,9 +509,9 @@ class Curves():
         result = A + B*x + C*x**2 + D*x**3 + E*x**4 + F*x**5 + G*x**6  + H*x**7 + I*x**8
         return result
 
-    def poly9_curve(x, A, B, C, D, E, F, G, H, I, J):
-        result = A + B*x + C*x**2 + D*x**3 + E*x**4 + F*x**5 + G*x**6  + H*x**7
-        result += I*x**8 + J*x**9
+    def poly10_curve(x, A, B, C, D, E, F, G, H, I, J, K):
+        result = A + B*x + C*x**2 + D*x**3 + E*x**4 + F*x**5 + G*x**6 + H*x**7
+        result += I*x**8 + J*x**9 + K*x**10
         return result
 
     def poly12_curve(x, A, B, C, D, E, F, G, H, I, J, K, L, M):
@@ -618,23 +673,28 @@ def test_shuffle():
     plt.close()
 
 def simple_histogram(arr, xlabel='X', odir=None, ofname=None, dist=skewnorm,
-                    label=None, legend_title=''):
+                    label=None, legend_title='', color=None):
     title = []
     if arr is None:
         return
     arr = np.array(arr).reshape(-1)
-    n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
+    if color is None:
+        n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
                                 bins = 50, alpha = 0.5, label = label)
+    else:
+        n, bins, patches = plt.hist(arr, weights = np.ones_like(arr) / len(arr),
+                                bins = 50, alpha = 0.5, label = label, color = color)
     bin_width = bins[1] - bins[0]
-    params = dist.fit(arr)
-    y = dist.pdf(bins, *params) * bin_width
-    params = [np.round(p, 3) for p in params]
-    print(ofname, params)
-    if dist == skewnorm and ofname is not None:
-        with open(osp.join(odir, ofname[:-9]+'.pickle'), 'wb') as f:
-            dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
-            pickle.dump(dict, f)
-    plt.plot(bins, y, ls = '--', color = 'k')
+    if dist is not None:
+        params = dist.fit(arr)
+        y = dist.pdf(bins, *params) * bin_width
+        params = [np.round(p, 3) for p in params]
+        print(ofname, params)
+        if dist == skewnorm and ofname is not None:
+            with open(osp.join(odir, ofname[:-9]+'.pickle'), 'wb') as f:
+                dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
+                pickle.dump(dict, f)
+        plt.plot(bins, y, ls = '--', color = 'k')
     if not (odir is None or ofname is None):
         if label is not None:
             plt.legend(title = legend_title)
@@ -864,9 +924,16 @@ def seq_dist(dataset, k, plot=True, eig_norm=False):
 
     return x_list
 
-def plaid_dist(dataset, b, phi, v, k, ar, plot=True, eig_norm=False):
+def plaid_dist(dataset, b, phi, v, k, ar, plot=True, eig_norm=False, cell_line=None,
+                mode=None):
     # distribution of plaid params
-    samples, experimental = get_samples(dataset, True)
+    if cell_line is not None:
+        samples, experimental, cell_lines = get_samples(dataset, True, return_cell_lines=True,
+                                        filter_cell_lines=set([cell_line]))
+    else:
+        samples, experimental, cell_lines = get_samples(dataset, True, return_cell_lines=True)
+    print(len(samples))
+    N = len(samples)
     dir = '/project2/depablo/erschultz/'
     if not osp.exists(dir):
         dir = '/home/erschultz'
@@ -874,12 +941,17 @@ def plaid_dist(dataset, b, phi, v, k, ar, plot=True, eig_norm=False):
 
     if v is None:
         assert phi is not None
-        odir = osp.join(data_dir, f'b_{b}_phi_{phi}_distributions')
+        odir = osp.join(data_dir, f'b_{b}_phi_{phi}')
     else:
-        odir = osp.join(data_dir, f'b_{b}_v_{v}_distributions')
+        odir = osp.join(data_dir, f'b_{b}_v_{v}')
     if ar != 1.0:
         odir += f'_spheroid_{ar}'
+    if mode is not None:
+        odir += f'_{mode}'
     odir += '_distributions'
+    if cell_line is not None:
+        odir += f'_{cell_line}'
+
     if not osp.exists(odir):
         os.mkdir(odir, mode = 0o755)
     if eig_norm:
@@ -898,9 +970,8 @@ def plaid_dist(dataset, b, phi, v, k, ar, plot=True, eig_norm=False):
     chi_ii_list = []
     chi_list = []
     chi_flat_list = []
-    grid_size_arr = grid_dist(dataset, False)
+    grid_size_arr = grid_dist(dataset, False, b=b, phi=phi, v=v, ar=ar, cell_line=cell_line)
     for sample in samples:
-        print(sample)
         s_dir = osp.join(data_dir, f'samples/sample{sample}')
         if experimental:
             if v is None:
@@ -911,6 +982,8 @@ def plaid_dist(dataset, b, phi, v, k, ar, plot=True, eig_norm=False):
             if ar != 1:
                 s_dir += f'_spheroid_{ar}'
             s_dir += f'-max_ent{k}'
+            if mode is not None:
+                s_dir += f'_{mode}'
 
         if not osp.exists(s_dir):
             print(f'WARNING: {s_dir} does not exist')
@@ -934,7 +1007,7 @@ def plaid_dist(dataset, b, phi, v, k, ar, plot=True, eig_norm=False):
             else:
                 diag_chis = np.load(osp.join(s_dir, 'diag_chis.npy'))
             D = calculate_D(diag_chis)
-        S = calculate_S(L, D)
+        S = calculate_U(L, D)
 
         m = len(L)
         L_list.append(L[np.triu_indices(m)])
@@ -988,7 +1061,6 @@ def plaid_dist(dataset, b, phi, v, k, ar, plot=True, eig_norm=False):
         legend_fontsize=16
         tick_fontsize=22
         letter_fontsize=26
-        x_list = seq_dist(dataset, k, plot, eig_norm)
         # plot plaid chi parameters
         if not eig_norm:
             simple_histogram(chi_ij_list, r'$\chi_{ij}$', odir,
@@ -1197,13 +1269,13 @@ def plaid_dist(dataset, b, phi, v, k, ar, plot=True, eig_norm=False):
 
     return L_list, S_list, D_list, chi_ij_list
 
-def grid_dist(dataset, plot=True, b=140, phi=None, v=None, ar=1.0):
+def grid_dist(dataset, plot=True, b=140, phi=None, v=None, ar=1.0, cell_line=None):
     # distribution of plaid params
-    samples, experimental = get_samples(dataset, True)
-    if not experimental:
-        if plot:
-            raise Exception('must be experimental')
-        return
+    if cell_line is not None:
+        samples, experimental, cell_lines = get_samples(dataset, True, return_cell_lines=True,
+                                                        filter_cell_lines = set([cell_line]))
+    else:
+        samples, experimental, cell_lines = get_samples(dataset, True, return_cell_lines=True)
     data_dir = osp.join('/home/erschultz', dataset)
 
     if v is None:
@@ -1214,6 +1286,8 @@ def grid_dist(dataset, plot=True, b=140, phi=None, v=None, ar=1.0):
     if ar != 1.0:
         odir += f'_spheroid_{ar}'
     odir += '_distributions'
+    if cell_line is not None:
+        odir += f'_{cell_line}'
     if not osp.exists(odir):
         os.mkdir(odir, mode = 0o755)
 
@@ -1221,23 +1295,43 @@ def grid_dist(dataset, plot=True, b=140, phi=None, v=None, ar=1.0):
     for i, sample in enumerate(samples):
         s_dir = osp.join(data_dir, f'samples/sample{sample}')
         assert osp.exists(s_dir), s_dir
-        if v is None:
-            dir = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}')
+        if experimental:
+            if v is None:
+                dir = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}')
+            else:
+                assert v is not None
+                dir = osp.join(s_dir, f'optimize_grid_b_{b}_v_{v}')
+            if ar != 1:
+                dir += f'_spheroid_{ar}'
+            if not osp.exists(dir) or len(os.listdir(dir)) == 0:
+                print(f'issue with dir: {dir}')
+                continue
+            # get grid_size
+            grid_size_arr[i] = np.loadtxt(osp.join(dir, 'grid.txt'))
         else:
-            assert v is not None
-            dir = osp.join(s_dir, f'optimize_grid_b_{b}_v_{v}')
-        if ar != 1:
-            dir += f'_spheroid_{ar}'
-        if not osp.exists(dir) or len(os.listdir(dir)) == 0:
-            continue
-
-        # get grid_size
-        grid_size_arr[i] = np.loadtxt(osp.join(dir, 'grid.txt'))
+            config = load_json(osp.join(s_dir, 'config.json'))
+            grid_size_arr[i] = config['grid_size']
+            print(sample, config['grid_size'])
 
     if plot:
-        # plot plaid chi parameters
+        # plot grid distribution
+        print(osp.join(odir, 'grid_size_dist.png'))
         simple_histogram(grid_size_arr, 'grid size', odir,
-                            'grid_size_dist.png', dist = skewnorm)
+                          'grid_size_dist.png', dist = skewnorm, color = 'orange')
+        if cell_lines is not None:
+            for target_cell_line in sorted(set(cell_lines)):
+                print(target_cell_line)
+                grid_size_arr_cell_line = []
+                for grid_size, cell_line in zip(grid_size_arr, cell_lines):
+                    if cell_line == target_cell_line:
+                        grid_size_arr_cell_line.append(grid_size)
+                print(grid_size_arr_cell_line[:5], len(grid_size_arr_cell_line))
+                simple_histogram(grid_size_arr_cell_line, None, label = target_cell_line, dist = None)
+            plt.legend(title = 'Cell Line')
+            plt.ylabel('probability', fontsize=16)
+            plt.xlabel('Grid Size', fontsize=16)
+            plt.savefig(osp.join(odir, 'grid_size_dist_cell_line.png'))
+            plt.close()
 
     return grid_size_arr
 
@@ -1323,17 +1417,16 @@ def get_read_counts(dataset):
     plt.show()
 
 
-
-
-
 if __name__ == '__main__':
-    # modify_plaid_chis('dataset_02_04_23', b=180, phi=None, v=8, k=5, ar=1.5)
-    # modify_maxent_diag_chi('dataset_02_04_23', b=180, phi=None, v=8, k=5, ar=1.5, edit=False)
+    modify_plaid_chis('dataset_12_06_23', b=200, phi=None, v=8, k=10, ar=1.5, cell_line='imr90')
+    # modify_maxent_diag_chi('dataset_12_06_23', b=200, phi=None, v=8, k=10, ar=1.5,
+    #                         edit=False, plot=True, cell_line='imr90')
     # for i in range(221, 222):
         # plot_modified_max_ent(i, k = 10)
     # diagonal_dist('dataset_02_04_23', b=261, phi=0.01, k=10)
-    grid_dist('dataset_02_04_23', b=180, phi=0.008, ar=1.5)
-    # plaid_dist('dataset_02_04_23', b=180, phi=None, v=8, k=5, ar=1.5, plot=True, eig_norm=True)
+    # grid_dist('dataset_11_20_23', b=180, phi=None, v=8, ar=1.5, cell_line='hmec')
+    # plaid_dist('dataset_12_06_23', b=200, phi=None, v=8, k=10, ar=1.5, plot=True, eig_norm=True,
+                # cell_line='imr90')
     # get_read_counts('dataset_04_28_23')
     # seq_dist('dataset_01_26_23', 4, True, True)
     # plot_params_test()

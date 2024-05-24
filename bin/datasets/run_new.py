@@ -11,9 +11,9 @@ from pylib.Pysim import Pysim
 from pylib.utils import default, utils
 
 sys.path.append('/home/erschultz/TICG-chromatin')
-import scripts.get_config as get_config
-import scripts.get_params_old as get_params
-from scripts.contact_map import plot_all
+import scripts.max_ent_setup.get_config as get_config
+import scripts.max_ent_setup.get_params_old as get_params
+from scripts.plotting.contact_map import plot_all
 
 
 def getArgs():

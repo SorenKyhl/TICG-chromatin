@@ -13,14 +13,12 @@ import pandas as pd
 import scipy
 import seaborn as sns
 from numba import njit
-from sklearn.decomposition import PCA, KernelPCA
-from tqdm import tqdm
-
 from pylib.utils import hic_utils, utils
 from pylib.utils.goals import *
-from pylib.utils.hic_utils import get_diagonal
 from pylib.utils.plotting_utils import plot_matrix
 from pylib.utils.similarity_measures import *
+from sklearn.decomposition import PCA, KernelPCA
+from tqdm import tqdm
 
 # import palettable
 # from palettable.colorbrewer.sequential import Reds_3
@@ -38,7 +36,7 @@ class Sim:
         metrics: cache for expensive metrics
     """
 
-    def __init__(self, path, maxent_analysis=True):
+    def __init__(self, path, maxent_analysis=True, mode='all'):
         """
         Args:
             path: directory containing simulation output
@@ -84,6 +82,7 @@ class Sim:
         self.seqs = None
         self.obs_full = None
         self.obs_tot = None
+        self.obs = None
         if self.config['plaid_on']:
             self.k = self.config['nspecies']
             if self.k > 0:
@@ -94,17 +93,19 @@ class Sim:
                 except OSError:
                     logging.error("error loading sequences")
 
-                observables_file = self.path / "observables.traj"
-                if os.stat(observables_file).st_size > 0:
-                    try:
-                        self.obs_full = pd.read_csv(observables_file, sep="\t",
-                                                    header=None)
-                        self.obs = np.array(self.obs_full.mean().values[1:])
-                    except FileNotFoundError:
-                        logging.error("error loading plaid observables")
+                if mode != 'diag':
+                    observables_file = self.path / "observables.traj"
+                    if os.stat(observables_file).st_size > 0:
+                        try:
+                            self.obs_full = pd.read_csv(observables_file, sep="\t",
+                                                        header=None)
+                            self.obs = np.array(self.obs_full.mean().values[1:])
+                        except FileNotFoundError:
+                            logging.error("error loading plaid observables")
         else:
             self.k = 0
 
+        self.diag_obs = None
         if self.config['diagonal_on']:
             self.diag_bins = np.shape(self.config["diag_chis"])[0]
             diag_observables_file = self.path / "diag_observables.traj"
@@ -114,12 +115,15 @@ class Sim:
                                                     header=None)
                     self.diag_obs = np.array(self.diag_obs_full.mean().values[1:])
                 except FileNotFoundError:
-                    logging.error("error loading diag observables")
+                    logging.error(f"error loading diag observables: not found at {diag_observables_file}")
 
         try:
-            self.obs_tot = np.hstack((self.obs, self.diag_obs))
+            if self.obs is None:
+                self.obs_tot = self.diag_obs
+            else:
+                self.obs_tot = np.hstack((self.obs, self.diag_obs))
         except AttributeError:
-            logging.error("observables not loaded")
+            logging.error(f"observables not loaded: obs is {type(self.obs)}, diag_obs is {type(self.diag_obs)}, obs_tot is {type(self.obs_tot)}")
 
         try:
             self.extra = np.loadtxt(self.path / "extra.traj")
@@ -527,7 +531,7 @@ def randomized_svd(X, r, q=10, p=1):
 
 def get_pcs(input, k, normalize=False, binarize=False, scale=False,
             use_kernel=False, kernel=None, manual=False, soren=False,
-            randomized=False, smooth=False, h=3, align=False):
+            randomized=False, smooth=False, h=3, align=False, split = False):
     '''
     Defines seq based on PCs of input.
 
@@ -572,20 +576,48 @@ def get_pcs(input, k, normalize=False, binarize=False, scale=False,
             V = pca.components_
 
     seq = np.zeros((m, k))
-    for j in range(k):
-        pc = V[j]
-        if normalize:
-            val = np.max(np.abs(pc))
-            # multiply by scale such that val x scale = 1
-            scale = 1/val
-            pc *= scale
+    if split:
+        seq_ind = 0
+        for j in range(int(k/2)):
+            pc = V[j]
+            pc_neg = np.abs(pc.copy())
+            pc_pos = np.abs(pc.copy())
+            pc_neg[pc > 0] = 0
+            pc_pos[pc < 0] = 0
 
-        if binarize:
-            # pc has already been normalized to [-1, 1]
-            pc[pc < 0] = 0
-            pc[pc > 0] = 1
+            if normalize:
+                val = np.max(np.abs(pc_neg))
+                # multiply by scale such that val x scale = 1
+                scale = 1/val
+                pc_neg *= scale
 
-        seq[:,j] = pc
+                val = np.max(np.abs(pc_pos))
+                # multiply by scale such that val x scale = 1
+                scale = 1/val
+                pc_pos *= scale
+
+            if binarize:
+                pc_neg[pc_neg > 0] = 1
+                pc_pos[pc_pos > 0] = 1
+
+            seq[:,seq_ind] = pc_neg
+            seq[:,seq_ind+1] = pc_pos
+            seq_ind += 2
+    else:
+        for j in range(k):
+            pc = V[j]
+            if normalize:
+                val = np.max(np.abs(pc))
+                # multiply by scale such that val x scale = 1
+                scale = 1/val
+                pc *= scale
+
+            if binarize:
+                # pc has already been normalized to [-1, 1]
+                pc[pc < 0] = 0
+                pc[pc > 0] = 1
+
+            seq[:,j] = pc
 
     if align:
         cutoff = int(0.2 * m)
@@ -605,7 +637,8 @@ def get_sequences(
     randomized=False,
     scaleby_singular_values=False,
     scaleby_sqrt_singular_values=False,
-    print_singular_values = True,
+    print_singular_values=True,
+    verbose=True
 ):
     """
     calculate polymer bead sequences using k principal components
@@ -615,10 +648,12 @@ def get_sequences(
     """
     OEmap = get_oe(hic)
     if randomized:
-        print("getting sequences with RANDOMIZED SVD")
+        if verbose:
+            print("getting sequences with RANDOMIZED SVD")
         U, S, VT = randomized_svd(np.corrcoef(OEmap), 2 * k)
     else:
-        print("getting sequences with np.linalg.svd")
+        if verbose:
+            print("getting sequences with np.linalg.svd")
         U, S, VT = np.linalg.svd(np.corrcoef(OEmap), full_matrices=0)
 
     # return VT can return here if you want
@@ -986,8 +1021,18 @@ def plot_consistency(sim, ofile=None):
 
     goal = get_goals(hic, sim.seqs, sim.config)
 
+    if sim.obs_tot is None or goal is None:
+        print('sim.obs_tot is None or goal is None')
+        return 0
+
+    if len(sim.obs_tot)  < len(goal):
+        N = len(sim.obs_tot)
+        goal = goal[-N:]
     diff = sim.obs_tot - goal
     error = np.sqrt(diff @ diff / (goal @ goal))
+    if error > 0.01:
+        ratio = sim.obs_tot / goal
+        print(f'ratio: {ratio}')
 
     plt.figure()
     plt.plot(sim.obs_tot, "o", label="obs")
@@ -1081,14 +1126,16 @@ def plot_obs_vs_goal(sim):
     goal = sim.obj_goal_tot
     axs[0].plot(obs, "--o", label="obs")
     axs[0].plot(goal, "ko", label="goal")
-    axs[0].vlines(len(sim.obs), min(sim.obs_tot) / 5, max(sim.obs_tot) / 5, "k")
+    if sim.obs is not None:
+        axs[0].vlines(len(sim.obs), min(sim.obs_tot) / 5, max(sim.obs_tot) / 5, "k")
     axs[0].legend()
     axs[0].set_title("Observables vs Goals")
 
     diff = sim.obs_tot - sim.obj_goal_tot
     axs[1].plot(diff, "--o")
     axs[1].hlines(0, len(sim.obs_tot), 0, "k")
-    axs[1].vlines(len(sim.obs), min(diff) / 5, max(diff) / 5, "k")
+    if sim.obs is not None:
+        axs[1].vlines(len(sim.obs), min(diff) / 5, max(diff) / 5, "k")
     axs[1].set_title("Difference")
 
 

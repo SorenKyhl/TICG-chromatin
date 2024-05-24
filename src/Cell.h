@@ -48,7 +48,7 @@ public:
 	double getConstantEnergy(const double constant_chi);
 	double getDiagEnergy(const std::vector<double> diag_chis);
 	double getBoundaryEnergy(const double boundary_chi, const double delta);
-	double getSLmatrixEnergy(const Eigen::MatrixXd &SLmatrix);
+	double getULmatrixEnergy(const Eigen::MatrixXd &ULmatrix);
 	double getDmatrixEnergy(const Eigen::MatrixXd &Dmatrix);
 
 
