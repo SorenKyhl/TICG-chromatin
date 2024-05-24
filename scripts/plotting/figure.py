@@ -9,22 +9,17 @@ import scipy
 import seaborn as sns
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
-                                      calculate_diag_chi_step, calculate_L,
-                                      calculate_S)
+                                      calculate_diag_chi_step)
+from pylib.utils.load_utils import load_L
 from pylib.utils.plotting_utils import RED_CMAP, rotate_bound
 from pylib.utils.similarity_measures import SCC
-from pylib.utils.utils import pearson_round
+from pylib.utils.utils import load_import_log, pearson_round
 from pylib.utils.xyz import xyz_load, xyz_write
 
 sys.path.append('/home/erschultz/TICG-chromatin/scripts')
 from data_generation.modify_maxent import get_samples
 from distances_Su2020.utils import plot_diagonal
 from makeLatexTable import *
-
-sys.path.append('/home/erschultz')
-from sequences_to_contact_maps.scripts.load_utils import (load_import_log,
-                                                          load_L)
-from sequences_to_contact_maps.scripts.utils import calc_dist_strat_corr
 
 test=False
 label_fontsize=22
@@ -44,7 +39,6 @@ def get_dirs(sample_dir):
     gnn_dir = f'{grid_dir}-GNN{GNN_ID}'
 
     return max_ent_dir, gnn_dir
-
 
 def get_y(sample_dir):
     max_ent_dir, gnn_dir = get_dirs(sample_dir)

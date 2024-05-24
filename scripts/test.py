@@ -23,7 +23,9 @@ from max_ent_setup.get_params import GetEnergy
 from pylib.utils import default, epilib, hic_utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
-                                      calculate_diag_chi_step, calculate_S)
+                                      calculate_diag_chi_step, calculate_U)
+from pylib.utils.load_utils import (get_final_max_ent_folder, load_all,
+                                    load_max_ent_D, load_max_ent_L, load_Y)
 from pylib.utils.plotting_utils import BLUE_RED_CMAP
 from pylib.utils.similarity_measures import SCC
 from pylib.utils.utils import (load_import_log, load_json, make_composite,
@@ -34,9 +36,6 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
-from sequences_to_contact_maps.scripts.knightRuiz import knightRuiz
-from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_all, load_max_ent_D, load_max_ent_L, load_Y)
 from sequences_to_contact_maps.scripts.plotting_utils import (plot_diag_chi,
                                                               plot_matrix,
                                                               plot_seq_binary)
@@ -237,7 +236,7 @@ def plot_mean_dist_S(dataset, experimental=False, label=None):
             max_ent_dir = osp.join(sample_dir, 'optimize_grid_b_140_phi_0.03-max_ent')
             L = load_max_ent_L(max_ent_dir)
             D = load_max_ent_D(max_ent_dir)
-            S = calculate_S(L, D)
+            S = calculate_U(L, D)
         else:
             S = np.load(osp.join(sample_dir, 'S.npy'))
         meanDist = DiagonalPreprocessing.genomic_distance_statistics(S, 'freq')

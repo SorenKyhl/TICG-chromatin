@@ -17,6 +17,7 @@ import scipy
 import seaborn as sns
 from pylib.utils import epilib
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
+from pylib.utils.load_utils import get_final_max_ent_folder, load_Y
 from pylib.utils.plotting_utils import (BLUE_CMAP, BLUE_RED_CMAP,
                                         RED_BLUE_CMAP, RED_CMAP, plot_matrix,
                                         plot_mean_dist, rotate_bound)
@@ -34,8 +35,6 @@ from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
-from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_Y)
 from sequences_to_contact_maps.scripts.utils import (calc_dist_strat_corr,
                                                      nan_pearsonr)
 

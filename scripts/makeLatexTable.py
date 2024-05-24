@@ -14,7 +14,10 @@ from data_generation.modify_maxent import get_samples
 from pylib.utils import epilib
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
-                                      calculate_L, calculate_S)
+                                      calculate_L, calculate_U)
+from pylib.utils.load_utils import (get_converged_max_ent_folder,
+                                    get_final_max_ent_folder, load_L,
+                                    load_max_ent_chi, load_psi, load_Y)
 from pylib.utils.similarity_measures import SCC, genome_disco, hic_spector
 from pylib.utils.utils import (load_import_log, load_json, print_time,
                                triu_to_full)
@@ -22,9 +25,7 @@ from scipy.stats import pearsonr
 from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
-from sequences_to_contact_maps.scripts.load_utils import (
-    get_converged_max_ent_folder, get_final_max_ent_folder, load_L,
-    load_max_ent_chi, load_psi, load_Y)
+
 from sequences_to_contact_maps.scripts.utils import load_time_dir
 
 
@@ -114,7 +115,7 @@ def load_data(args):
                 diag_chi_continuous = np.load(diag_chis_file)
             D = calculate_D(diag_chi_continuous)
             L = load_L(sample_folder, save = True)
-            ground_truth_S = calculate_S(L, D)
+            ground_truth_S = calculate_U(L, D)
         ground_truth_y, ground_truth_ydiag = load_Y(sample_folder)
         ground_truth_y /= np.mean(ground_truth_y.diagonal())
         np.fill_diagonal(ground_truth_y, 1)
@@ -238,7 +239,7 @@ def load_data(args):
                     D = calculate_D(diag_chis_continuous)
 
                     # calc S
-                    S = calculate_S(L, D)
+                    S = calculate_U(L, D)
                 else:
                     S = None
             else:
@@ -739,13 +740,14 @@ if __name__ == '__main__':
     args.test_significance = True
     args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', '_700k', 'phi',
                         'GNN579-max_ent', '-gd_gamma', 'distance', 'start', 'stat',
-                        'diagbins', 'binarize', 'chrom', 'grid200', 'long', 'long5', 'strict']
+                        'diagbins', 'binarize', 'chrom', 'grid200', 'long', 'long5',
+                        'strict', '_repeat-GNN690', '_test', '_repeat']
     for i in [1,2,3,4,5,6,7,8,9, 11,12,13,14,15]:
        args.bad_methods.append(f'max_ent{i}')
     # args.gnn_id = [434, 578, 579, 450, 451]
     # args.gnn_id = [600, 605, 606, 607, 608, 609, 610]
     # args.gnn_id = [579, 600, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620, 621, 622, 623, 624, 625]
-    args.gnn_id = []
+    args.gnn_id = [690]
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

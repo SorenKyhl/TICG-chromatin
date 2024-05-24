@@ -44,12 +44,15 @@ def load_psi(sample_folder, throw_exception = True, verbose = False):
 
 def load_Y(sample_folder, throw_exception = True):
     y_file = osp.join(sample_folder, 'y.npy')
+    hic_file = osp.join(sample_folder, 'hic.npy')
     y_file2 = osp.join(sample_folder, 'data_out/contacts.txt')
     y_file3 = osp.join(sample_folder, 'production_out/contacts.txt')
     y_file4 = osp.join(sample_folder, 'y.cool')
     y = None
     if osp.exists(y_file):
         y = np.load(y_file)
+    elif osp.exists(hic_file):
+        y = np.load(hic_file)
     elif osp.exists(y_file2):
         y = np.loadtxt(y_file2)
         np.save(y_file, y) # save in proper place
@@ -177,7 +180,7 @@ def load_all(sample_folder, plot = False, data_folder = None, log_file = None,
         for i in range(k):
             plt.plot(x[:, i])
             plt.title(r'$X$[:, {}]'.format(i))
-            plt.savefig(osp.join(sample_folder, 'x_{}'.format(i)))
+            plt.savefig(osp.join(sample_folder, f'x_{i}'))
             plt.close()
 
     chi = load_chi(sample_folder, throw_exception)
