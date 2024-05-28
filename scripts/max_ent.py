@@ -20,7 +20,7 @@ from pylib.utils.utils import load_import_log
 sys.path.append('/home/erschultz/TICG-chromatin')
 import scripts.optimize_grid as optimize_grid
 from scripts.data_generation.modify_maxent import get_samples
-from scripts.plotting.contact_map import getArgs, plot_all
+
 
 ROOT = '/home/erschultz'
 PROJECT = '/project/depablo/erschultz'

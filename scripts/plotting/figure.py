@@ -55,7 +55,7 @@ def get_y(sample_dir):
     return y, y_pca, y_gnn
 
 
-sample_dir = f'/home/erschultz/{dataset}/samples/sample{sample}'
+sample_dir = f'/project/depablo/erschultz/{dataset}/samples/sample{sample}'
 max_ent_dir, gnn_dir = get_dirs(sample_dir)
 y, y_pca, y_gnn = get_y(sample_dir)
 meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)

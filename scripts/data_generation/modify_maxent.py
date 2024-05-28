@@ -31,10 +31,9 @@ sys.path.append('/home/erschultz/TICG-chromatin')
 from scripts.data_generation.ECDF import Ecdf
 from scripts.data_generation.MultivariateSkewNormal import \
     multivariate_skewnorm
-from scripts.max_ent_setup.get_params_old import Tester
 
 ROOT = '/home/erschultz'
-PROJECT2 = '/project2/depablo/erschultz'
+PROJECT = '/project/depablo/erschultz'
 
 
 def get_samples(dataset, train=False, test=False, return_cell_lines=False, filter_cell_lines=None):
@@ -114,7 +113,7 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False, filte
             if not osp.exists(s_dir):
                 s_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c', s_dir)
             if not osp.exists(s_dir):
-                s_dir = osp.join(PROJECT2, dataset, f'samples/sample{s}')
+                s_dir = osp.join(PROJECT, dataset, f'samples/sample{s}')
             assert(osp.exists(s_dir)), s_dir
 
             result = load_import_log(s_dir)
