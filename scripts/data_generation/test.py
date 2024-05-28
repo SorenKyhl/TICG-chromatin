@@ -103,10 +103,8 @@ def split_dataset2(dataset, cutoff):
 
     rejects = 0
     accepts = 0
-    for i in range(2000, 10001):
-        if i % 500 == 0:
-            print(i)
-        s_dir = osp.join(dir, dataset, f'samples/sample{i}')
+    for i in range(1, 10001): 
+ 	s_dir = osp.join(dir, dataset, f'samples/sample{i}')
         if not osp.exists(s_dir):
             continue
         y, _ = load_Y(s_dir)
