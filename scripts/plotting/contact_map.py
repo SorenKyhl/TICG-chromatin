@@ -20,14 +20,14 @@ from pylib.utils.plotting_utils import (plot_matrix, plot_mean_dist,
 from pylib.utils.utils import crop
 from sklearn.metrics import mean_squared_error
 
+from pylib.utils.ArgparseConverter import ArgparseConverter
 sys.path.append('/home/erschultz')
-from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
 from sequences_to_contact_maps.scripts.plotting_utils import plot_diag_chi
 
 
 def getArgs(sample_folder=''):
     parser = argparse.ArgumentParser(description='Base parser')
-    AC = ArgparserConverter()
+    AC = ArgparseConverter()
 
     parser.add_argument('--m', type=int, default=-1,
                         help='number of particles (-1 to infer)')
