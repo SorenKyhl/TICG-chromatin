@@ -22,7 +22,6 @@ from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
-from sequences_to_contact_maps.scripts.plotting_utils import plot_diag_chi
 
 
 def getArgs(sample_folder=''):
@@ -56,6 +55,52 @@ def getArgs(sample_folder=''):
         path_split = args.replicate_folder.split(osp.sep)
         args.sample_folder = osp.join('/', *path_split[:path_split.index('samples')+2])
     return args
+
+def plot_diag_chi(config, path, ref = None, ref_label = '', logx = False,
+                ofile = None, diag_chis_step = None, ylim = (None, None),
+                title = None, label = ''):
+    '''
+    config: config file
+    path: save file path
+    ref: reference parameters
+    ref_label: label for reference parameters
+    '''
+    if config is None:
+        assert diag_chis_step is not None
+    else:
+        diag_chis_step = calculate_diag_chi_step(config)
+
+    fig, ax = plt.subplots()
+    ax.plot(diag_chis_step, color = 'k', label = label)
+    ax.set_xlabel('Polymer Distance', fontsize = 16)
+    ax.set_ylabel('Diagonal Parameter', fontsize = 16)
+    if ref is not None:
+        if isinstance(ref, str) and osp.exists(ref):
+            ref = np.load(ref)
+
+        if isinstance(ref, np.ndarray):
+            ax.plot(ref, color = 'k', ls = '--', label = ref_label)
+            if ref_label != '':
+                plt.legend()
+
+    ax.set_ylim(ylim[0], ylim[1])
+    if logx:
+        ax.set_xscale('log')
+    if title is not None:
+        plt.title(title)
+
+    if ofile is None:
+        if logx:
+            ofile = osp.join(path, 'chi_diag_step_log.png')
+        else:
+            ofile = osp.join(path, 'chi_diag_step.png')
+    else:
+        ofile = osp.join(path, ofile)
+
+    plt.savefig(ofile)
+    plt.close()
+
+    return diag_chis_step
 
 def plot_all(args):
     if args.random_mode:
