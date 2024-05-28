@@ -23,7 +23,7 @@ from scripts.data_generation.modify_maxent import get_samples
 from scripts.plotting.contact_map import getArgs, plot_all
 
 ROOT = '/home/erschultz'
-PROJECT2 = '/project2/depablo/erschultz'
+PROJECT = '/project/depablo/erschultz'
 MEDIA = '/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/'
 
 def max_ent_dataset(use_exp_hic=False):
@@ -249,7 +249,7 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None,
     if not osp.exists(data_dir):
         data_dir = osp.join(MEDIA, dataset)
     if not osp.exists(data_dir):
-        data_dir = osp.join(PROJECT2, dataset)
+        data_dir = osp.join(PROJECT, dataset)
     dir = osp.join(data_dir, f'{samples}/sample{sample}')
 
     bonded_config = default.bonded_config.copy()
@@ -441,6 +441,15 @@ def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=Non
             print(f'removing {root}')
             shutil.rmtree(root)
 
+def rename(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
+    root, _, _ = setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
+                                aspect_ratio, bond_type, k, contacts_distance,
+                                k_angle, theta_0, False)
+    if osp.exists(root):
+        if root.endswith('_repeat'):
+            print(root[:-8])
+            # os.rename(root, root[:-8])
+
 def main():
     samples = None
     # dataset = 'dataset_HIRES'; samples = [1, 2, 3, 4]
@@ -479,9 +488,9 @@ def main():
 
     print('len =', len(mapping))
 
-    with mp.Pool(48) as p:
+    # with mp.Pool(48) as p:
         # p.starmap(setup_config, mapping)
-        p.starmap(fit, mapping)
+        # p.starmap(fit, mapping)
         # p.starmap(check, mapping)
         # p.starmap(post_analysis, mapping)
         # p.starmap(cleanup, mapping)
@@ -489,6 +498,7 @@ def main():
     for i in mapping:
         #fit_max_ent(*i)
         # fit(*i)
+        rename(*i)
         check(*i)
 
 if __name__ == '__main__':
