@@ -6,7 +6,7 @@ import os.path as osp
 import string
 import sys
 
-import liftover
+import liftover  # https://pypi.org/project/liftover/
 import matplotlib
 import matplotlib.patheffects as pe
 import matplotlib.pyplot as plt
