@@ -9,12 +9,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from modify_maxent import get_samples
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
+from pylib.utils.load_utils import get_final_max_ent_folder
 from pylib.utils.utils import load_import_log
 from pylib.utils.xyz import xyz_load, xyz_to_distance
-
-sys.path.append('/home/erschultz')
-from sequences_to_contact_maps.scripts.load_utils import \
-    get_final_max_ent_folder
 
 sys.path.append('/home/erschultz/TICG-chromating')
 from scripts.distances_Su2020.utils import calculate_rg

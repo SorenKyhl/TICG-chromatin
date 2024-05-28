@@ -6,13 +6,10 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
+from pylib.utils.load_utils import get_final_max_ent_folder, load_import_log
 from pylib.utils.xyz import calculate_rg, xyz_load, xyz_to_distance
 from scipy.spatial import ConvexHull
 from su2020_analysis import get_dirs
-
-sys.path.append('/home/erschultz')
-from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_import_log)
 
 
 def figure():

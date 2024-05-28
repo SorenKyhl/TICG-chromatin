@@ -5,19 +5,17 @@ import os.path as osp
 import sys
 
 import numpy as np
+from pylib.utils.ArgparseConverter import ArgparseConverter
 from pylib.utils.energy_utils import calculate_D, calculate_diag_chi_step
 from pylib.utils.plotting_utils import plot_matrix
+from pylib.utils.utils import LETTERS, crop
 from sklearn.metrics.pairwise import polynomial_kernel
-
-sys.path.append('/home/erschultz')
-from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
-from sequences_to_contact_maps.scripts.utils import LETTERS, crop
 
 
 def getArgs(args_file=None, args_tmp=None):
     parser = argparse.ArgumentParser(description='Base parser', fromfile_prefix_chars='@',
                                 allow_abbrev = False)
-    AC = ArgparserConverter()
+    AC = ArgparseConverter()
 
     parser.add_argument('--config_ifile', type=str, default='config.json',
                         help='path to default config file')

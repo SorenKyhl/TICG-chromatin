@@ -1111,10 +1111,9 @@ def cleanup():
                 if id < 690:
                     shutil.rmtree(f_dir)
 
-
 if __name__ == '__main__':
     # test_tile()
-    make_small('dataset_12_06_23')
+    # make_small('dataset_12_06_23')
     # data_corr()
     # plot_triu_low_res()
     # distance_cutoff_diag_chis()
@@ -1124,4 +1123,4 @@ if __name__ == '__main__':
     # compare_gnn_p_s('dataset_02_04_23', 579)
     # compare_max_ent_p_s('dataset_02_04_23')
     # compare_p_s()
-    # cleanup()
+    cleanup()

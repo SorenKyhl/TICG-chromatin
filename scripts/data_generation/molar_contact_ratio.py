@@ -1,6 +1,7 @@
 import math
 import os
 import os.path as osp
+import shutil
 import sys
 
 import matplotlib
@@ -12,6 +13,7 @@ import torch
 import torch_geometric
 from modify_maxent import get_samples, plaid_dist
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
+from pylib.utils.load_utils import load_Y
 from pylib.utils.plotting_utils import (BLUE_RED_CMAP, RED_BLUE_CMAP, RED_CMAP,
                                         plot_matrix_layout)
 from pylib.utils.utils import pearson_round, triu_to_full
@@ -22,9 +24,6 @@ from sklearn.metrics import mean_squared_error
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.argparse_utils import (finalize_opt,
                                                               get_base_parser)
-from sequences_to_contact_maps.scripts.clean_directories import \
-    clean_directories
-from sequences_to_contact_maps.scripts.load_utils import load_Y
 from sequences_to_contact_maps.scripts.neural_nets.utils import (
     get_dataset, load_saved_model)
 
@@ -118,7 +117,7 @@ def get_gnn_mse(model_ID, data_dir, samples):
 
     # cleanup
     # opt.root is set in get_dataset
-    clean_directories(GNN_path = opt.root)
+    shutil.rmtree(opt.root)
 
     return mse_dict
 

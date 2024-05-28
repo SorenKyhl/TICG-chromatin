@@ -16,13 +16,15 @@ import pandas as pd
 import scipy
 import seaborn as sns
 from pylib.utils import epilib
+from pylib.utils.ArgparseConverter import ArgparseConverter
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.load_utils import get_final_max_ent_folder, load_Y
 from pylib.utils.plotting_utils import (BLUE_CMAP, BLUE_RED_CMAP,
-                                        RED_BLUE_CMAP, RED_CMAP, plot_matrix,
+                                        RED_BLUE_CMAP, RED_CMAP,
+                                        calc_dist_strat_corr, plot_matrix,
                                         plot_mean_dist, rotate_bound)
 from pylib.utils.similarity_measures import SCC
-from pylib.utils.utils import load_import_log, pearson_round
+from pylib.utils.utils import load_import_log, nan_pearsonr, pearson_round
 from pylib.utils.xyz import (calculate_rg, calculate_rg_matrix, xyz_load,
                              xyz_to_distance, xyz_write)
 from scipy.optimize import minimize
@@ -32,11 +34,6 @@ from scipy.stats import gaussian_kde
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
-
-sys.path.append('/home/erschultz')
-from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
-from sequences_to_contact_maps.scripts.utils import (calc_dist_strat_corr,
-                                                     nan_pearsonr)
 
 
 # load data
@@ -466,7 +463,7 @@ def xyz_to_dist2():
     print(f'found {num_coords} coords and {num_cells} cells')
 
 
-    AC = ArgparserConverter()
+    AC = ArgparseConverter()
     xyz = np.empty((num_cells, num_coords, 3))
     xyz[:] = np.NaN
     with open(file, 'r') as f:
@@ -559,7 +556,7 @@ def xyz_to_dist():
         print(f'found {num_coords} coords and {num_cells} cells')
 
 
-        AC = ArgparserConverter()
+        AC = ArgparseConverter()
         xyz = np.empty((num_cells, num_coords, 3))
         xyz[:] = np.NaN
         with open(file, 'r') as f:

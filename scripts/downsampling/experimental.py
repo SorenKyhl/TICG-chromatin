@@ -12,13 +12,10 @@ import scipy
 import scipy.stats as ss
 import seaborn as sns
 from pylib.utils.hic_utils import rescale_p_s_1
+from pylib.utils.load_utils import get_final_max_ent_folder, load_import_log
 from pylib.utils.plotting_utils import RED_CMAP, plot_matrix
 from pylib.utils.similarity_measures import SCC, hic_spector
 from pylib.utils.utils import make_composite, triu_to_full
-
-sys.path.append('/home/erschultz')
-from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_import_log)
 
 sys.path.append('/home/erschultz/TICG-chromatin')
 import scripts.GNN as GNN

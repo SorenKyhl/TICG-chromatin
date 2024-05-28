@@ -14,13 +14,11 @@ from pylib import analysis
 from pylib.Pysim import Pysim
 from pylib.utils import utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
+from pylib.utils.load_utils import (get_final_max_ent_folder, load_max_ent_S,
+                                    load_S)
 from pylib.utils.plotting_utils import RED_CMAP, plot_matrix, plot_mean_dist
 from pylib.utils.similarity_measures import SCC
 from sklearn.metrics import mean_squared_error
-
-sys.path.append('/home/erschultz')
-from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_max_ent_S, load_S)
 
 
 def run_long_simulation_wrapper():

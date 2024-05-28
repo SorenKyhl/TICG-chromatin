@@ -13,22 +13,19 @@ import numpy as np
 import seaborn as sns
 from pylib.utils import epilib
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
+from pylib.utils.load_utils import (get_final_max_ent_folder, load_import_log,
+                                    load_Y)
 from pylib.utils.plotting_utils import (BLUE_CMAP, BLUE_RED_CMAP,
                                         RED_BLUE_CMAP, RED_CMAP, plot_matrix,
                                         plot_mean_dist, rotate_bound)
 from pylib.utils.similarity_measures import SCC, hic_spector
-from pylib.utils.utils import make_composite, pearson_round
+from pylib.utils.utils import (calc_dist_strat_corr, make_composite,
+                               pearson_round)
 from pylib.utils.xyz import xyz_load, xyz_to_distance
 from scipy.spatial.distance import jensenshannon
 from scipy.stats import gaussian_kde, pearsonr
 from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
-
-sys.path.append('/home/erschultz')
-from sequences_to_contact_maps.scripts.argparse_utils import ArgparserConverter
-from sequences_to_contact_maps.scripts.load_utils import (
-    get_final_max_ent_folder, load_import_log, load_Y)
-from sequences_to_contact_maps.scripts.utils import calc_dist_strat_corr
 
 sys.path.append('/home/erschultz/TICG-chromatin')
 from scripts.distances_Su2020.utils import (dist_distribution_a_b, get_dirs,

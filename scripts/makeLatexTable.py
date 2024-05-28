@@ -3,7 +3,9 @@ import json
 import os
 import os.path as osp
 import re
+import shutil
 import sys
+import tarfile
 import time
 from collections import defaultdict
 
@@ -24,10 +26,54 @@ from pylib.utils.utils import (load_import_log, load_json, print_time,
 from scipy.stats import pearsonr
 from sklearn.metrics import mean_squared_error
 
-sys.path.append('/home/erschultz')
 
-from sequences_to_contact_maps.scripts.utils import load_time_dir
+def load_time_dir(dir):
+    assert osp.exists(dir), dir
+    def load_time_file(file):
+        if not osp.exists(file):
+            print(f'Warning: {file} does not exist')
+            return 0
+        t = None
+        with open(file) as f:
+            for line in f:
+                if line.startswith('elapsed'):
+                    line_split = line.split()
+                    t = int(line_split[1][:-3])
+        return t
 
+    eq_log_file = osp.join(dir, 'equilibration/log.log')
+    if osp.exists(osp.join(dir, 'equilibration.tar.gz')):
+        t_file = tarfile.open(osp.join(dir, 'equilibration.tar.gz'))
+        try:
+            log = t_file.extract('equilibration/log.log', dir)
+        except KeyError:
+            print(dir)
+            raise
+
+    t_eq = load_time_file(eq_log_file)
+
+    if osp.exists(osp.join(dir, 'production_out/log.log')):
+        t_prod = load_time_file(osp.join(dir, 'production_out/log.log'))
+    elif osp.exists(osp.join(dir, 'production_out.tar.gz')):
+        t_file = tarfile.open(osp.join(dir, 'production_out.tar.gz'))
+        log = t_file.extract('production_out/log.log', dir)
+        t_prod = load_time_file(osp.join(dir, 'production_out/log.log'))
+    else:
+        assert osp.exists(osp.join(dir, 'core0')), dir
+        t_prod = []
+        for f in os.listdir(dir):
+            if f.startswith('core'):
+                t_prod.append(load_time_file(osp.join(dir, f, 'log.log')))
+        t_prod = np.sum(t_prod)
+
+
+    # cleanup
+    for t_file in ['equilibration.tar.gz', 'production_out.tar.gz']:
+        if osp.exists(osp.join(dir, t_file)):
+            file = t_file.split('.')[0]
+            shutil.rmtree(osp.join(dir, file))
+
+    return t_eq + t_prod
 
 def getArgs(data_folder = None, sample = None, samples = None):
     parser = argparse.ArgumentParser(description='Base parser')

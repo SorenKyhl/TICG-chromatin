@@ -243,6 +243,45 @@ def pearson_round(x, y, stat = 'pearson', round = 2):
     stat, _ = fn(x, y)
     return np.round(stat, round)
 
+def calc_dist_strat_corr(y, yhat, mode = 'pearson', return_arr = False):
+    """
+    Helper function to calculate correlation stratified by distance.
+
+    Inputs:
+        y: target
+        yhat: prediction
+        mode: pearson or spearman (str)
+
+    Outpus:
+        avg: average distance stratified correlation
+        corr_arr: array of distance stratified correlations
+    """
+    if mode.lower() == 'pearson':
+        stat = pearsonr
+    elif mode.lower() == 'nan_pearson':
+        stat = nan_pearsonr
+    elif mode.lower() == 'spearman':
+        stat = spearmanr
+
+    assert len(y.shape) == 2
+    n, _ = y.shape
+    triu_ind = np.triu_indices(n)
+
+    corr_arr = np.zeros(n-2)
+    corr_arr[0] = np.NaN
+    for d in range(1, n-2):
+        # n-1, n, and 0 are NaN always, so skip
+        y_diag = np.diagonal(y, offset = d)
+        yhat_diag = np.diagonal(yhat, offset = d)
+        corr, _ = stat(y_diag, yhat_diag)
+        corr_arr[d] = corr
+
+    avg = np.nanmean(corr_arr)
+    if return_arr:
+        return avg, corr_arr
+    else:
+        return avg
+
 def make_composite(lower, upper):
     m, _ = lower.shape
     assert m == upper.shape[0]
