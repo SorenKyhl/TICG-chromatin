@@ -376,7 +376,7 @@ def setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
     # config['grid_size'] = 200
 
     # config['diag_start'] = 10
-    root = osp.join(dir, f'{root}-max_ent{k}_repeat')
+    root = osp.join(dir, f'{root}-max_ent{k}')
     if osp.exists(root):
         # shutil.rmtree(root)
         if verbose:
@@ -441,14 +441,14 @@ def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=Non
             print(f'removing {root}')
             shutil.rmtree(root)
 
-def rename(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
+def rename(dataset, sample, samples, bl, phi, v, vb, aspect_ratio, bond_type, k, contacts_distance, k_angle, theta_0):
     root, _, _ = setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                                 aspect_ratio, bond_type, k, contacts_distance,
                                 k_angle, theta_0, False)
     if osp.exists(root):
-        if root.endswith('_repeat'):
-            print(root[:-8])
-            # os.rename(root, root[:-8])
+        new_name = root+'0'
+        print(new_name)
+        os.rename(root, new_name)
 
 def main():
     samples = None
@@ -480,7 +480,7 @@ def main():
         for v in [8]:
             for b in [200]:
                 for ar in [1.5]:
-                    for k in [10]:
+                    for k in [1]:
                         for k_angle in [0]:
                             for bond_type in ['gaussian']:
                                 mapping.append((dataset, i, f'samples', b, phi, v, None, ar,

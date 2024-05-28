@@ -778,7 +778,7 @@ if __name__ == '__main__':
         sample = samples[0]
         samples = None
 
-    data_dir = osp.join('/home/erschultz', dataset)
+    data_dir = osp.join('/project/depablo/erschultz', dataset)
     args = getArgs(data_folder = data_dir, sample = sample, samples = samples)
     args.experimental = True
     args.verbose = True

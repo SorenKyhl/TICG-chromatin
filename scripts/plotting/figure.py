@@ -104,7 +104,7 @@ pcs_gnn[0] *= np.sign(pearson_round(pcs[0], pcs_gnn[0]))
 
 # boxplot data
 if not test:
-    args = getArgs(data_folder = f'/home/erschultz/{dataset}',
+    args = getArgs(data_folder = f'/project/depablo/erschultz/{dataset}',
                     samples = samples_list)
     args.experimental = True
     args.verbose = False
