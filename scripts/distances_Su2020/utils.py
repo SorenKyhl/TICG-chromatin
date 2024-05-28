@@ -21,10 +21,10 @@ from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.load_utils import get_final_max_ent_folder, load_Y
 from pylib.utils.plotting_utils import (BLUE_CMAP, BLUE_RED_CMAP,
                                         RED_BLUE_CMAP, RED_CMAP,
-                                        calc_dist_strat_corr, plot_matrix,
+                                        plot_matrix,
                                         plot_mean_dist, rotate_bound)
 from pylib.utils.similarity_measures import SCC
-from pylib.utils.utils import load_import_log, nan_pearsonr, pearson_round
+from pylib.utils.utils import load_import_log, nan_pearsonr, pearson_round, calc_dist_strat_corr
 from pylib.utils.xyz import (calculate_rg, calculate_rg_matrix, xyz_load,
                              xyz_to_distance, xyz_write)
 from scipy.optimize import minimize
