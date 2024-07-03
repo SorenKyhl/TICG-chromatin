@@ -8,6 +8,7 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 import pylib.analysis as analysis
+from pylib.datapipeline import DataPipeline, get_experiment_marks
 from pylib.Maxent import Maxent
 from pylib.Pysim import Pysim
 from pylib.utils import default, epilib, utils
@@ -20,7 +21,6 @@ from pylib.utils.utils import load_import_log
 sys.path.append('/home/erschultz/TICG-chromatin')
 import scripts.optimize_grid as optimize_grid
 from scripts.data_generation.modify_maxent import get_samples
-
 
 ROOT = '/home/erschultz'
 PROJECT = '/project/depablo/erschultz'
@@ -51,12 +51,12 @@ def max_ent_dataset(use_exp_hic=False):
             os.mkdir(s_odir)
 
         if use_exp_hic:
-            y = np.load(osp.join(data_dir, f'samples/sample{sample}/y.npy'))
+            y = np.load(osp.join(data_dir, f'samples/sample{sample}/hic.npy'))
         else:
-            y = np.load(osp.join(final, 'y.npy'))
+            y = np.load(osp.join(final, 'hic.npy'))
         if i < 10:
             plot_matrix(y, osp.join(s_odir, 'y.png'), vmax = 'mean')
-        np.save(osp.join(s_odir, 'y.npy'), y)
+        np.save(osp.join(s_odir, 'hic.npy'), y)
         config = utils.load_json(osp.join(final, 'config.json'))
         np.save(osp.join(s_odir, 'diag_chis.npy'), calculate_diag_chi_step(config))
         shutil.copyfile(osp.join(final, 'config.json'), osp.join(s_odir, 'config.json'))
@@ -117,6 +117,38 @@ def load_pcs(dataset, import_log, mode, k, norm=False):
             seq[:, j] /= np.max(np.abs(seq[:, j]))
     return seq
 
+def load_chipseq(import_log, k):
+    genome = import_log['genome']
+    cell_line = import_log['cell_line']
+    MEDIA = '/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/home/erschultz/'
+    DIR = osp.join(MEDIA, f'chip_seq_data/{cell_line.upper()}/{genome}/signal_p_value')
+    assert osp.exists(DIR)
+
+    table = get_experiment_marks(DIR)
+    table_rev = {v:k for k,v in table.items()}
+    print(table_rev)
+
+    if k == 6:
+        marks = ['H3K4me3', 'H3K27ac', 'H3K27me3', 'H3K4me1', 'H3K36me3', 'H3K9me3']
+    else:
+        raise Exception(f'not implemented yet: k={k}')
+
+    names = [table_rev[mark] for mark in marks]
+    print(names)
+
+    m = import_log['beads']
+    dataPipeline = DataPipeline(import_log['resolution'], import_log['chrom'],
+                            import_log['start'], import_log['end'],
+                            m)
+    result = np.empty((k, m))
+    for i, name in enumerate(names):
+        file = osp.join(DIR, name + '.bigWig')
+        assert osp.exists(file), name
+        npy = dataPipeline.load_bigWig(file)
+        npy = default.chipseq_pipeline.fit(npy)
+        result[i] = npy
+
+    return result
 
 def run(dir, config, x=None, S=None):
     print(dir)
@@ -275,11 +307,11 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None,
         bonded_config['beadvol'] = vb
     else:
         if bonded_config['bond_length'] <= 100:
-            bonded_config['beadvol'] = 13000
+            bonded_config['beadvol'] = 13_000
         elif bonded_config['bond_length'] == 140:
-            bonded_config['beadvol'] = 65000
+            bonded_config['beadvol'] = 65_000
         else:
-            bonded_config['beadvol'] = 130000
+            bonded_config['beadvol'] = 130_000
     if aspect_ratio != 1.0:
         bonded_config['boundary_type'] = 'spheroid'
         bonded_config['aspect_ratio'] = aspect_ratio
@@ -334,7 +366,7 @@ def setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                                 aspect_ratio, bond_type, k, contacts_distance,
                                 k_angle, theta_0, verbose)
 
-    y = np.load(osp.join(dir, 'y.npy')).astype(float)
+    y = np.load(osp.join(dir, 'hic.npy')).astype(float)
     y /= np.mean(np.diagonal(y))
     np.fill_diagonal(y, 1)
 
@@ -376,7 +408,7 @@ def setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
     # config['grid_size'] = 200
 
     # config['diag_start'] = 10
-    root = osp.join(dir, f'{root}-max_ent{k}')
+    root = osp.join(dir, f'{root}-max_ent{k}_chipseq_strict')
     if osp.exists(root):
         # shutil.rmtree(root)
         if verbose:
@@ -402,9 +434,10 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
 
     # get sequences
     # seqs = load_pcs('dataset_11_20_23', import_log, 'norm', k, norm=True)
-    seqs = epilib.get_pcs(epilib.get_oe(y), k, normalize=True)
+    # seqs = epilib.get_pcs(epilib.get_oe(y), k, normalize=True)
     # seqs = epilib.get_pcs(np.corrcoef(epilib.get_oe(y)), k, normalize=True)
     # seqs = epilib.get_sequences(y, k, randomized=True)
+    seqs = load_chipseq(import_log, k)
 
     params = default.params
     goals = epilib.get_goals(y, seqs, config)
@@ -413,7 +446,7 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
     params['equilib_sweeps'] = 10000
     params['production_sweeps'] = 300000
     params['stop_at_convergence'] = True
-    params['conv_defn'] = 'normal'
+    params['conv_defn'] = 'strict'
 
     stdout = sys.stdout
     with open(osp.join(root, 'log.log'), 'w') as sys.stdout:
@@ -430,7 +463,7 @@ def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=Non
                                 aspect_ratio, bond_type, k, contacts_distance,
                                 k_angle, theta_0, False)
 
-    remove = True
+    remove = False
     if osp.exists(root):
         # if not osp.exists(osp.join(root, 'iteration1')):
         #     remove = True
@@ -454,15 +487,15 @@ def main():
     samples = None
     # dataset = 'dataset_HIRES'; samples = [1, 2, 3, 4]
     # dataset = 'Su2020'; samples = ['1013_rescale1', '1004_rescale1']
-    dataset = 'dataset_12_06_23'
-    # dataset = 'dataset_HCT116_RAD21_KO'
+    # dataset = 'dataset_12_06_23'
+    dataset = 'dataset_HCT116_RAD21_KO'; samples=[1,2,3,4]
     # dataset = 'dataset_gm12878_25k'
     # dataset = 'dataset_11_21_23_imr90'; samples = range(1, 16)
     # dataset='dataset_HCT116_RAD21_KO'; samples=range(1,9)
 
     if samples is None:
         samples = []
-        for cell_line in ['imr90', 'gm12878', 'hmec', 'huvec', 'hap1']:
+        for cell_line in ['gm12878']:
             # samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
             # samples.extend(samples_cell_line)
             samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
@@ -473,22 +506,18 @@ def main():
     # dataset = 'dataset_12_06_23_max_ent_all'
 
     mapping = []
-    k_angle=0;theta_0=180;b=180;ar=2.0;phi=None;v=4
-    k=10
+    k_angle=0;theta_0=180;b=283;ar=1.5;phi=None;v=8;vb=260_000
     contacts_distance=False
     for i in samples:
-        for v in [8]:
-            for b in [200]:
-                for ar in [1.5]:
-                    for k in [1]:
-                        for k_angle in [0]:
-                            for bond_type in ['gaussian']:
-                                mapping.append((dataset, i, f'samples', b, phi, v, None, ar,
-                                            bond_type, k, contacts_distance, k_angle, theta_0))
+        for k in [6]:
+            for v in [8, 10, 12]:
+                for bond_type in ['gaussian']:
+                    mapping.append((dataset, i, f'samples_100k', b, phi, v, vb, ar,
+                                bond_type, k, contacts_distance, k_angle, theta_0))
 
     print('len =', len(mapping))
 
-    # with mp.Pool(48) as p:
+    # with mp.Pool(15) as p:
         # p.starmap(setup_config, mapping)
         # p.starmap(fit, mapping)
         # p.starmap(check, mapping)
@@ -496,10 +525,12 @@ def main():
         # p.starmap(cleanup, mapping)
 
     for i in mapping:
+        # setup_config(*i)
         #fit_max_ent(*i)
         # fit(*i)
-        rename(*i)
+        # rename(*i)
         check(*i)
+        # cleanup(*i)
 
 if __name__ == '__main__':
     # modify_maxent()

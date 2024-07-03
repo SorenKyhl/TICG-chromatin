@@ -778,7 +778,8 @@ if __name__ == '__main__':
         sample = samples[0]
         samples = None
 
-    data_dir = osp.join('/project/depablo/erschultz', dataset)
+    # data_dir = osp.join('/project/depablo/erschultz', dataset)
+    data_dir = osp.join('/home/erschultz', dataset)
     args = getArgs(data_folder = data_dir, sample = sample, samples = samples)
     args.experimental = True
     args.verbose = True
@@ -787,13 +788,14 @@ if __name__ == '__main__':
     args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', '_700k', 'phi',
                         'GNN579-max_ent', '-gd_gamma', 'distance', 'start', 'stat',
                         'diagbins', 'binarize', 'chrom', 'grid200', 'long', 'long5',
-                        'strict', '_repeat-GNN690', '_test', '_repeat']
-    for i in [1,2,3,4,5,6,7,8,9, 11,12,13,14,15]:
+                        'strict', '_repeat-GNN690', '_test', '_repeat', 'max_ent10-GNN690']
+    for i in [1,2,3,4,5,7,8,9,10,11,12,13,14,15]:
        args.bad_methods.append(f'max_ent{i}')
     # args.gnn_id = [434, 578, 579, 450, 451]
     # args.gnn_id = [600, 605, 606, 607, 608, 609, 610]
     # args.gnn_id = [579, 600, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620, 621, 622, 623, 624, 625]
-    args.gnn_id = [690]
+    # args.gnn_id = [690]
+    args.gnn_id = []
     main(args)
     # data, converged_mask = load_data(args)
     # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))

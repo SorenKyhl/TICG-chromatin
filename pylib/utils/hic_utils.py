@@ -7,8 +7,9 @@ import hicrep
 import numpy as np
 import scipy.ndimage as ndimage
 from numba import njit
-from pylib.utils import default, epilib
 from skimage.measure import block_reduce
+
+from pylib.utils import default, epilib
 
 """
 collection of functions for manipulating hic maps

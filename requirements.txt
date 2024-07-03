@@ -1,5 +1,5 @@
-numpy 
-matplotlib
+numpy
+matplotlib>=3.84
 scipy
 sympy
 seaborn

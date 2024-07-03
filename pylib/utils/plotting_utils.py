@@ -506,3 +506,30 @@ def plot_seq_continuous(seq, show=False, save=True, title=None, ofile='seq.png',
     if save:
         plt.savefig(ofile)
     plt.close()
+
+def plot_seq_continuous_panels(seq, labels, ofile='seq.png'):
+    m, k = seq.shape
+    cmap = matplotlib.cm.get_cmap('tab10')
+    ind = np.arange(k) % cmap.N
+    colors = cmap(ind)
+
+    rows=2; cols=3
+    fig, axes = plt.subplots(rows, cols)
+    row=0;col=0
+    for i in range(k):
+        print(i, row, col)
+        c = colors[i]
+        ax = axes[row][col]
+        ax.plot(np.arange(0, m), seq[:, i], label = f'Label {i+1}', color = c)
+        # i+1 to switch to 1-indexing
+        ax.set_title(labels[i], fontsize=16)
+        col += 1
+        if col == cols:
+            col = 0
+            row += 1
+
+    fig.supxlabel('Distance', fontsize=16)
+    fig.supylabel('Label Value', fontsize=16)
+    plt.tight_layout()
+    plt.savefig(ofile)
+    plt.close()

@@ -60,6 +60,8 @@ def load_import_log(dir, obj=None):
                 norm = line[1]
             elif line[0] == 'genome':
                 genome = line[1]
+            elif line[0] == 'beads':
+                beads = int(line[1])
 
     results['url'] = url
     results['cell_line'] = cell_line
@@ -72,6 +74,7 @@ def load_import_log(dir, obj=None):
     results['norm'] = norm
     results['genome'] = genome
     results['chrom'] = chrom
+    results['beads'] = beads
 
     if obj is not None:
         obj.url = url
@@ -85,6 +88,7 @@ def load_import_log(dir, obj=None):
         obj.norm = norm
         obj.genome = genome
         obj.chrom = chrom
+        obj.beads = beads
 
     return results
 

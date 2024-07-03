@@ -62,35 +62,45 @@
 # done
 
 
+# dir='/home/erschultz/dataset_12_06_23/samples'
+# cd $dir
+# for i in {1..641}
+# do
+#   for k in 10
+#   do
+#     for j in {0..19}
+#     do
+#       cd  "${dir}/sample${i}"
+#       cd "optimize_grid_b_200_v_8_spheroid_1.5-max_ent${k}_strict"
+#       cd "iteration${j}"
+#       pwd
+#       if [ -d "equilibration" ]
+#       then
+#         tar -czf equilibration.tar.gz equilibration
+#         rm -r equilibration
+#       fi
+#       rm S.npy
+#       rm L.npy
+#       rm experimental_hic.npy
+#       rm matrix*.png
+#       rm D.npy
+#       rm pc*.txt
+#       rm x.npy
+#       if [ -d "production_out" ]
+#       then
+#         tar -czf production_out.tar.gz production_out
+#         rm -r production_out
+#       fi
+#     done
+#   done
+# done
+
 dir='/home/erschultz/dataset_12_06_23/samples'
 cd $dir
 for i in {1..641}
 do
-  for k in 10
+  for gnn in {600..689}
   do
-    for j in {0..19}
-    do
-      cd  "${dir}/sample${i}"
-      cd "optimize_grid_b_200_v_8_spheroid_1.5-max_ent${k}_strict"
-      cd "iteration${j}"
-      pwd
-      if [ -d "equilibration" ]
-      then
-        tar -czf equilibration.tar.gz equilibration
-        rm -r equilibration
-      fi
-      rm S.npy
-      rm L.npy
-      rm experimental_hic.npy
-      rm matrix*.png
-      rm D.npy
-      rm pc*.txt
-      rm x.npy
-      if [ -d "production_out" ]
-      then
-        tar -czf production_out.tar.gz production_out
-        rm -r production_out
-      fi
-    done
+      rm -r "${dir}/sample${i}/optimize_grid_b_200_v_8_spheroid_1.5-GNN${gnn}"
   done
 done

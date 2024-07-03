@@ -14,6 +14,8 @@ found_root = False
 if usr == 'skyhl':
     root = "/home/skyhl/Documents/"
     found_root = True
+elif usr == 'erschultz':
+    root = "/home/erschultz"
 else:
     print(f"pylib.utils.default user not set up: {sys.path[0]}")
 

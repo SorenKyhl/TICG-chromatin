@@ -38,13 +38,13 @@ def bonded_simulations():
 
     base_config = default.bonded_config
     base_config['seed'] = 1
-    base_config["nSweeps"] = 350000
+    base_config["nSweeps"] = 350_000
     base_config["dump_frequency"] = 1000
     base_config["dump_stats_frequency"] = 100
     base_config['grid_size'] = 1000
 
     mapping = []
-    for boundary_type, ar in [('spherical', 1.0)]:
+    for boundary_type, ar in [('spheroid', 1.5)]:
         # ('spherical', 1.0), , ('spheroid', 2.0)
         boundary_dir = f'boundary_{boundary_type}'
         if ar != 1.0:
@@ -52,7 +52,7 @@ def bonded_simulations():
         boundary_dir = osp.join(dataset, boundary_dir)
         if not osp.exists(boundary_dir):
             os.mkdir(boundary_dir, mode=0o755)
-        for beadvol in [65000]:
+        for beadvol in [260_000]:
             beadvol_dir = osp.join(boundary_dir, f'beadvol_{beadvol}')
             if not osp.exists(beadvol_dir):
                 os.mkdir(beadvol_dir, mode=0o755)
@@ -72,15 +72,15 @@ def bonded_simulations():
                     m_dir = osp.join(bond_dir, f'm_{m}')
                     if not osp.exists(m_dir):
                         os.mkdir(m_dir, mode=0o755)
-                    for b in [140]:
+                    for b in [283]:
                         b_dir = osp.join(m_dir, f'bond_length_{b}')
                         if not osp.exists(b_dir):
                             os.mkdir(b_dir, mode=0o755)
-                        for v in [6, 8, 10]:
+                        for v in [12]:
                             v_dir = osp.join(b_dir, f'v_{v}')
                             if not osp.exists(v_dir):
                                 os.mkdir(v_dir, mode=0o755)
-                            for k_angle in [0, 2]:
+                            for k_angle in [0]:
                                 if bond_type == 'DSS'and k_angle != 0:
                                     continue
                                 for theta_0 in [180]:
@@ -183,21 +183,22 @@ def plot_bond_length():
     # plt.close()
 
 def main(root, config, mode='grid_angle10'):
-    gthic = np.load(osp.join(osp.split(root)[0], 'y.npy')).astype(float)
+    gthic = np.load(osp.join(osp.split(root)[0], 'hic.npy')).astype(float)
     config['nbeads'] = len(gthic)
     # config["nSweeps"] = 100000
     # config["dump_frequency"] = 100
     # config["dump_stats_frequency"] = 100
 
     if mode in {'grid', 'distance'}:
-        optimum = optimize_config(config, gthic, mode, 0.3, 2.4, root)
+        optimum = optimize_config(config, gthic, mode, 0.3, 2.4, root,
+                                dataset = osp.join(default.root, 'dataset_bonded'))
         p_s_exp = DiagonalPreprocessing.genomic_distance_statistics(gthic, 'prob')
-        xyz = get_bonded_simulation_xyz(config)
+        xyz = get_bonded_simulation_xyz(config, osp.join(default.root, 'dataset_bonded'))
         if mode == 'grid':
             y = xyz_to_contact_grid(xyz, optimum, dtype=float)
         elif mode == 'distance':
             y = xyz_to_contact_distance(xyz, optimum, dtype=float)
-        np.save(osp.join(root, 'y.npy'), y)
+        np.save(osp.join(root, 'hic.npy'), y)
         plot_matrix(y, osp.join(root, 'y.png'))
         p_s_exp = DiagonalPreprocessing.genomic_distance_statistics(gthic, 'prob')
         p_s_sim = DiagonalPreprocessing.genomic_distance_statistics(y, 'prob')
@@ -271,12 +272,12 @@ def create_config():
     return config
 
 def test_optimize():
-    y = np.load('/home/erschultz/Su2020/samples/sample1004/y.npy')
+    y = np.load('/home/erschultz/Su2020/samples/sample1004/hic.npy')
     dir = '/home/erschultz/Su2020/samples/sample1004/optimize_grid_b_261_phi_0.01 (copy)'
-    y_sim = np.load(osp.join(dir, 'y.npy'))
+    y_sim = np.load(osp.join(dir, 'hic.npy'))
     with open(osp.join(dir, 'config.json')) as f:
         config = json.load(f)
-    xyz = get_bonded_simulation_xyz(config)
+    xyz = get_bonded_simulation_xyz(config, osp.join(default.root, 'dataset_bonded'))
     # xyz = xyz_load(osp.join(dir, 'iteration6/output.xyz'))
     optimum = np.loadtxt(osp.join(dir, 'grid_size.txt'))
     print(optimum)
@@ -289,7 +290,7 @@ def test_optimize():
     plot_mean_dist(p_s_exp, dir, 'mean_dist_test_log.png',
                     None, True,
                     ref = p_s_sim_xyz, ref_label = 'output.xyz',  ref_color = 'g',
-                    ref2 = p_s_sim, ref2_label = 'y.npy', ref2_color = 'b',
+                    ref2 = p_s_sim, ref2_label = 'hic.npy', ref2_color = 'b',
                     label = 'Experiment', color = 'k')
 
 

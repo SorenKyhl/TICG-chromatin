@@ -20,13 +20,16 @@ import torch_geometric
 from data_generation.modify_maxent import get_samples
 from makeLatexTable import getArgs, load_data
 from max_ent_setup.get_params import GetEnergy
+from pylib.datapipeline import *
 from pylib.utils import default, epilib, hic_utils
+from pylib.utils.default import chipseq_pipeline
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
                                       calculate_diag_chi_step, calculate_U)
 from pylib.utils.load_utils import (get_final_max_ent_folder, load_all,
                                     load_max_ent_D, load_max_ent_L, load_Y)
-from pylib.utils.plotting_utils import BLUE_RED_CMAP
+from pylib.utils.plotting_utils import (BLUE_RED_CMAP, plot_seq_continuous,
+                                        plot_seq_continuous_panels)
 from pylib.utils.similarity_measures import SCC
 from pylib.utils.utils import (load_import_log, load_json, make_composite,
                                pearson_round, triu_to_full)
@@ -522,13 +525,15 @@ def make_dataset_of_converged(dataset):
 
                     shutil.copy(osp.join(pca_dir, 'y.npy'), osp.join(of_dir, 'y.npy'))
                     shutil.copy(osp.join(pca_dir, 'L.npy'), osp.join(of_dir, 'L.npy'))
-                    shutil.copy(osp.join(pca_dir, final_it_dir, 'config.json'), osp.join(of_dir, 'config.json'))
+                    shutil.copy(osp.join(pca_dir, final_it_dir, 'config.json'),
+                                osp.join(of_dir, 'config.json'))
                     with open(osp.join(pca_dir, final_it_dir, 'config.json')) as f:
                         config = json.load(f)
                     diag_chi_continuous = calculate_diag_chi_step(config)
                     np.save(osp.join(of_dir, 'diag_chis_continuous.npy'), diag_chi_continuous)
 
-                    # shutil.copytree(osp.join(final_it_dir, 'production_out'), osp.join(of_dir, 'data_out'))
+                    # shutil.copytree(osp.join(final_it_dir, 'production_out'),
+                    #             osp.join(of_dir, 'data_out'))
                 else:
                     count += 1
     print(f'{converged_count} out of {converged_count+count} converged')
@@ -567,13 +572,6 @@ def compare_y_exp_vs_sim():
         print_arr(data.edge_attr[:, 0], 'H_ij')
         arr = data.edge_attr[:, 0] * 10
         bin_width=1
-        # plt.hist(arr)
-        # plt.hist(arr, label = osp.split(dir)[1], alpha = 0.5,
-        #             weights = np.ones_like(arr) / len(arr),
-        #             bins = range(math.floor(np.nanmin(arr)), math.ceil(np.nanmax(arr)) + bin_width, bin_width))
-    #
-    # plt.legend()
-    # plt.show()
 
         # print_arr(hat_S)
         latent1, latent2 = model.latent(data)
@@ -666,7 +664,8 @@ def test_convergence(dataset, mode='loss'):
             continue
         for i, s in enumerate(samples):
             s_dir = osp.join(dir, f'sample{s}')
-            fpath = osp.join(s_dir, f'optimize_grid_b_{b}_phi_{phi}_spheroid_{ar}-max_ent5{max_ent_mode}')
+            fpath = osp.join(s_dir,
+                    f'optimize_grid_b_{b}_phi_{phi}_spheroid_{ar}-max_ent5{max_ent_mode}')
             assert osp.exists(fpath), fpath
 
             if mode == 'loss':
@@ -955,7 +954,8 @@ def test_time_contact_distance():
         print(np.mean(times), '+-', np.round(np.std(times), 3))
 
 def convergence():
-    dir = '/home/erschultz/dataset_02_04_23/samples/sample209/optimize_grid_b_180_phi_0.008_spheroid_1.5-max_ent5_longer'
+    dir = osp.join('/home/erschultz/dataset_02_04_23/samples/sample209',
+        'optimize_grid_b_180_phi_0.008_spheroid_1.5-max_ent5_longer')
     conv = np.loadtxt(osp.join(dir, 'convergence.txt'))
     plt.plot(conv)
     plt.yscale('log')
@@ -1111,6 +1111,33 @@ def cleanup():
                 if id < 690:
                     shutil.rmtree(f_dir)
 
+def test_pipeline():
+    MEDIA = '/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/home/erschultz/'
+    DIR = osp.join(MEDIA, 'chip_seq_data/GM12878/hg19/signal_p_value')
+    file = osp.join(DIR, 'ENCFF154XCY.bigWig')
+    table = get_experiment_marks(DIR)
+    print(table)
+    dataPipeline = DataPipeline(50000, 1, 30000000, 55600000, 512)
+
+    npy = dataPipeline.load_bigWig(file)
+    print(npy, npy.shape)
+
+    npy2 = chipseq_pipeline.fit(npy)
+    print(npy2, npy2.shape)
+
+def plot_seq():
+    dir = '/home/erschultz/dataset_12_06_23/samples/sample6/optimize_grid_b_200_v_8_spheroid_1.5-max_ent6_chipseq/iteration20/'
+    seq = np.load(osp.join(dir, 'x.npy'))
+    labels = ['H3K4me3', 'H3K27ac', 'H3K27me3', 'H3K4me1', 'H3K36me3', 'H3K9me3']
+    print(seq.shape)
+    plot_seq_continuous_panels(seq.T, labels, ofile = osp.join(dir, 'seq.png'))
+
+def temp():
+    y = np.load('/home/erschultz/chipseq-only/sample1/y.npy')
+    plot_matrix(y, '/home/erschultz/chipseq-only/sample1/y.png',
+                vmax='mean')
+    print(y.diagonal())
+
 if __name__ == '__main__':
     # test_tile()
     # make_small('dataset_12_06_23')
@@ -1123,4 +1150,7 @@ if __name__ == '__main__':
     # compare_gnn_p_s('dataset_02_04_23', 579)
     # compare_max_ent_p_s('dataset_02_04_23')
     # compare_p_s()
-    cleanup()
+    # cleanup()
+    # test_pipeline()
+    # plot_seq()
+    temp()
