@@ -99,8 +99,9 @@ dir='/home/erschultz/dataset_12_06_23/samples'
 cd $dir
 for i in {1..641}
 do
-  for gnn in {600..689}
-  do
-      rm -r "${dir}/sample${i}/optimize_grid_b_200_v_8_spheroid_1.5-GNN${gnn}"
-  done
+    mv "${dir}/sample${i}/y.png" "${dir}/sample${i}/hic.png"
+  # for gnn in {600..689}
+  # do
+  #     rm -r "${dir}/sample${i}/optimize_grid_b_200_v_8_spheroid_1.5-GNN${gnn}"
+  # done
 done

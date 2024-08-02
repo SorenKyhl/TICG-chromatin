@@ -408,7 +408,7 @@ def setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
     # config['grid_size'] = 200
 
     # config['diag_start'] = 10
-    root = osp.join(dir, f'{root}-max_ent{k}_chipseq_strict')
+    root = osp.join(dir, f'{root}-max_ent{k}')
     if osp.exists(root):
         # shutil.rmtree(root)
         if verbose:
@@ -434,10 +434,10 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
 
     # get sequences
     # seqs = load_pcs('dataset_11_20_23', import_log, 'norm', k, norm=True)
-    # seqs = epilib.get_pcs(epilib.get_oe(y), k, normalize=True)
+    seqs = epilib.get_pcs(epilib.get_oe(y), k, normalize=True) # default option
     # seqs = epilib.get_pcs(np.corrcoef(epilib.get_oe(y)), k, normalize=True)
     # seqs = epilib.get_sequences(y, k, randomized=True)
-    seqs = load_chipseq(import_log, k)
+    # seqs = load_chipseq(import_log, k)
 
     params = default.params
     goals = epilib.get_goals(y, seqs, config)
@@ -446,7 +446,7 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
     params['equilib_sweeps'] = 10000
     params['production_sweeps'] = 300000
     params['stop_at_convergence'] = True
-    params['conv_defn'] = 'strict'
+    params['conv_defn'] = 'normal'
 
     stdout = sys.stdout
     with open(osp.join(root, 'log.log'), 'w') as sys.stdout:
@@ -484,35 +484,23 @@ def rename(dataset, sample, samples, bl, phi, v, vb, aspect_ratio, bond_type, k,
         os.rename(root, new_name)
 
 def main():
-    samples = None
-    # dataset = 'dataset_HIRES'; samples = [1, 2, 3, 4]
-    # dataset = 'Su2020'; samples = ['1013_rescale1', '1004_rescale1']
-    # dataset = 'dataset_12_06_23'
-    dataset = 'dataset_HCT116_RAD21_KO'; samples=[1,2,3,4]
-    # dataset = 'dataset_gm12878_25k'
-    # dataset = 'dataset_11_21_23_imr90'; samples = range(1, 16)
-    # dataset='dataset_HCT116_RAD21_KO'; samples=range(1,9)
-
-    if samples is None:
-        samples = []
-        for cell_line in ['gm12878']:
-            # samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
-            # samples.extend(samples_cell_line)
-            samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
-            samples.extend(samples_cell_line)
-
+    dataset = 'dataset_12_06_23'
+    samples = []
+    for cell_line in ['gm12878', 'imr90', 'hap1', 'huvec', 'hmec']:
+        samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
+        samples.extend(samples_cell_line)
+        # samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
+        # samples.extend(samples_cell_line)
         print(samples)
 
-    # dataset = 'dataset_12_06_23_max_ent_all'
-
     mapping = []
-    k_angle=0;theta_0=180;b=283;ar=1.5;phi=None;v=8;vb=260_000
+    k_angle=0;theta_0=180;b=200;ar=1.5;phi=None;v=8;vb=None
     contacts_distance=False
     for i in samples:
-        for k in [6]:
-            for v in [8, 10, 12]:
+        for k in [10]:
+            for v in [8]:
                 for bond_type in ['gaussian']:
-                    mapping.append((dataset, i, f'samples_100k', b, phi, v, vb, ar,
+                    mapping.append((dataset, i, f'samples', b, phi, v, vb, ar,
                                 bond_type, k, contacts_distance, k_angle, theta_0))
 
     print('len =', len(mapping))
@@ -526,11 +514,36 @@ def main():
 
     for i in mapping:
         # setup_config(*i)
-        #fit_max_ent(*i)
+        # fit_max_ent(*i)
         # fit(*i)
         # rename(*i)
         check(*i)
         # cleanup(*i)
+
+
+def main2():
+    dataset = 'dataset_HCT116_RAD21_KO'; samples=[1,2,3,4]
+
+    mapping = []
+    k_angle=0;theta_0=180;b=283;ar=1.5;phi=None;v=8;vb=260_000
+    contacts_distance=False
+    for i in samples:
+        for k in [2,3,4,5,6,7,8,9,10, 1]:
+            for v in [10]:
+                for bond_type in ['gaussian']:
+                    mapping.append((dataset, i, f'samples_100k', b, phi, v, vb, ar,
+                                bond_type, k, contacts_distance, k_angle, theta_0))
+
+    print('len =', len(mapping))
+
+    with mp.Pool(15) as p:
+        # p.starmap(setup_config, mapping)
+        p.starmap(fit, mapping)
+        # p.starmap(cleanup, mapping)
+
+    for i in mapping:
+        check(*i)
+
 
 if __name__ == '__main__':
     # modify_maxent()

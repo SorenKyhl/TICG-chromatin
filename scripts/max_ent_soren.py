@@ -7,6 +7,7 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 import pylib.analysis as analysis
 from pylib.datapipeline import DataPipeline, get_experiment_marks
 from pylib.Maxent import Maxent
@@ -43,24 +44,29 @@ def fit():
     # get sequences
     seqs = []
     for i in range(1,7):
-        seq = np.loadtxt(f'/home/erschultz/chipseq-only/me-1024-1-encode-chr2/iteration0/pcf{i}.txt')
+        seq = np.loadtxt(f'/home/erschultz/chipseq-only/me-1024-1-encode-chr2_soren/iteration0/pcf{i}.txt')
         seqs.append(seq)
     seqs = np.array(seqs)
 
-    with open('/home/erschultz/chipseq-only/me-1024-1-encode-chr2/resources/config.json') as f:
+    with open('/home/erschultz/chipseq-only/me-1024-1-encode-chr2_soren/resources/config.json') as f:
         config = json.load(f)
 
-    with open('/home/erschultz/chipseq-only/me-1024-1-encode-chr2/resources/params.json') as f:
+    with open('/home/erschultz/chipseq-only/me-1024-1-encode-chr2_soren/resources/params.json') as f:
         params = json.load(f)
 
-    goals = epilib.get_goals(y, seqs, config)
-    print(goals)
-    return
+    # params['iterations'] = 1
+    # params['equilib_sweeps'] = 1000
+    params['production_sweeps'] = 300000
+    params['stop_at_convergence'] = False
+    params['method'] = 'n'
+
+    goals = epilib.get_goals(y, seqs, config) # TODO goals don't match
+    params["goals"] = goals
 
     stdout = sys.stdout
     with open(osp.join(root, 'log.log'), 'w') as sys.stdout:
         me = Maxent(root, params, config, seqs, y, fast_analysis=True,
-                    final_it_sweeps=300000, mkdir=False, bound_diag_chis=False)
+                    final_it_sweeps=params['production_sweeps'], mkdir=False, bound_diag_chis=False)
         t = me.fit()
         print(f'Simulation took {np.round(t, 2)} seconds')
     sys.stdout = stdout
