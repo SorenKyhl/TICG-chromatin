@@ -17,7 +17,7 @@ do
     for i in $(seq $start_i $end_i)
     do
       echo $i $start $end
-      # sbatch ~/TICG-chromatin/bin/datasets/bash_files/diag_dataset${i}.sh $sourceFile $start $end 128 "${cell_line}_"
+      sbatch ~/TICG-chromatin/bin/datasets/bash_files/diag_dataset${i}.sh $sourceFile $start $end 128 "${cell_line}_"
       start=$(( $start + 2000 ))
       end=$(( $end + 2000 ))
     done
