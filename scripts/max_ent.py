@@ -486,7 +486,7 @@ def rename(dataset, sample, samples, bl, phi, v, vb, aspect_ratio, bond_type, k,
 def main():
     dataset = 'dataset_12_06_23'
     samples = []
-    for cell_line in ['gm12878', 'imr90', 'hap1', 'huvec', 'hmec']:
+    for cell_line in ['imr90']:
         samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
         samples.extend(samples_cell_line)
         # samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
@@ -520,6 +520,35 @@ def main():
         check(*i)
         # cleanup(*i)
 
+def mouse():
+    dataset = 'dataset_mouse_50k_512'
+    samples, _ = get_samples(dataset, test=True, filter_cell_lines='ch12-lx-b-lymphoblasts')
+    print(samples)
+
+
+    mapping = []
+    k_angle=0;theta_0=180;b=200;ar=1.5;phi=None;v=8;vb=None
+    contacts_distance=False
+    for i in samples:
+        for k in [10]:
+            for v in [8]:
+                for bond_type in ['gaussian']:
+                    mapping.append((dataset, i, f'samples', b, phi, v, vb, ar,
+                                bond_type, k, contacts_distance, k_angle, theta_0))
+
+    print('len =', len(mapping))
+
+    # with mp.Pool(40) as p:
+        # p.starmap(setup_config, mapping)
+        # p.starmap(fit, mapping)
+        # p.starmap(check, mapping)
+        # p.starmap(post_analysis, mapping)
+        # p.starmap(cleanup, mapping)
+
+    for i in mapping:
+        check(*i)
+
+
 
 def main2():
     dataset = 'dataset_HCT116_RAD21_KO'; samples=[1,2,3,4]
@@ -547,7 +576,8 @@ def main2():
 
 if __name__ == '__main__':
     # modify_maxent()
-    main()
+    mouse()
+    # main()
     # max_ent_dataset(False)
     # max_ent_dataset(True)
     # compute_pcs('dataset_11_20_23', 'gm12878')

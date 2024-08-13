@@ -635,21 +635,35 @@ def make_small(dataset):
     if not osp.exists(odir):
         os.mkdir(odir)
     odir = osp.join(odir, 'samples')
-    if not osp.exists(odir):
-        os.mkdir(odir)
-    for s in os.listdir(dir):
+    for s in sorted(os.listdir(dir)):
         if 'sample' not in s:
             continue
         s_dir_grid = osp.join(dir, s, grid_root)
         s_odir = osp.join(odir, s)
-        shutil.copyfile( osp.join(dir, s, 'y.npy'), osp.join(s_odir, 'y.npy'))
-        shutil.copyfile( osp.join(dir, s, 'import.log'), osp.join(s_odir, 'import.log'))
         s_odir_grid = osp.join(s_odir, grid_root)
         os.makedirs(s_odir_grid, exist_ok=True)
-        for f in ['y.npy', 'grid.txt']:
+
+
+
+        shutil.copyfile( osp.join(dir, s, 'hic.npy'), osp.join(s_odir, 'hic.npy'))
+        shutil.copyfile( osp.join(dir, s, 'import.log'), osp.join(s_odir, 'import.log'))
+        for f in ['grid.txt', 'hic.npy']:
             source_file = osp.join(s_dir_grid, f)
-            if osp.exists(source_file):
-                shutil.copyfile(source_file, osp.join(s_odir_grid, f))
+            shutil.copyfile(source_file, osp.join(s_odir_grid, f))
+
+        # me_source = osp.join(dir, s, 'optimize_grid_b_200_v_8_spheroid_1.5-max_ent10')
+        # me_target = osp.join(s_odir, 'optimize_grid_b_200_v_8_spheroid_1.5-max_ent10')
+        # os.makedirs(me_target, exist_ok=True)
+        # os.makedirs(osp.join(me_target, 'resources'), exist_ok=True)
+        # for f in ['chis_diag.txt', 'chis.txt', 'chis_eig_norm.npy',
+        #         'resources/x_eig_norm.npy', 'resources/config.json',
+        #         'convergence.txt']:
+        #     source_file = osp.join(me_source, f)
+        #     if osp.exists(source_file):
+        #         shutil.copyfile(source_file, osp.join(me_target, f))
+
+
+
 
 def test_convergence(dataset, mode='loss'):
     dir = f'/home/erschultz/{dataset}/samples'
@@ -1140,7 +1154,7 @@ def temp():
 
 if __name__ == '__main__':
     # test_tile()
-    # make_small('dataset_12_06_23')
+    make_small('dataset_mouse_50k_512')
     # data_corr()
     # plot_triu_low_res()
     # distance_cutoff_diag_chis()
@@ -1153,4 +1167,4 @@ if __name__ == '__main__':
     # cleanup()
     # test_pipeline()
     # plot_seq()
-    temp()
+    # temp()

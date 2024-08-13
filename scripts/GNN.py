@@ -145,7 +145,7 @@ def setup_GNN(dataset, sample, sub_dir, b, phi, v, ar, GNN_ID):
     dir, root, config = setup_config(dataset, sample, sub_dir, b, phi, v, None,
                                     ar, verbose = False)
 
-    y_file = osp.join(dir, 'y.npy')
+    y_file = osp.join(dir, 'hic.npy')
     if not osp.exists(y_file):
         raise Exception(f'files does not exist: {y_file}')
     y = np.load(y_file).astype(np.float64)
@@ -159,13 +159,13 @@ def setup_GNN(dataset, sample, sub_dir, b, phi, v, ar, GNN_ID):
     config['load_bead_types'] = False
     config['lmatrix_on'] = False
     config['dmatrix_on'] = False
-    config['dump_frequency'] = 1000
-    config['nSweeps'] = 3000
-    config['nSweeps_eq'] = 1000
+    config['dump_frequency'] = 10000
+    config['nSweeps'] = 300000
+    config['nSweeps_eq'] = 10000
     config['nbeads'] = m
     config["umatrix_filename"] = "umatrix.txt"
 
-    gnn_root = f'{root}-GNN{GNN_ID}_test'
+    gnn_root = f'{root}-GNN{GNN_ID}'
 
     return dir, root, gnn_root, config, y
 
@@ -180,8 +180,8 @@ def fit(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
         return
     os.mkdir(gnn_root, mode=0o755)
 
-    S = run_GNN(GNN_ID, gnn_root, m, dir, root, sub_dir, use_GPU=False)
-    if S is None:
+    U = run_GNN(GNN_ID, gnn_root, m, dir, root, sub_dir, use_GPU=False)
+    if U is None:
         return
 
     stdout = sys.stdout
@@ -201,7 +201,7 @@ def check(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
         equilibration = osp.join(gnn_root, 'equilibration')
         if osp.exists(production):
             config = utils.load_json(osp.join(production, 'config.json'))
-            if not osp.exists(osp.join(gnn_root, 'y.npy')):
+            if not osp.exists(osp.join(gnn_root, 'hic.npy')):
                 with open(osp.join(production, 'energy.traj'), 'r') as f:
                     last = f.readlines()[-1]
                     it = int(last.split('\t')[0])
@@ -224,7 +224,7 @@ def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
             remove = True
         # elif not osp.exists(osp.join(gnn_root, 'production_out')):
             # remove = True
-        elif not osp.exists(osp.join(gnn_root, 'y.npy')):
+        elif not osp.exists(osp.join(gnn_root, 'hic.npy')):
              remove = True
         if remove:
             shutil.rmtree(gnn_root)
@@ -246,17 +246,19 @@ def main():
     # samples = [42, 114, 475, 331, 402, 543]
     # dataset = 'Su2020'; samples=['1013_rescale1', '1004_rescale1']
     # dataset = 'dataset_11_20_23';
+    dataset = 'dataset_mouse_50k_512'
+
     mapping = []
 
     if samples is None:
         samples = []
-        for cell_line in ['hmec']:
+        for cell_line in ['ch12-lx-b-lymphoblasts']:
             # samples_cell_line, _ = get_samples(dataset, train=True,
             #                                     filter_cell_lines=cell_line)
             # samples.extend(samples_cell_line[:10])
             samples_cell_line, _ = get_samples(dataset, test=True,
                                                 filter_cell_lines=cell_line)
-            samples.extend(samples_cell_line[:1])
+            samples.extend(samples_cell_line)
 
             print(len(samples))
 
@@ -269,9 +271,9 @@ def main():
     print(f'len of mapping: {len(mapping)}')
     # print(mapping)
 
-    # with mp.Pool(1) as p:
+    with mp.Pool(40) as p:
         # p.starmap(cleanup, mapping)
-        # p.starmap(fit, mapping)
+        p.starmap(fit, mapping)
 
     for i in mapping:
         # fit_max_ent(*i)

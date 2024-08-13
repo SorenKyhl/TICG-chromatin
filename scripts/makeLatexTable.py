@@ -766,12 +766,13 @@ if __name__ == '__main__':
     # dataset = 'dataset_02_04_23'
     # dataset='dataset_11_20_23'
     dataset='dataset_12_06_23'
+    # dataset = 'dataset_mouse_50k_512'
     # dataset='dataset_02_14_24_imr90'
     # dataset='Su2020'; samples = [1013]
 
     if samples is None and sample is None:
         samples, _ = get_samples(dataset, test = True,
-                                filter_cell_lines=['imr90'])
+                                filter_cell_lines=['gm12878'])
         samples = samples
         print(samples, len(samples))
     if samples is not None and len(samples) == 1:
