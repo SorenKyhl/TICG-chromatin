@@ -408,7 +408,7 @@ def setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
     # config['grid_size'] = 200
 
     # config['diag_start'] = 10
-    root = osp.join(dir, f'{root}-max_ent{k}')
+    root = osp.join(dir, f'{root}-max_ent{k}_repeat2')
     if osp.exists(root):
         # shutil.rmtree(root)
         if verbose:
@@ -486,8 +486,8 @@ def rename(dataset, sample, samples, bl, phi, v, vb, aspect_ratio, bond_type, k,
 def main():
     dataset = 'dataset_12_06_23'
     samples = []
-    for cell_line in ['imr90']:
-        samples_cell_line, _ = get_samples(dataset, train=True, filter_cell_lines=cell_line)
+    for cell_line in ['imr90', 'gm12878', 'hap1', 'huvec', 'hmec']:
+        samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
         samples.extend(samples_cell_line)
         # samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
         # samples.extend(samples_cell_line)
@@ -505,9 +505,9 @@ def main():
 
     print('len =', len(mapping))
 
-    # with mp.Pool(15) as p:
+    with mp.Pool(30) as p:
         # p.starmap(setup_config, mapping)
-        # p.starmap(fit, mapping)
+        p.starmap(fit, mapping)
         # p.starmap(check, mapping)
         # p.starmap(post_analysis, mapping)
         # p.starmap(cleanup, mapping)
@@ -576,8 +576,8 @@ def main2():
 
 if __name__ == '__main__':
     # modify_maxent()
-    mouse()
-    # main()
+    # mouse()
+    main()
     # max_ent_dataset(False)
     # max_ent_dataset(True)
     # compute_pcs('dataset_11_20_23', 'gm12878')

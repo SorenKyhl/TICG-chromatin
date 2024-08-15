@@ -168,7 +168,7 @@ def setup_GNN(dataset, sample, sub_dir, b, phi, v, ar, GNN_ID):
     config['nbeads'] = m
     config["umatrix_filename"] = "umatrix.txt"
 
-    gnn_root = f'{root}-GNN{GNN_ID}'
+    gnn_root = f'{root}-GNN{GNN_ID}_repeat2'
 
     return dir, root, gnn_root, config, y
 
@@ -249,13 +249,13 @@ def main():
     # samples = [42, 114, 475, 331, 402, 543]
     # dataset = 'Su2020'; samples=['1013_rescale1', '1004_rescale1']
     # dataset = 'dataset_11_20_23';
-    dataset = 'dataset_mouse_50k_512'
+    # dataset = 'dataset_mouse_50k_512'
 
     mapping = []
 
     if samples is None:
         samples = []
-        for cell_line in ['ch12-lx-b-lymphoblasts']:
+        for cell_line in ['imr90', 'gm12878', 'hap1', 'huvec', 'hmec']:
             # samples_cell_line, _ = get_samples(dataset, train=True,
             #                                     filter_cell_lines=cell_line)
             # samples.extend(samples_cell_line[:10])
@@ -274,7 +274,7 @@ def main():
     print(f'len of mapping: {len(mapping)}')
     # print(mapping)
 
-    with mp.Pool(40) as p:
+    with mp.Pool(30) as p:
         # p.starmap(cleanup, mapping)
         p.starmap(fit, mapping)
 
