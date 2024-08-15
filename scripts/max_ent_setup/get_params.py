@@ -18,7 +18,7 @@ from pylib.utils.plotting_utils import plot_matrix
 from pylib.utils.utils import load_json
 
 sys.path.append('/home/erschultz')
-
+sys.path.append('/project/depablo/erschultz')
 from sequences_to_contact_maps.scripts.argparse_utils import (
     ArgparserConverter, finalize_opt, get_base_parser)
 from sequences_to_contact_maps.scripts.clean_directories import \

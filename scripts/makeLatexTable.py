@@ -765,22 +765,22 @@ if __name__ == '__main__':
     samples = None; sample = None
     # dataset = 'dataset_02_04_23'
     # dataset='dataset_11_20_23'
-    dataset='dataset_12_06_23'
-    # dataset = 'dataset_mouse_50k_512'
+    # dataset='dataset_12_06_23'
+    dataset = 'dataset_mouse_50k_512'
     # dataset='dataset_02_14_24_imr90'
     # dataset='Su2020'; samples = [1013]
 
     if samples is None and sample is None:
         samples, _ = get_samples(dataset, test = True,
-                                filter_cell_lines=['gm12878'])
+                                filter_cell_lines=['ch12-lx-b-lymphoblasts'])
         samples = samples
         print(samples, len(samples))
     if samples is not None and len(samples) == 1:
         sample = samples[0]
         samples = None
 
-    # data_dir = osp.join('/project/depablo/erschultz', dataset)
-    data_dir = osp.join('/home/erschultz', dataset)
+    data_dir = osp.join('/project/depablo/erschultz', dataset)
+    # data_dir = osp.join('/home/erschultz', dataset)
     args = getArgs(data_folder = data_dir, sample = sample, samples = samples)
     args.experimental = True
     args.verbose = True

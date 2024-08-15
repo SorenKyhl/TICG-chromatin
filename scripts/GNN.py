@@ -21,6 +21,7 @@ from pylib.utils.energy_utils import calculate_D
 from pylib.utils.goals import get_goals
 
 sys.path.append('/home/erschultz')
+sys.path.append('/project/depablo/erschultz')
 from sequences_to_contact_maps.result_summary_plots import \
     predict_chi_in_psi_basis
 
@@ -30,9 +31,11 @@ from scripts.max_ent import setup_config, setup_max_ent
 from scripts.max_ent_setup.get_params import GetEnergy
 
 ROOT = '/home/erschultz'
+ROOT = '/project/depablo/erschultz'
 
 def run_GNN(GNN_ID, gnn_root, m, dir, root, sub_dir, use_GPU=True, verbose=True):
     # sleep for random # of seconds so as not to overload gpu
+    print(ROOT)
     model_path = osp.join(ROOT, 'sequences_to_contact_maps/results/ContactGNNEnergy',
                         str(GNN_ID))
     log_file = osp.join(gnn_root, 'energy.log')
@@ -277,7 +280,7 @@ def main():
 
     for i in mapping:
         # fit_max_ent(*i)
-        # fit(*i)
+        # fit(*i)i
         check(*i)
         # rename(*i)
         # cleanup(*i)

@@ -14,28 +14,30 @@ compress(){
   do
     cd "${dir}/${dataset}/samples/sample${i}"
     # energy
-    rm e.npy &
-    rm s.npy &
-    rm L.npy &
-    # rm S.npy &
+    rm e.npy
+    rm s.npy
+    rm L.npy
+    # rm S.npy
 
-    rm chis.tek &
-    rm chis.npy &
-    rm *diag.npy &
-    rm *.png &
+    rm chis.tek
+    rm chis.npy
+    rm *diag.npy
+    rm *.png
 
-    rm *.txt &
+    rm *.txt
 
-    wait
+    rm -r equilibration
+    
 
     cd production_out
     rm *.traj
   done
  
-  # cd $dir
-  # rm -r "${dataset}.tar.gz"
-  # tar -czf "${dataset}.tar.gz" $dataset
-  # rm -r $dataset
+  cd $dir
+  echo $dir
+  rm -r "${dataset}.tar.gz"
+  tar -czf "${dataset}.tar.gz" $dataset
+  rm -r $dataset
 }
 
 to_small(){
@@ -76,5 +78,6 @@ cleanup(){
 dir='/home/erschultz'
 dir='/project2/depablo/erschultz'
 cd $dir
-compress dataset_04_05_24_imr90
-compress dataset_04_18_24_imr90
+compress dataset_04_05_23_imr90 &
+compress dataset_04_18_23_imr90 &
+wait

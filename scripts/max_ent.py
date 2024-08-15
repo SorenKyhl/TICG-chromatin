@@ -538,9 +538,9 @@ def mouse():
 
     print('len =', len(mapping))
 
-    # with mp.Pool(40) as p:
+    with mp.Pool(30) as p:
         # p.starmap(setup_config, mapping)
-        # p.starmap(fit, mapping)
+        p.starmap(fit, mapping)
         # p.starmap(check, mapping)
         # p.starmap(post_analysis, mapping)
         # p.starmap(cleanup, mapping)
