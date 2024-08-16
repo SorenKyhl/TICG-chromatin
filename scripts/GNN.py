@@ -19,6 +19,7 @@ from pylib.utils import default, epilib, utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import calculate_D
 from pylib.utils.goals import get_goals
+from pylib.utils.load_utils import load_Y
 
 sys.path.append('/home/erschultz')
 sys.path.append('/project/depablo/erschultz')
@@ -148,10 +149,8 @@ def setup_GNN(dataset, sample, sub_dir, b, phi, v, ar, GNN_ID):
     dir, root, config = setup_config(dataset, sample, sub_dir, b, phi, v, None,
                                     ar, verbose = False)
 
-    y_file = osp.join(dir, 'hic.npy')
-    if not osp.exists(y_file):
-        raise Exception(f'files does not exist: {y_file}')
-    y = np.load(y_file).astype(np.float64)
+    y = load_Y(dir, return_y_diag=False)
+    y = y.astype(np.float64)
     y /= np.mean(np.diagonal(y))
     np.fill_diagonal(y, 1)
     m = len(y)
@@ -204,7 +203,7 @@ def check(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
         equilibration = osp.join(gnn_root, 'equilibration')
         if osp.exists(production):
             config = utils.load_json(osp.join(production, 'config.json'))
-            if not osp.exists(osp.join(gnn_root, 'hic.npy')):
+            if not (osp.exists(osp.join(gnn_root, 'hic.npy')) or osp.exists(osp.join(gnn_root, 'y.npy'))):
                 with open(osp.join(production, 'energy.traj'), 'r') as f:
                     last = f.readlines()[-1]
                     it = int(last.split('\t')[0])
@@ -227,7 +226,7 @@ def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
             remove = True
         # elif not osp.exists(osp.join(gnn_root, 'production_out')):
             # remove = True
-        elif not osp.exists(osp.join(gnn_root, 'hic.npy')):
+        elif not (osp.exists(osp.join(gnn_root, 'hic.npy')) or osp.exists(osp.join(gnn_root, 'y.npy'))):
              remove = True
         if remove:
             shutil.rmtree(gnn_root)

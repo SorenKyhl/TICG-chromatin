@@ -42,7 +42,7 @@ def load_psi(sample_folder, throw_exception = True, verbose = False):
 
     return x
 
-def load_Y(sample_folder, throw_exception = True):
+def load_Y(sample_folder, throw_exception = True, return_y_diag=True):
     y_file = osp.join(sample_folder, 'y.npy')
     hic_file = osp.join(sample_folder, 'hic.npy')
     y_file2 = osp.join(sample_folder, 'data_out/contacts.txt')
@@ -85,21 +85,24 @@ def load_Y(sample_folder, throw_exception = True):
     else:
         y = y.astype(float)
 
-    ydiag_file = osp.join(sample_folder, 'y_diag.npy')
-    try:
-        if osp.exists(ydiag_file):
-            ydiag = np.load(ydiag_file)
-        elif y is not None:
-            meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
-            ydiag = DiagonalPreprocessing.process(y, meanDist)
-            np.save(ydiag_file, ydiag) # save in proper place
-        else:
-            ydiag = None
-    except Exception:
-        print(f'Exception when loading y_diag for {sample_folder}')
-        raise
+    if return_y_diag:
+        ydiag_file = osp.join(sample_folder, 'y_diag.npy')
+        try:
+            if osp.exists(ydiag_file):
+                ydiag = np.load(ydiag_file)
+            elif y is not None:
+                meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
+                ydiag = DiagonalPreprocessing.process(y, meanDist)
+                np.save(ydiag_file, ydiag) # save in proper place
+            else:
+                ydiag = None
+        except Exception:
+            print(f'Exception when loading y_diag for {sample_folder}')
+            raise
 
-    return y, ydiag
+        return y, ydiag
+
+    return y
 
 def load_Y_diag(sample_folder, throw_exception = False):
     ydiag_file = osp.join(sample_folder, 'y_diag.npy')

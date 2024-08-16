@@ -14,7 +14,7 @@ from pylib.Pysim import Pysim
 from pylib.utils import default, epilib, utils
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import *
-from pylib.utils.load_utils import get_final_max_ent_folder
+from pylib.utils.load_utils import get_final_max_ent_folder, load_Y
 from pylib.utils.plotting_utils import plot_matrix
 from pylib.utils.utils import load_import_log
 
@@ -53,7 +53,8 @@ def max_ent_dataset(use_exp_hic=False):
         if use_exp_hic:
             y = np.load(osp.join(data_dir, f'samples/sample{sample}/hic.npy'))
         else:
-            y = np.load(osp.join(final, 'hic.npy'))
+            y = load_Y(final, return_y_diag=False)
+
         if i < 10:
             plot_matrix(y, osp.join(s_odir, 'y.png'), vmax = 'mean')
         np.save(osp.join(s_odir, 'hic.npy'), y)
@@ -366,7 +367,8 @@ def setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                                 aspect_ratio, bond_type, k, contacts_distance,
                                 k_angle, theta_0, verbose)
 
-    y = np.load(osp.join(dir, 'hic.npy')).astype(float)
+    y = load_Y(dir, return_y_diag=False)
+    y = y.astype(float)
     y /= np.mean(np.diagonal(y))
     np.fill_diagonal(y, 1)
 
