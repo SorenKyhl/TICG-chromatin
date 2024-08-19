@@ -706,13 +706,12 @@ def boxplot(data, ofile):
     plt.tight_layout()
     plt.savefig(ofile)
 
-def main(args=None):
+def main(args=None, fname='max_ent_table.txt'):
     if args is None:
         args = getArgs()
     assert args.sample is None or args.samples is None
     print('-'*100, '\n', args)
 
-    fname = 'max_ent_table.txt'
     dataset = osp.split(args.data_folder)[1]
     label = dataset
 
@@ -761,27 +760,15 @@ def main(args=None):
 
         # boxplot(data, osp.join(odir, f'boxplot_{defn}_convergence.png'))
 
-if __name__ == '__main__':
-    samples = None; sample = None
-    # dataset = 'dataset_02_04_23'
-    # dataset='dataset_11_20_23'
-    # dataset='dataset_12_06_23'
+def main_mouse():
     dataset = 'dataset_mouse_50k_512'
-    # dataset='dataset_02_14_24_imr90'
-    # dataset='Su2020'; samples = [1013]
-
-    if samples is None and sample is None:
-        samples, _ = get_samples(dataset, test = True,
-                                filter_cell_lines=['ch12-lx-b-lymphoblasts'])
-        samples = samples
-        print(samples, len(samples))
-    if samples is not None and len(samples) == 1:
-        sample = samples[0]
-        samples = None
+    samples, _ = get_samples(dataset, test = True,
+                            filter_cell_lines=['ch12-lx-b-lymphoblasts'])
+    print(samples, len(samples))
 
     data_dir = osp.join('/project/depablo/erschultz', dataset)
     # data_dir = osp.join('/home/erschultz', dataset)
-    args = getArgs(data_folder = data_dir, sample = sample, samples = samples)
+    args = getArgs(data_folder = data_dir, sample = None, samples = samples)
     args.experimental = True
     args.verbose = True
     args.convergence_definition = 'normal'
@@ -790,14 +777,48 @@ if __name__ == '__main__':
                         'GNN579-max_ent', '-gd_gamma', 'distance', 'start', 'stat',
                         'diagbins', 'binarize', 'chrom', 'grid200', 'long', 'long5',
                         'strict', '_repeat-GNN690', '_test', '_repeat', 'max_ent10-GNN690',
-                        '_chipseq']
-    for i in [1,2,3,4,5,7,8,9,11,12,13,14,15]:
+                        '_chipseq', '_repeat2']
+    for i in [1,2,3,4,5,7,8,9,10, 11,12,13,14,15]:
        args.bad_methods.append(f'max_ent{i}')
-    # args.gnn_id = [434, 578, 579, 450, 451]
-    # args.gnn_id = [600, 605, 606, 607, 608, 609, 610]
-    # args.gnn_id = [579, 600, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620, 621, 622, 623, 624, 625]
     args.gnn_id = [690]
-    # args.gnn_id = []
     main(args)
-    # data, converged_mask = load_data(args)
-    # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))
+
+def main_human():
+    samples = None; sample = None
+    dataset='dataset_12_06_23'
+    # dataset='Su2020'; samples = [1013]
+
+    for cell_line in ['imr90', 'hap1', 'huvec', 'gm12878', 'hmec']:
+        if samples is None and sample is None:
+            samples, _ = get_samples(dataset, test = True,
+                                    filter_cell_lines=['gm12878'])
+            samples = samples
+            print(samples, len(samples))
+        if samples is not None and len(samples) == 1:
+            sample = samples[0]
+            samples = None
+
+        # data_dir = osp.join('/project/depablo/erschultz', dataset)
+        data_dir = osp.join('/home/erschultz', dataset)
+        args = getArgs(data_folder = data_dir, sample = sample, samples = samples)
+        args.experimental = True
+        args.verbose = True
+        args.convergence_definition = 'normal'
+        args.test_significance = True
+        args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', '_700k', 'phi',
+                            'GNN579-max_ent', '-gd_gamma', 'distance', 'start', 'stat',
+                            'diagbins', 'binarize', 'chrom', 'grid200', 'long', 'long5',
+                            'strict', '_repeat-GNN690', '_test', '_repeat', 'max_ent10-GNN690',
+                            '_chipseq', '_repeat2']
+        for i in [1,2,3,4,5,7,8,9,10, 11,12,13,14,15]:
+           args.bad_methods.append(f'max_ent{i}')
+        args.gnn_id = [690]
+        # args.gnn_id = []
+        main(args, fname=f'max_ent_table_{cell_line}.txt')
+        # data, converged_mask = load_data(args)
+        # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))
+
+
+if __name__ == '__main__':
+    # main_mouse()
+    main_human()

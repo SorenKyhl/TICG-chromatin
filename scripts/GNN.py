@@ -167,7 +167,7 @@ def setup_GNN(dataset, sample, sub_dir, b, phi, v, ar, GNN_ID):
     config['nbeads'] = m
     config["umatrix_filename"] = "umatrix.txt"
 
-    gnn_root = f'{root}-GNN{GNN_ID}_repeat2'
+    gnn_root = f'{root}-GNN{GNN_ID}_repeat3'
 
     return dir, root, gnn_root, config, y
 
@@ -284,6 +284,31 @@ def main():
         # rename(*i)
         # cleanup(*i)
 
+def mouse():
+    dataset = 'dataset_mouse_50k_512'
+
+    mapping = []
+    samples, _ = get_samples(dataset, test=True, filter_cell_lines='ch12-lx-b-lymphoblasts')
+
+    GNN_IDs = [690]; b=200; phi=None; v=8; ar=1.5
+    for GNN_ID in GNN_IDs:
+        for i in samples:
+            mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
+
+    print(f'samples: {samples}')
+    print(f'len of mapping: {len(mapping)}')
+    # print(mapping)
+
+    with mp.Pool(30) as p:
+        # p.starmap(cleanup, mapping)
+        p.starmap(fit, mapping)
+
+    for i in mapping:
+        check(*i)
+
+
+
 if __name__ == '__main__':
     mp.set_start_method('spawn')
+    mouse()
     main()

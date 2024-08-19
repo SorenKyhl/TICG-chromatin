@@ -1,3 +1,4 @@
+import functools
 import json
 import multiprocessing as mp
 import os
@@ -229,10 +230,10 @@ def modify_maxent():
 
 def check(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
         aspect_ratio=1, bond_type='gaussian', k=10, contacts_distance=False,
-        k_angle=0, theta_0=190):
+        k_angle=0, theta_0=190, strict=False):
     root, _, _ = setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                                 aspect_ratio, bond_type, k, contacts_distance,
-                                k_angle, theta_0, False)
+                                k_angle, theta_0, False, strict=strict)
 
     if osp.exists(root):
         params = utils.load_json(osp.join(root, 'resources/params.json'))
@@ -360,7 +361,7 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None,
 
 def setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                 aspect_ratio, bond_type, k, contacts_distance,
-                k_angle, theta_0, verbose=True, return_dir=False):
+                k_angle, theta_0, verbose=True, return_dir=False, strict=False):
     if verbose:
         print(sample)
     dir, root, config = setup_config(dataset, sample, samples, bl, phi, v, vb,
@@ -410,7 +411,9 @@ def setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
     # config['grid_size'] = 200
 
     # config['diag_start'] = 10
-    root = osp.join(dir, f'{root}-max_ent{k}_repeat2')
+    root = osp.join(dir, f'{root}-max_ent{k}_repeat3')
+    if strict:
+        root += '_strict'
     if osp.exists(root):
         # shutil.rmtree(root)
         if verbose:
@@ -424,11 +427,11 @@ def setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
 
 def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
         aspect_ratio=1, bond_type='gaussian', k=10, contacts_distance=False,
-        k_angle=0, theta_0=180):
+        k_angle=0, theta_0=180, strict=False):
     dir = osp.join(ROOT, dataset, samples, f'sample{sample}')
     root, config, y = setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                                 aspect_ratio, bond_type, k, contacts_distance,
-                                k_angle, theta_0)
+                                k_angle, theta_0, strict=strict)
     import_log = load_import_log(dir)
     if osp.exists(root):
         return
@@ -448,7 +451,10 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
     params['equilib_sweeps'] = 10000
     params['production_sweeps'] = 300000
     params['stop_at_convergence'] = True
-    params['conv_defn'] = 'normal'
+    if strict:
+        params['conv_defn'] = 'normal'
+    else:
+        params['conv_defn'] = 'strict'
 
     stdout = sys.stdout
     with open(osp.join(root, 'log.log'), 'w') as sys.stdout:
@@ -485,6 +491,10 @@ def rename(dataset, sample, samples, bl, phi, v, vb, aspect_ratio, bond_type, k,
         print(new_name)
         os.rename(root, new_name)
 
+fit_strict = functools.partial(fit, strict=True)
+check_strict = functools.partial(check, strict=True)
+
+
 def main():
     dataset = 'dataset_12_06_23'
     samples = []
@@ -507,12 +517,16 @@ def main():
 
     print('len =', len(mapping))
 
+
+
     with mp.Pool(30) as p:
         # p.starmap(setup_config, mapping)
+        p.starmap(fit_strict, mapping)
         p.starmap(fit, mapping)
         # p.starmap(check, mapping)
         # p.starmap(post_analysis, mapping)
         # p.starmap(cleanup, mapping)
+
 
     for i in mapping:
         # setup_config(*i)
@@ -520,13 +534,13 @@ def main():
         # fit(*i)
         # rename(*i)
         check(*i)
+        check_strict(*i)
         # cleanup(*i)
 
 def mouse():
     dataset = 'dataset_mouse_50k_512'
     samples, _ = get_samples(dataset, test=True, filter_cell_lines='ch12-lx-b-lymphoblasts')
     print(samples)
-
 
     mapping = []
     k_angle=0;theta_0=180;b=200;ar=1.5;phi=None;v=8;vb=None
@@ -549,7 +563,6 @@ def mouse():
 
     for i in mapping:
         check(*i)
-
 
 
 def main2():
