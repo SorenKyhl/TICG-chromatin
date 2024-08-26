@@ -3,7 +3,7 @@
 #SBATCH --output=logFiles/compress.out
 #SBATCH --time=24:00:00
 #SBATCH --account=pi-depablo
-#SBATCH --partition=amd
+#SBATCH --partition=depablo
 #SBATCH --ntasks=8
 #SBATCH --mem-per-cpu=1000
 
@@ -27,17 +27,28 @@ compress(){
     rm *.txt
 
     rm -r equilibration
-    
+
 
     cd production_out
     rm *.traj
   done
- 
-  cd $dir
-  echo $dir
-  rm -r "${dataset}.tar.gz"
-  tar -czf "${dataset}.tar.gz" $dataset
-  rm -r $dataset
+
+  # cd $dir
+  # echo $dir
+  # rm -r "${dataset}.tar.gz"
+  # tar -czf "${dataset}.tar.gz" $dataset
+  # rm -r $dataset
+}
+
+compress2(){
+    dataset=$1
+    echo $dataset
+
+    cd $dir
+    echo $dir
+    rm -r "${dataset}.tar.gz"
+    tar -czf "${dataset}.tar.gz" $dataset
+    rm -r $dataset
 }
 
 to_small(){
@@ -78,6 +89,12 @@ cleanup(){
 dir='/home/erschultz'
 dir='/project2/depablo/erschultz'
 cd $dir
-compress dataset_04_05_23_imr90 &
-compress dataset_04_18_23_imr90 &
+compress2 dataset_04_05_23_imr90 &
+compress2 dataset_04_18_23_imr90 &
+wait
+
+dir='/project/depablo/erschultz/GNN_training_data'
+cd $dir
+compress2 dataset_02_14_24_imr90 &
+compress2 dataset_02_19_24_imr90 &
 wait
