@@ -221,7 +221,7 @@ def check(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
 def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     dir, _, gnn_root, config, y = setup_GNN(dataset, sample, sub_dir, b, phi, v, ar, GNN_ID)
     if osp.exists(gnn_root):
-        remove = False
+        remove = True
         if not osp.exists(osp.join(gnn_root, 'equilibration')):
             remove = True
         # elif not osp.exists(osp.join(gnn_root, 'production_out')):
@@ -273,16 +273,16 @@ def main():
     print(f'len of mapping: {len(mapping)}')
     # print(mapping)
 
-    with mp.Pool(30) as p:
+    with mp.Pool(100) as p:
         # p.starmap(cleanup, mapping)
         p.starmap(fit, mapping)
 
     for i in mapping:
         # fit_max_ent(*i)
         # fit(*i)i
-        check(*i)
+        # check(*i)
         # rename(*i)
-        # cleanup(*i)
+        cleanup(*i)
 
 def mouse():
     dataset = 'dataset_mouse_50k_512'
@@ -299,13 +299,12 @@ def mouse():
     print(f'len of mapping: {len(mapping)}')
     # print(mapping)
 
-    with mp.Pool(30) as p:
+    with mp.Pool(100) as p:
         # p.starmap(cleanup, mapping)
         p.starmap(fit, mapping)
 
     for i in mapping:
         check(*i)
-
 
 
 if __name__ == '__main__':

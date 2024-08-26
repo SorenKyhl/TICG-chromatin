@@ -466,12 +466,12 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
 
 def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
         aspect_ratio=1, bond_type='gaussian', k=10, contacts_distance=False,
-        k_angle=0, theta_0=180):
+        k_angle=0, theta_0=180, strict=False):
     root, _, _ = setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                                 aspect_ratio, bond_type, k, contacts_distance,
-                                k_angle, theta_0, False)
+                                k_angle, theta_0, False, strict=strict)
 
-    remove = False
+    remove = True
     if osp.exists(root):
         # if not osp.exists(osp.join(root, 'iteration1')):
         #     remove = True
@@ -493,7 +493,7 @@ def rename(dataset, sample, samples, bl, phi, v, vb, aspect_ratio, bond_type, k,
 
 fit_strict = functools.partial(fit, strict=True)
 check_strict = functools.partial(check, strict=True)
-
+cleanup_strict = functools.partial(cleanup, strict=True)
 
 def main():
     dataset = 'dataset_12_06_23'
@@ -519,13 +519,14 @@ def main():
 
 
 
-    with mp.Pool(30) as p:
+    with mp.Pool(100) as p:
         # p.starmap(setup_config, mapping)
         p.starmap(fit_strict, mapping)
         p.starmap(fit, mapping)
         # p.starmap(check, mapping)
         # p.starmap(post_analysis, mapping)
         # p.starmap(cleanup, mapping)
+        # p.starmap(cleanup_strict, mapping)
 
 
     for i in mapping:
@@ -554,7 +555,7 @@ def mouse():
 
     print('len =', len(mapping))
 
-    with mp.Pool(30) as p:
+    with mp.Pool(100) as p:
         # p.starmap(setup_config, mapping)
         p.starmap(fit, mapping)
         # p.starmap(check, mapping)
@@ -591,7 +592,7 @@ def main2():
 
 if __name__ == '__main__':
     # modify_maxent()
-    # mouse()
+    mouse()
     main()
     # max_ent_dataset(False)
     # max_ent_dataset(True)
