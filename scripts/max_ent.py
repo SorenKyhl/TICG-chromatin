@@ -8,6 +8,7 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 import pylib.analysis as analysis
 from pylib.datapipeline import DataPipeline, get_experiment_marks
 from pylib.Maxent import Maxent
@@ -517,7 +518,9 @@ def main():
 
     print('len =', len(mapping))
 
-
+    with mp.Pool(100) as p:
+        p.starmap(cleanup, mapping)
+        p.starmap(cleanup_strict, mapping)
 
     with mp.Pool(100) as p:
         # p.starmap(setup_config, mapping)
@@ -525,9 +528,6 @@ def main():
         p.starmap(fit, mapping)
         # p.starmap(check, mapping)
         # p.starmap(post_analysis, mapping)
-        # p.starmap(cleanup, mapping)
-        # p.starmap(cleanup_strict, mapping)
-
 
     for i in mapping:
         # setup_config(*i)
@@ -556,11 +556,13 @@ def mouse():
     print('len =', len(mapping))
 
     with mp.Pool(100) as p:
+        p.starmap(cleanup, mapping)
+
+
+    with mp.Pool(100) as p:
         # p.starmap(setup_config, mapping)
         p.starmap(fit, mapping)
         # p.starmap(check, mapping)
-        # p.starmap(post_analysis, mapping)
-        # p.starmap(cleanup, mapping)
 
     for i in mapping:
         check(*i)

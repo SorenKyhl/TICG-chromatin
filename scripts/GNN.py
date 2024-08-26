@@ -9,8 +9,9 @@ import sys
 from time import sleep, time
 
 import numpy as np
-import pylib.analysis as analysis
 import torch
+
+import pylib.analysis as analysis
 # from data_generation.modify_maxent import get_samples
 # from max_ent import setup_config
 from pylib.Maxent import Maxent
@@ -273,6 +274,10 @@ def main():
     print(f'len of mapping: {len(mapping)}')
     # print(mapping)
 
+    for i in mapping:
+        cleanup(*i)
+
+
     with mp.Pool(100) as p:
         # p.starmap(cleanup, mapping)
         p.starmap(fit, mapping)
@@ -280,9 +285,9 @@ def main():
     for i in mapping:
         # fit_max_ent(*i)
         # fit(*i)i
-        # check(*i)
+        check(*i)
         # rename(*i)
-        cleanup(*i)
+        # cleanup(*i)
 
 def mouse():
     dataset = 'dataset_mouse_50k_512'
@@ -299,8 +304,10 @@ def mouse():
     print(f'len of mapping: {len(mapping)}')
     # print(mapping)
 
+    for i in mapping:
+        cleanup(*i)
+
     with mp.Pool(100) as p:
-        # p.starmap(cleanup, mapping)
         p.starmap(fit, mapping)
 
     for i in mapping:
