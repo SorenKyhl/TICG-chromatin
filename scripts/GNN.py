@@ -289,20 +289,29 @@ def main():
         # rename(*i)
         # cleanup(*i)
 
-def mouse():
-    dataset = 'dataset_mouse_50k_512'
-
+def human_and_mouse():
     mapping = []
-    samples, _ = get_samples(dataset, test=True, filter_cell_lines='ch12-lx-b-lymphoblasts')
+    GNN_ID=690; b=200; phi=None; v=8; ar=1.5
 
-    GNN_IDs = [690]; b=200; phi=None; v=8; ar=1.5
-    for GNN_ID in GNN_IDs:
-        for i in samples:
-            mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
+    dataset='dataset_12_06_23'
+    samples = []
+    for cell_line in ['imr90', 'gm12878', 'hap1', 'huvec', 'hmec']:
+        samples_cell_line, _ = get_samples(dataset, test=True,
+                                            filter_cell_lines=cell_line)
+        samples.extend(samples_cell_line)
+    for i in samples:
+        mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
+
+
+    dataset = 'dataset_mouse_50k_512'
+    samples, _ = get_samples(dataset, test=True, filter_cell_lines='ch12-lx-b-lymphoblasts')
+    for i in samples:
+        mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
 
     print(f'samples: {samples}')
     print(f'len of mapping: {len(mapping)}')
     # print(mapping)
+
 
     for i in mapping:
         cleanup(*i)
@@ -316,5 +325,5 @@ def mouse():
 
 if __name__ == '__main__':
     mp.set_start_method('spawn')
-    mouse()
-    main()
+    human_and_mouse()
+    # main()

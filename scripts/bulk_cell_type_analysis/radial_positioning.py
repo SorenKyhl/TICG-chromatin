@@ -3,14 +3,13 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
+from utils import get_samples
+
 from pylib.utils import epilib
+from pylib.utils.load_utils import load_Y
 from pylib.utils.plotting_utils import plot_matrix
 from pylib.utils.utils import load_import_log
 from pylib.utils.xyz import xyz_load, xyz_to_distance
-from utils import get_samples
-
-sys.path.append('/home/erschultz')
-from sequences_to_contact_maps.scripts.load_utils import load_Y
 
 
 def cell_lines():
@@ -41,7 +40,7 @@ def cell_lines():
             center = np.nanmean(xyz[j], axis=0)
             xyz[j] -= center
 
-        # compute radii
+        # compute radii relative to center of xyz
         radii = np.linalg.norm(xyz, axis = 2)
         print(radii, radii.shape)
 

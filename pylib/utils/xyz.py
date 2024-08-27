@@ -7,10 +7,11 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 import numpy as np
 from numba import jit, njit
-from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
-from pylib.utils.utils import load_json, print_time
 from scipy.sparse import csr_array
 from sklearn.metrics.pairwise import nan_euclidean_distances
+
+from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
+from pylib.utils.utils import load_json, print_time
 
 
 def lammps_load(filepath, save = False, N_min = None, N_max = None, down_sampling = 1):

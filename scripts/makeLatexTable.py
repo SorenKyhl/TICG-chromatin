@@ -798,8 +798,8 @@ def main_human():
             sample = samples[0]
             samples = None
 
-        # data_dir = osp.join('/project/depablo/erschultz', dataset)
-        data_dir = osp.join('/home/erschultz', dataset)
+        data_dir = osp.join('/project/depablo/erschultz', dataset)
+        # data_dir = osp.join('/home/erschultz', dataset)
         args = getArgs(data_folder = data_dir, sample = sample, samples = samples)
         args.experimental = True
         args.verbose = True
@@ -821,4 +821,4 @@ def main_human():
 
 if __name__ == '__main__':
     # main_mouse()
-    main_human()
+    # main_human()

@@ -3,11 +3,12 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
+from utils import get_samples
+
 from pylib.utils import epilib
 from pylib.utils.plotting_utils import plot_matrix
 from pylib.utils.utils import load_import_log
 from pylib.utils.xyz import xyz_load, xyz_to_distance
-from utils import get_samples
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.load_utils import load_Y

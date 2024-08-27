@@ -538,34 +538,47 @@ def main():
         check_strict(*i)
         # cleanup(*i)
 
-def mouse():
+def human_and_mouse():
+    mapping = []
+    mapping_strict = []
+    k_angle=0;theta_0=180;b=200;ar=1.5;phi=None;v=8;vb=None
+    contacts_distance=False; k=10; v=8; bond_type='gaussian'
+
+    dataset = 'dataset_12_06_23'
+    samples = []
+    for cell_line in ['imr90', 'gm12878', 'hap1', 'huvec', 'hmec']:
+        samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
+        samples.extend(samples_cell_line)
+    for i in samples:
+        mapping.append((dataset, i, f'samples', b, phi, v, vb, ar,
+                    bond_type, k, contacts_distance, k_angle, theta_0))
+    samples, _ = get_samples(dataset, test=True, filter_cell_lines='imr90')
+    for i in samples:
+        mapping_strict.append((dataset, i, f'samples', b, phi, v, vb, ar,
+                    bond_type, k, contacts_distance, k_angle, theta_0))
+
     dataset = 'dataset_mouse_50k_512'
     samples, _ = get_samples(dataset, test=True, filter_cell_lines='ch12-lx-b-lymphoblasts')
-    print(samples)
-
-    mapping = []
-    k_angle=0;theta_0=180;b=200;ar=1.5;phi=None;v=8;vb=None
-    contacts_distance=False
     for i in samples:
-        for k in [10]:
-            for v in [8]:
-                for bond_type in ['gaussian']:
-                    mapping.append((dataset, i, f'samples', b, phi, v, vb, ar,
-                                bond_type, k, contacts_distance, k_angle, theta_0))
+        mapping.append((dataset, i, f'samples', b, phi, v, vb, ar,
+                    bond_type, k, contacts_distance, k_angle, theta_0))
 
-    print('len =', len(mapping))
+
+    print('len =', len(mapping), len(mapping_strict))
 
     with mp.Pool(100) as p:
         p.starmap(cleanup, mapping)
-
+        p.starmap(cleanup, mapping_strict)
 
     with mp.Pool(100) as p:
-        # p.starmap(setup_config, mapping)
         p.starmap(fit, mapping)
-        # p.starmap(check, mapping)
+        p.starmap(fit_strict, mapping_strict)
+
 
     for i in mapping:
         check(*i)
+    for i in mapping_strict:
+        check_strict(*i)
 
 
 def main2():
@@ -594,8 +607,8 @@ def main2():
 
 if __name__ == '__main__':
     # modify_maxent()
-    mouse()
-    main()
+    human_and_mouse()
+    # main()
     # max_ent_dataset(False)
     # max_ent_dataset(True)
     # compute_pcs('dataset_11_20_23', 'gm12878')
