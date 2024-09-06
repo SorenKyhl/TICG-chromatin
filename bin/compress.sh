@@ -89,12 +89,6 @@ cleanup(){
 dir='/home/erschultz'
 dir='/project2/depablo/erschultz'
 cd $dir
-compress2 dataset_04_05_23_imr90 &
-compress2 dataset_04_18_23_imr90 &
-wait
-
-dir='/project/depablo/erschultz/GNN_training_data'
-cd $dir
-compress2 dataset_02_14_24_imr90 &
-compress2 dataset_02_19_24_imr90 &
+compress dataset_02_30_24_imr90 &
+compress dataset_03_12_24_imr90 &
 wait
