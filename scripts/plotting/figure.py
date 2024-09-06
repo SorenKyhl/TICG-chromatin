@@ -21,6 +21,10 @@ from data_generation.modify_maxent import get_samples
 from distances_Su2020.utils import plot_diagonal
 from makeLatexTable import *
 
+ROOT = '/project/depablo/erschultz'
+if not osp.exists(ROOT):
+    ROOT = '/home/erschultz'
+
 test=False
 label_fontsize=22
 tick_fontsize=18
@@ -35,14 +39,14 @@ k=10
 grid_root = 'optimize_grid_b_200_v_8_spheroid_1.5'
 def get_dirs(sample_dir):
     grid_dir = osp.join(sample_dir, grid_root)
-    max_ent_dir = f'{grid_dir}-max_ent{k}'
-    gnn_dir = f'{grid_dir}-GNN{GNN_ID}'
+    max_ent_dir = f'{grid_dir}-max_ent{k}_repeat3'
+    gnn_dir = f'{grid_dir}-GNN{GNN_ID}_repeat3'
 
     return max_ent_dir, gnn_dir
 
 def get_y(sample_dir):
     max_ent_dir, gnn_dir = get_dirs(sample_dir)
-    y = np.load(osp.join(sample_dir, 'y.npy')).astype(np.float64)
+    y = np.load(osp.join(sample_dir, 'hic.npy')).astype(np.float64)
     y /= np.mean(np.diagonal(y))
 
     final = get_final_max_ent_folder(max_ent_dir, 'normal')
@@ -55,7 +59,7 @@ def get_y(sample_dir):
     return y, y_pca, y_gnn
 
 
-sample_dir = f'/project/depablo/erschultz/{dataset}/samples/sample{sample}'
+sample_dir = f'{ROOT}/{dataset}/samples/sample{sample}'
 max_ent_dir, gnn_dir = get_dirs(sample_dir)
 y, y_pca, y_gnn = get_y(sample_dir)
 meanDist = DiagonalPreprocessing.genomic_distance_statistics(y)
@@ -108,7 +112,8 @@ if not test:
                     samples = samples_list)
     args.experimental = True
     args.verbose = False
-    args.bad_methods=['140', '261', 'spheroid_2.0', 'phi', 'long', 'GNN579-max_ent', 'strict']
+    args.bad_methods=['140', '261', 'spheroid_2.0', 'phi', 'long', 'GNN579-max_ent',
+                    'strict', 'chipseq', 'repeat2']
     for j in range(2,10):
         args.bad_methods.append(f'max_ent{j}')
     args.convergence_definition = 'normal'
