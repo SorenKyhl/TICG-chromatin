@@ -820,5 +820,5 @@ def main_human():
 
 
 if __name__ == '__main__':
-    # main_mouse()
+    main_mouse()
     # main_human()

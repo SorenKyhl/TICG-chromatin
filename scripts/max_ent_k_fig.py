@@ -34,6 +34,27 @@ for i, k in enumerate(k_list):
         mean_arr[i] = np.nanmean(max_ent_sccs)
         std_arr[i] = ss.sem(max_ent_sccs, nan_policy='omit')
 
+fig, ax = plt.subplots(1, 1)
+ax.errorbar(k_list, mean_arr, std_arr, c='b')
+ax.set_ylim([0,0.9])
+ax.set_xlabel('$k$', fontsize=16)
+ax.set_ylabel('SCC', fontsize=16)
+ax.tick_params(axis='both', which='major', labelsize=12)
+
+delta = np.zeros(len(k_list))
+delta[0] = np.NaN
+prev = mean_arr[0]
+for i, mean in enumerate(mean_arr[1:]):
+    delta[i+1] = mean - prev
+    prev = mean
+
+plt.tight_layout()
+plt.subplots_adjust(wspace=0.25)
+plt.savefig('/home/erschultz/TICG-chromatin/figures/max_ent_k_fig.png')
+plt.close()
+# plt.show()
+
+
 fig, axes = plt.subplots(1, 2)
 fig.set_figheight(5.5)
 fig.set_figwidth(12)
@@ -62,6 +83,6 @@ ax2.tick_params(axis='both', which='major', labelsize=12)
 
 plt.tight_layout()
 plt.subplots_adjust(wspace=0.25)
-plt.savefig('/home/erschultz/TICG-chromatin/figures/max_ent_k_fig.png')
+plt.savefig('/home/erschultz/TICG-chromatin/figures/max_ent_k_fig_AB.png')
 plt.close()
 # plt.show()
