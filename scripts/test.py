@@ -17,7 +17,7 @@ import seaborn as sns
 import sympy
 import torch
 import torch_geometric
-from data_generation.modify_maxent import get_samples
+from data_generation.modify_maxent import get_samples, simple_histogram
 from makeLatexTable import getArgs, load_data
 from max_ent_setup.get_params import GetEnergy
 from pylib.datapipeline import *
@@ -35,6 +35,7 @@ from pylib.utils.utils import (load_import_log, load_json, make_composite,
                                pearson_round, triu_to_full)
 from pylib.utils.xyz import xyz_load, xyz_to_distance
 from scipy.ndimage import uniform_filter
+from scipy.stats import norm
 from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
 
@@ -1146,15 +1147,21 @@ def plot_seq():
     print(seq.shape)
     plot_seq_continuous_panels(seq.T, labels, ofile = osp.join(dir, 'seq.png'))
 
-def temp():
-    y = np.load('/home/erschultz/chipseq-only/sample1/y.npy')
-    plot_matrix(y, '/home/erschultz/chipseq-only/sample1/y.png',
-                vmax='mean')
-    print(y.diagonal())
+def plot_bonded_distributions():
+    xyz_file = '/home/erschultz/dataset_12_06_23/samples/sample1/optimize_grid_b_200_v_8_spheroid_1.5-GNN690/production_out/output.xyz'
+    xyz = xyz_load(xyz_file, save = True)
+    D = xyz_to_distance(xyz)
+    print(D.shape)
+    bonds = []
+    for i in range(len(D)):
+        bonds.extend(D[i].diagonal(1))
+
+    simple_histogram(bonds, xlabel='Bond Length', dist=norm)
+    plt.show()
 
 if __name__ == '__main__':
     # test_tile()
-    make_small('dataset_mouse_50k_512')
+    # make_small('dataset_mouse_50k_512')
     # data_corr()
     # plot_triu_low_res()
     # distance_cutoff_diag_chis()
@@ -1167,4 +1174,4 @@ if __name__ == '__main__':
     # cleanup()
     # test_pipeline()
     # plot_seq()
-    # temp()
+    plot_bonded_distributions()

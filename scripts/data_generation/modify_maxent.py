@@ -10,14 +10,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import statsmodels.api as sm
 import tqdm
-from scipy.ndimage import gaussian_filter
-from scipy.optimize import curve_fit
-from scipy.stats import (beta, gamma, laplace, multivariate_normal, norm,
-                         skewnorm, weibull_max, weibull_min)
-from sklearn.decomposition import PCA
-from sklearn.metrics import mean_squared_error
-from sklearn.neighbors import KernelDensity
-
 from pylib.utils.DiagonalPreprocessing import DiagonalPreprocessing
 from pylib.utils.energy_utils import (calculate_D, calculate_diag_chi_step,
                                       calculate_L, calculate_U)
@@ -27,6 +19,13 @@ from pylib.utils.load_utils import (get_final_max_ent_folder, load_L,
 from pylib.utils.plotting_utils import plot_matrix, plot_seq_continuous
 from pylib.utils.utils import (LETTERS, load_import_log, load_json,
                                pearson_round, triu_to_full)
+from scipy.ndimage import gaussian_filter
+from scipy.optimize import curve_fit
+from scipy.stats import (beta, gamma, laplace, multivariate_normal, norm,
+                         skewnorm, weibull_max, weibull_min)
+from sklearn.decomposition import PCA
+from sklearn.metrics import mean_squared_error
+from sklearn.neighbors import KernelDensity
 
 sys.path.append('/home/erschultz/TICG-chromatin')
 from scripts.data_generation.ECDF import Ecdf
@@ -698,11 +697,8 @@ def simple_histogram(arr, xlabel='X', odir=None, ofname=None, dist=skewnorm,
                 dict = {'alpha':params[0], 'mu':params[1], 'sigma':params[2]}
                 pickle.dump(dict, f)
         plt.plot(bins, y, ls = '--', color = 'k')
-    if not (odir is None or ofname is None):
         if label is not None:
             plt.legend(title = legend_title)
-        plt.ylabel('probability', fontsize=16)
-        plt.xlabel(xlabel, fontsize=16)
         # plt.xlim(-20, 20)
         if dist == skewnorm:
             title = r'$\alpha=$' + f'{params[0]}\n'
@@ -713,6 +709,9 @@ def simple_histogram(arr, xlabel='X', odir=None, ofname=None, dist=skewnorm,
             title += r'$\sigma$=' + f'{params[-1]:.2f}'
             plt.title(title)
 
+    plt.ylabel('probability', fontsize=16)
+    plt.xlabel(xlabel, fontsize=16)
+    if not (odir is None or ofname is None):
         plt.savefig(osp.join(odir, ofname))
         plt.close()
 
