@@ -784,19 +784,14 @@ def main_mouse():
     main(args)
 
 def main_human():
-    samples = None; sample = None
+    sample=None
     dataset='dataset_12_06_23'
     # dataset='Su2020'; samples = [1013]
 
     for cell_line in ['imr90', 'hap1', 'huvec', 'gm12878', 'hmec']:
-        if samples is None and sample is None:
-            samples, _ = get_samples(dataset, test = True,
-                                    filter_cell_lines=['gm12878'])
-            samples = samples
-            print(samples, len(samples))
-        if samples is not None and len(samples) == 1:
-            sample = samples[0]
-            samples = None
+        samples, _ = get_samples(dataset, test = True,
+                                    filter_cell_lines=[cell_line])
+        print(samples, len(samples))
 
         data_dir = osp.join('/project/depablo/erschultz', dataset)
         # data_dir = osp.join('/home/erschultz', dataset)
@@ -820,5 +815,5 @@ def main_human():
 
 
 if __name__ == '__main__':
-    main_mouse()
-    # main_human()
+    # main_mouse()
+    main_human()

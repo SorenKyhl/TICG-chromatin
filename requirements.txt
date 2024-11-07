@@ -16,3 +16,4 @@ hicrep
 sphinx
 codetiming
 m2r
+imageio
