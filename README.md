@@ -8,11 +8,6 @@ The base TICG engine (located in /src) is written in C++.
 
 A Python wrapper (located in /pylib) is the primary API for instantiating, dispatching, and analyzing simulations. A user should only need to familiarize themselves with the python library in order to use this simulation software. Higher level functionality is also available for conducting iterative simulations using maximum entropy optimization to parameterize epigenetic interactions in order to match experimental Hi-C conformation capture data.
 
-
-## python implementation
-a python wrapper for the TICG engine is packaged in pylib (temporary name).
-the library includes classes for running individual simulations, maxent optimization, and data pipelines
-
 ## installation:
 to build the engine (C++ extension) from source and install the python package (required first time)
 ```
