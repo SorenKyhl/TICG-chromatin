@@ -2,9 +2,11 @@
 
 Theoretically Informed Coarse Grain (TICG) model applied to chromatin organization. 
 
-General overview: \\
-The base TICG engine (locaed in /src) is written in C++. 
-and a python wrapper (located in /pylib) is available for instantiating, dispatching, and analyzing simulations.
+General overview: 
+
+The base TICG engine (locaed in /src) is written in C++.
+
+A Python wrapper (located in /pylib) is the primary API for instantiating, dispatching, and analyzing simulations. A user should only need to familiarize themselves with the python library in order to use this simulation software.
 
 
 ## python implementation
