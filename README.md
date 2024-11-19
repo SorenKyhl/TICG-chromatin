@@ -34,8 +34,8 @@ Pybind is used to extend the engine as a python module (ticg).
 several higher level python modules are built on top of the engine in order to conduct both individual simulations and maxent optimizations:
 
 Simulations:
-- pyticg (low level), just the bare engine
-- pysim	 (high level), wrapper around pyticg for manipulating simulations and their settings
+- pyticg (low level), just the bare engine: supply your own configuration.
+- pysim	 (high level), abstraction containing a bare pyticg simulation engine along with configuration parameters and routines to execute equilibration and production simulations.
 
 Maxent Optimizations:
 - maxent (low level), just the optimizer and dispacher for iterative simulations
