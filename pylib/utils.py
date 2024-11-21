@@ -318,3 +318,16 @@ def newton_trust_region(gradient, hessian, trust_region, log=False):
                 
             lamda = lamda + (p@p)/(q@q) * (np.linalg.norm(p) - trust_region)/trust_region
         return p
+
+def delete_2d(arr, inds):
+    """
+    mimics np.delete, but for 2d arrays. 
+    Args:
+        arr (np.array): array of numbers to mutate
+        inds (list): list of indices to delete
+    Returns:
+        arr (np.array): arr, but with indices deleted along both rows and columns
+    """
+    arr = np.delete(arr, inds, axis=1)
+    arr = np.delete(arr, inds, axis=0)
+    return arr

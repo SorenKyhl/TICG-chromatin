@@ -327,3 +327,16 @@ class Pysim:
     def write_sequence(self, sequence: ArrayLike, path: PathLike):
         """write sequence of polymer bead types to disk at specified path"""
         np.savetxt(path, sequence, fmt="%.8f", delimiter=" ")
+
+        
+def reduce_sequences(sim, inds):
+    """
+    returns a Pysim object with a subset of the original sequences
+    """
+    inds_complement = list(set(np.arange(sim.config['nspecies'])) - set(inds)) # indices to delete
+
+    
+    sim.config['nspecies'] = len(inds)
+    sim.config['bead_type_files'] = np.delete(sim.config['bead_type_files'], inds_complement).tolist()
+    sim.config['chis'] = utils.delete_2d(sim.config['chis'], inds_complement).tolist()
+    return sim
