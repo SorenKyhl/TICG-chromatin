@@ -4,7 +4,7 @@
 # installing python 3.10 and libffi 3.3 fixed the problem
 
 
-ENVNAME=fix4
+ENVNAME=clean_env
 conda create --name $ENVNAME
 conda activate $ENVNAME
 conda install libffi==3.3
@@ -15,5 +15,5 @@ make clean
 make all
 
 conda install ipykernel
-python -m ipykernel install --user --name myenv --display-name "Python (myenv)"
+python -m ipykernel install --user --name $ENVNAME --display-name "Python ${ENVNAME}"
 #ipython kernel install --user --name=$ENVNAME
