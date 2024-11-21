@@ -1,4 +1,5 @@
 import numpy as np
+import functools
 from pathlib import Path
 import matplotlib.pyplot as plt
 
@@ -30,8 +31,8 @@ class Pipeline:
         config,
         params,
         load_first=False,
-        seqs_method=ep.get_sequences,
-        goals_method=ep.get_goals,
+        seqs_method=functools.partial(ep.get_sequences, k=10),  # default is pca with k=10
+        goals_method=ep.get_goals, 
         analysis_on=True,
         initial_chis=None,
     ):
