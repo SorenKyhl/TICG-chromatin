@@ -86,3 +86,24 @@ plt.subplots_adjust(wspace=0.25)
 plt.savefig('/home/erschultz/TICG-chromatin/figures/max_ent_k_fig_AB.png')
 plt.close()
 # plt.show()
+
+fig, ax = plt.subplots(1, 1)
+
+delta = np.zeros(len(k_list))
+delta[0] = np.NaN
+prev = mean_arr[0]
+for i, mean in enumerate(mean_arr[1:]):
+    delta[i+1] = mean - prev
+    prev = mean
+
+ax.plot(k_list, delta, c='b')
+ax.axhline(0.01, ls='--', c='k')
+ax.set_xticks(k_list)
+ax.set_xlabel('$k$', fontsize=16)
+ax.set_ylabel('$\Delta$SCC (k - k-1)', fontsize=16)
+ax.tick_params(axis='both', which='major', labelsize=12)
+
+plt.tight_layout()
+plt.savefig('/home/erschultz/TICG-chromatin/figures/max_ent_k_fig_B2.png')
+plt.close()
+# plt.show()

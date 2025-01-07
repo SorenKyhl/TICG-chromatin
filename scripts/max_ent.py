@@ -8,7 +8,6 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
-
 import pylib.analysis as analysis
 from pylib.datapipeline import DataPipeline, get_experiment_marks
 from pylib.Maxent import Maxent
@@ -19,6 +18,12 @@ from pylib.utils.energy_utils import *
 from pylib.utils.load_utils import get_final_max_ent_folder, load_Y
 from pylib.utils.plotting_utils import plot_matrix
 from pylib.utils.utils import load_import_log
+
+sys.path.append('/home/erschultz')
+sys.path.append('/project/depablo/erschultz/Hi-C_data')
+from sequences_to_contact_maps.scripts.iced.ICE_normalization import \
+    ICE_normalization
+from sequences_to_contact_maps.scripts.knightRuiz import knightRuiz
 
 sys.path.append('/home/erschultz/TICG-chromatin')
 import scripts.optimize_grid as optimize_grid
@@ -231,10 +236,10 @@ def modify_maxent():
 
 def check(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
         aspect_ratio=1, bond_type='gaussian', k=10, contacts_distance=False,
-        k_angle=0, theta_0=190, strict=False):
+        k_angle=0, theta_0=190, preprocessing=None, strict=False):
     root, _, _ = setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                                 aspect_ratio, bond_type, k, contacts_distance,
-                                k_angle, theta_0, False, strict=strict)
+                                k_angle, theta_0, preprocessing, False, strict=strict)
 
     if osp.exists(root):
         params = utils.load_json(osp.join(root, 'resources/params.json'))
@@ -264,10 +269,10 @@ def check(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
 
 def post_analysis(dataset, sample, samples='samples', bl=140, phi=0.03, v=None,
         vb=None, aspect_ratio=1, bond_type='gaussian', k=10,
-        contacts_distance=False, k_angle=0, theta_0=180):
+        contacts_distance=False, k_angle=0, theta_0=180, preprocessing=None):
     root, _, _ = setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                                 aspect_ratio, bond_type, k, contacts_distance,
-                                k_angle, theta_0)
+                                k_angle, theta_0, preprocessing)
     stdout = sys.stdout
     with open(osp.join(root, 'analysis_log.log'), 'w') as sys.stdout:
         dir = osp.join(root, 'iteration0')
@@ -277,7 +282,8 @@ def post_analysis(dataset, sample, samples='samples', bl=140, phi=0.03, v=None,
 
 def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None,
                 vb=None, aspect_ratio=1.0, bond_type='gaussian', k=None,
-                contacts_distance=False, k_angle=0, theta_0=180, verbose=True):
+                contacts_distance=False, k_angle=0, theta_0=180, preprocessing=None,
+                verbose=True):
     if verbose:
         print(sample)
     data_dir = osp.join(ROOT, dataset)
@@ -351,6 +357,9 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None,
             shutil.rmtree(root)
         root, bonded_config = optimize_grid.main(root, bonded_config, mode)
 
+    if preprocessing is not None:
+        root += f'_{preprocessing}'
+
     config = default.config
     for key in ['beadvol', 'bond_length', 'phi_chromatin', 'target_volume',
                 'grid_size', 'distance_cutoff', 'k_angle', 'angles_on', 'theta_0', 'boundary_type',
@@ -362,17 +371,28 @@ def setup_config(dataset, sample, samples='samples', bl=140, phi=0.03, v=None,
 
 def setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                 aspect_ratio, bond_type, k, contacts_distance,
-                k_angle, theta_0, verbose=True, return_dir=False, strict=False):
+                k_angle, theta_0, preprocessing,
+                verbose=True, return_dir=False, strict=False):
     if verbose:
         print(sample)
     dir, root, config = setup_config(dataset, sample, samples, bl, phi, v, vb,
                                 aspect_ratio, bond_type, k, contacts_distance,
-                                k_angle, theta_0, verbose)
+                                k_angle, theta_0, preprocessing, verbose)
 
     y = load_Y(dir, return_y_diag=False)
+    if preprocessing is None:
+        pass
+    elif preprocessing == 'kr':
+        y = knightRuiz(y)
+    elif preprocessing == 'ice':
+        y = ICE_normalization(y)
+    else:
+        raise Exception(f'Unrecognized preprocessing {preprocessing}')
+
     y = y.astype(float)
     y /= np.mean(np.diagonal(y))
     np.fill_diagonal(y, 1)
+
 
     config['nspecies'] = k
     if k > 0:
@@ -412,7 +432,7 @@ def setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
     # config['grid_size'] = 200
 
     # config['diag_start'] = 10
-    root = osp.join(dir, f'{root}-max_ent{k}_repeat3')
+    root = osp.join(dir, f'{root}-max_ent{k}')
     if strict:
         root += '_strict'
     if osp.exists(root):
@@ -428,11 +448,11 @@ def setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
 
 def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
         aspect_ratio=1, bond_type='gaussian', k=10, contacts_distance=False,
-        k_angle=0, theta_0=180, strict=False):
+        k_angle=0, theta_0=180, preprocessing=None, strict=False):
     dir = osp.join(ROOT, dataset, samples, f'sample{sample}')
     root, config, y = setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                                 aspect_ratio, bond_type, k, contacts_distance,
-                                k_angle, theta_0, strict=strict)
+                                k_angle, theta_0, preprocessing, strict=strict)
     import_log = load_import_log(dir)
     if osp.exists(root):
         return
@@ -467,10 +487,10 @@ def fit(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
 
 def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=None,
         aspect_ratio=1, bond_type='gaussian', k=10, contacts_distance=False,
-        k_angle=0, theta_0=180, strict=False):
+        k_angle=0, theta_0=180, preprocessing=None, strict=False):
     root, _, _ = setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                                 aspect_ratio, bond_type, k, contacts_distance,
-                                k_angle, theta_0, False, strict=strict)
+                                k_angle, theta_0, preprocessing, False, strict=strict)
 
     remove = True
     if osp.exists(root):
@@ -483,10 +503,11 @@ def cleanup(dataset, sample, samples='samples', bl=140, phi=0.03, v=None, vb=Non
             print(f'removing {root}')
             shutil.rmtree(root)
 
-def rename(dataset, sample, samples, bl, phi, v, vb, aspect_ratio, bond_type, k, contacts_distance, k_angle, theta_0):
+def rename(dataset, sample, samples, bl, phi, v, vb, aspect_ratio, bond_type,
+            k, contacts_distance, k_angle, theta_0, preprocessing=None):
     root, _, _ = setup_max_ent(dataset, sample, samples, bl, phi, v, vb,
                                 aspect_ratio, bond_type, k, contacts_distance,
-                                k_angle, theta_0, False)
+                                k_angle, theta_0, preprocessing, False)
     if osp.exists(root):
         new_name = root+'0'
         print(new_name)
@@ -496,10 +517,10 @@ fit_strict = functools.partial(fit, strict=True)
 check_strict = functools.partial(check, strict=True)
 cleanup_strict = functools.partial(cleanup, strict=True)
 
-def main():
-    dataset = 'dataset_12_06_23'
+def main_ice_kr():
     samples = []
-    for cell_line in ['imr90', 'gm12878', 'hap1', 'huvec', 'hmec']:
+    dataset = 'dataset_all_files_50k_512_ice'
+    for cell_line in ['imr90']:
         samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
         samples.extend(samples_cell_line)
         # samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
@@ -507,24 +528,26 @@ def main():
         print(samples)
 
     mapping = []
-    k_angle=0;theta_0=180;b=200;ar=1.5;phi=None;v=8;vb=None
+    k_angle=0;theta_0=180;b=200;ar=1.5;phi=None;v=8;vb=None;preprocessing=None
     contacts_distance=False
-    for i in samples:
-        for k in [10]:
-            for v in [8]:
-                for bond_type in ['gaussian']:
-                    mapping.append((dataset, i, f'samples', b, phi, v, vb, ar,
-                                bond_type, k, contacts_distance, k_angle, theta_0))
+    for dataset in ['dataset_all_files_50k_512_ice', 'dataset_all_files_50k_512_kr']:
+        for i in samples:
+            for k in [10]:
+                for v in [8]:
+                    for bond_type in ['gaussian']:
+                        mapping.append((dataset, i, f'samples', b, phi, v, vb, ar,
+                                    bond_type, k, contacts_distance, k_angle, theta_0,
+                                    preprocessing))
 
     print('len =', len(mapping))
 
-    with mp.Pool(100) as p:
-        p.starmap(cleanup, mapping)
-        p.starmap(cleanup_strict, mapping)
+    # with mp.Pool(100) as p:
+        # p.starmap(cleanup, mapping)
+        # p.starmap(cleanup_strict, mapping)
 
     with mp.Pool(100) as p:
         # p.starmap(setup_config, mapping)
-        p.starmap(fit_strict, mapping)
+        # p.starmap(fit_strict, mapping)
         p.starmap(fit, mapping)
         # p.starmap(check, mapping)
         # p.starmap(post_analysis, mapping)
@@ -535,7 +558,7 @@ def main():
         # fit(*i)
         # rename(*i)
         check(*i)
-        check_strict(*i)
+        # check_strict(*i)
         # cleanup(*i)
 
 def human_and_mouse():
@@ -549,9 +572,13 @@ def human_and_mouse():
     for cell_line in ['imr90', 'gm12878', 'hap1', 'huvec', 'hmec']:
         samples_cell_line, _ = get_samples(dataset, test=True, filter_cell_lines=cell_line)
         samples.extend(samples_cell_line)
+
+    # normal
     for i in samples:
         mapping.append((dataset, i, f'samples', b, phi, v, vb, ar,
                     bond_type, k, contacts_distance, k_angle, theta_0))
+
+    # strict
     samples, _ = get_samples(dataset, test=True, filter_cell_lines='imr90')
     for i in samples:
         mapping_strict.append((dataset, i, f'samples', b, phi, v, vb, ar,
@@ -607,8 +634,8 @@ def main2():
 
 if __name__ == '__main__':
     # modify_maxent()
-    human_and_mouse()
-    # main()
+    # human_and_mouse()
+    main_ice_kr()
     # max_ent_dataset(False)
     # max_ent_dataset(True)
     # compute_pcs('dataset_11_20_23', 'gm12878')

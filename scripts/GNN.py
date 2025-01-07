@@ -9,9 +9,8 @@ import sys
 from time import sleep, time
 
 import numpy as np
-import torch
-
 import pylib.analysis as analysis
+import torch
 # from data_generation.modify_maxent import get_samples
 # from max_ent import setup_config
 from pylib.Maxent import Maxent
@@ -26,19 +25,22 @@ sys.path.append('/home/erschultz')
 sys.path.append('/project/depablo/erschultz')
 from sequences_to_contact_maps.result_summary_plots import \
     predict_chi_in_psi_basis
+from sequences_to_contact_maps.scripts.iced.ICE_normalization import \
+    ICE_normalization
+from sequences_to_contact_maps.scripts.knightRuiz import knightRuiz
 
 sys.path.append('/home/erschultz/TICG-chromatin')
 from scripts.data_generation.modify_maxent import get_samples
-from scripts.max_ent import setup_config, setup_max_ent
+from scripts.max_ent import PROJECT, ROOT, setup_config, setup_max_ent
 from scripts.max_ent_setup.get_params import GetEnergy
 
-ROOT = '/home/erschultz'
-ROOT = '/project/depablo/erschultz'
 
 def run_GNN(GNN_ID, gnn_root, m, dir, root, sub_dir, use_GPU=True, verbose=True):
     # sleep for random # of seconds so as not to overload gpu
-    print(ROOT)
-    model_path = osp.join(ROOT, 'sequences_to_contact_maps/results/ContactGNNEnergy',
+    data_dir = ROOT
+    if not osp.exists(data_dir):
+        data_dir = PROJECT
+    model_path = osp.join(data_dir, 'sequences_to_contact_maps/results/ContactGNNEnergy',
                         str(GNN_ID))
     log_file = osp.join(gnn_root, 'energy.log')
     ofile = osp.join(gnn_root, 'S.npy')
@@ -51,7 +53,7 @@ def run_GNN(GNN_ID, gnn_root, m, dir, root, sub_dir, use_GPU=True, verbose=True)
         args_str += f' --use_gpu true --verbose {verbose}'
         # using subprocess gaurantees that pytorch can't keep any GPU vram cached
         file = 'TICG-chromatin/scripts/max_ent_setup/get_params.py'
-        sp.run(f"python3 {ROOT}/{file} {args_str} > {log_file}",
+        sp.run(f"python3 {data_dir}/{file} {args_str} > {log_file}",
                 shell=True)
     else:
         t0 = time()
@@ -146,15 +148,24 @@ def fit_max_ent(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar, k=10):
         print(f'Simulation took {np.round(t, 2)} seconds')
     sys.stdout = stdout
 
-def setup_GNN(dataset, sample, sub_dir, b, phi, v, ar, GNN_ID):
+def setup_GNN(dataset, sample, sub_dir, b, phi, v, ar, preprocessing, GNN_ID):
     dir, root, config = setup_config(dataset, sample, sub_dir, b, phi, v, None,
-                                    ar, verbose = False)
+                                    ar, preprocessing=preprocessing, verbose=False)
 
     y = load_Y(dir, return_y_diag=False)
     y = y.astype(np.float64)
     y /= np.mean(np.diagonal(y))
     np.fill_diagonal(y, 1)
     m = len(y)
+
+    if preprocessing is None:
+        pass
+    elif preprocessing == 'kr':
+        y = knightRuiz(y)
+    elif preprocessing == 'ice':
+        y = ICE_normalization(y)
+    else:
+        raise Exception(f'Unrecognized preprocessing {preprocessing}')
 
     # config_ref = utils.load_json(osp.join(dir, 'config.json'))
     # config['grid_size'] = 200
@@ -168,15 +179,16 @@ def setup_GNN(dataset, sample, sub_dir, b, phi, v, ar, GNN_ID):
     config['nbeads'] = m
     config["umatrix_filename"] = "umatrix.txt"
 
-    gnn_root = f'{root}-GNN{GNN_ID}_repeat3'
+    gnn_root = f'{root}-GNN{GNN_ID}'
 
     return dir, root, gnn_root, config, y
 
-def fit(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
+def fit(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar, preprocessing=None):
     print(sample)
     mode = 'grid'
 
-    dir, root, gnn_root, config, y = setup_GNN(dataset, sample, sub_dir, b, phi, v, ar, GNN_ID)
+    dir, root, gnn_root, config, y = setup_GNN(dataset, sample, sub_dir, b, phi,
+                                                v, ar, preprocessing, GNN_ID)
     m = len(y)
 
     if osp.exists(gnn_root):
@@ -197,8 +209,9 @@ def fit(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
         analysis.main_no_maxent(dir=sim.root)
     sys.stdout = stdout
 
-def check(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
-    dir, _, gnn_root, config, y = setup_GNN(dataset, sample, sub_dir, b, phi, v, ar, GNN_ID)
+def check(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar, preprocessing=None):
+    dir, _, gnn_root, config, y = setup_GNN(dataset, sample, sub_dir, b, phi, v,
+                                            ar, preprocessing, GNN_ID)
     if osp.exists(gnn_root):
         production = osp.join(gnn_root, 'production_out')
         equilibration = osp.join(gnn_root, 'equilibration')
@@ -219,10 +232,11 @@ def check(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
     else:
         print(f"{gnn_root} not started")
 
-def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
-    dir, _, gnn_root, config, y = setup_GNN(dataset, sample, sub_dir, b, phi, v, ar, GNN_ID)
+def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar, preprocessing=None):
+    dir, _, gnn_root, config, y = setup_GNN(dataset, sample, sub_dir, b, phi, v,
+                                            ar, preprocessing, GNN_ID)
     if osp.exists(gnn_root):
-        remove = True
+        remove = False
         if not osp.exists(osp.join(gnn_root, 'equilibration')):
             remove = True
         # elif not osp.exists(osp.join(gnn_root, 'production_out')):
@@ -233,15 +247,16 @@ def cleanup(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
             shutil.rmtree(gnn_root)
             print(f'removing {gnn_root}')
 
-def rename(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar):
-    dir, _, gnn_root, config, y = setup_GNN(dataset, sample, sub_dir, b, phi, v, ar, GNN_ID)
+def rename(dataset, sample, GNN_ID, sub_dir, b, phi, v, ar, preprocessing=None):
+    dir, _, gnn_root, config, y = setup_GNN(dataset, sample, sub_dir, b, phi, v,
+                                            ar, preprocessing, GNN_ID)
     if osp.exists(gnn_root):
         os.rename(gnn_root, f'{root}_GNN{GNN_ID}')
 
 def main():
     samples=None
     # dataset = 'dataset_HIRES'; samples = [1, 2, 3, 4]
-    dataset='dataset_12_06_23';
+    dataset='dataset_all_files_50k_512_ice';
     # dataset='dataset_HCT116_RAD21_KO'
     # samples = [441, 81, 8, 578, 368, 297, 153, 510, 225]
     # dataset='dataset_12_12_23_imr90'
@@ -255,7 +270,8 @@ def main():
 
     if samples is None:
         samples = []
-        for cell_line in ['imr90', 'gm12878', 'hap1', 'huvec', 'hmec']:
+        for cell_line in ['imr90']:
+            # sequences_to_contact_maps/results/ContactGNNEnergy/732/
             # samples_cell_line, _ = get_samples(dataset, train=True,
             #                                     filter_cell_lines=cell_line)
             # samples.extend(samples_cell_line[:10])
@@ -265,18 +281,18 @@ def main():
 
             print(len(samples))
 
-    GNN_IDs = [690]; b=200; phi=None; v=8; ar=1.5
+    GNN_IDs = [690]; b=200; phi=None; v=8; ar=1.5; preprocessing=None
     for GNN_ID in GNN_IDs:
-        for i in samples:
-            mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar))
+        for dataset in ['dataset_all_files_50k_512_ice', 'dataset_all_files_50k_512_kr']:
+            for i in samples:
+                mapping.append((dataset, i, GNN_ID, f'samples', b, phi, v, ar, preprocessing))
 
     print(f'samples: {samples}')
     print(f'len of mapping: {len(mapping)}')
     # print(mapping)
 
-    for i in mapping:
-        cleanup(*i)
-
+    # for i in mapping:
+        # cleanup(*i)
 
     with mp.Pool(100) as p:
         # p.starmap(cleanup, mapping)
@@ -284,7 +300,7 @@ def main():
 
     for i in mapping:
         # fit_max_ent(*i)
-        # fit(*i)i
+        # fit(*i)
         check(*i)
         # rename(*i)
         # cleanup(*i)
@@ -325,5 +341,5 @@ def human_and_mouse():
 
 if __name__ == '__main__':
     mp.set_start_method('spawn')
-    human_and_mouse()
-    # main()
+    # human_and_mouse()
+    main()

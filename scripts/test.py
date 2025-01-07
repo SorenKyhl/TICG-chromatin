@@ -28,7 +28,8 @@ from pylib.utils.energy_utils import (calculate_all_energy, calculate_D,
                                       calculate_diag_chi_step, calculate_U)
 from pylib.utils.load_utils import (get_final_max_ent_folder, load_all,
                                     load_max_ent_D, load_max_ent_L, load_Y)
-from pylib.utils.plotting_utils import (BLUE_RED_CMAP, plot_seq_continuous,
+from pylib.utils.plotting_utils import (BLUE_RED_CMAP, plot_matrix,
+                                        plot_seq_continuous,
                                         plot_seq_continuous_panels)
 from pylib.utils.similarity_measures import SCC
 from pylib.utils.utils import (load_import_log, load_json, make_composite,
@@ -41,7 +42,6 @@ from sklearn.metrics import mean_squared_error
 
 sys.path.append('/home/erschultz')
 from sequences_to_contact_maps.scripts.plotting_utils import (plot_diag_chi,
-                                                              plot_matrix,
                                                               plot_seq_binary)
 from sequences_to_contact_maps.scripts.utils import (calc_dist_strat_corr,
                                                      load_time_dir,
@@ -1141,14 +1141,17 @@ def test_pipeline():
     print(npy2, npy2.shape)
 
 def plot_seq():
-    dir = '/home/erschultz/dataset_12_06_23/samples/sample6/optimize_grid_b_200_v_8_spheroid_1.5-max_ent6_chipseq/iteration20/'
+    dir = osp.join('/home/erschultz/dataset_12_06_23/samples/sample6',
+                'optimize_grid_b_200_v_8_spheroid_1.5-max_ent6_chipseq/iteration20')
     seq = np.load(osp.join(dir, 'x.npy'))
     labels = ['H3K4me3', 'H3K27ac', 'H3K27me3', 'H3K4me1', 'H3K36me3', 'H3K9me3']
     print(seq.shape)
     plot_seq_continuous_panels(seq.T, labels, ofile = osp.join(dir, 'seq.png'))
 
 def plot_bonded_distributions():
-    xyz_file = '/home/erschultz/dataset_12_06_23/samples/sample1/optimize_grid_b_200_v_8_spheroid_1.5-GNN690/production_out/output.xyz'
+    xyz_file = osp.join('/home/erschultz/dataset_12_06_23/samples',
+                        'sample1/optimize_grid_b_200_v_8_spheroid_1.5-GNN690',
+                        'production_out/output.xyz')
     xyz = xyz_load(xyz_file, save = True)
     D = xyz_to_distance(xyz)
     print(D.shape)
@@ -1158,6 +1161,29 @@ def plot_bonded_distributions():
 
     simple_histogram(bonds, xlabel='Bond Length', dist=norm)
     plt.show()
+
+def get_cmap():
+    name = 'BuGn'
+
+    cmap = matplotlib.cm.get_cmap(name, 23)
+
+    for i in range(cmap.N):
+        rgba = cmap(i)
+        # rgb2hex accepts rgb or rgba
+        print(i, matplotlib.colors.rgb2hex(rgba))
+
+def get_hic():
+    dir = '/home/erschultz/dataset_12_06_23/samples/sample1'
+    file = osp.join(dir, 'hic.npy')
+    y = np.load(file)
+    plot_matrix(y, osp.join(dir, 'hic2.png'), vmax='mean', use_cbar=False,
+                x_ticks=[], y_ticks = [], border=True)
+
+    file2 = osp.join(dir, 'optimize_grid_b_200_v_8_spheroid_1.5-GNN690',
+                        'y.npy')
+    y2 = np.load(file2)
+    plot_matrix(y2, osp.join(dir, 'hic3.png'), vmax='mean', use_cbar=False,
+                x_ticks=[], y_ticks = [], border=True)
 
 if __name__ == '__main__':
     # test_tile()
@@ -1174,4 +1200,6 @@ if __name__ == '__main__':
     # cleanup()
     # test_pipeline()
     # plot_seq()
-    plot_bonded_distributions()
+    # plot_bonded_distributions()
+    # get_cmap()
+    get_hic()
