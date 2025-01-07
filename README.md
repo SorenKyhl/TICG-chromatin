@@ -1,9 +1,12 @@
-#TICG-chromatin
+# TICG-chromatin
 
+Theoretically Informed Coarse Grain (TICG) model applied to chromatin organization. 
 
-## python implementation
-a python wrapper for the TICG engine is packaged in pylib (temporary name).
-the library includes classes for running individual simulations, maxent optimization, and data pipelines
+General overview: 
+
+The base TICG engine (located in /src) is written in C++.
+
+A Python wrapper (located in /pylib) is the primary API for instantiating, dispatching, and analyzing simulations. A user should only need to familiarize themselves with the python library in order to use this simulation software. Higher level functionality is also available for conducting iterative simulations using maximum entropy optimization. This optimization routine parameterizes the model interactions in order to match experimental Hi-C conformation capture data.
 
 ## installation:
 to build the engine (C++ extension) from source and install the python package (required first time)
@@ -28,11 +31,11 @@ after building, they are located in pylib/docs/build/index.html, and can be open
 The core TICG simulation engine is written in C++ (located in src).
 Pybind is used to extend the engine as a python module (ticg).
 
-further modules are built on top of the engine both individual simulations and maxent optimizations:
+several higher level python modules are built on top of the engine in order to conduct both individual simulations and maxent optimizations:
 
 Simulations:
-- pyticg (low level), just the bare engine
-- pysim	 (high level), wrapper around pyticg for manipulating simulations and their settings
+- pyticg (low level), just the bare engine: supply your own configuration.
+- pysim	 (high level), abstraction containing a bare pyticg simulation engine along with configuration parameters and routines to execute equilibration and production simulations.
 
 Maxent Optimizations:
 - maxent (low level), just the optimizer and dispacher for iterative simulations
