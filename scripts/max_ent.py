@@ -25,7 +25,7 @@ import scripts.optimize_grid as optimize_grid
 from scripts.data_generation.modify_maxent import get_samples
 
 ROOT = '/home/erschultz'
-PROJECT = '/project/depablo/erschultz'
+PROJECT = '/project/depablo/erschultz/HiC_data'
 MEDIA = '/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c/'
 
 def max_ent_dataset(use_exp_hic=False):

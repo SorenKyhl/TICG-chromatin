@@ -46,7 +46,7 @@ def get_dirs(sample_dir):
 
 def get_y(sample_dir):
     max_ent_dir, gnn_dir = get_dirs(sample_dir)
-    y = np.load(osp.join(sample_dir, 'hic.npy')).astype(np.float64)
+    y = np.load(osp.join(sample_dir, 'y.npy')).astype(np.float64)
     y /= np.mean(np.diagonal(y))
 
     final = get_final_max_ent_folder(max_ent_dir, 'normal')

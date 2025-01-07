@@ -33,7 +33,7 @@ from scripts.data_generation.MultivariateSkewNormal import \
     multivariate_skewnorm
 
 ROOT = '/home/erschultz'
-PROJECT = '/project/depablo/erschultz'
+PROJECT = '/project/depablo/erschultz/Hi-C_data'
 
 
 def get_samples(dataset, train=False, test=False, return_cell_lines=False, filter_cell_lines=None):

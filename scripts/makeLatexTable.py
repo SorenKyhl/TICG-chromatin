@@ -776,7 +776,7 @@ def main_mouse():
     args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', '_700k', 'phi',
                         'GNN579-max_ent', '-gd_gamma', 'distance', 'start', 'stat',
                         'diagbins', 'binarize', 'chrom', 'grid200', 'long', 'long5',
-                        'strict', '_repeat-GNN690', '_test', '_repeat', 'max_ent10-GNN690',
+                        '_repeat-GNN690', '_test', '_repeat', 'max_ent10-GNN690',
                         '_chipseq', '_repeat2']
     for i in [1,2,3,4,5,7,8,9,10, 11,12,13,14,15]:
        args.bad_methods.append(f'max_ent{i}')
@@ -787,8 +787,9 @@ def main_human():
     sample=None
     dataset='dataset_12_06_23'
     # dataset='Su2020'; samples = [1013]
+    all_cell_lines = ['imr90', 'hap1', 'huvec', 'gm12878', 'hmec']
 
-    for cell_line in ['imr90', 'hap1', 'huvec', 'gm12878', 'hmec']:
+    for cell_line in all_cell_lines:
         samples, _ = get_samples(dataset, test = True,
                                     filter_cell_lines=[cell_line])
         print(samples, len(samples))
@@ -798,12 +799,12 @@ def main_human():
         args = getArgs(data_folder = data_dir, sample = sample, samples = samples)
         args.experimental = True
         args.verbose = True
-        args.convergence_definition = 'normal'
+        args.convergence_definition = 'strict'
         args.test_significance = True
         args.bad_methods = ['_stop', 'b_140', 'b_261', 'spheroid_2.0', '_700k', 'phi',
                             'GNN579-max_ent', '-gd_gamma', 'distance', 'start', 'stat',
                             'diagbins', 'binarize', 'chrom', 'grid200', 'long', 'long5',
-                            'strict', '_repeat-GNN690', '_test', '_repeat', 'max_ent10-GNN690',
+                            '_repeat-GNN690', '_test', '_repeat', 'max_ent10-GNN690',
                             '_chipseq', '_repeat2']
         for i in [1,2,3,4,5,7,8,9,10, 11,12,13,14,15]:
            args.bad_methods.append(f'max_ent{i}')
@@ -812,6 +813,7 @@ def main_human():
         main(args, fname=f'max_ent_table_{cell_line}.txt')
         # data, converged_mask = load_data(args)
         # boxplot(data, osp.join(data_dir, 'boxplot_test.png'))
+        return
 
 
 if __name__ == '__main__':
