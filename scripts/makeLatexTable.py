@@ -760,6 +760,23 @@ def main(args=None, fname='max_ent_table.txt'):
 
         # boxplot(data, osp.join(odir, f'boxplot_{defn}_convergence.png'))
 
+def main_k():
+    dataset = 'dataset_12_06_23'
+    samples, _ = get_samples(dataset, train=True, filter_cell_lines=['imr90'])
+    samples_list = samples[:10]
+    print(samples_list)
+
+    args = getArgs(data_folder = f'/home/erschultz/{dataset}',
+                    samples = samples_list)
+    args.experimental = True
+    args.verbose = True
+    args.bad_methods=['phi', 'grid200', '_spheroid_2.0']
+    args.convergence_definition = 'normal'
+    args.gnn_id = []
+    args.test_significance = False
+    main(args)
+
+
 def main_mouse():
     dataset = 'dataset_mouse_50k_512'
     samples, _ = get_samples(dataset, test = True,
@@ -815,5 +832,6 @@ def main_human():
 
 
 if __name__ == '__main__':
+    main_k()
     # main_mouse()
-    main_human()
+    # main_human()

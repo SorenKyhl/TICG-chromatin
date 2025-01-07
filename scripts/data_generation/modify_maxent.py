@@ -55,6 +55,9 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False, filte
     elif dataset == 'dataset_12_06_23':
         samples = range(1, 642)
         experimental = True
+    elif dataset in {'dataset_all_files_50k_512_ice', 'dataset_all_files_50k_512_kr'}:
+        samples = range(1, 74)
+        experimental = True
     elif dataset == 'dataset_11_30_23':
         samples = range(1, 242)
         experimental = True
