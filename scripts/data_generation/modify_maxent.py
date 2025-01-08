@@ -33,7 +33,7 @@ from scripts.data_generation.MultivariateSkewNormal import \
     multivariate_skewnorm
 
 ROOT = '/home/erschultz'
-PROJECT = '/project/depablo/erschultz/HiC_data'
+PROJECT = '/project/depablo/erschultz'
 
 
 def get_samples(dataset, train=False, test=False, return_cell_lines=False, filter_cell_lines=None):
@@ -120,6 +120,8 @@ def get_samples(dataset, train=False, test=False, return_cell_lines=False, filte
                 s_dir = osp.join('/media/erschultz/1814ae69-5346-45a6-b219-f77f6739171c', s_dir)
             if not osp.exists(s_dir):
                 s_dir = osp.join(PROJECT, dataset, f'samples/sample{s}')
+            if not osp.exists(s_dir):
+                s_dir = osp.join(PROJECT, 'HiC_data', dataset, f'samples/sample{s}')
             assert(osp.exists(s_dir)), s_dir
 
             result = load_import_log(s_dir)
