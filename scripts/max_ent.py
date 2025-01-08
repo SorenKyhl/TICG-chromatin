@@ -20,7 +20,7 @@ from pylib.utils.plotting_utils import plot_matrix
 from pylib.utils.utils import load_import_log
 
 sys.path.append('/home/erschultz')
-sys.path.append('/project/depablo/erschultz/Hi-C_data')
+sys.path.append('/project/depablo/erschultz')
 from sequences_to_contact_maps.scripts.iced.ICE_normalization import \
     ICE_normalization
 from sequences_to_contact_maps.scripts.knightRuiz import knightRuiz

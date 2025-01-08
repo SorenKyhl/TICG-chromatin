@@ -294,16 +294,16 @@ def main():
     # for i in mapping:
         # cleanup(*i)
 
-    with mp.Pool(100) as p:
+    # with mp.Pool(100) as p:
         # p.starmap(cleanup, mapping)
-        p.starmap(fit, mapping)
+        # p.starmap(fit, mapping)
 
     for i in mapping:
         # fit_max_ent(*i)
         # fit(*i)
-        check(*i)
+        # check(*i)
         # rename(*i)
-        # cleanup(*i)
+        cleanup(*i)
 
 def human_and_mouse():
     mapping = []
