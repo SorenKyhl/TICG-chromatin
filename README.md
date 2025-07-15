@@ -23,10 +23,10 @@ config['nSweeps'] = 10000 # modify desired config settings
 seqs = epilib.get_sequences(np.load("experimental_hic.npy"))
 
 # construct simulation object
-sim = Pysim(root=".", config=config, seqs=seqs, mkdir=False)
+sim = Pysim(root=".", config=config, seqs=seqs)
 
 # run equilibration, followed by production simulations
-sim.run_eq(eq_sweeps=10000, prod_sweeps=50000, parallel=1) 
+sim.run_eq(eq_sweeps=10000, prod_sweeps=50000) 
 
 # optional analysis-plot contactmap
 plot_contactmap("output_dir")
