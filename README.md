@@ -6,6 +6,32 @@ The core engine (located in /src) is written in C++, and an accompanying Python 
 
 See: [Chromatin structures from integrated AI and polymer physics model](https://doi.org/10.1371/journal.pcbi.1012912) for more details.
 
+
+# Quickstart: 
+Get started quickly with code snippets located in /examples. 
+For example, to simulate chromatin structure against an experimental hic target, run:
+```
+from pylib.pysim import Pysim
+from pylib import default, epilib
+from pylib.plot_contactmap import plot_contactmap
+
+# load simulation configuration file
+config = default.config
+config['nSweeps'] = 10000 # modify desired config settings
+
+# calculate bead labels "sequences" from experimental hic 
+seqs = epilib.get_sequences(np.load("experimental_hic.npy"))
+
+# construct simulation object
+sim = Pysim(root=".", config=config, seqs=seqs, mkdir=False)
+
+# run equilibration, followed by production simulations
+sim.run_eq(eq_sweeps=10000, prod_sweeps=50000, parallel=1) 
+
+# optional analysis-plot contactmap
+plot_contactmap("output_dir")
+```
+
 ## Installation:
 To build the engine as a C++ extension and install the engine as a python package, run:
 ```
