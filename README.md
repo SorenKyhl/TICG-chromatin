@@ -10,7 +10,7 @@ See: [Chromatin structures from integrated AI and polymer physics model](https:/
 # Quickstart: 
 Get started quickly with code snippets located in /examples. 
 For example, to simulate chromatin structure against an experimental hic target, run:
-```
+``` python
 from pylib.pysim import Pysim
 from pylib import default, epilib
 from pylib.plot_contactmap import plot_contactmap
