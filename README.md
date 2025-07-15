@@ -1,45 +1,43 @@
-# TICG-chromatin
+# TICG-chromatin: Theoretically Informed Coarse Grain (TICG) model for chromatin organization. 
 
-Theoretically Informed Coarse Grain (TICG) model applied to chromatin organization. 
+TICG-chromatin is a simulation engine for modeling the 3D conformation of DNA (chromatin) in the cell nucleus. We propose a novel coarse-grained particle representation of chromatin combined with field-theoretic energy functionals, enabling faster and higher resolution DNA modeling than previously documented in the literature. 
 
-General overview: 
+The core engine (located in /src) is written in C++, and an accompanying Python wrapper (located in /pylib) is available for instantiating, dispatching, and analyzing simulations. A user should only need to familiarize themselves with the python library in order to use this simulation software. Higher-level functionality, including model parametrization using maximum entropy parametrization, is also available.  
 
-The base TICG engine (located in /src) is written in C++.
+See: [Chromatin structures from integrated AI and polymer physics model](https://doi.org/10.1371/journal.pcbi.1012912) for more details.
 
-A Python wrapper (located in /pylib) is the primary API for instantiating, dispatching, and analyzing simulations. A user should only need to familiarize themselves with the python library in order to use this simulation software. Higher level functionality is also available for conducting iterative simulations using maximum entropy optimization. This optimization routine parameterizes the model interactions in order to match experimental Hi-C conformation capture data.
-
-## installation:
-to build the engine (C++ extension) from source and install the python package (required first time)
+## Installation:
+To build the engine as a C++ extension and install the engine as a python package, run:
 ```
 make all
 ```
 
-to install just the python package (C++ extension must have been built at least once)
+To install just the python package (C++ extension must have been built at least once), run:
 ```
 make install
 ```
 
 ## Documentation
-to build the docs:
+To build the docs, run:
 ```
 make docs
 ```
-after building, they are located in pylib/docs/build/index.html, and can be opened in a web browser
+after building, the docs are located in pylib/docs/build/index.html, and can be opened in a web browser
 
-## General Structure
+## Software Overview
 
 The core TICG simulation engine is written in C++ (located in src).
 Pybind is used to extend the engine as a python module (ticg).
 
-several higher level python modules are built on top of the engine in order to conduct both individual simulations and maxent optimizations:
+Several higher level python modules are built on top of the C++ engine in order to conduct both individual simulations and maxent parametrization. A general library overview is as follows: 
 
-Simulations:
+For individual simulations, the following modules are available:
 - pyticg (low level), just the bare engine: supply your own configuration.
 - pysim	 (high level), abstraction containing a bare pyticg simulation engine along with configuration parameters and routines to execute equilibration and production simulations.
 
-Maxent Optimizations:
-- maxent (low level), just the optimizer and dispacher for iterative simulations
-- pipeline (high level), wrapper around maxent for manipulating maxent runs and their settings
+For model parametrization against experimental Hi-C data, the following modules are available:
+- maxent (low level), just the optimizer and dispacher for iterative parametrization.
+- pipeline (high level), wrapper around maxent for manipulating maxent runs and their settings.
 
 The following is a general description of the individual modules:
 
@@ -60,11 +58,11 @@ class Sim:
 ```
 
 ### pysim module
-this module implements the pysim class, a wrapper around the pyticg engine with much more functionality. 
+This module implements the pysim class, a wrapper around the pyticg engine with much more functionality. 
 This class is the main interface to the user performing simulations. 
 
 #### usage:
-to set up a simulation, all that is needed are polymer sequences and a config file.
+To set up a simulation, all that is needed are polymer sequences and a config file.
 the config file contains physical constants (number of beads)  and parameters for the 
 monte carlo simulation (number of sweeps, etc). A default config file is available in maxent/defaults/config.json
 ```python
