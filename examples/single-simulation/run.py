@@ -15,7 +15,7 @@ config['nSweeps'] = 10000 # modify desired config settings
 
 # calculate bead labels "sequences" from ground truth hic
 gthic = np.load("experimental_hic.npy") 
-seqs = epilib.get_sequences(gthic, k=5)
+seqs = epilib.get_sequences(gthic, k=10)
 
 #... or load them if they're already on disk
 """

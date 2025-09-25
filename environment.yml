@@ -1,0 +1,9 @@
+name: test-env
+channels:
+    - conda-forge
+dependencies:
+    - libffi=3.3
+    - python=3.10
+    - pip
+    - pip:
+        - -r file:requirements.txt

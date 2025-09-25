@@ -6,7 +6,6 @@ from typing import Callable
 from skimage.measure import block_reduce
 
 from pylib import epilib, default
-from pylib import hic as hiclib
 
 """
 collection of functions for manipulating hic maps
@@ -228,7 +227,7 @@ def load_chipseq(nbeads, encode_only=False, chrom=2, return_gthic=False, data_di
     
     # need to load gthic to know which indices to drop when loading chip
     gthic = pipe.load_hic(default.HCT116_hic)
-    gthic = hiclib.pool_sum(gthic, factor)
+    gthic = pool(gthic, factor)
     sequences_total = pipe.load_chipseq_from_directory(data_dir, wig_method)
 
     encode_seqs = ["H3K4me3", "H3K27ac", "H3K27me3", "H3K4me1", "H3K36me3", "H3K9me3"]
@@ -240,6 +239,8 @@ def load_chipseq(nbeads, encode_only=False, chrom=2, return_gthic=False, data_di
     chip = {}
     pooled = {}
     for seq in sequences:
+        sequences[seq][sequences[seq] == None] = float(0)  # impute Nones to 0
+        sequences[seq] = sequences[seq].astype(float) # ensure correct imputed datatype
         pooled[seq] = pool_seqs(sequences[seq], factor)
         chip[seq] = chipseq_pipeline.fit(pooled[seq])
 

@@ -30,6 +30,17 @@ HCT116_hic = Path(
 HCT116_chipseq = Path(
     "/home/skyhl/Documents/chromatin/maxent-analysis/HCT116_chipseq_hg19/"
 )
+HCT116_chipseq_TF = Path(
+    "/home/skyhl/Documents/chromatin/maxent-analysis/test"
+)
+
+HCT116_chipseq_TF_hg38 = Path(
+    "/home/skyhl/Documents/chromatin/maxent-analysis/hg38"
+)
+
+HCT116_chipseq_TF_hg38_lifted = Path(
+    "/home/skyhl/Documents/chromatin/maxent-analysis/hg38/hg19"
+)
 
 data_dir = proj_root / "data"
 HCT116_hic_20k = {'2': data_dir / "HCT116_chr2_20k.npy",
